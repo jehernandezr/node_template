@@ -1,8 +1,8 @@
-# Ejemplos de backend-nestjs-composicion
+# backend-nestjs-composicion examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies to you.
 
-## Tokens para puertos
+## Tokens for ports
 
 ```ts
 @Module({
@@ -18,7 +18,7 @@ Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
 export class UsersModule {}
 ```
 
-## Tokens para puertos
+## Tokens for ports
 
 ```ts
 export enum UserBloomFilter {
@@ -33,12 +33,12 @@ export class UsersEmailChecker {
 }
 ```
 
-## Módulos de las librerías de plataforma
+## Platform library modules
 
 ```ts
 @Module({
   imports: [
-    // Configuración propia del servicio. Las librerías traen sus secciones.
+    // The service's own configuration. Libraries bring their sections.
     ConfigModule.forRoot({ env: process.env }),
 
     ObservabilityModule.forRoot({ telemetry }),
@@ -49,7 +49,7 @@ export class UsersEmailChecker {
       metrics: MetricsPort,
     }),
 
-    // Adaptadores de infraestructura.
+    // Infrastructure adapters.
     ValkeyModule.forRoot({ connectionName: SERVICE_NAME }),
     AwsModule.forRoot({
       messaging: { topology: identityTopology, source: SERVICE_NAME },
@@ -64,7 +64,7 @@ export class UsersEmailChecker {
     }),
     PostgresPlatformModule.forRoot(),
 
-    // Núcleo, con el adaptador elegido por `Type<Port>`.
+    // Core, with the adapter chosen by `Type<Port>`.
     ShardingModule.forRoot({
       routingCache: ValkeyRoutingCache,
       channel: ValkeyShardDirectoryChannel,
@@ -83,10 +83,10 @@ export class UsersEmailChecker {
       processedStore: TypeOrmProcessedMessageStore,
       publisher: SnsSqsEnvelopePublisher,
       bus: SnsSqsMessageBus,
-      relay: true, // registra OutboxRelayJob y las retenciones
+      relay: true, // registers OutboxRelayJob and the retention jobs
       relayScopes: ShardedRelayScopes,
     }),
-    // No es global: se destruye antes que AwsModule y detiene el sondeo antes de cerrar los clientes.
+    // Not global: destroyed before AwsModule, so polling stops before the clients close.
     SqsConsumerModule.forRoot({
       topology: identityTopology,
       queue: QueueName.Orders,
@@ -102,14 +102,14 @@ export class UsersEmailChecker {
       scopes: ShardedSagaScopes,
     }),
 
-    // Módulos de negocio.
+    // Business modules.
     UsersModule,
   ],
 })
 export class AppModule {}
 ```
 
-## Casos de uso y comandos
+## Use cases and commands
 
 ```ts
 @Injectable()

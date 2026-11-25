@@ -386,6 +386,54 @@ void main() {
       );
     });
 
+    test(
+      'call headers win over the defaults but never over the token',
+      () async {
+        client = ApiClient(
+          transport: transport,
+          baseUri: Uri.parse('https://api.example.com/'),
+          accessToken: () async => 'token-1',
+          defaultHeaders: const {'x-session-transport': 'cookie'},
+        );
+        transport.next = _json(200, {'revoked': 0});
+
+        await client.send(
+          IdentityRoutes.revokeOtherSessions,
+          const Empty(),
+          headers: const {
+            'x-session-transport': 'bearer',
+            'authorization': 'Bearer other',
+          },
+        );
+
+        final headers = transport.requests.single.headers;
+        expect(headers['x-session-transport'], 'bearer');
+        expect(headers['authorization'], 'Bearer token-1');
+      },
+    );
+
+    test('call headers go on the retry after a refresh', () async {
+      client = ApiClient(
+        transport: transport,
+        baseUri: Uri.parse('https://api.example.com/'),
+        accessToken: () async => 'token-1',
+        sessionRefresh: _staleRefresh(() async {}),
+      );
+      transport.queue.add(_stale());
+      transport.next = _json(200, {'revoked': 0});
+
+      await client.send(
+        IdentityRoutes.revokeOtherSessions,
+        const Empty(),
+        headers: const {'x-session-transport': 'bearer'},
+      );
+
+      expect(
+        [for (final r in transport.requests) r.headers['x-session-transport']],
+        ['bearer', 'bearer'],
+      );
+    });
+
     test('stale permissions twice in a row throw after one retry', () async {
       var refreshes = 0;
       client = ApiClient(

@@ -1,58 +1,58 @@
-# Registros de decisiones de arquitectura (ADR)
+# Architecture decision records (ADR)
 
-Un ADR documenta una decisión técnica relevante: el contexto que la motivó, lo que se eligió, sus consecuencias y las alternativas descartadas. Sirve para entender por qué el sistema es como es sin reconstruirlo desde el código.
+An ADR documents a relevant technical decision: the context that motivated it, what was chosen, its consequences and the discarded alternatives. It helps to understand why the system is the way it is without reconstructing it from the code.
 
-El [registro de decisiones del plan](../plan/README.md#registro-de-decisiones) lista todas las decisiones con su fecha y enlaza al ADR que desarrolla cada una.
+The [plan's decision log](../plan/README.md#registro-de-decisiones) lists every decision with its date and links to the ADR that develops each one.
 
-Los diseños de una fase o de una pieza grande viven en [`docs/design/`](../design/) y enlazan a los ADR que fijan sus decisiones.
+The designs of a phase or of a large piece live in [`docs/design/`](../design/) and link to the ADRs that set their decisions.
 
-## Cómo agregar un ADR
+## How to add an ADR
 
-1. Copia `0000-plantilla.md` a un archivo nuevo con el siguiente número libre, por ejemplo `0015-nombre-en-kebab-case.md`.
-2. Completa las secciones. Un ADR ocupa entre 15 y 30 líneas.
-3. Pon el estado en `Propuesta` mientras se discute.
-4. Cuando el equipo lo acepte, cambia el estado a `Aceptada`.
-5. Si una decisión nueva reemplaza una anterior, cambia el estado del antiguo a `Reemplazada por ADR NNNN` y agrega la fila al índice. No borres el ADR antiguo.
-6. Agrega la fila correspondiente al índice de este archivo.
+1. Copy `0000-plantilla.md` to a new file with the next free number, for example `0015-nombre-en-kebab-case.md`.
+2. Fill in the sections. An ADR takes between 15 and 30 lines.
+3. Set the status to `Proposed` while it is under discussion.
+4. When the team accepts it, change the status to `Accepted`.
+5. If a new decision supersedes an earlier one, change the status of the old one to `Superseded by ADR NNNN` and add the row to the index. Do not delete the old ADR.
+6. Add the corresponding row to the index in this file.
 
-Los números no se reutilizan. Los nombres de archivo van en kebab-case y en español.
+Numbers are not reused. File names use kebab-case and are in Spanish.
 
-## Índice
+## Index
 
-| Número | Título                                                                                                                       | Estado                   |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| 0001   | [Monorepo Nx con pnpm y un microservicio por app](0001-monorepo-nx-pnpm-microservicios.md)                                   | Aceptada                 |
-| 0002   | [Arquitectura hexagonal y plataforma agnóstica](0002-arquitectura-hexagonal-plataforma-agnostica.md)                         | Aceptada                 |
-| 0003   | [Identificadores UUIDv7 y traceId](0003-identificadores-uuidv7-traceid.md)                                                   | Aceptada                 |
-| 0004   | [Observabilidad con OpenTelemetry y OpenObserve](0004-observabilidad-opentelemetry-openobserve.md)                           | Aceptada                 |
-| 0005   | [Autenticación propia con sesiones y JWT](0005-autenticacion-sesiones-jwt.md)                                                | Aceptada                 |
-| 0006   | [MFA con dispositivo registrado y passkeys](0006-mfa-dispositivo-registrado-passkeys.md)                                     | Aceptada                 |
-| 0007   | [Mensajería con topología tipada, SNS/SQS y CloudEvents](0007-mensajeria-topologia-tipada-sns-sqs-cloudevents.md)            | Aceptada                 |
-| 0008   | [Sagas orquestadas con bitácora persistente](0008-sagas-orquestadas-bitacora-persistente.md)                                 | Aceptada                 |
-| 0009   | [RDS PostgreSQL con capa de persistencia propia](0009-rds-postgresql-capa-persistencia-propia.md)                            | Reemplazada por ADR 0024 |
-| 0010   | [Sharding lógico por grupos y residencia por región](0010-sharding-logico-residencia-region.md)                              | Modificada por ADR 0032  |
-| 0011   | [Tiempo real con Socket.IO y SSE](0011-tiempo-real-socketio-sse.md)                                                          | Modificada por ADR 0034  |
-| 0012   | [Front en Flutter con shells y microfrontends](0012-front-flutter-shells-microfrontends.md)                                  | Aceptada                 |
-| 0013   | [Módulo de IA con puertos y Claude por defecto](0013-modulo-ia-puertos-claude.md)                                            | Aceptada, sin construir  |
-| 0014   | [Acuerdos y documentos firmados](0014-acuerdos-documentos-firmados.md)                                                       | Aceptada, sin construir  |
-| 0015   | [Estructura del repositorio y código compartido por aplicación](0015-estructura-backend-front-y-codigo-compartido.md)        | Aceptada                 |
-| 0016   | [Salida a Internet con NAT solo para las subredes de aplicación](0016-egress-de-red.md)                                      | Aceptada                 |
-| 0017   | [Export de contratos](0017-export-de-contratos.md)                                                                           | Aceptada                 |
-| 0018   | [Contrato de microfrontend](0018-contrato-de-microfrontend.md)                                                               | Aceptada                 |
-| 0019   | [CI y toolchain](0019-ci-y-toolchain.md)                                                                                     | Aceptada                 |
-| 0020   | [Terraform por stacks y runtime de API elegido por servicio](0020-terraform-por-stacks-y-runtime-por-servicio.md)            | Aceptada                 |
-| 0021   | [Valkey como adaptador de caché, ruteo, Bloom e invalidación](0021-adaptador-valkey.md)                                      | Aceptada                 |
-| 0022   | [Verificación de tokens y estado de revocación compartido](0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) | Aceptada                 |
-| 0023   | [Enrutamiento de los datos de identity entre shards](0023-enrutamiento-de-datos-de-identity.md)                              | Aceptada                 |
-| 0024   | [Persistencia sobre TypeORM con sharding y sagas persistentes](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)   | Aceptada                 |
-| 0025   | [Capa NestJS por sub-entrada y puertos como clases abstractas](0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md)     | Aceptada                 |
-| 0026   | [Jobs programados: ScheduledJob, JobLock y @platform/scheduling](0026-jobs-programados-scheduledjob-y-joblock.md)            | Aceptada                 |
-| 0027   | [Patrones de pantalla y pruebas compartidas del front](0027-patrones-de-pantalla-y-pruebas-del-front.md)                     | Aceptada                 |
-| 0028   | [Tiempo real sobre un stream por usuario](0028-tiempo-real-sobre-un-stream-por-usuario.md)                                   | Aceptada                 |
-| 0029   | [Mantenimiento entre tenants con RLS y búsqueda por shard](0029-mantenimiento-entre-tenants-y-busqueda-por-shard.md)         | Aceptada                 |
-| 0030   | [Correo de identity por notifications](0030-correo-de-identity-por-notifications.md)                                         | Aceptada                 |
-| 0031   | [Reportes, facturación y sagas de identity](0031-reportes-facturacion-y-sagas-de-identity.md)                                | Aceptada                 |
-| 0032   | [Traslado de tenants y regiones](0032-traslado-de-tenants-y-regiones.md)                                                     | Aceptada                 |
-| 0033   | [Generadores de servicio y de módulo, y OpenAPI desde los contratos](0033-generadores-y-openapi.md)                          | Aceptada                 |
-| 0034   | [Repositorios live del front, SSE y región en el cliente](0034-repositorios-live-del-front-sse-y-region.md)                  | Aceptada                 |
-| 0035   | [Flujo de punta a punta de la plataforma](0035-flujo-de-punta-a-punta-de-la-plataforma.md)                                   | Aceptada                 |
+| Number | Title                                                                                                                      | Status                 |
+| ------ | -------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| 0001   | [Nx monorepo with pnpm and one microservice per app](0001-monorepo-nx-pnpm-microservicios.md)                              | Accepted               |
+| 0002   | [Hexagonal architecture and platform-agnostic design](0002-arquitectura-hexagonal-plataforma-agnostica.md)                 | Accepted               |
+| 0003   | [UUIDv7 identifiers and traceId](0003-identificadores-uuidv7-traceid.md)                                                   | Accepted               |
+| 0004   | [Observability with OpenTelemetry and OpenObserve](0004-observabilidad-opentelemetry-openobserve.md)                       | Accepted               |
+| 0005   | [In-house authentication with sessions and JWT](0005-autenticacion-sesiones-jwt.md)                                        | Accepted               |
+| 0006   | [MFA with a registered device and passkeys](0006-mfa-dispositivo-registrado-passkeys.md)                                   | Accepted               |
+| 0007   | [Messaging with a typed topology, SNS/SQS and CloudEvents](0007-mensajeria-topologia-tipada-sns-sqs-cloudevents.md)        | Accepted               |
+| 0008   | [Orchestrated sagas with a persistent log](0008-sagas-orquestadas-bitacora-persistente.md)                                 | Accepted               |
+| 0009   | [RDS PostgreSQL with an in-house persistence layer](0009-rds-postgresql-capa-persistencia-propia.md)                       | Superseded by ADR 0024 |
+| 0010   | [Logical sharding by groups and residency by region](0010-sharding-logico-residencia-region.md)                            | Amended by ADR 0032    |
+| 0011   | [Real time with Socket.IO and SSE](0011-tiempo-real-socketio-sse.md)                                                       | Amended by ADR 0034    |
+| 0012   | [Flutter front with shells and microfrontends](0012-front-flutter-shells-microfrontends.md)                                | Accepted               |
+| 0013   | [AI module with ports and Claude by default](0013-modulo-ia-puertos-claude.md)                                             | Accepted, not built    |
+| 0014   | [Agreements and signed documents](0014-acuerdos-documentos-firmados.md)                                                    | Accepted, not built    |
+| 0015   | [Repository structure and shared code per application](0015-estructura-backend-front-y-codigo-compartido.md)               | Accepted               |
+| 0016   | [Internet egress with NAT only for the application subnets](0016-egress-de-red.md)                                         | Accepted               |
+| 0017   | [Contract export](0017-export-de-contratos.md)                                                                             | Accepted               |
+| 0018   | [Microfrontend contract](0018-contrato-de-microfrontend.md)                                                                | Accepted               |
+| 0019   | [CI and toolchain](0019-ci-y-toolchain.md)                                                                                 | Accepted               |
+| 0020   | [Terraform by stacks and API runtime chosen per service](0020-terraform-por-stacks-y-runtime-por-servicio.md)              | Accepted               |
+| 0021   | [Valkey as the adapter for cache, routing, Bloom and invalidation](0021-adaptador-valkey.md)                               | Accepted               |
+| 0022   | [Token verification and shared revocation state](0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md)         | Accepted               |
+| 0023   | [Routing identity data across shards](0023-enrutamiento-de-datos-de-identity.md)                                           | Accepted               |
+| 0024   | [Persistence on TypeORM with sharding and persistent sagas](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)    | Accepted               |
+| 0025   | [NestJS layer per sub-entry point and ports as abstract classes](0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md) | Accepted               |
+| 0026   | [Scheduled jobs: ScheduledJob, JobLock and @platform/scheduling](0026-jobs-programados-scheduledjob-y-joblock.md)          | Accepted               |
+| 0027   | [Screen patterns and shared front tests](0027-patrones-de-pantalla-y-pruebas-del-front.md)                                 | Accepted               |
+| 0028   | [Real time over one stream per user](0028-tiempo-real-sobre-un-stream-por-usuario.md)                                      | Accepted               |
+| 0029   | [Cross-tenant maintenance with RLS and per-shard search](0029-mantenimiento-entre-tenants-y-busqueda-por-shard.md)         | Accepted               |
+| 0030   | [Identity email through notifications](0030-correo-de-identity-por-notifications.md)                                       | Accepted               |
+| 0031   | [Reports, billing and identity sagas](0031-reportes-facturacion-y-sagas-de-identity.md)                                    | Accepted               |
+| 0032   | [Moving tenants and regions](0032-traslado-de-tenants-y-regiones.md)                                                       | Accepted               |
+| 0033   | [Service and module generators, and OpenAPI from the contracts](0033-generadores-y-openapi.md)                             | Accepted               |
+| 0034   | [Live front repositories, SSE and region in the client](0034-repositorios-live-del-front-sse-y-region.md)                  | Accepted               |
+| 0035   | [End-to-end flow of the platform](0035-flujo-de-punta-a-punta-de-la-plataforma.md)                                         | Accepted               |

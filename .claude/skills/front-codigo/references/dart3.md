@@ -1,16 +1,16 @@
-# Dart 3 en el front
+# Dart 3 in the front
 
-## Contenido
+## Contents
 
-- Sealed classes y switch exhaustivo
+- Sealed classes and exhaustive switch
 - Records
 - Pattern matching
-- Constructores primarios
-- Enums con datos
+- Primary constructors
+- Enums with data
 
-## Sealed classes y switch exhaustivo
+## Sealed classes and exhaustive switch
 
-Un `sealed` describe un conjunto cerrado de casos. Sus subtipos son `final class` y el `switch` sobre él no lleva `default`:
+A `sealed` class describes a closed set of cases. Its subtypes are `final class` and a `switch` over it has no `default`:
 
 ```dart
 sealed class SessionState {
@@ -32,11 +32,11 @@ String label(SessionState state) => switch (state) {
 };
 ```
 
-Mal: `_ => 'otro'` sobre un `sealed`. Si mañana hay un tercer caso, nadie se entera.
+Wrong: `_ => 'other'` over a `sealed`. If a third case shows up tomorrow, nobody notices.
 
 ## Records
 
-Sirven para un retorno local de dos o tres campos. Si se repite en tres sitios o cruza una frontera de paquete, se convierte en clase.
+They serve for a local return of two or three fields. If it repeats in three places or crosses a package boundary, it becomes a class.
 
 ```dart
 (List<Task> items, String? nextCursor) _split(TasksPage page) =>
@@ -47,7 +47,7 @@ final (items, nextCursor) = _split(page);
 
 ## Pattern matching
 
-Decodificar datos de entrada (JSON del servidor ya pasa por `contracts`, así que esto aplica a deep links, `params` de rutas y datos de plataforma):
+Decoding input data (server JSON already goes through `contracts`, so this applies to deep links, route `params` and platform data):
 
 ```dart
 Task? parseTask(Object? json) => switch (json) {
@@ -56,27 +56,27 @@ Task? parseTask(Object? json) => switch (json) {
 };
 ```
 
-Reglas:
+Rules:
 
-- Si un dato mal formado debe fallar, no se filtra en silencio con `if (x case ...)`. Se lanza `FormatException` con lo recibido.
-- Un solo valor que hay que promover usa `if (x is T)`, no `if (x case final T t)`.
-- Un `switch` con un solo caso o sobre un booleano es un `if`.
-- Segmentos de ruta: `switch (segments) { ['tasks', final id] => ..., ['tasks'] => ... }` en lugar de `.length` e índices.
-- Dos casos con el mismo cuerpo se unen con `||`.
+- If malformed data must fail, it is not filtered silently with `if (x case ...)`. Throw a `FormatException` with what was received.
+- A single value that needs promotion uses `if (x is T)`, not `if (x case final T t)`.
+- A `switch` with a single case or over a boolean is an `if`.
+- Route segments: `switch (segments) { ['tasks', final id] => ..., ['tasks'] => ... }` instead of `.length` and indexes.
+- Two cases with the same body are joined with `||`.
 
-## Constructores primarios
+## Primary constructors
 
-Con el SDK 3.14 están habilitados. En código nuevo se pueden usar para eliminar la repetición campo, parámetro e inicialización:
+They are enabled with SDK 3.14. In new code they can be used to remove the field, parameter and initialization repetition:
 
 ```dart
 final class TaskSummary(final String id, final String title);
 ```
 
-Dejan de valer la pena si la clase necesita validar, asignar por defecto algo calculado o documentar cada campo por separado. El código existente que usa parámetros `this._campo` se queda como está; se reescribe solo al tocarlo.
+They stop being worth it if the class needs to validate, assign a computed default or document each field separately. Existing code that uses `this._field` parameters stays as it is; it is rewritten only when touched.
 
-## Enums con datos
+## Enums with data
 
-Un enum con campos y métodos reemplaza un `switch` repetido por un mapa de constantes:
+An enum with fields and methods replaces a repeated `switch` with a map of constants:
 
 ```dart
 enum ReportPeriod {
@@ -88,4 +88,4 @@ enum ReportPeriod {
 }
 ```
 
-Los textos de interfaz de un enum no viven en el enum: una función `taskStatusLabel(l10n, status)` con `switch` exhaustivo, como ya hace `tasks`.
+An enum's interface texts do not live in the enum: a `taskStatusLabel(l10n, status)` function with an exhaustive `switch`, as `tasks` already does.

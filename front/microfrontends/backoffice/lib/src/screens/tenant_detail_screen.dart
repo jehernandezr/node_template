@@ -28,6 +28,7 @@ class TenantDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       ControllerBuilder<TenantDetailController>(
+        key: ValueKey((repository, tenantId)),
         create: (_) =>
             TenantDetailController(repository, tenantId: tenantId)..start(),
         builder: (context, controller) {

@@ -1,125 +1,125 @@
 ---
 name: backend-pruebas
-description: 'Pruebas del backend por capas: ubicación, dobles como clases, Testcontainers, contrato y e2e. Úsala al escribir o revisar pruebas del backend.'
+description: 'Backend tests by layer: location, test doubles as classes, Testcontainers, contract and e2e. Use it when writing or reviewing backend tests.'
 paths:
   - 'backend/**/__tests__/**'
   - 'backend/**/e2e/**'
 ---
 
-# Pruebas del backend
+# Backend tests
 
-Se prueba por capas, con el costo mínimo que da confianza. El patrón es un panal: mucho en componentes e integración, poco en unitarias de lógica real y muy poco e2e.
+Test by layer, at the lowest cost that gives confidence. The pattern is a honeycomb: a lot in components and integration, little in unit tests of real logic and very little e2e.
 
-## Ubicación
+## Location
 
-- `src/<carpeta>/__tests__/<archivo>.spec.ts` para unitarias y `<archivo>.int-spec.ts` para integración. Ver `backend-estructura`.
-- Contrato de un puerto: la prueba compartida `run<Puerto>Contract(factory)` vive en `src/__tests__/utils/`, sale por `@platform/<lib>/test-utils` y la llaman, desde su propio `.spec.ts` o `.int-spec.ts`, el doble en memoria y el adaptador real. Las pruebas de esquemas zod son `.spec.ts` normales.
-- Las pruebas de integración terminan en `.int-spec.ts`. Un archivo `*.integration.spec.ts` correría como unitaria y lo rechazan `check-structure.mjs` y el lint.
-- End to end de una app: `backend/apps/<app>/e2e/<flujo>.e2e-spec.ts`.
-- Utilitarios compartidos en `__tests__/utils/` (de la carpeta o, si los usan varias, de `src/__tests__/utils/`). Se exponen a otras librerías con el alias `@platform/<lib>/test-utils`. Nunca una carpeta `testing/` aparte. Los dobles de un puerto no se exportan desde el `index.ts` público: salen solo por `@platform/<lib>/test-utils`.
+- `src/<folder>/__tests__/<file>.spec.ts` for unit tests and `<file>.int-spec.ts` for integration. See `backend-estructura`.
+- Contract of a port: the shared test `run<Port>Contract(factory)` lives in `src/__tests__/utils/`, is exposed through `@platform/<lib>/test-utils` and is called, from their own `.spec.ts` or `.int-spec.ts`, by the in-memory double and the real adapter. zod schema tests are plain `.spec.ts` files.
+- Integration tests end in `.int-spec.ts`. A `*.integration.spec.ts` file would run as a unit test, and `check-structure.mjs` and the lint reject it.
+- End to end of an app: `backend/apps/<app>/e2e/<flow>.e2e-spec.ts`.
+- Shared utilities in `__tests__/utils/` (of the folder or, if several use them, of `src/__tests__/utils/`). They are exposed to other libraries with the `@platform/<lib>/test-utils` alias. Never a separate `testing/` folder. A port's doubles are not exported from the public `index.ts`: they are exposed only through `@platform/<lib>/test-utils`.
 
-## Las pruebas también son código
+## Tests are code too
 
-Las reglas de `backend-codigo-enterprise` aplican a las pruebas y a sus utilitarios:
+The rules of `backend-codigo-enterprise` apply to tests and their utilities:
 
-- Fakes, builders y contenedores son clases con nombre de rol: `InMemoryUserRepository`, `UserBuilder`, `PostgresTestDatabase`. Nada de objetos sueltos copiados en cada prueba.
-- Lo que se repite en dos pruebas sube a `__tests__/utils/`. Si lo usan dos carpetas, sube a `src/__tests__/utils/`.
-- Un builder por agregado con valores por defecto válidos y métodos `with...` para lo que importa en cada prueba.
-- Un fake implementa el puerto real y pasa la misma prueba de contrato que el adaptador real.
-- Sin lógica en las pruebas: nada de `if` ni bucles que decidan qué verificar.
-- Nombres, imports y tipos con el mismo cuidado que el código de producción.
+- Fakes, builders and containers are classes with a role name: `InMemoryUserRepository`, `UserBuilder`, `PostgresTestDatabase`. No loose objects copied into every test.
+- What repeats in two tests moves up to `__tests__/utils/`. If two folders use it, it moves up to `src/__tests__/utils/`.
+- One builder per aggregate with valid defaults and `with...` methods for what matters in each test.
+- A fake implements the real port and passes the same contract test as the real adapter.
+- No logic in tests: no `if` or loops that decide what to verify.
+- Names, imports and types with the same care as production code.
 
-## Qué probar en cada capa
+## What to test in each layer
 
-- Dominio: qué prueba: Invariantes, transiciones, eventos emitidos; con qué: Jest puro
-- Aplicación: qué prueba: Un caso de uso: orquestación, errores, eventos al outbox; con qué: Jest; dobles: Fakes en memoria de los puertos
-- Infraestructura: qué prueba: Repositorio, mapper, consumidor contra sistema real; con qué: Testcontainers; dobles: Ninguno para la base
-- Contrato: qué prueba: El esquema zod acepta lo válido y rechaza lo inválido; productor y consumidor coinciden; con qué: Jest
-- Componente: qué prueba: Un módulo NestJS completo por HTTP; con qué: `@nestjs/testing` y supertest, base real; dobles: Solo servicios externos
-- E2E: qué prueba: Pocos flujos críticos con la app empaquetada; con qué: docker-compose
+- Domain: what it tests: invariants, transitions, emitted events; with: plain Jest
+- Application: what it tests: a use case: orchestration, errors, events to the outbox; with: Jest; doubles: in-memory fakes of the ports
+- Infrastructure: what it tests: repository, mapper, consumer against a real system; with: Testcontainers; doubles: none for the database
+- Contract: what it tests: the zod schema accepts valid input and rejects invalid input; producer and consumer match; with: Jest
+- Component: what it tests: a full NestJS module over HTTP; with: `@nestjs/testing` and supertest, real database; doubles: only external services
+- E2E: what it tests: a few critical flows with the packaged app; with: docker-compose
 
-Detalle y recetas en `references/capas-y-testcontainers.md`.
+Details and recipes in `references/capas-y-testcontainers.md`.
 
-## Cómo se escriben
+## How to write them
 
-- Una prueba verifica un comportamiento. El nombre dice unidad, escenario y resultado: `rejects a password shorter than 12 characters`. Dos niveles de `describe`: la unidad y el escenario.
-- Arrange, act, assert separados por una línea en blanco. Un `act` y pocas aserciones.
-- Sin lógica en la prueba: ni bucles ni condicionales. Si se repite una verificación, es un matcher o un helper con nombre.
-- Los errores se verifican por `code`: `await expect(promise).rejects.toMatchObject({ code: ... })`. Nada de `try/catch`.
-- Valores generados (ids, fechas) se verifican por forma, no por valor exacto (`expect.any(String)`), o se fijan con `FixedClock` e `SequentialIdGenerator`.
-- Los datos de prueba salen de constructores con valores por defecto válidos y se sobreescribe solo lo que importa en la prueba: `aUser({ status: UserStatus.Suspended })`. El detalle relevante se ve en la prueba.
-- Datos realistas (un email con formato de email), no "foo". Sin datos reales de personas.
-- Snapshots solo pequeños y en línea. Nunca de un objeto grande.
-- Una prueba no depende del orden ni del estado de otra, y cada una crea sus datos. Sin semillas globales.
+- A test verifies one behavior. The name states unit, scenario and result: `rejects a password shorter than 12 characters`. Two levels of `describe`: the unit and the scenario.
+- Arrange, act, assert separated by a blank line. One `act` and few assertions.
+- No logic in the test: no loops or conditionals. If a check repeats, it is a matcher or a named helper.
+- Errors are verified by `code`: `await expect(promise).rejects.toMatchObject({ code: ... })`. No `try/catch`.
+- Generated values (ids, dates) are verified by shape, not exact value (`expect.any(String)`), or pinned with `FixedClock` and `SequentialIdGenerator`.
+- Test data comes from builders with valid defaults, overriding only what matters in the test: `aUser({ status: UserStatus.Suspended })`. The relevant detail is visible in the test.
+- Realistic data (an email shaped like an email), not "foo". No real people's data.
+- Snapshots only small and inline. Never of a large object.
+- A test does not depend on the order or state of another, and each one creates its data. No global seeds.
 
-Ejemplo en `references/ejemplos.md`, sección "Cómo se escriben".
+Example in `references/ejemplos.md`, section "How to write them".
 
-- Las tablas de casos van con `it.each`, no con bucles ni `if`.
-- Cada archivo de prueba corresponde a una clase. Si prueba varias, se parte.
+- Case tables use `it.each`, not loops or `if`.
+- Each test file maps to one class. If it tests several, split it.
 
-## Dobles
+## Doubles
 
-- Son clases que implementan el puerto: `InMemoryUserRepository`, `FixedClock`, `FakeRateLimiter`, `InMemoryBus`. Se prefiere un fake con comportamiento a un mock.
-- Si la cantidad de llamadas es un requisito (la deduplicación de cargas de `PlacementLoader`), se usa un fake con comportamiento y un contador público, no `jest.fn` con `toHaveBeenCalledTimes`.
-- Un fake en memoria debe cumplir la misma prueba de contrato que el adaptador real (`runUserRepositoryContract(factory)`), para que no diverjan.
-- Servicios externos HTTP: interceptor (`nock`, MSW) con respuestas lentas, 503 y timeouts.
-- La aleatoriedad, los ids y el tiempo se controlan con dobles de `RandomSource`, `IdGenerator` (`SequentialIdGenerator`) y `Clock` (`FixedClock`). Nada de `Math.random` ni `Date.now` en el código bajo prueba.
+- They are classes that implement the port: `InMemoryUserRepository`, `FixedClock`, `FakeRateLimiter`, `InMemoryBus`. A fake with behavior is preferred over a mock.
+- If the number of calls is a requirement (load deduplication in `PlacementLoader`), use a fake with behavior and a public counter, not `jest.fn` with `toHaveBeenCalledTimes`.
+- An in-memory fake must pass the same contract test as the real adapter (`runUserRepositoryContract(factory)`), so they do not diverge.
+- External HTTP services: interceptor (`nock`, MSW) with slow responses, 503 and timeouts.
+- Randomness, ids and time are controlled with doubles of `RandomSource`, `IdGenerator` (`SequentialIdGenerator`) and `Clock` (`FixedClock`). No `Math.random` or `Date.now` in the code under test.
 
-## Dobles que se quedan en producción
+## Doubles that stay in production
 
-Son un modo de ejecución y no un doble, así que siguen en el índice público: `InMemoryCache` (único modo sin Valkey), `InMemoryRateLimiter` (lo usa `DegradingRateLimiter`), `NoopMetrics`, `InProcessJobLock`, `NullRoutingCache` e `InProcessDirectoryChannel`. Los demás dobles van a `test-utils`:
+They are a runtime mode, not a double, so they stay in the public index: `InMemoryCache` (the only mode without Valkey), `InMemoryRateLimiter` (used by `DegradingRateLimiter`), `NoopMetrics`, `InProcessJobLock`, `NullRoutingCache` and `InProcessDirectoryChannel`. The other doubles go to `test-utils`:
 
-- `InMemoryIdempotencyStore`: sale por: `@platform/kernel/test-utils`; contrato: `runIdempotencyStoreContract`
-- `InMemoryBus`, `InMemoryOutboxStore`, `InMemoryProcessedMessageStore`: sale por: `@platform/messaging/test-utils`; contrato: `runOutboxStoreContract`, `runProcessedMessageStoreContract`
-- `InMemoryProcessedOperationStore`: sale por: `@platform/internal-api/test-utils`; contrato: `runIdempotencyStoreContract`
-- `InMemorySagaStore`: sale por: `@platform/saga/test-utils`; contrato: `runSagaStoreContract`
-- `InMemoryDirectoryStore`: sale por: `@platform/sharding/test-utils`; contrato: `runDirectoryStoreContract`
-- `InMemoryRoutingCache`: sale por: `@platform/sharding/test-utils`; contrato: `runRoutingCacheContract`
-- `InMemoryMetrics`: sale por: `@platform/observability/test-utils`
-- `FakeSqsClient`, `FakeSnsClient`: sale por: `@platform/adapters-aws/test-utils`
+- `InMemoryIdempotencyStore`: exposed through: `@platform/kernel/test-utils`; contract: `runIdempotencyStoreContract`
+- `InMemoryBus`, `InMemoryOutboxStore`, `InMemoryProcessedMessageStore`: exposed through: `@platform/messaging/test-utils`; contract: `runOutboxStoreContract`, `runProcessedMessageStoreContract`
+- `InMemoryProcessedOperationStore`: exposed through: `@platform/internal-api/test-utils`; contract: `runIdempotencyStoreContract`
+- `InMemorySagaStore`: exposed through: `@platform/saga/test-utils`; contract: `runSagaStoreContract`
+- `InMemoryDirectoryStore`: exposed through: `@platform/sharding/test-utils`; contract: `runDirectoryStoreContract`
+- `InMemoryRoutingCache`: exposed through: `@platform/sharding/test-utils`; contract: `runRoutingCacheContract`
+- `InMemoryMetrics`: exposed through: `@platform/observability/test-utils`
+- `FakeSqsClient`, `FakeSnsClient`: exposed through: `@platform/adapters-aws/test-utils`
 
-## Tiempo y asincronía
+## Time and async
 
-- El tiempo se controla con `FixedClock` o temporizadores falsos. Nunca `sleep` ni esperas fijas: si algo es asíncrono, se espera la condición (`await waitFor(() => ..., { timeoutMs })`) con un tiempo máximo.
-- Pruebas paralelas seguras: bases por suite o esquema por suite, puertos aleatorios (`listen(0)`).
-- Una prueba inestable no se reintenta ni se salta: se arregla o se elimina.
+- Time is controlled with `FixedClock` or fake timers. Never `sleep` or fixed waits: if something is async, wait for the condition (`await waitFor(() => ..., { timeoutMs })`) with a maximum time.
+- Safe parallel tests: database per suite or schema per suite, random ports (`listen(0)`).
+- A flaky test is not retried or skipped: fix it or delete it.
 
-## Integración
+## Integration
 
-- Contra servicios reales con Testcontainers (PostgreSQL, Valkey, LocalStack). `ContainerRuntime` de `@platform/kernel/test-utils` decide si hay Docker según la variable `INTEGRATION_TESTS`: `skip` (por defecto fuera de CI, la suite se omite sin Docker) o `require` (CI, falla sin Docker). `describeIfAvailable(name, body)` envuelve cada suite de integración. No hay banderas por servicio. `pg-mem` no se usa: la capa TypeORM se prueba con Testcontainers.
+- Against real services with Testcontainers (PostgreSQL, Valkey, LocalStack). `ContainerRuntime` from `@platform/kernel/test-utils` decides whether Docker is available based on the `INTEGRATION_TESTS` variable: `skip` (the default outside CI, the suite is skipped without Docker) or `require` (CI, fails without Docker). `describeIfAvailable(name, body)` wraps each integration suite. There are no per-service flags. `pg-mem` is not used: the TypeORM layer is tested with Testcontainers.
 
-Ejemplo en `references/ejemplos.md`, sección "Integración".
+Example in `references/ejemplos.md`, section "Integration".
 
-En CI: `INTEGRATION_TESTS=require pnpm nx test <proyecto>`.
+In CI: `INTEGRATION_TESTS=require pnpm nx test <project>`.
 
-- Los contenedores arrancan una vez por suite (`beforeAll`) y las pruebas aíslan sus datos con tenants o ids propios, o con transacciones que se deshacen.
-- Las migraciones de TypeORM corren de verdad en la base de prueba, y una prueba verifica que no quedan cambios pendientes (`migration:generate` sin diferencias).
-- Cada suite crea sus datos y no asume datos previos. Se limpia después de la suite, no entre pruebas.
-- Los repositorios se prueban con casos que atrapan defectos reales: concurrencia (dos escrituras con la misma versión), unicidad, paginación por cursor, aislamiento entre tenants y número de consultas (sin N+1).
+- Containers start once per suite (`beforeAll`) and tests isolate their data with their own tenants or ids, or with transactions that roll back.
+- TypeORM migrations actually run on the test database, and a test verifies that no changes are pending (`migration:generate` with no differences).
+- Each suite creates its data and assumes no prior data. Clean up after the suite, not between tests.
+- Repositories are tested with cases that catch real defects: concurrency (two writes with the same version), uniqueness, cursor pagination, isolation between tenants and number of queries (no N+1).
 
-## Aserciones de un flujo
+## Assertions of a flow
 
-En una prueba de componente se piensa en cinco resultados: la respuesta, el estado nuevo, las llamadas salientes, los mensajes publicados y la observabilidad (log o métrica) cuando es un requisito.
+In a component test, think of five outcomes: the response, the new state, the outgoing calls, the published messages and observability (log or metric) when it is a requirement.
 
-## Cobertura
+## Coverage
 
-- 80 % de líneas, sentencias y funciones, y 75 % de ramas por proyecto. El umbral vive en `backend/jest.preset.js`.
-- Los `catch` y los caminos de error cuentan.
-- Una prueba de mutación (Stryker) sobre `domain/` y `application/` es la medida de que las pruebas verifican de verdad.
+- 80 % of lines, statements and functions, and 75 % of branches per project. The threshold lives in `backend/jest.preset.js`.
+- `catch` blocks and error paths count.
+- A mutation test (Stryker) over `domain/` and `application/` is the measure that tests really verify.
 
-## Pruebas obligatorias por tipo de cambio
+## Required tests by type of change
 
 ```
-- [ ] Agregado o valor nuevo: invariantes y rechazos
-- [ ] Caso de uso nuevo: camino feliz, cada error de dominio, eventos publicados
-- [ ] Repositorio o migración nueva: integración con PostgreSQL real
-- [ ] Contrato nuevo: válido, inválido y compatibilidad hacia atrás
-- [ ] Consumidor nuevo: duplicado, fuera de orden, mensaje inválido
-- [ ] Endpoint nuevo: sin autenticar, sin permiso, otro tenant, entrada inválida
-- [ ] Puerto nuevo: prueba de contrato run<Puerto>Contract contra el doble y contra el adaptador real
-- [ ] Job nuevo: una prueba que llama a run() directamente
+- [ ] New aggregate or value: invariants and rejections
+- [ ] New use case: happy path, each domain error, published events
+- [ ] New repository or migration: integration with real PostgreSQL
+- [ ] New contract: valid, invalid and backward compatibility
+- [ ] New consumer: duplicate, out of order, invalid message
+- [ ] New endpoint: unauthenticated, no permission, another tenant, invalid input
+- [ ] New port: contract test run<Port>Contract against the double and against the real adapter
+- [ ] New job: a test that calls run() directly
 ```
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-test-behavior-not-implementation`, `typescript-best-practices`, `tdd`, `principle-prove-it-works`, `interrogate`.
+Method in `pstack-en-node-template`. From pstack these apply here: `principle-test-behavior-not-implementation`, `typescript-best-practices`, `tdd`, `principle-prove-it-works`, `interrogate`.

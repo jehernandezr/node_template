@@ -1,46 +1,46 @@
-# 0022. Verificación de tokens y estado de revocación compartido
+# 0022. Token verification and shared revocation state
 
-- Estado: Aceptada
-- Fecha: 2026-11-13
+- Status: Accepted
+- Date: 2026-11-13
 
-## Contexto
+## Context
 
-El ADR 0005 decide que identity emite los tokens y que los demás servicios solo los verifican, revisando firma, expiración, sesión, épocas y versión de permisos. Falta decidir dónde vive esa verificación, de dónde leen los servicios el estado de revocación y qué claims necesita el token para hacerlo sin llamar a identity. Hoy cada servicio solo puede leer las llaves de Valkey con su propio prefijo (ADR 0020 y 0021), así que ningún servicio vería una sesión revocada por identity.
+ADR 0005 decides that identity issues the tokens and the other services only verify them, checking signature, expiration, session, epochs and permission version. It remains to decide where that verification lives, where the services read the revocation state from and which claims the token needs to do it without calling identity. Today each service can only read Valkey keys with its own prefix (ADR 0020 and 0021), so no service would see a session revoked by identity.
 
-## Decisión
+## Decision
 
-`backend/libs/platform/auth` (`@platform/auth`) verifica el access token y arma el `Actor` en cualquier servicio, sin NestJS. La entrada HTTP (`@platform/http`) la usa en su guard.
+`backend/libs/platform/auth` (`@platform/auth`) verifies the access token and builds the `Actor` in any service, without NestJS. The HTTP entry point (`@platform/http`) uses it in its guard.
 
-- Firma y verificación ES256 y JWKS con `node:crypto` (`dsaEncoding: 'ieee-p1363'`, JWK por `KeyObject`). Sin librería de JWT.
-- Header `{ alg: 'ES256', typ: 'at+jwt', kid }`. Claims: `iss`, `aud`, `sub`, `tid`, `htid` (tenant de origen, ADR 0023), `sid`, `did`, `amr`, `auth_time`, `roles`, `proles` (roles de plataforma), `pv` (`"<versión del tenant>.<versión del usuario>"`), `rgn`, `sxp` (tope absoluto de la sesión), `iat`, `exp`, `jti`. El esquema vive en `@contracts/identity`.
-- Orden de revisión: formato, firma, emisor y audiencia, expiración (`PLATFORM.AUTH.TOKEN_EXPIRED`), tope de sesión, sesión revocada, época del usuario, época del tenant, versión de permisos. Los códigos son los de `SessionGuardErrors`.
-- Identity escribe el estado de revocación en el espacio `auth:*` de Valkey, sin prefijo de servicio: `auth:revoked:{sid}` con su índice `auth:revoked-index`, `auth:epoch:user:{id}`, `auth:epoch:tenant:{id}`, `auth:pv:*`, `auth:access:{tid}:{uid}`, `auth:apikey:{prefix}` y el canal `auth:revocations`.
-- La ACL de Valkey del stack `data` da a identity lectura y escritura sobre `auth:*`, y a los demás servicios solo lectura (`%R~auth:*`) y suscripción a `auth:revocations`.
-- Cada proceso mantiene un Bloom en memoria de sesiones revocadas, alimentado por el canal y reconstruido cada 10 s desde el índice, y una caché local de 5 s para épocas y versiones. Si Valkey no responde y no hay valor en caché, el verificador responde 503 en lugar de aceptar el token.
-- `@platform/auth` y `@platform/http` pueden importar `@contracts/identity` (excepción explícita en `backend/eslint.config.mjs`): el formato del token y sus códigos son contrato de identity.
+- ES256 signing and verification and JWKS with `node:crypto` (`dsaEncoding: 'ieee-p1363'`, JWK through `KeyObject`). No JWT library.
+- Header `{ alg: 'ES256', typ: 'at+jwt', kid }`. Claims: `iss`, `aud`, `sub`, `tid`, `htid` (home tenant, ADR 0023), `sid`, `did`, `amr`, `auth_time`, `roles`, `proles` (platform roles), `pv` (`"<tenant version>.<user version>"`), `rgn`, `sxp` (absolute session cap), `iat`, `exp`, `jti`. The schema lives in `@contracts/identity`.
+- Check order: format, signature, issuer and audience, expiration (`PLATFORM.AUTH.TOKEN_EXPIRED`), session cap, revoked session, user epoch, tenant epoch, permission version. The codes are those of `SessionGuardErrors`.
+- Identity writes the revocation state in Valkey's `auth:*` space, without a service prefix: `auth:revoked:{sid}` with its index `auth:revoked-index`, `auth:epoch:user:{id}`, `auth:epoch:tenant:{id}`, `auth:pv:*`, `auth:access:{tid}:{uid}`, `auth:apikey:{prefix}` and the `auth:revocations` channel.
+- The Valkey ACL of the `data` stack gives identity read and write on `auth:*`, and the other services only read (`%R~auth:*`) and subscription to `auth:revocations`.
+- Each process keeps an in-memory Bloom of revoked sessions, fed by the channel and rebuilt every 10 s from the index, and a 5 s local cache for epochs and versions. If Valkey does not respond and there is no cached value, the verifier answers 503 instead of accepting the token.
+- `@platform/auth` and `@platform/http` may import `@contracts/identity` (explicit exception in `backend/eslint.config.mjs`): the token format and its codes are identity's contract.
 
-## Implementación en identity
+## Implementation in identity
 
-- El módulo `tokens` firma con la clave activa de `IDENTITY_SIGNING_KEYS` y publica en `GET /v1/auth/jwks` la activa y las de verificación, con `Cache-Control: public, max-age=300`. La rotación planeada y la de emergencia están en el [runbook de claves](../runbooks/rotacion-claves-identity.md).
-- Una API key válida se copia en `auth:apikey:{prefix}` por 60 s (o hasta que vence o termina su gracia de rotación) y revocarla borra la copia. Una key limitada por CIDR nunca se copia: quien lee la copia no conoce la IP del cliente, y sin IP identity la rechaza (`IDENTITY.API_KEY.IP_NOT_ALLOWED`). Los fallos cuentan por prefijo e IP con las reglas de bloqueo del inicio de sesión, y el último uso se acumula en Valkey y lo vuelca un job.
-- Las rutas toman el acceso del contrato. La [matriz de acceso](../identity/matriz-de-acceso.md) se genera desde `@contracts/identity`, una prueba falla si una ruta pública no está aprobada y el e2e `access-matrix.e2e-spec.ts` recorre cada ruta con sesión sin token, sin permiso y sin MFA reciente.
+- The `tokens` module signs with the active key of `IDENTITY_SIGNING_KEYS` and publishes at `GET /v1/auth/jwks` the active key and the verification keys, with `Cache-Control: public, max-age=300`. Planned and emergency rotation are in the [key runbook](../runbooks/rotacion-claves-identity.md).
+- A valid API key is copied to `auth:apikey:{prefix}` for 60 s (or until it expires or its rotation grace period ends) and revoking it deletes the copy. A CIDR-restricted key is never copied: whoever reads the copy does not know the client's IP, and without an IP identity rejects it (`IDENTITY.API_KEY.IP_NOT_ALLOWED`). Failures count by prefix and IP with the sign-in lockout rules, and the last use is accumulated in Valkey and flushed by a job.
+- Routes take their access from the contract. The [access matrix](../identity/matriz-de-acceso.md) is generated from `@contracts/identity`, a test fails if a public route is not approved and the `access-matrix.e2e-spec.ts` e2e walks every route with a session without a token, without permission and without recent MFA.
 
-## Consecuencias
+## Consequences
 
-### Positivas
+### Positive
 
-- Ningún servicio llama a identity para autenticar una petición.
-- Una revocación llega a todos los procesos en milisegundos por el canal, y en a lo sumo 10 s si un proceso perdió el aviso.
-- Un solo verificador para HTTP, consumidores y el gateway de tiempo real.
+- No service calls identity to authenticate a request.
+- A revocation reaches every process in milliseconds through the channel, and in at most 10 s if a process missed the notice.
+- A single verifier for HTTP, consumers and the real-time gateway.
 
-### Costos
+### Costs
 
-- El espacio `auth:*` rompe la regla de "cada servicio ve solo su prefijo"; se acota a lectura.
-- Los claims nuevos (`htid`, `proles`, `pv` como par, `sxp`) amplían lo que el plan lista.
-- Mantener código criptográfico propio exige vectores de prueba de los RFC y casos de tokens alterados.
+- The `auth:*` space breaks the "each service sees only its prefix" rule; it is limited to reads.
+- The new claims (`htid`, `proles`, `pv` as a pair, `sxp`) extend what the plan lists.
+- Maintaining in-house cryptographic code requires test vectors from the RFCs and tampered-token cases.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Cada servicio consume `TokensRevoked` por su cola y guarda una copia bajo su prefijo: la cola entrega a un solo consumidor por servicio y la revocación tiene que llegar a todos los procesos.
-- Introspección en identity por petición: suma latencia y hace de identity un punto único de falla.
-- Librería `jose`: correcta, pero `node:crypto` cubre ES256 y JWK con poco código propio.
+- Each service consumes `TokensRevoked` from its queue and keeps a copy under its prefix: the queue delivers to a single consumer per service and the revocation has to reach every process.
+- Introspection in identity per request: it adds latency and makes identity a single point of failure.
+- The `jose` library: correct, but `node:crypto` covers ES256 and JWK with little in-house code.

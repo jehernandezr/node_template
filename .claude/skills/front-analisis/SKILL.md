@@ -1,35 +1,35 @@
 ---
 name: front-analisis
-description: 'Analizador, lints, formato y supresiones del front Dart. Úsala al configurar analysis_options o corregir avisos.'
+description: 'Analyzer, lints, formatting and suppressions for the Dart front. Use it when configuring analysis_options or fixing warnings.'
 paths:
   - 'front/**/analysis_options.yaml'
   - 'front/**/pubspec.yaml'
 ---
 
-# Análisis estático y documentación
+# Static analysis and documentation
 
-## Estado actual y meta
+## Current state and goal
 
-Cada paquete tiene su `analysis_options.yaml` con `include: package:flutter_lints/flutter.yaml` y los directorios de plataforma excluidos. La meta es endurecerlo, y se hace como un cambio propio con todos los paquetes en verde, no mezclado con una funcionalidad:
+Each package has its own `analysis_options.yaml` with `include: package:flutter_lints/flutter.yaml` and the platform directories excluded. The goal is to tighten it, done as a change of its own with every package green, not mixed with a feature:
 
-Ejemplo en `references/ejemplos.md`, sección "Estado actual y meta".
+Example in `references/ejemplos.md`, section "Current state and goal".
 
-- `flutter_lints` ya trae `avoid_print`, `prefer_const_constructors` y `use_build_context_synchronously`; la lista de arriba agrega lo que le falta. Con `include`, una lista de reglas en `linter.rules` agrega; para apagar una se usa el formato de mapa (`regla: false`). No se mezclan lista y mapa en el mismo bloque.
-- `public_member_api_docs` se aplica a los paquetes compartidos (`front/packages`) y se deja fuera de pantallas privadas de un microfrontend.
-- Ningún `// ignore:` sin una línea que explique por qué, y siempre del código concreto (`// ignore: use_build_context_synchronously`), nunca `ignore_for_file: type=lint`. El código generado se excluye en `analyzer.exclude`.
+- `flutter_lints` already brings `avoid_print`, `prefer_const_constructors` and `use_build_context_synchronously`; the list above adds what it lacks. With `include`, a list of rules in `linter.rules` adds; to turn one off, use the map format (`rule: false`). Do not mix list and map in the same block.
+- `public_member_api_docs` applies to the shared packages (`front/packages`) and is left out of a microfrontend's private screens.
+- No `// ignore:` without a line explaining why, and always for the specific code (`// ignore: use_build_context_synchronously`), never `ignore_for_file: type=lint`. Generated code is excluded in `analyzer.exclude`.
 
-## Antes de dar por terminado un cambio
+## Before calling a change done
 
-1. `dart format` sobre lo tocado (`format-check` de Nx lo verifica).
-2. `dart analyze` del paquete, o `analyze` de Nx. Cero avisos, incluidos los `info`; con `--fatal-infos` si se quiere forzar.
-3. `dart fix --dry-run` y, si las correcciones son las esperadas, `dart fix --apply`, y se vuelve a analizar.
-4. `flutter test` del paquete.
-5. Para un microfrontend, `dart run tools/check_microfrontend_boundaries.dart`.
+1. `dart format` on what you touched (Nx `format-check` verifies it).
+2. `dart analyze` for the package, or Nx `analyze`. Zero warnings, including `info`; with `--fatal-infos` to enforce it.
+3. `dart fix --dry-run` and, if the fixes are the expected ones, `dart fix --apply`, then analyze again.
+4. `flutter test` for the package.
+5. For a microfrontend, `dart run tools/check_microfrontend_boundaries.dart`.
 
-## Documentación con `///`
+## Documentation with `///`
 
-Las reglas están en `front-codigo`, sección "Documentación con `///`".
+The rules are in `front-codigo`, section "Documentation with `///`".
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-encode-lessons-in-structure`, `correct`, `no-comments`, `unslop`, `principle-prove-it-works`.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `principle-encode-lessons-in-structure`, `correct`, `no-comments`, `unslop`, `principle-prove-it-works`.

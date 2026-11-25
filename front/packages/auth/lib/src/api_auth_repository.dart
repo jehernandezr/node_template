@@ -2,53 +2,74 @@ import 'package:api/api.dart';
 import 'package:contracts/contracts.dart';
 
 import 'ports.dart';
+import 'session_transport.dart';
 
-/// [AuthRepository] sobre las rutas de identity.
+/// [AuthRepository] over the identity routes.
 ///
-/// Cada llamada pasa por [ApiClient], que valida la petición contra el
-/// contrato antes de tocar la red y decodifica la respuesta con los tipos
-/// generados.
+/// Every call goes through [ApiClient], which validates the request against
+/// the contract before touching the network and decodes the response with the
+/// generated types.
 ///
-/// El login, el refresh y el cierre de sesión son rutas públicas y van por
-/// [client], que no lleva access token: el refresh y el cierre se identifican
-/// con el session token (en el cuerpo en móvil, en la cookie httpOnly en web).
-/// El paso adicional exige la sesión abierta y va por [sessionClient], que
-/// firma con el access token de la sesión.
+/// Sign-in, refresh and sign-out are public routes and go through [client],
+/// which carries no access token: refresh and sign-out are identified by the
+/// session token (in the body on mobile, in the httpOnly cookie on the web).
+/// Each of those routes carries the [sessionTransport] headers, which tell
+/// identity whether the client is a browser or a native app. The step-up
+/// requires an open session and goes through [sessionClient], which signs with
+/// the session access token.
 final class ApiAuthRepository implements AuthRepository {
-  /// Repositorio sobre [client]. Sin [sessionClient], el paso adicional usa
-  /// [client] y, como no tiene token, falla con
-  /// `PLATFORM.AUTH.UNAUTHENTICATED` sin llamar a la red.
-  ApiAuthRepository(this.client, {ApiClient? sessionClient})
-    : sessionClient = sessionClient ?? client;
+  /// Creates a repository over [client] that declares [sessionTransport] on
+  /// the session routes.
+  ///
+  /// Without [sessionClient], the step-up uses [client] and, since it has no
+  /// token, fails with `PLATFORM.AUTH.UNAUTHENTICATED` without calling the
+  /// network.
+  ApiAuthRepository(
+    this.client, {
+    required this.sessionTransport,
+    ApiClient? sessionClient,
+  }) : sessionClient = sessionClient ?? client;
 
-  /// Cliente sin sesión, para las rutas públicas.
+  /// Client without a session, for the public routes.
   final ApiClient client;
 
-  /// Cliente con el access token de la sesión, para el paso adicional.
+  /// Client with the session access token, for the step-up.
   final ApiClient sessionClient;
 
+  /// How the session token travels: in the browser cookie or in the native
+  /// app request body.
+  final SessionTransport sessionTransport;
+
   @override
-  Future<SignInResponse> signIn(SignInRequest request) =>
-      client.send(IdentityRoutes.signIn, request);
+  Future<SignInResponse> signIn(SignInRequest request) => client.send(
+    IdentityRoutes.signIn,
+    request,
+    headers: sessionTransport.headers,
+  );
 
   @override
   Future<MfaChallenge> requestMfaChallenge(MfaChallengeRequest request) =>
       client.send(IdentityRoutes.requestMfaChallenge, request);
 
   @override
-  Future<SignInResponse> verifyMfa(MfaVerifyRequest request) =>
-      client.send(IdentityRoutes.verifyMfa, request);
+  Future<SignInResponse> verifyMfa(MfaVerifyRequest request) => client.send(
+    IdentityRoutes.verifyMfa,
+    request,
+    headers: sessionTransport.headers,
+  );
 
   @override
   Future<SessionTokens> refresh({String? sessionToken}) => client.send(
     IdentityRoutes.refreshSession,
     SessionTokenRequest(sessionToken: sessionToken),
+    headers: sessionTransport.headers,
   );
 
   @override
   Future<void> logout({String? sessionToken}) => client.send(
     IdentityRoutes.signOut,
     SessionTokenRequest(sessionToken: sessionToken),
+    headers: sessionTransport.headers,
   );
 
   @override

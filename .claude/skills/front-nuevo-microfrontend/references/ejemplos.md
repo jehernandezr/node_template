@@ -1,8 +1,8 @@
-# Ejemplos de front-nuevo-microfrontend
+# front-nuevo-microfrontend examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies to you.
 
-## Esquema del manifiesto y del puente
+## Manifest outline
 
 ```dart
 import 'src/screens/screens.dart' deferred as screens;
@@ -41,7 +41,7 @@ final MicrofrontendManifest reportsManifest = MicrofrontendManifest(
 );
 ```
 
-## Esquema del manifiesto y del puente
+## Bridge outline
 
 ```dart
 abstract final class ReportsScreens {

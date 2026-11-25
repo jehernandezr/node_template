@@ -1,6 +1,6 @@
 ---
 name: backend-nestjs-composicion
-description: 'Composición NestJS: módulos como raíz de composición, tokens de puertos, casos de uso, controllers, fachadas y apagado. Úsala al cablear módulos y providers.'
+description: 'NestJS composition: modules as composition root, port tokens, use cases, controllers, facades and shutdown. Use it when wiring modules and providers.'
 paths:
   - 'backend/**/presentation/**'
   - 'backend/**/*.module.ts'
@@ -10,21 +10,21 @@ paths:
   - 'backend/libs/platform/service/**'
 ---
 
-# Composición con NestJS
+# Composition with NestJS
 
-NestJS es un detalle de `presentation/` y de la raíz de composición. El dominio y los casos de uso no saben que existe.
+NestJS is a detail of `presentation/` and of the composition root. The domain and the use cases do not know it exists.
 
-## Módulo = raíz de composición
+## Module = composition root
 
-- Un módulo por módulo de negocio, en `presentation/<nombre>.module.ts`. Es el único lugar que une puerto con adaptador.
-- `providers` lista casos de uso, adaptadores y servicios. `exports` lista solo la fachada y los tokens que otros módulos pueden usar.
-- Los módulos importan módulos, nunca providers sueltos de otro módulo. Nada de `forwardRef`: una dependencia circular es un error de diseño, se resuelve con un evento o moviendo la responsabilidad.
-- `@Global()` solo para plataforma (config, logger, reloj). Nunca para negocio.
-- Providers con alcance por defecto (singleton). `Scope.REQUEST` está prohibido en negocio: baja el rendimiento y los hooks de ciclo de vida no se ejecutan. El contexto de la petición (tenant, traza) va en `AsyncLocalStorage` de plataforma.
+- One module per business module, in `presentation/<name>.module.ts`. It is the only place that binds a port to its adapter.
+- `providers` lists use cases, adapters and services. `exports` lists only the facade and the tokens other modules may use.
+- Modules import modules, never loose providers from another module. No `forwardRef`: a circular dependency is a design error, solved with an event or by moving the responsibility.
+- `@Global()` only for platform (config, logger, clock). Never for business.
+- Providers use the default scope (singleton). `Scope.REQUEST` is forbidden in business code: it hurts performance and lifecycle hooks do not run. The request context (tenant, trace) lives in the platform `AsyncLocalStorage`.
 
-## Tokens para puertos
+## Tokens for ports
 
-Todo puerto es una clase abstracta sin decoradores: es el contrato y el token de inyección a la vez, y se inyecta por tipo, sin `@Inject`. El dominio no importa NestJS.
+Every port is an abstract class without decorators: it is both the contract and the injection token, and it is injected by type, without `@Inject`. The domain does not import NestJS.
 
 ```ts
 export abstract class UserRepository {
@@ -33,87 +33,87 @@ export abstract class UserRepository {
 }
 ```
 
-Ejemplo en `references/ejemplos.md`, sección "Tokens para puertos".
+Example in `references/ejemplos.md`, section "Tokens for ports".
 
-Un `Symbol` solo cuando conviven varias instancias del mismo tipo: `SNS_CLIENT`, `SQS_CLIENT` o un filtro Bloom por nombre con `bloomFilterToken(name)`. Ahí el constructor lleva `@Inject`:
+A `Symbol` only when several instances of the same type coexist: `SNS_CLIENT`, `SQS_CLIENT` or a Bloom filter by name with `bloomFilterToken(name)`. There the constructor takes `@Inject`:
 
-Ejemplo en `references/ejemplos.md`, sección "Tokens para puertos".
+Example in `references/ejemplos.md`, section "Tokens for ports".
 
-- Tokens de cadena sueltos están prohibidos. Los `Symbol` se exportan desde un solo archivo, junto al puerto.
-- `useFactory` con `inject` cuando el adaptador necesita configuración o un cliente asíncrono. El factory solo arma, no tiene lógica.
-- `Clock`, `IdGenerator`, `RandomSource` y `TransactionManager` del kernel y `LoggerPort` de observability son clases abstractas: se inyectan por tipo, sin `@Inject`.
-- `useExisting` para un alias (una clase concreta que cumple dos puertos).
-- `@Inject()` y `@Injectable()` solo en `infrastructure/`, `application/` (casos de uso) y `presentation/`. El dominio nunca los lleva.
-- Un caso de uso lleva `@Injectable()`; es la única anotación del framework que se tolera en `application/`.
+- Loose string tokens are forbidden. `Symbol` tokens are exported from a single file, next to the port.
+- `useFactory` with `inject` when the adapter needs configuration or an async client. The factory only assembles, it has no logic.
+- `Clock`, `IdGenerator`, `RandomSource` and `TransactionManager` from the kernel and `LoggerPort` from observability are abstract classes: they are injected by type, without `@Inject`.
+- `useExisting` for an alias (one concrete class that fulfills two ports).
+- `@Inject()` and `@Injectable()` only in `infrastructure/`, `application/` (use cases) and `presentation/`. The domain never has them.
+- A use case has `@Injectable()`; it is the only framework annotation tolerated in `application/`.
 
-## Módulos de las librerías de plataforma
+## Platform library modules
 
-- Cada librería con cableado expone `@platform/<lib>/nest`. Su módulo se importa con `forRoot` o `forRootAsync` (generados con `ConfigurableModuleBuilder`) y con `forFeature` cuando el servicio registra algo suyo.
-- `ConfigModule.forRoot({ schema })` recibe solo el esquema del servicio. Cada módulo de librería importa `ConfigModule.forFeature(section)` con su `ConfigSection`, así que el servicio no conoce variables ajenas.
-- El adaptador lo elige el servicio pasando su tipo en la opción (`CacheModule.forRoot({ store: ValkeyCache })`). Un módulo del núcleo nunca importa un adaptador. Sin la opción se obtiene el modo local (`InMemoryCache`).
+- Every library with wiring exposes `@platform/<lib>/nest`. Its module is imported with `forRoot` or `forRootAsync` (generated with `ConfigurableModuleBuilder`) and with `forFeature` when the service registers something of its own.
+- `ConfigModule.forRoot({ schema })` receives only the service schema. Each library module imports `ConfigModule.forFeature(section)` with its `ConfigSection`, so the service does not know other modules' variables.
+- The service picks the adapter by passing its type in the option (`CacheModule.forRoot({ store: ValkeyCache })`). A core module never imports an adapter. Without the option you get local mode (`InMemoryCache`).
 
 ```ts
 export interface CacheModuleOptions {
-  /** Por defecto `InMemoryCache`, el modo local sin Valkey. */
+  /** Defaults to `InMemoryCache`, the local mode without Valkey. */
   readonly store?: Type<CachePort>;
 }
-// en CacheModule: { provide: CachePort, useExisting: options.store ?? InMemoryCache }
+// in CacheModule: { provide: CachePort, useExisting: options.store ?? InMemoryCache }
 ```
 
-Ejemplo en `references/ejemplos.md`, sección "Módulos de las librerías de plataforma".
+Example in `references/ejemplos.md`, section "Platform library modules".
 
-Sin Valkey (modo local con una sola instancia), el servicio omite `ValkeyModule` y deja `CacheModule.forRoot()` y `RateLimitModule.forRoot()` sin opciones: usan `InMemoryCache` e `InMemoryRateLimiter`, y `ShardingModule` usa `NullRoutingCache` e `InProcessDirectoryChannel`. Los jobs exclusivos usan `InProcessJobLock`.
+Without Valkey (local mode with a single instance), the service omits `ValkeyModule` and leaves `CacheModule.forRoot()` and `RateLimitModule.forRoot()` without options: they use `InMemoryCache` and `InMemoryRateLimiter`, and `ShardingModule` uses `NullRoutingCache` and `InProcessDirectoryChannel`. Exclusive jobs use `InProcessJobLock`.
 
-Catálogo de cada módulo (qué provee y sus hooks) en `references/modulos-de-plataforma.md`.
+Catalog of each module (what it provides and its hooks) in `references/modulos-de-plataforma.md`.
 
-## Casos de uso y comandos
+## Use cases and commands
 
-- Una clase por caso de uso, método `execute(command)`, nombre de verbo (`SignInUseCase`). Implementa `UseCase<TInput, TOutput>` del kernel.
-- Orquesta: valida permisos, carga agregados, invoca al dominio, guarda, publica eventos con `MessageBus`, devuelve un DTO mínimo (un id o un resultado, no el agregado).
-- No contiene reglas de negocio. Si una condición decide el negocio, va en el agregado o en un servicio de dominio.
-- Un caso de uso no llama a otro caso de uso. Si dos comparten un paso, es un servicio de aplicación o un evento.
-- El comando es una clase de datos inmutable en `application/`, distinta del DTO HTTP. El controller traduce uno al otro.
-- Las consultas (lecturas) tienen su propia clase `*Query` y manejador, y no abren transacción de escritura.
-- La transacción la abre el caso de uso con `TransactionManager.runInTransaction`. Nunca el controller.
+- One class per use case, method `execute(command)`, verb name (`SignInUseCase`). It implements `UseCase<TInput, TOutput>` from the kernel.
+- It orchestrates: checks permissions, loads aggregates, calls the domain, saves, publishes events with `MessageBus`, returns a minimal DTO (an id or a result, not the aggregate).
+- It contains no business rules. If a condition decides business behavior, it goes in the aggregate or in a domain service.
+- A use case does not call another use case. If two share a step, it is an application service or an event.
+- The command is an immutable data class in `application/`, separate from the HTTP DTO. The controller translates one into the other.
+- Queries (reads) have their own `*Query` class and handler, and do not open a write transaction.
+- The use case opens the transaction with `TransactionManager.runInTransaction`. Never the controller.
 
-Ejemplo en `references/ejemplos.md`, sección "Casos de uso y comandos".
+Example in `references/ejemplos.md`, section "Use cases and commands".
 
-## Controllers y consumidores
+## Controllers and consumers
 
-- Delgados: validan la entrada con el esquema zod del contrato, arman el comando, llaman al caso de uso, arman la respuesta. Sin reglas, sin acceso a repositorios, sin `try/catch` de negocio.
-- La validación usa un `ZodValidationPipe` de plataforma con el esquema de `@contracts/<servicio>`. No se duplica el esquema con `class-validator`.
-- La respuesta se arma explícita con los campos permitidos (lista blanca). Nunca se devuelve una entidad ORM ni un agregado.
-- Un controller por tipo de disparador: HTTP, mensaje (`@Subscribe`), job.
-- Los errores no se atrapan aquí. Los traduce el filtro global (ver `backend-errores`).
-- Autorización por guard y decorador con enum de permisos (ver `backend-seguridad`).
-- Los consumidores son clases con métodos `@Subscribe` y los handlers de la API interna clases con `@InternalHandler`; los descubren `MessagingExplorer` y `InternalApiModule`, no se registran a mano.
-- Las tareas periódicas son providers que extienden `ScheduledJob`; `SchedulingModule` los descubre sin que el módulo de negocio lo importe.
+- Thin: they validate input with the contract zod schema, build the command, call the use case, build the response. No rules, no repository access, no business `try/catch`.
+- Validation uses a platform `ZodValidationPipe` with the schema from `@contracts/<service>`. The schema is not duplicated with `class-validator`.
+- The response is built explicitly with the allowed fields (allowlist). Never return an ORM entity or an aggregate.
+- One controller per trigger type: HTTP, message (`@Subscribe`), job.
+- Errors are not caught here. The global filter translates them (see `backend-errores`).
+- Authorization through a guard and a decorator with a permissions enum (see `backend-seguridad`).
+- Consumers are classes with `@Subscribe` methods and internal API handlers are classes with `@InternalHandler`; `MessagingExplorer` and `InternalApiModule` discover them, they are not registered by hand.
+- Periodic tasks are providers that extend `ScheduledJob`; `SchedulingModule` discovers them without the business module importing it.
 
-## Fachadas
+## Facades
 
-Un módulo se comunica con otro por su fachada (`UsersFacade`) o por eventos. La fachada expone métodos pequeños con DTO propios, no agregados ni entidades. Si el otro módulo está en otro servicio, es un cliente de la API interna con contrato.
+A module talks to another through its facade (`UsersFacade`) or through events. The facade exposes small methods with their own DTOs, not aggregates or entities. If the other module lives in another service, it is an internal API client with a contract.
 
-## Ciclo de vida y apagado
+## Lifecycle and shutdown
 
-- `main.ts` importa primero `./instrumentation.js`, que llama a `TelemetryBootstrap.start(process.env)` de `@platform/observability/setup`, y después crea la app con NestJS y llama `app.enableShutdownHooks()`.
-- Nest 12 apaga en este orden: todos los `onModuleDestroy`, luego `beforeApplicationShutdown` y al final `onApplicationShutdown`. Por eso lo que genera trabajo (`JobRunner`, `SqsPoller`, suscripciones) se detiene en `onModuleDestroy`, y los módulos que cierran recursos (clientes SNS y SQS, Valkey con `quit`, `DataSource`) son globales y se importan antes en `AppModule`, para que su `onModuleDestroy` corra después: Nest destruye los módulos en orden inverso al de importación. `SqsPoller` vive en `SqsConsumerModule`, que no es global, para cerrarse antes que `AwsModule`, que solo implementa `OnModuleDestroy`. `onApplicationShutdown` vacía la telemetría.
-- `onApplicationBootstrap` corre cuando todos los módulos ya iniciaron: ahí van las validaciones cruzadas (`InternalApiModule` llama `assertComplete`, `MessagingExplorer` registra los consumidores).
-- La salud la reúne `HealthRegistry` de observability: cada adaptador de red implementa `HealthCheckable` del kernel y se registra en su `onModuleInit`.
-- Los hooks de inicio son asíncronos y fallan fuerte: si la config o la base no están, el proceso no arranca.
-- `app.close()` no termina el proceso: sin temporizadores colgados.
-- Un módulo no hace trabajo al importarse el archivo. Todo ocurre en hooks.
+- `main.ts` first imports `./instrumentation.js`, which calls `TelemetryBootstrap.start(process.env)` from `@platform/observability/setup`, and then creates the app with NestJS and calls `app.enableShutdownHooks()`.
+- Nest 12 shuts down in this order: all `onModuleDestroy`, then `beforeApplicationShutdown` and finally `onApplicationShutdown`. That is why whatever generates work (`JobRunner`, `SqsPoller`, subscriptions) stops in `onModuleDestroy`, and the modules that close resources (SNS and SQS clients, Valkey with `quit`, `DataSource`) are global and imported earlier in `AppModule`, so their `onModuleDestroy` runs later: Nest destroys modules in reverse import order. `SqsPoller` lives in `SqsConsumerModule`, which is not global, so it closes before `AwsModule`, which only implements `OnModuleDestroy`. `onApplicationShutdown` flushes telemetry.
+- `onApplicationBootstrap` runs once all modules have initialized: cross validations go there (`InternalApiModule` calls `assertComplete`, `MessagingExplorer` registers the consumers).
+- Health is gathered by `HealthRegistry` from observability: each network adapter implements `HealthCheckable` from the kernel and registers itself in its `onModuleInit`.
+- Startup hooks are async and fail loudly: if the config or the database is missing, the process does not start.
+- `app.close()` does not end the process: no dangling timers.
+- A module does no work when its file is imported. Everything happens in hooks.
 
-## Verificación de arranque
+## Startup check
 
 ```
-- [ ] Cada puerto inyectado tiene su provider en el módulo o en su módulo de librería
-- [ ] Los adaptadores se pasan como tipo en las opciones de cada módulo de librería
-- [ ] Ningún provider de negocio es global ni de alcance de petición
-- [ ] exports solo con fachada y tokens públicos
-- [ ] enableShutdownHooks activo
-- [ ] La app arranca con NEST_DEBUG=true sin dependencias sin resolver
+- [ ] Every injected port has its provider in the module or in its library module
+- [ ] Adapters are passed as a type in the options of each library module
+- [ ] No business provider is global or request scoped
+- [ ] exports only with the facade and public tokens
+- [ ] enableShutdownHooks enabled
+- [ ] The app starts with NEST_DEBUG=true with no unresolved dependencies
 ```
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-boundary-discipline`, `principle-minimize-reader-load`, `principle-laziness-protocol`, `principle-encode-lessons-in-structure`. Un adaptador se elige con una clase selectora probada, nunca con un `switch` dentro de `useFactory`.
+Method in `pstack-en-node-template`. From pstack these apply here: `principle-boundary-discipline`, `principle-minimize-reader-load`, `principle-laziness-protocol`, `principle-encode-lessons-in-structure`. An adapter is picked with a tested selector class, never with a `switch` inside `useFactory`.

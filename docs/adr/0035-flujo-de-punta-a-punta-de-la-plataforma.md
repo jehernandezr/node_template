@@ -1,35 +1,35 @@
-# 0035. Flujo de punta a punta de la plataforma
+# 0035. End-to-end platform flow
 
-- Estado: Aceptada
-- Fecha: 2026-11-24
-- Relacionados: [ADR 0008](0008-sagas-orquestadas-bitacora-persistente.md), [ADR 0010](0010-sharding-logico-residencia-region.md), [ADR 0031](0031-reportes-facturacion-y-sagas-de-identity.md), [ADR 0032](0032-traslado-de-tenants-y-regiones.md)
+- Status: Accepted
+- Date: 2026-11-24
+- Related: [ADR 0008](0008-sagas-orquestadas-bitacora-persistente.md), [ADR 0010](0010-sharding-logico-residencia-region.md), [ADR 0031](0031-reportes-facturacion-y-sagas-de-identity.md), [ADR 0032](0032-traslado-de-tenants-y-regiones.md)
 
-## Contexto
+## Context
 
-Cada servicio prueba sus rutas, sus consumidores y sus sagas con los demás servicios simulados. F5 a F11 terminan cuando el flujo de punta a punta pasa dos veces seguidas: el alta de un tenant, su trabajo en cada servicio, la factura y el traslado, con los cinco servicios reales hablando entre sí. Hacía falta decidir cómo levantarlos juntos sin LocalStack ni contenedores por servicio, y qué afirma la prueba en cada paso.
+Each service tests its routes, its consumers and its sagas with the other services mocked. F5 to F11 end when the end-to-end flow passes twice in a row: a tenant's onboarding, its work in each service, the invoice and the move, with the five real services talking to each other. It had to be decided how to bring them up together without LocalStack or containers per service, and what the test asserts at each step.
 
-## Decisión
+## Decision
 
-- **Un proceso, bases reales.** `backend/e2e/platform-flow` (target `platform-flow:e2e`, en CI con `nx affected -t e2e`) arranca identity, tasks, notifications, reports y billing en un proceso, sobre un PostgreSQL con un catálogo y dos shards por servicio y un Valkey de Testcontainers. Es el único proyecto que importa apps, y solo por `@apps/<servicio>/test-utils`.
-- **Mensajería en memoria, API interna por HTTP.** Los une un bus en memoria: el relay de cada outbox publica en él (`BusEnvelopePublisher`) y cada cola se entrega al despachador del servicio que la declara. La API interna va por HTTP firmado entre los cinco, sin intermediarios.
-- **Sin simular pasos de la plataforma.** Cada servicio arranca con su propia configuración (bases, `TENANT_MOVE_TARGETS` con los dos grupos de shards, URLs de los demás) y nada escribe en sus bases por fuera de sus operaciones: los tenants llegan al directorio de cada servicio por la siembra de identity y por la saga de alta ([ADR 0032](0032-traslado-de-tenants-y-regiones.md)).
-- **Jobs a mano.** Los jobs no corren solos (`SchedulingMode.External`): la prueba publica los outbox y entrega los mensajes hasta que nada queda en camino, y cierra los periodos de billing con su job.
-- **Qué afirma.** Recorre el alta de un tenant con `TenantOnboarding` (y comprueba que los cinco directorios lo ubican en el mismo grupo), la invitación de un miembro, tareas creadas y completadas, el aviso en la bandeja del autor, el reporte de tareas por estado sobre la proyección, la factura del periodo y el traslado del tenant al otro grupo con `MoveTenant`. Del traslado guarda antes el shard de origen de cada servicio, y después afirma que el directorio de cada uno apunta al shard del grupo destino, que las filas de cada tabla leídas directamente en ese shard son las de antes y que el origen de cada servicio quedó con la barrera del traslado marcada como pivotada.
-- **En CI sin Docker falla.** El paso corre con `INTEGRATION_TESTS=require`, así una máquina sin Docker no lo da por bueno con cero pruebas.
+- **One process, real databases.** `backend/e2e/platform-flow` (target `platform-flow:e2e`, in CI with `nx affected -t e2e`) starts identity, tasks, notifications, reports and billing in one process, on a PostgreSQL with one catalog and two shards per service and a Valkey from Testcontainers. It is the only project that imports apps, and only through `@apps/<service>/test-utils`.
+- **In-memory messaging, internal API over HTTP.** An in-memory bus connects them: each outbox's relay publishes to it (`BusEnvelopePublisher`) and each queue is delivered to the dispatcher of the service that declares it. The internal API goes over signed HTTP among the five, without intermediaries.
+- **No mocked platform steps.** Each service starts with its own configuration (databases, `TENANT_MOVE_TARGETS` with both shard groups, URLs of the others) and nothing writes to their databases outside their operations: tenants reach each service's directory through identity's seeding and through the onboarding saga ([ADR 0032](0032-traslado-de-tenants-y-regiones.md)).
+- **Jobs by hand.** Jobs do not run on their own (`SchedulingMode.External`): the test publishes the outboxes and delivers the messages until nothing is left in flight, and closes the billing periods with its job.
+- **What it asserts.** It walks through a tenant's onboarding with `TenantOnboarding` (and checks that the five directories place it in the same group), inviting a member, tasks created and completed, the notice in the author's inbox, the tasks-by-status report on the projection, the period's invoice and moving the tenant to the other group with `MoveTenant`. For the move it first records each service's source shard, and afterwards asserts that each one's directory points to the target group's shard, that the rows of each table read directly in that shard are the ones from before and that each service's source was left with the move barrier marked as pivoted.
+- **In CI it fails without Docker.** The step runs with `INTEGRATION_TESTS=require`, so a machine without Docker does not accept it as passing with zero tests.
 
-## Consecuencias
+## Consequences
 
-### Positivas
+### Positive
 
-- Un paso de la plataforma que falte entre servicios (un directorio sin el tenant, una cola sin consumidor, un `switch` que no corrió) rompe la prueba.
-- Corre en una Raspberry Pi y en el tiempo de CI.
+- A missing platform step between services (a directory without the tenant, a queue without a consumer, a `switch` that did not run) breaks the test.
+- It runs on a Raspberry Pi and within CI time.
 
-### Costos
+### Costs
 
-- No ejercita SNS ni SQS: eso queda en las pruebas de integración de `@platform/adapters-aws`.
-- Los cinco servicios comparten un proceso y un Valkey; un problema que solo aparece con procesos separados no se ve aquí.
+- It does not exercise SNS or SQS: that stays in the integration tests of `@platform/adapters-aws`.
+- The five services share one process and one Valkey; a problem that only shows up with separate processes is not seen here.
 
-## Alternativas descartadas
+## Alternatives considered
 
-- Levantar los cinco servicios compilados con LocalStack: no cabe en una Raspberry Pi ni en el tiempo de CI y prueba el mismo flujo de negocio.
-- Comprobar el traslado leyendo cada servicio por su propio directorio: pasaría aunque un servicio no hubiera hecho `switch`.
+- Bringing up the five compiled services with LocalStack: it does not fit on a Raspberry Pi or within CI time and tests the same business flow.
+- Checking the move by reading each service through its own directory: it would pass even if a service had not done the `switch`.

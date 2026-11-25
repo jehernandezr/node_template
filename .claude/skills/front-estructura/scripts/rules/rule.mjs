@@ -1,8 +1,8 @@
 import { Violation } from '../violation.mjs';
 
-// Regla de estructura. Las subclases implementan appliesTo (solo por ruta) y check.
-// El motor llama a check solo si appliesTo devolvió true, y entrega el texto del archivo
-// únicamente para .dart y pubspec.yaml (para el resto, text es '').
+// Structure rule. Subclasses implement appliesTo (by path only) and check.
+// The engine calls check only if appliesTo returned true, and passes the file text
+// only for .dart and pubspec.yaml (for everything else, text is '').
 export class Rule {
   constructor(id, message) {
     this.id = id;
@@ -10,12 +10,12 @@ export class Rule {
   }
 
   appliesTo(_file) {
-    throw new Error(`${this.constructor.name}.appliesTo no implementado`);
+    throw new Error(`${this.constructor.name}.appliesTo not implemented`);
   }
 
-  // Devuelve Violation[]; vacío si el archivo cumple.
+  // Returns Violation[]; empty if the file complies.
   check(_file, _text) {
-    throw new Error(`${this.constructor.name}.check no implementado`);
+    throw new Error(`${this.constructor.name}.check not implemented`);
   }
 
   violation(file, line = null) {

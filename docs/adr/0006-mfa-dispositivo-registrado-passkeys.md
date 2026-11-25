@@ -1,39 +1,39 @@
-# 0006. MFA con dispositivo registrado y passkeys
+# 0006. MFA with a registered device and passkeys
 
-- Estado: Aceptada
-- Fecha: 2026-11-11
-- Revisión: 2026-11-14 (diseño de F4, sección 11: la app verificadora obtiene el código del dispositivo registrado con una petición firmada y lo envía sola; las opciones y respuestas de WebAuthn viajan en base64url dentro del JSON del contrato)
+- Status: Accepted
+- Date: 2026-11-11
+- Revised: 2026-11-14 (F4 design, section 11: the verifier app obtains the code from the registered device with a signed request and sends it on its own; WebAuthn options and responses travel as base64url inside the contract JSON)
 
-## Contexto
+## Context
 
-Una contraseña robada no debe bastar para entrar desde un dispositivo nuevo. Al mismo tiempo, un usuario con su dispositivo a mano no debería escribir un código en cada login.
+A stolen password must not be enough to sign in from a new device. At the same time, a user with their device at hand should not have to type a code on every login.
 
-## Decisión
+## Decision
 
-MFA obligatorio al registrar cualquier dispositivo nuevo, para todos los usuarios. En cada login, MFA solo para administradores de tenant y de backoffice.
+MFA is mandatory when registering any new device, for all users. On every login, MFA only for tenant and backoffice administrators.
 
-- Registro: la app genera un par de claves en Secure Enclave, Android Keystore o WebCrypto (no exportable) y envía la clave pública.
-- Login desde un dispositivo registrado: el servidor envía un challenge, la app lo firma y genera el código de 8 dígitos sin intervención del usuario. Vence en 2 a 3 minutos.
-- Primer dispositivo: código de 6 dígitos por email, con vencimiento de 5 minutos.
-- Cada código se guarda como HMAC, es de un solo uso, admite 5 intentos por challenge y 3 challenges cada 15 minutos.
-- Passkeys desde la primera versión (WebAuthn con `@simplewebauthn/server`). En backoffice son el método recomendado.
-- Recuperación sin dispositivo por email, con espera exponencial de 24 h, 48 h y 96 h.
-- Operaciones sensibles usan step-up: `mfa: { maxAgeMinutes: 10 }`.
+- Registration: the app generates a key pair in Secure Enclave, Android Keystore or WebCrypto (non-exportable) and sends the public key.
+- Login from a registered device: the server sends a challenge, the app signs it and generates the 8-digit code without user intervention. It expires in 2 to 3 minutes.
+- First device: 6-digit code by email, expiring in 5 minutes.
+- Each code is stored as an HMAC, is single use, allows 5 attempts per challenge and 3 challenges every 15 minutes.
+- Passkeys from the first version (WebAuthn with `@simplewebauthn/server`). In backoffice they are the recommended method.
+- Recovery without a device by email, with an exponential wait of 24 h, 48 h and 96 h.
+- Sensitive operations use step-up: `mfa: { maxAgeMinutes: 10 }`.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- El usuario con un dispositivo registrado entra sin escribir códigos.
-- Una passkey en un dispositivo registrado cumple los dos factores.
-- La espera creciente en la recuperación frena el secuestro de cuentas por email.
+- A user with a registered device signs in without typing codes.
+- A passkey on a registered device satisfies both factors.
+- The increasing wait during recovery slows down account takeover through email.
 
-Costos:
+Costs:
 
-- Si el usuario pierde el dispositivo registrado, la recuperación tarda al menos 24 horas.
-- La app debe manejar claves del dispositivo en iOS, Android y web.
+- If the user loses the registered device, recovery takes at least 24 hours.
+- The app must handle device keys on iOS, Android and web.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Código por email como método de login: el documento lo retira cuando hay un dispositivo registrado.
-- TOTP y códigos de recuperación: quedan como respaldo, no como método principal.
+- Email code as a login method: the document retires it when there is a registered device.
+- TOTP and recovery codes: they remain as a fallback, not as the main method.

@@ -1,42 +1,42 @@
-# 0002. Arquitectura hexagonal y plataforma agnóstica
+# 0002. Hexagonal architecture and platform-agnostic design
 
-- Estado: Aceptada
-- Fecha: 2026-11-11
-- Revisión: 2026-11-14 (cada puerto vive en la librería de plataforma de su capacidad, por ejemplo `CachePort` en `@platform/cache`, y los adaptadores en `libs/platform/adapters/<proveedor>`)
+- Status: Accepted
+- Date: 2026-11-11
+- Revised: 2026-11-14 (each port lives in the platform library of its capability, for example `CachePort` in `@platform/cache`, and the adapters in `libs/platform/adapters/<provider>`)
 
-## Contexto
+## Context
 
-La plataforma despliega en AWS, pero migrar a otra nube no debería obligar a reescribir la lógica de negocio. Cada servicio necesita una estructura interna que separe el dominio de NestJS, TypeORM y AWS.
+The platform deploys on AWS, but moving to another cloud should not force a rewrite of the business logic. Each service needs an internal structure that separates the domain from NestJS, TypeORM and AWS.
 
-## Decisión
+## Decision
 
-Arquitectura hexagonal estricta. El dominio y los casos de uso no importan NestJS, TypeORM ni AWS. Cada capacidad externa es un puerto en `libs/platform/capabilities` con un adaptador por proveedor, y cada módulo elige su adaptador por configuración.
+Strict hexagonal architecture. The domain and the use cases do not import NestJS, TypeORM or AWS. Each external capability is a port in `libs/platform/capabilities` with one adapter per provider, and each module chooses its adapter through configuration.
 
-- `@aws-sdk/*` solo aparece en `libs/platform/adapters/aws`.
-- Las entradas (endpoints, eventos, jobs, operaciones internas y tiempo real) se declaran con decoradores de la plataforma y llaman casos de uso.
-- Un adaptador de entrada por runtime traduce Lambda, Fargate, contenedor, Kubernetes o local a esas declaraciones.
-- La topología de mensajería, los jobs y los buckets se declaran de forma abstracta. Terraform de AWS lee esas declaraciones.
+- `@aws-sdk/*` appears only in `libs/platform/adapters/aws`.
+- Inputs (endpoints, events, jobs, internal operations and real time) are declared with platform decorators and call use cases.
+- One input adapter per runtime translates Lambda, Fargate, container, Kubernetes or local into those declarations.
+- The messaging topology, the jobs and the buckets are declared abstractly. The AWS Terraform reads those declarations.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Cambiar de nube significa escribir adaptadores nuevos y otro Terraform, sin tocar el negocio.
-- Cambiar de runtime significa cambiar el adaptador de entrada.
+- Changing clouds means writing new adapters and different Terraform, without touching the business logic.
+- Changing runtimes means changing the input adapter.
 
-Costos:
+Costs:
 
-- Cada puerto tiene al menos dos adaptadores (AWS y local) que mantener y probar.
-- Hay que verificar la regla de dependencias en CI, o la separación se pierde con el tiempo.
+- Each port has at least two adapters (AWS and local) to maintain and test.
+- The dependency rule has to be checked in CI, or the separation erodes over time.
 
-## Alternativas consideradas
+## Alternatives considered
 
-El documento no compara este estilo con otras arquitecturas. Registra proveedores alternativos para cada puerto:
+The document does not compare this style with other architectures. It records alternative providers for each port:
 
-- Tópicos: Google Pub/Sub o Kafka.
-- Colas: RabbitMQ, o BullMQ sobre Valkey en local.
-- Archivos: Google Cloud Storage o Azure Blob.
-- Jobs programados: Cloud Scheduler o CronJob de Kubernetes.
-- Feature flags: flagd o AppConfig.
-- Secretos: Vault.
-- Cómputo: cualquier contenedor.
+- Topics: Google Pub/Sub or Kafka.
+- Queues: RabbitMQ, or BullMQ on Valkey locally.
+- Files: Google Cloud Storage or Azure Blob.
+- Scheduled jobs: Cloud Scheduler or Kubernetes CronJob.
+- Feature flags: flagd or AppConfig.
+- Secrets: Vault.
+- Compute: any container.

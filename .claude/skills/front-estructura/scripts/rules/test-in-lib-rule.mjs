@@ -6,7 +6,7 @@ export class TestInLibRule extends Rule {
   constructor() {
     super(
       RuleId.TEST_IN_LIB,
-      'las pruebas van en el test/ del paquete, con las carpetas de lib/src',
+      "tests go in the package's test/, mirroring the lib/src folders",
     );
   }
 

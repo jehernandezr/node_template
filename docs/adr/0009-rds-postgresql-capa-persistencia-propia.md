@@ -1,50 +1,50 @@
-# 0009. RDS PostgreSQL con capa de persistencia propia
+# 0009. RDS PostgreSQL with an in-house persistence layer
 
-- Estado: Reemplazada por [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)
-- Fecha: 2026-11-11
-- Revisión: 2026-11-14 (un solo camino sobre `pg`, sin TypeORM)
-- Reemplazada: 2026-11-14 por el [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) (persistencia sobre TypeORM)
+- Status: Superseded by [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)
+- Date: 2026-11-11
+- Revised: 2026-11-14 (a single path on `pg`, without TypeORM)
+- Superseded: 2026-11-14 by [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) (persistence on TypeORM)
 
-Este ADR se conserva como registro histórico. La capa propia sobre `pg` y las migraciones en SQL a mano quedan reemplazadas por TypeORM y su CLI. Se mantienen de este ADR la base RDS PostgreSQL con RDS Proxy y una réplica de lectura, RLS, particiones por rango sobre el UUIDv7, auditoría con triggers y la búsqueda vectorial en la misma base.
+This ADR is kept as a historical record. The in-house layer on `pg` and the hand-written SQL migrations are replaced by TypeORM and its CLI. The following are kept from this ADR: the RDS PostgreSQL database with RDS Proxy and a read replica, RLS, range partitions on the UUIDv7, auditing with triggers and vector search in the same database.
 
-## Contexto
+## Context
 
-El template original usa `sync({ alter: true })` al arrancar y no tiene migraciones. La plataforma necesita PostgreSQL con RLS, particiones, búsqueda vectorial y replicación lógica, sin que el dominio dependa de un ORM concreto.
+The original template uses `sync({ alter: true })` at startup and has no migrations. The platform needs PostgreSQL with RLS, partitions, vector search and logical replication, without the domain depending on a specific ORM.
 
-## Decisión
+## Decision
 
-La base es RDS PostgreSQL con RDS Proxy y una réplica de lectura. `libs/platform/persistence` es una capa propia sobre el driver `pg`, sin ORM: el dominio ve solo puertos de repositorio.
+The database is RDS PostgreSQL with RDS Proxy and a read replica. `libs/platform/persistence` is an in-house layer on the `pg` driver, without an ORM: the domain sees only repository ports.
 
-Hay un solo camino para cada pieza:
+There is a single path for each piece:
 
-- Conexión: `PgPoolConnection` sobre `pg.Pool`, con un pool para el primario y otro para la réplica.
-- Tabla: una `TableDefinition` escrita a mano junto al registro (campo a columna, id, versión, tenant, borrado lógico y auditoría). `BaseRepository` arma todo su SQL desde ella.
-- Migraciones: `SqlMigration` en SQL plano, aplicadas con `applyMigrations`. Cada migración corre en su transacción y queda en `platform_schema_migrations`. El ciclo completo toma `pg_advisory_lock`, así dos tareas que arrancan a la vez no aplican la misma migración. No hay `migration:generate`: el SQL se escribe y se revisa.
+- Connection: `PgPoolConnection` on `pg.Pool`, with one pool for the primary and another for the replica.
+- Table: a hand-written `TableDefinition` next to the record (field to column, id, version, tenant, soft delete and auditing). `BaseRepository` builds all its SQL from it.
+- Migrations: `SqlMigration` in plain SQL, applied with `applyMigrations`. Each migration runs in its own transaction and is recorded in `platform_schema_migrations`. The whole cycle takes `pg_advisory_lock`, so two tasks that start at the same time do not apply the same migration. There is no `migration:generate`: the SQL is written and reviewed.
 
-Además:
+In addition:
 
-- `BaseRepository` ofrece lectura, escritura, bloqueo optimista por columna `version`, `Criteria` propio y Unit of Work con el puerto `TransactionManager`. El puerto vive en `@platform/primitives`, sin la sesión SQL, para que mensajería y la API interna no dependan de esta capa.
-- Columnas de auditoría y soft delete automáticos. Cada SQL lleva `/* traceId=… tenantId=… */`.
-- Las lecturas van a la réplica, salvo dentro de una transacción. La capa no recuerda escrituras entre peticiones, porque la siguiente puede caer en otro proceso. Quien necesita leer lo que acaba de confirmar sin transacción usa `readPrimary`.
-- Particiones por rango sobre el `id` UUIDv7, creadas con `createPartitionedTableSql`. Un job crea las particiones futuras y archiva las vencidas.
-- Auditoría con triggers por tabla que escriben en `audit_log`. `@Audited` declara las columnas excluidas junto al registro.
-- Los adaptadores de puertos de otras librerías sobre Postgres (idempotencia, directorio de shards, outbox, mensajes procesados) y sus tablas viven en `libs/platform/adapters/postgres`, que exporta `shardMigrations` y `catalogMigrations` completas.
+- `BaseRepository` offers reads, writes, optimistic locking on a `version` column, its own `Criteria` and Unit of Work with the `TransactionManager` port. The port lives in `@platform/primitives`, without the SQL session, so that messaging and the internal API do not depend on this layer.
+- Automatic audit columns and soft delete. Every SQL statement carries `/* traceId=… tenantId=… */`.
+- Reads go to the replica, except inside a transaction. The layer does not remember writes across requests, because the next one may land in another process. Whoever needs to read what they just committed without a transaction uses `readPrimary`.
+- Range partitions on the UUIDv7 `id`, created with `createPartitionedTableSql`. A job creates future partitions and archives expired ones.
+- Auditing with per-table triggers that write to `audit_log`. `@Audited` declares the excluded columns next to the record.
+- The adapters for other libraries' ports on Postgres (idempotency, shard directory, outbox, processed messages) and their tables live in `libs/platform/adapters/postgres`, which exports complete `shardMigrations` and `catalogMigrations`.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Una sola forma de definir tablas, conectar y migrar, sin metadatos de un ORM que la capa no usa.
-- La búsqueda vectorial vive en la misma base y bajo las mismas reglas de tenant.
+- A single way to define tables, connect and migrate, without ORM metadata that the layer does not use.
+- Vector search lives in the same database and under the same tenant rules.
 
-Costos:
+Costs:
 
-- La capa es código propio que hay que mantener y probar.
-- Sin generador de migraciones, cada cambio de esquema se escribe en SQL a mano.
-- El comportamiento de RDS Proxy con variables de sesión (`app.tenant_id`) se valida en la fase de persistencia. Hasta entonces es un supuesto.
+- The layer is in-house code that has to be maintained and tested.
+- Without a migration generator, every schema change is written in SQL by hand.
+- The behavior of RDS Proxy with session variables (`app.tenant_id`) is validated in the persistence phase. Until then it is an assumption.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Motor de búsqueda aparte: el documento lo descarta, porque pgvector resuelve la búsqueda semántica en el mismo shard.
-- TypeORM como única vía (entidades, metadatos y `migration:generate`): obliga a declarar cada tabla dos veces, como entidad y como SQL de la capa, y suma una dependencia grande que el repositorio no necesita.
-- Lectura del primario durante unos segundos después de escribir: con varias tareas detrás del balanceador solo vale dentro del mismo proceso, así que no da la garantía que promete.
+- A separate search engine: the document discards it, because pgvector handles semantic search in the same shard.
+- TypeORM as the only path (entities, metadata and `migration:generate`): it forces every table to be declared twice, as an entity and as the layer's SQL, and adds a large dependency the repository does not need.
+- Reading from the primary for a few seconds after writing: with several tasks behind the load balancer it only works inside the same process, so it does not give the guarantee it promises.

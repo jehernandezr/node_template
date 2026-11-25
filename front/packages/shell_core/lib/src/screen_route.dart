@@ -29,8 +29,8 @@ typedef DeferredScreenBuilder = Widget Function(
 ///
 /// The shell turns it into a [GoRoute]: it loads [loadLibrary] through the
 /// shell's [ScreenLoader], calls [builder] with the scope of the current
-/// identity, rebuilds the page when the identity changes and, when [access]
-/// is set, guards the route with [accessRedirect].
+/// identity, rebuilds the page when the identity or its parameters change
+/// and, when [access] is set, guards the route with [accessRedirect].
 final class ScreenRoute {
   /// Creates a screen route. [path] is absolute (`/tasks`) at the top level of
   /// a manifest and relative (`new`, `:id`) inside [routes].

@@ -6,7 +6,7 @@ import { RuleId } from '../rule-id.mjs';
 const LIB = 'front/packages/ui/lib/src/a.dart';
 
 describe('FlutterTestImportRule', () => {
-  it('se aplica al lib de un paquete, no a test_utils', () => {
+  it('applies to a package lib, not to test_utils', () => {
     const rule = new FlutterTestImportRule();
     assert.equal(rule.appliesTo(LIB), true);
     assert.equal(
@@ -15,7 +15,7 @@ describe('FlutterTestImportRule', () => {
     );
   });
 
-  it('marca un import de flutter_test en lib', () => {
+  it('flags a flutter_test import in lib', () => {
     const rule = new FlutterTestImportRule();
     const text = [
       "import 'package:flutter/widgets.dart';",
@@ -27,7 +27,7 @@ describe('FlutterTestImportRule', () => {
     assert.equal(violation.file, LIB);
   });
 
-  it('deja pasar un import de widgets', () => {
+  it('lets a widgets import through', () => {
     const rule = new FlutterTestImportRule();
     assert.deepEqual(
       rule.check(LIB, "import 'package:flutter/widgets.dart';"),

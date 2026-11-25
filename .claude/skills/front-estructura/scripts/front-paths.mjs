@@ -1,4 +1,4 @@
-// Predicados sobre rutas relativas a la raíz del repositorio (separador "/").
+// Predicates over paths relative to the repository root ("/" separator).
 export class FrontPaths {
   static GENERATED = /\/(l10n\/generated|contracts\/lib\/src\/(?!core\/))/;
 
@@ -32,7 +32,7 @@ export class FrontPaths {
     return FrontPaths.isDart(file) && file.startsWith('front/packages/ui/lib/');
   }
 
-  // Pubspec de un miembro del workspace; el de la raíz de front/ queda fuera.
+  // Pubspec of a workspace member; the one at the root of front/ is excluded.
   static isMemberPubspec(file) {
     return /^front\/.+\/pubspec\.yaml$/.test(file);
   }

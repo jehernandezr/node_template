@@ -74,12 +74,16 @@ class ApiClient {
 
   /// Sends [request] through [route] and returns the decoded response.
   ///
+  /// [headers] go on every attempt of this call, over [defaultHeaders]; the
+  /// access token and the content type are never replaced by them.
+  ///
   /// Throws [ContractViolationException] when the request or the response
   /// break the contract, and [ApiErrorException] when the API answers an error.
   Future<Res> send<Req, Res>(
     RouteDescriptor<Req, Res> route,
-    Req request,
-  ) async {
+    Req request, {
+    Map<String, String> headers = const {},
+  }) async {
     final json = route.encodeRequest(request);
     final errors = route.validateRequest(json);
     if (errors.isNotEmpty) {
@@ -89,18 +93,18 @@ class ApiClient {
     _reportDeprecation(route);
 
     var (uri, body) = _encode(route, json);
-    var response = await _dispatch(route, uri, body);
+    var response = await _dispatch(route, uri, body, headers);
     final region = _regionBaseOf(response);
     if (region != null) {
       _baseUri = region;
       (uri, body) = _encode(route, json);
-      response = await _dispatch(route, uri, body);
+      response = await _dispatch(route, uri, body, headers);
     }
     final policy = sessionRefresh;
     if (policy != null && route.requiresAuth && !_isSuccess(response)) {
       if (policy.appliesTo(_problemOf(response))) {
         await policy.refresh();
-        response = await _dispatch(route, uri, body);
+        response = await _dispatch(route, uri, body, headers);
       }
     }
 
@@ -153,10 +157,12 @@ class ApiClient {
     RouteDescriptor<Req, Res> route,
     Uri uri,
     String? body,
+    Map<String, String> extraHeaders,
   ) async {
     final headers = <String, String>{
       'accept': 'application/json, application/problem+json',
       ...defaultHeaders,
+      ...extraHeaders,
     };
     if (route.requiresAuth) {
       final token = await accessToken?.call();

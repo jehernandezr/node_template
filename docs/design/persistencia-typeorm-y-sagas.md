@@ -1,63 +1,63 @@
-# Diseño: persistencia sobre TypeORM con sharding y sagas persistentes
+# Design: persistence on TypeORM with sharding and persistent sagas
 
-- Estado: Aceptada
-- Fecha: 2026-11-14
-- Reemplaza: la capa propia sobre `pg` del ADR 0009 (revisión del 14 de noviembre) y el motor actual de `@platform/saga`
-- ADR relacionados: [0008](../adr/0008-sagas-orquestadas-bitacora-persistente.md), [0009](../adr/0009-rds-postgresql-capa-persistencia-propia.md), [0010](../adr/0010-sharding-logico-residencia-region.md) y [0023](../adr/0023-enrutamiento-de-datos-de-identity.md)
+- Status: Accepted
+- Date: 2026-11-14
+- Replaces: the custom layer on top of `pg` from ADR 0009 (revision of November 14) and the current engine of `@platform/saga`
+- Related ADRs: [0008](../adr/0008-sagas-orquestadas-bitacora-persistente.md), [0009](../adr/0009-rds-postgresql-capa-persistencia-propia.md), [0010](../adr/0010-sharding-logico-residencia-region.md) and [0023](../adr/0023-enrutamiento-de-datos-de-identity.md)
 
-## 1. Objetivo
+## 1. Goal
 
-- TypeORM es el ORM: entidades, `DataSource`, `EntityManager`, `QueryBuilder` y sus migraciones. No hay SQL a mano salvo donde TypeORM no llega, y entonces va dentro de un repositorio.
-- `@platform/persistence` envuelve TypeORM para lo que TypeORM no trae: elegir el shard lógico, llegar a la instancia física, mantener una transacción en un solo shard, leer de la réplica y migrar todas las bases.
-- Un servicio solo escribe entidades, repositorios y migraciones. El ruteo es transparente.
-- Las sagas guardan su bitácora en la base del servicio que orquesta, con TypeORM, y se usan con una línea desde un caso de uso.
+- TypeORM is the ORM: entities, `DataSource`, `EntityManager`, `QueryBuilder` and its migrations. There is no hand-written SQL except where TypeORM falls short, and then it goes inside a repository.
+- `@platform/persistence` wraps TypeORM for what TypeORM does not provide: choosing the logical shard, reaching the physical instance, keeping a transaction in a single shard, reading from the replica and migrating every database.
+- A service only writes entities, repositories and migrations. Routing is transparent.
+- Sagas store their log in the database of the orchestrating service, with TypeORM, and are used with one line from a use case.
 
-## 2. Cómo se rutea una consulta
+## 2. How a query is routed
 
 ```mermaid
 flowchart LR
-  C["PersistenceContext<br/>tenant, usuario, actor"] --> K["ShardKeyResolver<br/>llave según el módulo"]
-  K --> R["ShardRouter<br/>tenant → región → grupo → shard lógico"]
-  R --> I["Shard lógico → instancia física"]
-  I --> D["ShardDataSources<br/>DataSource de esa base"]
-  D --> E["EntityManager<br/>de la transacción o de la réplica"]
+  C["PersistenceContext<br/>tenant, user, actor"] --> K["ShardKeyResolver<br/>key according to the module"]
+  K --> R["ShardRouter<br/>tenant → region → group → logical shard"]
+  R --> I["Logical shard → physical instance"]
+  I --> D["ShardDataSources<br/>DataSource of that database"]
+  D --> E["EntityManager<br/>from the transaction or the replica"]
 ```
 
-- **Shard lógico:** una base `<servicio>_shard_<n>`. Es la unidad que se mueve entre instancias.
-- **Shard físico:** una instancia de RDS que aloja varios shards lógicos.
-- **Catálogo:** la base global con el directorio y las tablas de referencia.
-- `ShardRouter` (`@platform/sharding`) ya resuelve tenant, región, grupo, shard lógico e instancia con caché y tombstones. Lo nuevo es lo que conecta ese resultado con TypeORM.
+- **Logical shard:** a `<service>_shard_<n>` database. It is the unit that moves between instances.
+- **Physical shard:** an RDS instance that hosts several logical shards.
+- **Catalog:** the global database with the directory and the reference tables.
+- `ShardRouter` (`@platform/sharding`) already resolves tenant, region, group, logical shard and instance with caching and tombstones. What is new is what connects that result to TypeORM.
 
-## 3. Piezas de `@platform/persistence`
+## 3. Pieces of `@platform/persistence`
 
-Todas son clases con dependencias por constructor.
+All of them are classes with constructor dependencies.
 
-| Clase                                    | Responsabilidad                                                                                                                                                                                                                                                                     |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ShardDataSources`                       | Crea y guarda un `DataSource` de TypeORM por base física (instancia más shard lógico), con `replication` (primario y réplicas). Los crea al primer uso y cierra los que no se usan; cierra el viejo cuando un shard cambia de instancia.                                            |
-| `CatalogDataSource`                      | El `DataSource` del catálogo.                                                                                                                                                                                                                                                       |
-| `ShardResolver`                          | Del contexto y la declaración del módulo (`ShardKey.Tenant`, `ShardKey.User` o `ShardKey.Custom`) saca la llave, llama a `ShardRouter` y devuelve el `DataSource` del shard.                                                                                                        |
-| `TypeOrmTransactionManager`              | Implementa el puerto `TransactionManager` de `@platform/primitives` con un `QueryRunner` del shard resuelto. Guarda la unidad de trabajo en `AsyncLocalStorage`, corre los hooks `afterCommit` y rechaza tocar otro shard dentro de la misma transacción (`TransactionShardGuard`). |
-| `EntityManagerProvider`                  | Da el `EntityManager` correcto: el de la transacción actual o, fuera de ella, el de la réplica del shard. `readPrimary()` fuerza el primario.                                                                                                                                       |
-| `ShardedRepository<TAggregate, TEntity>` | Base de los repositorios. Usa `EntityManagerProvider` y un `EntityMapper<TAggregate, TEntity>` inyectado. Aplica tenant, versión optimista (`@VersionColumn`), borrado lógico (`@DeleteDateColumn`), auditoría y `Criteria` con paginación por cursor UUIDv7.                       |
-| `CatalogRepository<TAggregate, TEntity>` | Lo mismo sobre el catálogo.                                                                                                                                                                                                                                                         |
-| `ShardScope`                             | Ejecuta un bloque en el shard de una llave explícita, para los casos del ADR 0023 (por ejemplo, el usuario de otro tenant).                                                                                                                                                         |
-| `AcrossShards`                           | Recorre varios shards para reportes y tareas de mantenimiento, con plazo y concurrencia acotada.                                                                                                                                                                                    |
-| `ShardedMigrationRunner`                 | Corre `dataSource.runMigrations()` en cada shard lógico y en el catálogo, cada uno bajo `pg_advisory_lock`. Lo usa el binario `migrate` de cada app.                                                                                                                                |
-| `PersistenceModule`                      | Módulo de NestJS. `forRoot(config)` arma todo lo anterior con valores por defecto, y `forFeature({ entities, sharding })` registra los repositorios de un módulo con su llave.                                                                                                      |
+| Class                                    | Responsibility                                                                                                                                                                                                                                                                         |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ShardDataSources`                       | Creates and keeps one TypeORM `DataSource` per physical database (instance plus logical shard), with `replication` (primary and replicas). Creates them on first use and closes the unused ones; closes the old one when a shard moves to another instance.                            |
+| `CatalogDataSource`                      | The catalog `DataSource`.                                                                                                                                                                                                                                                              |
+| `ShardResolver`                          | From the context and the module declaration (`ShardKey.Tenant`, `ShardKey.User` or `ShardKey.Custom`) it derives the key, calls `ShardRouter` and returns the shard's `DataSource`.                                                                                                    |
+| `TypeOrmTransactionManager`              | Implements the `TransactionManager` port from `@platform/primitives` with a `QueryRunner` of the resolved shard. Keeps the unit of work in `AsyncLocalStorage`, runs the `afterCommit` hooks and refuses to touch another shard inside the same transaction (`TransactionShardGuard`). |
+| `EntityManagerProvider`                  | Provides the right `EntityManager`: the one of the current transaction or, outside of one, the one of the shard's replica. `readPrimary()` forces the primary.                                                                                                                         |
+| `ShardedRepository<TAggregate, TEntity>` | Base of the repositories. Uses `EntityManagerProvider` and an injected `EntityMapper<TAggregate, TEntity>`. Applies tenant, optimistic version (`@VersionColumn`), soft delete (`@DeleteDateColumn`), auditing and `Criteria` with UUIDv7 cursor pagination.                           |
+| `CatalogRepository<TAggregate, TEntity>` | The same on the catalog.                                                                                                                                                                                                                                                               |
+| `ShardScope`                             | Runs a block in the shard of an explicit key, for the cases in ADR 0023 (for example, the user of another tenant).                                                                                                                                                                     |
+| `AcrossShards`                           | Iterates over several shards for reports and maintenance tasks, with a deadline and bounded concurrency.                                                                                                                                                                               |
+| `ShardedMigrationRunner`                 | Runs `dataSource.runMigrations()` on each logical shard and on the catalog, each one under `pg_advisory_lock`. Used by the `migrate` binary of each app.                                                                                                                               |
+| `PersistenceModule`                      | NestJS module. `forRoot(config)` wires everything above with default values, and `forFeature({ entities, sharding })` registers a module's repositories with its key.                                                                                                                  |
 
-Las entidades base (`AuditedEntity`, `VersionedEntity`) traen `id` uuid, auditoría, versión y borrado lógico en `timestamptz`. La llave de shard de cada módulo se declara en `forFeature`, no en decoradores sobre la entidad.
+The base entities (`AuditedEntity`, `VersionedEntity`) bring a uuid `id`, auditing, version and soft delete in `timestamptz`. Each module's shard key is declared in `forFeature`, not in decorators on the entity.
 
-## 4. Dónde vive cada cosa en un servicio
+## 4. Where each thing lives in a service
 
 ```
 backend/apps/identity/
 ├── migrations/
-│   ├── shard/             migraciones de TypeORM de las bases de shard
-│   └── catalog/           migraciones de TypeORM del catálogo
+│   ├── shard/             TypeORM migrations of the shard databases
+│   └── catalog/           TypeORM migrations of the catalog
 └── src/
     ├── database/
-    │   ├── shard.data-source.ts    DataSource de referencia para migration-generate
+    │   ├── shard.data-source.ts    reference DataSource for migration-generate
     │   └── catalog.data-source.ts
     └── modules/users/infrastructure/persistence/
         ├── entities/user.entity.ts
@@ -65,11 +65,11 @@ backend/apps/identity/
         └── typeorm-user.repository.ts
 ```
 
-- `pnpm nx run identity:migration-generate --name=CreateUsers --target=shard` genera la migración comparando las entidades con una base temporal.
-- `migration-run` y `migration-revert` usan los mismos `DataSource`.
-- Las tablas de la plataforma (outbox, mensajes procesados, idempotencia, directorio de shards y bitácora de sagas) tienen sus entidades y migraciones en `@platform/adapters-postgres` (`src/entities` y `src/migrations`). Cada app las suma a su `DataSource` con `platformShardEntities`, `platformShardMigrations` y sus equivalentes del catálogo.
+- `pnpm nx run identity:migration-generate --name=CreateUsers --target=shard` generates the migration by comparing the entities with a temporary database.
+- `migration-run` and `migration-revert` use the same `DataSource`.
+- The platform tables (outbox, processed messages, idempotency, shard directory and saga log) have their entities and migrations in `@platform/adapters-postgres` (`src/entities` and `src/migrations`). Each app adds them to its `DataSource` with `platformShardEntities`, `platformShardMigrations` and their catalog equivalents.
 
-Uso desde un módulo:
+Usage from a module:
 
 ```ts
 @Module({
@@ -101,43 +101,43 @@ export class TypeOrmUserRepository
 
 ## 5. Sagas
 
-Aprobado por el usuario el 14 de noviembre de 2026.
+Approved by the user on November 14, 2026.
 
-- **Store persistente:** `TypeOrmSagaStore` en `@platform/adapters-postgres`, con las entidades `SagaInstanceEntity` y `SagaStepLogEntity` y sus migraciones.
-  - Cada escritura protegida es un `UPDATE ... WHERE version = :v AND lease_token = :t`.
-  - La instancia y su paso se guardan en la misma transacción.
-  - `findRecoverable` usa `FOR UPDATE SKIP LOCKED`.
-  - `InMemorySagaStore` pasa a `__tests__/utils` de `@platform/saga`.
-- **Dominio:** `SagaInstance` es un agregado. Sus transiciones son métodos puros: `recordDispatch`, `completeStep`, `startCompensation`, `completeCompensation`, `suspend` y `finish`.
-- **Colaboradores:**
-  - `StepExecutor`: despacha y llama la operación por `OperationInvoker`.
-  - `CompensationRunner`: corre las compensaciones.
-  - `LeaseKeeper`: toma, renueva y suelta el lease.
-  - `SagaRecoveryJob`: retoma las sagas.
-  - `SagaEventPublisher`: emite eventos y trazas.
-- **Fachada:** `SagaEngine` queda pequeño, con `start` y `resume`.
-- **Uso:** `SagaModule.forFeature([CreateTenantSaga])` arma el motor con valores por defecto (lease, plazos, dueño) y registra la recuperación. Un caso de uso inyecta `Sagas` y llama `await this.sagas.start(CreateTenantSaga, state, { idempotencyKey })`.
-- Las definiciones siguen siendo clases `SagaDefinition` con `flow.step(...).pivot()`, y las compensaciones siguen saliendo del `compensatedBy` de cada contrato.
+- **Persistent store:** `TypeOrmSagaStore` in `@platform/adapters-postgres`, with the entities `SagaInstanceEntity` and `SagaStepLogEntity` and their migrations.
+  - Every protected write is an `UPDATE ... WHERE version = :v AND lease_token = :t`.
+  - The instance and its step are saved in the same transaction.
+  - `findRecoverable` uses `FOR UPDATE SKIP LOCKED`.
+  - `InMemorySagaStore` moves to `__tests__/utils` of `@platform/saga`.
+- **Domain:** `SagaInstance` is an aggregate. Its transitions are pure methods: `recordDispatch`, `completeStep`, `startCompensation`, `completeCompensation`, `suspend` and `finish`.
+- **Collaborators:**
+  - `StepExecutor`: dispatches and calls the operation through `OperationInvoker`.
+  - `CompensationRunner`: runs the compensations.
+  - `LeaseKeeper`: acquires, renews and releases the lease.
+  - `SagaRecoveryJob`: resumes the sagas.
+  - `SagaEventPublisher`: emits events and traces.
+- **Facade:** `SagaEngine` stays small, with `start` and `resume`.
+- **Usage:** `SagaModule.forFeature([CreateTenantSaga])` wires the engine with default values (lease, deadlines, owner) and registers recovery. A use case injects `Sagas` and calls `await this.sagas.start(CreateTenantSaga, state, { idempotencyKey })`.
+- Definitions are still `SagaDefinition` classes with `flow.step(...).pivot()`, and compensations still come from the `compensatedBy` of each contract.
 
-### 5.1 Dónde vive la bitácora y qué guarda
+### 5.1 Where the log lives and what it stores
 
-- **Sin base compartida de sagas.** Cada servicio que orquesta guarda su bitácora en su propia base. Una base común para todos los servicios los acoplaría y sería un punto único de falla.
-- **Esquema propio, en el shard del tenant.** Las tablas `saga.instances` y `saga.step_log` van en un esquema `saga` dentro de la base de shard del servicio que orquesta. Es una base lógica propia (sus migraciones, sus permisos), pero en la misma base física que los datos del servicio, por dos razones: la saga arranca en la misma transacción que el cambio local que la provoca, sin escritura doble, y sus datos se quedan en la región del tenant (ADR 0010). `SagaRecoveryJob` recorre los shards con `AcrossShards` y `FOR UPDATE SKIP LOCKED`.
-- **La instancia sabe todo para retomarse.** Cada instancia guarda el tipo de saga (que identifica la definición y sus pasos), el estado, el tenant, el actor y el tenant de origen que la iniciaron, el `traceparent`, la llave de idempotencia y el canal de respuesta (evento de fin o consulta de estado). Para retomarla no hace falta quien la invocó: la retoma el servicio dueño, y el resultado sale por el outbox como evento (`SagaCompleted`, `SagaCompensated`) o por `GET /v1/sagas/{sagaId}`.
-- **Directorio en el catálogo.** `saga_directory (saga_id, service, tenant_id, region, logical_shard, type, status, updated_at)` en el catálogo del servicio, escrito con el arranque y con cada cambio de estado, permite encontrar el histórico de cualquier saga por su id sin recorrer shards: soporte, backoffice y la consulta de estado lo usan. No guarda payloads, solo dónde vive la saga.
-- **Bitácora antes de llamar (write-ahead).** Antes de cada llamada, el paso queda `Dispatched` con su entrada completa y su llave `sagaId:paso:dirección`. Después de la llamada se guarda la respuesta o el error. La compensación se arma con la entrada y la salida guardadas, no con memoria del proceso.
-- **El participante guarda su respuesta.** Cada servicio llamado registra la respuesta de cada llave de idempotencia (`processed_messages`) en la misma transacción que sus efectos. Si la Lambda o el contenedor del orquestador cae entre `Dispatched` y la respuesta, al retomar se reenvía la misma petición con la misma llave: el participante devuelve la respuesta guardada sin repetir el efecto. Así ningún paso se pierde ni se duplica.
-- **Retoma sin proceso vivo.** El lease vence y `SagaRecoveryJob`, programado (EventBridge en AWS, cron en local), retoma la saga desde el último paso confirmado.
-- **Datos sensibles y tamaño.** La entrada y la salida se guardan cifradas cuando llevan datos personales, y un job purga las sagas terminadas después de la retención. Un payload grande se guarda por referencia (id del recurso), no completo.
+- **No shared saga database.** Each orchestrating service stores its log in its own database. A common database for all services would couple them and would be a single point of failure.
+- **Own schema, in the tenant's shard.** The `saga.instances` and `saga.step_log` tables go in a `saga` schema inside the shard database of the orchestrating service. It is a logical database of its own (its migrations, its permissions), but in the same physical database as the service's data, for two reasons: the saga starts in the same transaction as the local change that triggers it, with no dual write, and its data stays in the tenant's region (ADR 0010). `SagaRecoveryJob` iterates over the shards with `AcrossShards` and `FOR UPDATE SKIP LOCKED`.
+- **The instance knows everything needed to resume.** Each instance stores the saga type (which identifies the definition and its steps), the state, the tenant, the actor and the origin tenant that started it, the `traceparent`, the idempotency key and the reply channel (completion event or status query). Resuming it does not need the caller: the owning service resumes it, and the result goes out through the outbox as an event (`SagaCompleted`, `SagaCompensated`) or through `GET /v1/sagas/{sagaId}`.
+- **Directory in the catalog.** `saga_directory (saga_id, service, tenant_id, region, logical_shard, type, status, updated_at)` in the service's catalog, written at start and on every status change, makes it possible to find the history of any saga by its id without iterating over shards: support, the backoffice and the status query use it. It stores no payloads, only where the saga lives.
+- **Log before calling (write-ahead).** Before each call, the step is left `Dispatched` with its full input and its `sagaId:step:direction` key. After the call the response or the error is saved. The compensation is built from the stored input and output, not from process memory.
+- **The participant stores its response.** Each called service records the response for each idempotency key (`processed_messages`) in the same transaction as its effects. If the orchestrator's Lambda or container goes down between `Dispatched` and the response, on resume the same request is resent with the same key: the participant returns the stored response without repeating the effect. This way no step is lost or duplicated.
+- **Resume without a live process.** The lease expires and `SagaRecoveryJob`, scheduled (EventBridge on AWS, cron locally), resumes the saga from the last confirmed step.
+- **Sensitive data and size.** Input and output are stored encrypted when they carry personal data, and a job purges finished sagas after the retention period. A large payload is stored by reference (resource id), not in full.
 
-Alternativa descartada: AWS Step Functions como orquestador. Resuelve estado y reintentos, pero ata la plataforma a AWS (el diseño es agnóstico y corre en local), limita el payload a 256 KB y cobra por transición.
+Discarded alternative: AWS Step Functions as the orchestrator. It handles state and retries, but ties the platform to AWS (the design is agnostic and runs locally), limits the payload to 256 KB and charges per transition.
 
-## 6. Paquetes de trabajo
+## 6. Work packages
 
-| Paquete                      | Alcance                                                                                                                                        | Depende de                            |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| P1 · núcleo de persistencia  | `@platform/persistence` completo (sección 3), sus pruebas de integración con dos shards en Postgres real y los targets de migración de Nx      | Nada                                  |
-| P2 · tablas de la plataforma | Entidades, migraciones y stores de TypeORM en `@platform/adapters-postgres`: outbox, procesados, idempotencia, directorio y `TypeOrmSagaStore` | Interfaces de P1                      |
-| P3 · motor de sagas          | Rediseño de `@platform/saga` (sección 5) contra el puerto `SagaStore`, más `SagaModule`                                                        | Puerto `SagaStore`; se integra con P2 |
+| Package               | Scope                                                                                                                                      | Depends on                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| P1 · persistence core | Complete `@platform/persistence` (section 3), its integration tests with two shards on real Postgres and the Nx migration targets          | Nothing                              |
+| P2 · platform tables  | TypeORM entities, migrations and stores in `@platform/adapters-postgres`: outbox, processed, idempotency, directory and `TypeOrmSagaStore` | P1 interfaces                        |
+| P3 · saga engine      | Redesign of `@platform/saga` (section 5) against the `SagaStore` port, plus `SagaModule`                                                   | `SagaStore` port; integrates with P2 |
 
-El orden de ejecución lo fija el [plan](../plan/README.md#orden-de-ejecución-por-olas): P1 es WP-09, P2 es WP-10 y P3 es WP-12 del [plan del backend](../plan/backend.md#d11-persistencia-con-typeorm-y-sagas-frontera-de-paquetes), que pasa `TypeOrmSagaStore` de P2 a P3. Al cerrar, se actualizan los ADR 0008 y 0009, `docs/ARCHITECTURE.md` y la skill `backend-persistencia-typeorm`.
+The execution order is set by the [plan](../plan/README.md#orden-de-ejecución-por-olas): P1 is WP-09, P2 is WP-10 and P3 is WP-12 of the [backend plan](../plan/backend.md#d11-persistence-with-typeorm-and-sagas-package-boundary), which hands `TypeOrmSagaStore` from P2 to P3. On closing, ADRs 0008 and 0009, `docs/ARCHITECTURE.md` and the `backend-persistencia-typeorm` skill are updated.

@@ -6,7 +6,7 @@ import { RuleId } from '../rule-id.mjs';
 const SCREEN = 'front/microfrontends/tasks/lib/src/screens/a.dart';
 
 describe('WidgetRepositoryRule', () => {
-  it('se aplica a las pantallas de un microfrontend, no a sus datos', () => {
+  it("applies to a microfrontend's screens, not to its data", () => {
     const rule = new WidgetRepositoryRule();
     assert.equal(rule.appliesTo(SCREEN), true);
     assert.equal(
@@ -15,13 +15,13 @@ describe('WidgetRepositoryRule', () => {
     );
   });
 
-  it('deja pasar una pantalla que habla con su controlador', () => {
+  it('lets a screen that talks to its controller through', () => {
     const rule = new WidgetRepositoryRule();
     const text = ['final a = 1;', 'controller.load();', 'return a;'].join('\n');
     assert.deepEqual(rule.check(SCREEN, text), []);
   });
 
-  it('marca widget.repository. con su línea', () => {
+  it('flags widget.repository. with its line', () => {
     const rule = new WidgetRepositoryRule();
     const text = [
       'final a = 1;',
@@ -35,12 +35,12 @@ describe('WidgetRepositoryRule', () => {
     assert.equal(violation.line, 3);
   });
 
-  it('ignora una línea de comentario con el patrón', () => {
+  it('ignores a comment line with the pattern', () => {
     const rule = new WidgetRepositoryRule();
     assert.deepEqual(rule.check(SCREEN, '// widget.repository.fetch();'), []);
   });
 
-  it('no marca un repository que no es el del widget', () => {
+  it('does not flag a repository that is not the widget one', () => {
     const rule = new WidgetRepositoryRule();
     assert.deepEqual(rule.check(SCREEN, 'repository.fetch();'), []);
   });

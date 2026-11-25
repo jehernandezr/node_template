@@ -6,7 +6,7 @@ import { RuleId } from '../rule-id.mjs';
 const LIB = 'front/packages/ui/lib/src/a.dart';
 
 describe('PrintRule', () => {
-  it('marca print en la columna 0', () => {
+  it('flags print at column 0', () => {
     const rule = new PrintRule();
     const [violation, ...rest] = rule.check(LIB, "print('x');");
     assert.equal(rest.length, 0);
@@ -14,14 +14,14 @@ describe('PrintRule', () => {
     assert.equal(violation.file, LIB);
   });
 
-  it('marca print indentado', () => {
+  it('flags indented print', () => {
     const rule = new PrintRule();
     const [violation, ...rest] = rule.check(LIB, "    print('x');");
     assert.equal(rest.length, 0);
     assert.equal(violation.ruleId, RuleId.PRINT_CALL);
   });
 
-  it('deja pasar debugPrint', () => {
+  it('lets debugPrint through', () => {
     const rule = new PrintRule();
     assert.deepEqual(rule.check(LIB, "debugPrint('x');"), []);
   });

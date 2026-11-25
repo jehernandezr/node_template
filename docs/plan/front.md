@@ -1,101 +1,101 @@
-# Plan de solución de la revisión del front
+# Front review solution plan
 
-Fecha: 2026-11-14. Estado: aprobado por el usuario, con las decisiones de la sección 8. El orden de las oleadas junto al backend y a F4, el estado de cada paquete y la forma de trabajo de las tropas están en el [plan](README.md).
+Date: 2026-11-14. Status: approved by the user, with the decisions in section 8. The order of the waves alongside the backend and F4, the status of each package and how the troops work are in the [plan](README.md).
 
-Resuelve los hallazgos de [la revisión del front](../audits/2026-11-14-revision-front.md). Contrato de microfrontend: [ADR 0012](../adr/0012-front-flutter-shells-microfrontends.md) y [ADR 0018](../adr/0018-contrato-de-microfrontend.md). Reglas: skills `front-*` y `CLAUDE.md`.
+It resolves the findings of [the front review](../audits/2026-11-14-revision-front.md). Microfrontend contract: [ADR 0012](../adr/0012-front-flutter-shells-microfrontends.md) and [ADR 0018](../adr/0018-contrato-de-microfrontend.md). Rules: the `front-*` skills and `CLAUDE.md`.
 
-Las rutas son relativas a `front/` salvo que diga otra cosa. Esfuerzo: S (menos de medio día), M (1 a 2 días), L (más de 2 días).
+Paths are relative to `front/` unless stated otherwise. Effort: S (less than half a day), M (1 to 2 days), L (more than 2 days).
 
-## 1. Verificación de los hallazgos
+## 1. Verification of the findings
 
-Releí el informe y comprobé cada hallazgo contra el código. El script `check-structure.mjs --all` confirma los 3 incumplimientos de `DateTime.now()`. Conté 24 clases `State` en microfrontends (28 con paquetes), 51 llamadas a `widget.repository.`, 0 `Semantics(` en `lib/`, 4 `tooltip`, 0 pruebas con guías de accesibilidad o goldens, 3 controladores (`TasksListController`, `AssistantChatController` y `MfaFlow`) y 11 `catch` sin `on` fuera de `contracts`.
+I reread the report and checked each finding against the code. The `check-structure.mjs --all` script confirms the 3 `DateTime.now()` violations. I counted 24 `State` classes in microfrontends (28 with packages), 51 calls to `widget.repository.`, 0 `Semantics(` in `lib/`, 4 `tooltip`, 0 tests with accessibility guidelines or goldens, 3 controllers (`TasksListController`, `AssistantChatController` and `MfaFlow`) and 11 `catch` without `on` outside `contracts`.
 
-### 1.1 Se sostienen
+### 1.1 They hold
 
-U1, U2, U3, U5, U7, T1, I1, I2, I3, I4, SC1, SC2, SC3, SH1, SH2, A1, TU1, TU2, TU3, AC1 a AC7, AS1 a AS6, B0 a B5, BI1, BI2, BI4, N1 a N3, TK1 a TK5, V1, V2, V3, AP1 a AP3, M1, M2. Resumen de lo comprobado:
+U1, U2, U3, U5, U7, T1, I1, I2, I3, I4, SC1, SC2, SC3, SH1, SH2, A1, TU1, TU2, TU3, AC1 to AC7, AS1 to AS6, B0 to B5, BI1, BI2, BI4, N1 to N3, TK1 to TK5, V1, V2, V3, AP1 to AP3, M1, M2. Summary of what was checked:
 
-- AP1: el móvil elige el destino con `location.startsWith(e.path)` (`mobile_shell_scaffold.dart:58`), y `/tasks2` marcaría `/tasks`. La web compara por id de manifiesto.
-- AP2: 719 y 652 líneas de pruebas casi iguales.
-- N1 y N2: `_markOptimistically` y `_update` revierten a una copia anterior, así que pisan cambios posteriores.
-- AS2: `load()` no lleva `_requestId` y hace `result.valueOrNull ?? _messages`.
-- V1: `_secondsLeft--` en un `Timer.periodic`, sin reloj.
-- I3: 21 interpolaciones directas de `${l10n.x}` en microfrontends, más los separadores `·` (18 con ese patrón). El informe dice 35 o más y el orden de magnitud es correcto. Además hay una en `ui`: `error_view.dart` arma `'${l10n.errorCodeLabel}: $errorCode'`.
-- M1 y M2: `_localized` existe en 7 archivos y hay 6 fakes con latencia y fallos propios.
+- AP1: mobile picks the destination with `location.startsWith(e.path)` (`mobile_shell_scaffold.dart:58`), and `/tasks2` would mark `/tasks`. The web compares by manifest id.
+- AP2: 719 and 652 lines of nearly identical tests.
+- N1 and N2: `_markOptimistically` and `_update` revert to an earlier copy, so they overwrite later changes.
+- AS2: `load()` has no `_requestId` and does `result.valueOrNull ?? _messages`.
+- V1: `_secondsLeft--` in a `Timer.periodic`, with no clock.
+- I3: 21 direct interpolations of `${l10n.x}` in microfrontends, plus the `·` separators (18 with that pattern). The report says 35 or more and the order of magnitude is right. There is also one in `ui`: `error_view.dart` builds `'${l10n.errorCodeLabel}: $errorCode'`.
+- M1 and M2: `_localized` exists in 7 files and there are 6 fakes with their own latency and failures.
 
-### 1.2 Se sostienen con corrección
+### 1.2 They hold with a correction
 
-- **Ids cruzados.** U5 y el resumen dicen "ver B1" para los colores de billing, y el hallazgo es BI1. B1 es la carga secuencial de `saga_detail_screen.dart`.
-- **U3, `try/catch` en pantallas.** Son 12 bloques `try {` en `screens/`, no 24. La conclusión no cambia.
-- **U4, accesibilidad base.** El spinner sin etiqueta y el `InkWell` de `app_card.dart` se sostienen. Tres puntos no:
-  - La clave `loading` ya existe en los dos ARB compartidos (`app_es.arb:36`). No hay que agregarla. `LoadingView` no la usa.
-  - Los iconos de `error_view` y `empty_state` no necesitan `ExcludeSemantics`: un `Icon` sin `semanticLabel` ya no entra al árbol semántico.
-  - El mínimo de 48 en `AppButton` es decisión de producto: la skill acepta 24 como piso en web con puntero. Va a la sección 8.
-- **SH2, ubicación.** `MfaFlow` vive en `packages/auth`, no en `shell_host`. Lo consumen tres formularios de `shell_host`. Se divide así: `auth` produce el estado y `shell_host` adapta los widgets.
-- **SH3.** El campo de correo ya declara `keyboardType`. Faltan `textInputAction`, `keyboardType` del código y la región viva del error.
-- **SH4 y `catch (error, stack)` en `microfrontend_scope.dart:97` y `shell_runtime.dart:229,267`.** El informe solo nombra `shell_host.dart:164`. Los cuatro reportan con `FlutterError.reportError` y siguen: es intencional. Se documentan con un comentario `// catch-all:` y la regla nueva del script lo respeta (decisión 3.17).
-- **M3, versiones exactas.** Se sostiene: 11 `go_router: ^`, 9 `intl: ^` y 12 `material_ui: ^`. Pero pub no tiene un catálogo único de versiones en el workspace, así que "una sola fuente" no es posible. Se fija el número exacto en cada `pubspec.yaml` y el script lo vigila.
-- **TU1, riesgo de ciclo.** El informe teme que `test_utils` cree un ciclo con `ui`. Ya existe uno de desarrollo: `auth` tiene `test_utils` en `dev_dependencies` y `test_utils` depende de `auth`, y funciona. `ui` no usa `test_utils` (tiene su propio `test/utils/pump.dart`), así que `test_utils` puede depender de `ui` sin ciclo nuevo.
-- **AP2, ubicación de la suite.** Un paquete no puede importar el `test/` de otro. La suite compartida va en `packages/test_utils/lib/src/shell/scenarios/`, no en `shell_host/test/` como propone el informe.
-- **B5, diálogos.** La propuesta del informe (`useRootNavigator: false`) no resuelve el problema. Un diálogo es una ruta del `Navigator`, hermana de la página, y no hereda el `Localizations.override` de la página en ningún caso. Se resuelve con `DeferredLocalizations` más un helper que reaplica los delegados (decisión 3.8).
-- **U6.** Se sostiene, y se simplifica: `ui` solo importa `contracts` en `error_view.dart` y `action_error.dart`. El mapeo de errores pasa a `i18n` (que ya tiene `errorMessage(l10n, code)`) y `ui` deja de depender de `contracts`.
-- **U1, riesgo.** Cambiar `guard` a `on Exception` hace que un `StateError` lanzado por un fake escape en vez de mostrarse como error. Hay pruebas que lo usan como falla (`account/test/screens/overview_screen_test.dart:49`, `screen_builders_test.dart:136`). Se cambian a una excepción tipada.
+- **Cross-referenced ids.** U5 and the summary say "see B1" for the billing colors, and the finding is BI1. B1 is the sequential loading of `saga_detail_screen.dart`.
+- **U3, `try/catch` in screens.** There are 12 `try {` blocks in `screens/`, not 24. The conclusion does not change.
+- **U4, base accessibility.** The unlabeled spinner and the `InkWell` in `app_card.dart` hold. Three points do not:
+  - The `loading` key already exists in both shared ARBs (`app_es.arb:36`). It does not need to be added. `LoadingView` does not use it.
+  - The icons in `error_view` and `empty_state` do not need `ExcludeSemantics`: an `Icon` without `semanticLabel` already stays out of the semantics tree.
+  - The minimum of 48 in `AppButton` is a product decision: the skill accepts 24 as the floor on web with a pointer. It goes to section 8.
+- **SH2, location.** `MfaFlow` lives in `packages/auth`, not in `shell_host`. Three `shell_host` forms consume it. It is split like this: `auth` produces the state and `shell_host` adapts the widgets.
+- **SH3.** The email field already declares `keyboardType`. Missing are `textInputAction`, the code field's `keyboardType` and the error's live region.
+- **SH4 and `catch (error, stack)` in `microfrontend_scope.dart:97` and `shell_runtime.dart:229,267`.** The report only names `shell_host.dart:164`. All four report with `FlutterError.reportError` and carry on: it is intentional. They are documented with a `// catch-all:` comment and the script's new rule respects it (decision 3.17).
+- **M3, exact versions.** It holds: 11 `go_router: ^`, 9 `intl: ^` and 12 `material_ui: ^`. But pub has no single version catalog in the workspace, so "a single source" is not possible. The exact number is pinned in each `pubspec.yaml` and the script watches it.
+- **TU1, cycle risk.** The report fears that `test_utils` creates a cycle with `ui`. A development one already exists: `auth` has `test_utils` in `dev_dependencies` and `test_utils` depends on `auth`, and it works. `ui` does not use `test_utils` (it has its own `test/utils/pump.dart`), so `test_utils` can depend on `ui` without a new cycle.
+- **AP2, location of the suite.** A package cannot import another's `test/`. The shared suite goes in `packages/test_utils/lib/src/shell/scenarios/`, not in `shell_host/test/` as the report proposes.
+- **B5, dialogs.** The report's proposal (`useRootNavigator: false`) does not solve the problem. A dialog is a `Navigator` route, a sibling of the page, and never inherits the page's `Localizations.override`. It is solved with `DeferredLocalizations` plus a helper that reapplies the delegates (decision 3.8).
+- **U6.** It holds, and it gets simpler: `ui` only imports `contracts` in `error_view.dart` and `action_error.dart`. Error mapping moves to `i18n` (which already has `errorMessage(l10n, code)`) and `ui` stops depending on `contracts`.
+- **U1, risk.** Changing `guard` to `on Exception` makes a `StateError` thrown by a fake escape instead of showing as an error. Some tests use it as a failure (`account/test/screens/overview_screen_test.dart:49`, `screen_builders_test.dart:136`). They are changed to a typed exception.
 
-### 1.3 Se descartan o se dejan fuera
+### 1.3 Discarded or left out
 
-- **BI3** (`usageLevelFor` dentro de `shared/types`): es una función pura sin dependencias y la regla la permite. No se toca.
-- **SC4** (`defaultLifecycleRetryDelay` y `Timer` en `shell_runtime.dart`): el informe mismo lo marca como correcto. Solo se documenta el parámetro, dentro de P1.2.
-- **A3** (`is Map<String, dynamic>` en `identity_connection.dart`): es el uso permitido de pattern matching. Se deja, salvo que se toque.
-- **TL2 y TL3** (`FrontRoot`, `CliExit`, `DeferredChunkChecker`): el informe los marca como prioridad baja y los scripts de CLI son aceptables como están. Fuera de alcance.
-- **AP4** (`front/build/`): existe y contiene solo `.last_build_id`; está cubierto por `front/**/build/` del `.gitignore`. Es basura local, no incumplimiento versionado. Se borra dentro de P0.2 por limpieza, sin más.
-- **Endurecer `analysis_options.yaml`** (propuesta de TL1: `unawaited_futures`, `public_member_api_docs`, etc.): la skill `front-analisis` pide hacerlo como un cambio propio con todo en verde. Fuera de este plan (sección 6).
+- **BI3** (`usageLevelFor` inside `shared/types`): it is a pure function with no dependencies and the rule allows it. Not touched.
+- **SC4** (`defaultLifecycleRetryDelay` and `Timer` in `shell_runtime.dart`): the report itself marks it as correct. Only the parameter is documented, inside P1.2.
+- **A3** (`is Map<String, dynamic>` in `identity_connection.dart`): it is the allowed use of pattern matching. Left as is, unless touched.
+- **TL2 and TL3** (`FrontRoot`, `CliExit`, `DeferredChunkChecker`): the report marks them as low priority and the CLI scripts are acceptable as they are. Out of scope.
+- **AP4** (`front/build/`): it exists and contains only `.last_build_id`; it is covered by `front/**/build/` in `.gitignore`. It is local junk, not a versioned violation. It is deleted inside P0.2 for cleanliness, nothing more.
+- **Hardening `analysis_options.yaml`** (TL1's proposal: `unawaited_futures`, `public_member_api_docs`, etc.): the `front-analisis` skill asks for it as its own change with everything green. Out of this plan (section 6).
 
-## 2. Cómo se ejecuta
+## 2. How it is executed
 
-### 2.1 Reglas de la tropa
+### 2.1 Troop rules
 
-La forma de trabajo de una tropa es la del [plan](README.md#cómo-se-ejecuta-una-ola). En el front, además:
+A troop's way of working is the one in the [plan](README.md#cómo-se-ejecuta-una-ola). In the front, also:
 
-- Los archivos barril (`lib/<paquete>.dart`) y los `pubspec.yaml` los edita solo el guía. Los Haiku le piden por escrito la línea de export que necesitan.
-- Los esqueletos llevan las firmas de este plan con cuerpos `throw UnimplementedError()`. El guía revisa el diff completo y corre los comandos de aceptación antes de entregar.
-- Cada instrucción a un Haiku nombra archivo, clase, firma y prueba, nunca un "refactoriza lo necesario".
-- Los textos de usuario, los comentarios `///` y los comentarios nuevos van como piden `front-i18n` y `front-analisis`: ARB en español e inglés, `///` en inglés.
+- Barrel files (`lib/<package>.dart`) and `pubspec.yaml` files are edited only by the lead. The Haikus ask the lead in writing for the export line they need.
+- Skeletons carry this plan's signatures with `throw UnimplementedError()` bodies. The lead reviews the full diff and runs the acceptance commands before handing over.
+- Every instruction to a Haiku names file, class, signature and test, never a "refactor whatever is needed".
+- User texts, `///` comments and new comments follow `front-i18n` and `front-analisis`: ARB in Spanish and English, `///` in English.
 
-### 2.2 Primero lo aditivo, el retiro al final
+### 2.2 Additive first, removal at the end
 
-Las API nuevas se agregan sin romper las viejas. Los consumidores migran en las oleadas 2 y 3, y la oleada 4 borra lo viejo. Así el repositorio compila y pasa pruebas al cierre de cada oleada. Para no llenar el análisis de avisos `deprecated_member_use` (que `analyze` cuenta como `info`), lo legado no lleva `@Deprecated`: lleva un comentario `/// Legacy: removed in wave 4.` y la lista de la sección 4.5.
+New APIs are added without breaking the old ones. Consumers migrate in waves 2 and 3, and wave 4 deletes the old ones. That way the repository compiles and passes tests at the close of each wave. To avoid filling the analysis with `deprecated_member_use` warnings (which `analyze` counts as `info`), legacy code does not carry `@Deprecated`: it carries a `/// Legacy: removed in wave 4.` comment and the list in section 4.5.
 
-Excepción pactada: `AccessRule` pasa a `now` obligatorio en la oleada 1, y los 5 `manifest_test.dart` de microfrontends que lo llaman reciben el cambio de una línea en la misma oleada (P1.2). No pueden esperar.
+Agreed exception: `AccessRule` moves to a required `now` in wave 1, and the 5 microfrontend `manifest_test.dart` files that call it get the one-line change in the same wave (P1.2). They cannot wait.
 
-### 2.3 Comandos de aceptación
+### 2.3 Acceptance commands
 
-Cada paquete de trabajo corre, con sus proyectos de Nx (`front-<nombre del pubspec>`; los microfrontends son `front-mf_<id>` y las apps `front-web_shell` y `front-mobile_shell`):
+Each work package runs, with its Nx projects (`front-<pubspec name>`; microfrontends are `front-mf_<id>` and the apps `front-web_shell` and `front-mobile_shell`):
 
 ```bash
-pnpm nx run-many -t format-check analyze test --projects=<proyectos>
+pnpm nx run-many -t format-check analyze test --projects=<projects>
 node .claude/skills/front-estructura/scripts/check-structure.mjs --changed .
 ```
 
-Además:
+Also:
 
-- Un paquete que toca un manifiesto, pantallas diferidas o `shell_core` corre `check_deferred_chunks` al final, tras compilar la web:
+- A package that touches a manifest, deferred screens or `shell_core` runs `check_deferred_chunks` at the end, after building the web:
 
   ```bash
   cd front/apps/web && flutter build web --release --source-maps \
     && dart run ../../tools/check_deferred_chunks.dart
   ```
 
-- Un paquete que cambia una API compartida corre además `analyze` y `test` de sus consumidores, para probar que lo aditivo no rompió nada: `pnpm nx run-many -t analyze test --projects=<consumidores>`.
-- Un microfrontend corre también `dart run tools/check_microfrontend_boundaries.dart` (ya va dentro de su `analyze`).
-- Tras editar un ARB: `flutter gen-l10n` en la carpeta del paquete, y el resultado de `l10n/generated` se versiona.
-- Tras editar un `pubspec.yaml`: `flutter pub get` en `front/`.
+- A package that changes a shared API also runs `analyze` and `test` on its consumers, to prove the additive change broke nothing: `pnpm nx run-many -t analyze test --projects=<consumers>`.
+- A microfrontend also runs `dart run tools/check_microfrontend_boundaries.dart` (already inside its `analyze`).
+- After editing an ARB: `flutter gen-l10n` in the package folder, and the output in `l10n/generated` is versioned.
+- After editing a `pubspec.yaml`: `flutter pub get` in `front/`.
 
-## 3. Decisiones de diseño
+## 3. Design decisions
 
-Todas las firmas son Dart 3. Se escriben con constructores clásicos; los constructores primarios son opcionales (`front-codigo`).
+All signatures are Dart 3. They are written with classic constructors; primary constructors are optional (`front-codigo`).
 
 ### 3.1 `Clock`
 
-Hoy `Clock` vive en `auth` y otras cinco declaraciones repiten `DateTime Function()`. Pasa a `utils` (hoja del grafo: depende de `contracts` e `intl`) y `auth`, `shell_core`, `shell_host` y `test_utils` lo importan. `utils` es el único lugar donde se llama `DateTime.now()`, y el script lo permite solo en `utils/lib/src/clock.dart`.
+Today `Clock` lives in `auth` and five other declarations repeat `DateTime Function()`. It moves to `utils` (a leaf of the graph: depends on `contracts` and `intl`) and `auth`, `shell_core`, `shell_host` and `test_utils` import it. `utils` is the only place where `DateTime.now()` is called, and the script allows it only in `utils/lib/src/clock.dart`.
 
 ```dart
 // packages/utils/lib/src/clock.dart
@@ -124,7 +124,7 @@ final class FakeClock {
 }
 ```
 
-`AccessRule` deja de llamar a `DateTime.now()`. El valor por defecto desaparece y los llamadores pasan `clock()`:
+`AccessRule` stops calling `DateTime.now()`. The default value goes away and callers pass `clock()`:
 
 ```dart
 bool allows(UserSession session, {required DateTime now});
@@ -132,11 +132,11 @@ AccessDecision decide(UserSession session, {required DateTime now});
 bool reachableBy(UserSession session, {required DateTime now});
 ```
 
-`ShellAccessScope`, `ShellRuntime`, `ShellHost` y `StepUpPage` usan `Clock clock = systemClock`. Lo demás no cambia.
+`ShellAccessScope`, `ShellRuntime`, `ShellHost` and `StepUpPage` use `Clock clock = systemClock`. Nothing else changes.
 
 ### 3.2 `AsyncValue`, `AsyncLoader`, `ActionRunner`
 
-`AsyncValue` sale del archivo del widget a `packages/ui/lib/src/state/async_value.dart`, y `guard` atrapa solo `Exception`.
+`AsyncValue` moves out of the widget file to `packages/ui/lib/src/state/async_value.dart`, and `guard` catches only `Exception`.
 
 ```dart
 sealed class AsyncValue<T> {
@@ -161,7 +161,7 @@ sealed class AsyncValue<T> {
 }
 ```
 
-`AsyncLoader<T>` es el controlador genérico de carga. Descarta respuestas viejas y no notifica tras `dispose`.
+`AsyncLoader<T>` is the generic loading controller. It drops stale responses and does not notify after `dispose`.
 
 ```dart
 // packages/ui/lib/src/state/async_loader.dart
@@ -184,7 +184,7 @@ final class AsyncLoader<T> extends ChangeNotifier {
 }
 ```
 
-`ActionRunner` ejecuta las acciones del usuario sin `BuildContext` y devuelve un resultado cerrado:
+`ActionRunner` runs user actions without a `BuildContext` and returns a closed result:
 
 ```dart
 // packages/ui/lib/src/state/action_runner.dart
@@ -230,7 +230,7 @@ final class ActionRunner extends ChangeNotifier {
 }
 ```
 
-Dos piezas más de `ui` cierran el patrón en el widget:
+Two more `ui` pieces close the pattern in the widget:
 
 ```dart
 /// Owns a controller for the life of the widget: creates it once, listens to
@@ -260,13 +260,13 @@ bool showActionResult(
 });
 ```
 
-`showActionError` queda como está. `ErrorView`, `AsyncValueView` y `showActionError` dejan de importar `contracts` (decisión 3.5).
+`showActionError` stays as it is. `ErrorView`, `AsyncValueView` and `showActionError` stop importing `contracts` (decision 3.5).
 
-### 3.3 El controlador por pantalla
+### 3.3 The per-screen controller
 
-Regla: cada pantalla con estado o lógica tiene un `final class XController extends ChangeNotifier` en `screens/x_controller.dart`. Recibe por constructor el puerto del repositorio y, si hace falta, un `StepUpGate`, un `Clock` o un `Duration`. Compone un `AsyncLoader` y un `ActionRunner`, expone estado inmutable y devuelve el resultado de cada acción. La pantalla es un `StatelessWidget` con `ControllerBuilder`. Se prueba sin widgets.
+Rule: every screen with state or logic has a `final class XController extends ChangeNotifier` in `screens/x_controller.dart`. It receives the repository port through its constructor and, if needed, a `StepUpGate`, a `Clock` or a `Duration`. It composes an `AsyncLoader` and an `ActionRunner`, exposes immutable state and returns the result of each action. The screen is a `StatelessWidget` with `ControllerBuilder`. It is tested without widgets.
 
-Ejemplo de `account`:
+Example from `account`:
 
 ```dart
 final class SessionsController extends ChangeNotifier {
@@ -318,7 +318,7 @@ final class SessionsController extends ChangeNotifier {
 }
 ```
 
-La pantalla queda así:
+The screen looks like this:
 
 ```dart
 class SessionsScreen extends StatelessWidget {
@@ -354,25 +354,25 @@ class SessionsScreen extends StatelessWidget {
 }
 ```
 
-Catálogo de controladores (estado tipado entre paréntesis cuando no basta `AsyncValue`):
+Controller catalog (typed state in parentheses when `AsyncValue` is not enough):
 
-| Paquete       | Controlador                                                                                                                     | Estado y métodos principales                                                                                                                                           |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| account       | `SessionsController`                                                                                                            | arriba                                                                                                                                                                 |
-| account       | `DevicesController`                                                                                                             | `AsyncValue<List<DeviceSummary>>`, `revoke(id)`, `rename(id, name)`                                                                                                    |
-| account       | `SecurityController`                                                                                                            | `AsyncValue<SecuritySnapshot>`, `enableTotp()`, `regenerateCodes()` devuelve `ActionResult<List<String>>` (los `codes` dejan de capturarse en un closure)              |
-| account       | `AgreementsController`                                                                                                          | `AsyncValue<List<AgreementItem>>`, `accept(id)`                                                                                                                        |
-| account       | `AccountOverviewController`                                                                                                     | `AsyncValue<AccountOverview>`                                                                                                                                          |
-| backoffice    | `SagasController`, `SagaDetailController`, `DlqController`, `TenantsController`, `TenantDetailController`, `OverviewController` | `AsyncLoader` por pantalla; `SagaDetailController` carga saga y bitácora con `Future.wait`; `DlqController.retry(id)` y `discard(id, reason)` devuelven `ActionResult` |
-| billing       | `BillingPlanController`, `InvoicesController`, `InvoiceDetailController`, `ChangePlanController`                                | ver sealed abajo                                                                                                                                                       |
-| notifications | `InboxController`, `PreferencesController`                                                                                      | ver sealed abajo                                                                                                                                                       |
-| tasks         | `TaskFormController`, `TaskDetailController`                                                                                    | ver sealed abajo; `TasksListController` ya existe                                                                                                                      |
-| verifier      | `VerifierController`                                                                                                            | ver sealed abajo                                                                                                                                                       |
-| assistant     | `AssistantChatController` (rehecho)                                                                                             | ver sealed abajo                                                                                                                                                       |
+| Package       | Controller                                                                                                                      | Main state and methods                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| account       | `SessionsController`                                                                                                            | above                                                                                                                                                                     |
+| account       | `DevicesController`                                                                                                             | `AsyncValue<List<DeviceSummary>>`, `revoke(id)`, `rename(id, name)`                                                                                                       |
+| account       | `SecurityController`                                                                                                            | `AsyncValue<SecuritySnapshot>`, `enableTotp()`, `regenerateCodes()` returns `ActionResult<List<String>>` (the `codes` are no longer captured in a closure)                |
+| account       | `AgreementsController`                                                                                                          | `AsyncValue<List<AgreementItem>>`, `accept(id)`                                                                                                                           |
+| account       | `AccountOverviewController`                                                                                                     | `AsyncValue<AccountOverview>`                                                                                                                                             |
+| backoffice    | `SagasController`, `SagaDetailController`, `DlqController`, `TenantsController`, `TenantDetailController`, `OverviewController` | `AsyncLoader` per screen; `SagaDetailController` loads the saga and its log with `Future.wait`; `DlqController.retry(id)` and `discard(id, reason)` return `ActionResult` |
+| billing       | `BillingPlanController`, `InvoicesController`, `InvoiceDetailController`, `ChangePlanController`                                | see sealed below                                                                                                                                                          |
+| notifications | `InboxController`, `PreferencesController`                                                                                      | see sealed below                                                                                                                                                          |
+| tasks         | `TaskFormController`, `TaskDetailController`                                                                                    | see sealed below; `TasksListController` already exists                                                                                                                    |
+| verifier      | `VerifierController`                                                                                                            | see sealed below                                                                                                                                                          |
+| assistant     | `AssistantChatController` (rebuilt)                                                                                             | see sealed below                                                                                                                                                          |
 
-Los nombres de campos de los tipos de contrato (`DeviceSummary`, `SecuritySnapshot`, etc.) son ilustrativos: el guía de cada paquete usa los reales.
+The field names of the contract types (`DeviceSummary`, `SecuritySnapshot`, etc.) are illustrative: each package's lead uses the real ones.
 
-Estados sealed de las pantallas que no son una carga simple:
+Sealed states of the screens that are not a simple load:
 
 ```dart
 // billing: ChangePlanController
@@ -508,11 +508,11 @@ final class AnswerFailed extends AnswerState {
 enum ChatFailureKind { quotaExceeded, generic }
 ```
 
-Los nombres de campos de esos tipos de contrato (`Plan`, `PendingChallenge`, `ChatMessage`) son los del código existente; el guía los confirma al escribir el esqueleto.
+The field names of those contract types (`Plan`, `PendingChallenge`, `ChatMessage`) are the ones in the existing code; the lead confirms them when writing the skeleton.
 
-### 3.4 `StatusColors` y tokens
+### 3.4 `StatusColors` and tokens
 
-`ColorPalette` tiene `successBase/On` y `warningBase/On` y no tiene `info`. `AppTheme` no los lleva al tema. Se agrega `info` a `design-tokens.json` y a `tokens`, y una extensión de tema:
+`ColorPalette` has `successBase/On` and `warningBase/On` and has no `info`. `AppTheme` does not carry them into the theme. `info` is added to `design-tokens.json` and to `tokens`, along with a theme extension:
 
 ```dart
 // packages/ui/lib/src/theme/status_colors.dart
@@ -554,11 +554,11 @@ extension StatusColorsContext on BuildContext {
 }
 ```
 
-`AppTheme._build` registra `StatusColors.fromPalette(palette)` y agrega `FilledButtonThemeData`, `OutlinedButtonThemeData` e `InputDecorationTheme` con `minimumSize` de 48 (decisión 8.2). `tokens` suma `AppRadius.full`, `AppIconSize` (`sm`, `md`, `xl`) y `AppLayout` (`listPaneWidth` 360, `readingWidth` 720, `wideContentWidth` 1100). `ui` suma `ContentColumn` (un `Center` con `ConstrainedBox`) y la extensión `context.localeTag`, que reemplaza a las dos funciones `localeTag` de account y billing. Los valores hexadecimales de `info` y los contenedores se validan con `textContrastGuideline` en claro y oscuro; el guía de P1.1 los fija.
+`AppTheme._build` registers `StatusColors.fromPalette(palette)` and adds `FilledButtonThemeData`, `OutlinedButtonThemeData` and `InputDecorationTheme` with a `minimumSize` of 48 (decision 8.2). `tokens` adds `AppRadius.full`, `AppIconSize` (`sm`, `md`, `xl`) and `AppLayout` (`listPaneWidth` 360, `readingWidth` 720, `wideContentWidth` 1100). `ui` adds `ContentColumn` (a `Center` with a `ConstrainedBox`) and the `context.localeTag` extension, which replaces the two `localeTag` functions in account and billing. The hexadecimal values of `info` and the containers are validated with `textContrastGuideline` in light and dark; the P1.1 lead pins them.
 
-### 3.5 Errores sin dominio en `ui`
+### 3.5 Domain-free errors in `ui`
 
-`i18n` suma la dependencia de `contracts` (que solo depende de `meta`, sin ciclo) y absorbe el mapeo:
+`i18n` adds the dependency on `contracts` (which only depends on `meta`, no cycle) and absorbs the mapping:
 
 ```dart
 // packages/i18n/lib/src/error_presenter.dart
@@ -584,11 +584,11 @@ final class ErrorPresenter {
 }
 ```
 
-`ErrorView` recibe un `ErrorDetails`. `ErrorView.fromException` y `actionErrorMessage` se conservan con la misma firma y delegan en `ErrorPresenter`, así los microfrontends no cambian en este paso. `AccountAsyncView` y `AsyncBody` desaparecen cuando sus dueños migran.
+`ErrorView` receives an `ErrorDetails`. `ErrorView.fromException` and `actionErrorMessage` are kept with the same signature and delegate to `ErrorPresenter`, so the microfrontends do not change in this step. `AccountAsyncView` and `AsyncBody` go away when their owners migrate.
 
 ### 3.6 `DeferredLibraryLoader`
 
-Reemplaza al mapa global `_libraryLoads` y a `resetDeferredPageCache()`. El caché vive en la instancia; `ShellHost` crea una y la entrega al router.
+It replaces the global `_libraryLoads` map and `resetDeferredPageCache()`. The cache lives in the instance; `ShellHost` creates one and hands it to the router.
 
 ```dart
 // packages/shell_core/lib/src/deferred_library_loader.dart
@@ -619,7 +619,7 @@ final class DeferredLibraryLoader {
 }
 ```
 
-Las pruebas crean una instancia propia: no hay reset y desaparecen los `loadNow` de `tasks` y `assistant`. `deferredPage`, `resetDeferredPageCache` y `shellScreenLoader` quedan como legado hasta la oleada 4.
+Tests create their own instance: there is no reset and the `loadNow` calls in `tasks` and `assistant` go away. `deferredPage`, `resetDeferredPageCache` and `shellScreenLoader` stay as legacy until wave 4.
 
 ### 3.7 `ScreenRoute.deferred`
 
@@ -652,11 +652,11 @@ extension ScreenParamsX on Map<String, String> {
 }
 ```
 
-Cada ruta pasa de 6 líneas a 3.
+Each route goes from 6 lines to 3.
 
 ### 3.8 `DeferredLocalizations`
 
-Reemplaza a los siete `_localized` y a `BackofficeLocalized`. Además registra los delegados para los diálogos:
+It replaces the seven `_localized` and `BackofficeLocalized`. It also registers the delegates for dialogs:
 
 ```dart
 class DeferredLocalizations extends StatelessWidget {
@@ -686,11 +686,11 @@ extension LocalizedOverlays on BuildContext {
 }
 ```
 
-`showBackofficeDialog` se reemplaza por `showLocalizedDialog`. Si no hay un `DeferredLocalizations` arriba, el helper lanza un `FlutterError` claro.
+`showBackofficeDialog` is replaced by `showLocalizedDialog`. If there is no `DeferredLocalizations` above, the helper throws a clear `FlutterError`.
 
 ### 3.9 `RepositoryBinding`
 
-Reemplaza a las cuatro funciones `_repository(scope)` y a su `switch` repetido:
+It replaces the four `_repository(scope)` functions and their repeated `switch`:
 
 ```dart
 // packages/shell_core/lib/src/repository_binding.dart
@@ -713,7 +713,7 @@ extension RepositoriesOfScope on MicrofrontendScope {
 }
 ```
 
-Cada microfrontend declara el suyo en `data/<id>_data.dart`:
+Each microfrontend declares its own in `data/<id>_data.dart`:
 
 ```dart
 abstract final class TasksData {
@@ -723,11 +723,11 @@ abstract final class TasksData {
 }
 ```
 
-Ese archivo va dentro de `data/`, que es una carpeta diferida: el manifiesto no lo importa.
+That file goes inside `data/`, which is a deferred folder: the manifest does not import it.
 
 ### 3.10 `DemoBehavior`
 
-Una pieza de composición para los seis fakes: latencia, fallos programables y cierre. Cada fake la recibe por constructor.
+A composition piece for the six fakes: latency, programmable failures and shutdown. Each fake receives it through its constructor.
 
 ```dart
 // packages/shell_core/lib/src/demo_behavior.dart
@@ -761,7 +761,7 @@ final class DemoDisposedException implements Exception {
 }
 ```
 
-`notifications` conserva su `StreamController` de llegadas en vivo; solo la latencia y los fallos (`fetchError`, `markError`, `saveError`) pasan a `failNext(error, operation: NotificationsOperation.markRead)`. El generador UUIDv7 de `tasks` sale a su clase propia (TK2):
+`notifications` keeps its `StreamController` of live arrivals; only the latency and the failures (`fetchError`, `markError`, `saveError`) move to `failNext(error, operation: NotificationsOperation.markRead)`. The UUIDv7 generator in `tasks` moves out to its own class (TK2):
 
 ```dart
 final class UuidV7Generator {
@@ -795,11 +795,11 @@ final class StepUpGate {
 }
 ```
 
-Solo `account` pide step-up hoy, así que la clase vive en `account` y no en `shell_core`. Si otro microfrontend la necesita, sube a `shell_core` sin cambiar la firma.
+Only `account` asks for step-up today, so the class lives in `account` and not in `shell_core`. If another microfrontend needs it, it moves up to `shell_core` without changing the signature.
 
-### 3.12 `ShellNavigator` y `ShellRouterFactory` (shell_core)
+### 3.12 `ShellNavigator` and `ShellRouterFactory` (shell_core)
 
-Reemplazan a `homeLocation`, `signOutAndGoToLogin`, `buildShellRouter` y `redirectFor`. `accessRedirect(rule)` y `AccessGate` siguen siendo públicas: son parte del contrato del ADR 0018.
+They replace `homeLocation`, `signOutAndGoToLogin`, `buildShellRouter` and `redirectFor`. `accessRedirect(rule)` and `AccessGate` stay public: they are part of the ADR 0018 contract.
 
 ```dart
 final class ShellNavigator {
@@ -843,9 +843,9 @@ final class ShellRouterFactory {
 }
 ```
 
-### 3.13 División de `ShellHost` (shell_host)
+### 3.13 Splitting `ShellHost` (shell_host)
 
-`ShellHost` conserva su constructor actual como `factory`, así que las dos apps no cambian hasta la oleada 4. El constructor generativo recibe las piezas.
+`ShellHost` keeps its current constructor as a `factory`, so the two apps do not change until wave 4. The generative constructor receives the pieces.
 
 ```dart
 final class MenuBadges {
@@ -916,7 +916,7 @@ final class ShellHost {
 }
 ```
 
-Para las apps:
+For the apps:
 
 ```dart
 final class ShellDestination {
@@ -973,7 +973,7 @@ final class IdentityConnectionFactory {
 
 ### 3.14 `MfaState` (auth)
 
-Reemplaza a `_busy`, `_errorCode`, `_pending` y `_challenge` de `MfaFlow`. Un paso (`MfaStep`) nunca está ocupado ni en error; `MfaBusy` y `MfaFailed` lo envuelven.
+It replaces `_busy`, `_errorCode`, `_pending` and `_challenge` in `MfaFlow`. A step (`MfaStep`) is never busy or in error; `MfaBusy` and `MfaFailed` wrap it.
 
 ```dart
 sealed class MfaState {
@@ -1028,11 +1028,11 @@ abstract base class MfaFlow extends ChangeNotifier {
 }
 ```
 
-Los widgets de `shell_host` hacen `switch (flow.state)` exhaustivo. Los comentarios de `auth/flows` pasan a inglés.
+The `shell_host` widgets do an exhaustive `switch (flow.state)`. The comments in `auth/flows` move to English.
 
 ### 3.15 `test_utils`
 
-Hoy exporta 3 fakes de auth y el precargador de librerías. Suma lo que siete harness repiten. `test_utils` depende de `ui` (para `AppTheme` y `StatusColors`), `i18n`, `utils` y `go_router`, además de lo que ya tiene.
+Today it exports 3 auth fakes and the library preloader. It adds what seven harnesses repeat. `test_utils` depends on `ui` (for `AppTheme` and `StatusColors`), `i18n`, `utils` and `go_router`, in addition to what it already has.
 
 ```dart
 // Builds MaterialApp or MaterialApp.router with the shared delegates, a
@@ -1106,13 +1106,13 @@ final class DeferredLibrariesPreloader {
 }
 ```
 
-Las pruebas de `tasks`, `account` y las demás usan `TestApp` y borran su `testApp`, `pumpApp`, `loadNow`, `billingSession` y `unavailableProblem`. `setSurface` se mueve de `ui/test/utils/pump.dart` a `test_utils` solo si `ui` no lo necesita; si lo necesita, se copia (el costo es una función de 6 líneas, y `ui` no puede depender de `test_utils`).
+The tests in `tasks`, `account` and the rest use `TestApp` and delete their `testApp`, `pumpApp`, `loadNow`, `billingSession` and `unavailableProblem`. `setSurface` moves from `ui/test/utils/pump.dart` to `test_utils` only if `ui` does not need it; if it does, it is copied (the cost is a 6-line function, and `ui` cannot depend on `test_utils`).
 
-Las pruebas viven en `test/utils/` (no `test/support.dart`) como pide `front-pruebas`.
+The test helpers live in `test/utils/` (not `test/support.dart`) as `front-pruebas` asks.
 
-### 3.16 Suite compartida de escenarios de shell
+### 3.16 Shared suite of shell scenarios
 
-Vive en `packages/test_utils/lib/src/shell/scenarios/`. Cada app implementa un `ShellFixture` que arma su `ShellHost` con su marco; la suite solo toca los tipos de `shell_core` y `auth`, así que `test_utils` no depende de `shell_host`.
+It lives in `packages/test_utils/lib/src/shell/scenarios/`. Each app implements a `ShellFixture` that builds its `ShellHost` with its frame; the suite only touches `shell_core` and `auth` types, so `test_utils` does not depend on `shell_host`.
 
 ```dart
 /// What a scenario needs from the app under test.
@@ -1155,86 +1155,86 @@ final class ShellUnderTest {
 void defineShellScenarios(ShellFixture fixture, {String platform = 'shell'});
 ```
 
-Cada app queda solo con lo suyo: el menú de su plataforma, el "Más" del móvil y `deep_link_mapper`.
+Each app keeps only what is its own: its platform's menu, the mobile "More" and `deep_link_mapper`.
 
-### 3.17 Reglas nuevas del script y línea base
+### 3.17 New script rules and baseline
 
-`check-structure.mjs` suma estas reglas, todas baratas (expresiones regulares sobre `lib/`):
+`check-structure.mjs` adds these rules, all cheap (regular expressions over `lib/`):
 
-| Regla                                                                                                       | Dónde aplica                                                                                             |
-| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `Color(0x` o `Colors.`                                                                                      | `lib/` de microfrontends (permitido en `tokens` y `ui/theme`)                                            |
-| `catch (` sin `on`                                                                                          | `lib/` de todo, salvo `contracts`; se permite con la marca `// catch-all: <motivo>` en la línea anterior |
-| `Text('` con literal                                                                                        | `screens/`                                                                                               |
-| `widget.repository.`                                                                                        | `screens/`                                                                                               |
-| `Alignment.centerLeft`, `Alignment.centerRight`, `EdgeInsets.fromLTRB`, `BorderRadius.circular(` con número | `lib/` de microfrontends                                                                                 |
-| `${l10n.` seguido de `:` o ` ·`                                                                             | `lib/` de microfrontends y `ui`                                                                          |
-| `DateTime.now()`                                                                                            | todo `lib/`, salvo `utils/lib/src/clock.dart` (ya existe, se ajusta la excepción)                        |
-| `: ^` en `pubspec.yaml` de miembros                                                                         | todo (tras P0.1)                                                                                         |
+| Rule                                                                                                           | Where it applies                                                                                    |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `Color(0x` or `Colors.`                                                                                        | Microfrontend `lib/` (allowed in `tokens` and `ui/theme`)                                           |
+| `catch (` without `on`                                                                                         | All `lib/`, except `contracts`; allowed with the `// catch-all: <reason>` mark on the previous line |
+| `Text('` with a literal                                                                                        | `screens/`                                                                                          |
+| `widget.repository.`                                                                                           | `screens/`                                                                                          |
+| `Alignment.centerLeft`, `Alignment.centerRight`, `EdgeInsets.fromLTRB`, `BorderRadius.circular(` with a number | Microfrontend `lib/`                                                                                |
+| `${l10n.` followed by `:` or ` ·`                                                                              | Microfrontend and `ui` `lib/`                                                                       |
+| `DateTime.now()`                                                                                               | All `lib/`, except `utils/lib/src/clock.dart` (it already exists, the exception is adjusted)        |
+| `: ^` in member `pubspec.yaml` files                                                                           | Everything (after P0.1)                                                                             |
 
-Como esas reglas marcarían el código que todavía no migró, se agrega una línea base: `front/tools/structure-baseline.json` con las violaciones actuales por archivo y regla. `--all` falla solo por violaciones fuera de la línea base. `--changed` ignora la línea base para los archivos tocados: un archivo que se toca debe quedar limpio. Una entrada que ya no aplica es un aviso, no un fallo. Ninguna tropa de las oleadas 1 a 3 edita la línea base; en la oleada 4 se regenera, se comprueba que quedó vacía y se borra.
+Since those rules would flag code that has not migrated yet, a baseline is added: `front/tools/structure-baseline.json` with the current violations per file and rule. `--all` fails only on violations outside the baseline. `--changed` ignores the baseline for touched files: a file that is touched must end up clean. An entry that no longer applies is a warning, not a failure. No troop in waves 1 to 3 edits the baseline; in wave 4 it is regenerated, checked to be empty and deleted.
 
-## 4. Oleadas y paquetes de trabajo
+## 4. Waves and work packages
 
-### 4.1 Dependencias entre oleadas
+### 4.1 Dependencies between waves
 
-El mapa de oleadas y tropas está en el [plan](README.md#orden-de-ejecución-por-olas).
+The map of waves and troops is in the [plan](README.md#orden-de-ejecución-por-olas).
 
-Dependencias entre oleadas: la 1 necesita la 0 (el `Clock` de `utils`). Las 2 y 3 necesitan la 1 completa (`ui`, `shell_core`, `test_utils`). Los microfrontends no dependen de P2.1, por eso van en la 2 y la 3 sin orden entre sí. P4.1 necesita P2.1 y P1.3. P4.2 necesita que las oleadas 2 y 3 hayan migrado todo. P4.3 necesita la 1 (API) y la 3 (un microfrontend de referencia).
+Dependencies between waves: wave 1 needs wave 0 (the `utils` `Clock`). Waves 2 and 3 need wave 1 complete (`ui`, `shell_core`, `test_utils`). The microfrontends do not depend on P2.1, which is why they go in waves 2 and 3 with no order among them. P4.1 needs P2.1 and P1.3. P4.2 needs waves 2 and 3 to have migrated everything. P4.3 needs wave 1 (API) and wave 3 (a reference microfrontend).
 
-### 4.2 Oleada 0: preludio
+### 4.2 Wave 0: prelude
 
-Es corta: tres paquetes S que dejan el terreno listo y ya no se tocan.
+It is short: three S packages that prepare the ground and are not touched again.
 
-**P0.1 Reloj y versiones.** Esfuerzo S.
+**P0.1 Clock and versions.** Effort S.
 
-- Carpetas: `packages/utils/lib/src/clock.dart` y `utils/lib/utils.dart`, `packages/utils/test/clock_test.dart`, `packages/auth/lib/src/session_manager.dart` (solo el `typedef`), `packages/test_utils/lib/src/clock/**`, `packages/test_utils/lib/test_utils.dart`, `packages/test_utils/test/clock/**` y todos los `pubspec.yaml` de miembros del workspace.
-- Cierra: I2 (parte `utils` y `auth`), A2, M3, TU3.
-- Produce: `Clock` y `systemClock` en `utils`; `FakeClock` en `test_utils`; dependencias `auth`, `shell_core`, `shell_host` y `test_utils` hacia `utils`; versiones exactas de `go_router`, `intl`, `material_ui`, `flutter_lints`, `lints` y `test`; `sdk: ^3.14.0` en `test_utils`. Consume: nada.
-- Aceptación: pruebas de `systemClock` y `FakeClock` (avanza, salta, no se mueve solo); `grep -rn ": \^" front --include=pubspec.yaml` no devuelve miembros del workspace; `pnpm nx run-many -t format-check analyze test --projects=front-utils,front-auth,front-test_utils,front-shell_core,front-shell_host,front-ui,front-i18n`; `pnpm nx run-many -t analyze --projects=front-mf_account,front-mf_assistant,front-mf_backoffice,front-mf_billing,front-mf_notifications,front-mf_tasks,front-mf_verifier,front-web_shell,front-mobile_shell`; `check-structure.mjs --changed .`.
-- Haiku 1: `Clock`, `systemClock`, su prueba, el `typedef` de `auth` (se cambia por import) y `FakeClock` con su prueba. Haiku 2: los `pubspec.yaml` (versiones exactas y dependencias nuevas) y la verificación de `flutter pub get`.
+- Folders: `packages/utils/lib/src/clock.dart` and `utils/lib/utils.dart`, `packages/utils/test/clock_test.dart`, `packages/auth/lib/src/session_manager.dart` (only the `typedef`), `packages/test_utils/lib/src/clock/**`, `packages/test_utils/lib/test_utils.dart`, `packages/test_utils/test/clock/**` and every workspace member `pubspec.yaml`.
+- Closes: I2 (the `utils` and `auth` part), A2, M3, TU3.
+- Produces: `Clock` and `systemClock` in `utils`; `FakeClock` in `test_utils`; dependencies from `auth`, `shell_core`, `shell_host` and `test_utils` to `utils`; exact versions of `go_router`, `intl`, `material_ui`, `flutter_lints`, `lints` and `test`; `sdk: ^3.14.0` in `test_utils`. Consumes: nothing.
+- Acceptance: tests of `systemClock` and `FakeClock` (advances, jumps, does not move on its own); `grep -rn ": \^" front --include=pubspec.yaml` returns no workspace members; `pnpm nx run-many -t format-check analyze test --projects=front-utils,front-auth,front-test_utils,front-shell_core,front-shell_host,front-ui,front-i18n`; `pnpm nx run-many -t analyze --projects=front-mf_account,front-mf_assistant,front-mf_backoffice,front-mf_billing,front-mf_notifications,front-mf_tasks,front-mf_verifier,front-web_shell,front-mobile_shell`; `check-structure.mjs --changed .`.
+- Haiku 1: `Clock`, `systemClock`, its test, the `auth` `typedef` (replaced by an import) and `FakeClock` with its test. Haiku 2: the `pubspec.yaml` files (exact versions and new dependencies) and the `flutter pub get` check.
 
-**P0.2 Script y línea base.** Esfuerzo M.
+**P0.2 Script and baseline.** Effort M.
 
-- Carpetas: `.claude/skills/front-estructura/scripts/**`, `front/tools/structure-baseline.json` (nuevo), `front/tools/nx-plugin/**` (si el target `analyze` del script lo necesita) y `front/build/`.
-- Cierra: TL1 (reglas baratas) y AP4 (borrado local).
-- Produce: las reglas de 3.17, la línea base y `--update-baseline`; pruebas del script con `node --test` en `check-structure.test.mjs`. Consume: nada.
-- Aceptación: `node --test .claude/skills/front-estructura/scripts/` con un caso verde y uno rojo por regla; `check-structure.mjs --all .` sale en verde con la línea base recién generada; si se agrega una violación nueva, sale en rojo; `--changed` rechaza una violación nueva en un archivo tocado aunque esté en la línea base.
-- Haiku 1: las reglas de microfrontend (colores, `widget.repository.`, direccionalidad, texto). Haiku 2: las reglas de `catch`, `DateTime.now()`, versiones en `pubspec`, la línea base y las pruebas.
+- Folders: `.claude/skills/front-estructura/scripts/**`, `front/tools/structure-baseline.json` (new), `front/tools/nx-plugin/**` (if the script's `analyze` target needs it) and `front/build/`.
+- Closes: TL1 (cheap rules) and AP4 (local deletion).
+- Produces: the rules in 3.17, the baseline and `--update-baseline`; script tests with `node --test` in `check-structure.test.mjs`. Consumes: nothing.
+- Acceptance: `node --test .claude/skills/front-estructura/scripts/` with one green and one red case per rule; `check-structure.mjs --all .` passes with the freshly generated baseline; if a new violation is added, it fails; `--changed` rejects a new violation in a touched file even if it is in the baseline.
+- Haiku 1: the microfrontend rules (colors, `widget.repository.`, directionality, text). Haiku 2: the rules for `catch`, `DateTime.now()`, `pubspec` versions, the baseline and the tests.
 
-**P0.3 ADR del front.** Esfuerzo S.
+**P0.3 Front ADR.** Effort S.
 
-- Carpetas: `docs/adr/<número>-*.md` y `docs/adr/README.md`. El número es el siguiente libre; el 0024 ya es el de persistencia (ver las decisiones abiertas del [plan](README.md#registro-de-decisiones)).
-- Cierra: nada directo. Registra las decisiones 3.1 a 3.17 como ADR en estado "Propuesta", como exige `CLAUDE.md` para una decisión de arquitectura. Pasa a "Aceptada" en P4.3.
-- Aceptación: sigue `docs/adr/0000-plantilla.md`; enlaza ADR 0012, 0015 y 0018; el índice lista el ADR nuevo.
-- Haiku 1: contexto, decisión y consecuencias. Haiku 2: alternativas consideradas (las de la sección 1.2) y el índice.
+- Folders: `docs/adr/<number>-*.md` and `docs/adr/README.md`. The number is the next free one; 0024 is already the persistence one (see the open decisions in the [plan](README.md#registro-de-decisiones)).
+- Closes: nothing directly. It records decisions 3.1 to 3.17 as an ADR in "Proposed" status, as `CLAUDE.md` requires for an architecture decision. It moves to "Accepted" in P4.3.
+- Acceptance: it follows `docs/adr/0000-plantilla.md`; it links ADR 0012, 0015 and 0018; the index lists the new ADR.
+- Haiku 1: context, decision and consequences. Haiku 2: alternatives considered (those in section 1.2) and the index.
 
-### 4.3 Oleada 1: fundamentos
+### 4.3 Wave 1: foundations
 
-Los tres paquetes son aditivos (salvo `AccessRule`, ver 2.2) y tienen carpetas disjuntas.
+The three packages are additive (except `AccessRule`, see 2.2) and have disjoint folders.
 
-**P1.1 ui, tokens, i18n.** Esfuerzo L.
+**P1.1 ui, tokens, i18n.** Effort L.
 
-- Carpetas: `packages/ui/**`, `packages/tokens/**` (incluye `design-tokens.json`), `packages/i18n/**`.
-- Cierra: U1, U2, U3, U4 (parte real), U5, U6, U7, T1, I3 (la parte de `ui`: `error_view` y el separador `MetaLine`), AC7 (extensión `context.localeTag`).
-- Produce: `AsyncValue` (archivo propio), `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `showActionResult`, `StatusColors`, `ContentColumn`, `MetaLine`, `context.localeTag`, `ErrorDetails` y `ErrorPresenter` (en `i18n`), `AppRadius.full`, `AppIconSize`, `AppLayout`, rol `info`, temas de botón y de campo. Consume: `utils` solo si `ui` lo necesita (no).
-- Cambios de accesibilidad: `LoadingView` con `Semantics(liveRegion: true, label: l10n.loading)` y `semanticsLabel` en el indicador (la clave ya existe); el mensaje de `ErrorView` en región viva; `AppCard` con `Semantics(button: true)` cuando hay `onTap`; el spinner de `AppButton` con etiqueta.
-- Aceptación (pruebas por pieza):
-  - `AsyncLoader`: una respuesta vieja no pisa una nueva; no notifica tras `dispose`; `setData` invalida un fetch en curso; un `StateError` del fetch escapa.
-  - `ActionRunner`: los tres modos de concurrencia; `Exception` da `ActionFailed`, `Error` escapa; `dispose` en medio de una acción no lanza.
-  - `ControllerBuilder`: crea una vez, reconstruye al notificar, hace `dispose`.
-  - `StatusColors`: `textContrastGuideline` en claro y oscuro para cada par; `lerp`.
-  - Componentes base: `meetsGuideline(androidTapTargetGuideline)`, `iOSTapTargetGuideline`, `labeledTapTargetGuideline`, `textContrastGuideline`; prueba a 2x de escala; `tokens` sigue coincidiendo con `design-tokens.json`.
-  - `ErrorPresenter`: código de catálogo, `ContractViolationException`, error genérico; `ErrorView` ya no importa `contracts` (`grep` vacío).
-  - Comandos: `pnpm nx run-many -t format-check analyze test --projects=front-ui,front-tokens,front-i18n`; `analyze` y `test` de los siete microfrontends y de `front-shell_host`, `front-web_shell`, `front-mobile_shell` (compatibilidad); `check-structure.mjs --changed .`.
-- Haiku 1: `lib/src/state/**` (`AsyncValue`, `AsyncLoader`, `ActionRunner`), `ControllerBuilder`, `showActionResult` y sus pruebas. Haiku 2: `tokens`, `StatusColors`, temas, componentes accesibles, `ContentColumn`, `MetaLine`, `ErrorPresenter` y ARB. El guía edita `ui.dart`, `tokens.dart` e `i18n.dart`.
-- Riesgo propio: el cambio de `guard` rompe pruebas que usan `StateError` como falla (sección 6). El guía lista esas pruebas antes de empezar y las cambia en el mismo paquete cuando son de `ui`; las de microfrontends se cambian en su oleada.
+- Folders: `packages/ui/**`, `packages/tokens/**` (includes `design-tokens.json`), `packages/i18n/**`.
+- Closes: U1, U2, U3, U4 (the real part), U5, U6, U7, T1, I3 (the `ui` part: `error_view` and the `MetaLine` separator), AC7 (the `context.localeTag` extension).
+- Produces: `AsyncValue` (its own file), `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `showActionResult`, `StatusColors`, `ContentColumn`, `MetaLine`, `context.localeTag`, `ErrorDetails` and `ErrorPresenter` (in `i18n`), `AppRadius.full`, `AppIconSize`, `AppLayout`, the `info` role, button and field themes. Consumes: `utils` only if `ui` needs it (it does not).
+- Accessibility changes: `LoadingView` with `Semantics(liveRegion: true, label: l10n.loading)` and `semanticsLabel` on the indicator (the key already exists); the `ErrorView` message in a live region; `AppCard` with `Semantics(button: true)` when there is an `onTap`; the `AppButton` spinner with a label.
+- Acceptance (tests per piece):
+  - `AsyncLoader`: a stale response does not overwrite a new one; it does not notify after `dispose`; `setData` invalidates a fetch in flight; a `StateError` from the fetch escapes.
+  - `ActionRunner`: the three concurrency modes; `Exception` gives `ActionFailed`, `Error` escapes; `dispose` in the middle of an action does not throw.
+  - `ControllerBuilder`: creates once, rebuilds on notify, calls `dispose`.
+  - `StatusColors`: `textContrastGuideline` in light and dark for each pair; `lerp`.
+  - Base components: `meetsGuideline(androidTapTargetGuideline)`, `iOSTapTargetGuideline`, `labeledTapTargetGuideline`, `textContrastGuideline`; a test at 2x scale; `tokens` still matches `design-tokens.json`.
+  - `ErrorPresenter`: catalog code, `ContractViolationException`, generic error; `ErrorView` no longer imports `contracts` (empty `grep`).
+  - Commands: `pnpm nx run-many -t format-check analyze test --projects=front-ui,front-tokens,front-i18n`; `analyze` and `test` of the seven microfrontends and of `front-shell_host`, `front-web_shell`, `front-mobile_shell` (compatibility); `check-structure.mjs --changed .`.
+- Haiku 1: `lib/src/state/**` (`AsyncValue`, `AsyncLoader`, `ActionRunner`), `ControllerBuilder`, `showActionResult` and their tests. Haiku 2: `tokens`, `StatusColors`, themes, accessible components, `ContentColumn`, `MetaLine`, `ErrorPresenter` and ARB. The lead edits `ui.dart`, `tokens.dart` and `i18n.dart`.
+- Own risk: the `guard` change breaks tests that use `StateError` as a failure (section 6). The lead lists those tests before starting and changes them in the same package when they belong to `ui`; the microfrontend ones are changed in their wave.
 
-**P1.2 shell_core y utils.** Esfuerzo L.
+**P1.2 shell_core and utils.** Effort L.
 
-- Carpetas: `packages/shell_core/**`, `packages/utils/lib/src/money*.dart`, `packages/utils/test/money*`. Excepción pactada: una línea en cada uno de `microfrontends/{assistant,backoffice,billing,tasks,verifier}/test/manifest_test.dart` para pasar `now: DateTime.utc(2026, 1, 1)`.
-- Cierra: SC1, SC2, SC3, SC4 (documentar el parámetro), I1, M1 (parte shell), M2 (parte shell), AC5 (la base), B5 (la base), AC2 queda para `account`.
-- Produce: `AccessRule` con `now` obligatorio; `DeferredLibraryLoader`; `ShellNavigator`; `ShellRouterFactory`; `ScreenRoute.deferred` y `ScreenParamsX`; `DeferredLocalizations` y `LocalizedOverlays`; `RepositoryBinding`; `DemoBehavior` y `DemoDisposedException`; `MoneyFormatter`. Se conservan como legado `deferredPage`, `resetDeferredPageCache`, `buildShellRouter`, `homeLocation`, `signOutAndGoToLogin` y `redirectFor`. Consume: `Clock` de P0.1.
+- Folders: `packages/shell_core/**`, `packages/utils/lib/src/money*.dart`, `packages/utils/test/money*`. Agreed exception: one line in each of `microfrontends/{assistant,backoffice,billing,tasks,verifier}/test/manifest_test.dart` to pass `now: DateTime.utc(2026, 1, 1)`.
+- Closes: SC1, SC2, SC3, SC4 (document the parameter), I1, M1 (shell part), M2 (shell part), AC5 (the base), B5 (the base); AC2 is left to `account`.
+- Produces: `AccessRule` with a required `now`; `DeferredLibraryLoader`; `ShellNavigator`; `ShellRouterFactory`; `ScreenRoute.deferred` and `ScreenParamsX`; `DeferredLocalizations` and `LocalizedOverlays`; `RepositoryBinding`; `DemoBehavior` and `DemoDisposedException`; `MoneyFormatter`. Kept as legacy: `deferredPage`, `resetDeferredPageCache`, `buildShellRouter`, `homeLocation`, `signOutAndGoToLogin` and `redirectFor`. Consumes: `Clock` from P0.1.
 - `MoneyFormatter`:
 
   ```dart
@@ -1246,101 +1246,101 @@ Los tres paquetes son aditivos (salvo `AccessRule`, ver 2.2) y tienen carpetas d
   }
   ```
 
-  `formatMoney` sigue existiendo y delega.
+  `formatMoney` still exists and delegates.
 
-- Aceptación:
-  - `access_rule_test`, `mfa_rule_test` y `user_session_test` pasan con `now` explícito; `grep -rn "DateTime.now()" packages/shell_core/lib` vacío.
-  - `DeferredLibraryLoader`: una carga por instancia; una carga fallida se reintenta; dos instancias no comparten caché; `page` muestra `loading` y luego el contenido.
-  - `ScreenRoute.deferred`: la ruta construye con el scope y los `params` (gana el path); `params.require` lanza `StateError` si falta.
-  - `DeferredLocalizations`: el texto del delegado llega a la página y a un `showLocalizedDialog`; sin `DeferredLocalizations` arriba lanza un error claro.
-  - `RepositoryBinding`: el modo demo y el vivo eligen su fábrica; la instancia es única por scope; el scope la libera; `demoOnly` en modo vivo lanza `StateError`.
-  - `DemoBehavior`: latencia, `failNext` con `count` y por `operation`, `dispose` y `DemoDisposedException`.
-  - `ShellNavigator`: `home`, `landing` y cierre de sesión (un `/tasks2` no es un `/tasks`).
-  - Comandos: `pnpm nx run-many -t format-check analyze test --projects=front-shell_core,front-utils`; `analyze` y `test` de todos los consumidores; `check_deferred_chunks`; `check-structure.mjs --changed .`.
-- Haiku 1: `AccessRule` y sus llamadores (`ShellAccessScope`, `context.can`, router y runtime), las pruebas de acceso y las cinco líneas de `manifest_test`. Haiku 2: `DeferredLibraryLoader`, `ScreenRoute.deferred`, `DeferredLocalizations`, `RepositoryBinding`, `DemoBehavior`, `MoneyFormatter` y sus pruebas. El guía escribe `ShellNavigator` y `ShellRouterFactory` (necesitan las piezas de los dos) y los barriles.
+- Acceptance:
+  - `access_rule_test`, `mfa_rule_test` and `user_session_test` pass with an explicit `now`; `grep -rn "DateTime.now()" packages/shell_core/lib` empty.
+  - `DeferredLibraryLoader`: one load per instance; a failed load is retried; two instances do not share a cache; `page` shows `loading` and then the content.
+  - `ScreenRoute.deferred`: the route builds with the scope and the `params` (the path wins); `params.require` throws `StateError` if it is missing.
+  - `DeferredLocalizations`: the delegate's text reaches the page and a `showLocalizedDialog`; without `DeferredLocalizations` above it throws a clear error.
+  - `RepositoryBinding`: demo and live modes pick their factory; the instance is unique per scope; the scope releases it; `demoOnly` in live mode throws `StateError`.
+  - `DemoBehavior`: latency, `failNext` with `count` and per `operation`, `dispose` and `DemoDisposedException`.
+  - `ShellNavigator`: `home`, `landing` and sign-out (a `/tasks2` is not a `/tasks`).
+  - Commands: `pnpm nx run-many -t format-check analyze test --projects=front-shell_core,front-utils`; `analyze` and `test` of every consumer; `check_deferred_chunks`; `check-structure.mjs --changed .`.
+- Haiku 1: `AccessRule` and its callers (`ShellAccessScope`, `context.can`, router and runtime), the access tests and the five `manifest_test` lines. Haiku 2: `DeferredLibraryLoader`, `ScreenRoute.deferred`, `DeferredLocalizations`, `RepositoryBinding`, `DemoBehavior`, `MoneyFormatter` and their tests. The lead writes `ShellNavigator` and `ShellRouterFactory` (they need the pieces of both) and the barrels.
 
-**P1.3 test_utils, auth, api.** Esfuerzo M.
+**P1.3 test_utils, auth, api.** Effort M.
 
-- Carpetas: `packages/test_utils/**`, `packages/auth/**`, `packages/api/**`.
-- Cierra: TU1 (las piezas), TU2 (los utilitarios), SH2 (el estado), A1, AC6 (comentarios de `auth/flows`).
-- Produce: `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope`, `expectAccessible`, `pumpAtWidths`, `pumpAtTextScale`, `DeferredLibrariesPreloader`; `MfaState`, `MfaStep` y subtipos, y `MfaFlow.state` (con los getters viejos derivados). Consume: `Clock` y `FakeClock` de P0.1, `StatusColors` de P1.1 (para `TestApp`, que usa `AppTheme`) y `ScreenRoute` actual de `shell_core`. Como P1.1 corre a la vez, `TestApp` no importa `StatusColors` directamente: importa `AppTheme`, que ya existe. La tropa no depende del código nuevo de `ui` para compilar.
-- Aceptación: `TestApp.wrap` y `wrapRouter` montan con el idioma y los delegados dados; `SessionBuilder` produce sesiones iguales a las literales que reemplaza (prueba con tres casos reales); `expectAccessible` falla con un botón de 20 px y pasa con uno de 48; `pumpAtTextScale` aplica 2x. `MfaFlow`: transiciones `MfaIdle` a `MfaAwaitingMethod`, a `MfaAwaitingCode`, `MfaBusy` y `MfaFailed` en cada código de error de `_challengeResetCodes`; un `TypeError` sale tal cual y suelta el estado ocupado. `session_manager.dart:292` usa `on Exception` y las pruebas de refresco siguen verdes. Comandos: `pnpm nx run-many -t format-check analyze test --projects=front-test_utils,front-auth,front-api`; `analyze` y `test` de `front-shell_host` y de los consumidores de `test_utils`; `check-structure.mjs --changed .`.
-- Haiku 1: `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope` y pruebas. Haiku 2: `expectAccessible`, `pumpAtWidths`, `pumpAtTextScale`, el preloader, `MfaState` y `A1`.
+- Folders: `packages/test_utils/**`, `packages/auth/**`, `packages/api/**`.
+- Closes: TU1 (the pieces), TU2 (the utilities), SH2 (the state), A1, AC6 (`auth/flows` comments).
+- Produces: `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope`, `expectAccessible`, `pumpAtWidths`, `pumpAtTextScale`, `DeferredLibrariesPreloader`; `MfaState`, `MfaStep` and subtypes, and `MfaFlow.state` (with the old getters derived). Consumes: `Clock` and `FakeClock` from P0.1, `StatusColors` from P1.1 (for `TestApp`, which uses `AppTheme`) and the current `ScreenRoute` from `shell_core`. Since P1.1 runs at the same time, `TestApp` does not import `StatusColors` directly: it imports `AppTheme`, which already exists. The troop does not depend on the new `ui` code to compile.
+- Acceptance: `TestApp.wrap` and `wrapRouter` mount with the given language and delegates; `SessionBuilder` produces sessions equal to the literals it replaces (test with three real cases); `expectAccessible` fails with a 20 px button and passes with a 48 one; `pumpAtTextScale` applies 2x. `MfaFlow`: transitions from `MfaIdle` to `MfaAwaitingMethod`, to `MfaAwaitingCode`, `MfaBusy` and `MfaFailed` on each error code in `_challengeResetCodes`; a `TypeError` comes out as is and releases the busy state. `session_manager.dart:292` uses `on Exception` and the refresh tests stay green. Commands: `pnpm nx run-many -t format-check analyze test --projects=front-test_utils,front-auth,front-api`; `analyze` and `test` of `front-shell_host` and of the `test_utils` consumers; `check-structure.mjs --changed .`.
+- Haiku 1: `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope` and tests. Haiku 2: `expectAccessible`, `pumpAtWidths`, `pumpAtTextScale`, the preloader, `MfaState` and `A1`.
 
-### 4.4 Oleada 2: shell y dos microfrontends grandes
+### 4.4 Wave 2: shell and two large microfrontends
 
-**P2.1 shell_host.** Esfuerzo L.
+**P2.1 shell_host.** Effort L.
 
-- Carpetas: `packages/shell_host/**`.
-- Cierra: SH1, SH2 (los widgets), SH3, SH4 (comentario `// catch-all:`), AP1 (el modelo), AP3 (la fábrica).
-- Consume: `ShellNavigator`, `ShellRouterFactory`, `DeferredLibraryLoader` (P1.2); `MfaState` (P1.3); `Clock`. Produce: `MenuBadges`, `SessionBinding`, `ShellRoutes`, `ShellHost.compose` y la `factory ShellHost`, `ShellMenuModel`, `ShellDestination`, `IdentityConnectionFactory`; formularios con `switch (flow.state)`, `MfaErrorText` como región viva, `textInputAction` y `keyboardType: number` en el código. `shellScreenLoader` queda como legado.
-- Aceptación: `shell_host_test` pasa sin cambios de comportamiento; pruebas nuevas por pieza (`MenuBadges` cuenta y se resetea con la identidad; `SessionBinding` cierra sesión cuando identity la cierra; `ShellRoutes` redirige `/step-up` a login para anónimos; `ShellMenuModel` con `/tasks`, `/tasks2`, `/tasks/42`, desborde y sin selección); `IdentityConnectionFactory.create()` devuelve null con `baseUrl` vacío; los formularios pasan `expectAccessible`. Comandos: `pnpm nx run-many -t format-check analyze test --projects=front-shell_host`; `analyze` y `test` de `front-web_shell` y `front-mobile_shell` (la `factory` no debe romperlos); `check-structure.mjs --changed .`.
-- Haiku 1: `MenuBadges`, `SessionBinding`, `ShellRoutes`, `ShellHost.compose`, la `factory` y sus pruebas. Haiku 2: `ShellMenuModel`, `ShellDestination`, `IdentityConnectionFactory` y las páginas (SH2, SH3) con sus pruebas. El guía revisa el orden de construcción de la `factory` (el router necesita las rutas, que necesitan el navegador, y el runtime necesita `signOut` y `requestStepUp`).
+- Folders: `packages/shell_host/**`.
+- Closes: SH1, SH2 (the widgets), SH3, SH4 (`// catch-all:` comment), AP1 (the model), AP3 (the factory).
+- Consumes: `ShellNavigator`, `ShellRouterFactory`, `DeferredLibraryLoader` (P1.2); `MfaState` (P1.3); `Clock`. Produces: `MenuBadges`, `SessionBinding`, `ShellRoutes`, `ShellHost.compose` and the `factory ShellHost`, `ShellMenuModel`, `ShellDestination`, `IdentityConnectionFactory`; forms with `switch (flow.state)`, `MfaErrorText` as a live region, `textInputAction` and `keyboardType: number` on the code field. `shellScreenLoader` stays as legacy.
+- Acceptance: `shell_host_test` passes with no behavior changes; new tests per piece (`MenuBadges` counts and resets with the identity; `SessionBinding` signs out when identity closes the session; `ShellRoutes` redirects `/step-up` to login for anonymous users; `ShellMenuModel` with `/tasks`, `/tasks2`, `/tasks/42`, overflow and no selection); `IdentityConnectionFactory.create()` returns null with an empty `baseUrl`; the forms pass `expectAccessible`. Commands: `pnpm nx run-many -t format-check analyze test --projects=front-shell_host`; `analyze` and `test` of `front-web_shell` and `front-mobile_shell` (the `factory` must not break them); `check-structure.mjs --changed .`.
+- Haiku 1: `MenuBadges`, `SessionBinding`, `ShellRoutes`, `ShellHost.compose`, the `factory` and their tests. Haiku 2: `ShellMenuModel`, `ShellDestination`, `IdentityConnectionFactory` and the pages (SH2, SH3) with their tests. The lead reviews the build order of the `factory` (the router needs the routes, which need the navigator, and the runtime needs `signOut` and `requestStepUp`).
 
-**P2.2 account.** Esfuerzo L.
+**P2.2 account.** Effort L.
 
-- Carpetas: `microfrontends/account/**`.
-- Cierra: AC1, AC2, AC3, AC4, AC5, AC6, AC7 (uso), I3 (en sus archivos: `sessions_screen`, `devices_screen`, `agreements_screen`), M1 y M2 (uso), TU1 (su harness), TU2 (una prueba de accesibilidad por pantalla).
-- Consume: `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `showActionResult`, `ContentColumn`, `MetaLine`, `context.localeTag` (P1.1); `ScreenRoute.deferred`, `DeferredLocalizations`, `RepositoryBinding`, `DemoBehavior` (P1.2); `TestApp`, `SessionBuilder`, `ProblemFixtures`, `FakeClock`, `expectAccessible` (P1.3). Produce: cinco controladores y `StepUpGate`; `AccountData` (binding); `FakeAccountRepository` con `DemoBehavior` y reloj; `AccountScreens`; manifiesto con `.deferred`. Retira: `runAccountAction`, `confirmStepUp`, `runSensitiveAction`, `AccountAsyncView`, `_localized`, `_repository`, `localeTag` propio.
-- Aceptación: cada controlador con su prueba sin widgets (carga, error, acción, `ActionSkipped` cuando se rechaza el step-up, un `reload` rápido tras cerrar sesión no pisa datos nuevos: ese es el bug de AC1); `closeOthers` devuelve el número y ya no hay `closed` mutable en un closure; la lista de sesiones queda centrada y con ancho máximo en 1280 (`pumpAtWidths`); `Alignment.centerRight` pasa a `AlignmentDirectional.centerEnd`; los siete accesos a `DateTime.now()` salen; `check-structure.mjs --changed .` en verde sin línea base para sus archivos; `check_deferred_chunks`. Comando: `pnpm nx run-many -t format-check analyze test --projects=front-mf_account`.
-- Haiku 1: Sessions, Devices y Overview (controlador, pantalla, pruebas). Haiku 2: Security, Agreements, `StepUpGate`, el fake con `DemoBehavior` y reloj, `AccountData`. El guía hace el manifiesto, `AccountScreens`, los ARB (placeholders de I3) y el harness.
+- Folders: `microfrontends/account/**`.
+- Closes: AC1, AC2, AC3, AC4, AC5, AC6, AC7 (usage), I3 (in its files: `sessions_screen`, `devices_screen`, `agreements_screen`), M1 and M2 (usage), TU1 (its harness), TU2 (one accessibility test per screen).
+- Consumes: `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `showActionResult`, `ContentColumn`, `MetaLine`, `context.localeTag` (P1.1); `ScreenRoute.deferred`, `DeferredLocalizations`, `RepositoryBinding`, `DemoBehavior` (P1.2); `TestApp`, `SessionBuilder`, `ProblemFixtures`, `FakeClock`, `expectAccessible` (P1.3). Produces: five controllers and `StepUpGate`; `AccountData` (binding); `FakeAccountRepository` with `DemoBehavior` and a clock; `AccountScreens`; manifest with `.deferred`. Removes: `runAccountAction`, `confirmStepUp`, `runSensitiveAction`, `AccountAsyncView`, `_localized`, `_repository`, its own `localeTag`.
+- Acceptance: each controller with its widget-free test (load, error, action, `ActionSkipped` when the step-up is declined, a quick `reload` after closing a session does not overwrite new data: that is the AC1 bug); `closeOthers` returns the number and there is no longer a mutable `closed` in a closure; the session list is centered and has a maximum width at 1280 (`pumpAtWidths`); `Alignment.centerRight` becomes `AlignmentDirectional.centerEnd`; the seven `DateTime.now()` calls are gone; `check-structure.mjs --changed .` green without a baseline for its files; `check_deferred_chunks`. Command: `pnpm nx run-many -t format-check analyze test --projects=front-mf_account`.
+- Haiku 1: Sessions, Devices and Overview (controller, screen, tests). Haiku 2: Security, Agreements, `StepUpGate`, the fake with `DemoBehavior` and a clock, `AccountData`. The lead does the manifest, `AccountScreens`, the ARBs (I3 placeholders) and the harness.
 
-**P2.3 backoffice.** Esfuerzo L.
+**P2.3 backoffice.** Effort L.
 
-- Carpetas: `microfrontends/backoffice/**`.
-- Cierra: B0 a B5, I3 (20 sitios), M1 y M2 (uso), TU1 y TU2 (su harness y su accesibilidad).
-- Consume: lo mismo que P2.2 sin `StepUpGate`. Produce: `SagasController`, `SagaDetailController` (con `Future.wait` de la saga y la bitácora), `DlqController`, `TenantsController`, `TenantDetailController`, `OverviewController`; `BackofficePage` con `CustomScrollView` y `SliverList`; navegación de secciones con `SegmentedButton` o `NavigationBar` que marca la actual; el fake con `DemoBehavior`. Retira: `AsyncBody`, `BackofficeLocalized`, `showBackofficeDialog`, `_SectionNav` con `TextButton`.
-- Aceptación: un controlador por pantalla con su prueba (`DlqController.retry` recarga las dos listas y devuelve `ActionResult`); `SagaDetailController` hace las dos cargas en paralelo (prueba con un fake que registra el orden de inicio); los diálogos muestran el texto del ARB del backoffice (`showLocalizedDialog`); la sección actual tiene `Semantics(selected: true)`; las listas largas usan carga perezosa; `Alignment.centerLeft`, `BorderRadius.circular(12)` y el `1100` desaparecen a favor de `AlignmentDirectional`, `AppRadius.md` y `AppLayout.wideContentWidth`. Los ARB del backoffice no aparecen en el bundle inicial (`check_deferred_chunks`, que ya los vigila). Comando: `pnpm nx run-many -t format-check analyze test --projects=front-mf_backoffice`.
-- Haiku 1: Sagas, SagaDetail y Overview. Haiku 2: Dlq, Tenants, TenantDetail y `BackofficePage`. El guía: manifiesto, ARB (I3 es la mayor concentración), fake y harness.
+- Folders: `microfrontends/backoffice/**`.
+- Closes: B0 to B5, I3 (20 sites), M1 and M2 (usage), TU1 and TU2 (its harness and its accessibility).
+- Consumes: the same as P2.2 without `StepUpGate`. Produces: `SagasController`, `SagaDetailController` (with `Future.wait` of the saga and its log), `DlqController`, `TenantsController`, `TenantDetailController`, `OverviewController`; `BackofficePage` with `CustomScrollView` and `SliverList`; section navigation with a `SegmentedButton` or `NavigationBar` that marks the current one; the fake with `DemoBehavior`. Removes: `AsyncBody`, `BackofficeLocalized`, `showBackofficeDialog`, `_SectionNav` with `TextButton`.
+- Acceptance: one controller per screen with its test (`DlqController.retry` reloads both lists and returns `ActionResult`); `SagaDetailController` does both loads in parallel (test with a fake that records the start order); dialogs show the text from the backoffice ARB (`showLocalizedDialog`); the current section has `Semantics(selected: true)`; long lists use lazy loading; `Alignment.centerLeft`, `BorderRadius.circular(12)` and the `1100` go away in favor of `AlignmentDirectional`, `AppRadius.md` and `AppLayout.wideContentWidth`. The backoffice ARBs do not appear in the initial bundle (`check_deferred_chunks`, which already watches them). Command: `pnpm nx run-many -t format-check analyze test --projects=front-mf_backoffice`.
+- Haiku 1: Sagas, SagaDetail and Overview. Haiku 2: Dlq, Tenants, TenantDetail and `BackofficePage`. The lead: manifest, ARB (I3 is the largest concentration), fake and harness.
 
-### 4.5 Oleada 3: cuatro microfrontends
+### 4.5 Wave 3: four microfrontends
 
-**P3.1 billing y notifications.** Esfuerzo L.
+**P3.1 billing and notifications.** Effort L.
 
-- Carpetas: `microfrontends/billing/**`, `microfrontends/notifications/**`.
-- Cierra: BI1, BI2, BI4, N1, N2, N3, I3 (billing), I4 (billing), AC7 (billing), M1 y M2 (uso), TU1 y TU2. BI3 se descarta.
-- Produce: `BillingPlanController`, `InvoicesController`, `InvoiceDetailController`, `ChangePlanController` y `ChangePlanState`; `InboxController` (con `_requestId`, búfer de llegadas, reversión de solo `read`); `PreferencesController` (un guardado a la vez, gana el más reciente, con `ActionRunner(concurrency: ActionConcurrency.serial)`); `StatusChip` y `UsageMeter` con `StatusColors`; fakes con `DemoBehavior`. Retira: `billing_colors.dart`, `localeTag` propio, `SizedBox(height: 160, ...)` por `ConstrainedBox(minHeight:)`, `EdgeInsets.fromLTRB` por `EdgeInsetsDirectional.only`, `BorderRadius.circular(999)` por `AppRadius.full`.
-- Aceptación: BI1 primero, como commit propio (borrar `billing_colors.dart`; prueba de contraste de chip y medidor en claro y oscuro con `textContrastGuideline`). `InboxController`: tocar "reintentar" dos veces no mezcla dos cargas; si llega una notificación en vivo mientras se guarda y el guardado falla, la notificación sigue en la lista y solo se revierte `read` (el bug de N1). `PreferencesController`: dos cambios seguidos dan dos guardados en orden; si el primero falla, el segundo cambio no se borra. `test/utils/test_app.dart` de billing desaparece a favor de `TestApp` y de `supportedLocales` de `i18n`. Comando: `pnpm nx run-many -t format-check analyze test --projects=front-mf_billing,front-mf_notifications`.
-- Haiku 1: billing (BI1 primero, luego los cuatro controladores). Haiku 2: notifications (Inbox, Preferences, fake con `DemoBehavior`). El guía: manifiestos, ARB y harness de los dos.
+- Folders: `microfrontends/billing/**`, `microfrontends/notifications/**`.
+- Closes: BI1, BI2, BI4, N1, N2, N3, I3 (billing), I4 (billing), AC7 (billing), M1 and M2 (usage), TU1 and TU2. BI3 is discarded.
+- Produces: `BillingPlanController`, `InvoicesController`, `InvoiceDetailController`, `ChangePlanController` and `ChangePlanState`; `InboxController` (with `_requestId`, an arrivals buffer, reverting only `read`); `PreferencesController` (one save at a time, the latest wins, with `ActionRunner(concurrency: ActionConcurrency.serial)`); `StatusChip` and `UsageMeter` with `StatusColors`; fakes with `DemoBehavior`. Removes: `billing_colors.dart`, its own `localeTag`, `SizedBox(height: 160, ...)` in favor of `ConstrainedBox(minHeight:)`, `EdgeInsets.fromLTRB` in favor of `EdgeInsetsDirectional.only`, `BorderRadius.circular(999)` in favor of `AppRadius.full`.
+- Acceptance: BI1 first, as its own commit (delete `billing_colors.dart`; contrast test of the chip and meter in light and dark with `textContrastGuideline`). `InboxController`: tapping "retry" twice does not mix two loads; if a live notification arrives while saving and the save fails, the notification stays in the list and only `read` is reverted (the N1 bug). `PreferencesController`: two changes in a row give two saves in order; if the first one fails, the second change is not erased. Billing's `test/utils/test_app.dart` goes away in favor of `TestApp` and the `supportedLocales` of `i18n`. Command: `pnpm nx run-many -t format-check analyze test --projects=front-mf_billing,front-mf_notifications`.
+- Haiku 1: billing (BI1 first, then the four controllers). Haiku 2: notifications (Inbox, Preferences, fake with `DemoBehavior`). The lead: manifests, ARBs and harness of both.
 
-**P3.2 tasks y verifier.** Esfuerzo M.
+**P3.2 tasks and verifier.** Effort M.
 
-- Carpetas: `microfrontends/tasks/**`, `microfrontends/verifier/**`.
-- Cierra: TK1 a TK5, V1, V2, V3, I3 (los que haya), M1 y M2 (uso), TU1 y TU2.
-- Produce: `TaskFormController` y `TaskFormState`; `TaskDetailController` y `TaskDetailState`; `UuidV7Generator` con su archivo y su prueba; `TasksListController` con `selectedId` (TK3); `FakeTasksRepository` con `DemoBehavior` y `UuidV7Generator`; `VerifierController`, `VerifierState` y el tick inyectable; `verifier_widgets.dart` con la cuenta atrás en `Semantics` y el aviso solo a los 10 s y a 0 con `SemanticsService.sendAnnouncement`; `disableAnimations` en la barra. Retira: `builders.dart` y `_localized`, `loadNow`, `unavailableProblem`, `AppLayout` ya en `tokens` (reemplaza el `360`). Mueve `test/support.dart` de `tasks` y `verifier` a `test/utils/` o lo borra a favor de `TestApp`, y parte `tasks_screens_test.dart` (467 líneas) en `test/screens/<pantalla>_test.dart`.
-- Aceptación: `VerifierController` con `FakeClock`: la cuenta atrás sale de `expiresAt` y no se desvía si el reloj salta 30 s; bloqueado, negado y reto nuevo reinician el estado sin un `_generation` visible; `copied` vuelve a `false` al pasar el reto. `TaskDetailController`: una respuesta vieja no pisa una nueva; un cambio externo durante el borrado no resucita la tarea. `TaskFormController`: `TaskFormSaved` es el único estado que navega. Los ids generados por `UuidV7Generator` son UUIDv7 válidos y ordenados con el reloj de prueba. Comando: `pnpm nx run-many -t format-check analyze test --projects=front-mf_tasks,front-mf_verifier`.
-- Haiku 1: tasks. Haiku 2: verifier. El guía: manifiestos, binding y la partición de la prueba grande.
+- Folders: `microfrontends/tasks/**`, `microfrontends/verifier/**`.
+- Closes: TK1 to TK5, V1, V2, V3, I3 (whatever there are), M1 and M2 (usage), TU1 and TU2.
+- Produces: `TaskFormController` and `TaskFormState`; `TaskDetailController` and `TaskDetailState`; `UuidV7Generator` with its file and its test; `TasksListController` with `selectedId` (TK3); `FakeTasksRepository` with `DemoBehavior` and `UuidV7Generator`; `VerifierController`, `VerifierState` and the injectable tick; `verifier_widgets.dart` with the countdown in `Semantics` and the announcement only at 10 s and at 0 with `SemanticsService.sendAnnouncement`; `disableAnimations` on the bar. Removes: `builders.dart` and `_localized`, `loadNow`, `unavailableProblem`, and uses the `AppLayout` already in `tokens` (it replaces the `360`). Moves `test/support.dart` of `tasks` and `verifier` to `test/utils/` or deletes it in favor of `TestApp`, and splits `tasks_screens_test.dart` (467 lines) into `test/screens/<screen>_test.dart`.
+- Acceptance: `VerifierController` with `FakeClock`: the countdown comes from `expiresAt` and does not drift if the clock jumps 30 s; blocked, denied and a new challenge reset the state without a visible `_generation`; `copied` goes back to `false` when the challenge changes. `TaskDetailController`: a stale response does not overwrite a new one; an external change during deletion does not resurrect the task. `TaskFormController`: `TaskFormSaved` is the only state that navigates. The ids generated by `UuidV7Generator` are valid UUIDv7 and ordered with the test clock. Command: `pnpm nx run-many -t format-check analyze test --projects=front-mf_tasks,front-mf_verifier`.
+- Haiku 1: tasks. Haiku 2: verifier. The lead: manifests, binding and splitting the large test.
 
-**P3.3 assistant.** Esfuerzo M.
+**P3.3 assistant.** Effort M.
 
-- Carpetas: `microfrontends/assistant/**`.
-- Cierra: AS1 a AS6, M1 y M2 (uso), TU1 y TU2.
-- Produce: `AssistantAccess` en `shared/constants/assistant_access.dart` (AS1); `AssistantChatController` con `ChatState`, `AnswerState`, `ChatFailureKind`, `_requestId` en `load()` y `Object? takeError()` (AS2, AS3); `ChatBubble` en su archivo (un archivo, una clase); auto-desplazar solo si el usuario estaba al final (AS4); `labelText` en el campo, anuncio con `SemanticsService.sendAnnouncement` al terminar la respuesta y no por fragmento (AS5); `AppSpacing`, `AppLayout` o constantes propias en lugar de `sm + 4`, `md - 2`, `640` (AS5); pruebas con `Completer` por fragmento o `fakeAsync` en lugar de `Future.delayed` de 90 y 300 ms (AS6).
-- Aceptación: `load()` doble no pisa; un `send` durante una carga no la sobrescribe; `isStreaming` sale del estado; la cuota excedida da `ChatFailureKind.quotaExceeded` y la pantalla solo lo mapea a texto; `grep -rn "Future<void>.delayed" microfrontends/assistant/test` vacío; `expectAccessible` pasa. Comando: `pnpm nx run-many -t format-check analyze test --projects=front-mf_assistant`.
-- Haiku 1: controlador, estados y sus pruebas (con los `Completer`). Haiku 2: `ChatBubble`, la pantalla, `AssistantAccess`, el desplazamiento y la accesibilidad.
+- Folders: `microfrontends/assistant/**`.
+- Closes: AS1 to AS6, M1 and M2 (usage), TU1 and TU2.
+- Produces: `AssistantAccess` in `shared/constants/assistant_access.dart` (AS1); `AssistantChatController` with `ChatState`, `AnswerState`, `ChatFailureKind`, `_requestId` in `load()` and `Object? takeError()` (AS2, AS3); `ChatBubble` in its own file (one file, one class); auto-scroll only if the user was at the bottom (AS4); `labelText` on the field, an announcement with `SemanticsService.sendAnnouncement` when the answer finishes and not per chunk (AS5); `AppSpacing`, `AppLayout` or its own constants instead of `sm + 4`, `md - 2`, `640` (AS5); tests with a `Completer` per chunk or `fakeAsync` instead of `Future.delayed` of 90 and 300 ms (AS6).
+- Acceptance: a double `load()` does not overwrite; a `send` during a load does not overwrite it; `isStreaming` comes from the state; an exceeded quota gives `ChatFailureKind.quotaExceeded` and the screen only maps it to text; `grep -rn "Future<void>.delayed" microfrontends/assistant/test` empty; `expectAccessible` passes. Command: `pnpm nx run-many -t format-check analyze test --projects=front-mf_assistant`.
+- Haiku 1: controller, states and their tests (with the `Completer`s). Haiku 2: `ChatBubble`, the screen, `AssistantAccess`, scrolling and accessibility.
 
-### 4.6 Oleada 4: apps, retiro y guía
+### 4.6 Wave 4: apps, removal and guide
 
-**P4.1 apps y suite de escenarios.** Esfuerzo L.
+**P4.1 apps and scenario suite.** Effort L.
 
-- Carpetas: `apps/web/**`, `apps/mobile/**`, `packages/test_utils/**`.
-- Cierra: AP1 (uso), AP2, AP3 (uso), TU1 (resto).
-- Consume: `ShellMenuModel`, `IdentityConnectionFactory`, `ShellHost` (P2.1), `TestApp`, `FakeClock`, `FakeAuthRepository` (P1.3). Produce: la suite `defineShellScenarios` (3.16) y los dos `ShellFixture`; los scaffolds que solo pintan un `ShellMenuModel`; `webIdentityConnection` y `mobileIdentityConnection` como una llamada a `IdentityConnectionFactory`. Retira: `DeferredLibrariesLoader` (queda `DeferredLibrariesPreloader`) y `host.signOut()` sin `await` en una lambda (se envuelve con `unawaited`).
-- Aceptación: `web_shell_test.dart` y `mobile_shell_test.dart` bajan de 1371 líneas a lo propio de cada plataforma (menú, "Más", `deep_link_mapper`); los 8 escenarios de la suite corren en las dos apps; la prueba de `/tasks2` pasa en móvil; `check-structure.mjs --changed .`; `flutter build web --release --source-maps` y `check_deferred_chunks`. Comando: `pnpm nx run-many -t format-check analyze test --projects=front-web_shell,front-mobile_shell,front-test_utils`.
-- Haiku 1: la suite y el fixture de la web. Haiku 2: el fixture y el scaffold del móvil y `IdentityConnectionFactory` en las dos apps. El guía: scaffold web y revisión de que la suite cubre cada escenario que hoy tiene prueba (tabla escenario por escenario antes de borrar).
+- Folders: `apps/web/**`, `apps/mobile/**`, `packages/test_utils/**`.
+- Closes: AP1 (usage), AP2, AP3 (usage), TU1 (rest).
+- Consumes: `ShellMenuModel`, `IdentityConnectionFactory`, `ShellHost` (P2.1), `TestApp`, `FakeClock`, `FakeAuthRepository` (P1.3). Produces: the `defineShellScenarios` suite (3.16) and the two `ShellFixture`s; scaffolds that only paint a `ShellMenuModel`; `webIdentityConnection` and `mobileIdentityConnection` as a call to `IdentityConnectionFactory`. Removes: `DeferredLibrariesLoader` (`DeferredLibrariesPreloader` remains) and `host.signOut()` without `await` in a lambda (it is wrapped with `unawaited`).
+- Acceptance: `web_shell_test.dart` and `mobile_shell_test.dart` drop from 1371 lines to what is specific to each platform (menu, "More", `deep_link_mapper`); the suite's 8 scenarios run in both apps; the `/tasks2` test passes on mobile; `check-structure.mjs --changed .`; `flutter build web --release --source-maps` and `check_deferred_chunks`. Command: `pnpm nx run-many -t format-check analyze test --projects=front-web_shell,front-mobile_shell,front-test_utils`.
+- Haiku 1: the suite and the web fixture. Haiku 2: the mobile fixture and scaffold, and `IdentityConnectionFactory` in both apps. The lead: the web scaffold and a review that the suite covers every scenario that has a test today (a scenario-by-scenario table before deleting).
 
-**P4.2 retiro de lo legado y script.** Esfuerzo M.
+**P4.2 removal of legacy code and script.** Effort M.
 
-- Carpetas: `packages/shell_core/**`, `packages/shell_host/**`, `packages/ui/**`, `packages/auth/**`, `front/tools/**` salvo `new_microfrontend*`, `.claude/skills/front-estructura/scripts/**`.
-- Cierra: cierre de SC2, SH1, SH2, M1, TL1 y el retiro de toda la lista de legado.
-- Retira: `deferredPage`, `resetDeferredPageCache`, `buildShellRouter`, `homeLocation`, `signOutAndGoToLogin`, `redirectFor` y `shellScreenLoader`; los getters viejos de `MfaFlow` y el reexporte de `Clock` en `auth`; los dos usos antiguos de `ErrorView`/`AsyncValueView` que queden. La guía de partida es el compilador: se borra y se corrige hasta que `analyze` de todo el workspace queda limpio.
-- Aceptación: `check-structure.mjs --all .` en verde con la línea base regenerada y vacía, y luego se borra `structure-baseline.json` (o queda como `[]` si el usuario prefiere conservar el mecanismo); `pnpm nx run-many -t format-check analyze test --projects=` con todos los proyectos del front en verde; `check_deferred_chunks`; `grep` de cada símbolo legado vacío.
-- Haiku 1: retiro en `shell_core`, `shell_host` y `auth`. Haiku 2: la línea base, el script y la revisión de que ninguna de las reglas de 3.17 tiene una excepción olvidada.
+- Folders: `packages/shell_core/**`, `packages/shell_host/**`, `packages/ui/**`, `packages/auth/**`, `front/tools/**` except `new_microfrontend*`, `.claude/skills/front-estructura/scripts/**`.
+- Closes: the closing of SC2, SH1, SH2, M1, TL1 and the removal of the whole legacy list.
+- Removes: `deferredPage`, `resetDeferredPageCache`, `buildShellRouter`, `homeLocation`, `signOutAndGoToLogin`, `redirectFor` and `shellScreenLoader`; the old `MfaFlow` getters and the `Clock` re-export in `auth`; the two old uses of `ErrorView`/`AsyncValueView` that remain. The starting guide is the compiler: delete and fix until `analyze` of the whole workspace is clean.
+- Acceptance: `check-structure.mjs --all .` green with the baseline regenerated and empty, and then `structure-baseline.json` is deleted (or stays as `[]` if the user prefers to keep the mechanism); `pnpm nx run-many -t format-check analyze test --projects=` with every front project green; `check_deferred_chunks`; `grep` for each legacy symbol empty.
+- Haiku 1: removal in `shell_core`, `shell_host` and `auth`. Haiku 2: the baseline, the script and a review that none of the 3.17 rules has a forgotten exception.
 
-**P4.3 skills, ADR y generador.** Esfuerzo M.
+**P4.3 skills, ADR and generator.** Effort M.
 
-- Carpetas: `.claude/skills/front-*/**` (salvo `front-estructura/scripts/`), `.claude/skills/front-nuevo-microfrontend/**` (nueva), `front/tools/new_microfrontend.dart`, `docs/adr/0018-*.md`, el ADR del front, `docs/ARCHITECTURE.md`.
-- Produce: las skills `front-codigo`, `front-pruebas`, `front-accesibilidad`, `front-layout-adaptable` y `front-i18n` actualizadas con `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors`, `TestApp`, `expectAccessible`, `DeferredLocalizations` y `ScreenRoute.deferred`; el ADR 0018 con la nueva forma de declarar pantallas; el ADR del front en "Aceptada"; el generador:
+- Folders: `.claude/skills/front-*/**` (except `front-estructura/scripts/`), `.claude/skills/front-nuevo-microfrontend/**` (new), `front/tools/new_microfrontend.dart`, `docs/adr/0018-*.md`, the front ADR, `docs/ARCHITECTURE.md`.
+- Produces: the `front-codigo`, `front-pruebas`, `front-accesibilidad`, `front-layout-adaptable` and `front-i18n` skills updated with `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors`, `TestApp`, `expectAccessible`, `DeferredLocalizations` and `ScreenRoute.deferred`; ADR 0018 with the new way to declare screens; the front ADR in "Accepted"; the generator:
 
   ```dart
   /// `dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`
@@ -1353,74 +1353,74 @@ Los tres paquetes son aditivos (salvo `AccessRule`, ver 2.2) y tienen carpetas d
   }
   ```
 
-- Aceptación: el generador crea `reports`, y `flutter pub get`, `analyze` y `test` de `front-mf_reports` salen verdes sin edición manual; `check-structure.mjs --all .` y `check_microfrontend_boundaries` pasan; después de crearlo se borra (es una prueba, no se versiona). Cada skill actualizada se revisa contra el código real.
-- Haiku 1: el generador y su prueba. Haiku 2: skills y ADR.
+- Acceptance: the generator creates `reports`, and `flutter pub get`, `analyze` and `test` of `front-mf_reports` pass without manual editing; `check-structure.mjs --all .` and `check_microfrontend_boundaries` pass; after creating it, it is deleted (it is a test, not versioned). Each updated skill is reviewed against the real code.
+- Haiku 1: the generator and its test. Haiku 2: skills and ADR.
 
-## 5. Orden y tropas
+## 5. Order and troops
 
-Hay tres tropas del front por oleada como máximo. La composición de cada tropa y la regla de avance entre oleadas están en el [plan](README.md#cómo-se-ejecuta-una-ola).
+There are at most three front troops per wave. The composition of each troop and the rule for advancing between waves are in the [plan](README.md#cómo-se-ejecuta-una-ola).
 
-| Oleada | Tropas               | Ruta crítica             | Esfuerzo total |
-| ------ | -------------------- | ------------------------ | -------------- |
-| 0      | 3 (P0.1, P0.2, P0.3) | P0.2                     | S + M + S      |
-| 1      | 3 (P1.1, P1.2, P1.3) | P1.1 y P1.2 (L cada una) | L + L + M      |
-| 2      | 3 (P2.1, P2.2, P2.3) | las tres son L           | L + L + L      |
-| 3      | 3 (P3.1, P3.2, P3.3) | P3.1                     | L + M + M      |
-| 4      | 3 (P4.1, P4.2, P4.3) | P4.1                     | L + M + M      |
+| Wave | Troops               | Critical path          | Total effort |
+| ---- | -------------------- | ---------------------- | ------------ |
+| 0    | 3 (P0.1, P0.2, P0.3) | P0.2                   | S + M + S    |
+| 1    | 3 (P1.1, P1.2, P1.3) | P1.1 and P1.2 (L each) | L + L + M    |
+| 2    | 3 (P2.1, P2.2, P2.3) | all three are L        | L + L + L    |
+| 3    | 3 (P3.1, P3.2, P3.3) | P3.1                   | L + M + M    |
+| 4    | 3 (P4.1, P4.2, P4.3) | P4.1                   | L + M + M    |
 
-Total: 15 paquetes en 5 oleadas. La oleada 4 puede arrancar P4.3 (docs y generador) apenas termine la 3. P4.1 y P4.2 no tocan los mismos archivos: P4.2 no edita `test_utils`, y P4.1 no edita los paquetes de P4.2.
+Total: 15 packages in 5 waves. Wave 4 can start P4.3 (docs and generator) as soon as wave 3 ends. P4.1 and P4.2 do not touch the same files: P4.2 does not edit `test_utils`, and P4.1 does not edit the P4.2 packages.
 
-Al integrar una oleada, el general corre `flutter pub get`, `pnpm nx run-many -t format-check analyze test --projects=<todo el front>` y `check_deferred_chunks`.
+When integrating a wave, the general runs `flutter pub get`, `pnpm nx run-many -t format-check analyze test --projects=<the whole front>` and `check_deferred_chunks`.
 
-## 6. Riesgos y lo que se deja fuera
+## 6. Risks and what is left out
 
-### 6.1 Riesgos
+### 6.1 Risks
 
-- **`guard` con `on Exception`.** Una prueba que lanza `StateError` como falla ahora ve escapar el error. Mitigación: cada guía busca `StateError(` en sus pruebas al empezar y lo cambia por una `Exception` tipada de prueba, definida una vez en `test_utils`.
-- **Lo legado se queda.** Sin `@Deprecated` nadie ve el aviso. Mitigación: P4.2 es una tropa propia, se guía por el compilador y por el script, y la lista de legado de esta sección es su criterio de aceptación.
-- **Barriles y `pubspec.yaml`.** Son el único punto donde dos tropas podrían chocar. Mitigación: solo los edita el guía y la lista de carpetas lo declara.
-- **Un cambio visual por el mínimo de 48.** En escritorio, los botones pasan de 40 a 48 de alto. Mitigación: se decide antes (8.2); es un cambio en el tema, fácil de revertir.
-- **Chunks diferidos.** Una clase nueva en el paquete equivocado puede subir código de un microfrontend al bundle inicial. Mitigación: `TasksData`, los controladores y las pantallas van en carpetas diferidas; `check_deferred_chunks` corre en cada paquete que toca manifiestos o pantallas.
-- **Ciclo `test_utils` y `auth`.** Ya existe y funciona. Mitigación: se agrega `ui` como dependencia de `test_utils` solo si `nx graph` no marca un ciclo nuevo; si lo marca, `TestApp` recibe el `ThemeData` por parámetro.
-- **Nombres parecidos.** `DeferredLibraryLoader` (shell_core) y `DeferredLibrariesLoader` (test_utils) se confunden. Por eso el segundo pasa a `DeferredLibrariesPreloader`.
-- **Los Haiku siguen literal.** Una firma ambigua da código que compila y no hace lo pedido. Mitigación: el esqueleto con `UnimplementedError` y las pruebas nombradas en cada paquete; el guía revisa el diff contra las firmas de la sección 3.
-- **ARB compartidos.** Solo P1.1 toca `i18n` en las oleadas 1 a 3. Si un microfrontend necesita una clave compartida nueva, la pide a P4.2.
-- **Pruebas con tiempo real.** `Future.delayed` en las pruebas del asistente y retardos en los fakes. Mitigación: `DemoBehavior(delay: Duration.zero)` por defecto en pruebas y `FakeClock`.
+- **`guard` with `on Exception`.** A test that throws `StateError` as a failure now sees the error escape. Mitigation: each lead searches for `StateError(` in its tests at the start and replaces it with a typed test `Exception`, defined once in `test_utils`.
+- **Legacy code stays.** Without `@Deprecated` nobody sees the warning. Mitigation: P4.2 is its own troop, it is guided by the compiler and the script, and this section's legacy list is its acceptance criterion.
+- **Barrels and `pubspec.yaml`.** They are the only point where two troops could collide. Mitigation: only the lead edits them and the folder list declares it.
+- **A visual change from the minimum of 48.** On desktop, buttons go from 40 to 48 high. Mitigation: it is decided beforehand (8.2); it is a theme change, easy to revert.
+- **Deferred chunks.** A new class in the wrong package can pull a microfrontend's code into the initial bundle. Mitigation: `TasksData`, the controllers and the screens go in deferred folders; `check_deferred_chunks` runs in every package that touches manifests or screens.
+- **`test_utils` and `auth` cycle.** It already exists and works. Mitigation: `ui` is added as a dependency of `test_utils` only if `nx graph` does not flag a new cycle; if it does, `TestApp` receives the `ThemeData` as a parameter.
+- **Similar names.** `DeferredLibraryLoader` (shell_core) and `DeferredLibrariesLoader` (test_utils) get confused. That is why the second one becomes `DeferredLibrariesPreloader`.
+- **The Haikus follow instructions literally.** An ambiguous signature gives code that compiles and does not do what was asked. Mitigation: the skeleton with `UnimplementedError` and the tests named in each package; the lead reviews the diff against the signatures in section 3.
+- **Shared ARBs.** Only P1.1 touches `i18n` in waves 1 to 3. If a microfrontend needs a new shared key, it asks P4.2 for it.
+- **Tests with real time.** `Future.delayed` in the assistant tests and delays in the fakes. Mitigation: `DemoBehavior(delay: Duration.zero)` by default in tests and `FakeClock`.
 
-### 6.2 Fuera de alcance
+### 6.2 Out of scope
 
-- **Endurecer `analysis_options.yaml`** (`strict-casts`, `unawaited_futures`, `public_member_api_docs`...): la skill `front-analisis` pide un cambio propio con todos los paquetes en verde, y no se sabe cuántos avisos aparecerán. Va después de este plan.
-- **Golden tests:** la skill los marca opcionales. Se cubren con `expectAccessible`, `pumpAtWidths` y `pumpAtTextScale`.
-- **Revisión manual con lector de pantalla** (TalkBack, VoiceOver, Tab en web): no se puede automatizar. Se anota por pantalla en cada paquete como revisión a cargo del usuario.
-- **TL2, TL3, A3:** ver 1.3.
-- **`packages/contracts`, `packages/api` (salvo la lectura de tipos), `layout/*`, `tokens/lib/src/scales.dart`, cuerpo de `contracts_gen`:** el informe no los revisó y este plan no los toca. No equivale a "sin hallazgos".
-- **Adaptadores reales de `tasks`, `notifications` y demás:** hoy son demo. Este plan no agrega datos reales.
-- **Un catálogo único de versiones:** pub no lo permite. Se fija por archivo.
+- **Hardening `analysis_options.yaml`** (`strict-casts`, `unawaited_futures`, `public_member_api_docs`...): the `front-analisis` skill asks for its own change with every package green, and it is not known how many warnings will appear. It comes after this plan.
+- **Golden tests:** the skill marks them optional. They are covered with `expectAccessible`, `pumpAtWidths` and `pumpAtTextScale`.
+- **Manual review with a screen reader** (TalkBack, VoiceOver, Tab on web): it cannot be automated. It is noted per screen in each package as a review owned by the user.
+- **TL2, TL3, A3:** see 1.3.
+- **`packages/contracts`, `packages/api` (except reading types), `layout/*`, `tokens/lib/src/scales.dart`, the body of `contracts_gen`:** the report did not review them and this plan does not touch them. That is not the same as "no findings".
+- **Real adapters for `tasks`, `notifications` and the rest:** today they are demo. This plan adds no real data.
+- **A single version catalog:** pub does not allow it. It is pinned per file.
 
-## 7. Crear un microfrontend nuevo después del cambio
+## 7. Creating a new microfrontend after the change
 
-Ejemplo: `reports`, con una lista y un detalle, datos de demostración y sin API real todavía.
+Example: `reports`, with a list and a detail, demo data and no real API yet.
 
-1. Correr el generador: `dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`. Crea el paquete con `pubspec.yaml`, `lib/mf_reports.dart`, las carpetas `data`, `screens`, `shared`, `l10n` y `test/utils`, y agrega el miembro a `front/pubspec.yaml`. Imprime las dos líneas que van en cada app.
-2. Agregar el manifiesto a `apps/web/lib/main.dart` y a `apps/mobile/lib/main.dart` (1 línea en cada una).
-3. Escribir lo propio del dominio.
+1. Run the generator: `dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`. It creates the package with `pubspec.yaml`, `lib/mf_reports.dart`, the `data`, `screens`, `shared`, `l10n` and `test/utils` folders, and adds the member to `front/pubspec.yaml`. It prints the two lines that go in each app.
+2. Add the manifest to `apps/web/lib/main.dart` and to `apps/mobile/lib/main.dart` (1 line in each).
+3. Write what is specific to the domain.
 
-Lo que se escribe a mano, con una estimación de líneas contra el código de hoy (tomando `tasks` y `notifications` como referencia):
+What is written by hand, with an estimate of lines against today's code (taking `tasks` and `notifications` as reference):
 
-| Pieza                                         | Hoy                                                 | Después                                                           |
-| --------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------- |
-| `mf_reports.dart` (id, acceso, menú, 2 rutas) | unas 80                                             | unas 35 (`ScreenRoute.deferred`, sin `_loading`)                  |
-| Puente a las pantallas (`ReportsScreens`)     | unas 50 (`_localized`, `_repository`, 3 `build...`) | unas 14 (`DeferredLocalizations` y `scope.repository`)            |
-| Binding del repositorio                       | unas 8 repetidas en cada `screens.dart`             | 6 (`ReportsData`)                                                 |
-| Fake con latencia y fallos                    | unas 50 de plomería más los datos                   | unas 8 de plomería (`DemoBehavior`) más los datos                 |
-| Un controlador de pantalla                    | 25 repartidas en el `State`                         | unas 30, con `AsyncLoader` y `ActionRunner`, probadas sin widgets |
-| Harness de pruebas                            | 70 a 120 por microfrontend                          | 0 a 10 (`TestApp`, `SessionBuilder`, `ProblemFixtures`)           |
-| Rutas, acceso y enums                         | unas 25                                             | unas 25 (no cambia: es dominio)                                   |
-| ARB                                           | unas 20                                             | unas 20                                                           |
+| Piece                                          | Today                                                | After                                                                   |
+| ---------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| `mf_reports.dart` (id, access, menu, 2 routes) | about 80                                             | about 35 (`ScreenRoute.deferred`, no `_loading`)                        |
+| Bridge to the screens (`ReportsScreens`)       | about 50 (`_localized`, `_repository`, 3 `build...`) | about 14 (`DeferredLocalizations` and `scope.repository`)               |
+| Repository binding                             | about 8 repeated in each `screens.dart`              | 6 (`ReportsData`)                                                       |
+| Fake with latency and failures                 | about 50 of plumbing plus the data                   | about 8 of plumbing (`DemoBehavior`) plus the data                      |
+| A screen controller                            | 25 spread across the `State`                         | about 30, with `AsyncLoader` and `ActionRunner`, tested without widgets |
+| Test harness                                   | 70 to 120 per microfrontend                          | 0 to 10 (`TestApp`, `SessionBuilder`, `ProblemFixtures`)                |
+| Routes, access and enums                       | about 25                                             | about 25 (unchanged: it is domain)                                      |
+| ARB                                            | about 20                                             | about 20                                                                |
 
-En total: unas 60 líneas de pegamento (manifiesto, puente y binding) que el generador ya deja escritas, contra unas 250 hoy entre pegamento repetido y plomería. Lo que queda por escribir es el dominio: el puerto del repositorio (unas 20 líneas), los datos de demostración, un controlador y una pantalla por ruta, los textos y las pruebas de cada controlador y de cada pantalla.
+In total: about 60 lines of glue (manifest, bridge and binding) that the generator already writes, against about 250 today between repeated glue and plumbing. What remains to write is the domain: the repository port (about 20 lines), the demo data, a controller and a screen per route, the texts and the tests of each controller and each screen.
 
-Esquema mínimo de las dos piezas de pegamento:
+Minimal outline of the two glue pieces:
 
 ```dart
 // lib/mf_reports.dart
@@ -1462,24 +1462,24 @@ final class ReportsScreens {
 }
 ```
 
-Checklist del microfrontend nuevo, que verifica el revisor:
+Checklist for the new microfrontend, which the reviewer verifies:
 
-- Ninguna pantalla tiene `State` con `Future`, `try/catch` ni `widget.repository.` (el script lo marca).
-- Cada controlador usa `AsyncLoader` y `ActionRunner`, y su prueba no monta widgets.
-- Cada pantalla tiene prueba de sus cuatro estados, un ancho compacto y uno expandido, `expectAccessible` y una a 2x de escala.
-- Colores desde `Theme` y `context.statusColors`; textos desde el ARB con placeholders; `AlignmentDirectional` y `EdgeInsetsDirectional`.
-- `check_microfrontend_boundaries` y `check_deferred_chunks` en verde.
+- No screen has a `State` with a `Future`, `try/catch` or `widget.repository.` (the script flags it).
+- Each controller uses `AsyncLoader` and `ActionRunner`, and its test does not mount widgets.
+- Each screen has a test of its four states, one compact width and one expanded, `expectAccessible` and one at 2x scale.
+- Colors from `Theme` and `context.statusColors`; texts from the ARB with placeholders; `AlignmentDirectional` and `EdgeInsetsDirectional`.
+- `check_microfrontend_boundaries` and `check_deferred_chunks` green.
 
-## 8. Decisiones aprobadas por el usuario
+## 8. Decisions approved by the user
 
-1. **Versiones exactas por archivo (M3).** Pub no tiene un catálogo único. Propuesta: fijar el número exacto en cada `pubspec.yaml` y vigilarlo con el script. Alternativa: cambiar la skill `front-estructura` para aceptar `^`.
-2. **Mínimo de 48 en todos los botones y campos (U4/U5).** La skill acepta 24 como piso en web con puntero. Propuesta: 48 en todo el tema, por uniformidad y por móvil. Costo: botones de 48 de alto también en escritorio.
-3. **`i18n` depende de `contracts` (U6).** Propuesta: el mapeo de errores a texto vive en `i18n`, que ya tiene `errorMessage`, y `ui` deja de importar `contracts`. Alternativa: un paquete nuevo `errors`, más limpio pero un miembro más del workspace.
-4. **`ControllerBuilder` en `ui`.** Propuesta: un widget que crea y cierra el controlador, para que las 27 pantallas sean `StatelessWidget`. Alternativa: dejar un `State` mínimo por pantalla que solo hace `initState` y `dispose`.
-5. **`ActionResult` con tres desenlaces y `ActionConcurrency`.** El informe propone dos (`ActionSucceeded`, `ActionFailed`). Propuesta: sumar `ActionSkipped` (step-up rechazado, acción ya en curso) y tres modos de concurrencia, porque `PreferencesController` necesita serializar y `closeOthers` necesita distinguir "no corrió" de "falló".
-6. **Lo legado se retira al final, sin `@Deprecated` (2.2).** Propuesta: comentario `Legacy` y una oleada propia de retiro. Costo: la API vieja y la nueva conviven hasta la oleada 4.
-7. **La suite de escenarios vive en `test_utils` y no en `shell_host/test` (3.16).** Es la única ubicación que dos apps pueden importar.
-8. **Los diálogos de `backoffice` se arreglan con `showLocalizedDialog` y no con `useRootNavigator: false` (B5).** La propuesta del informe no funciona.
-9. **Línea base para las reglas nuevas del script (3.17).** Propuesta: las reglas entran ya, con una línea base que se vacía en la oleada 4. Alternativa: entrar al final, pero entonces nada protege el código que las oleadas 1 a 3 escriben.
-10. **`StepUpGate` en `account` y no en `shell_core` (3.11).** Solo account lo usa hoy.
-11. **Fuera de alcance:** endurecer `analysis_options.yaml` como cambio aparte (6.2).
+1. **Exact versions per file (M3).** Pub has no single catalog. Proposal: pin the exact number in each `pubspec.yaml` and watch it with the script. Alternative: change the `front-estructura` skill to accept `^`.
+2. **Minimum of 48 on all buttons and fields (U4/U5).** The skill accepts 24 as the floor on web with a pointer. Proposal: 48 across the whole theme, for uniformity and for mobile. Cost: 48-high buttons on desktop too.
+3. **`i18n` depends on `contracts` (U6).** Proposal: the mapping from errors to text lives in `i18n`, which already has `errorMessage`, and `ui` stops importing `contracts`. Alternative: a new `errors` package, cleaner but one more workspace member.
+4. **`ControllerBuilder` in `ui`.** Proposal: a widget that creates and closes the controller, so the 27 screens are `StatelessWidget`. Alternative: keep a minimal `State` per screen that only does `initState` and `dispose`.
+5. **`ActionResult` with three outcomes and `ActionConcurrency`.** The report proposes two (`ActionSucceeded`, `ActionFailed`). Proposal: add `ActionSkipped` (step-up declined, action already running) and three concurrency modes, because `PreferencesController` needs to serialize and `closeOthers` needs to tell "did not run" from "failed".
+6. **Legacy code is removed at the end, without `@Deprecated` (2.2).** Proposal: a `Legacy` comment and a wave of its own for removal. Cost: the old and new APIs coexist until wave 4.
+7. **The scenario suite lives in `test_utils` and not in `shell_host/test` (3.16).** It is the only location both apps can import.
+8. **The `backoffice` dialogs are fixed with `showLocalizedDialog` and not with `useRootNavigator: false` (B5).** The report's proposal does not work.
+9. **Baseline for the script's new rules (3.17).** Proposal: the rules go in now, with a baseline that is emptied in wave 4. Alternative: add them at the end, but then nothing protects the code that waves 1 to 3 write.
+10. **`StepUpGate` in `account` and not in `shell_core` (3.11).** Only account uses it today.
+11. **Out of scope:** hardening `analysis_options.yaml` as a separate change (6.2).

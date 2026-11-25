@@ -1,35 +1,35 @@
-# 0001. Monorepo Nx con pnpm y un microservicio por app
+# 0001. Nx monorepo with pnpm and one microservice per app
 
-- Estado: Aceptada
-- Fecha: 2026-11-11
+- Status: Accepted
+- Date: 2026-11-11
 
-## Contexto
+## Context
 
-`node_template` es un Express de 2022 con una sola aplicación. La plataforma nueva necesita varios microservicios que compartan librerías de plataforma y contratos, pero que no compartan código de negocio ni bases de datos.
+`node_template` is a 2022 Express project with a single application. The new platform needs several microservices that share platform libraries and contracts, but do not share business code or databases.
 
-## Decisión
+## Decision
 
-El repositorio es un workspace de Nx con pnpm. Cada microservicio es una app en `apps/` con su dominio, su base de datos, sus migraciones y su despliegue. Lo único que los servicios comparten son las librerías de `libs/platform` y los contratos de `libs/contracts`.
+The repository is an Nx workspace with pnpm. Each microservice is an app in `apps/` with its own domain, database, migrations and deployment. The only things the services share are the libraries in `libs/platform` and the contracts in `libs/contracts`.
 
-Tres reglas se verifican en CI:
+Three rules are checked in CI:
 
-- Una app solo depende de librerías `scope:shared` (`@nx/enforce-module-boundaries`).
-- Dentro de un módulo, `domain` depende solo de `kernel` y las capas externas dependen hacia adentro (`dependency-cruiser`).
-- CI corre `nx affected`: prueba, construye y despliega solo lo que cambió.
+- An app depends only on `scope:shared` libraries (`@nx/enforce-module-boundaries`).
+- Inside a module, `domain` depends only on `kernel` and the outer layers depend inward (`dependency-cruiser`).
+- CI runs `nx affected`: it tests, builds and deploys only what changed.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Un servicio nuevo sale de un generador y hereda las reglas de dependencia.
-- Un cambio de contrato se revisa en el mismo PR que lo usa.
-- El pipeline no reconstruye ni despliega servicios que no cambiaron.
+- A new service comes out of a generator and inherits the dependency rules.
+- A contract change is reviewed in the same PR that uses it.
+- The pipeline does not rebuild or redeploy services that did not change.
 
-Costos:
+Costs:
 
-- Cada servicio tiene su base, sus migraciones y su despliegue que mantener.
-- Las reglas de límites deben seguir activas en CI. Si se relajan, código de un servicio puede terminar importando a otro.
+- Each service has its own database, migrations and deployment to maintain.
+- The boundary rules must stay active in CI. If they are relaxed, code from one service can end up importing another.
 
-## Alternativas consideradas
+## Alternatives considered
 
-El documento de arquitectura no registra alternativas evaluadas para esta decisión.
+The architecture document does not record alternatives evaluated for this decision.

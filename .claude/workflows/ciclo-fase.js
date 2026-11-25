@@ -1,41 +1,41 @@
-// Ciclo de construcción y revisión de una fase del plan (docs/plan/README.md, olas 6 a 9).
-// Un constructor Opus planea, implementa y prueba en una copia de trabajo; un revisor Opus
-// independiente revisa el diff sin editarlo; el constructor corrige. El constructor hace commits y push
-// en la rama troop/<key> a medida que avanza; el revisor no. El general integra, abre el PR y lo mezcla.
+// Build and review cycle for one phase of the plan (docs/plan/README.md, waves 6 to 9).
+// An Opus builder plans, implements and tests in a worktree; an independent Opus reviewer
+// reviews the diff without editing it; the builder fixes. The builder commits and pushes
+// to the troop/<key> branch as it goes; the reviewer does not. The general integrates, opens the PR and merges it.
 //
 // Args:
 //   cycle: { key, title, path, area, plan, package, notes }
-//     key      nombre corto del ciclo (rama troop/<key>)
-//     path     copia de trabajo absoluta, por ejemplo <repo>/.claude/worktrees/cycle-<key>
-//     area     'backend' | 'front' | 'full' | 'docs': elige la verificación
-//     plan     diseño que manda, relativo a la copia (docs/design/...)
-//     package  qué parte del diseño construye este ciclo
-//     notes    contexto propio del ciclo (base, hallazgos abiertos, límites)
-//   maxRounds    revisiones como máximo (por defecto 2: revisión, corrección y revisión final)
-//   corrections  hallazgos o correcciones del usuario que mandan sobre todo lo demás
-//   shim         carpeta opcional que se antepone al PATH (por ejemplo, un pnpm fijado)
+//     key      short name of the cycle (branch troop/<key>)
+//     path     absolute worktree path, for example <repo>/.claude/worktrees/cycle-<key>
+//     area     'backend' | 'front' | 'full' | 'docs': selects the verification
+//     plan     governing design, relative to the worktree (docs/design/...)
+//     package  which part of the design this cycle builds
+//     notes    cycle-specific context (base, open findings, limits)
+//   maxRounds    maximum number of reviews (default 2: review, fix and final review)
+//   corrections  user findings or corrections that override everything else
+//   shim         optional folder prepended to PATH (for example, a pinned pnpm)
 //
-// Para una ronda extra de correcciones sobre la misma copia: corrections con los hallazgos
-// pendientes y maxRounds 1 (corrección y una revisión).
+// For an extra round of fixes on the same worktree: corrections with the pending
+// findings and maxRounds 1 (fix and one review).
 
 export const meta = {
   name: 'ciclo-fase',
   description:
-    'Ciclo de una fase: un Opus construye y prueba, un revisor Opus independiente revisa, y el constructor corrige hasta aprobar',
+    'Phase cycle: an Opus builds and tests, an independent Opus reviewer reviews, and the builder fixes until approved',
   phases: [
     {
-      title: 'Construir',
-      detail: 'el constructor Opus planea, implementa y prueba',
+      title: 'Build',
+      detail: 'the Opus builder plans, implements and tests',
       model: 'opus',
     },
     {
-      title: 'Revisar',
-      detail: 'el revisor Opus independiente revisa el diff completo',
+      title: 'Review',
+      detail: 'the independent Opus reviewer reviews the full diff',
       model: 'opus',
     },
     {
-      title: 'Corregir',
-      detail: 'el constructor corrige los hallazgos',
+      title: 'Fix',
+      detail: 'the builder fixes the findings',
       model: 'opus',
     },
   ],
@@ -45,35 +45,35 @@ const PATH_PREFIX = args.shim ? ` && export PATH="${args.shim}:$PATH"` : '';
 
 const VERIFY = {
   backend: `- node .claude/skills/backend-estructura/scripts/check-structure.mjs --changed .
-- pnpm nx run-many -t lint test typecheck --projects=<proyectos tocados y sus dependientes> --skip-nx-cache (cobertura 80/80/80/75 con --coverage en los proyectos tocados)
+- pnpm nx run-many -t lint test typecheck --projects=<touched projects and their dependents> --skip-nx-cache (coverage 80/80/80/75 with --coverage on the touched projects)
 - pnpm nx format:check
-- Si tocas contratos: pnpm nx run contracts-export:check y (cd front/packages/contracts && dart run contracts_gen --check)
+- If you touch contracts: pnpm nx run contracts-export:check and (cd front/packages/contracts && dart run contracts_gen --check)
 - Docker: TESTCONTAINERS_RYUK_DISABLED=true`,
   front: `- node .claude/skills/front-estructura/scripts/check-structure.mjs --changed .
-- pnpm nx run-many -t format-check analyze test --projects=<proyectos front tocados y sus dependientes> --skip-nx-cache
+- pnpm nx run-many -t format-check analyze test --projects=<touched front projects and their dependents> --skip-nx-cache
 - pnpm nx format:check
-- Si tocas pubspec: (cd front && flutter pub get)`,
+- If you touch pubspec: (cd front && flutter pub get)`,
   docs: `- pnpm nx format:check
-- Los scripts de .claude/skills que toques tienen sus pruebas con node --test y pasan
-- node .claude/skills/backend-estructura/scripts/check-structure.mjs --all . y node .claude/skills/front-estructura/scripts/check-structure.mjs --all . corren sin errores de ejecución`,
+- The .claude/skills scripts you touch have their tests with node --test and they pass
+- node .claude/skills/backend-estructura/scripts/check-structure.mjs --all . and node .claude/skills/front-estructura/scripts/check-structure.mjs --all . run without execution errors`,
 };
 
 VERIFY.full = VERIFY.backend + '\n' + VERIFY.front;
 
 const COMMON = (t) => `
-Repositorio node_template. Tu tropa trabaja SOLO en la copia ${t.path} (rama troop/${t.key}). Cada comando de shell empieza con: cd ${t.path}${PATH_PREFIX}. Si \`node -v\` da 20, usa Node 24: source ~/.nvm/nvm.sh && nvm use 24.
-Nunca edites archivos fuera de ${t.path}. Los hooks del repositorio no se activan en esa copia: corre tú las verificaciones.
+Repository node_template. Your troop works ONLY in the worktree ${t.path} (branch troop/${t.key}). Every shell command starts with: cd ${t.path}${PATH_PREFIX}. If \`node -v\` gives 20, use Node 24: source ~/.nvm/nvm.sh && nvm use 24.
+Never edit files outside ${t.path}. The repository hooks do not run in that worktree: run the checks yourself.
 
-Tu paquete: ${t.package} del plan ${t.path}/${t.plan}. Léelo completo junto con las decisiones de diseño que cita (y las secciones de reglas y oleadas del plan). Respeta sus carpetas exclusivas: no toques nada fuera de ellas salvo lo que el paquete declare.
+Your package: ${t.package} of the plan ${t.path}/${t.plan}. Read it in full together with the design decisions it cites (and the rules and waves sections of the plan). Respect its exclusive folders: touch nothing outside them except what the package declares.
 ${t.notes ?? ''}
 
-Reglas que mandan (léelas en ${t.path}/.claude/skills y ${t.path}/CLAUDE.md): las skills ${t.area === 'front' ? 'front-*' : t.area === 'full' ? 'backend-* y front-*' : 'backend-*'}. Innegociable: clases, composición e inyección por constructor (nada de funciones sueltas exportadas, salvo utilidades puras y las excepciones que el plan declara); pruebas en __tests__/ (backend) o en test/ (front) con utilitarios en __tests__/utils, test/utils o el paquete test_utils, nunca carpetas testing/support; código directo en src/ sin src/lib/; enums en vez de literales; el código se explica solo, sin comentarios en línea; cada método público lleva su JSDoc (o /// en Dart) completo y conciso, sin mencionar WP, olas, tropas, auditorías ni el plan. Español sin guiones largos en docs.
+Governing rules (read them in ${t.path}/.claude/skills and ${t.path}/CLAUDE.md): the ${t.area === 'front' ? 'front-*' : t.area === 'full' ? 'backend-* and front-*' : 'backend-*'} skills. Non-negotiable: classes, composition and constructor injection (no exported loose functions, except pure utilities and the exceptions the plan declares); tests in __tests__/ (backend) or in test/ (front) with utilities in __tests__/utils, test/utils or the test_utils package, never testing/support folders; code directly in src/ with no src/lib/; enums instead of literals; the code explains itself, with no inline comments; every public method has its complete and concise JSDoc (or /// in Dart), without mentioning WPs, waves, troops, audits or the plan. All developer text is in English only (docs, ADRs, plan, JSDoc, ///, commits), with no mixed languages and no em dashes; a Spanish doc or JSDoc you touch is translated entirely into English. User-facing text stays in its ARB.
 
-Verificación (todo en verde antes de terminar):
+Verification (all green before finishing):
 ${VERIFY[t.area]}
-Commits (solo el constructor; el revisor nunca hace commit): haz commits pequeños en la rama troop/${t.key} cada vez que una parte queda compilando y con sus pruebas en verde, y después de cada commit haz git -C ${t.path} push -u origin troop/${t.key}. Mensajes en Conventional Commits en español, asunto en minúsculas, sin Co-Authored-By ni ninguna atribución de IA. Nunca uses --no-verify ni reescribas commits ya publicados.
+Commits (builder only; the reviewer never commits): make small commits on the troop/${t.key} branch each time a part compiles with its tests green, and after each commit run git -C ${t.path} push -u origin troop/${t.key}. Messages in Conventional Commits in English, lowercase subject, no Co-Authored-By and no AI attribution of any kind. Never use --no-verify or rewrite commits that were already pushed.
 
-CPU Y MEMORIA: la máquina es una Raspberry Pi con 4 núcleos y 8 GB. Un solo comando pesado a la vez: no lances tsc, lint o nx mientras corre Jest, ni comandos en segundo plano en paralelo. Nx con --parallel=1; Jest con --maxWorkers=2 en unitarias y --runInBand en integración; las pruebas de integración de a un proyecto, nunca todas a la vez. Al terminar cada corrida borra los contenedores de prueba (docker rm -f $(docker ps -aq --filter label=org.testcontainers=true)), mata los Jest colgados y detén el daemon de Nx de tu copia (pnpm nx daemon --stop). En fixtures, nada de literales con forma de credencial junto a llaves como token, key, secret o credential (gitleaks).`;
+CPU AND MEMORY: the machine is a Raspberry Pi with 4 cores and 8 GB. One heavy command at a time: do not start tsc, lint or nx while Jest is running, and no background commands in parallel. Nx with --parallel=1; Jest with --maxWorkers=2 for unit tests and --runInBand for integration; integration tests one project at a time, never all at once. After each run, remove the test containers (docker rm -f $(docker ps -aq --filter label=org.testcontainers=true)), kill hung Jest processes and stop the Nx daemon of your worktree (pnpm nx daemon --stop). In fixtures, no credential-shaped literals next to keys such as token, key, secret or credential (gitleaks).`;
 
 const REPORT_SCHEMA = {
   type: 'object',
@@ -82,24 +82,24 @@ const REPORT_SCHEMA = {
     commitMessage: {
       type: 'string',
       description:
-        'Conventional Commits en español, asunto en minúsculas, líneas de máximo 100 caracteres, sin Co-Authored-By ni atribución de IA',
+        'Conventional Commits in English, lowercase subject, lines of at most 100 characters, no Co-Authored-By and no AI attribution',
     },
     closedFindings: {
       type: 'string',
-      description: 'Hallazgos del plan que cerró el paquete',
+      description: 'Plan findings the package closed',
     },
     corrections: { type: 'string' },
     deviations: {
       type: 'string',
-      description: 'Desviaciones del plan y su porqué',
+      description: 'Deviations from the plan and why',
     },
     verification: {
       type: 'string',
-      description: 'Resultado de cada comando de verificación',
+      description: 'Result of each verification command',
     },
     outsideChanges: {
       type: 'string',
-      description: 'Cambios necesarios fuera de las carpetas del paquete',
+      description: 'Changes needed outside the package folders',
     },
     allGreen: { type: 'boolean' },
   },
@@ -120,7 +120,7 @@ const REVIEW_SCHEMA = {
   properties: {
     approved: {
       type: 'boolean',
-      description: 'true solo si no queda ningún hallazgo bloqueante',
+      description: 'true only if no blocking finding remains',
     },
     summary: { type: 'string' },
     findings: {
@@ -130,7 +130,7 @@ const REVIEW_SCHEMA = {
         properties: {
           severity: {
             type: 'string',
-            enum: ['bloqueante', 'importante', 'menor'],
+            enum: ['blocker', 'important', 'minor'],
           },
           file: { type: 'string' },
           issue: { type: 'string' },
@@ -141,7 +141,7 @@ const REVIEW_SCHEMA = {
     },
     verification: {
       type: 'string',
-      description: 'Comandos que corriste y su resultado',
+      description: 'Commands you ran and their result',
     },
   },
   required: ['approved', 'summary', 'findings', 'verification'],
@@ -150,49 +150,49 @@ const REVIEW_SCHEMA = {
 const t = args.cycle;
 const maxRounds = args.maxRounds ?? 2;
 const corrections = args.corrections
-  ? `\n\nCORRECCIONES DEL USUARIO (mandan sobre todo lo demás; aplícalas todas):\n${args.corrections}`
+  ? `\n\nUSER CORRECTIONS (they override everything else; apply all of them):\n${args.corrections}`
   : '';
 
-phase('Construir');
+phase('Build');
 let report = await agent(
-  `Eres el CONSTRUCTOR (Opus) del ciclo "${t.title}". Trabajas solo: planeas, implementas, pruebas y verificas todo tú, sin delegar en otros agentes.
+  `You are the BUILDER (Opus) of the cycle "${t.title}". You work alone: you plan, implement, test and verify everything yourself, without delegating to other agents.
 ${COMMON(t)}${corrections}
 
-Cómo trabajas (método de pstack, reglas del repositorio; lee primero la skill pstack-en-node-template y su sección "Cómo se trabaja"):
-1. Lee el paquete y las decisiones que cita, las skills y el código actual. Si la rama ya tiene trabajo de una corrida anterior (git log main..HEAD y git status), parte de ahí.
-2. Elige el playbook de poteto-mode que corresponde al paquete (feature, bug-fix, refactoring o perf-issue) y sigue sus pasos. Para el diseño no trivial usa architect antes de codificar.
-3. Construye en unidades verificables (principle-sequence-verifiable-units): primero puertos e interfaces, luego implementaciones con pruebas, al final el cableado. Cada unidad termina compilando, con sus pruebas en verde y con su commit y push. Cada bug o hallazgo empieza con la prueba que lo reproduce (tdd).
-4. Antes de entregar pasa no-comments sobre tu diff y unslop sobre los ADR y la documentación que tocaste.
-5. Cumple principle-prove-it-works: corre la verificación completa hasta verde y cierra con un último commit y push. No dejes nada sin commit.
-Devuelve el reporte con el schema.`,
+How you work (pstack method, repository rules; first read the pstack-en-node-template skill and its "How work is done" section):
+1. Read the package and the decisions it cites, the skills and the current code. If the branch already has work from a previous run (git log main..HEAD and git status), start from there.
+2. Choose the poteto-mode playbook that fits the package (feature, bug-fix, refactoring or perf-issue) and follow its steps. For non-trivial design, use architect before coding.
+3. Build in verifiable units (principle-sequence-verifiable-units): first ports and interfaces, then implementations with tests, and the wiring last. Each unit ends compiling, with its tests green and with its commit and push. Each bug or finding starts with the test that reproduces it (tdd).
+4. Before handing off, run no-comments on your diff and unslop on the ADRs and documentation you touched.
+5. Follow principle-prove-it-works: run the full verification until green and finish with a last commit and push. Leave nothing uncommitted.
+Return the report with the schema.`,
   {
     model: 'opus',
-    phase: 'Construir',
-    label: `constructor:${t.key}`,
+    phase: 'Build',
+    label: `builder:${t.key}`,
     schema: REPORT_SCHEMA,
   },
 );
 
 const reviews = [];
 for (let round = 1; round <= maxRounds; round++) {
-  phase('Revisar');
+  phase('Review');
   const review = await agent(
-    `Eres el REVISOR (Opus) del ciclo "${t.title}". Eres independiente: no escribiste este código y no lo corriges tú. Tu trabajo es encontrar lo que está mal o falta.
+    `You are the REVIEWER (Opus) of the cycle "${t.title}". You are independent: you did not write this code and you do not fix it. Your job is to find what is wrong or missing.
 ${COMMON(t)}${corrections}
 
-Reporte del constructor:
+Builder report:
 ${JSON.stringify(report, null, 2)}
 
-Qué haces (sigues la skill interrogate de pstack; lee primero pstack-en-node-template y su sección "interrogate en este repositorio"):
-1. Lee el diff completo de la rama contra main (git -C ${t.path} log --oneline main..HEAD, git -C ${t.path} diff main...HEAD y status por si quedó algo sin commit) contra el paquete del plan, las decisiones que cita y las skills.
-2. Busca: lo que el paquete pide y no está; errores de lógica y de concurrencia; pruebas débiles o que no prueban lo que dicen; violaciones de las reglas (funciones sueltas, puertos que no son clases abstractas, literales donde van enums, imports de infraestructura en domain, NestJS fuera de src/nest); alternativas de la tabla 2.1 del diseño de F5 a F11 que faltan; secretos o literales con forma de credencial en fixtures; comentarios en línea, métodos públicos sin JSDoc completo y conciso, o JSDoc que narra el proceso.
-3. Abre el panel de adversarios de interrogate con los modelos de la línea interrogate reviewers de ~/.claude/rules/pstack-models.md, cada uno en su propia copia (isolation worktree), con las reglas del punto 2 y las de "Reglas de revisión" de las skills del área. Sus corridas son puntuales (un archivo de prueba o un script, nunca una suite completa). Vuelve a correr tú cada hallazgo y conserva solo los que la corrida demuestra; los demás van a dropped en el summary. Pasa también no-comments en modo de solo lectura y, si el cambio toca plataforma, contratos, autenticación o datos, blast-radius.
-4. Corre tú la verificación completa para confirmar que está en verde.
-No edites archivos de la copia del ciclo. approved es true solo si no queda ningún hallazgo bloqueante. Devuelve la revisión con el schema.`,
+What you do (you follow the pstack interrogate skill; first read pstack-en-node-template and its "interrogate here" section):
+1. Read the full diff of the branch against main (git -C ${t.path} log --oneline main..HEAD, git -C ${t.path} diff main...HEAD and status in case something was left uncommitted) against the plan package, the decisions it cites and the skills.
+2. Look for: what the package asks for and is missing; logic and concurrency bugs; weak tests or tests that do not test what they claim; rule violations (loose functions, ports that are not abstract classes, literals where enums belong, infrastructure imports in domain, NestJS outside src/nest); missing alternatives from table 2.1 of the F5 to F11 design; secrets or credential-shaped literals in fixtures; inline comments, public methods without complete and concise JSDoc, or JSDoc that narrates the process.
+3. Open the interrogate adversary panel with the models from the interrogate reviewers line of ~/.claude/rules/pstack-models.md, each one in its own worktree (isolation worktree), with the rules from point 2 and those from the "Review rules" of the area skills. Their runs are targeted (one test file or one script, never a full suite). Rerun each finding yourself and keep only those the run proves; the rest go to dropped in the summary. Also run no-comments in read-only mode and, if the change touches platform, contracts, authentication or data, blast-radius.
+4. Run the full verification yourself to confirm it is green.
+Do not edit files in the cycle worktree. approved is true only if no blocking finding remains. Return the review with the schema.`,
     {
       model: 'opus',
-      phase: 'Revisar',
-      label: `revisor:${t.key}:${round}`,
+      phase: 'Review',
+      label: `reviewer:${t.key}:${round}`,
       schema: REVIEW_SCHEMA,
     },
   );
@@ -202,25 +202,25 @@ No edites archivos de la copia del ciclo. approved es true solo si no queda ning
       path: t.path,
       report,
       reviews,
-      error: `el revisor ${round} no devolvió resultado`,
+      error: `reviewer ${round} returned no result`,
     };
   }
   reviews.push(review);
   if (review.approved || round === maxRounds) break;
 
-  phase('Corregir');
+  phase('Fix');
   report = await agent(
-    `Eres el CONSTRUCTOR (Opus) del ciclo "${t.title}". El revisor independiente encontró esto:
+    `You are the BUILDER (Opus) of the cycle "${t.title}". The independent reviewer found this:
 ${COMMON(t)}${corrections}
 
-Hallazgos:
+Findings:
 ${JSON.stringify(review.findings, null, 2)}
 
-Corrige todos los bloqueantes e importantes, y los menores que tengan sentido. Cada uno empieza con la prueba que lo reproduce (tdd) y se arregla en su raíz (principle-fix-root-causes). Si no estás de acuerdo con un hallazgo, explícalo en deviations. Corre la verificación completa hasta verde y cierra con commit y push: no dejes nada sin commit. Devuelve el reporte con el schema.`,
+Fix every blocker and important finding, and the minor ones that make sense. Each one starts with the test that reproduces it (tdd) and is fixed at its root (principle-fix-root-causes). If you disagree with a finding, explain it in deviations. Run the full verification until green and finish with a commit and push: leave nothing uncommitted. Return the report with the schema.`,
     {
       model: 'opus',
-      phase: 'Corregir',
-      label: `corrección:${t.key}:${round}`,
+      phase: 'Fix',
+      label: `fix:${t.key}:${round}`,
       schema: REPORT_SCHEMA,
     },
   );

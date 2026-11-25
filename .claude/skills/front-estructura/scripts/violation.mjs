@@ -1,4 +1,4 @@
-// Un incumplimiento de una regla en un archivo, con la línea cuando la regla la conoce.
+// A rule violation in a file, with the line when the rule knows it.
 export class Violation {
   constructor(file, ruleId, message, line = null) {
     this.file = file;

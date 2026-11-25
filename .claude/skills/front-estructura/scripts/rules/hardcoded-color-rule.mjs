@@ -6,12 +6,12 @@ export class HardcodedColorRule extends PatternRule {
   constructor() {
     super(
       RuleId.HARDCODED_COLOR,
-      'los colores salen de los tokens y del tema, no de Color(0x...) ni Colors.',
+      'colors come from the tokens and the theme, not from Color(0x...) or Colors.',
       /\bColor\(\s*0x|\bColors\./,
     );
   }
 
-  // Los tokens y el tema de ui sí definen colores; solo los microfrontends los consumen.
+  // The tokens and the ui theme do define colors; only microfrontends consume them.
   appliesTo(file) {
     return FrontPaths.isMicrofrontendLib(file);
   }

@@ -1,42 +1,42 @@
-# 0020. Terraform por stacks y runtime de API elegido por servicio
+# 0020. Terraform by stacks and API runtime chosen per service
 
-- Estado: Aceptada
-- Fecha: 2026-11-13
+- Status: Accepted
+- Date: 2026-11-13
 
-## Contexto
+## Context
 
-El plan pide una raíz `platform` y una raíz por servicio con estado propio, API Gateway HTTP detrás de CloudFront con WAF y una base por servicio dentro de la instancia RDS compartida. La primera versión tenía una sola raíz con los servicios en un mapa, las APIs en Fargate detrás de un ALB público, un esquema por servicio en una base `platform` y lectura por un RDS Proxy que no admite réplicas fuera de Aurora. Desplegar un servicio planeaba toda la plataforma y AWS divergía del entorno local.
+The plan asks for a `platform` root and one root per service with its own state, an HTTP API Gateway behind CloudFront with WAF and one database per service inside the shared RDS instance. The first version had a single root with the services in a map, the APIs on Fargate behind a public ALB, one schema per service in a `platform` database and reads through an RDS Proxy that does not support replicas outside Aurora. Deploying one service planned the whole platform and AWS diverged from the local environment.
 
-## Decisión
+## Decision
 
-- Estructura (la misma del proyecto Solventa): `modules/`, `stacks/<capa>` y `environments/<ambiente>/<stack>/{backend.tfvars,terraform.tfvars}`. Cada stack tiene `config.tf` con backend S3 vacío, `remote_state.tf` y un `variables_common.tf` idéntico en todos. Stacks: `network`, `platform`, `data`, `messaging`, `edge` y `service`, que se instancia una vez por servicio con su estado en `<región>/services/<servicio>/terraform.tfstate`.
-- Ambientes `local` (LocalStack: `platform` sin cómputo y `messaging`), `dev`, `staging` y `prod`. Scripts en `backend/infra/scripts`: `deploy-aws.sh`, `local.sh` y `tf-validate.mjs`.
-- Runtime por servicio: `api.runtime = "lambda"` (API Gateway HTTP) o `"fargate"` (ALB interno por VPC link). Todas las APIs entran por la misma API HTTP detrás de CloudFront y WAF; un autorizador exige `X-Origin-Verify`, cuyo valor vive en Secrets Manager. El tiempo real va siempre en Fargate tras un ALB público. Workers Fargate escalan por cola desde cero y los consumidores pueden ser Lambda.
-- Datos: una base por shard de cada servicio (`<servicio>_shard_<n>`) y la base `catalog`, como `init.sql`. El bootstrap crea roles, bases con su dueño, `vector`, roles `catalog_owner` y `catalog_reader`, y nunca borra. Cada servicio recibe `DB_DATABASES`. La lectura va directo a las réplicas (`DB_READER_HOSTS`); RDS Proxy queda para escribir.
-- Mínimo privilegio: el IAM va por componente. La mensajería sale de `producers` y `consumer` de `topology.json`: cada worker y cada consumidor consumen solo su cola, y la API y el tiempo real no consumen. `files_access` y `ses_send` se piden por componente. Valkey limita cada usuario a `~<servicio>:*` con autenticación IAM; los servicios salen solo por HTTPS y un security group de clientes abre RDS Proxy, réplicas, Valkey y OpenObserve.
-- Claves: todas las CMK salen del módulo `kms-key`, con la misma política base. Los logs del cómputo comparten una CMK por ambiente del stack `platform`.
-- Despliegue: `deploy-aws.sh plan` toma el candado del estado y guarda el plan; `apply` aplica solo ese plan guardado.
-- El ambiente `local` de Terraform aplica `platform` y `messaging` contra LocalStack.
-- CI: `ci-ok` sigue agregando solo los jobs de `ci.yml`. La protección de `main` (exigir `ci-ok` y los checks de `security.yml` que se decidan) la configura el dueño del repositorio en GitHub; no se gestiona desde el código. Las pruebas del backend exigen 80 % de líneas, sentencias y funciones y 75 % de ramas por proyecto.
+- Structure (the same as the Solventa project): `modules/`, `stacks/<layer>` and `environments/<environment>/<stack>/{backend.tfvars,terraform.tfvars}`. Each stack has `config.tf` with an empty S3 backend, `remote_state.tf` and a `variables_common.tf` identical in all of them. Stacks: `network`, `platform`, `data`, `messaging`, `edge` and `service`, which is instantiated once per service with its state in `<region>/services/<service>/terraform.tfstate`.
+- Environments `local` (LocalStack: `platform` without compute and `messaging`), `dev`, `staging` and `prod`. Scripts in `backend/infra/scripts`: `deploy-aws.sh`, `local.sh` and `tf-validate.mjs`.
+- Runtime per service: `api.runtime = "lambda"` (HTTP API Gateway) or `"fargate"` (internal ALB through a VPC link). All APIs come in through the same HTTP API behind CloudFront and WAF; an authorizer requires `X-Origin-Verify`, whose value lives in Secrets Manager. Real time always runs on Fargate behind a public ALB. Fargate workers scale by queue from zero and consumers can be Lambda.
+- Data: one database per shard of each service (`<service>_shard_<n>`) and the `catalog` database, like `init.sql`. The bootstrap creates roles, databases with their owner, `vector`, the `catalog_owner` and `catalog_reader` roles, and never deletes. Each service receives `DB_DATABASES`. Reads go directly to the replicas (`DB_READER_HOSTS`); RDS Proxy is kept for writes.
+- Least privilege: IAM is per component. Messaging comes from `producers` and `consumer` in `topology.json`: each worker and each consumer consumes only its queue, and the API and real time do not consume. `files_access` and `ses_send` are requested per component. Valkey limits each user to `~<service>:*` with IAM authentication; services only go out over HTTPS and a client security group opens RDS Proxy, replicas, Valkey and OpenObserve.
+- Keys: every CMK comes from the `kms-key` module, with the same base policy. Compute logs share one CMK per environment from the `platform` stack.
+- Deployment: `deploy-aws.sh plan` takes the state lock and saves the plan; `apply` applies only that saved plan.
+- The Terraform `local` environment applies `platform` and `messaging` against LocalStack.
+- CI: `ci-ok` still aggregates only the jobs in `ci.yml`. The `main` protection (require `ci-ok` and whichever `security.yml` checks are decided) is configured by the repository owner on GitHub; it is not managed from code. Backend tests require 80 % of lines, statements and functions and 75 % of branches per project.
 
-## Consecuencias
+## Consequences
 
-### Positivas
+### Positive
 
-- Desplegar un servicio solo planea su stack. Cambiar el runtime de su API es un campo y un artefacto.
-- AWS y local usan las mismas bases, nombres de colas y filtros.
-- `terraform test` con proveedores simulados prueba la lógica de los stacks sin AWS.
+- Deploying a service only plans its stack. Changing the runtime of its API is one field and one artifact.
+- AWS and local use the same databases, queue names and filters.
+- `terraform test` with mocked providers tests the stacks' logic without AWS.
 
-### Costos
+### Costs
 
-- Seis stacks y un estado por servicio: hay que respetar el orden de despliegue y las prioridades de listener únicas entre servicios.
-- Un ALB interno y un VPC link si alguna API corre en Fargate. Las lecturas a réplica no tienen pooling de RDS Proxy.
-- Rotar el secreto de origen exige aplicar `platform` y luego `edge`. Las salidas nulas no quedan en el estado, por eso los stacks completan con `null` lo que leen de `platform`.
-- `dependency-cruiser` queda pendiente hasta el primer servicio en `backend/apps`: hoy no hay capas que verificar y los límites entre proyectos ya los cubren los tags de Nx.
+- Six stacks and one state per service: the deployment order and listener priorities unique across services have to be respected.
+- An internal ALB and a VPC link if any API runs on Fargate. Replica reads have no RDS Proxy pooling.
+- Rotating the origin secret requires applying `platform` and then `edge`. Null outputs are not kept in the state, which is why the stacks fill in with `null` what they read from `platform`.
+- `dependency-cruiser` is pending until the first service in `backend/apps`: today there are no layers to verify and the boundaries between projects are already covered by Nx tags.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Servicios como mapa en una sola raíz: un apply por servicio tocaba toda la plataforma.
-- Esquema por servicio en una base compartida: rompe el shard lógico del ADR 0010 y diverge del entorno local.
-- Proxy de lectura por réplica: RDS Proxy no lo admite fuera de Aurora. Aurora queda como opción si se necesita pooling de lectura.
-- CloudFront con un origen por servicio (ALB o API Gateway): obliga a repetir las rutas en `edge`.
+- Services as a map in a single root: one apply per service touched the whole platform.
+- One schema per service in a shared database: it breaks the logical shard of ADR 0010 and diverges from the local environment.
+- A read proxy per replica: RDS Proxy does not support it outside Aurora. Aurora remains an option if read pooling is needed.
+- CloudFront with one origin per service (ALB or API Gateway): it forces repeating the routes in `edge`.

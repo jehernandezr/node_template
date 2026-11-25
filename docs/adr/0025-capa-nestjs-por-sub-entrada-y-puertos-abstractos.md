@@ -1,19 +1,19 @@
-# 0025. Capa NestJS por sub-entrada y puertos como clases abstractas
+# 0025. NestJS layer per sub-entry point and ports as abstract classes
 
-- Estado: Aceptada
-- Fecha: 2026-11-14
+- Status: Accepted
+- Date: 2026-11-14
 
-## Contexto
+## Context
 
-Las librerías de plataforma no tenían cableado de NestJS. Cada servicio unía a mano puertos y adaptadores con fábricas, y los puertos eran interfaces sin token de inyección, así que cada uno necesitaba un `Symbol` y un `@Inject`. Ese código se repetía en cada servicio y ataba el arranque de cada uno a los detalles de la librería.
+The platform libraries had no NestJS wiring. Each service wired ports and adapters by hand with factories, and the ports were interfaces without an injection token, so each one needed a `Symbol` and an `@Inject`. That code was repeated in every service and tied each one's bootstrap to the library's details.
 
-## Decisión
+## Decision
 
-### Puertos como clases abstractas
+### Ports as abstract classes
 
-Todo puerto es una clase abstracta sin decoradores, y es su propio token de inyección. El dominio no importa NestJS. Se usa `Symbol` solo cuando conviven varias instancias del mismo tipo (`SNS_CLIENT`, `SQS_CLIENT` o un filtro Bloom por nombre con `bloomFilterToken(name)`).
+Every port is an abstract class without decorators, and it is its own injection token. The domain does not import NestJS. A `Symbol` is used only when several instances of the same type coexist (`SNS_CLIENT`, `SQS_CLIENT` or a Bloom filter by name with `bloomFilterToken(name)`).
 
-Convertir una interfaz en clase abstracta no rompe a quien la implementa, ni a los dobles hechos con objetos literales, siempre que la clase solo tenga miembros abstractos.
+Turning an interface into an abstract class does not break its implementers, nor doubles made with object literals, as long as the class only has abstract members.
 
 ```ts
 export abstract class Clock {
@@ -26,13 +26,13 @@ export class SystemClock extends Clock {
 }
 ```
 
-### Sub-entrada nest
+### The nest sub-entry point
 
-Cada librería con cableado expone `@platform/<lib>/nest`, que apunta a `src/nest/index.ts`. Fuera de `src/nest/` no se importa `@nestjs/*` ni otra sub-entrada `/nest`. Lo verifican la regla de ESLint `layout/no-nest-outside-nest-folder` de `backend/eslint.config.mjs` y `check-structure.mjs`. `domain/` ya tenía su propia regla.
+Each library with wiring exposes `@platform/<lib>/nest`, which points to `src/nest/index.ts`. Outside `src/nest/` nothing imports `@nestjs/*` or another `/nest` sub-entry point. This is checked by the ESLint rule `layout/no-nest-outside-nest-folder` in `backend/eslint.config.mjs` and by `check-structure.mjs`. `domain/` already had its own rule.
 
-### Módulos configurables
+### Configurable modules
 
-Se usa `ConfigurableModuleBuilder` de `@nestjs/common`, que genera `forRoot` y `forRootAsync` sin código propio. `forFeature` se escribe a mano cuando el servicio registra algo suyo.
+`ConfigurableModuleBuilder` from `@nestjs/common` is used, which generates `forRoot` and `forRootAsync` without in-house code. `forFeature` is written by hand when the service registers something of its own.
 
 ```ts
 // @platform/cache/src/nest/cache.module-definition.ts
@@ -50,88 +50,88 @@ export class CacheModule extends CacheModuleClass {
 }
 ```
 
-### Quién elige el adaptador
+### Who chooses the adapter
 
-Un módulo del núcleo nunca importa un adaptador, porque la dependencia iría al revés. La opción recibe el tipo del adaptador y el módulo lo liga al puerto.
+A core module never imports an adapter, because the dependency would point the wrong way. The option receives the adapter's type and the module binds it to the port.
 
 ```ts
 export interface CacheModuleOptions {
-  /** Por defecto `InMemoryCache`, el modo local sin Valkey. */
+  /** Defaults to `InMemoryCache`, the local mode without Valkey. */
   readonly store?: Type<CachePort>;
 }
-// en CacheModule: { provide: CachePort, useExisting: options.store ?? InMemoryCache }
+// in CacheModule: { provide: CachePort, useExisting: options.store ?? InMemoryCache }
 ```
 
-Sin la opción, el módulo obtiene el modo local. Las demás opciones siguen el mismo patrón: `RateLimitModule` (`limiter`, `degradeLocally`), `ShardingModule` (`routingCache`, `channel`, `directory`), `MessagingModule` (`outboxStore`, `processedStore`, `bus`, `publisher`), `InternalApiModule` (`processedStore`) y `SagaModule` (`store`). El adaptador exporta sus clases desde su módulo y la app las nombra.
+Without the option, the module gets the local mode. The other options follow the same pattern: `RateLimitModule` (`limiter`, `degradeLocally`), `ShardingModule` (`routingCache`, `channel`, `directory`), `MessagingModule` (`outboxStore`, `processedStore`, `bus`, `publisher`), `InternalApiModule` (`processedStore`) and `SagaModule` (`store`). The adapter exports its classes from its module and the app names them.
 
-### Configuración
+### Configuration
 
-`ConfigModule.forRoot({ schema })` recibe solo el esquema propio del servicio. Cada módulo de librería importa `ConfigModule.forFeature(section)` con su sección (`LoggingConfig`, `TelemetryConfig`, `DatabaseConfig`, `ValkeyConfig`, `AwsConfig`), y se lee con `AppConfig.get(section)`. Así el servicio no escribe `.extend(...)` ni conoce variables que no son suyas. Todo se valida al arrancar, y si algo falla el arranque lista todos los errores a la vez.
+`ConfigModule.forRoot({ schema })` receives only the service's own schema. Each library module imports `ConfigModule.forFeature(section)` with its section (`LoggingConfig`, `TelemetryConfig`, `DatabaseConfig`, `ValkeyConfig`, `AwsConfig`), and it is read with `AppConfig.get(section)`. That way the service does not write `.extend(...)` or know variables that are not its own. Everything is validated at startup, and if something fails the startup lists all the errors at once.
 
-### Ciclo de vida
+### Lifecycle
 
-Hay tres momentos, en este orden de apagado:
+There are three moments, in this shutdown order:
 
-1. `OnModuleDestroy` de lo que genera trabajo: `JobRunner`, `SqsPoller` y las suscripciones. Sus módulos no son globales y se importan después, así que Nest los destruye primero.
-2. `OnModuleDestroy` de los recursos, en módulos globales importados antes: clientes SNS y SQS (`AwsModule`, que solo implementa este hook), Valkey con `quit` y el `DataSource` de TypeORM.
-3. `OnApplicationShutdown` vacía la telemetría.
+1. `OnModuleDestroy` of what generates work: `JobRunner`, `SqsPoller` and the subscriptions. Their modules are not global and are imported later, so Nest destroys them first.
+2. `OnModuleDestroy` of the resources, in global modules imported earlier: SNS and SQS clients (`AwsModule`, which only implements this hook), Valkey with `quit` and the TypeORM `DataSource`.
+3. `OnApplicationShutdown` flushes the telemetry.
 
-### Salud
+### Health
 
-`HealthRegistry` vive en observability, con `register(check)` y `checkAll()`, y `HealthCheckable` vive en el kernel. Cada adaptador de red se registra en su `onModuleInit`. Los endpoints `/health/live` y `/health/ready` los monta F4 en `@platform/http` sobre `HealthRegistry`.
+`HealthRegistry` lives in observability, with `register(check)` and `checkAll()`, and `HealthCheckable` lives in the kernel. Each network adapter registers itself in its `onModuleInit`. The `/health/live` and `/health/ready` endpoints are mounted by F4 in `@platform/http` on top of `HealthRegistry`.
 
-### Telemetría
+### Telemetry
 
-El arranque temprano se conserva fuera de Nest, en `@platform/observability/setup`. Debe parchear http, pg e iovalkey antes de que se importen, así que `instrumentation.ts` es la primera importación de `main.ts`. `ObservabilityModule` provee `TELEMETRY` con ese valor y solo gobierna el apagado.
+The early bootstrap is kept outside Nest, in `@platform/observability/setup`. It must patch http, pg and iovalkey before they are imported, so `instrumentation.ts` is the first import of `main.ts`. `ObservabilityModule` provides `TELEMETRY` with that value and only governs shutdown.
 
 ```ts
-// instrumentation.ts, primera importación de main.ts
+// instrumentation.ts, first import of main.ts
 import { TelemetryBootstrap } from '@platform/observability/setup';
 export const telemetry = TelemetryBootstrap.start(process.env);
 ```
 
-### Dobles de prueba
+### Test doubles
 
-Los dobles salen por `@platform/<lib>/test-utils`, no por el índice público. Cada doble pasa la misma prueba de contrato `run<Port>Contract(factory)` que el adaptador real.
+Doubles are exported through `@platform/<lib>/test-utils`, not through the public index. Each double passes the same `run<Port>Contract(factory)` contract test as the real adapter.
 
-### Módulos por librería
+### Modules per library
 
-| Librería          | Módulo                   | Provee                                                                                                                                                                         |
+| Library           | Module                   | Provides                                                                                                                                                                       |
 | ----------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | config            | `ConfigModule`           | `AppConfig`                                                                                                                                                                    |
 | observability     | `ObservabilityModule`    | `LoggerPort`, `MetricsPort`, `RequestContextStore`, `Tracing`, `Redactor`, `HealthRegistry`, `TELEMETRY`                                                                       |
-| resilience        | `ResilienceModule`       | `ResilienceRegistry`; `forFeature({ name, policy })` agrega una política                                                                                                       |
-| cache             | `CacheModule`            | `CachePort`, `SingleFlight`, `CacheAside` por espacio (`cacheAsideToken(namespace)`)                                                                                           |
+| resilience        | `ResilienceModule`       | `ResilienceRegistry`; `forFeature({ name, policy })` adds a policy                                                                                                             |
+| cache             | `CacheModule`            | `CachePort`, `SingleFlight`, `CacheAside` per namespace (`cacheAsideToken(namespace)`)                                                                                         |
 | rate-limit        | `RateLimitModule`        | `RateLimiter`, `RateLimitGuard`                                                                                                                                                |
-| bloom             | `BloomModule`            | `bloomFilterToken(name)` por `forFeature`, `BloomRebuildJob`                                                                                                                   |
+| bloom             | `BloomModule`            | `bloomFilterToken(name)` per `forFeature`, `BloomRebuildJob`                                                                                                                   |
 | scheduling        | `SchedulingModule`       | `JobRunner`, `JobLock`                                                                                                                                                         |
 | sharding          | `ShardingModule`         | `ShardRouter`, `DirectoryChangeSubscription`                                                                                                                                   |
 | messaging         | `MessagingModule`        | `OutboxWriter`, `MessageBus`, `MessageDispatcher`, `OutboxRelay`, `MessagingExplorer`, jobs                                                                                    |
 | internal-api      | `InternalApiModule`      | `InternalClient`, `InternalRouter`, `Transport`, `InternalApiController`, jobs                                                                                                 |
 | persistence       | `PersistenceModule`      | `TransactionManager`, `EntityManagerProvider`, `ShardResolver`, `ShardScope`, `AcrossShards`                                                                                   |
 | adapters-postgres | `PostgresPlatformModule` | `TypeOrmOutboxStore`, `TypeOrmProcessedMessageStore`, `TypeOrmIdempotencyStore`, `TypeOrmDirectoryStore`                                                                       |
-| saga              | `SagaModule`             | `Sagas`, `SagaEngine`, `SagaRecoveryJob`, `SagaRetentionJob`; `forFeature([definiciones])`                                                                                     |
-| adapters-aws      | `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `AwsMessagingNames`, `AwsErrorTranslator`; `SqsConsumerModule` (no global) provee `SqsPoller`       |
+| saga              | `SagaModule`             | `Sagas`, `SagaEngine`, `SagaRecoveryJob`, `SagaRetentionJob`; `forFeature([definitions])`                                                                                      |
+| adapters-aws      | `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `AwsMessagingNames`, `AwsErrorTranslator`; `SqsConsumerModule` (not global) provides `SqsPoller`    |
 | adapters-valkey   | `ValkeyModule`           | `VALKEY_CLIENT`, `ValkeyCache`, `ValkeyRateLimiter`, `ValkeyRoutingCache`, `ValkeyShardDirectoryChannel`, `ValkeyBloomFilterFactory`, `ValkeyJobLock`, `ValkeyHealthIndicator` |
 
-## Consecuencias
+## Consequences
 
-### Positivas
+### Positive
 
-- El servicio solo nombra adaptadores y su esquema de configuración.
-- El dominio sigue sin depender de NestJS.
-- Un servicio sin Valkey arranca en modo local sin cambiar código.
-- Los dobles quedan fuera del índice público.
+- The service only names adapters and its configuration schema.
+- The domain still does not depend on NestJS.
+- A service without Valkey starts in local mode without changing code.
+- Doubles stay out of the public index.
 
-### Costos
+### Costs
 
-- Cada librería suma una carpeta `src/nest` y una sub-entrada en `tsconfig.base.json`.
-- Dependencias nuevas: `@nestjs/common`, `@nestjs/core`, `@nestjs/testing`, `reflect-metadata` y `rxjs`.
-- Hay que migrar los consumidores de las interfaces anteriores. Los reexportes de compatibilidad ya se retiraron.
+- Each library adds a `src/nest` folder and a sub-entry point in `tsconfig.base.json`.
+- New dependencies: `@nestjs/common`, `@nestjs/core`, `@nestjs/testing`, `reflect-metadata` and `rxjs`.
+- The consumers of the previous interfaces have to be migrated. The compatibility re-exports have already been removed.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Que cada servicio cablee a mano los puertos: es el estado anterior, y el cableado se repite en cada servicio.
-- Que un módulo del núcleo importe el adaptador: la dependencia iría al revés.
-- Mover el arranque de OpenTelemetry a `ObservabilityModule`: rompe la instrumentación automática, que debe parchear antes de importar http, pg e iovalkey.
-- Un decorador `@Resilient`: se descarta, porque `ResilienceRegistry.execute` es la única vía.
+- Each service wiring the ports by hand: that is the previous state, and the wiring is repeated in every service.
+- A core module importing the adapter: the dependency would point the wrong way.
+- Moving the OpenTelemetry bootstrap to `ObservabilityModule`: it breaks automatic instrumentation, which must patch before http, pg and iovalkey are imported.
+- A `@Resilient` decorator: discarded, because `ResilienceRegistry.execute` is the only path.

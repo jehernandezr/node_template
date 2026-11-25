@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Repositorio git temporal para probar la CLI sin tocar el repositorio real.
+// Temporary git repository to test the CLI without touching the real repository.
 export class TempRepository {
   static CHECK_SCRIPT = fileURLToPath(
     new URL('../../check-structure.mjs', import.meta.url),
@@ -26,7 +26,7 @@ export class TempRepository {
 
   commitAll() {
     this.git('add', '-A');
-    // Sin hooks globales: el repositorio temporal no debe ejecutar los del usuario.
+    // No global hooks: the temporary repository must not run the user's hooks.
     this.git(
       '-c',
       'user.name=test',

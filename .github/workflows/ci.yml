@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   changes:
-    name: Cambios
+    name: Changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -33,7 +33,7 @@ jobs:
         id: filter
         with:
           filters: |
-            # Todo lo que cambia el JSON exportado, la topología, AsyncAPI o el Dart generado.
+            # Everything that changes the exported JSON, the topology, AsyncAPI or the generated Dart.
             contracts:
               - 'backend/libs/contracts/**'
               - 'backend/libs/platform/messaging/**'
@@ -55,7 +55,7 @@ jobs:
               - '.github/workflows/ci.yml'
 
   nx:
-    name: Nx affected (backend y front)
+    name: Nx affected (backend and front)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -71,7 +71,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - name: Leer la versión de Flutter
+      - name: Read the Flutter version
         id: flutter-version
         run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
 
@@ -83,13 +83,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # pnpm-workspace.yaml usa nodeLinker: hoisted; una carpeta node_modules dentro de
-      # backend/ indica una dependencia duplicada o una librería con package.json propio.
-      - name: Un solo node_modules
+      # pnpm-workspace.yaml uses nodeLinker: hoisted; a node_modules folder inside
+      # backend/ means a duplicated dependency or a library with its own package.json.
+      - name: Single node_modules
         run: |
           extra=$(find . -path ./node_modules -prune -o -name node_modules -type d -print -prune)
           if [ -n "$extra" ]; then
-            echo "::error::Hay node_modules fuera de la raíz: $extra"
+            echo "::error::There are node_modules outside the root: $extra"
             exit 1
           fi
 
@@ -108,30 +108,30 @@ jobs:
 
       - run: pnpm nx affected -t lint typecheck build analyze format-check
 
-      # El umbral de cobertura vive en backend/jest.preset.js: el mismo comando lo aplica en local.
-      - name: Pruebas del backend con cobertura mínima
+      # The coverage threshold lives in backend/jest.preset.js: the same command applies it locally.
+      - name: Backend tests with minimum coverage
         run: >-
           pnpm nx affected -t test --exclude='tag:lang:dart' --coverage
           --coverageReporters=text-summary
 
-      # Los cinco servicios en un proceso con PostgreSQL y Valkey reales: alta de tenant, tareas, avisos, reportes,
-      # factura y traslado del tenant. Sin Docker debe fallar, no pasar con cero pruebas.
-      - name: Flujo de punta a punta de la plataforma
+      # The five services in one process with real PostgreSQL and Valkey: tenant signup, tasks, notices, reports,
+      # invoice and tenant move. Without Docker it must fail, not pass with zero tests.
+      - name: Platform end-to-end flow
         run: pnpm nx affected -t e2e
         env:
           INTEGRATION_TESTS: require
 
-      - name: Pruebas del front
+      - name: Front tests
         run: pnpm nx affected -t test --exclude='*,!tag:lang:dart'
 
       - run: pnpm nx format:check
 
-      # Un servicio y un módulo recién generados pasan lint, test, typecheck y build en una copia del workspace.
-      - name: Humo de los generadores
+      # A freshly generated service and module pass lint, test, typecheck and build in a copy of the workspace.
+      - name: Generator smoke test
         run: pnpm nx run generators:smoke
 
   contracts:
-    name: Contratos
+    name: Contracts
     needs: changes
     if: needs.changes.outputs.contracts == 'true'
     runs-on: ubuntu-latest
@@ -148,7 +148,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - name: Leer la versión de Flutter
+      - name: Read the Flutter version
         id: flutter-version
         run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
 
@@ -160,18 +160,18 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # check cubre contract.json, asyncapi.json y backend/infra/terraform/topology.json.
-      - name: Deriva del export de contratos y de la topología
+      # check covers contract.json, asyncapi.json and backend/infra/terraform/topology.json.
+      - name: Contract export and topology drift
         run: pnpm nx run contracts-export:check
 
-      - name: Deriva del Dart generado
+      - name: Generated Dart drift
         run: |
           flutter pub get
           dart run contracts_gen --check
         working-directory: front
 
   web-deferred:
-    name: Web diferido
+    name: Deferred web
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -181,7 +181,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Leer la versión de Flutter
+      - name: Read the Flutter version
         id: flutter-version
         run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
 
@@ -197,7 +197,7 @@ jobs:
       - run: flutter build web --release --source-maps
         working-directory: front/apps/web
 
-      - name: Comprobar que los microfrontends siguen diferidos
+      - name: Check that the microfrontends stay deferred
         run: dart run ../../tools/check_deferred_chunks.dart
         working-directory: front/apps/web
 
@@ -217,8 +217,8 @@ jobs:
         with:
           persist-credentials: false
 
-      # setup-terraform no lee archivos de versión: se leen aquí, como con Flutter.
-      - name: Leer las versiones de Terraform y tflint
+      # setup-terraform does not read version files: they are read here, as with Flutter.
+      - name: Read the Terraform and tflint versions
         id: versions
         run: |
           echo "terraform=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
@@ -240,22 +240,22 @@ jobs:
 
       - run: terraform fmt -check -recursive
 
-      - name: init, validate y terraform test (stacks y ejemplos)
+      - name: init, validate and terraform test (stacks and examples)
         run: node ../scripts/tf-validate.mjs
 
-      - name: Pruebas de las Lambdas y scripts en Python
+      - name: Python Lambda and script tests
         run: |
           python3 -B -I -m unittest discover -s modules/rds-postgres/lambda/db_bootstrap -v
           python3 -B -I -m unittest discover -s modules/http-api/authorizer -v
           python3 -B -I -m unittest discover -s ../local/localstack -v
 
-      - name: Pruebas de los scripts del pipeline
+      - name: Pipeline script tests
         run: node --test ../scripts/__tests__/*.test.mjs
 
-      - name: vendor/ del bootstrap coincide con requirements.txt
+      - name: Bootstrap vendor/ matches requirements.txt
         run: python3 -B -I ../scripts/check_vendor.py modules/rds-postgres/lambda/db_bootstrap
 
-      - name: shellcheck de los scripts de infraestructura
+      - name: shellcheck of the infrastructure scripts
         run: shellcheck -x --source-path=SCRIPTDIR ../scripts/*.sh ../local/localstack/*.sh
 
       - name: tflint
@@ -278,14 +278,14 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - name: Comprobar el resultado de los jobs
+      - name: Check the job results
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "Resultados: $RESULTS"
+          echo "Results: $RESULTS"
           for r in $RESULTS; do
             if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
-              echo "::error::Hay jobs fallidos o cancelados."
+              echo "::error::Some jobs failed or were cancelled."
               exit 1
             fi
           done

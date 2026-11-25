@@ -1,18 +1,18 @@
-# Ejemplos de backend-codigo-enterprise
+# backend-codigo-enterprise examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies to you.
 
-## Reglas de revisión
+## Review rules
 
 ```
-- [ ] Capas respetadas: el dominio no importa infraestructura
-- [ ] Dependencias por constructor, tipadas con puertos, sin new de colaboradores
-- [ ] Reloj e ids inyectados
-- [ ] Enums, no literales, para eventos, errores, colas y permisos
-- [ ] Entradas externas validadas con zod en el borde
-- [ ] Errores de dominio con código y sin filtrar detalles al cliente
-- [ ] Pruebas en __tests__/ junto al código
-- [ ] Migración generada con la CLI y revisada, si cambió una entidad
-- [ ] Sin secretos, sin datos personales en logs
-- [ ] Sin comentarios en línea; JSDoc en cada método público
+- [ ] Layers respected: the domain does not import infrastructure
+- [ ] Dependencies through the constructor, typed with ports, no new of collaborators
+- [ ] Clock and ids injected
+- [ ] Enums, not literals, for events, errors, queues and permissions
+- [ ] External input validated with zod at the edge
+- [ ] Domain errors with a code and no details leaked to the client
+- [ ] Tests in __tests__/ next to the code
+- [ ] Migration generated with the CLI and reviewed, if an entity changed
+- [ ] No secrets, no personal data in logs
+- [ ] No inline comments; JSDoc on every public method
 ```

@@ -1,100 +1,100 @@
 ---
 name: front-nuevo-microfrontend
-description: 'Crear un microfrontend con front/tools/new_microfrontend.dart y lo que se escribe a mano. Úsala al crear o revisar un microfrontend nuevo.'
+description: 'Create a microfrontend with front/tools/new_microfrontend.dart and what is written by hand. Use it when creating or reviewing a new microfrontend.'
 paths:
   - 'front/tools/new_microfrontend/**'
   - 'front/microfrontends/*/lib/*.dart'
 ---
 
-# Microfrontend nuevo
+# New microfrontend
 
-El generador crea la estructura y el pegamento. Lo que queda es el dominio: el puerto del repositorio, un controlador y una pantalla por ruta, los textos y las pruebas. Las reglas de cada pieza están en `front-codigo`, `front-pruebas`, `front-i18n` y `front-accesibilidad`.
+The generator creates the structure and the glue. What remains is the domain: the repository port, one controller and one screen per route, the texts and the tests. The rules for each piece are in `front-codigo`, `front-pruebas`, `front-i18n` and `front-accesibilidad`.
 
-## Comando
+## Command
 
 ```bash
 dart run front/tools/new_microfrontend.dart reports --menu "Reportes" [--menu-en "Reports"] [--no-install]
 ```
 
-- El id va en minúsculas, de 2 a 24 caracteres (`^[a-z][a-z0-9]{1,23}$`). Es el primer segmento de las rutas.
-- `--menu-en` es opcional; por defecto es el id con mayúscula inicial.
-- `--no-install` omite los tres pasos de instalación de abajo.
+- The id is lowercase, 2 to 24 characters (`^[a-z][a-z0-9]{1,23}$`). It is the first segment of the routes.
+- `--menu-en` is optional; it defaults to the id with an initial capital.
+- `--no-install` skips the three install steps below.
 
-## Qué crea
+## What it creates
 
-En `front/microfrontends/reports`:
+In `front/microfrontends/reports`:
 
-- `.gitignore`, `analysis_options.yaml`, `l10n.yaml` y `README.md`.
-- `pubspec.yaml` (`mf_reports`, con versiones exactas) y `lib/mf_reports.dart`, con `reportsManifest`: la ruta de lista, la ruta hija del detalle y el acceso `ReportsAccess.read`.
-- `lib/src/shared/`: `constants/reports_paths.dart` (`reportsId`, `reportsMenuLabel` y `ReportsPaths`), `constants/reports_access.dart` (`ReportsAccess.read = AccessRule.authenticated()`) y `constants/reports_demo.dart`; `enums/reports_operation.dart`; `types/reports_item.dart` y `types/reports_not_found_exception.dart`.
-- `lib/src/data/`: `reports_repository.dart` (el puerto), `fake_reports_repository.dart` con `DemoBehavior`, y `reports_data.dart` con `RepositoryBinding.demoOnly`.
-- `lib/src/screens/`: `reports_list_controller.dart` y `reports_detail_controller.dart` con `AsyncLoader`; `reports_list_screen.dart` y `reports_detail_screen.dart` con `ControllerBuilder`; `reports_screens.dart` con `ReportsScreens` estático y `DeferredLocalizations`; `screens.dart`.
-- `lib/src/l10n/app_es.arb` y `app_en.arb`, y `test/` con `utils/reports_test_app.dart` (`ReportsTestApp`), `utils/scripted_reports_repository.dart`, `manifest_test.dart`, y pruebas de `data/`, `screens/` y `l10n/`.
-- Agrega `  - microfrontends/reports` a `front/pubspec.yaml`.
+- `.gitignore`, `analysis_options.yaml`, `l10n.yaml` and `README.md`.
+- `pubspec.yaml` (`mf_reports`, with exact versions) and `lib/mf_reports.dart`, with `reportsManifest`: the list route, the child detail route and the `ReportsAccess.read` access rule.
+- `lib/src/shared/`: `constants/reports_paths.dart` (`reportsId`, `reportsMenuLabel` and `ReportsPaths`), `constants/reports_access.dart` (`ReportsAccess.read = AccessRule.authenticated()`) and `constants/reports_demo.dart`; `enums/reports_operation.dart`; `types/reports_item.dart` and `types/reports_not_found_exception.dart`.
+- `lib/src/data/`: `reports_repository.dart` (the port), `fake_reports_repository.dart` with `DemoBehavior`, and `reports_data.dart` with `RepositoryBinding.demoOnly`.
+- `lib/src/screens/`: `reports_list_controller.dart` and `reports_detail_controller.dart` with `AsyncLoader`; `reports_list_screen.dart` and `reports_detail_screen.dart` with `ControllerBuilder`; `reports_screens.dart` with the static `ReportsScreens` and `DeferredLocalizations`; `screens.dart`.
+- `lib/src/l10n/app_es.arb` and `app_en.arb`, and `test/` with `utils/reports_test_app.dart` (`ReportsTestApp`), `utils/scripted_reports_repository.dart`, `manifest_test.dart`, and tests for `data/`, `screens/` and `l10n/`.
+- Adds `  - microfrontends/reports` to `front/pubspec.yaml`.
 
-Después, salvo `--no-install`, corre `flutter pub get` en `front/`, `flutter gen-l10n` y `dart format lib test` en el paquete nuevo.
+Then, unless `--no-install` is given, it runs `flutter pub get` in `front/`, and `flutter gen-l10n` and `dart format lib test` in the new package.
 
-El generador no edita las apps. Imprime lo que cada app necesita.
+The generator does not edit the apps. It prints what each app needs.
 
-## Qué agregar a mano en cada app
+## What to add by hand in each app
 
-El generador imprime tres piezas para cada app:
+The generator prints three pieces for each app:
 
-1. El import `import 'package:mf_reports/mf_reports.dart' show reportsManifest;`.
-2. La línea `reportsManifest,` en la lista de `front/apps/web/lib/src/web_shell.dart` (`webManifests`) y en la de `front/apps/mobile/lib/src/mobile_shell.dart` (`mobileManifests`).
-3. La dependencia `mf_reports` con `path: ../../microfrontends/reports` en `dependencies` de `front/apps/web/pubspec.yaml` y de `front/apps/mobile/pubspec.yaml`.
+1. The import `import 'package:mf_reports/mf_reports.dart' show reportsManifest;`.
+2. The line `reportsManifest,` in the list in `front/apps/web/lib/src/web_shell.dart` (`webManifests`) and in the one in `front/apps/mobile/lib/src/mobile_shell.dart` (`mobileManifests`).
+3. The `mf_reports` dependency with `path: ../../microfrontends/reports` under `dependencies` in `front/apps/web/pubspec.yaml` and `front/apps/mobile/pubspec.yaml`.
 
-## Qué se escribe a mano
+## What is written by hand
 
-- **Puerto y datos:** el puerto `ReportsRepository` (una `abstract interface class` que implementa `ScopedResource`) y `FakeReportsRepository` con `DemoBehavior` para latencia y fallos. Los datos de demostración son `FakeReportsRepository.demoItems`; `reports_demo.dart` solo tiene la latencia. Un repositorio real no existe hasta que haya contrato.
-- **Controladores:** uno por pantalla, con `AsyncLoader` para cada carga y `ActionRunner` si escribe, los dos escuchados con `addListener(notifyListeners)` y liberados en `dispose`. `start` carga y sirve también de reintento. Sin `State` con `Future`, sin `try/catch` de lógica.
-- **Pantallas:** una por ruta, `StatelessWidget` con `ControllerBuilder`, con los cuatro estados.
-- **Textos:** las claves nuevas en `app_es.arb` y `app_en.arb`, con placeholders.
-- **Pruebas:** controladores sin widgets, pantallas con los cuatro estados, anchos compacto y expandido, `expectAccessible` y escala 2x.
-- **Acceso:** `AccessRule.permissions([...])` con el `Permission` real cuando exista. Hoy `ReportsAccess.read` usa `AccessRule.authenticated()`, porque `Permission` no tiene un permiso de reportes.
-- **Escritura:** si hay acciones que cambian datos, `ActionRunner`. Una acción sensible se protege con `AccessRule.mfa` y `context.can`, o con `scope.services.requestStepUp()` cuando la sesión no la cumple.
-- **Enlaces profundos:** `deepLinks` en el manifiesto, solo si hacen falta.
+- **Port and data:** the `ReportsRepository` port (an `abstract interface class` that implements `ScopedResource`) and `FakeReportsRepository` with `DemoBehavior` for latency and failures. The demo data is `FakeReportsRepository.demoItems`; `reports_demo.dart` only holds the latency. A real repository does not exist until there is a contract.
+- **Controllers:** one per screen, with an `AsyncLoader` for each load and an `ActionRunner` if it writes, both listened to with `addListener(notifyListeners)` and released in `dispose`. `start` loads and also serves as retry. No `State` with a `Future`, no logic `try/catch`.
+- **Screens:** one per route, a `StatelessWidget` with `ControllerBuilder`, with the four states.
+- **Texts:** the new keys in `app_es.arb` and `app_en.arb`, with placeholders.
+- **Tests:** controllers without widgets, screens with the four states, compact and expanded widths, `expectAccessible` and 2x scale.
+- **Access:** `AccessRule.permissions([...])` with the real `Permission` once it exists. Today `ReportsAccess.read` uses `AccessRule.authenticated()`, because `Permission` has no reports permission.
+- **Writes:** if there are actions that change data, `ActionRunner`. A sensitive action is protected with `AccessRule.mfa` and `context.can`, or with `scope.services.requestStepUp()` when the session does not meet it.
+- **Deep links:** `deepLinks` in the manifest, only if needed.
 
-## Piezas
+## Pieces
 
-- Manifiesto: dónde: `lib/mf_reports.dart`; qué hace: id, plataformas, modos, acceso, menú y rutas diferidas
-- Constantes de rutas: dónde: `lib/src/shared/constants/`; qué hace: `ReportsPaths.list`, `ReportsPaths.detail(id)`, `idParam` e `idSegment`
-- Puerto y datos demo: dónde: `lib/src/data/`; qué hace: `ReportsRepository`, `FakeReportsRepository`, `ReportsData.repository`
-- Controlador: dónde: `lib/src/screens/*_controller.dart`; qué hace: Estado con `AsyncLoader`, acciones con `ActionRunner`
-- Pantalla: dónde: `lib/src/screens/*_screen.dart`; qué hace: `ControllerBuilder` y `AsyncValueView`, sin lógica
-- Puente de pantallas: dónde: `lib/src/screens/reports_screens.dart`; qué hace: `ReportsScreens` estático, con `DeferredLocalizations` y `scope.repository`
-- Textos: dónde: `lib/src/l10n/*.arb`; qué hace: `ReportsLocalizations`, con placeholders
+- Manifest: where: `lib/mf_reports.dart`; what it does: id, platforms, modes, access, menu and deferred routes
+- Route constants: where: `lib/src/shared/constants/`; what it does: `ReportsPaths.list`, `ReportsPaths.detail(id)`, `idParam` and `idSegment`
+- Port and demo data: where: `lib/src/data/`; what it does: `ReportsRepository`, `FakeReportsRepository`, `ReportsData.repository`
+- Controller: where: `lib/src/screens/*_controller.dart`; what it does: state with `AsyncLoader`, actions with `ActionRunner`
+- Screen: where: `lib/src/screens/*_screen.dart`; what it does: `ControllerBuilder` and `AsyncValueView`, no logic
+- Screens bridge: where: `lib/src/screens/reports_screens.dart`; what it does: static `ReportsScreens`, with `DeferredLocalizations` and `scope.repository`
+- Texts: where: `lib/src/l10n/*.arb`; what it does: `ReportsLocalizations`, with placeholders
 
-## Esquema del manifiesto y del puente
+## Manifest and bridge outline
 
-Igual que `tasks` (`mf_tasks.dart`). El manifiesto solo importa constantes, enums y el puente, con `deferred as`:
+Same as `tasks` (`mf_tasks.dart`). The manifest only imports constants, enums and the bridge, with `deferred as`:
 
-Ejemplo en `references/ejemplos.md`, sección "Esquema del manifiesto y del puente".
+Example in `references/ejemplos.md`, section "Manifest outline".
 
-El puente es una clase estática. `DeferredLocalizations` carga los delegados con la pantalla, y el repositorio sale del binding del microfrontend:
+The bridge is a static class. `DeferredLocalizations` loads the delegates with the screen, and the repository comes from the microfrontend's binding:
 
-Ejemplo en `references/ejemplos.md`, sección "Esquema del manifiesto y del puente".
+Example in `references/ejemplos.md`, section "Bridge outline".
 
-## Checklist del revisor
+## Reviewer checklist
 
-- Ninguna pantalla tiene `State` con `Future`, `try/catch` ni `widget.repository.`.
-- Cada controlador usa `AsyncLoader`, y `ActionRunner` si escribe. Su prueba no monta widgets.
-- Cada pantalla tiene prueba de sus cuatro estados, un ancho compacto y uno expandido, `expectAccessible` y una prueba a 2x de escala.
-- Colores desde `Theme` y `context.statusColors`; textos desde el ARB con placeholders; `AlignmentDirectional` y `EdgeInsetsDirectional`.
-- Diálogos con `context.showLocalizedDialog`.
-- `check_microfrontend_boundaries` y `check_deferred_chunks` en verde.
-- Aceptación: `pnpm nx run-many -t format-check analyze test --projects=front-mf_<id> --skip-nx-cache`.
+- No screen has a `State` with a `Future`, a `try/catch` or `widget.repository.`.
+- Every controller uses `AsyncLoader`, and `ActionRunner` if it writes. Its test does not mount widgets.
+- Every screen has a test for its four states, one compact and one expanded width, `expectAccessible` and a test at 2x scale.
+- Colors from `Theme` and `context.statusColors`; texts from the ARB with placeholders; `AlignmentDirectional` and `EdgeInsetsDirectional`.
+- Dialogs with `context.showLocalizedDialog`.
+- `check_microfrontend_boundaries` and `check_deferred_chunks` green.
+- Acceptance: `pnpm nx run-many -t format-check analyze test --projects=front-mf_<id> --skip-nx-cache`.
 
-## Cambiar el generador
+## Changing the generator
 
-Las plantillas viven en `front/tools/new_microfrontend/templates/` como archivos `.tmpl`, con los marcadores `{{id}}`, `{{Pascal}}`, `{{menuEs}}`, `{{menuEn}}`, `{{menuEsJson}}` y `{{menuEnJson}}`. Un marcador desconocido hace fallar al generador antes de escribir nada. El formateador y el analizador no leen los `.tmpl`, así que cada cambio de plantilla se comprueba de punta a punta:
+The templates live in `front/tools/new_microfrontend/templates/` as `.tmpl` files, with the markers `{{id}}`, `{{Pascal}}`, `{{menuEs}}`, `{{menuEn}}`, `{{menuEsJson}}` and `{{menuEnJson}}`. An unknown marker makes the generator fail before writing anything. The formatter and the analyzer do not read the `.tmpl` files, so every template change is checked end to end:
 
 1. `pnpm nx run-many -t format-check analyze test --projects=front-new_microfrontend`.
-2. Generar uno de prueba (`dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`) y correr `pnpm nx run-many -t format-check analyze test --projects=front-mf_reports --skip-nx-cache` y `check-structure.mjs --all .`.
-3. Borrar `front/microfrontends/reports` y su línea en `front/pubspec.yaml`, y correr `flutter pub get` en `front/`. El de prueba no se versiona.
+2. Generate a test one (`dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`) and run `pnpm nx run-many -t format-check analyze test --projects=front-mf_reports --skip-nx-cache` and `check-structure.mjs --all .`.
+3. Delete `front/microfrontends/reports` and its line in `front/pubspec.yaml`, and run `flutter pub get` in `front/`. The test one is not committed.
 
-Las reglas de código de cada pieza están en [front-codigo](../front-codigo/SKILL.md), las de pruebas en [front-pruebas](../front-pruebas/SKILL.md), y los textos en [front-i18n](../front-i18n/SKILL.md).
+The code rules for each piece are in [front-codigo](../front-codigo/SKILL.md), the test rules in [front-pruebas](../front-pruebas/SKILL.md), and the texts in [front-i18n](../front-i18n/SKILL.md).
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-build-the-lever`, `architect`, `feature`, `poteto-mode`.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `principle-build-the-lever`, `architect`, `feature`, `poteto-mode`.

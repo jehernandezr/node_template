@@ -50,6 +50,22 @@ void main() {
       expect(find.text('Starter a Enterprise'), findsOneWidget);
     });
 
+    testWidgets('going from one tenant to another shows the new one', (
+      tester,
+    ) async {
+      final mounted = await harness.pump(
+        tester,
+        location: '/backoffice/tenants/t-001',
+        repository: repo,
+      );
+
+      mounted.router.go('/backoffice/tenants/t-002');
+      await tester.pumpAndSettle();
+
+      expect(find.text(_es.tenantPlanLine('Starter')), findsOneWidget);
+      expect(find.text(_es.tenantPlanLine('Enterprise')), findsNothing);
+    });
+
     testWidgets('an unknown tenant shows the not found state', (tester) async {
       await harness.pump(
         tester,

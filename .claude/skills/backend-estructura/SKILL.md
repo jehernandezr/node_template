@@ -1,6 +1,6 @@
 ---
 name: backend-estructura
-description: 'Carpetas, capas, proyectos de Nx, alias y ubicación de pruebas del backend. Úsala al crear o mover librerías, apps, módulos, carpetas o pruebas.'
+description: 'Backend folders, layers, Nx projects, aliases and test placement. Use it when creating or moving libraries, apps, modules, folders or tests.'
 paths:
   - 'backend/**/project.json'
   - 'backend/**/tsconfig*.json'
@@ -10,86 +10,86 @@ paths:
   - 'backend/package.json'
 ---
 
-# Estructura del backend
+# Backend structure
 
-## Raíz
+## Root
 
-- La raíz solo tiene `backend/`, `front/`, Nx como orquestador y herramientas del repositorio (CI/CD, hooks, docs).
-- El backend es dueño de sus librerías en `backend/libs`. El front tiene su propia skill, `front-estructura`.
+- The root only has `backend/`, `front/`, Nx as orchestrator and repository tooling (CI/CD, hooks, docs).
+- The backend owns its libraries in `backend/libs`. The front has its own skill, `front-estructura`.
 
-## Dependencias: un solo `node_modules`
+## Dependencies: a single `node_modules`
 
-- Un pnpm workspace con un único `node_modules` en la raíz. Las dependencias externas se declaran en un solo `package.json` del backend (o de la raíz para herramientas), con versiones exactas.
-- Las librerías del backend no son paquetes: no tienen `package.json` ni `node_modules` propios. Son proyectos de Nx (`project.json` con sus tags) y se importan por alias de TypeScript (`@platform/kernel`, `@contracts/identity`) declarados en `tsconfig.base.json`.
-- Los límites los aplica `@nx/enforce-module-boundaries` con tags. Una importación que cruza un límite prohibido rompe el lint, no se arregla con un alias nuevo.
-- Se importa por el alias público del proyecto (`@platform/kernel`), nunca por ruta profunda a otro proyecto (`@platform/kernel/src/errors/...`).
-- Dependencia nueva: antes de agregarla, ver si reimplementarla es razonable. Se acepta solo si hacerlo en casa es imprudente (criptografía, protocolos) o caro. Se aísla detrás de un puerto.
-- Sin dependencias circulares entre proyectos ni entre carpetas de un servicio.
+- One pnpm workspace with a single `node_modules` at the root. External dependencies are declared in a single backend `package.json` (or the root one for tooling), with exact versions.
+- Backend libraries are not packages: they have no `package.json` or `node_modules` of their own. They are Nx projects (`project.json` with their tags) imported through TypeScript aliases (`@platform/kernel`, `@contracts/identity`) declared in `tsconfig.base.json`.
+- Boundaries are enforced by `@nx/enforce-module-boundaries` with tags. An import that crosses a forbidden boundary breaks the lint; it is not fixed with a new alias.
+- Import through the project's public alias (`@platform/kernel`), never through a deep path into another project (`@platform/kernel/src/errors/...`).
+- New dependency: before adding it, check whether reimplementing it is reasonable. It is accepted only if doing it in-house is unwise (cryptography, protocols) or expensive. It is isolated behind a port.
+- No circular dependencies between projects or between folders of a service.
 
-## Capas dentro de un servicio
+## Layers inside a service
 
-Ejemplo en `references/ejemplos.md`, sección "Capas dentro de un servicio".
+Example in `references/ejemplos.md`, section "Layers inside a service".
 
-- Se agrupa por módulo de negocio, no por tipo técnico. Dentro del módulo, por capa.
-- Un módulo expone al resto solo lo que exporta su `index.ts`. Lo demás es privado.
-- Dirección de dependencias: `presentation` y `infrastructure` hacia `application`, `application` hacia `domain`, `domain` hacia `@platform/kernel`. Una prueba de arquitectura (regla de lint o `dependency-cruiser`) lo verifica en CI.
+- Group by business module, not by technical type. Inside the module, by layer.
+- A module exposes to the rest only what its `index.ts` exports. Everything else is private.
+- Dependency direction: `presentation` and `infrastructure` toward `application`, `application` toward `domain`, `domain` toward `@platform/kernel`. An architecture test (a lint rule or `dependency-cruiser`) checks it in CI.
 
-## Carpetas de código
+## Code folders
 
-- El código va directo en `src/`. No existe `src/lib/`.
-- Lo compartido dentro de un servicio vive en `shared/{enums,constants,types,utils}`.
+- Code goes directly in `src/`. There is no `src/lib/`.
+- What is shared inside a service lives in `shared/{enums,constants,types,utils}`.
 
-Ejemplo en `references/ejemplos.md`, sección "Carpetas de código".
+Example in `references/ejemplos.md`, section "Code folders".
 
-## NestJS solo en `src/nest/`
+## NestJS only in `src/nest/`
 
-- El núcleo de una librería de `libs/platform`, `libs/contracts` y `libs/shared` no importa `@nestjs/*` ni la sub-entrada de otra librería (`@platform/<lib>/nest`). El cableado vive en `src/nest/`, que expone el alias `@platform/<lib>/nest`.
-- Lo comprueban la regla de ESLint `layout/no-nest-outside-nest-folder` y `check-structure.mjs`. Las apps y los módulos de servicio (`presentation/`) usan NestJS con libertad.
+- The core of a library in `libs/platform`, `libs/contracts` and `libs/shared` does not import `@nestjs/*` or another library's sub-entry (`@platform/<lib>/nest`). The wiring lives in `src/nest/`, which exposes the `@platform/<lib>/nest` alias.
+- The ESLint rule `layout/no-nest-outside-nest-folder` and `check-structure.mjs` check it. Apps and service modules (`presentation/`) use NestJS freely.
 
-## Funciones exportadas
+## Exported functions
 
-- El comportamiento va en clases. `check-structure.mjs` solo admite funciones exportadas en `utils/`, en migraciones, en `index.ts`, en archivos de configuración y en su lista declarada de excepciones (`FUNCTION_EXCEPTIONS`): las fábricas `define*` de `contracts/*/src/kit`, los esquemas de `env.ts` y `secret()` de config y el `main()` de las herramientas.
-- Una excepción nueva se agrega a esa lista con su motivo y una prueba en `check-structure.test.mjs`.
+- Behavior goes in classes. `check-structure.mjs` only allows exported functions in `utils/`, in migrations, in `index.ts`, in configuration files and in its declared exception list (`FUNCTION_EXCEPTIONS`): the `define*` factories of `contracts/*/src/kit`, the `env.ts` schemas and `secret()` of config, and the tools' `main()`.
+- A new exception is added to that list with its reason and a test in `check-structure.test.mjs`.
 
-## Pruebas
+## Tests
 
-- Cada carpeta de código tiene su carpeta `__tests__/` con las pruebas de esa carpeta. Ejemplo: `users/src/modules/sign-in/application/__tests__/`.
-- Nunca un `.spec.ts` junto al archivo fuente, ni una única carpeta de pruebas en la raíz del módulo. Esto reemplaza la convención por defecto de NestJS.
-- Lo que comparten las pruebas (fakes, builders, contenedores, contratos reutilizables) va dentro de la estructura de pruebas, nunca en una carpeta `testing/` aparte:
-  - `__tests__/utils/` de una carpeta, si solo lo usan las pruebas de esa carpeta;
-  - `src/__tests__/utils/` del proyecto, si lo usan varias carpetas. Si otra librería lo necesita, se expone por el alias `@platform/<lib>/test-utils`.
-- Las pruebas de un utilitario van en el `__tests__/` que lo contiene (por ejemplo `src/__tests__/fake-rate-limiter.spec.ts`), no en un `__tests__` anidado dentro de `utils/`.
-- Las pruebas de integración terminan en `.int-spec.ts`. `check-structure.mjs` rechaza `*.integration.spec.ts`, que correría como unitaria.
-- El código de producción nunca importa nada de `__tests__/`.
-- Las pruebas end to end de una app viven en `backend/apps/<app>/e2e/`.
-- El flujo de punta a punta entre servicios vive en `backend/e2e/platform-flow` (tags `type:e2e` y `scope:e2e`), con su target `platform-flow:e2e`. Es el único proyecto que importa apps, y solo por `@apps/<servicio>/test-utils` (`allowAppImports` de `backend/eslint.config.mjs`).
-- Detalle en `backend-pruebas`.
+- Each code folder has its own `__tests__/` folder with that folder's tests. Example: `users/src/modules/sign-in/application/__tests__/`.
+- Never a `.spec.ts` next to the source file, nor a single test folder at the module root. This replaces the NestJS default convention.
+- What tests share (fakes, builders, containers, reusable contracts) goes inside the test structure, never in a separate `testing/` folder:
+  - `__tests__/utils/` of a folder, if only that folder's tests use it;
+  - the project's `src/__tests__/utils/`, if several folders use it. If another library needs it, it is exposed through the `@platform/<lib>/test-utils` alias.
+- Tests of a utility go in the `__tests__/` that contains it (for example `src/__tests__/fake-rate-limiter.spec.ts`), not in a nested `__tests__` inside `utils/`.
+- Integration tests end in `.int-spec.ts`. `check-structure.mjs` rejects `*.integration.spec.ts`, which would run as a unit test.
+- Production code never imports anything from `__tests__/`.
+- An app's end-to-end tests live in `backend/apps/<app>/e2e/`.
+- The end-to-end flow across services lives in `backend/e2e/platform-flow` (tags `type:e2e` and `scope:e2e`), with its `platform-flow:e2e` target. It is the only project that imports apps, and only through `@apps/<service>/test-utils` (`allowAppImports` in `backend/eslint.config.mjs`).
+- Details in `backend-pruebas`.
 
-## Compilado
+## Build
 
-- Las librerías no se compilan por separado: su target es `typecheck`.
-- Cada app se empaqueta con esbuild en `backend/dist/<app>/`. No hay `dist/` dentro de librerías ni de apps.
-- `backend/dist/` está en `.gitignore`.
-- Los migradores (`migrate`) se empaquetan como binario de la misma app. Las migraciones TypeORM se compilan junto con la app, porque la CLI de `run` y `revert` solo carga JavaScript.
+- Libraries are not built separately: their target is `typecheck`.
+- Each app is bundled with esbuild into `backend/dist/<app>/`. There is no `dist/` inside libraries or apps.
+- `backend/dist/` is in `.gitignore`.
+- Migrators (`migrate`) are bundled as a binary of the same app. TypeORM migrations are compiled with the app, because the `run` and `revert` CLI only loads JavaScript.
 
-## Nombres de archivo
+## File names
 
-- kebab-case con sufijo de rol: `sign-in.use-case.ts`, `user.repository.ts`, `typeorm-user.repository.ts`, `user.entity.ts`, `users.module.ts`, `users.facade.ts`.
-- Un archivo, una clase pública. Tabla completa de roles en `backend-codigo-enterprise/references/nombres.md`.
-- Sin archivos `utils.ts` ni `helpers.ts` genéricos. Si hay lógica, tiene nombre de negocio y es una clase.
-- Los `index.ts` solo reexportan la API pública. Sin lógica y sin barriles internos que mezclen capas.
+- kebab-case with a role suffix: `sign-in.use-case.ts`, `user.repository.ts`, `typeorm-user.repository.ts`, `user.entity.ts`, `users.module.ts`, `users.facade.ts`.
+- One file, one public class. Full role table in `backend-codigo-enterprise/references/nombres.md`.
+- No generic `utils.ts` or `helpers.ts` files. If there is logic, it has a business name and is a class.
+- `index.ts` files only re-export the public API. No logic and no internal barrels that mix layers.
 
-## Cómo crear una librería nueva
+## How to create a new library
 
 ```
-- [ ] project.json con tags de tipo y de alcance
-- [ ] Alias en tsconfig.base.json
-- [ ] tsconfig.json y jest.config.cjs
-- [ ] src/index.ts con la API pública
-- [ ] Target typecheck y test
-- [ ] pnpm nx lint <proyecto> pasa sin romper límites
+- [ ] project.json with type and scope tags
+- [ ] Alias in tsconfig.base.json
+- [ ] tsconfig.json and jest.config.cjs
+- [ ] src/index.ts with the public API
+- [ ] typecheck and test targets
+- [ ] pnpm nx lint <project> passes without breaking boundaries
 ```
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `how`, `why`, `principle-encode-lessons-in-structure`, `correct`, `principle-migrate-callers-then-delete-legacy-apis`, `principle-subtract-before-you-add`.
+Method in `pstack-en-node-template`. From pstack, these apply here: `how`, `why`, `principle-encode-lessons-in-structure`, `correct`, `principle-migrate-callers-then-delete-legacy-apis`, `principle-subtract-before-you-add`.

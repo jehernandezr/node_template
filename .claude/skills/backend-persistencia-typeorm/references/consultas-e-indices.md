@@ -1,58 +1,58 @@
-# Consultas, N+1 e índices
+# Queries, N+1 and indexes
 
-## Contenido
+## Contents
 
 - N+1
-- Cargar relaciones
-- Paginación
-- Índices
-- Sondeo con EXPLAIN
+- Loading relations
+- Pagination
+- Indexes
+- Probing with EXPLAIN
 
 ## N+1
 
-Una consulta dentro de un bucle es un defecto.
+A query inside a loop is a defect.
 
 ```ts
-// Mal: una consulta por pedido
+// Bad: one query per order
 for (const order of orders) {
   order.lines = await manager.find(OrderLineEntity, {
     where: { orderId: order.id },
   });
 }
 
-// Bien: una consulta para todos
+// Good: one query for all of them
 const lines = await manager.find(OrderLineEntity, {
   where: { orderId: In(orders.map((order) => order.id)) },
 });
 const linesByOrder = Map.groupBy(lines, (line) => line.orderId);
 ```
 
-- Para listados, una consulta con `QueryBuilder` y `leftJoin` más `select` explícito, o dos consultas con `In(...)`.
-- `In(...)` con listas acotadas (por ejemplo, 1000 ids por lote).
-- Dentro de un caso de uso, cargar el agregado con todo lo que necesita en una operación, no relación por relación.
-- Una prueba de integración puede contar consultas (logger de TypeORM en la prueba) y fallar si superan lo esperado.
+- For listings, one query with `QueryBuilder` and `leftJoin` plus an explicit `select`, or two queries with `In(...)`.
+- `In(...)` with bounded lists (for example, 1000 ids per batch).
+- Inside a use case, load the aggregate with everything it needs in one operation, not relation by relation.
+- An integration test can count queries (TypeORM logger in the test) and fail if they exceed the expected number.
 
-## Cargar relaciones
+## Loading relations
 
-- Sin `eager` ni `lazy`. La carga se pide en la consulta (`relations` o `join`).
-- No se hace `find` de la entidad completa para leer dos columnas: `select`.
-- Nunca se devuelve una entidad ORM fuera de `infrastructure/`.
+- No `eager` or `lazy`. Loading is requested in the query (`relations` or `join`).
+- Do not `find` the whole entity to read two columns: use `select`.
+- Never return an ORM entity outside `infrastructure/`.
 
-## Paginación
+## Pagination
 
-- Por cursor con el id UUIDv7 (`?after=<id>`, `ORDER BY id`), no por `OFFSET`. Los UUIDv7 crecen con el tiempo, así que el cursor también ordena por creación.
-- Todo listado tiene `LIMIT` máximo, impuesto en el esquema zod de la petición.
-- `COUNT(*)` exacto solo si el producto lo pide; es costoso en tablas grandes.
+- By cursor with the UUIDv7 id (`?after=<id>`, `ORDER BY id`), not by `OFFSET`. UUIDv7 values grow over time, so the cursor also orders by creation.
+- Every listing has a maximum `LIMIT`, enforced in the request zod schema.
+- Exact `COUNT(*)` only if the product asks for it; it is expensive on large tables.
 
-## Índices
+## Indexes
 
-- Toda columna de filtro, unión u orden frecuente tiene índice. Un índice compuesto sigue el orden: igualdades primero, luego rango u orden.
-- Llaves de shard (`tenant_id`) van primero en índices compuestos de tablas por tenant.
-- Unicidad por regla de negocio: índice `UNIQUE` (parcial si hay borrado lógico: `WHERE deleted_at IS NULL`). El código verifica por cortesía; la base garantiza.
-- Cada índice cuesta en escritura: se agrega con una consulta real que lo use y se elimina el redundante.
-- Un índice nuevo en una tabla grande se crea `CONCURRENTLY` en una migración sin transacción (ver `migraciones-sin-downtime.md`).
-- Claves foráneas en columnas de id: PostgreSQL no las indexa solo.
+- Every frequent filter, join or order column has an index. A composite index follows the order: equalities first, then range or order.
+- Shard keys (`tenant_id`) go first in composite indexes of per-tenant tables.
+- Uniqueness by business rule: a `UNIQUE` index (partial if there is soft delete: `WHERE deleted_at IS NULL`). The code checks as a courtesy; the database guarantees it.
+- Every index costs on writes: add it with a real query that uses it and drop the redundant one.
+- A new index on a large table is created `CONCURRENTLY` in a migration without a transaction (see `migraciones-sin-downtime.md`).
+- Foreign keys on id columns: PostgreSQL does not index them on its own.
 
-## Sondeo con EXPLAIN
+## Probing with EXPLAIN
 
-Antes de integrar una consulta nueva sobre una tabla grande: `EXPLAIN (ANALYZE, BUFFERS)` con volumen realista. Un `Seq Scan` en una tabla grande con filtro selectivo pide un índice. Las consultas lentas ya se registran con `DB_SLOW_QUERY_MS` (`maxQueryExecutionTime`).
+Before integrating a new query on a large table: `EXPLAIN (ANALYZE, BUFFERS)` with realistic volume. A `Seq Scan` on a large table with a selective filter calls for an index. Slow queries are already logged with `DB_SLOW_QUERY_MS` (`maxQueryExecutionTime`).

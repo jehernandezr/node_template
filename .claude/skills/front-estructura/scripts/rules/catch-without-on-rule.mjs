@@ -5,13 +5,13 @@ import { RuleId } from './rule-id.mjs';
 export class CatchWithoutOnRule extends Rule {
   static CATCH = /\bcatch\s*\(/;
   static ON_TYPE = /\bon\s+[\w.<>?,\s]+$/;
-  // Un catch-all es válido solo si la línea anterior explica por qué.
+  // A catch-all is valid only if the line before explains why.
   static CATCH_ALL_MARK = /^\/\/ catch-all:\s*\S/;
 
   constructor() {
     super(
       RuleId.CATCH_WITHOUT_ON,
-      'catch sin on: captura un tipo concreto o marca el catch-all con // catch-all: motivo',
+      'catch without on: catch a specific type or mark the catch-all with // catch-all: reason',
     );
   }
 

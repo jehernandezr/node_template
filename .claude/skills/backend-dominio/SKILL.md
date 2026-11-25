@@ -1,54 +1,54 @@
 ---
 name: backend-dominio
-description: 'Modelado del dominio del backend: agregados, objetos de valor, eventos, puertos y errores de dominio sobre @platform/kernel. Úsala en domain/.'
+description: 'Backend domain modeling: aggregates, value objects, events, ports and domain errors on top of @platform/kernel. Use it in domain/.'
 paths:
   - 'backend/**/domain/**'
   - 'backend/libs/platform/kernel/**'
 ---
 
-# Dominio
+# Domain
 
-TypeScript puro: solo importa `@platform/kernel`. Sin NestJS, TypeORM, zod, AWS ni `process.env`. Ejemplos de `User` y `Email` en `references/ejemplos.md`.
+Pure TypeScript: it only imports `@platform/kernel`. No NestJS, TypeORM, zod, AWS or `process.env`. `User` and `Email` examples in `references/ejemplos.md`.
 
-## Agregados
+## Aggregates
 
-- Se carga, cambia y guarda entero en una transacción. Acceso solo por la raíz.
-- Agregados pequeños. Referencias a otros por id (`ownerId: Id`), nunca por objeto.
-- Constructor privado y dos fábricas: `register(...)` valida, crea y emite evento; `rehydrate(...)` reconstruye sin validar ni emitir.
-- Sin setters públicos: métodos con nombre de negocio que verifican la regla antes de mutar.
-- `id` y `createdAt` son `readonly`.
-- Recibe `now` y los ids de evento como parámetros; el caso de uso los saca de `Clock` e `IdGenerator`.
-- Una regla que necesita otros agregados o la base va en un servicio de dominio (clase con puertos en `domain/`) o en el caso de uso.
-- Unicidad: se verifica en el caso de uso con el repositorio y se garantiza con índice único. El repositorio traduce el duplicado a `EmailAlreadyRegisteredError`.
+- Loaded, changed and saved whole in one transaction. Access only through the root.
+- Small aggregates. References to others by id (`ownerId: Id`), never by object.
+- Private constructor and two factories: `register(...)` validates, creates and emits an event; `rehydrate(...)` rebuilds without validating or emitting.
+- No public setters: methods with business names that check the rule before mutating.
+- `id` and `createdAt` are `readonly`.
+- Receives `now` and the event ids as parameters; the use case gets them from `Clock` and `IdGenerator`.
+- A rule that needs other aggregates or the database goes in a domain service (a class with ports in `domain/`) or in the use case.
+- Uniqueness: checked in the use case with the repository and guaranteed with a unique index. The repository translates the duplicate to `EmailAlreadyRegisteredError`.
 
-## Objetos de valor
+## Value objects
 
-- Extienden `ValueObject`. Inmutables, iguales por valor, constructor privado y `Email.create(raw)` que lanza el error de dominio.
-- Solo para primitivos con reglas: `Email`, `Money`, `PasswordHash`, `TenantId`.
-- Dinero: entero en la unidad menor más moneda.
-- Nunca viajan en DTO, eventos ni entidades ORM: se serializan a primitivos en la frontera.
-- Ids: `Id` del kernel (UUIDv7). Se crean con `IdGenerator` o se parsean con `Id.from(raw)`. El `aggregateId` del evento es `id.value`.
-- Validación simple en el dominio; formatos complejos los valida zod en el borde.
+- Extend `ValueObject`. Immutable, equal by value, private constructor and `Email.create(raw)` that throws the domain error.
+- Only for primitives with rules: `Email`, `Money`, `PasswordHash`, `TenantId`.
+- Money: an integer in the minor unit plus a currency.
+- They never travel in DTOs, events or ORM entities: they are serialized to primitives at the boundary.
+- Ids: the kernel `Id` (UUIDv7). Created with `IdGenerator` or parsed with `Id.from(raw)`. The event `aggregateId` is `id.value`.
+- Simple validation in the domain; zod validates complex formats at the edge.
 
-## Eventos de dominio
+## Domain events
 
-- Hecho en pasado, emitido con `addDomainEvent`. Tipo de un enum por agregado (`UserEventType.Registered = 'identity.user.registered'`).
-- `payload` de primitivos, mínimo y sin datos sensibles.
-- El caso de uso los saca con `pullDomainEvents()` tras guardar y los entrega al outbox en la misma transacción (ver `backend-mensajeria-idempotencia`).
-- Lo que sale del servicio es un evento de integración versionado con esquema zod en `@contracts/<servicio>` (`events/`), traducido en un mapper de aplicación.
+- A fact in past tense, emitted with `addDomainEvent`. Type from one enum per aggregate (`UserEventType.Registered = 'identity.user.registered'`).
+- `payload` of primitives, minimal and without sensitive data.
+- The use case takes them with `pullDomainEvents()` after saving and hands them to the outbox in the same transaction (see `backend-mensajeria-idempotencia`).
+- What leaves the service is a versioned integration event with a zod schema in `@contracts/<service>` (`events/`), translated in an application mapper.
 
-## Puertos
+## Ports
 
-- Clase abstracta en `domain/`, que sirve de contrato y de token (ver `backend-nestjs-composicion`).
-- Los de repositorio hablan en agregados: `save(user)`, `findById(id)`.
-- Puertos de plataforma disponibles: `Clock`, `IdGenerator`.
+- An abstract class in `domain/` that serves as contract and token (see `backend-nestjs-composicion`).
+- Repository ports speak in aggregates: `save(user)`, `findById(id)`.
+- Available platform ports: `Clock`, `IdGenerator`.
 
-## Errores y consultas
+## Errors and queries
 
-- Cada regla rota es una clase que extiende `DomainError` con código del enum del servicio (ver `backend-errores`).
-- Las lecturas sin reglas pueden leer de la réplica con `QueryBuilder` y devolver un DTO de lectura, nunca entidades ORM.
-- El dominio se prueba sin dobles ni NestJS (ver `backend-pruebas`).
+- Each broken rule is a class extending `DomainError` with a code from the service enum (see `backend-errores`).
+- Reads without rules may read from the replica with `QueryBuilder` and return a read DTO, never ORM entities.
+- The domain is tested without doubles or NestJS (see `backend-pruebas`).
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-model-the-domain`, `principle-foundational-thinking`, `principle-type-system-discipline`, `principle-boundary-discipline`, `architect`. Donde `principle-boundary-discipline` pide funciones puras, aquí van clases del dominio sin dependencias de framework.
+Method in `pstack-en-node-template`. From pstack, these apply here: `principle-model-the-domain`, `principle-foundational-thinking`, `principle-type-system-discipline`, `principle-boundary-discipline`, `architect`. Where `principle-boundary-discipline` asks for pure functions, here they are domain classes without framework dependencies.

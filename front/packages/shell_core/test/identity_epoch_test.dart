@@ -262,4 +262,106 @@ void main() {
       expect(builtFor, ['admin']);
     },
   );
+
+  testWidgets('a path parameter change rebuilds the page for the new id', (
+    tester,
+  ) async {
+    final session = ValueNotifier(_user('u1'));
+    final registry = MicrofrontendRegistry()
+      ..register(
+        fakeManifest(
+          id: TestIds.tasks,
+          screens: [
+            ScreenRoute(
+              path: '/tasks',
+              loadLibrary: () async {},
+              builder: (scope, {params = const {}}) => const Text('list'),
+              routes: [
+                ScreenRoute(
+                  path: ':id',
+                  loadLibrary: () async {},
+                  builder: (scope, {params = const {}}) =>
+                      _ProfileScreen(profile: _Profile(params['id']!)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    final router = await _pump(tester, registry, session, '/tasks/s-101');
+    expect(find.text('user: s-101'), findsOneWidget);
+
+    router.go('/tasks/s-102');
+    await tester.pumpAndSettle();
+
+    expect(find.text('user: s-102'), findsOneWidget);
+    expect(find.text('user: s-101'), findsNothing);
+  });
+
+  testWidgets('a query parameter change rebuilds the page for the new value', (
+    tester,
+  ) async {
+    final session = ValueNotifier(_user('u1'));
+    final registry = MicrofrontendRegistry()
+      ..register(
+        fakeManifest(
+          id: TestIds.tasks,
+          screens: [
+            ScreenRoute(
+              path: '/tasks',
+              loadLibrary: () async {},
+              builder: (scope, {params = const {}}) =>
+                  _ProfileScreen(profile: _Profile(params['tab'] ?? '')),
+            ),
+          ],
+        ),
+      );
+    final router = await _pump(tester, registry, session, '/tasks?tab=open');
+
+    router.go('/tasks?tab=done');
+    await tester.pumpAndSettle();
+
+    expect(find.text('user: done'), findsOneWidget);
+  });
+
+  testWidgets('opening a child route keeps the state of the parent page', (
+    tester,
+  ) async {
+    final session = ValueNotifier(_user('u1'));
+    final registry = MicrofrontendRegistry()
+      ..register(
+        fakeManifest(
+          id: TestIds.tasks,
+          screens: [
+            ScreenRoute(
+              path: '/tasks',
+              loadLibrary: () async {},
+              builder: (scope, {params = const {}}) =>
+                  _ProfileScreen(profile: _Profile('list')),
+              routes: [
+                ScreenRoute(
+                  path: ':id',
+                  loadLibrary: () async {},
+                  builder: (scope, {params = const {}}) =>
+                      Text('task ${params['id']}'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    final router = await _pump(tester, registry, session, '/tasks');
+    final state = tester.state(find.byType(_ProfileScreen));
+
+    router.go('/tasks/s-101');
+    await tester.pumpAndSettle();
+    router.go('/tasks/s-102');
+    await tester.pumpAndSettle();
+
+    expect(find.text('task s-102'), findsOneWidget);
+    expect(
+      tester.state(find.byType(_ProfileScreen, skipOffstage: false)),
+      same(state),
+    );
+  });
 }

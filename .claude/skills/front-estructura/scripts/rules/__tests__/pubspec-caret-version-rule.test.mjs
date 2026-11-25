@@ -4,7 +4,7 @@ import { PubspecCaretVersionRule } from '../pubspec-caret-version-rule.mjs';
 import { RuleId } from '../rule-id.mjs';
 
 describe('PubspecCaretVersionRule', () => {
-  it('se aplica a los pubspec de los miembros del workspace', () => {
+  it('applies to the pubspecs of workspace members', () => {
     const rule = new PubspecCaretVersionRule();
     assert.equal(rule.appliesTo('front/packages/ui/pubspec.yaml'), true);
     assert.equal(
@@ -15,7 +15,7 @@ describe('PubspecCaretVersionRule', () => {
     assert.equal(rule.appliesTo('front/packages/ui/lib/a.dart'), false);
   });
 
-  it('marca una dependencia con ^', () => {
+  it('flags a dependency with ^', () => {
     const rule = new PubspecCaretVersionRule();
     const file = 'front/packages/ui/pubspec.yaml';
     const text = [
@@ -32,7 +32,7 @@ describe('PubspecCaretVersionRule', () => {
     assert.equal(violation.line, 5);
   });
 
-  it('marca una dependencia con ^ entre comillas', () => {
+  it('flags a dependency with a quoted ^', () => {
     const rule = new PubspecCaretVersionRule();
     const text = "dependencies:\n  intl: '^0.20.3'";
     const [violation, ...rest] = rule.check(
@@ -43,13 +43,13 @@ describe('PubspecCaretVersionRule', () => {
     assert.equal(violation.line, 2);
   });
 
-  it('acepta una versión exacta', () => {
+  it('accepts an exact version', () => {
     const rule = new PubspecCaretVersionRule();
     const text = 'dependencies:\n  go_router: 18.1.4';
     assert.deepEqual(rule.check('front/packages/ui/pubspec.yaml', text), []);
   });
 
-  it('acepta el ^ del SDK y los rangos sin ^', () => {
+  it('accepts the SDK ^ and ranges without ^', () => {
     const rule = new PubspecCaretVersionRule();
     const text = [
       'environment:',
@@ -60,13 +60,13 @@ describe('PubspecCaretVersionRule', () => {
     assert.deepEqual(rule.check('front/packages/ui/pubspec.yaml', text), []);
   });
 
-  it('ignora una dependencia comentada', () => {
+  it('ignores a commented-out dependency', () => {
     const rule = new PubspecCaretVersionRule();
     const text = 'dependencies:\n  # go_router: ^1.0.0';
     assert.deepEqual(rule.check('front/packages/ui/pubspec.yaml', text), []);
   });
 
-  it('acepta un ^ en la columna 0', () => {
+  it('accepts a ^ at column 0', () => {
     const rule = new PubspecCaretVersionRule();
     const text = 'version: ^1.0.0';
     assert.deepEqual(rule.check('front/packages/ui/pubspec.yaml', text), []);

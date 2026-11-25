@@ -1,40 +1,40 @@
-# 0013. Módulo de IA con puertos y Claude por defecto
+# 0013. AI module with ports and Claude by default
 
-- Estado: Aceptada, sin construir
-- Actualizada: 2026-11-24 (estado de lo construido)
-- Fecha: 2026-11-11
+- Status: Accepted, not built
+- Updated: 2026-11-24 (status of what is built)
+- Date: 2026-11-11
 
-## Contexto
+## Context
 
-Los servicios de la plataforma necesitan capacidades de IA con las mismas reglas que el resto: tenant, permisos, auditoría, costos y trazas. El proveedor y el modelo deben poder cambiar sin reescribir los casos de uso.
+The platform's services need AI capabilities under the same rules as everything else: tenant, permissions, auditing, costs and traces. The provider and the model must be replaceable without rewriting the use cases.
 
-## Decisión
+## Decision
 
-`libs/platform/ai` define los puertos `LlmProvider` (mensajes, streaming, herramientas y salida estructurada) y `EmbeddingProvider`. El adaptador por defecto de LLM es la Claude API con `@anthropic-ai/sdk`, y el de embeddings es Voyage AI.
+`libs/platform/ai` defines the ports `LlmProvider` (messages, streaming, tools and structured output) and `EmbeddingProvider`. The default LLM adapter is the Claude API with `@anthropic-ai/sdk`, and the default embeddings adapter is Voyage AI.
 
-- Los modelos se eligen por enum: `AiModel.Default` apunta a `claude-opus-5-5` y `AiModel.Fast` a `claude-haiku-5-5`, para clasificación y extracción masiva.
-- Los prompts son clases versionadas con su esquema de salida en zod, validado antes de llegar al caso de uso.
-- `@AiTool` expone un caso de uso como herramienta, con el `Actor`, el tenant y los permisos del usuario que conversa. Las herramientas que modifican datos piden confirmación.
-- Cada llamada publica `BillingEvent.UsageRecorded` por tenant, usuario y modelo.
-- Un conjunto de casos de evaluación por prompt corre en CI cuando el prompt cambia.
+- Models are chosen by enum: `AiModel.Default` points to `claude-opus-5-5` and `AiModel.Fast` to `claude-haiku-5-5`, for classification and bulk extraction.
+- Prompts are versioned classes with their output schema in zod, validated before reaching the use case.
+- `@AiTool` exposes a use case as a tool, with the `Actor`, the tenant and the permissions of the user in the conversation. Tools that modify data ask for confirmation.
+- Each call publishes `BillingEvent.UsageRecorded` per tenant, user and model.
+- A set of evaluation cases per prompt runs in CI when the prompt changes.
 
-### Estado
+### Status
 
-`libs/platform/ai` todavía no existe. Lo único construido es el microfrontend `assistant`, que solo sirve el modo demo con datos en memoria; su modo live espera a esta librería y al servicio que la use. Cuando se construya, el uso se mide como cualquier otra métrica de `@platform/metering` hacia billing, en vez de un evento propio `BillingEvent.UsageRecorded`.
+`libs/platform/ai` does not exist yet. The only thing built is the `assistant` microfrontend, which only serves demo mode with in-memory data; its live mode waits for this library and for the service that uses it. When it is built, usage is metered like any other `@platform/metering` metric toward billing, instead of a dedicated `BillingEvent.UsageRecorded` event.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Cambiar de modelo es configuración. Cambiar de proveedor es escribir un adaptador.
-- El costo de IA se cobra y se limita por tenant y plan.
+- Changing models is configuration. Changing providers is writing an adapter.
+- AI cost is charged and limited per tenant and plan.
 
-Costos:
+Costs:
 
-- Claude es el proveedor por defecto, así que la dependencia existe mientras no se cambie el adaptador.
-- Cada prompt necesita casos de evaluación que mantener.
+- Claude is the default provider, so the dependency exists as long as the adapter is not changed.
+- Each prompt needs evaluation cases to maintain.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- LLM: Claude en Amazon Bedrock (`AnthropicBedrockMantle`), o Ollama para desarrollo.
-- Embeddings: Amazon Bedrock o un modelo local.
+- LLM: Claude on Amazon Bedrock (`AnthropicBedrockMantle`), or Ollama for development.
+- Embeddings: Amazon Bedrock or a local model.

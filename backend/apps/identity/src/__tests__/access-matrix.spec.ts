@@ -4,7 +4,7 @@ import { identityContract } from '@contracts/identity';
 import { SystemRolePermissions } from '../shared/constants/system-roles.constants.js';
 import { AccessMatrix } from './utils/index.js';
 
-/** El documento vive con la documentación del repositorio, fuera del proyecto. */
+/** The document lives with the repository docs, outside the project. */
 const DOCUMENT = join(
   __dirname,
   '../../../../../docs/identity/matriz-de-acceso.md',
