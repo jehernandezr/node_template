@@ -3,7 +3,7 @@ import type {
   SessionRevokedPayload,
   TokensRevokedPayload,
 } from '@contracts/identity';
-import { AuthStateReader, AuthStateWriter } from '@platform/auth';
+import { AuthStateWriter } from '@platform/auth';
 import { Clock } from '@platform/kernel';
 import { IdentitySettings } from '../../../config/identity-settings.js';
 import { SessionRevoker } from './session-revoker.js';
@@ -18,7 +18,6 @@ export class RevocationReplay {
   private static readonly SECOND_MS = 1000;
 
   constructor(
-    private readonly reader: AuthStateReader,
     private readonly writer: AuthStateWriter,
     private readonly settings: IdentitySettings,
     private readonly clock: Clock,
@@ -40,21 +39,14 @@ export class RevocationReplay {
   }
 
   /**
-   * Moves the epoch of a user up to the cut-off of a revocation of all their sessions, keeping their current
-   * suspension and a later cut-off if there is one.
+   * Raises the epoch of a user to the cut-off of a revocation of all their sessions in one atomic step,
+   * keeping their current suspension and a later cut-off if there is one.
    * @param event Published revocation of the user.
    */
   async user(event: TokensRevokedPayload): Promise<void> {
-    const current = await this.reader.userEpoch(event.subjectId);
-    const cutOff = Math.floor(
-      Date.parse(event.revokedBefore) / RevocationReplay.SECOND_MS,
+    await this.writer.raiseUserRevocation(
+      event.subjectId,
+      Math.floor(Date.parse(event.revokedBefore) / RevocationReplay.SECOND_MS),
     );
-    if (current !== undefined && current.revokedBefore >= cutOff) {
-      return;
-    }
-    await this.writer.setUserEpoch(event.subjectId, {
-      revokedBefore: cutOff,
-      suspended: current?.suspended ?? false,
-    });
   }
 }

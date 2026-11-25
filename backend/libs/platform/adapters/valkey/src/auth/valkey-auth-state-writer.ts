@@ -28,6 +28,23 @@ redis.call('SET', KEYS[1], ARGV[1])
 return 1
 `);
 
+  /** Raises the cut-off of a user epoch only when the new one is later, keeping its stored suspension. */
+  private static readonly RAISE_EPOCH = new LuaScript(`
+local stored = redis.call('GET', KEYS[1])
+local suspended = 'false'
+if stored then
+  local epoch = cjson.decode(stored)
+  if tonumber(epoch.revokedBefore) >= tonumber(ARGV[1]) then
+    return 0
+  end
+  if epoch.suspended == true then
+    suspended = 'true'
+  end
+end
+redis.call('SET', KEYS[1], '{"revokedBefore":' .. ARGV[1] .. ',"suspended":' .. suspended .. '}')
+return 1
+`);
+
   /** Life of a stored `AccessGrant`. */
   static readonly ACCESS_GRANT_TTL_MS = 15 * 60_000;
 
@@ -86,6 +103,23 @@ return 1
       AuthStateKey.userEpoch(userId),
       ValkeyAuthJson.encode(epoch),
     ]);
+  }
+
+  async raiseUserRevocation(
+    userId: string,
+    revokedBefore: number,
+  ): Promise<void> {
+    if (!Number.isSafeInteger(revokedBefore) || revokedBefore < 0) {
+      throw new InvalidArgumentError(
+        'revokedBefore',
+        'a non-negative safe integer',
+      );
+    }
+    await this.executor.script(
+      ValkeyAuthStateWriter.RAISE_EPOCH,
+      [AuthStateKey.userEpoch(userId)],
+      [String(revokedBefore)],
+    );
   }
 
   async setTenantEpoch(tenantId: string, epoch: Epoch): Promise<void> {

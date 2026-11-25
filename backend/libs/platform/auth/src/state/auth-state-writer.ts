@@ -27,6 +27,17 @@ export abstract class AuthStateWriter {
   abstract setUserEpoch(userId: string, epoch: Epoch): Promise<void>;
 
   /**
+   * Raises the revocation cut-off of a user in one atomic step and keeps the suspension already stored, so
+   * a concurrent suspension is never lost. A cut-off lower than or equal to the stored one changes nothing.
+   * @param userId User.
+   * @param revokedBefore New cut-off in epoch seconds, a non-negative safe integer.
+   */
+  abstract raiseUserRevocation(
+    userId: string,
+    revokedBefore: number,
+  ): Promise<void>;
+
+  /**
    * Stores the revocation epoch of a tenant.
    * @param tenantId Tenant.
    * @param epoch Cut-off instant and suspension.

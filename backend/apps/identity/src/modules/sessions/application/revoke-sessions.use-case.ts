@@ -4,7 +4,7 @@ import {
   RevocationScope,
   TokensRevokedEvent,
 } from '@contracts/identity';
-import { AuthStateReader, AuthStateWriter } from '@platform/auth';
+import { AuthStateWriter } from '@platform/auth';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
@@ -39,7 +39,6 @@ export class RevokeSessions {
     private readonly scopes: IdentityShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
-    private readonly reader: AuthStateReader,
     private readonly writer: AuthStateWriter,
     private readonly clock: Clock,
   ) {}
@@ -114,12 +113,9 @@ export class RevokeSessions {
 
   /** Keeps the current suspension: `users` writes it, and this epoch only moves the cut-off. */
   private async moveUserEpoch(userId: string): Promise<void> {
-    const current = await this.reader.userEpoch(userId);
-    await this.writer.setUserEpoch(userId, {
-      revokedBefore: Math.floor(
-        this.clock.now().getTime() / RevokeSessions.SECOND_MS,
-      ),
-      suspended: current?.suspended ?? false,
-    });
+    await this.writer.raiseUserRevocation(
+      userId,
+      Math.floor(this.clock.now().getTime() / RevokeSessions.SECOND_MS),
+    );
   }
 }

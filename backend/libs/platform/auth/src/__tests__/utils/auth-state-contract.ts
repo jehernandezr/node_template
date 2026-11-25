@@ -175,6 +175,47 @@ export function runAuthStateContract(
 
         expect(await reader.tenantEpoch('t1')).toEqual(EPOCH);
       });
+
+      it('starts an unsuspended user epoch when a cut-off is raised for a user without one', async () => {
+        const { reader, writer } = await create();
+
+        await writer.raiseUserRevocation('u1', 1_700_000_000);
+
+        expect(await reader.userEpoch('u1')).toEqual({
+          revokedBefore: 1_700_000_000,
+          suspended: false,
+        });
+      });
+
+      it('keeps the stored suspension when it raises the cut-off of a user', async () => {
+        const { reader, writer } = await create();
+        await writer.setUserEpoch('u1', {
+          revokedBefore: 1_700_000_000,
+          suspended: true,
+        });
+
+        await writer.raiseUserRevocation('u1', 1_700_000_100);
+
+        expect(await reader.userEpoch('u1')).toEqual({
+          revokedBefore: 1_700_000_100,
+          suspended: true,
+        });
+      });
+
+      it('never moves the cut-off of a user back', async () => {
+        const { reader, writer } = await create();
+        await writer.setUserEpoch('u1', {
+          revokedBefore: 1_700_000_100,
+          suspended: false,
+        });
+
+        await writer.raiseUserRevocation('u1', 1_700_000_000);
+
+        expect(await reader.userEpoch('u1')).toEqual({
+          revokedBefore: 1_700_000_100,
+          suspended: false,
+        });
+      });
     });
 
     describe('permission versions', () => {

@@ -108,6 +108,21 @@ export class InMemoryAuthState
     this.userEpochs.set(userId, epoch);
   }
 
+  async raiseUserRevocation(
+    userId: string,
+    revokedBefore: number,
+  ): Promise<void> {
+    this.touch('raiseUserRevocation');
+    const current = this.userEpochs.get(userId);
+    if (current !== undefined && current.revokedBefore >= revokedBefore) {
+      return;
+    }
+    this.userEpochs.set(userId, {
+      revokedBefore,
+      suspended: current?.suspended ?? false,
+    });
+  }
+
   async setTenantEpoch(tenantId: string, epoch: Epoch): Promise<void> {
     this.touch('setTenantEpoch');
     this.tenantEpochs.set(tenantId, epoch);
