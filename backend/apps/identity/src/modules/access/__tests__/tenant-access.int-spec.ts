@@ -23,6 +23,7 @@ import {
 import { SystemRolePermissions } from '../../../shared/constants/system-roles.constants.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
+import { AccessFacade } from '../application/access.facade.js';
 import { ManageMembers } from '../application/manage-members.use-case.js';
 import { TenantAccessSetup } from '../application/tenant-access-setup.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
@@ -304,6 +305,27 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
     expect(
       pages.map((memberships) => memberships.map(({ userId }) => userId)),
     ).toEqual([[lower], [higher]]);
+  });
+
+  it('deletes on erasure the tombstone an earlier removal left in a tenant the user no longer belongs to', async () => {
+    const { tenantId, firstOwner } = await organizationWithTwoOwners('lapida');
+    await app
+      .get(ManageMembers)
+      .remove(
+        tenantId,
+        firstOwner.userId,
+        SystemRolePermissions[TenantRole.Owner],
+      );
+
+    await app.get(AccessFacade).removeFromAllTenants(firstOwner);
+
+    await expect(
+      app
+        .shards()
+        .shardsWith(
+          `SELECT 1 FROM tenant_members WHERE user_id = '${firstOwner.userId}'`,
+        ),
+    ).resolves.toEqual([]);
   });
 
   it('keeps one owner when two owners are removed at the same time', async () => {

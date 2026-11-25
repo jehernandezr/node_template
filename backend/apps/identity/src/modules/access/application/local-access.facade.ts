@@ -6,6 +6,7 @@ import type {
 } from '@contracts/identity';
 import type { Actor } from '@platform/auth';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
+import { MemberTombstones } from '../domain/member-tombstones.js';
 import type { UserTenant } from '../domain/user-tenant.js';
 import { AccessFacade } from './access.facade.js';
 import { RefreshTenantAccess } from './refresh-tenant-access.use-case.js';
@@ -25,6 +26,7 @@ export class LocalAccessFacade extends AccessFacade {
     private readonly refresh: RefreshTenantAccess,
     private readonly members: ManageMembers,
     private readonly versions: AccessVersionPublisher,
+    private readonly tombstones: MemberTombstones,
   ) {
     super();
   }
@@ -112,6 +114,7 @@ export class LocalAccessFacade extends AccessFacade {
     for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
       await this.members.removeErased(tenantId, ref);
     }
+    await this.tombstones.forget(ref.userId);
   }
 
   /** {@inheritDoc AccessFacade.discardTenant} */

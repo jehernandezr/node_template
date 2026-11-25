@@ -11,6 +11,8 @@ import { GetSessionAccess } from '../application/get-session-access.use-case.js'
 import { ListMembersByPermission } from '../application/list-members-by-permission.use-case.js';
 import { LocalAccessFacade } from '../application/local-access.facade.js';
 import { ManageGroups } from '../application/manage-groups.use-case.js';
+import { MemberTombstones } from '../domain/member-tombstones.js';
+import { TypeOrmMemberTombstones } from '../infrastructure/persistence/typeorm-member-tombstones.js';
 import { ListMembers } from '../application/list-members.use-case.js';
 import { ManageMembers } from '../application/manage-members.use-case.js';
 import { ManageRoles } from '../application/manage-roles.use-case.js';
@@ -53,6 +55,7 @@ import { AccessInternalOperations } from './access.internal-operations.js';
       useClass: TypeOrmTenantAccessRepository,
     },
     { provide: UserAccessRepository, useClass: TypeOrmUserAccessRepository },
+    { provide: MemberTombstones, useClass: TypeOrmMemberTombstones },
     AccessResolver,
     AccessVersionPublisher,
     TenantAccessSetup,
