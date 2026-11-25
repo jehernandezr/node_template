@@ -7,7 +7,6 @@ import {
 } from '../../../../__tests__/utils/index.js';
 import { InMemoryAccessFacade } from '../../../access/__tests__/utils/index.js';
 import { IdentitySagas } from '../../../sagas/index.js';
-import type { SagaEntry } from '../../../sagas/domain/saga-directory.js';
 import { InMemorySagaDirectory } from '../../../sagas/__tests__/utils/index.js';
 import { DeleteAccountSaga } from '../delete-account.saga.js';
 import { StartAccountDeletion } from '../start-account-deletion.use-case.js';
@@ -23,7 +22,9 @@ const USER = {
 class UnreachableSagaDirectory extends InMemorySagaDirectory {
   reachable = true;
 
-  override async record(entry: SagaEntry): Promise<void> {
+  override async record(
+    entry: Parameters<InMemorySagaDirectory['record']>[0],
+  ): Promise<void> {
     if (!this.reachable) {
       throw new Error('saga catalog unreachable');
     }
