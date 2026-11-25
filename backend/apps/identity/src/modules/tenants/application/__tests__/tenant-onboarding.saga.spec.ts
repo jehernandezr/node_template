@@ -10,8 +10,12 @@ import {
   NotificationType,
   TemplateParameter,
 } from '@contracts/notifications';
+import { ReportsOperation } from '@contracts/reports';
+import { TasksOperation } from '@contracts/tasks';
+import { InternalApiReason } from '@platform/internal-api';
 import { CallOutcome } from '@platform/primitives';
 import { AmbientSagaScopes, SagaRecoveryJob, SagaStatus } from '@platform/saga';
+import { TenantMoveErrorCode } from '@platform/tenant-move';
 import {
   CrashingSagaStore,
   ProcessDied,
@@ -24,6 +28,8 @@ import {
 } from '../tenant-onboarding.saga.js';
 
 const LEASE_EXPIRED_MS = 30_001;
+/** Índice del paso que abre la cuenta: va después de crear el tenant y de ubicarlo en los cuatro directorios. */
+const OPEN_ACCOUNT_STEP = 5;
 const SAGA_ID = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f01';
 const STATE: TenantOnboardingState = {
   tenantId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a05',
@@ -35,7 +41,27 @@ const STATE: TenantOnboardingState = {
     homeTenantId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01',
   },
   welcomeId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9d01',
+  directory: {
+    tenantId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a05',
+    region: 'eu',
+    groups: ['shard_1'],
+    dedicated: false,
+  },
 };
+/** Los pasos que anotan el tenant en el directorio de cada servicio, en orden. */
+const PLACEMENTS = [
+  TasksOperation.TenantDirectoryPlace,
+  NotificationsOperation.TenantDirectoryPlace,
+  ReportsOperation.TenantDirectoryPlace,
+  BillingOperation.TenantDirectoryPlace,
+];
+/** Sus reversas, en el orden en que la compensación las corre. */
+const REMOVALS = [
+  BillingOperation.TenantDirectoryRemove,
+  ReportsOperation.TenantDirectoryRemove,
+  NotificationsOperation.TenantDirectoryRemove,
+  TasksOperation.TenantDirectoryRemove,
+];
 
 const kitOf = (
   participants: RecordingParticipants,
@@ -48,7 +74,7 @@ const kitOf = (
   });
 
 describe('TenantOnboardingSaga', () => {
-  it('creates the tenant, opens its billing account, activates it and welcomes its owner', async () => {
+  it('creates the tenant, places it in every service, opens its billing account, activates it and welcomes its owner', async () => {
     const participants = new RecordingParticipants();
 
     const saga = await kitOf(participants).sagas.start(
@@ -60,10 +86,14 @@ describe('TenantOnboardingSaga', () => {
     expect(saga.status).toBe(SagaStatus.Completed);
     expect(participants.operations()).toEqual([
       IdentityOperation.CreateTenant,
+      ...PLACEMENTS,
       BillingOperation.OpenAccount,
       IdentityOperation.ActivateTenant,
       NotificationsOperation.NotifyUser,
     ]);
+    for (const placement of PLACEMENTS) {
+      expect(participants.inputOf(placement)).toEqual(STATE.directory);
+    }
     expect(participants.inputOf(IdentityOperation.CreateTenant)).toEqual({
       tenantId: STATE.tenantId,
       slug: 'acme',
@@ -81,7 +111,7 @@ describe('TenantOnboardingSaga', () => {
     });
   });
 
-  it('discards the tenant when billing refuses to open its account', async () => {
+  it('takes the tenant out of every directory and discards it when billing refuses to open its account', async () => {
     const participants = new RecordingParticipants();
     participants.answer(
       BillingOperation.OpenAccount,
@@ -97,12 +127,48 @@ describe('TenantOnboardingSaga', () => {
     expect(saga.status).toBe(SagaStatus.Compensated);
     expect(participants.operations()).toEqual([
       IdentityOperation.CreateTenant,
+      ...PLACEMENTS,
       BillingOperation.OpenAccount,
+      ...REMOVALS,
       IdentityOperation.DiscardTenant,
     ]);
+    for (const removal of REMOVALS) {
+      expect(participants.inputOf(removal)).toEqual({
+        tenantId: STATE.tenantId,
+      });
+    }
     expect(participants.inputOf(IdentityOperation.DiscardTenant)).toEqual({
       tenantId: STATE.tenantId,
     });
+  });
+
+  it('takes the tenant out of every directory it reached when a service refuses to place it', async () => {
+    const participants = new RecordingParticipants();
+    participants.answer(
+      ReportsOperation.TenantDirectoryPlace,
+      CallOutcome.protocolViolation(
+        InternalApiReason.UndeclaredError,
+        TenantMoveErrorCode.UnknownTarget,
+      ),
+    );
+
+    const saga = await kitOf(participants).sagas.start(
+      TenantOnboardingSaga,
+      STATE,
+      { sagaId: SAGA_ID },
+    );
+
+    expect(saga.status).toBe(SagaStatus.Compensated);
+    expect(participants.operations()).toEqual([
+      IdentityOperation.CreateTenant,
+      TasksOperation.TenantDirectoryPlace,
+      NotificationsOperation.TenantDirectoryPlace,
+      ReportsOperation.TenantDirectoryPlace,
+      ReportsOperation.TenantDirectoryRemove,
+      NotificationsOperation.TenantDirectoryRemove,
+      TasksOperation.TenantDirectoryRemove,
+      IdentityOperation.DiscardTenant,
+    ]);
   });
 
   it('ends compensated without opening an account when another tenant took the slug first', async () => {
@@ -149,7 +215,7 @@ describe('TenantOnboardingSaga', () => {
       const participants = new RecordingParticipants();
       const store = new CrashingSagaStore();
       const kit = kitOf(participants, store);
-      store.crashBeforeOutcome(1);
+      store.crashBeforeOutcome(OPEN_ACCOUNT_STEP);
 
       await expect(
         kit.sagas.start(TenantOnboardingSaga, STATE, { sagaId: SAGA_ID }),
@@ -169,6 +235,70 @@ describe('TenantOnboardingSaga', () => {
       ).toBe(1);
       expect(participants.effectsOf(BillingOperation.OpenAccount)).toBe(1);
       expect(participants.effectsOf(IdentityOperation.ActivateTenant)).toBe(1);
+    });
+
+    it('places the tenant once in a directory whose answer was lost in a crash and then finishes the onboarding', async () => {
+      const participants = new RecordingParticipants();
+      const store = new CrashingSagaStore();
+      const kit = kitOf(participants, store);
+      store.crashBeforeOutcome(
+        PLACEMENTS.indexOf(NotificationsOperation.TenantDirectoryPlace) + 1,
+      );
+
+      await expect(
+        kit.sagas.start(TenantOnboardingSaga, STATE, { sagaId: SAGA_ID }),
+      ).rejects.toBeInstanceOf(ProcessDied);
+      kit.clock.advance(LEASE_EXPIRED_MS);
+      await new SagaRecoveryJob({
+        engine: kit.engineFor('node-b'),
+        store: kit.store,
+        scopes: new AmbientSagaScopes(),
+        settings: kit.settings,
+        clock: kit.clock,
+      }).run();
+
+      expect((await kit.store.get(SAGA_ID))?.status).toBe(SagaStatus.Completed);
+      expect(
+        new Set(
+          participants.keysOf(NotificationsOperation.TenantDirectoryPlace),
+        ).size,
+      ).toBe(1);
+      for (const placement of PLACEMENTS) {
+        expect(participants.effectsOf(placement)).toBe(1);
+      }
+    });
+
+    it('takes the tenant out of every directory when billing refuses after a crash right after placing it in billing', async () => {
+      const participants = new RecordingParticipants();
+      participants.answer(
+        BillingOperation.OpenAccount,
+        CallOutcome.businessError(BillingErrorCode.PlanNotAvailable),
+      );
+      const store = new CrashingSagaStore();
+      const kit = kitOf(participants, store);
+      store.crashAfterDispatch(OPEN_ACCOUNT_STEP - 1);
+
+      await expect(
+        kit.sagas.start(TenantOnboardingSaga, STATE, { sagaId: SAGA_ID }),
+      ).rejects.toBeInstanceOf(ProcessDied);
+      kit.clock.advance(LEASE_EXPIRED_MS);
+      await new SagaRecoveryJob({
+        engine: kit.engineFor('node-b'),
+        store: kit.store,
+        scopes: new AmbientSagaScopes(),
+        settings: kit.settings,
+        clock: kit.clock,
+      }).run();
+
+      expect((await kit.store.get(SAGA_ID))?.status).toBe(
+        SagaStatus.Compensated,
+      );
+      for (const removal of REMOVALS) {
+        expect(participants.effectsOf(removal)).toBe(1);
+      }
+      expect(
+        participants.effectsOf(BillingOperation.TenantDirectoryPlace),
+      ).toBe(1);
     });
 
     it('frees the slug it reserved when the process dies right after creating the tenant and billing then refuses', async () => {
@@ -210,7 +340,7 @@ describe('TenantOnboardingSaga', () => {
       );
       const store = new CrashingSagaStore();
       const kit = kitOf(participants, store);
-      store.crashAfterDispatch(1);
+      store.crashAfterDispatch(OPEN_ACCOUNT_STEP);
 
       await expect(
         kit.sagas.start(TenantOnboardingSaga, STATE, { sagaId: SAGA_ID }),

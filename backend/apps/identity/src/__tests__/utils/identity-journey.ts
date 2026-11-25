@@ -4,7 +4,7 @@ import type {
   HttpTestResponse,
 } from '@platform/http/test-utils';
 import { IdentityEmailTemplate } from '../../shared/enums/identity-email-template.enum.js';
-import type { IdentityTestApp } from './identity-test-app.js';
+import type { IdentityEntry } from './identity-entry.js';
 import { AccessTokenClaimsReader } from './access-token-claims.js';
 import { DeviceKey } from './device-key.js';
 
@@ -24,7 +24,7 @@ export class IdentityJourney {
   private ip: string;
 
   constructor(
-    private readonly app: IdentityTestApp,
+    private readonly app: IdentityEntry,
     readonly email: string,
   ) {
     const byte = createHash('sha256').update(email).digest()[0] ?? 0;

@@ -1,6 +1,8 @@
 import type { INestApplicationContext } from '@nestjs/common';
 import type { OperationDefinition, TenantMoveRef } from '@contracts/platform';
 import { InternalClient } from '@platform/internal-api';
+import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
+import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import { ActorType, RequestContextStore } from '@platform/observability';
 import { UuidV7IdGenerator } from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
@@ -9,7 +11,9 @@ import { ShardRouter, TenantStatus } from '@platform/sharding';
 import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import { TenantMoves } from '../../application/tenant-moves.js';
 import {
+  LedgerCredited,
   LedgerGroup,
+  LedgerTenantDirectoryOperations,
   LedgerTenantMoveOperations,
   OpenLedgerOperation,
   RegionServers,
@@ -275,6 +279,42 @@ runtime.describeIfAvailable(
       ).resolves.toHaveLength(1);
     });
 
+    it('recognises a message the source processed before the move when it arrives again in the target', async () => {
+      const ledger = new TwoRegionLedger(regionA, regionB, 'directory');
+      deployment = ledger;
+      const tenant = newId();
+      const ledgerId = newId();
+      const { inA } = await ledger.deploy([tenant]);
+      await (
+        await regionA.connect(ledger.shards.a0)
+      ).query(
+        "INSERT INTO ledgers (id, tenant_id, name, total) VALUES ($1, $2, 'abonos', 0)",
+        [ledgerId, tenant],
+      );
+      const credit = EnvelopeBuilder.anEnvelope({
+        id: newId(),
+        type: LedgerCredited.type,
+        source: 'ledger',
+        tenantid: tenant,
+        data: { ledgerId, amount: 7 },
+      });
+      const dispatcher = inA.get(MessageDispatcher);
+      const before = await dispatcher.dispatch(credit, { receiveCount: 1 });
+      const moves = inA.get(TenantMoves);
+      const move = refOf(tenant, LedgerGroup.A1, regionA);
+
+      await untilDone(() => moves.sync(move));
+      await untilDone(() => moves.finalize(move));
+      await moves.switch(move);
+      const after = await dispatcher.dispatch(credit, { receiveCount: 2 });
+
+      expect(before).toMatchObject({ outcome: DispatchOutcome.Processed });
+      expect(after).toMatchObject({ outcome: DispatchOutcome.Duplicate });
+      await expect(
+        ledger.rowsOf(regionA, ledger.shards.a1, tenant),
+      ).resolves.toEqual([{ id: ledgerId, total: '7' }]);
+    });
+
     it('cancels a frozen move, discards the copy and lets the tenant write again where it was', async () => {
       const ledger = new TwoRegionLedger(regionA, regionB, 'directory');
       deployment = ledger;
@@ -318,6 +358,67 @@ runtime.describeIfAvailable(
         shardGroup: [ledger.shards.a0],
         status: TenantStatus.Active,
       });
+    });
+
+    it('places a new tenant in the shard of its group once, lets it write and move there, and removes the row of an onboarding that is undone', async () => {
+      const ledger = new TwoRegionLedger(regionA, regionB, 'directory');
+      deployment = ledger;
+      const tenant = newId();
+      const undone = newId();
+      const { inA } = await ledger.deploy([]);
+      const client = inA.get(InternalClient);
+      const call = (operation: OperationDefinition, input: unknown) =>
+        client.call(operation, input, { idempotencyKey: newId() });
+      const entryOf = (tenantId: string, group: string) => ({
+        tenantId,
+        region: regionA.region,
+        groups: [group],
+        dedicated: false,
+      });
+      const place = LedgerTenantDirectoryOperations.tenantDirectoryPlace;
+      const remove = LedgerTenantDirectoryOperations.tenantDirectoryRemove;
+
+      const placed = await call(place, entryOf(tenant, LedgerGroup.A1));
+      const again = await call(place, entryOf(tenant, LedgerGroup.A1));
+      const unknown = await call(place, entryOf(newId(), 'group-z'));
+      await call(place, entryOf(undone, LedgerGroup.A1));
+      const removed = await call(remove, { tenantId: undone });
+      const removedAgain = await call(remove, { tenantId: undone });
+      const writer = new ServiceLedgerWriter(
+        tenant,
+        newId,
+        new Map([[regionA.apiBaseUrl, inA]]),
+        inA,
+      );
+      for (let i = 0; i < 3; i++) {
+        await writer.writeOnce();
+      }
+      const moves = inA.get(TenantMoves);
+      const move = refOf(tenant, LedgerGroup.B0, regionB);
+      await untilDone(() => moves.sync(move));
+      await untilDone(() => moves.finalize(move));
+      await moves.switch(move);
+
+      expect([placed, again, removed, removedAgain]).toEqual([
+        { kind: CallOutcomeKind.Success, value: { tenantId: tenant } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: tenant } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: undone } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: undone } },
+      ]);
+      expect(unknown).toMatchObject({
+        kind: CallOutcomeKind.ProtocolViolation,
+        code: TenantMoveErrorCode.UnknownTarget,
+      });
+      await expect(
+        ledger.rowsOf(regionB, ledger.shards.b0, tenant),
+      ).resolves.toEqual(writer.ackedRows());
+      await expect(
+        inA.get(ShardRouter).placement(tenant),
+      ).resolves.toMatchObject({
+        region: regionB.region,
+        shardGroup: [ledger.shards.b0],
+      });
+      await expect(ledger.placementRows(undone)).resolves.toEqual([]);
     });
   },
 );

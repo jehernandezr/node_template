@@ -36,13 +36,17 @@ final class SessionRefreshPolicy {
 /// no access token. An error that [sessionRefresh] accepts refreshes the
 /// session and retries the request once with the new token.
 ///
+/// A `PLATFORM.SHARDING.WRONG_REGION` answer (421) means the tenant lives in
+/// another region: the client repeats the request once against
+/// `details.apiBaseUrl` and keeps that base for the next calls.
+///
 /// A successful answer must carry the route's `successStatus`; a deprecated
 /// route is logged once per client so the migration does not wait for the
 /// sunset.
 class ApiClient {
   ApiClient({
     required this.transport,
-    required this.baseUri,
+    required this._baseUri,
     this.accessToken,
     this.sessionRefresh,
     this.defaultHeaders = const {},
@@ -51,8 +55,10 @@ class ApiClient {
   /// Port that sends the HTTP requests.
   final HttpTransport transport;
 
-  /// Base of every route path, for example `https://api.example.com`.
-  final Uri baseUri;
+  /// Base of every route path, for example `https://api.example.com`. It
+  /// changes to the API of the tenant's region after a wrong-region answer.
+  Uri get baseUri => _baseUri;
+  Uri _baseUri;
 
   /// Source of the access token for routes that need a session.
   final AccessTokenProvider? accessToken;
@@ -82,8 +88,14 @@ class ApiClient {
 
     _reportDeprecation(route);
 
-    final (uri, body) = _encode(route, json);
+    var (uri, body) = _encode(route, json);
     var response = await _dispatch(route, uri, body);
+    final region = _regionBaseOf(response);
+    if (region != null) {
+      _baseUri = region;
+      (uri, body) = _encode(route, json);
+      response = await _dispatch(route, uri, body);
+    }
     final policy = sessionRefresh;
     if (policy != null && route.requiresAuth && !_isSuccess(response)) {
       if (policy.appliesTo(_problemOf(response))) {
@@ -171,6 +183,31 @@ class ApiClient {
     );
   }
 
+  /// The API of the tenant's region when [response] is a wrong-region answer
+  /// with a usable `apiBaseUrl`, or null.
+  ///
+  /// Only an absolute `https` URL is followed, or `http` while the current
+  /// base is `http` (a local deployment): the token never travels to a
+  /// weaker scheme than the one it was given for.
+  Uri? _regionBaseOf(TransportResponse response) {
+    if (response.statusCode !=
+        PlatformErrorCode.shardingWrongRegion.httpStatus) {
+      return null;
+    }
+    final problem = _problemOf(response);
+    if (problem.code != PlatformErrorCode.shardingWrongRegion.code) {
+      return null;
+    }
+    final target = Uri.tryParse(problem.details?.apiBaseUrl ?? '');
+    if (target == null || !target.isAbsolute || target.host.isEmpty) {
+      return null;
+    }
+    final allowed =
+        target.scheme == 'https' ||
+        (target.scheme == 'http' && _baseUri.scheme == 'http');
+    return allowed && target != _baseUri ? target : null;
+  }
+
   static bool _isSuccess(TransportResponse response) =>
       response.statusCode >= 200 && response.statusCode <= 299;
 
@@ -197,17 +234,18 @@ class ApiClient {
       final value = rest.remove(param);
       path = path.replaceAll('{$param}', Uri.encodeComponent('$value'));
     }
-    final basePath = baseUri.path.endsWith('/')
-        ? baseUri.path.substring(0, baseUri.path.length - 1)
-        : baseUri.path;
+    final base = _baseUri;
+    final basePath = base.path.endsWith('/')
+        ? base.path.substring(0, base.path.length - 1)
+        : base.path;
     if (route.requestLocation == RequestLocation.body) {
-      return (baseUri.replace(path: '$basePath$path'), jsonEncode(rest));
+      return (base.replace(path: '$basePath$path'), jsonEncode(rest));
     }
     // The contract's canonical form: numbers in JSON notation, booleans as
     // true/false and lists as a repeated parameter.
     final query = encodeQuery(rest);
     return (
-      baseUri.replace(
+      base.replace(
         path: '$basePath$path',
         queryParameters: query.isEmpty ? null : query,
       ),

@@ -2,20 +2,21 @@ import {
   BillingCommand,
   BillingErrorCode,
   BillingEvent,
+  BillingTenantDirectoryOperations,
   CheckQuotaOperation,
   CloseAccountOperation,
+  type Invoice,
+  type InvoiceChangePage,
+  type InvoicePage,
   InvoiceStatus,
   ListInvoiceChangesOperation,
   MarkInvoiceFailedOperation,
   MarkInvoicePaidOperation,
   OpenAccountOperation,
-  SubscriptionStatus,
-  UsageMetric,
-  type Invoice,
-  type InvoiceChangePage,
-  type InvoicePage,
   type PlanCatalog,
   type Subscription,
+  SubscriptionStatus,
+  UsageMetric,
   type UsageOverview,
 } from '@contracts/billing';
 import { IdentityEvent, MembershipChangeKind } from '@contracts/identity';
@@ -23,6 +24,10 @@ import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
+import { ProvisionedService } from '@platform/service/test-utils';
+import { TenantStatus } from '@platform/sharding';
+import { TenantDirectoryRehearsal } from '@platform/tenant-move/test-utils';
+import { TenantMoveErrorCode } from '@platform/tenant-move';
 import { CloseInvoicePeriodsJob } from '../modules/invoices/application/close-invoice-periods.job.js';
 import { IssueInvoice } from '../modules/invoices/application/issue-invoice.use-case.js';
 import { AdvanceDunningJob } from '../modules/subscriptions/application/advance-dunning.job.js';
@@ -485,6 +490,66 @@ new ContainerRuntime(process.env).describeIfAvailable(
           `SELECT 1 FROM subscriptions WHERE tenant_id = '${TENANT_B}'`,
         ),
       ).resolves.toEqual([]);
+    });
+
+    it('places a tenant onboarded by identity in the shard of its group once and takes it out when the onboarding is undone', async () => {
+      const rehearsal = new TenantDirectoryRehearsal(
+        BillingTenantDirectoryOperations,
+        app.internal(),
+        app.servers,
+      );
+
+      const report = await rehearsal.rehearse();
+
+      expect(report.placements).toEqual([
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+      ]);
+      expect(report.placedRows).toEqual([
+        {
+          region: ProvisionedService.REGION,
+          shard_group: [rehearsal.expectedShard()],
+          status: TenantStatus.Active,
+        },
+      ]);
+      expect(report.removals).toEqual([
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+      ]);
+      expect(report.rowsAfterRemoval).toEqual([]);
+      expect(report.unknownGroup).toMatchObject({
+        kind: CallOutcomeKind.ProtocolViolation,
+        code: TenantMoveErrorCode.UnknownTarget,
+      });
+    });
+
+    it('opens the account of a tenant that identity has just placed in its directory', async () => {
+      const tenantId = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a77';
+
+      const placed = await app.internal().invoke(
+        BillingTenantDirectoryOperations.tenantDirectoryPlace,
+        {
+          tenantId,
+          region: ProvisionedService.REGION,
+          groups: [ProvisionedService.GROUPS[0]],
+          dedicated: false,
+        },
+        tenantId,
+      );
+      const opened = await app
+        .internal()
+        .invoke(OpenAccountOperation, { tenantId, ownerUserId: OWNER });
+
+      expect(placed.kind).toBe(CallOutcomeKind.Success);
+      expect(opened).toMatchObject({
+        kind: CallOutcomeKind.Success,
+        value: { tenantId, status: SubscriptionStatus.Trialing },
+      });
+      await expect(
+        app.servers
+          .shards()[0]
+          .rows(`SELECT 1 FROM subscriptions WHERE tenant_id = '${tenantId}'`),
+      ).resolves.toHaveLength(1);
     });
   },
 );

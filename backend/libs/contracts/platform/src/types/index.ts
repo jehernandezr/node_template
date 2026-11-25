@@ -4,5 +4,6 @@ export * from './money.type.js';
 export * from './pagination.type.js';
 export * from './problem-details.type.js';
 export * from './problem-details-input.type.js';
+export * from './tenant-directory.type.js';
 export * from './tenant-move.type.js';
 export * from './user-ref.type.js';

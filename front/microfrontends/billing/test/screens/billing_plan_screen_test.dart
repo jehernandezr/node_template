@@ -1,4 +1,4 @@
-import 'package:contracts/contracts.dart' hide BillingOperation, Currency;
+import 'package:contracts/contracts.dart' hide BillingOperation;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
@@ -196,6 +196,6 @@ void main() {
 }
 
 String _cop(int amountMinor) => formatMoney(
-  MoneyAmount(amountMinor: amountMinor, currency: Currency.cop.code),
+  MoneyAmount(amountMinor: amountMinor, currency: Currency.cop.wireCode),
   locale: 'es',
 );

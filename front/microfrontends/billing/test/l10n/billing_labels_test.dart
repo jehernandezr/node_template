@@ -35,12 +35,12 @@ void main() {
 
   group(quotaLabel, () {
     test('every quota key has a label in each language', () {
-      for (final key in QuotaKey.values) {
+      for (final key in UsageMetric.values) {
         expect(quotaLabel(_es, key), isNotEmpty);
         expect(quotaLabel(_en, key), isNotEmpty);
       }
-      expect(quotaLabel(_es, QuotaKey.users), 'Usuarios');
-      expect(quotaLabel(_en, QuotaKey.users), 'Users');
+      expect(quotaLabel(_es, UsageMetric.users), 'Usuarios');
+      expect(quotaLabel(_en, UsageMetric.users), 'Users');
     });
   });
 }

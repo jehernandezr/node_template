@@ -10,6 +10,7 @@ import { CreatePlatformShardTables1794800001001 } from './migrations/shard/17948
 import { CreateTenantWriteFences1794800001002 } from './migrations/shard/1794800001002-CreateTenantWriteFences.js';
 import { CreateTenantMoveCheckpoints1794800001003 } from './migrations/shard/1794800001003-CreateTenantMoveCheckpoints.js';
 import { AddIdempotencyKeyTenant1794800001004 } from './migrations/shard/1794800001004-AddIdempotencyKeyTenant.js';
+import { AddProcessedMessageTenant1794800001005 } from './migrations/shard/1794800001005-AddProcessedMessageTenant.js';
 import { IdempotencyKeyEntity } from './entities/idempotency-key.entity.js';
 import { OutboxEntity } from './entities/outbox.entity.js';
 import { ProcessedMessageEntity } from './entities/processed-message.entity.js';
@@ -46,6 +47,7 @@ export const platformShardMigrations: readonly MigrationClass[] = [
   CreateTenantWriteFences1794800001002,
   CreateTenantMoveCheckpoints1794800001003,
   AddIdempotencyKeyTenant1794800001004,
+  AddProcessedMessageTenant1794800001005,
 ];
 
 /** Migraciones del catálogo global. */

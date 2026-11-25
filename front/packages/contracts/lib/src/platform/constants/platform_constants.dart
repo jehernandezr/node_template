@@ -46,3 +46,11 @@ abstract final class TenantMoveLimits {
   static const int switchTimeoutMs = 6000;
   static const int cleanupTimeoutMs = 6000;
 }
+
+/// Constantes `TenantDirectoryLimits` del contrato `platform`.
+abstract final class TenantDirectoryLimits {
+  static const int fieldMaxLength = 64;
+  static const int maxGroups = 64;
+  static const int placeTimeoutMs = 5000;
+  static const int removeTimeoutMs = 5000;
+}

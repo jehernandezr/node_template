@@ -25,12 +25,18 @@ export class OutboxSecurityAlerts extends SecurityAlerts {
   async raise(alert: SecurityAlert): Promise<void> {
     await this.scopes.inUserShard(alert.user, () =>
       this.transactions.runInTransaction(async () => {
-        await this.bus.publish(SecurityAlertRaisedEvent, {
-          alertId: this.ids.next().toString(),
-          userId: alert.user.userId,
-          type: alert.type,
-          raisedAt: this.clock.now().toISOString(),
-        });
+        await this.bus.publish(
+          SecurityAlertRaisedEvent,
+          {
+            alertId: this.ids.next().toString(),
+            userId: alert.user.userId,
+            type: alert.type,
+            raisedAt: this.clock.now().toISOString(),
+          },
+          // Se publica fuera de una petición de tenant (al iniciar sesión, por ejemplo): el tenant del sobre es el de
+          // origen del usuario, que es donde lo ubican quienes consumen el aviso.
+          { tenantId: alert.user.homeTenantId },
+        );
       }),
     );
   }

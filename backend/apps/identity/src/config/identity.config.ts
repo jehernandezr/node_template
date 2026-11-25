@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import { TokenAudience } from '@contracts/identity';
 import { IdSchema } from '@contracts/platform';
-import { internalHttpConfigSchema } from '@platform/service';
+import {
+  internalHttpConfigSchema,
+  regionsConfigSchema,
+} from '@platform/service';
 import {
   envDuration,
   envList,
@@ -19,8 +22,12 @@ import { IdentityMailerKind } from './identity-mailer-kind.enum.js';
 export const identityConfigSchema = serviceConfigSchema
   .extend({
     IDENTITY_REGION: z.string().trim().min(1).max(32),
-    /** La región del proceso para el enrutamiento (`@platform/service`); si se declara, es `IDENTITY_REGION`. */
+    /**
+     * La región del proceso para el enrutamiento (`@platform/service`): es `IDENTITY_REGION` y es obligatoria cuando
+     * `REGIONS` declara regiones, porque sin ella el router no rechaza los tenants de otra región.
+     */
     SERVICE_REGION: z.string().trim().min(1).max(32).optional(),
+    REGIONS: regionsConfigSchema.shape.REGIONS,
     IDENTITY_ISSUER: z.url(),
     AUTH_ISSUER: z.url(),
     AUTH_JWKS_URL: z.url(),
@@ -64,6 +71,14 @@ export const identityConfigSchema = serviceConfigSchema
         code: 'custom',
         path: ['AUTH_ISSUER'],
         message: 'AUTH_ISSUER debe ser igual a IDENTITY_ISSUER',
+      });
+    }
+    if (config.REGIONS.length > 0 && config.SERVICE_REGION === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SERVICE_REGION'],
+        message:
+          'SERVICE_REGION es obligatoria cuando REGIONS declara regiones',
       });
     }
     if (

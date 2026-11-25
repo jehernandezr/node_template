@@ -1,23 +1,8 @@
-import 'dart:convert';
-
 import 'package:api/api.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_account/src/data/api_account_repository.dart';
-
-class _Transport implements HttpTransport {
-  final List<TransportRequest> requests = [];
-  final List<TransportResponse> answers = [];
-
-  @override
-  Future<TransportResponse> send(TransportRequest request) async {
-    requests.add(request);
-    return answers.removeAt(0);
-  }
-
-  @override
-  void close() {}
-}
+import 'package:test_utils/test_utils.dart';
 
 const _id = '0193f1c2-0000-7000-8000-000000000001';
 
@@ -29,15 +14,12 @@ Map<String, Object?> _session(String id, {bool current = false}) => {
   'current': current,
 };
 
-TransportResponse _json(int status, Object body) =>
-    TransportResponse(statusCode: status, body: jsonEncode(body));
-
 void main() {
-  late _Transport transport;
+  late ScriptedTransport transport;
   late ApiAccountRepository repository;
 
   setUp(() {
-    transport = _Transport();
+    transport = ScriptedTransport();
     repository = ApiAccountRepository(
       client: ApiClient(
         transport: transport,
@@ -59,19 +41,15 @@ void main() {
 
   group('sessions', () {
     test('lists every page with the page size of the contract', () async {
-      transport.answers
-        ..add(
-          _json(200, {
-            'items': [_session(_id, current: true)],
-            'nextCursor': 'c1',
-          }),
-        )
-        ..add(
-          _json(200, {
-            'items': [_session('0193f1c2-0000-7000-8000-000000000002')],
-            'nextCursor': null,
-          }),
-        );
+      transport
+        ..json(200, {
+          'items': [_session(_id, current: true)],
+          'nextCursor': 'c1',
+        })
+        ..json(200, {
+          'items': [_session('0193f1c2-0000-7000-8000-000000000002')],
+          'nextCursor': null,
+        });
       final sessions = await repository.listSessions();
       expect(sessions.map((s) => s.current), [true, false]);
       expect(sessions.first.platform, ClientPlatform.web);
@@ -85,7 +63,7 @@ void main() {
     });
 
     test('revokes one session with DELETE on its path', () async {
-      transport.answers.add(const TransportResponse(statusCode: 204));
+      transport.empty(204);
       await repository.revokeSession(_id);
       final request = transport.requests.single;
       expect(request.method, 'DELETE');
@@ -93,7 +71,7 @@ void main() {
     });
 
     test('revokes the other sessions and returns the count', () async {
-      transport.answers.add(_json(200, {'revoked': 3}));
+      transport.json(200, {'revoked': 3});
       expect(await repository.revokeOtherSessions(), 3);
       expect(
         transport.requests.single.uri.path,
@@ -102,14 +80,12 @@ void main() {
     });
 
     test('an API error reaches the caller', () async {
-      transport.answers.add(
-        _json(401, {
-          'type': 'about:blank',
-          'title': 'Revoked',
-          'status': 401,
-          'code': 'IDENTITY.SESSION.REVOKED',
-        }),
-      );
+      transport.json(401, {
+        'type': 'about:blank',
+        'title': 'Revoked',
+        'status': 401,
+        'code': 'IDENTITY.SESSION.REVOKED',
+      });
       await expectLater(
         repository.listSessions(),
         throwsA(isA<ApiErrorException>()),
@@ -118,20 +94,18 @@ void main() {
   });
 
   test('lists trusted devices', () async {
-    transport.answers.add(
-      _json(200, {
-        'items': [
-          {
-            'id': _id,
-            'name': 'iPhone',
-            'platform': 'ios',
-            'lastSeenAt': '2026-11-12T10:00:00.000Z',
-            'verifier': true,
-          },
-        ],
-        'nextCursor': null,
-      }),
-    );
+    transport.json(200, {
+      'items': [
+        {
+          'id': _id,
+          'name': 'iPhone',
+          'platform': 'ios',
+          'lastSeenAt': '2026-11-12T10:00:00.000Z',
+          'verifier': true,
+        },
+      ],
+      'nextCursor': null,
+    });
     final devices = await repository.listDevices();
     expect(devices.single.verifier, isTrue);
     expect(devices.single.platform, ClientPlatform.ios);

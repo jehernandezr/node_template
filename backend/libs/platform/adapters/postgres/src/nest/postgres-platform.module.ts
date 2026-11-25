@@ -133,6 +133,7 @@ export class PostgresPlatformModule extends PostgresPlatformModuleClass {
               managers,
               ids,
               clock,
+              { tenantColumn: true },
             ),
           ),
         inject: [PlatformEntityManagers, IdGenerator, Clock],

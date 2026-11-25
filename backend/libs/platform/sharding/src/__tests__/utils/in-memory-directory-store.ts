@@ -75,6 +75,17 @@ export class InMemoryDirectoryStore implements DirectoryStore, DirectoryWriter {
     return DirectoryWriteResult.Written;
   }
 
+  async deletePlacement(
+    tenantId: string,
+    expectedVersion: number,
+  ): Promise<DirectoryWriteResult> {
+    if (this.placements.get(tenantId)?.version !== expectedVersion) {
+      return DirectoryWriteResult.VersionConflict;
+    }
+    this.placements.delete(tenantId);
+    return DirectoryWriteResult.Written;
+  }
+
   private breaksExclusivity(placement: TenantPlacement): boolean {
     for (const other of this.placements.values()) {
       if (other.tenantId === placement.tenantId) {

@@ -141,6 +141,25 @@ const depConstraints = [
       'type:contracts',
     ],
   },
+  // La prueba de punta a punta del flujo de la plataforma: lee contratos y librerías, y entra a las apps por la
+  // excepción de `allowAppImports`.
+  {
+    sourceTag: 'type:e2e',
+    onlyDependOnLibsWithTags: [
+      'type:app',
+      'type:platform',
+      'type:util',
+      'type:contracts',
+    ],
+  },
+  {
+    sourceTag: 'scope:e2e',
+    onlyDependOnLibsWithTags: [
+      'scope:platform',
+      'scope:shared',
+      'type:contracts',
+    ],
+  },
   ...['tasks', 'notifications', 'realtime', 'reports', 'billing'].map(
     (service) => ({
       sourceTag: `scope:${service}`,
@@ -191,7 +210,33 @@ const allowBillingContracts = allowServiceContracts([
   'scope:identity',
 ]);
 
-export { allowBillingContracts, allowIdentityContracts, layoutPlugin };
+/**
+ * Nx prohíbe importar una app desde cualquier proyecto. La prueba de punta a punta arranca los cinco servicios en un
+ * proceso y es el único proyecto que entra a ellos, solo por `@apps/<servicio>/test-utils`.
+ */
+const allowAppImports = (files) => ({
+  files,
+  rules: {
+    '@nx/enforce-module-boundaries': [
+      'error',
+      {
+        enforceBuildableLibDependency: true,
+        allow: [
+          '^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$',
+          '^@apps/[a-z-]+/test-utils$',
+        ],
+        depConstraints,
+      },
+    ],
+  },
+});
+
+export {
+  allowAppImports,
+  allowBillingContracts,
+  allowIdentityContracts,
+  layoutPlugin,
+};
 
 export default [
   ...nx.configs['flat/base'],
@@ -254,6 +299,7 @@ export default [
     'libs/platform/quotas/**/*.ts',
     'libs/platform/metering/**/*.ts',
   ]),
+  allowAppImports(['e2e/**/*.ts']),
   {
     files: ['**/domain/**/*.ts'],
     rules: {

@@ -147,7 +147,9 @@ enum TasksOperation {
   tenantMoveFinalize('tasks.tenant-move.finalize.v1'),
   tenantMoveAbort('tasks.tenant-move.abort.v1'),
   tenantMoveSwitch('tasks.tenant-move.switch.v1'),
-  tenantMoveCleanup('tasks.tenant-move.cleanup.v1');
+  tenantMoveCleanup('tasks.tenant-move.cleanup.v1'),
+  tenantDirectoryPlace('tasks.tenant-directory.place.v1'),
+  tenantDirectoryRemove('tasks.tenant-directory.remove.v1');
 
   const TasksOperation(this.wireCode);
 

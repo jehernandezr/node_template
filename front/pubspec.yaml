@@ -12,6 +12,7 @@ workspace:
   - microfrontends/backoffice
   - microfrontends/billing
   - microfrontends/notifications
+  - microfrontends/reports
   - microfrontends/tasks
   - microfrontends/verifier
   - packages/api

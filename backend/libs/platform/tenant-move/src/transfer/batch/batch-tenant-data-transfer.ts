@@ -47,7 +47,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   async sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
-    const budget = new TransferBudget(this.clock, this.options.callBudgetMs);
+    const budget = transfer.budget ?? this.newBudget();
     const tables: TenantMoveTableProgress[] = [];
     let changed = 0;
     for (const copier of await this.copiers(transfer.source)) {
@@ -64,7 +64,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   async verify(transfer: TenantTransfer): Promise<TenantMoveVerification> {
-    const budget = new TransferBudget(this.clock, this.options.callBudgetMs);
+    const budget = transfer.budget ?? this.newBudget();
     const tables: TenantMoveTableCheck[] = [];
     for (const { table, copier } of await this.copiers(transfer.source)) {
       tables.push(await this.verifyTable(transfer, table, copier, budget));
@@ -83,7 +83,11 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   async abort(transfer: TenantTransfer): Promise<void> {
-    await this.purge(transfer.tenantId, transfer.target);
+    await this.purge(
+      transfer.tenantId,
+      transfer.target,
+      transfer.budget ?? this.newBudget(),
+    );
     await this.checkpoints.forget(
       transfer.target,
       transfer.moveId,
@@ -91,8 +95,12 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     );
   }
 
-  async cleanup(tenantId: string, source: DataSource): Promise<void> {
-    await this.purge(tenantId, source);
+  async cleanup(
+    tenantId: string,
+    source: DataSource,
+    budget: TransferBudget = this.newBudget(),
+  ): Promise<void> {
+    await this.purge(tenantId, source, budget);
   }
 
   async assignRegion(
@@ -394,8 +402,11 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   /** Borra las filas del tenant de las tablas del manifiesto, los hijos primero. */
-  private async purge(tenantId: string, dataSource: DataSource): Promise<void> {
-    const budget = new TransferBudget(this.clock, this.options.callBudgetMs);
+  private async purge(
+    tenantId: string,
+    dataSource: DataSource,
+    budget: TransferBudget,
+  ): Promise<void> {
     const copiers = await this.copiers(dataSource);
     for (const { table, copier } of [...copiers].reverse()) {
       let deleted: number;
@@ -406,6 +417,10 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
         );
       } while (deleted > 0);
     }
+  }
+
+  private newBudget(): TransferBudget {
+    return new TransferBudget(this.clock, this.options.callBudgetMs);
   }
 
   private tableNames(): string[] {

@@ -56,8 +56,8 @@ final class WebShellFixture implements ShellFixture {
     return (host: host, under: under);
   }
 
-  /// Waits for the queued identity syncs, then unmounts the app, which
-  /// disposes the host.
+  /// Waits for the queued identity syncs, unmounts the app, which disposes
+  /// the host, and waits for that disposal to finish.
   Future<void> _close(WidgetTester tester, ShellHost host) async {
     final idle = await const RuntimeSettler().settle(
       tester,
@@ -66,5 +66,12 @@ final class WebShellFixture implements ShellFixture {
     expect(idle, isTrue, reason: 'the runtime never got idle');
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
+    // The scopes of the identity hold live connections that close only when
+    // the disposal of the host finishes.
+    final disposed = await const RuntimeSettler().settle(
+      tester,
+      () => host.whenDisposed,
+    );
+    expect(disposed, isTrue, reason: 'the host never finished disposing');
   }
 }

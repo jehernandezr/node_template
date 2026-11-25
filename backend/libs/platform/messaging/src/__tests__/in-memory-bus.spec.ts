@@ -6,6 +6,7 @@ import { MessageDispatcher } from '../dispatch/message-dispatcher.js';
 import { QueueDef } from '../topology/queue-def.js';
 import { Route } from '../topology/route.js';
 import { TopicDef } from '../topology/topic-def.js';
+import { TargetKind } from '../topology/target-kind.enum.js';
 import { Topology } from '../topology/topology.js';
 import { InMemoryBus } from './utils/in-memory-bus.js';
 import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
@@ -101,6 +102,33 @@ describe('InMemoryBus', () => {
     });
     expect(bus.pendingCount('reports')).toBe(1);
     expect(bus.pendingCount('audit')).toBe(0);
+  });
+
+  it('accepts a relayed event and fans it out by its type', async () => {
+    const { bus } = setup();
+    const source = setup().bus;
+    const envelope = await source.publish(TaskUpdated, { id: 't1' });
+
+    bus.accept(envelope, { kind: TargetKind.Topic, name: 'tasks-events' });
+
+    expect(bus.pendingCount('notifications')).toBe(1);
+    expect(bus.pendingCount('audit')).toBe(1);
+  });
+
+  it('accepts a relayed command and holds it until its delay passes', async () => {
+    const { bus, dispatcher, setClock } = setup();
+    const envelope = await setup().bus.send(GenerateReport, {
+      reportId: 'r1',
+    });
+
+    bus.accept(envelope, { kind: TargetKind.Queue, name: 'reports' }, 500);
+    await bus.drain('reports', dispatcher);
+    const waiting = bus.pendingCount('reports');
+    setClock(500);
+    await bus.drain('reports', dispatcher);
+
+    expect(waiting).toBe(1);
+    expect(bus.pendingCount('reports')).toBe(0);
   });
 
   it('rejects an unrouted type', async () => {

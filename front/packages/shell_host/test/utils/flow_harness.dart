@@ -3,8 +3,6 @@ import 'package:auth/auth.dart';
 import 'package:contracts/contracts.dart';
 import 'package:test_utils/test_utils.dart';
 
-import 'scripted_transport.dart';
-
 /// An `IdentityConnection` over a `FakeAuthRepository`, with helpers that
 /// script the sign-in and step-up answers the forms need.
 final class FlowHarness {

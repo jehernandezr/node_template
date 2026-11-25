@@ -23,6 +23,16 @@ export class TenantMoveTargets {
     return this.byGroup.get(group);
   }
 
+  /** El grupo de la región que lleva al shard lógico de este servicio, o `undefined` si ninguno lo nombra. */
+  groupOf(region: string, shard: string): string | undefined {
+    for (const target of this.byGroup.values()) {
+      if (target.region === region && target.shard === shard) {
+        return target.group;
+      }
+    }
+    return undefined;
+  }
+
   /**
    * @throws TenantMoveError `UnknownTarget` si el grupo no existe o su región no es la pedida.
    */

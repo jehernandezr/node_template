@@ -10,6 +10,7 @@ import '../../auth/fake_auth_repository.dart';
 import '../../auth/fake_token_store.dart';
 import '../../clock/fake_clock.dart';
 import '../../errors/fake_failure.dart';
+import '../../http/scripted_transport.dart';
 import '../../session/session_builder.dart';
 import '../deferred_libraries_preloader.dart';
 import 'scenario_identity.dart';
@@ -19,7 +20,8 @@ import 'shell_scenario_setup.dart';
 
 /// Registers the shared scenarios: sign-in that keeps `from`, sign-out,
 /// forbidden page, step-up redirect, step-up of an action, MFA at login,
-/// identity switch and deep link after restoring the session.
+/// identity switch, deep link after restoring the session and the live data
+/// of a business microfrontend.
 ///
 /// [platform] names the group, so the two apps tell apart in a report.
 void defineShellScenarios(ShellFixture fixture, {String platform = 'shell'}) =>
@@ -55,6 +57,7 @@ final class ShellScenarioSuite {
       mfaAtLogin();
       identitySwitch();
       restoredDeepLink();
+      liveBusinessData();
     });
   }
 
@@ -492,6 +495,41 @@ final class ShellScenarioSuite {
 
   /// Builds the fixture, runs [body] inside the test and closes the app
   /// inside the test body too.
+  /// In live mode a business microfrontend reads its API with the session
+  /// token and follows the tenant to its region. Both apps compose tasks.
+  void liveBusinessData() {
+    group('live business data', () {
+      testWidgets('the tasks come from the API of the region of the tenant', (
+        tester,
+      ) {
+        final api = ScriptedTransport.unavailable()
+          ..problem(_Api.wrongRegion, path: _Api.tasksRoute)
+          ..json(200, _Api.taskPage, path: _Api.tasksRoute);
+        return _run(
+          tester,
+          (s) async {
+            await s.signInLive();
+            await s.go(_Api.tasksPage);
+
+            final reads = api.requestsTo(_Api.tasksRoute);
+            expect(reads.map((request) => request.uri.host), [
+              'api.example.com',
+              Uri.parse(_Api.regionBase).host,
+            ]);
+            expect(
+              reads.last.headers['authorization'],
+              'Bearer ${_Identity.accessToken}',
+            );
+            expect(find.text(_Api.taskTitle), findsWidgets);
+          },
+          live: true,
+          api: api,
+          configure: _Configurations.signIn,
+        );
+      });
+    });
+  }
+
   Future<void> _run(
     WidgetTester tester,
     Future<void> Function(_Scenario s) body, {
@@ -500,6 +538,7 @@ final class ShellScenarioSuite {
     TokenStore? tokenStore,
     void Function(FakeAuthRepository auth, FakeClock clock)? configure,
     String initialLocation = '/',
+    ScriptedTransport? api,
   }) async {
     final clock = FakeClock();
     FakeAuthRepository? auth;
@@ -511,6 +550,7 @@ final class ShellScenarioSuite {
         auth,
         tokenStore: tokenStore,
         clock: clock.now,
+        api: api,
       );
     }
     final under = await fixture.pump(
@@ -651,6 +691,45 @@ final class _Scenario {
     await tester.tap(find.text(_Texts.verify));
     await tester.pumpAndSettle();
   }
+}
+
+/// What the API answers in the live data scenario.
+abstract final class _Api {
+  /// Page of the tasks microfrontend, which both apps compose.
+  static const String tasksPage = '/tasks';
+  static final String tasksRoute = TasksRoutes.listTasks.path;
+  static const String regionBase = 'https://sa.api.example.test';
+  static const String taskTitle = 'Revisar contrato del proveedor';
+
+  static final ProblemDetails wrongRegion = ProblemDetails(
+    type: 'about:blank',
+    title: 'Wrong region',
+    status: PlatformErrorCode.shardingWrongRegion.httpStatus,
+    code: PlatformErrorCode.shardingWrongRegion.code,
+    details: const ProblemDetailsDetails(
+      region: 'sa-east-1',
+      apiBaseUrl: regionBase,
+    ),
+  );
+
+  static const Map<String, Object?> taskPage = {
+    'items': [
+      {
+        'id': '0193f1c2-0000-7000-8000-0000000000e1',
+        'title': taskTitle,
+        'description': '',
+        'status': 'open',
+        'version': 1,
+        'createdAt': '2026-11-20T10:00:00.000Z',
+        'updatedAt': '2026-11-20T10:00:00.000Z',
+        'createdBy': {
+          'userId': ScenarioIdentity.defaultUserId,
+          'homeTenantId': '0193f1c2-0000-7000-8000-0000000000b1',
+        },
+      },
+    ],
+    'nextCursor': null,
+  };
 }
 
 /// Texts the scenarios look for on screen, in Spanish.

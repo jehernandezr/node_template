@@ -4,7 +4,11 @@ import type {
   TenantMoveRef,
 } from '@contracts/platform';
 import { PlatformErrorCode } from '@contracts/platform';
-import { OperationHandler, type HandlerResult } from '@platform/internal-api';
+import {
+  OperationHandler,
+  type CallMeta,
+  type HandlerResult,
+} from '@platform/internal-api';
 import { InProcessInternalApi } from '@platform/internal-api/test-utils';
 import type { JobContext } from '@platform/kernel';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
@@ -35,11 +39,15 @@ type CleanupScript = (
 const done: CleanupScript = (input) =>
   CallOutcome.success({ moveId: input.moveId });
 
-/** La limpieza de un servicio: responde según su guion y anota cada traslado que terminó de limpiar. */
+/**
+ * La limpieza de un servicio: responde según su guion y anota cada traslado que terminó de limpiar y cada llave de
+ * idempotencia que recibió, que es un intento del job (los reintentos del cliente repiten la llave).
+ */
 class ScriptedCleanup extends OperationHandler<
   TenantMoveOperations['tenantMoveCleanup']
 > {
   readonly cleaned: string[] = [];
+  readonly keys = new Set<string>();
   private calls = 0;
 
   constructor(
@@ -53,8 +61,12 @@ class ScriptedCleanup extends OperationHandler<
     return this.calls;
   }
 
-  async handle(input: TenantMoveRef): Promise<HandlerResult<TenantMoveAck>> {
+  async handle(
+    input: TenantMoveRef,
+    context: CallMeta,
+  ): Promise<HandlerResult<TenantMoveAck>> {
     this.calls += 1;
+    this.keys.add(context.idempotencyKey);
     this.onCall();
     const outcome = this.script(input, this.calls);
     if (outcome.kind === CallOutcomeKind.Success) {
@@ -74,6 +86,7 @@ describe('TenantMoveCleanupJob', () => {
   const setup = (
     scripts: Partial<Record<number, CleanupScript>> = {},
     onCall?: (clock: FixedClock) => void,
+    maxAttempts = 30,
   ) => {
     const clock = new FixedClock(NOW);
     const ids = new SequentialIdGenerator();
@@ -96,7 +109,11 @@ describe('TenantMoveCleanupJob', () => {
       clock,
       new SequentialIdGenerator(),
       logger,
-      tenantMoveConfigSchema.parse({ TENANT_MOVE_GRACE_DAYS: '7' }),
+      tenantMoveConfigSchema.parse({
+        TENANT_MOVE_GRACE_DAYS: '7',
+        TENANT_MOVE_CLEANUP_PAUSE_MS: '1',
+        TENANT_MOVE_CLEANUP_MAX_ATTEMPTS: String(maxAttempts),
+      }),
     );
     return { clock, handlers, job, log, logger };
   };
@@ -146,7 +163,44 @@ describe('TenantMoveCleanupJob', () => {
 
     // Más llamadas que los intentos que el cliente hace por su cuenta en una sola llamada.
     expect(handlers[0]?.callCount).toBe(5);
+    expect(handlers[0]?.keys.size).toBeGreaterThan(1);
     expect(log.find(OLD_MOVE)?.status).toBe(TenantMoveStatus.CleanedUp);
+  });
+
+  it('stops asking a service that keeps answering that its round goes on once it reaches the attempt cap', async () => {
+    const maxAttempts = 2;
+    const { handlers, job, log } = setup(
+      {
+        0: () => CallOutcome.transientFailure(TenantMoveErrorCode.RoundPending),
+      },
+      undefined,
+      maxAttempts,
+    );
+    await switchedMove(log, OLD_MOVE, TENANT_A, 8);
+
+    await job.run(context());
+
+    expect(handlers[0]?.keys.size).toBe(maxAttempts);
+    for (const handler of handlers.slice(1)) {
+      expect(handler.cleaned).toEqual([OLD_MOVE]);
+    }
+    expect(log.find(OLD_MOVE)?.status).toBe(TenantMoveStatus.Switched);
+  });
+
+  it('stops repeating a pending round when the run is aborted during the pause', async () => {
+    const controller = new AbortController();
+    const { handlers, job, log } = setup({
+      0: () => {
+        controller.abort();
+        return CallOutcome.transientFailure(TenantMoveErrorCode.RoundPending);
+      },
+    });
+    await switchedMove(log, OLD_MOVE, TENANT_A, 8);
+
+    await job.run({ ...context(), signal: controller.signal });
+
+    expect(handlers[0]?.keys.size).toBe(1);
+    expect(log.find(OLD_MOVE)?.status).toBe(TenantMoveStatus.Switched);
   });
 
   it('tries the other services when one fails, and asks that one again on the next run with a new key', async () => {

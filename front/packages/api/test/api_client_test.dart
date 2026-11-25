@@ -255,6 +255,80 @@ void main() {
     });
   });
 
+  group('wrong region', () {
+    TransportResponse wrongRegion(String? apiBaseUrl) => _json(421, {
+      'type': 'about:blank',
+      'title': 'Wrong region',
+      'status': 421,
+      'code': PlatformErrorCode.shardingWrongRegion.code,
+      'details': {'region': 'sa-east-1', 'apiBaseUrl': ?apiBaseUrl},
+    });
+
+    const page = {'items': <Object>[], 'nextCursor': null};
+
+    test(
+      'repeats the request once in the region of the tenant and stays there',
+      () async {
+        transport.queue
+          ..add(wrongRegion('https://sa.api.example.com/base'))
+          ..add(_json(200, page))
+          ..add(_json(200, page));
+
+        await client.send(IdentityRoutes.listSessions, const PageQuery());
+        await client.send(IdentityRoutes.listSessions, const PageQuery());
+
+        expect(
+          [for (final request in transport.requests) request.uri.toString()],
+          [
+            'https://api.example.com/v1/me/sessions',
+            'https://sa.api.example.com/base/v1/me/sessions',
+            'https://sa.api.example.com/base/v1/me/sessions',
+          ],
+        );
+        expect(
+          transport.requests[1].headers['authorization'],
+          'Bearer token-1',
+        );
+        expect(client.baseUri, Uri.parse('https://sa.api.example.com/base'));
+      },
+    );
+
+    test('a second wrong-region answer reaches the caller', () async {
+      transport.queue
+        ..add(wrongRegion('https://sa.api.example.com'))
+        ..add(wrongRegion('https://sa.api.example.com'));
+
+      await expectLater(
+        client.send(IdentityRoutes.listSessions, const PageQuery()),
+        throwsA(
+          isA<ApiErrorException>().having(
+            (e) => e.problem.code,
+            'code',
+            PlatformErrorCode.shardingWrongRegion.code,
+          ),
+        ),
+      );
+      expect(transport.requests, hasLength(2));
+    });
+
+    for (final (label, target) in [
+      ('without a URL', null),
+      ('to a plain http URL from https', 'http://sa.api.example.com'),
+      ('to a relative URL', '/elsewhere'),
+    ]) {
+      test('does not follow an answer $label', () async {
+        transport.queue.add(wrongRegion(target));
+
+        await expectLater(
+          client.send(IdentityRoutes.listSessions, const PageQuery()),
+          throwsA(isA<ApiErrorException>()),
+        );
+        expect(transport.requests, hasLength(1));
+        expect(client.baseUri, Uri.parse('https://api.example.com/'));
+      });
+    }
+  });
+
   group('session', () {
     test('a route that needs a session fails without a token and never '
         'reaches the transport', () async {

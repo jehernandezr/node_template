@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:contracts/contracts.dart'
+    show ApiErrorException, BillingErrorCode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_billing/src/data/billing_repository.dart';
 import 'package:mf_billing/src/data/fake_billing_repository.dart';
@@ -41,6 +43,52 @@ void main() {
             .having((s) => s.plans, 'plans', hasLength(3))
             .having((s) => s.selectedId, 'selectedId', isNull),
       );
+    });
+
+    for (final code in [
+      BillingErrorCode.quotaExceeded,
+      BillingErrorCode.planUsageExceedsLimit,
+    ]) {
+      test('a save refused with ${code.code} is a plan refusal', () async {
+        final controller = controllerFor(
+          FakeBillingRepository(
+            behavior: DemoBehavior()
+              ..failNext(
+                ApiErrorException(
+                  ProblemFixtures.withCode(code.code, status: code.httpStatus),
+                ),
+                operation: BillingOperation.changePlan,
+              ),
+          ),
+        );
+        await controller.start();
+        controller.select('empresa');
+
+        final result = await controller.confirm();
+
+        expect(result, isA<ActionFailed<Subscription>>());
+        expect(controller.state, isA<ChangePlanFailed>());
+        expect(controller.isPlanRefused, isTrue);
+      });
+    }
+
+    test('any other failed save is not a plan refusal', () async {
+      final controller = controllerFor(
+        FakeBillingRepository(
+          behavior: DemoBehavior()
+            ..failNext(
+              ApiErrorException(ProblemFixtures.unavailable()),
+              operation: BillingOperation.changePlan,
+            ),
+        ),
+      );
+      await controller.start();
+      controller.select('empresa');
+
+      await controller.confirm();
+
+      expect(controller.state, isA<ChangePlanFailed>());
+      expect(controller.isPlanRefused, isFalse);
     });
 
     test('the current plan cannot be selected', () async {

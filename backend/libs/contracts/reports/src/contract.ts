@@ -1,6 +1,7 @@
 import { RecordUsageCommand } from '@contracts/billing';
 import {
   defineServiceContract,
+  defineTenantDirectoryOperations,
   defineTenantMoveOperations,
 } from '@contracts/platform';
 import { ReportsLimits } from './constants/reports.constants.js';
@@ -42,6 +43,10 @@ import * as schemas from './schemas/index.js';
 /** Las operaciones de traslado de tenant de reports, con su tipo exacto para registrarlas y llamarlas. */
 export const ReportsTenantMoveOperations =
   defineTenantMoveOperations('reports');
+
+/** Las operaciones del directorio de tenants de reports, con su tipo exacto para registrarlas y llamarlas. */
+export const ReportsTenantDirectoryOperations =
+  defineTenantDirectoryOperations('reports');
 
 /** Contrato del servicio reports: catálogo de reportes, ejecuciones y proyecciones por eventos. */
 export const reportsContract = defineServiceContract({
@@ -103,6 +108,9 @@ export const reportsContract = defineServiceContract({
     tenantMoveAbort: ReportsTenantMoveOperations.tenantMoveAbort,
     tenantMoveSwitch: ReportsTenantMoveOperations.tenantMoveSwitch,
     tenantMoveCleanup: ReportsTenantMoveOperations.tenantMoveCleanup,
+    tenantDirectoryPlace: ReportsTenantDirectoryOperations.tenantDirectoryPlace,
+    tenantDirectoryRemove:
+      ReportsTenantDirectoryOperations.tenantDirectoryRemove,
   },
   events: { runCompleted: RunCompletedEvent },
   commands: { executeRun: ExecuteRunCommand },

@@ -1,6 +1,6 @@
 # 0010. Sharding lógico por grupos y residencia por región
 
-- Estado: Aceptada
+- Estado: Aceptada, modificada por [ADR 0023](0023-enrutamiento-de-datos-de-identity.md), [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) y [ADR 0032](0032-traslado-de-tenants-y-regiones.md)
 - Fecha: 2026-11-11
 
 ## Contexto
@@ -11,12 +11,12 @@ La plataforma atiende muchos tenants, algunos muy grandes, y cada tenant elige s
 
 Shard lógico: una base PostgreSQL con el esquema completo del servicio. Varios shards lógicos conviven en una instancia física. La cadena de enrutamiento es tenant, región, grupo de shards, shard lógico e instancia física.
 
-- Un catálogo global guarda solo datos de enrutamiento: directorio tenant a región y grupo, mapa de shard a instancia, índices globales y HMAC del email.
+- Cada servicio tiene su catálogo, que guarda solo datos de enrutamiento: directorio tenant a región y grupo, mapa de shard a instancia y, en identity, índices globales y HMAC del email.
 - Cada servicio o entidad declara su llave (`ShardKey.Tenant`, `ShardKey.User` o propia). Sin llave, la query falla con `PLATFORM.SHARDING.KEY_MISSING`.
 - Estrategia por defecto `Directory`. Las transacciones no cruzan shards (`PLATFORM.SHARDING.CROSS_SHARD_TX`).
-- Los traslados (`SagaType.MoveShard` y `SagaType.MoveTenant`) usan replicación lógica y un candado por tenant en Valkey de menos de un segundo en el corte.
-- Cada región despliega su propio stack. El login devuelve la URL regional y el JWT lleva la región (`rgn`).
-- `identity` estrena el sharding con un shard por región en producción y dos en local y pruebas.
+- Los traslados de un tenant (`MoveTenant`) copian por lotes por defecto, o con replicación lógica cuando el manifiesto lo admite, y frenan las escrituras con una compuerta (en el directorio o en Valkey) y una barrera por tenant en el shard de origen ([ADR 0032](0032-traslado-de-tenants-y-regiones.md)). El traslado de un shard entero (`MoveShard`) no está construido.
+- Cada región despliega su propio stack (`REGIONS` y `SERVICE_REGION`). El login devuelve la URL regional, el JWT lleva la región (`rgn`) y un tenant de otra región responde `PLATFORM.SHARDING.WRONG_REGION` (421) con la URL de su API, que `ApiClient` del front sigue una vez ([ADR 0034](0034-repositorios-live-del-front-sse-y-region.md)).
+- Los cinco servicios de la plantilla usan shards: uno por región en producción y dos en local y pruebas, con un tenant en cada uno.
 
 ## Consecuencias
 

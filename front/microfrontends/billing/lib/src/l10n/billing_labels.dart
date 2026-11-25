@@ -5,10 +5,10 @@ import '../shared/types/billing_types.dart';
 import 'generated/billing_localizations.dart';
 
 /// Localized name of a metered limit.
-String quotaLabel(BillingLocalizations l10n, QuotaKey key) => switch (key) {
-  QuotaKey.users => l10n.quotaUsers,
-  QuotaKey.apiCalls => l10n.quotaApiCalls,
-  QuotaKey.storageGb => l10n.quotaStorageGb,
+String quotaLabel(BillingLocalizations l10n, UsageMetric key) => switch (key) {
+  UsageMetric.users => l10n.quotaUsers,
+  UsageMetric.apiCalls => l10n.quotaApiCalls,
+  UsageMetric.storageGb => l10n.quotaStorageGb,
 };
 
 /// Formats a period with the localized range text and the dates of [locale],
@@ -48,7 +48,7 @@ String invoiceStatusLabel(BillingLocalizations l10n, InvoiceStatus value) =>
       InvoiceStatus.issued => l10n.invoiceIssued,
       InvoiceStatus.paid => l10n.invoicePaid,
       InvoiceStatus.failed => l10n.invoiceFailed,
-      InvoiceStatus.voided => l10n.invoiceVoided,
+      InvoiceStatus.voidValue => l10n.invoiceVoided,
     };
 
 /// Localized label of an invoice line kind.

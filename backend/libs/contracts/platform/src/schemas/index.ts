@@ -4,6 +4,7 @@ export * from './id.schema.js';
 export * from './money.schema.js';
 export * from './pagination.schema.js';
 export * from './problem-details.schema.js';
+export * from './tenant-directory.schema.js';
 export * from './tenant-move.schema.js';
 export * from './timestamp.schema.js';
 export * from './user-ref.schema.js';

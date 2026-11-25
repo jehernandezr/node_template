@@ -49,6 +49,7 @@ runtime.describeIfAvailable(
             managers,
             new SequentialIdGenerator(),
             clock,
+            { tenantColumn: true },
           ),
         ),
         clock,
@@ -74,6 +75,7 @@ runtime.describeIfAvailable(
             managers,
             new SequentialIdGenerator(),
             clock,
+            { tenantColumn: true },
           ),
         );
       }
@@ -102,11 +104,37 @@ runtime.describeIfAvailable(
             database.managers,
             new SequentialIdGenerator(),
             clock,
+            { tenantColumn: true },
           ),
         );
         await expect(
           unpinned.purgeCompleted(new Date(T0.getTime() + 1)),
         ).resolves.toBe(2);
+      });
+
+      it('keeps the tenant of the message with its key, so the tenant move carries it', async () => {
+        const clock = new FixedClock(T0);
+        const store = storeOn(
+          await database.pinned(PlatformTestDatabase.SHARD_A),
+          clock,
+        );
+
+        await store.claim(KEY, {
+          fingerprint: FINGERPRINT,
+          deadline: Deadline.after(1_000, clock),
+          tenantId: PlatformTestDatabase.TENANT_A,
+        });
+
+        const rows = await database.db.runAs(
+          PlatformTestDatabase.TENANT_A,
+          () =>
+            database.managers.run(ManagerIntent.ReadPrimary, (manager) =>
+              manager.findBy(ProcessedMessageEntity, { key: KEY }),
+            ),
+        );
+        expect(rows.map((row) => row.tenantId)).toEqual([
+          PlatformTestDatabase.TENANT_A,
+        ]);
       });
 
       it('rolls back the effects of the handler together with the completion', async () => {
@@ -117,6 +145,7 @@ runtime.describeIfAvailable(
             database.managers,
             new SequentialIdGenerator(),
             clock,
+            { tenantColumn: true },
           ),
         );
         const claim = await database.db.runAs(

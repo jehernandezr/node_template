@@ -169,6 +169,7 @@ void main() {
 
       expect(routes.duplicated, isEmpty);
       expect(routes.all.where((path) => path == '/tasks'), hasLength(1));
+      expect(routes.all.where((path) => path == '/reports'), hasLength(1));
       expect(routes.all.where((path) => path == '/login'), hasLength(1));
       expect(routes.all.where((path) => path == '/forbidden'), hasLength(1));
     });
@@ -179,7 +180,12 @@ void main() {
       );
       addTearDown(host.dispose);
 
-      expect(host.registry.manifestForPath('/tasks'), isNull);
+      for (final path in ['/tasks', '/notifications', '/billing', '/reports']) {
+        expect(host.registry.manifestForPath(path), isNotNull, reason: path);
+      }
+      for (final path in ['/assistant', '/backoffice']) {
+        expect(host.registry.manifestForPath(path), isNull, reason: path);
+      }
     });
   });
 }

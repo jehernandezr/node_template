@@ -18,6 +18,19 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "paths": {
+      "@apps/billing/test-utils": [
+        "./apps/billing/src/__tests__/utils/index.ts"
+      ],
+      "@apps/identity/test-utils": [
+        "./apps/identity/src/__tests__/utils/index.ts"
+      ],
+      "@apps/notifications/test-utils": [
+        "./apps/notifications/src/__tests__/utils/index.ts"
+      ],
+      "@apps/reports/test-utils": [
+        "./apps/reports/src/__tests__/utils/index.ts"
+      ],
+      "@apps/tasks/test-utils": ["./apps/tasks/src/__tests__/utils/index.ts"],
       "@contracts/billing": ["./libs/contracts/billing/src/index.ts"],
       "@contracts/identity": ["./libs/contracts/identity/src/index.ts"],
       "@contracts/notifications": [

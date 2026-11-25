@@ -89,6 +89,29 @@ describe('identityConfigSchema', () => {
     ).toEqual([]);
   });
 
+  it('asks for SERVICE_REGION once REGIONS declares regions', () => {
+    const region = IdentityTestEnvironment.build()['IDENTITY_REGION'];
+    const regions = JSON.stringify([
+      {
+        code: region,
+        apiBaseUrl: 'https://api.example.test',
+        issuer: 'https://identity.example.test',
+      },
+    ]);
+
+    expect(
+      parseIssues(IdentityTestEnvironment.build({ REGIONS: regions })),
+    ).toContain('SERVICE_REGION');
+    expect(
+      parseIssues(
+        IdentityTestEnvironment.build({
+          REGIONS: regions,
+          SERVICE_REGION: region,
+        }),
+      ),
+    ).toEqual([]);
+  });
+
   it('refuses a secret shorter than its minimum', () => {
     const short = randomBytes(23).toString('base64url');
 

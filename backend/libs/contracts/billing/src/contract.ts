@@ -1,5 +1,6 @@
 import {
   defineServiceContract,
+  defineTenantDirectoryOperations,
   defineTenantMoveOperations,
 } from '@contracts/platform';
 import {
@@ -60,6 +61,10 @@ import * as schemas from './schemas/index.js';
 /** Las operaciones de traslado de tenant de billing, con su tipo exacto para registrarlas y llamarlas. */
 export const BillingTenantMoveOperations =
   defineTenantMoveOperations('billing');
+
+/** Las operaciones del directorio de tenants de billing, con su tipo exacto para registrarlas y llamarlas. */
+export const BillingTenantDirectoryOperations =
+  defineTenantDirectoryOperations('billing');
 
 /** Contrato del servicio billing: planes, suscripciones, uso, facturas, cuotas y eventos. */
 export const billingContract = defineServiceContract({
@@ -150,6 +155,9 @@ export const billingContract = defineServiceContract({
     tenantMoveAbort: BillingTenantMoveOperations.tenantMoveAbort,
     tenantMoveSwitch: BillingTenantMoveOperations.tenantMoveSwitch,
     tenantMoveCleanup: BillingTenantMoveOperations.tenantMoveCleanup,
+    tenantDirectoryPlace: BillingTenantDirectoryOperations.tenantDirectoryPlace,
+    tenantDirectoryRemove:
+      BillingTenantDirectoryOperations.tenantDirectoryRemove,
   },
   events: {
     subscriptionChanged: SubscriptionChangedEvent,

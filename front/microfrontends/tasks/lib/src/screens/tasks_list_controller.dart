@@ -85,8 +85,7 @@ final class TasksListController extends ChangeNotifier {
     _notify();
     String? next;
     final result = await AsyncValue.guard<List<Task>>(() async {
-      if (searching) return _repository.search(_query, status: _status);
-      final page = await _repository.list(status: _status);
+      final page = await _page();
       next = page.nextCursor;
       return page.items;
     });
@@ -105,7 +104,7 @@ final class TasksListController extends ChangeNotifier {
     if (cursor == null || current == null) return const ActionSkipped<void>();
     final request = _requestId;
     final result = await _more.run<void>(() async {
-      final page = await _repository.list(status: _status, cursor: cursor);
+      final page = await _page(cursor: cursor);
       if (_disposed || request != _requestId) return;
       _items = AsyncValue.data([...current, ...page.items]);
       _nextCursor = page.nextCursor;
@@ -134,6 +133,12 @@ final class TasksListController extends ChangeNotifier {
       unawaited(reload());
     });
   }
+
+  /// The page after [cursor] of the search, or of the list when not
+  /// searching.
+  Future<TasksPage> _page({String? cursor}) => searching
+      ? _repository.search(_query, status: _status, cursor: cursor)
+      : _repository.list(status: _status, cursor: cursor);
 
   void _notify() {
     if (!_disposed) notifyListeners();

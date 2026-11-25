@@ -58,36 +58,35 @@ final class FakeTasksRepository implements TasksRepository {
     String? cursor,
     int limit = tasksPageSize,
   }) {
-    return _behavior.respond(() {
-      final matching = _tasks
-          .where((task) => status == null || task.status == status)
-          .toList();
-      var start = 0;
-      if (cursor != null) {
-        start = matching.indexWhere((task) => task.id.compareTo(cursor) > 0);
-        if (start < 0) start = matching.length;
-      }
-      final items = matching.skip(start).take(limit).toList();
-      final hasMore = start + items.length < matching.length;
-      return TasksPage(
-        items: items,
-        nextCursor: hasMore ? items.last.id : null,
-      );
-    }, operation: TasksOperation.list);
+    return _behavior.respond(
+      () => _page(
+        _tasks.where((task) => status == null || task.status == status),
+        cursor,
+        limit,
+      ),
+      operation: TasksOperation.list,
+    );
   }
 
   @override
-  Future<List<Task>> search(String query, {TaskStatus? status}) {
+  Future<TasksPage> search(
+    String query, {
+    TaskStatus? status,
+    String? cursor,
+    int limit = tasksPageSize,
+  }) {
     final needle = query.trim().toLowerCase();
     return _behavior.respond(
-      () => _tasks
-          .where(
-            (task) =>
-                (status == null || task.status == status) &&
-                (task.title.toLowerCase().contains(needle) ||
-                    task.description.toLowerCase().contains(needle)),
-          )
-          .toList(),
+      () => _page(
+        _tasks.where(
+          (task) =>
+              (status == null || task.status == status) &&
+              (task.title.toLowerCase().contains(needle) ||
+                  task.description.toLowerCase().contains(needle)),
+        ),
+        cursor,
+        limit,
+      ),
       operation: TasksOperation.search,
     );
   }
@@ -136,6 +135,18 @@ final class FakeTasksRepository implements TasksRepository {
   void dispose() {
     _behavior.dispose();
     unawaited(_changes.close());
+  }
+
+  /// The page after [cursor] of [matching], which is ordered by id.
+  static TasksPage _page(Iterable<Task> matching, String? cursor, int limit) {
+    final after = cursor == null
+        ? matching.toList()
+        : matching.where((task) => task.id.compareTo(cursor) > 0).toList();
+    final items = after.take(limit).toList();
+    return TasksPage(
+      items: items,
+      nextCursor: after.length > items.length ? items.last.id : null,
+    );
   }
 
   int _indexOf(String id) {

@@ -6,8 +6,8 @@ import 'package:mf_account/src/data/account_data.dart';
 import 'package:mf_account/src/data/fake_account_repository.dart';
 import 'package:mf_account/src/screens/account_screens.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
 
-import '../utils/no_network_transport.dart';
 import '../utils/recording_step_up.dart';
 import '../utils/test_app.dart';
 
@@ -90,7 +90,7 @@ void main() {
 
   group('en modo vivo', () {
     ApiClient client() => ApiClient(
-      transport: NoNetworkTransport(),
+      transport: ScriptedTransport(),
       baseUri: Uri.parse('https://api.example.com'),
       accessToken: () async => 'token',
     );

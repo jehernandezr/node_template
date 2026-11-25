@@ -202,24 +202,24 @@ El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto
 
 **Paquetes compartidos** (`front/packages`)
 
-| Paquete      | Qué contiene                                                                                                                                                                                                                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shell_host` | Lo común de los dos shells: arranque, sesión, login, step-up, página de acceso denegado y modo demo                                                                                                                                                                                               |
-| `shell_core` | `MicrofrontendManifest`, `ScreenRoute` con `ScreenRoute.deferred`, registro, `ShellRuntime`, `ShellContext`, `ShellNavigator` y `ShellRouterFactory` (router), `DeferredLibraryLoader`, `RepositoryBinding`, `DemoBehavior`, `DeferredLocalizations` con `showLocalizedDialog` y reglas de acceso |
-| `api`        | `ApiClient` con un `HttpTransport` inyectable: valida la petición contra el contrato antes de llamar y decodifica respuestas y errores                                                                                                                                                            |
-| `contracts`  | `lib/src/core` escrito a mano y `lib/src/<servicio>` generado por `contracts_gen` desde `backend/libs/contracts`                                                                                                                                                                                  |
-| `utils`      | `Clock` y `systemClock`, el único lugar con `DateTime.now()`; funciones puras sobre los tipos de `contracts`: montos, fechas y errores de campo                                                                                                                                                   |
-| `auth`       | Puertos, modelos y `SessionManager` de la sesión                                                                                                                                                                                                                                                  |
-| `ui`         | Widgets adaptativos, `AsyncValue`, `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors` (`context.statusColors`), layout (`AppPage`, `ShellChrome`, `PlatformScreen`, `ContentColumn`) y tema                                                                                       |
-| `test_utils` | `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope`, `FakeClock`, `DeferredLibrariesPreloader`, `expectAccessible`, `pumpAtWidths` y `pumpAtTextScale`, y los dobles de `auth`. Solo en `dev_dependencies`. Lo que usan las pruebas de un solo paquete va en su `test/utils/`             |
-| `tokens`     | Colores y escalas de diseño en Dart                                                                                                                                                                                                                                                               |
-| `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores, y `ErrorPresenter` con `ErrorDetails` para describir un error                                                                                                                                                   |
+| Paquete      | Qué contiene                                                                                                                                                                                                                                                                                                                                                          |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shell_host` | Lo común de los dos shells: arranque, sesión, login, step-up, página de acceso denegado y modo demo                                                                                                                                                                                                                                                                   |
+| `shell_core` | `MicrofrontendManifest`, `ScreenRoute` con `ScreenRoute.deferred`, registro, `ShellRuntime`, `ShellContext`, `ShellNavigator` y `ShellRouterFactory` (router), `DeferredLibraryLoader`, `RepositoryBinding`, `DemoBehavior`, `DeferredLocalizations` con `showLocalizedDialog` y reglas de acceso                                                                     |
+| `api`        | `ApiClient` con un `HttpTransport` inyectable: valida la petición contra el contrato antes de llamar y decodifica respuestas y errores                                                                                                                                                                                                                                |
+| `contracts`  | `lib/src/core` escrito a mano y `lib/src/<servicio>` generado por `contracts_gen` desde `backend/libs/contracts`                                                                                                                                                                                                                                                      |
+| `utils`      | `Clock` y `systemClock`, el único lugar con `DateTime.now()`; funciones puras sobre los tipos de `contracts`: montos, fechas y errores de campo                                                                                                                                                                                                                       |
+| `auth`       | Puertos, modelos y `SessionManager` de la sesión                                                                                                                                                                                                                                                                                                                      |
+| `ui`         | Widgets adaptativos, `AsyncValue`, `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors` (`context.statusColors`), layout (`AppPage`, `ShellChrome`, `PlatformScreen`, `ContentColumn`) y tema                                                                                                                                                           |
+| `test_utils` | `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope`, `FakeClock`, `ScriptedTransport` con `ScriptedApi`, `DeferredLibrariesPreloader`, `expectAccessible`, `pumpAtWidths` y `pumpAtTextScale`, los escenarios compartidos de los shells y los dobles de `auth`. Solo en `dev_dependencies`. Lo que usan las pruebas de un solo paquete va en su `test/utils/` |
+| `tokens`     | Colores y escalas de diseño en Dart                                                                                                                                                                                                                                                                                                                                   |
+| `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores, y `ErrorPresenter` con `ErrorDetails` para describir un error                                                                                                                                                                                                                       |
 
 **Crear un microfrontend nuevo**
 
 `dart run front/tools/new_microfrontend.dart reports --menu "Reportes"` crea `front/microfrontends/reports` con su manifiesto, sus pantallas diferidas, su repositorio de demostración y sus pruebas, y agrega el miembro a `front/pubspec.yaml`. Imprime las líneas que cada app necesita. Los pasos a mano y la lista de lo que se escribe están en la [skill front-nuevo-microfrontend](../.claude/skills/front-nuevo-microfrontend/SKILL.md).
 
-El cliente de tiempo real del front llega con el servicio `realtime`, con adaptadores SSE y Socket.IO.
+**Datos reales.** Cada microfrontend de negocio (tasks, notifications, billing y reports) declara `RepositoryBinding(demo:, live:)`: en demo usa su fake en memoria y en live un `Api<Nombre>Repository` sobre `ApiClient` y las rutas generadas, que valida cada petición contra el contrato. Los enums del contrato se reexportan desde el `shared/enums` del microfrontend. Las notificaciones en vivo y el conteo de no leídos llegan por `SseNotificationsStream`, que lee `GET /v1/notifications/stream` con el token de la sesión y reanuda con `Last-Event-ID` sin perder ni repetir avisos. Ante `PLATFORM.SHARDING.WRONG_REGION`, `ApiClient` repite la petición una vez en `details.apiBaseUrl` y se queda con esa base. Las pruebas usan `ScriptedTransport` de `test_utils` y no necesitan backend ([ADR 0034](adr/0034-repositorios-live-del-front-sse-y-region.md)).
 
 **Despliegue.** El módulo `cloudfront-waf` crea el bucket S3 y la distribución de CloudFront de la web.
 
@@ -370,11 +370,11 @@ Los errores de campo usan los códigos `PLATFORM.VALIDATION.*` y rutas con punto
 
 - Los casos de uso solo lanzan errores de dominio.
 - Cada operación interna declara los códigos que puede devolver. El cliente trata un código no declarado como violación de protocolo.
-- El filtro global de HTTP es `ProblemDetailsFilter` de `@platform/http`, que llega con F4: traduce los errores con el catálogo y responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId` y sin detalles internos ante un error inesperado.
+- El filtro global de HTTP es `ProblemDetailsFilter` de `@platform/http`: traduce los errores con el catálogo y responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId` y sin detalles internos ante un error inesperado.
 
 ## Endpoints
 
-Un solo decorador, `@Endpoint`, toma la ruta del contrato y reúne autenticación, autorización, MFA, rate limit, versión y deprecación. El método, el path, los esquemas, los códigos de error y el acceso salen del `RouteDefinition` de `@contracts/<servicio>`, así el servidor no puede divergir del contrato que consume el front (decisión 3 del [diseño de F4](design/f4-identity.md#11-decisiones-que-requieren-al-usuario)). `@platform/http` llega con F4.
+Un solo decorador, `@Endpoint`, toma la ruta del contrato y reúne autenticación, autorización, MFA, rate limit, versión y deprecación. El método, el path, los esquemas, los códigos de error y el acceso salen del `RouteDefinition` de `@contracts/<servicio>`, así el servidor no puede divergir del contrato que consume el front (decisión 3 del [diseño de F4](design/f4-identity.md#11-decisiones-que-requieren-al-usuario)).
 
 ```ts
 @Resource(IdentityResource.Sessions)
@@ -426,7 +426,7 @@ La conexión a base de datos se define en el módulo y queda fuera del endpoint:
 
 **Documentación autogenerada**
 
-- OpenAPI generado desde `contract.json` en la fase F11, sin `@nestjs/swagger` (decisión 4 del diseño de F4), con UI en Scalar.
+- OpenAPI generado desde `contract.json`, sin `@nestjs/swagger` (decisión 4 del diseño de F4), con UI en Scalar ([ADR 0033](adr/0033-generadores-y-openapi.md)).
 - AsyncAPI para eventos y colas, generado desde la topología y los contratos.
 - Un portal que reúne todos los servicios, el catálogo de errores y la matriz de acceso. En prod queda detrás de autenticación.
 - El front recibe los contratos generados en Dart (`front/packages/contracts`) y llama a la API con `ApiClient`.
@@ -616,6 +616,7 @@ Los tenants nuevos reciben shard con una `ShardPlacementPolicy` durante la saga 
 **Residencia de datos por región**
 
 - Cada tenant elige país o región al crearse; el directorio lo guarda y la saga de alta lo ubica en un grupo de shards de esa región.
+- Cada servicio tiene su propio directorio en su catálogo. Identity elige la región y el grupo de shards del tenant, y la saga de alta lo anota en tasks, notifications, reports y billing con `<servicio>.tenant-directory.place.v1` antes de abrir su cuenta de facturación, con `<servicio>.tenant-directory.remove.v1` como reversa; la siembra de identity hace lo mismo con los tenants fijos de la región. Un grupo es el declarado en `TENANT_MOVE_TARGETS` o, sin él, el nombre del shard sin el prefijo del servicio ([ADR 0032](adr/0032-traslado-de-tenants-y-regiones.md)).
 - Cada región despliega su propio stack: servicios, shards, Valkey, colas y almacenamiento de archivos. Los datos del tenant permanecen en su región.
 - El catálogo global guarda solo datos de enrutamiento (ids, región, shard y HMAC del email). Vive en la región principal con réplicas de lectura en las demás.
 - El login consulta el catálogo y devuelve la URL regional (por ejemplo `co.api.<dominio>`). El JWT lleva la región (`rgn`) y el SDK del cliente usa esa URL. Una petición que llega a otra región recibe una redirección.
@@ -768,7 +769,7 @@ Cada filtro declara su tasa de falsos positivos (por defecto 1 %) y su reconstru
 
 El servicio `identity` emite y controla toda la identidad: usuarios, sesiones, dispositivos, MFA, API keys, tenants y grupos. Los demás servicios solo verifican, con `@platform/auth`. El detalle técnico está en su [diseño](design/f4-identity.md).
 
-`backend/apps/identity` está organizado en módulos (`users`, `passwords`, `authentication`, `devices`, `mfa`, `passkeys`, `sessions`, `tokens`, `tenants`, `access`, `invitations`, `api-keys` y `alerts`), cada uno con `domain`, `application`, `infrastructure` y `presentation`. Un módulo solo usa a otro por la fachada de su `index.ts`. Los datos de usuario se enrutan por usuario dentro del grupo de su tenant de origen y los de tenant por tenant, siempre dentro de un `ShardScope` ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md)). Los tokens efímeros (desafíos MFA, aprobaciones de dispositivo, pruebas de email, reset de contraseña, desafíos WebAuthn y contadores de bloqueo) viven en Valkey bajo el prefijo del servicio. Las tablas de tenant tienen RLS por `tenant_id`, y `user_tenants` es una proyección que el caso de uso escribe después del commit y que repara el consumidor de `identity.membership.changed.v1`. `login_attempts` se particiona por mes y un job borra lo de más de 12 meses. Las contraseñas filtradas se buscan en un Bloom (`identity.breached-passwords`) que reconstruye su job. Nadie otorga ni quita un permiso que no tiene: la regla se aplica a roles, grupos, miembros e invitaciones. Las pruebas de extremo a extremo están en `backend/apps/identity/e2e`, la [matriz de acceso](identity/matriz-de-acceso.md) se genera desde el contrato y la rotación de claves sigue su [runbook](runbooks/rotacion-claves-identity.md). El alta de tenant por `POST /v1/tenants`, la consulta de sagas, la baja de cuenta con su borrado de usuario y las operaciones de traslado de tenants responden todavía `PLATFORM.INTERNAL.UNEXPECTED`: llegan con las sagas y con `MoveTenant`.
+`backend/apps/identity` está organizado en módulos (`users`, `passwords`, `authentication`, `devices`, `mfa`, `passkeys`, `sessions`, `tokens`, `tenants`, `access`, `invitations`, `api-keys` y `alerts`), cada uno con `domain`, `application`, `infrastructure` y `presentation`. Un módulo solo usa a otro por la fachada de su `index.ts`. Los datos de usuario se enrutan por usuario dentro del grupo de su tenant de origen y los de tenant por tenant, siempre dentro de un `ShardScope` ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md)). Los tokens efímeros (desafíos MFA, aprobaciones de dispositivo, pruebas de email, reset de contraseña, desafíos WebAuthn y contadores de bloqueo) viven en Valkey bajo el prefijo del servicio. Las tablas de tenant tienen RLS por `tenant_id`, y `user_tenants` es una proyección que el caso de uso escribe después del commit y que repara el consumidor de `identity.membership.changed.v1`. `login_attempts` se particiona por mes y un job borra lo de más de 12 meses. Las contraseñas filtradas se buscan en un Bloom (`identity.breached-passwords`) que reconstruye su job. Nadie otorga ni quita un permiso que no tiene: la regla se aplica a roles, grupos, miembros e invitaciones. Las pruebas de extremo a extremo están en `backend/apps/identity/e2e`, la [matriz de acceso](identity/matriz-de-acceso.md) se genera desde el contrato y la rotación de claves sigue su [runbook](runbooks/rotacion-claves-identity.md). El alta de tenant por `POST /v1/tenants` corre la saga `TenantOnboarding`, la baja de cuenta corre `DeleteAccount` y el traslado de un tenant corre `MoveTenant` ([ADR 0031](adr/0031-reportes-facturacion-y-sagas-de-identity.md) y [ADR 0032](adr/0032-traslado-de-tenants-y-regiones.md)); el traslado se opera con su [runbook](runbooks/traslado-de-tenant.md).
 
 **Sesiones y JWT**
 
@@ -1445,7 +1446,10 @@ Corre en cada PR, en cada push a `main` y los lunes a las 06:00 UTC:
 - Las pruebas de `@platform/saga` simulan la caída del proceso justo después de registrar un paso (`CrashingSagaStore.crashAfterDispatch`, en `__tests__/utils`) y verifican que la saga retomada repita la llamada con la misma llave y produzca un solo efecto.
 - Las pruebas de integración (`*.int-spec.ts`) corren contra Postgres y Valkey reales con Testcontainers.
 
-Con los primeros servicios llegan las pruebas e2e contra la app (`fetch` nativo contra `app.listen(0)`, según el diseño de F4) y las de carga con k6 contra staging.
+- Cada servicio trae sus pruebas e2e en `backend/apps/<servicio>/e2e`, contra la app completa con PostgreSQL y Valkey reales y una matriz de acceso por ruta.
+- `backend/e2e/platform-flow` (`pnpm nx run platform-flow:e2e`) arranca los cinco servicios en un proceso, unidos por un bus en memoria, y recorre el alta de un tenant, tareas, avisos, reportes, factura y traslado del tenant, sin simular ningún paso de la plataforma ([ADR 0035](adr/0035-flujo-de-punta-a-punta-de-la-plataforma.md)).
+
+Las pruebas de carga con k6 contra staging quedan para después de F12.
 
 **Herramientas de IA en el repositorio** (`.claude/`)
 
@@ -1455,6 +1459,133 @@ Con los primeros servicios llegan las pruebas e2e contra la app (`fetch` nativo 
 - Agentes de tropa: `backend-guia` y `front-guia` planean y revisan, y `backend-implementador` y `front-implementador` escriben un paquete de trabajo ya planeado.
 
 **Documentación del repositorio**: README, el [plan](plan/README.md), ADRs para cada decisión de arquitectura, diseños por fase en [`docs/design/`](design/), auditorías de calidad en [`docs/audits/`](audits/), [guía de contribución](../CONTRIBUTING.md) y [desarrollo local](local-development.md).
+
+## Mapa de la plataforma
+
+Los diagramas resumen lo construido. El detalle de cada pieza está en su sección y en su ADR.
+
+**Servicios y cómo se hablan**
+
+```mermaid
+flowchart LR
+  subgraph Front["Front (Flutter)"]
+    WEB["Shell web"]
+    MOB["Shell móvil"]
+  end
+  subgraph Servicios["Servicios (un stack por región)"]
+    ID["identity"]
+    TK["tasks"]
+    NT["notifications"]
+    RP["reports"]
+    BL["billing"]
+    RT["realtime"]
+  end
+  subgraph Datos["Por servicio"]
+    PG[("PostgreSQL: catálogo y shards")]
+    VK[("Valkey")]
+  end
+  BUS{{"SNS y SQS"}}
+  WEB -- "HTTP con ApiClient" --> ID & TK & NT & RP & BL
+  MOB -- "HTTP con ApiClient" --> ID & TK & NT
+  WEB -- "SSE" --> NT
+  NT -- "stream por usuario" --> RT
+  ID -- "API interna firmada" --> BL & NT & TK & RP
+  TK & BL & ID -- "eventos" --> BUS
+  BUS -- "colas" --> NT & RP & BL & ID
+  RP -- "comando de ejecución" --> BUS
+  ID & TK & NT & RP & BL --> PG
+  ID & TK & NT & RP & BL --> VK
+```
+
+**Librerías de plataforma**
+
+```mermaid
+flowchart BT
+  kernel["kernel: puertos, reloj, ids, errores"]
+  primitives["primitives"] --> kernel
+  sharding["sharding"] --> kernel
+  persistence["persistence"] --> sharding
+  scheduling["scheduling"] --> kernel
+  internalapi["internal-api"] --> kernel
+  messaging["messaging"] --> scheduling
+  saga["saga"] --> internalapi
+  auth["auth"] --> kernel
+  http["http"] --> auth
+  realtime["realtime"] --> http
+  realtime --> messaging
+  quotas["quotas"] --> http
+  quotas --> internalapi
+  metering["metering"] --> messaging
+  metering --> persistence
+  search["search"] --> persistence
+  adapters["adapters: postgres, valkey, aws"] --> persistence
+  adapters --> messaging
+  adapters --> saga
+  service["service: runtime de cada servicio"] --> adapters
+  service --> http
+  service --> saga
+  tenantmove["tenant-move"] --> service
+```
+
+**Una petición**
+
+```mermaid
+sequenceDiagram
+  participant C as Front
+  participant H as "@platform/http"
+  participant U as Caso de uso
+  participant S as ShardRouter
+  participant DB as Shard del tenant
+  participant O as Outbox
+  C->>H: petición con token (validada contra el contrato en el cliente)
+  H->>H: autentica, autoriza, valida con zod y fija tenant y traceId
+  H->>U: comando
+  U->>S: conexión con la llave del contexto
+  S-->>U: shard (o 421 WRONG_REGION con la URL de la región)
+  U->>DB: escrituras y evento en la misma transacción
+  DB->>O: evento pendiente
+  U-->>C: respuesta o Problem Details
+  O-->>O: el relay publica después del commit
+```
+
+**Un evento entre servicios**
+
+```mermaid
+sequenceDiagram
+  participant T as tasks
+  participant B as SNS y SQS
+  participant N as notifications
+  participant R as realtime
+  participant F as Front
+  T->>B: tasks.task.updated.v1 (desde el outbox)
+  B->>N: entrega al menos una vez
+  N->>N: claim en processed_messages del shard del tenant
+  N->>N: crea la notificación y cuenta las no leídas
+  N->>R: tramas en el stream del usuario
+  R-->>F: SSE con id; al reconectar, Last-Event-ID
+```
+
+**Sagas**
+
+```mermaid
+flowchart LR
+  subgraph Alta["TenantOnboarding"]
+    A1["crear tenant"] --> A2["abrir cuenta en billing"] --> AP(("pivote")) --> A3["activar tenant"] --> A4["avisar al dueño"]
+  end
+  subgraph Baja["DeleteAccount"]
+    D1["suspender usuario"] --> DP(("pivote")) --> D2["borrar en tasks, notifications y reports"] --> D3["borrar en identity"]
+  end
+  subgraph Traslado["MoveTenant"]
+    M1["sync en los cinco"] --> M2["finalize en los cinco"] --> MP(("pivote")) --> M3["switch en los cinco"] --> M4["FinishMove"]
+    M4 -. "pasada la gracia" .-> M5["TenantMoveCleanupJob"]
+  end
+```
+
+Antes del pivote cada paso tiene compensación; después, cada paso es idempotente y se repite hasta completarse ([ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md)).
+
+**Operación**
+
+Los procedimientos para operar lo construido están en [`docs/runbooks`](runbooks/README.md): salud, jobs, colas y DLQ de cada servicio, traslado de un tenant y rotación de claves y secretos.
 
 ## Plan
 

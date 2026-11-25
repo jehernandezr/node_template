@@ -37,7 +37,7 @@ final class Quota {
   const Quota({required this.key, required this.limit});
 
   /// Which limit this is. Matches usage with the quota and picks the label.
-  final QuotaKey key;
+  final UsageMetric key;
 
   /// Maximum amount included in the plan for one period.
   final int limit;
@@ -126,6 +126,32 @@ final class InvoiceLine {
   final MoneyAmount amount;
 }
 
+/// What the invoice list shows of an invoice: no lines, only its total.
+final class InvoiceSummary {
+  const InvoiceSummary({
+    required this.id,
+    required this.number,
+    required this.period,
+    required this.status,
+    required this.total,
+  });
+
+  /// Identifier used in routes.
+  final String id;
+
+  /// Human-facing invoice number.
+  final String number;
+
+  /// Period the invoice covers.
+  final BillingPeriod period;
+
+  /// Lifecycle state.
+  final InvoiceStatus status;
+
+  /// Sum of all the lines.
+  final MoneyAmount total;
+}
+
 /// A billing document for one period.
 final class Invoice {
   const Invoice({
@@ -158,7 +184,16 @@ final class Invoice {
   /// Sum of all line amounts.
   MoneyAmount get total => MoneyAmount(
     amountMinor: lines.fold(0, (sum, line) => sum + line.amount.amountMinor),
-    currency: currency.code,
+    currency: currency.wireCode,
+  );
+
+  /// This invoice as the list shows it.
+  InvoiceSummary get summary => InvoiceSummary(
+    id: id,
+    number: number,
+    period: period,
+    status: status,
+    total: total,
   );
 }
 

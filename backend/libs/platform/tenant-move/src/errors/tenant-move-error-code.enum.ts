@@ -1,6 +1,6 @@
 /** Códigos de error de `@platform/tenant-move`. */
 export enum TenantMoveErrorCode {
-  /** El grupo de destino no está en `TENANT_MOVE_TARGETS` o su shard no está en el directorio. */
+  /** El grupo de destino o de alta no está configurado, o su shard no está en el directorio. */
   UnknownTarget = 'PLATFORM.TENANT_MOVE.UNKNOWN_TARGET',
   /** El tenant reparte sus datos en más de un shard, o ya vive en el destino. */
   NotMovable = 'PLATFORM.TENANT_MOVE.NOT_MOVABLE',
@@ -12,6 +12,8 @@ export enum TenantMoveErrorCode {
   TenantBusy = 'PLATFORM.TENANT_MOVE.TENANT_BUSY',
   /** El directorio del servicio todavía lleva al tenant al shard que la limpieza iba a borrar. */
   NotSwitched = 'PLATFORM.TENANT_MOVE.NOT_SWITCHED',
+  /** El grupo del tenant choca en el directorio del servicio con un tenant dedicado, o es dedicado y el shard está ocupado. */
+  ShardTaken = 'PLATFORM.TENANT_MOVE.SHARD_TAKEN',
   /** El manifiesto nombra una tabla o columna inválida, o un padre que no lo precede. */
   InvalidManifest = 'PLATFORM.TENANT_MOVE.INVALID_MANIFEST',
 }

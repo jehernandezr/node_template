@@ -1,0 +1,39 @@
+name: mf_reports
+description: "Microfrontend de reportes: catálogo con parámetros, ejecuciones y descarga del resultado."
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.14.0
+
+dependencies:
+  api:
+    path: ../../packages/api
+  contracts:
+    path: ../../packages/contracts
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  go_router: 18.1.4
+  intl: 0.20.3
+  material_ui: 1.11.0
+  shell_core:
+    path: ../../packages/shell_core
+  ui:
+    path: ../../packages/ui
+  utils:
+    path: ../../packages/utils
+  web: 1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 6.0.0
+  test_utils:
+    path: ../../packages/test_utils
+
+flutter:
+  generate: true
+
+resolution: workspace

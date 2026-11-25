@@ -3,8 +3,8 @@ import 'package:shell_core/shell_core.dart';
 import '../shared/types/types.dart';
 
 /// Data port of the notifications. `FakeNotificationsRepository` implements it
-/// in tests and in the demo mode; the HTTP implementation arrives when the
-/// backend publishes the notifications contract.
+/// in tests and in the demo mode, and `ApiNotificationsRepository` over the
+/// API in live mode.
 ///
 /// It is a [ScopedResource]: the scope of the identity closes it with
 /// [dispose], which cancels subscriptions and closes the open streams.
@@ -28,7 +28,7 @@ abstract interface class NotificationsRepository implements ScopedResource {
 
   Future<void> savePreferences(NotificationPreferences preferences);
 
-  /// Notifications that arrive while the app is open (SSE or Socket.IO in
-  /// production). Ends when the repository closes.
+  /// Notifications that arrive while the app is open (server-sent events in
+  /// live mode). Ends when the repository closes.
   Stream<AppNotification> live();
 }

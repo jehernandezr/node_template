@@ -29,7 +29,7 @@ void main() {
       addTearDown(controller.dispose);
 
       await controller.start();
-      expect(controller.invoices, isA<AsyncError<List<Invoice>>>());
+      expect(controller.invoices, isA<AsyncError<List<InvoiceSummary>>>());
 
       await controller.start();
       expect(controller.invoices.valueOrNull, hasLength(5));

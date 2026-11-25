@@ -5,6 +5,7 @@ import 'package:mf_backoffice/mf_backoffice.dart' show backofficeManifest;
 import 'package:mf_billing/mf_billing.dart' show billingManifest;
 import 'package:mf_notifications/mf_notifications.dart'
     show notificationsManifest;
+import 'package:mf_reports/mf_reports.dart' show reportsManifest;
 import 'package:mf_tasks/mf_tasks.dart' show tasksManifest;
 import 'package:shell_core/shell_core.dart';
 import 'package:shell_host/shell_host.dart';
@@ -17,6 +18,7 @@ final List<MicrofrontendManifest> webManifests = [
   accountManifest,
   tasksManifest,
   notificationsManifest,
+  reportsManifest,
   assistantManifest,
   billingManifest,
   backofficeManifest,

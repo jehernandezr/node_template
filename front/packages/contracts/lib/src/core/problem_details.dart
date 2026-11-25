@@ -1,5 +1,7 @@
 import 'package:meta/meta.dart';
 
+import '../platform/types/platform_types.dart' show ProblemDetailsDetails;
+
 /// A single field-level validation error inside [ProblemDetails.errors].
 @immutable
 class FieldError {
@@ -44,7 +46,8 @@ class FieldError {
       'FieldError(field: $field, code: $code, message: $message)';
 }
 
-/// An RFC 9457 problem document with the platform extensions `code`, `traceId` and `errors`.
+/// An RFC 9457 problem document with the platform extensions `code`,
+/// `traceId`, `errors` and `details`.
 @immutable
 class ProblemDetails {
   /// Creates a problem document.
@@ -57,6 +60,7 @@ class ProblemDetails {
     this.instance,
     this.traceId,
     this.errors = const [],
+    this.details,
   });
 
   /// Parses a problem document from its JSON map. Throws [FormatException]
@@ -76,6 +80,12 @@ class ProblemDetails {
           for (final item in rawErrors)
             FieldError.fromJson(item as Map<String, dynamic>),
         ],
+        details: switch (json['details']) {
+          final Map<String, dynamic> details => ProblemDetailsDetails.fromJson(
+            details,
+          ),
+          _ => null,
+        },
       );
     } on TypeError catch (error) {
       throw FormatException('Invalid problem details: $error', json);
@@ -107,6 +117,9 @@ class ProblemDetails {
   /// Field-level errors. Empty when there are none.
   final List<FieldError> errors;
 
+  /// Public data of the error, such as the API of the tenant's region.
+  final ProblemDetailsDetails? details;
+
   /// Serializes this document, omitting null members.
   Map<String, dynamic> toJson() => {
     'type': type,
@@ -117,6 +130,7 @@ class ProblemDetails {
     'code': code,
     if (traceId != null) 'traceId': traceId,
     'errors': [for (final error in errors) error.toJson()],
+    if (details != null) 'details': details!.toJson(),
   };
 
   @override

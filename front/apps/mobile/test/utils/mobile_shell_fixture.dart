@@ -84,11 +84,18 @@ final class MobileShellFixture implements ShellFixture {
     expect(idle, isTrue, reason: 'the runtime never got idle');
   }
 
-  /// Settles the runtime, then unmounts the app. The host is disposed by
-  /// [ShellHostApp], so it is not disposed here.
+  /// Settles the runtime, unmounts the app and waits for [ShellHostApp] to
+  /// finish disposing the host.
   Future<void> _close(WidgetTester tester, ShellHost host) async {
     await settleRuntime(tester, host);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
+    // The scopes of the identity hold live connections that close only when
+    // the disposal of the host finishes.
+    final disposed = await const RuntimeSettler().settle(
+      tester,
+      () => host.whenDisposed,
+    );
+    expect(disposed, isTrue, reason: 'the host never finished disposing');
   }
 }

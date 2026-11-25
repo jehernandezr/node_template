@@ -1,6 +1,7 @@
 import { RecordUsageCommand } from '@contracts/billing';
 import {
   defineServiceContract,
+  defineTenantDirectoryOperations,
   defineTenantMoveOperations,
 } from '@contracts/platform';
 import { TasksLimits } from './constants/tasks.constants.js';
@@ -25,6 +26,10 @@ import * as schemas from './schemas/index.js';
 
 /** Las operaciones de traslado de tenant de tasks, con su tipo exacto para registrarlas y llamarlas. */
 export const TasksTenantMoveOperations = defineTenantMoveOperations('tasks');
+
+/** Las operaciones del directorio de tenants de tasks, con su tipo exacto para registrarlas y llamarlas. */
+export const TasksTenantDirectoryOperations =
+  defineTenantDirectoryOperations('tasks');
 
 /** Contrato del servicio tasks: tareas del tenant, búsqueda y eventos. */
 export const tasksContract = defineServiceContract({
@@ -75,6 +80,8 @@ export const tasksContract = defineServiceContract({
     tenantMoveAbort: TasksTenantMoveOperations.tenantMoveAbort,
     tenantMoveSwitch: TasksTenantMoveOperations.tenantMoveSwitch,
     tenantMoveCleanup: TasksTenantMoveOperations.tenantMoveCleanup,
+    tenantDirectoryPlace: TasksTenantDirectoryOperations.tenantDirectoryPlace,
+    tenantDirectoryRemove: TasksTenantDirectoryOperations.tenantDirectoryRemove,
   },
   events: {
     taskCreated: TaskCreatedEvent,

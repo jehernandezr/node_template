@@ -121,7 +121,7 @@ class BackendStructureCheck {
   }
 
   checkFile(file) {
-    const inCodeProject = /^backend\/(libs|apps|tools)\//.test(file);
+    const inCodeProject = /^backend\/(libs|apps|tools|e2e)\//.test(file);
     if (inCodeProject && /\/src\/lib\//.test(file)) {
       this.add(file, 'el código va directo en src/, sin src/lib/');
     }
@@ -286,7 +286,7 @@ class BackendStructureCheck {
       }
     };
     walk(this.root, 0);
-    for (const area of ['libs', 'apps', 'tools']) {
+    for (const area of ['libs', 'apps', 'tools', 'e2e']) {
       const base = join(this.root, 'backend', area);
       if (existsSync(base)) this.findDist(base);
     }

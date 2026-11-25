@@ -176,6 +176,7 @@ void main() {
         '/forbidden',
         '/tasks',
         '/notifications',
+        '/reports',
         '/verifier',
       ]),
     );

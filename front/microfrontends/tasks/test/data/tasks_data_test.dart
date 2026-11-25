@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mf_tasks/src/data/api_tasks_repository.dart';
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
 import 'package:mf_tasks/src/data/tasks_data.dart';
 import 'package:mf_tasks/src/shared/types/task.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
 
 import '../utils/tasks_app.dart';
 
@@ -45,6 +47,20 @@ void main() {
 
       expect((repository as FakeTasksRepository).isDisposed, isTrue);
       expect(done, isTrue);
+    });
+
+    test('a live scope lists the tasks of the API', () async {
+      final transport = ScriptedTransport()
+        ..json(200, {'items': <Object>[], 'nextCursor': null});
+      final scope = ScriptedApi.liveScope(transport);
+      addTearDown(scope.dispose);
+
+      final repository = scope.repository(TasksData.repository);
+      final page = await repository.list();
+
+      expect(repository, isA<ApiTasksRepository>());
+      expect(page.items, isEmpty);
+      expect(transport.requests.single.uri.path, '/v1/tasks');
     });
   });
 }

@@ -13,5 +13,6 @@ export { ServicePostgresServer } from './service-postgres-server.js';
 export { ServiceShardMigration1900000000010 } from './service-shard-migration.js';
 export { TestRootModule } from './test-root.module.js';
 export { IdentityStub, type StubMember } from './identity-stub.js';
+export { ProvisionedService } from './provisioned-service.js';
 export { ServiceTestServers } from './service-test-servers.js';
 export { InternalOperationsClient } from './internal-operations-client.js';

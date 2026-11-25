@@ -36,4 +36,14 @@ export abstract class DirectoryWriter {
     placement: TenantPlacement,
     expectedVersion: number | undefined,
   ): Promise<DirectoryWriteResult>;
+
+  /**
+   * Borra la fila de un tenant solo si su versión guardada es `expectedVersion`. Es la reversa del alta, antes de
+   * que el tenant tenga datos.
+   * @returns `Written` si borró, `VersionConflict` si la fila cambió o ya no existe.
+   */
+  abstract deletePlacement(
+    tenantId: string,
+    expectedVersion: number,
+  ): Promise<DirectoryWriteResult>;
 }

@@ -65,7 +65,8 @@ export class ClaimGuard {
   }
 
   /**
-   * Toma el claim de `(consumer, envelope.id)`. Resuelve `Settled` con
+   * Toma el claim de `(consumer, envelope.id)` a nombre del tenant del mensaje, para que el traslado del tenant se
+   * lleve lo procesado. Resuelve `Settled` con
    * `Duplicate`, `InProgress` o `DeadLetter` (la huella guardada es otra:
    * conflicto de idempotencia; si el claim se había adquirido, se devuelve).
    * Si el almacén falla, el error sale tal cual.
@@ -85,6 +86,9 @@ export class ClaimGuard {
       fingerprint,
       deadline: Deadline.after(leaseMs, this.clock),
       minLeaseMs: leaseMs,
+      ...(envelope.tenantid === undefined
+        ? {}
+        : { tenantId: envelope.tenantid }),
       ...(this.config.leaseMarginMs === undefined
         ? {}
         : { leaseMarginMs: this.config.leaseMarginMs }),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
 import 'package:flutter/foundation.dart';
@@ -249,6 +251,11 @@ final class ShellHost {
     }
   }
 
+  /// Completes once [dispose] has released everything: the runtime with the
+  /// scopes of every identity, the router and the connection.
+  Future<void> get whenDisposed => _disposed.future;
+  final Completer<void> _disposed = Completer<void>();
+
   Future<void> dispose() async {
     binding?.stop();
     runtime.identityEpoch.removeListener(_onIdentityChanged);
@@ -259,6 +266,7 @@ final class ShellHost {
     await runtime.dispose();
     session.dispose();
     await connection?.dispose();
+    _disposed.complete();
   }
 
   /// A new identity must not see the previous user's badges or messages, nor

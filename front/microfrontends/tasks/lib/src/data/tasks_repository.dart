@@ -8,8 +8,8 @@ import '../shared/types/task.dart';
 ///
 /// The scope of the identity disposes it (see [ScopedResource]). Errors other
 /// than [TaskNotFoundException] surface as `ApiErrorException` (from
-/// `contracts`) when the API returns a problem. There is no backend contract
-/// for tasks yet, so the only implementation is `FakeTasksRepository`.
+/// `contracts`) when the API returns a problem. `ApiTasksRepository` talks to
+/// the tasks API and `FakeTasksRepository` serves the demo mode.
 abstract interface class TasksRepository implements ScopedResource {
   /// One page ordered by id. Pass the previous [TasksPage.nextCursor] as
   /// [cursor] to get the next page.
@@ -19,8 +19,14 @@ abstract interface class TasksRepository implements ScopedResource {
     int limit = tasksPageSize,
   });
 
-  /// Tasks whose title or description contains [query], without paging.
-  Future<List<Task>> search(String query, {TaskStatus? status});
+  /// One page of the tasks whose title or description contains [query]. Pass
+  /// the previous [TasksPage.nextCursor] as [cursor] to get the next page.
+  Future<TasksPage> search(
+    String query, {
+    TaskStatus? status,
+    String? cursor,
+    int limit = tasksPageSize,
+  });
 
   /// Throws [TaskNotFoundException] when the id is unknown.
   Future<Task> get(String id);

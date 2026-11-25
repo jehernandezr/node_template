@@ -25,6 +25,8 @@ export enum ReportsOperation {
   TenantMoveAbort = 'reports.tenant-move.abort.v1',
   TenantMoveSwitch = 'reports.tenant-move.switch.v1',
   TenantMoveCleanup = 'reports.tenant-move.cleanup.v1',
+  TenantDirectoryPlace = 'reports.tenant-directory.place.v1',
+  TenantDirectoryRemove = 'reports.tenant-directory.remove.v1',
 }
 
 /** Tipos CloudEvents de los eventos que publica reports. */

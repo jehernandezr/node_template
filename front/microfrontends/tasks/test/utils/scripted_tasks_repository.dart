@@ -53,8 +53,12 @@ final class ScriptedTasksRepository implements TasksRepository {
   }) => throw UnimplementedError();
 
   @override
-  Future<List<Task>> search(String query, {TaskStatus? status}) =>
-      throw UnimplementedError();
+  Future<TasksPage> search(
+    String query, {
+    TaskStatus? status,
+    String? cursor,
+    int limit = tasksPageSize,
+  }) => throw UnimplementedError();
 
   @override
   Future<Task> create(TaskDraft draft) => throw UnimplementedError();

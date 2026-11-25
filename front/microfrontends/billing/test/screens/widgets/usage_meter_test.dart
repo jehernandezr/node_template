@@ -9,7 +9,7 @@ import '../../utils/billing_test_app.dart';
 import '../../utils/contrast_check.dart';
 
 QuotaUsage _usage(int used, {int limit = 100}) => QuotaUsage(
-  quota: Quota(key: QuotaKey.users, limit: limit),
+  quota: Quota(key: UsageMetric.users, limit: limit),
   used: used,
 );
 
@@ -59,7 +59,7 @@ void main() {
         tester,
         UsageMeter(
           usage: QuotaUsage(
-            quota: const Quota(key: QuotaKey.apiCalls, limit: 100000),
+            quota: const Quota(key: UsageMetric.apiCalls, limit: 100000),
             used: 4200,
           ),
         ),

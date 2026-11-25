@@ -5,4 +5,6 @@ export enum __Name__Operation {
   TenantMoveAbort = '__name__.tenant-move.abort.v1',
   TenantMoveSwitch = '__name__.tenant-move.switch.v1',
   TenantMoveCleanup = '__name__.tenant-move.cleanup.v1',
+  TenantDirectoryPlace = '__name__.tenant-directory.place.v1',
+  TenantDirectoryRemove = '__name__.tenant-directory.remove.v1',
 }

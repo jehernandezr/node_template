@@ -12,6 +12,7 @@ import {
 import { identityService } from '../../identity.service.js';
 import { MemoryIdentityMailer } from '../../modules/alerts/index.js';
 import { SeedRegionTenants } from '../../modules/tenants/index.js';
+import type { IdentityEntry } from './identity-entry.js';
 import { IdentityTestServers } from './identity-test-servers.js';
 import { PeerServicesStub } from './peer-services-stub.js';
 import { ShardProbe } from './shard-probe.js';
@@ -21,7 +22,7 @@ import { ShardProbe } from './shard-probe.js';
  * tenants de la región y sirve HTTP en un puerto libre. Los servicios a los que llama son `peers`. Lo
  * comparten las pruebas de integración y las e2e.
  */
-export class IdentityTestApp {
+export class IdentityTestApp implements IdentityEntry {
   /** Origen web permitido por el entorno de prueba. */
   static readonly WEB_ORIGIN = 'https://app.identity.test';
   static readonly DEFAULT_IP = '198.51.100.1';

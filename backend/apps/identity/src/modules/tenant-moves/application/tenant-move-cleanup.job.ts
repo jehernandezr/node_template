@@ -14,7 +14,11 @@ import {
   type JobSchedule,
 } from '@platform/kernel';
 import { LoggerPort } from '@platform/observability';
-import { CallOutcomeKind, type CallOutcome } from '@platform/primitives';
+import {
+  CallOutcomeKind,
+  TimerScheduler,
+  type CallOutcome,
+} from '@platform/primitives';
 import {
   TenantMoveConfig,
   TenantMoveErrorCode,
@@ -28,7 +32,8 @@ import { TenantMoveParticipants } from './tenant-move-participants.js';
 /**
  * Pasada la gracia desde que todos los servicios apuntan al destino, pide a cada uno que borre lo que quedó del tenant
  * en el origen. Cada llamada borra lo que cabe en su plazo y responde que la ronda sigue: el job la repite, con una
- * llave nueva por intento, hasta que el servicio termina o se acaba su tramo de la corrida. Un servicio que falla no
+ * llave nueva por intento y una pausa corta entre intentos para no cargar el shard sin respiro, hasta que el servicio
+ * termina, se acaba su tramo de la corrida o llega al tope de intentos. Un servicio que falla no
  * impide intentar los demás, y un traslado que no termina queda para la corrida siguiente, que empieza por los que
  * llevan más tiempo sin intentarse.
  */
@@ -122,25 +127,60 @@ export class TenantMoveCleanupJob extends ScheduledJob {
     return pending;
   }
 
-  /** Repite la llamada mientras el servicio responde que su limpieza sigue y queda tiempo en su tramo. */
+  /**
+   * Repite la llamada, con una pausa entre intentos, mientras el servicio responde que su limpieza sigue, queda
+   * tiempo en su tramo y no se llegó al tope de intentos.
+   */
   private async untilFinished(
     operation: TenantMoveOperations['tenantMoveCleanup'],
     ref: TenantMoveRef,
     sliceEndsAt: number,
     signal: AbortSignal,
   ): Promise<CallOutcome<TenantMoveAck>> {
-    for (;;) {
-      const outcome = await this.client.call(operation, ref, {
+    const call = () =>
+      this.client.call(operation, ref, {
         idempotencyKey: this.ids.next().toString(),
         signal,
       });
-      const roundPending =
-        outcome.kind === CallOutcomeKind.TransientFailure &&
-        outcome.reason === TenantMoveErrorCode.RoundPending;
-      if (!roundPending || this.nowMs() >= sliceEndsAt || signal.aborted) {
-        return outcome;
+    let outcome = await call();
+    for (
+      let attempt = 1;
+      attempt < this.settings.TENANT_MOVE_CLEANUP_MAX_ATTEMPTS &&
+      TenantMoveCleanupJob.roundPending(outcome) &&
+      this.nowMs() < sliceEndsAt &&
+      !signal.aborted;
+      attempt += 1
+    ) {
+      await this.pause(signal);
+      if (signal.aborted) {
+        break;
       }
+      outcome = await call();
     }
+    return outcome;
+  }
+
+  /** Espera la pausa entre intentos; un aborto la corta antes. */
+  private pause(signal: AbortSignal): Promise<void> {
+    return new Promise((resolve) => {
+      const done = (): void => {
+        signal.removeEventListener('abort', done);
+        cancel();
+        resolve();
+      };
+      const cancel = TimerScheduler.arm(
+        this.settings.TENANT_MOVE_CLEANUP_PAUSE_MS,
+        done,
+      );
+      signal.addEventListener('abort', done, { once: true });
+    });
+  }
+
+  private static roundPending(outcome: CallOutcome<TenantMoveAck>): boolean {
+    return (
+      outcome.kind === CallOutcomeKind.TransientFailure &&
+      outcome.reason === TenantMoveErrorCode.RoundPending
+    );
   }
 
   private nowMs(): number {
