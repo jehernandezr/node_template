@@ -1,11 +1,12 @@
 ---
 name: backend-seguridad
-description: Reglas de seguridad del backend de node_template. Validación de entrada con zod, autenticación JWT y sesiones, autorización por permisos con enums y por tenant, aislamiento entre tenants, secretos, hash de contraseñas, límites de tasa y tamaño, cabeceras, inyección SQL, datos sensibles en logs y dependencias. Úsala al exponer un endpoint, un consumidor, una consulta, o al manejar credenciales, tokens o datos personales.
+description: 'Seguridad del backend: zod en el borde, JWT y sesiones, permisos y tenants, secretos, límites, SQL y datos personales. Úsala al exponer un endpoint o manejar credenciales.'
 paths:
-  - 'backend/apps/**'
+  - 'backend/**/presentation/**'
   - 'backend/libs/platform/auth/**'
   - 'backend/libs/platform/http/**'
-  - 'backend/libs/contracts/**'
+  - 'backend/libs/contracts/**/http/**'
+  - 'backend/apps/identity/**'
 ---
 
 # Seguridad
@@ -78,8 +79,4 @@ Contexto: ADR 0005 (autenticación), 0006 (MFA), 0010 (sharding por tenant), 001
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- Todo cambio en autenticación, sesiones, tokens, permisos, aislamiento entre tenants o secretos pasa por `interrogate` y `blast-radius` antes de integrarse.
-- `principle-boundary-discipline`: la entrada se parsea con zod en el borde a tipos de dominio. `principle-type-system-discipline` para que un id de un tenant no pase por el de otro.
-- En una revisión de seguridad, un hallazgo sin una corrida que lo demuestre queda como hipótesis, no como bloqueante. Así lo exige `interrogate`.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `interrogate`, `blast-radius`, `principle-boundary-discipline`, `principle-type-system-discipline`.

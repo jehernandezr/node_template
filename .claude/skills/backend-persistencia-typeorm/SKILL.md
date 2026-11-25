@@ -1,6 +1,6 @@
 ---
 name: backend-persistencia-typeorm
-description: Cómo se persiste en node_template con TypeORM sobre PostgreSQL con shards. Entidades, mappers, repositorios que implementan puertos del dominio, transacciones y locking optimista, consultas sin N+1, índices, migraciones generadas y aplicadas con la CLI de TypeORM (incluidas las seguras sin downtime) y sharding por DataSource. Úsala al crear tablas, entidades, repositorios, consultas o migraciones.
+description: 'Persistencia con TypeORM sobre PostgreSQL con shards: entidades, mappers, repositorios, transacciones y migraciones. Úsala al tocar tablas o consultas.'
 paths:
   - 'backend/**/infrastructure/persistence/**'
   - 'backend/**/migrations/**'
@@ -32,20 +32,7 @@ El ORM es TypeORM sobre PostgreSQL. Se usan sus capacidades (entidades, `DataSou
 - Los errores de la base se traducen a errores de dominio dentro del repositorio (`23505` a la regla de unicidad). Los que no tienen significado de negocio los traduce `PersistenceErrorTranslator` a `PersistenceError`, clasificados por `PostgresFailureClassifier`. Ver `backend-errores`.
 - Las lecturas de consulta devuelven DTO de lectura con `select` de las columnas necesarias, no entidades.
 
-```ts
-@Injectable()
-export class TypeOrmUserRepository
-  extends ShardedRepository<User, UserEntity>
-  implements UserRepository
-{
-  async findByEmail(email: Email): Promise<User | null> {
-    const row = await this.manager().findOne(UserEntity, {
-      where: { email: email.value },
-    });
-    return row ? this.mapper.toDomain(row) : null;
-  }
-}
-```
+Ejemplo en `references/ejemplos.md`, sección "Repositorios y mappers".
 
 ## Transacciones y concurrencia
 
@@ -94,8 +81,4 @@ Las pruebas de integración de repositorios usan Testcontainers con `ContainerRu
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- `principle-separate-before-serializing-shared-state` al elegir entre `FOR UPDATE`, `SKIP LOCKED`, versión optimista o candados consultivos.
-- `principle-make-operations-idempotent` para escrituras que se reintentan (`ON CONFLICT`, llaves naturales) y migraciones que se pueden reaplicar.
-- Antes de una migración que cambia un esquema en uso: `blast-radius`. Al reemplazar un repositorio o una base: `principle-migrate-callers-then-delete-legacy-apis`.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-separate-before-serializing-shared-state`, `principle-make-operations-idempotent`, `blast-radius`, `principle-migrate-callers-then-delete-legacy-apis`.

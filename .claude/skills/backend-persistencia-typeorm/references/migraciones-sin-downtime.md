@@ -21,16 +21,14 @@
 
 ## Operación por operación
 
-| Operación             | Peligrosa                                                               | Segura                                                                                                                          |
-| --------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Agregar columna       | `NOT NULL` sin default en tabla grande con versiones viejas escribiendo | Agregar nullable (o con default constante), backfill, luego `CHECK ... NOT VALID` y `VALIDATE CONSTRAINT`, luego `SET NOT NULL` |
-| Agregar índice        | `CREATE INDEX` normal: bloquea escrituras                               | `CREATE INDEX CONCURRENTLY` en migración sin transacción                                                                        |
-| Índice único          | Crearlo directo sobre datos que pueden duplicarse                       | Limpiar duplicados, `CREATE UNIQUE INDEX CONCURRENTLY`, luego `ADD CONSTRAINT ... USING INDEX`                                  |
-| Agregar clave foránea | `ADD FOREIGN KEY` directo: bloquea ambas tablas                         | `ADD CONSTRAINT ... NOT VALID`, luego `VALIDATE CONSTRAINT`                                                                     |
-| Renombrar columna     | `RENAME COLUMN` con la app vieja leyéndola                              | Expand y contract                                                                                                               |
-| Cambiar tipo          | `ALTER COLUMN TYPE`: reescribe la tabla                                 | Columna nueva, doble escritura, backfill, cambio de lectura, borrar la vieja                                                    |
-| Borrar columna        | Mientras el código aún la usa                                           | Quitar el uso del código, desplegar, luego borrarla en otra migración                                                           |
-| Borrar tabla          | Igual                                                                   | Igual, y tras un periodo sin lecturas                                                                                           |
+- Agregar columna: peligrosa: `NOT NULL` sin default en tabla grande con versiones viejas escribiendo; segura: Agregar nullable (o con default constante), backfill, luego `CHECK ... NOT VALID` y `VALIDATE CONSTRAINT`, luego `SET NOT NULL`
+- Agregar índice: peligrosa: `CREATE INDEX` normal: bloquea escrituras; segura: `CREATE INDEX CONCURRENTLY` en migración sin transacción
+- Índice único: peligrosa: Crearlo directo sobre datos que pueden duplicarse; segura: Limpiar duplicados, `CREATE UNIQUE INDEX CONCURRENTLY`, luego `ADD CONSTRAINT ... USING INDEX`
+- Agregar clave foránea: peligrosa: `ADD FOREIGN KEY` directo: bloquea ambas tablas; segura: `ADD CONSTRAINT ... NOT VALID`, luego `VALIDATE CONSTRAINT`
+- Renombrar columna: peligrosa: `RENAME COLUMN` con la app vieja leyéndola; segura: Expand y contract
+- Cambiar tipo: peligrosa: `ALTER COLUMN TYPE`: reescribe la tabla; segura: Columna nueva, doble escritura, backfill, cambio de lectura, borrar la vieja
+- Borrar columna: peligrosa: Mientras el código aún la usa; segura: Quitar el uso del código, desplegar, luego borrarla en otra migración
+- Borrar tabla: peligrosa: Igual; segura: Igual, y tras un periodo sin lecturas
 
 El generador de TypeORM propone `DROP` más `ADD` en renombres y cambios de tipo, y `CREATE INDEX` sin `CONCURRENTLY`. Se reescribe a mano antes del commit. Se conserva el resultado del generador y se edita; no se escribe todo desde cero.
 

@@ -1,9 +1,9 @@
 ---
 name: front-nuevo-microfrontend
-description: Cómo crear un microfrontend nuevo del front de node_template con el generador front/tools/new_microfrontend.dart, qué agregar a mano en cada app y qué escribir del dominio (puerto del repositorio, controladores, pantallas, textos, pruebas). Ejemplo reports, con lista y detalle. Úsala al crear un microfrontend, o al revisar uno nuevo en front/microfrontends/ o front/tools/new_microfrontend/.
+description: 'Crear un microfrontend con front/tools/new_microfrontend.dart y lo que se escribe a mano. Úsala al crear o revisar un microfrontend nuevo.'
 paths:
-  - 'front/microfrontends/**'
   - 'front/tools/new_microfrontend/**'
+  - 'front/microfrontends/*/lib/*.dart'
 ---
 
 # Microfrontend nuevo
@@ -57,78 +57,23 @@ El generador imprime tres piezas para cada app:
 
 ## Piezas
 
-| Pieza               | Dónde                                  | Qué hace                                                                    |
-| ------------------- | -------------------------------------- | --------------------------------------------------------------------------- |
-| Manifiesto          | `lib/mf_reports.dart`                  | id, plataformas, modos, acceso, menú y rutas diferidas                      |
-| Constantes de rutas | `lib/src/shared/constants/`            | `ReportsPaths.list`, `ReportsPaths.detail(id)`, `idParam` e `idSegment`     |
-| Puerto y datos demo | `lib/src/data/`                        | `ReportsRepository`, `FakeReportsRepository`, `ReportsData.repository`      |
-| Controlador         | `lib/src/screens/*_controller.dart`    | Estado con `AsyncLoader`, acciones con `ActionRunner`                       |
-| Pantalla            | `lib/src/screens/*_screen.dart`        | `ControllerBuilder` y `AsyncValueView`, sin lógica                          |
-| Puente de pantallas | `lib/src/screens/reports_screens.dart` | `ReportsScreens` estático, con `DeferredLocalizations` y `scope.repository` |
-| Textos              | `lib/src/l10n/*.arb`                   | `ReportsLocalizations`, con placeholders                                    |
+- Manifiesto: dónde: `lib/mf_reports.dart`; qué hace: id, plataformas, modos, acceso, menú y rutas diferidas
+- Constantes de rutas: dónde: `lib/src/shared/constants/`; qué hace: `ReportsPaths.list`, `ReportsPaths.detail(id)`, `idParam` e `idSegment`
+- Puerto y datos demo: dónde: `lib/src/data/`; qué hace: `ReportsRepository`, `FakeReportsRepository`, `ReportsData.repository`
+- Controlador: dónde: `lib/src/screens/*_controller.dart`; qué hace: Estado con `AsyncLoader`, acciones con `ActionRunner`
+- Pantalla: dónde: `lib/src/screens/*_screen.dart`; qué hace: `ControllerBuilder` y `AsyncValueView`, sin lógica
+- Puente de pantallas: dónde: `lib/src/screens/reports_screens.dart`; qué hace: `ReportsScreens` estático, con `DeferredLocalizations` y `scope.repository`
+- Textos: dónde: `lib/src/l10n/*.arb`; qué hace: `ReportsLocalizations`, con placeholders
 
 ## Esquema del manifiesto y del puente
 
 Igual que `tasks` (`mf_tasks.dart`). El manifiesto solo importa constantes, enums y el puente, con `deferred as`:
 
-```dart
-import 'src/screens/screens.dart' deferred as screens;
-
-final MicrofrontendManifest reportsManifest = MicrofrontendManifest(
-  id: reportsId,
-  platforms: {AppPlatform.web, AppPlatform.mobile},
-  access: ReportsAccess.read,
-  modes: const {ShellMode.demo},
-  menu: const [
-    MenuEntry(
-      label: reportsMenuLabel,
-      path: ReportsPaths.list,
-      order: 100,
-      icon: Icons.folder_outlined,
-      selectedIcon: Icons.folder,
-    ),
-  ],
-  screens: [
-    ScreenRoute.deferred(
-      ReportsPaths.list,
-      library: screens.loadLibrary,
-      build: (scope, params) => screens.ReportsScreens.list(scope),
-      routes: [
-        ScreenRoute.deferred(
-          ReportsPaths.idSegment,
-          library: screens.loadLibrary,
-          build: (scope, params) => screens.ReportsScreens.detail(
-            scope,
-            itemId: params.require(ReportsPaths.idParam),
-          ),
-        ),
-      ],
-    ),
-  ],
-);
-```
+Ejemplo en `references/ejemplos.md`, sección "Esquema del manifiesto y del puente".
 
 El puente es una clase estática. `DeferredLocalizations` carga los delegados con la pantalla, y el repositorio sale del binding del microfrontend:
 
-```dart
-abstract final class ReportsScreens {
-  static Widget list(MicrofrontendScope scope) =>
-      _withTexts(ReportsListScreen(repository: _repository(scope)));
-
-  static Widget detail(MicrofrontendScope scope, {required String itemId}) =>
-      _withTexts(
-        ReportsDetailScreen(repository: _repository(scope), itemId: itemId),
-      );
-
-  static ReportsRepository _repository(MicrofrontendScope scope) =>
-      scope.repository(ReportsData.repository);
-
-  static Widget _withTexts(Widget child) => DeferredLocalizations(
-    delegates: const [ReportsLocalizations.delegate],
-    child: child,
-  );
-}
-```
+Ejemplo en `references/ejemplos.md`, sección "Esquema del manifiesto y del puente".
 
 ## Checklist del revisor
 
@@ -152,8 +97,4 @@ Las reglas de código de cada pieza están en [front-codigo](../front-codigo/SKI
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- Se crea con el generador: es la palanca de `principle-build-the-lever`. Lo que se haga a mano y se repita se agrega al generador.
-- Antes de escribir el dominio: `architect` para el puerto del repositorio, los controladores y los estados.
-- El trabajo completo sigue el playbook `feature` de `poteto-mode`, con las pruebas de `front-pruebas`.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-build-the-lever`, `architect`, `feature`, `poteto-mode`.

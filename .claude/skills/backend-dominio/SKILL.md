@@ -1,6 +1,6 @@
 ---
 name: backend-dominio
-description: Cómo se modela el dominio del backend de node_template. Agregados con invariantes, entidades, objetos de valor, eventos de dominio, fábricas, puertos y rehidratación, sobre AggregateRoot, ValueObject y DomainEvent de @platform/kernel. Úsala al crear o modificar cualquier cosa dentro de domain/.
+description: 'Modelado del dominio del backend: agregados, objetos de valor, eventos, puertos y errores de dominio sobre @platform/kernel. Úsala en domain/.'
 paths:
   - 'backend/**/domain/**'
   - 'backend/libs/platform/kernel/**'
@@ -8,130 +8,47 @@ paths:
 
 # Dominio
 
-El dominio es TypeScript puro. Importa solo `@platform/kernel`. Nada de decoradores de NestJS, TypeORM, zod, AWS ni `process.env`.
+TypeScript puro: solo importa `@platform/kernel`. Sin NestJS, TypeORM, zod, AWS ni `process.env`. Ejemplos de `User` y `Email` en `references/ejemplos.md`.
 
-## Agregados e invariantes
+## Agregados
 
-- Un agregado es una frontera de consistencia. Se carga, cambia y guarda entero, en una transacción. Se accede a su interior solo por la raíz.
-- Agregados pequeños. Si dos cosas no necesitan ser consistentes en la misma transacción, son agregados distintos.
-- Un agregado referencia a otro por id (`ownerId: Id`), nunca por objeto.
-- Un agregado válido existe siempre. Constructor privado y dos fábricas: `register(...)` valida, crea y emite evento. `rehydrate(...)` reconstruye desde la base sin validar de nuevo ni emitir.
-- Sin setters públicos. El estado cambia por métodos con nombre de negocio que verifican la regla antes de mutar.
+- Se carga, cambia y guarda entero en una transacción. Acceso solo por la raíz.
+- Agregados pequeños. Referencias a otros por id (`ownerId: Id`), nunca por objeto.
+- Constructor privado y dos fábricas: `register(...)` valida, crea y emite evento; `rehydrate(...)` reconstruye sin validar ni emitir.
+- Sin setters públicos: métodos con nombre de negocio que verifican la regla antes de mutar.
 - `id` y `createdAt` son `readonly`.
-- El agregado no conoce casos de uso, controllers ni repositorios.
-
-```ts
-export class User extends AggregateRoot<Id, UserEvent> {
-  private constructor(
-    id: Id,
-    private email: Email,
-    private status: UserStatus,
-    private readonly createdAt: Date,
-    private version: number,
-  ) {
-    super(id);
-  }
-
-  static register(params: RegisterUserParams): User {
-    const user = new User(
-      params.id,
-      params.email,
-      UserStatus.Active,
-      params.now,
-      0,
-    );
-    user.addDomainEvent({
-      id: params.eventId,
-      type: UserEventType.Registered,
-      occurredAt: params.now,
-      aggregateId: params.id.value,
-      payload: { email: params.email.value },
-    });
-    return user;
-  }
-
-  changeEmail(newEmail: Email, now: Date, eventId: Id): void {
-    if (this.status !== UserStatus.Active) {
-      throw new UserNotActiveError({ userId: this.id.value });
-    }
-    if (this.email.equals(newEmail)) return;
-    this.email = newEmail;
-    this.addDomainEvent({
-      id: eventId,
-      type: UserEventType.EmailChanged,
-      occurredAt: now,
-      aggregateId: this.id.value,
-      payload: { email: newEmail.value },
-    });
-  }
-}
-```
-
-- El agregado recibe `now` y los ids de evento como parámetros. El caso de uso los saca de `Clock` e `IdGenerator`. El dominio no los consulta solo.
-- Una regla que necesita datos de otros agregados o de la base no va en el agregado: va en un servicio de dominio (clase en `domain/` con puertos) o en el caso de uso.
-- Unicidad (`email` único) se verifica en el caso de uso con el repositorio y se garantiza con un índice único. Si la base rechaza el duplicado, el repositorio lo traduce a `EmailAlreadyRegisteredError`.
+- Recibe `now` y los ids de evento como parámetros; el caso de uso los saca de `Clock` e `IdGenerator`.
+- Una regla que necesita otros agregados o la base va en un servicio de dominio (clase con puertos en `domain/`) o en el caso de uso.
+- Unicidad: se verifica en el caso de uso con el repositorio y se garantiza con índice único. El repositorio traduce el duplicado a `EmailAlreadyRegisteredError`.
 
 ## Objetos de valor
 
-- Extienden `ValueObject`. Inmutables, iguales por valor, validados al construirse. Constructor privado y `Email.create(raw)` que lanza el error de dominio si es inválido.
-- Se crean para primitivos con reglas: `Email`, `Money`, `PasswordHash`, `TenantId`. No para un `string` sin regla.
-- Dinero: monto entero en la unidad menor más moneda, nunca `number` decimal.
-- Nunca viajan en DTO, eventos ni entidades ORM. Se serializan a primitivos en la frontera.
-- Los ids son el `Id` del kernel (UUIDv7, objeto de valor). Se crean con el `IdGenerator` o se parsean con `Id.from(raw)` al llegar de fuera. El `aggregateId` del evento es el string (`id.value`).
-
-```ts
-export class Email extends ValueObject<{ value: string }> {
-  private constructor(value: string) {
-    super({ value });
-  }
-
-  static create(raw: string): Email {
-    const normalized = raw.trim().toLowerCase();
-    if (!EMAIL_PATTERN.test(normalized)) {
-      throw new InvalidEmailError();
-    }
-    return new Email(normalized);
-  }
-
-  get value(): string {
-    return this.props.value;
-  }
-}
-```
-
-Validación simple (largo, vacío, formato básico) vive en el dominio. Formatos complejos los valida zod en el borde y el dominio confía en el valor ya parseado.
+- Extienden `ValueObject`. Inmutables, iguales por valor, constructor privado y `Email.create(raw)` que lanza el error de dominio.
+- Solo para primitivos con reglas: `Email`, `Money`, `PasswordHash`, `TenantId`.
+- Dinero: entero en la unidad menor más moneda.
+- Nunca viajan en DTO, eventos ni entidades ORM: se serializan a primitivos en la frontera.
+- Ids: `Id` del kernel (UUIDv7). Se crean con `IdGenerator` o se parsean con `Id.from(raw)`. El `aggregateId` del evento es `id.value`.
+- Validación simple en el dominio; formatos complejos los valida zod en el borde.
 
 ## Eventos de dominio
 
-- Un hecho en pasado, emitido por el agregado con `addDomainEvent`. El tipo sale de un enum por agregado (`UserEventType.Registered = 'identity.user.registered'`).
-- El `payload` son primitivos y lo mínimo que el consumidor necesita. Sin objetos de valor ni datos sensibles.
-- El caso de uso, no el agregado, saca los eventos con `pullDomainEvents()` después de guardar y los entrega al outbox en la misma transacción (ver `backend-mensajeria-idempotencia`).
-- Un evento de dominio es interno. Lo que sale del servicio es un evento de integración versionado, con esquema zod en `@contracts/<servicio>` (`events/`). Se traduce en un mapper de aplicación, no se reutiliza el de dominio.
-- Evento nuevo o cambio de forma: ver reglas de versionado en `backend-mensajeria-idempotencia`.
+- Hecho en pasado, emitido con `addDomainEvent`. Tipo de un enum por agregado (`UserEventType.Registered = 'identity.user.registered'`).
+- `payload` de primitivos, mínimo y sin datos sensibles.
+- El caso de uso los saca con `pullDomainEvents()` tras guardar y los entrega al outbox en la misma transacción (ver `backend-mensajeria-idempotencia`).
+- Lo que sale del servicio es un evento de integración versionado con esquema zod en `@contracts/<servicio>` (`events/`), traducido en un mapper de aplicación.
 
 ## Puertos
 
-- Interfaz o clase abstracta en `domain/` con lo que el negocio necesita. Los puertos de repositorio hablan en agregados: `save(user)`, `findById(id)`, no en filas.
-- Si el puerto se inyecta, necesita token en runtime (ver `backend-nestjs-composicion`). Una clase abstracta sirve a la vez de contrato y de token.
-- Puertos de plataforma que el dominio puede usar: `Clock`, `IdGenerator`.
+- Clase abstracta en `domain/`, que sirve de contrato y de token (ver `backend-nestjs-composicion`).
+- Los de repositorio hablan en agregados: `save(user)`, `findById(id)`.
+- Puertos de plataforma disponibles: `Clock`, `IdGenerator`.
 
-## Errores de dominio
+## Errores y consultas
 
-Cada regla rota es una clase que extiende `DomainError` con código del enum del servicio. Detalle en `backend-errores`.
-
-## Consultas
-
-Las lecturas que no pasan por reglas (listados, reportes) no necesitan agregados. Un manejador de consulta puede leer directo de la réplica con `QueryBuilder` y devolver un DTO de lectura. Nunca devuelve entidades ORM.
-
-## Pruebas
-
-El dominio se prueba sin dobles ni NestJS: crear, ejecutar el método, verificar estado y `pullDomainEvents()`. Ver `backend-pruebas`.
+- Cada regla rota es una clase que extiende `DomainError` con código del enum del servicio (ver `backend-errores`).
+- Las lecturas sin reglas pueden leer de la réplica con `QueryBuilder` y devolver un DTO de lectura, nunca entidades ORM.
+- El dominio se prueba sin dobles ni NestJS (ver `backend-pruebas`).
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- `principle-model-the-domain` y `principle-foundational-thinking` al elegir agregados, objetos de valor y estados.
-- `principle-type-system-discipline`: estados ilegales imposibles de construir y uniones exhaustivas. Los identificadores siguen siendo los tipos del kernel.
-- `principle-boundary-discipline` pide la lógica de negocio en funciones puras. Aquí vive en las clases del dominio sin dependencias de framework, que cumplen la misma intención.
-- Para un agregado nuevo o un cambio de invariantes: `architect` antes de escribir el código.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-model-the-domain`, `principle-foundational-thinking`, `principle-type-system-discipline`, `principle-boundary-discipline`, `architect`. Donde `principle-boundary-discipline` pide funciones puras, aquí van clases del dominio sin dependencias de framework.

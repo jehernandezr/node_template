@@ -1,6 +1,6 @@
 ---
 name: front-seguridad
-description: Seguridad del código del front de node_template (Flutter, web y móvil). Secretos, almacenamiento de tokens, HTTPS, validación de entrada, logs, aleatoriedad y dependencias. Úsala al tocar sesión, tokens, ApiClient, almacenamiento local, configuración por entorno, deep links o al agregar una dependencia.
+description: 'Seguridad del front: secretos, tokens, HTTPS, validación, logs y enlaces profundos. Úsala al tocar sesión, ApiClient o almacenamiento.'
 paths:
   - 'front/packages/auth/**'
   - 'front/packages/api/**'
@@ -41,7 +41,4 @@ Cada hallazgo es Critical (secreto en el binario, validación TLS apagada, token
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- Todo cambio en sesión, tokens, `ApiClient`, almacenamiento local o enlaces profundos pasa por `interrogate` y `blast-radius`.
-- `principle-boundary-discipline`: lo que llega del servidor o de un enlace se parsea en el borde contra el contrato.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `interrogate`, `blast-radius`, `principle-boundary-discipline`.
