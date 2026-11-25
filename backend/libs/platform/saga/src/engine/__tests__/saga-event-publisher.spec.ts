@@ -8,7 +8,7 @@ describe('SagaEventPublisher', () => {
     .with({ lastErrorCode: 'X' })
     .build();
 
-  it('entrega el evento a cada oyente suscrito', () => {
+  it('delivers the event to each subscribed listener', () => {
     const publisher = new SagaEventPublisher();
     const received: string[] = [];
     publisher.subscribe((event) => {
@@ -20,7 +20,7 @@ describe('SagaEventPublisher', () => {
     expect(received).toEqual([`completed:${SagaInstanceBuilder.DEFAULT_ID}:X`]);
   });
 
-  it('la función que devuelve subscribe retira al oyente', () => {
+  it('the function returned by subscribe removes the listener', () => {
     const publisher = new SagaEventPublisher();
     let count = 0;
     const unsubscribe = publisher.subscribe(() => {
@@ -34,7 +34,7 @@ describe('SagaEventPublisher', () => {
     expect(count).toBe(1);
   });
 
-  it('ignora los oyentes que lanzan o rechazan y los registra', async () => {
+  it('ignores listeners that throw or reject and logs them', async () => {
     const logger = new RecordingLogger();
     const publisher = new SagaEventPublisher(logger);
     publisher.subscribe(() => {

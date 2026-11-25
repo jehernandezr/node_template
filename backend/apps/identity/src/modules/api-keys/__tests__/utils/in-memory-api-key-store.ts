@@ -91,7 +91,7 @@ export class InMemoryApiKeyDirectory extends ApiKeyDirectory {
 
 /** HMAC with a constructed test key, same as the real adapter. */
 export class TestApiKeySecretHasher extends ApiKeySecretHasher {
-  private readonly key = ['llave', 'de', 'prueba'].join('-');
+  private readonly key = ['test', 'secret', 'key'].join('-');
 
   hmac(secretSha256: string): string {
     return createHmac('sha256', this.key)

@@ -22,7 +22,7 @@ export class NameForms {
     if (!NameForms.KEBAB.test(name)) {
       throw new GeneratorError(
         GeneratorErrorReason.InvalidName,
-        `"${name}" no es un nombre en kebab-case (por ejemplo inventory o api-keys)`,
+        `"${name}" is not a kebab-case name (for example inventory or api-keys)`,
       );
     }
     const words = name.split('-');

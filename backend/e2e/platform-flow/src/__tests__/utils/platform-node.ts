@@ -54,7 +54,7 @@ export class PlatformNode {
       .shards()
       .find((candidate) => candidate.database === placement?.shard_group[0]);
     if (shard === undefined) {
-      throw new Error(`${this.service} no tiene al tenant ${tenantId}`);
+      throw new Error(`${this.service} does not have tenant ${tenantId}`);
     }
     return shard;
   }

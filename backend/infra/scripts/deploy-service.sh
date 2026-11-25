@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Deploys a service by stages. Without stages it runs publish, migrate, plan and apply, in that order:
-# the artifact goes first because apply needs TF_VAR_image or TF_VAR_lambda_package.
+# the artifact goes out first because apply needs TF_VAR_image or TF_VAR_lambda_package.
 # Usage: deploy-service.sh <environment> <service> [publish|migrate|plan|apply]...
-# plan and apply load .artifacts/<service>.env (written by publish). In DRY_RUN the file is not
+# plan and apply load .artifacts/<service>.env (publish writes it). In DRY_RUN the file is not
 # required: "+ source .artifacts/<service>.env" is logged.
 # Variables: those of publish-service.sh, DRY_RUN=1 to print everything without running it.
 # Exit code 2 for an unknown stage.
@@ -29,7 +29,7 @@ for stage in "$@"; do
   case "$stage" in
     publish | migrate | plan | apply) ;;
     *)
-      log "Etapa desconocida: $stage"
+      log "Unknown stage: $stage"
       usage
       exit 2
       ;;

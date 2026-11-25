@@ -29,22 +29,22 @@ import { CommitCounter } from './utils/commit-counter.js';
 const OrderPlaced = defineEvent({
   type: 'orders.order.placed.v1',
   payload: z.object({ orderId: z.string(), total: z.number().positive() }),
-  description: 'Se creó un pedido.',
+  description: 'An order was created.',
 });
 const OrdersEvents = defineTopic({
   name: 'orders-events',
   fifo: true,
   events: [OrderPlaced],
-  description: 'Eventos de pedidos, en orden por pedido.',
+  description: 'Order events, ordered per order.',
 });
 const ExpireOrder = defineCommand({
   type: 'orders.order.expire.v1',
   payload: z.object({ orderId: z.string() }),
-  description: 'Vence un pedido sin pagar.',
+  description: 'An unpaid order expires.',
 });
 const orders = defineServiceContract({
   service: 'orders',
-  description: 'Pedidos.',
+  description: 'Orders.',
   events: { orderPlaced: OrderPlaced },
   commands: { expireOrder: ExpireOrder },
   topics: { ordersEvents: OrdersEvents },
@@ -53,12 +53,12 @@ const orders = defineServiceContract({
       name: 'orders-projection',
       fifo: true,
       subscriptions: [{ topic: OrdersEvents }],
-      description: 'Proyección de pedidos.',
+      description: 'Order projection.',
     }),
     ordersWork: defineQueue({
       name: 'orders-work',
       commands: [ExpireOrder],
-      description: 'Trabajo diferido de pedidos.',
+      description: 'Deferred order work.',
     }),
   },
 });

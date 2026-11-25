@@ -79,7 +79,7 @@ export class TasksHarness {
   readonly changes = new ListTaskChanges(this.tasks, this.shard);
 
   /** Creates a task by Ana in the main tenant. */
-  aTask(title = 'Preparar la reunión', description = 'Con el cliente') {
+  aTask(title = 'Prepare the meeting', description = 'With the client') {
     return this.create.execute({
       tenantId: TasksHarness.TENANT,
       actor: TasksHarness.ANA,

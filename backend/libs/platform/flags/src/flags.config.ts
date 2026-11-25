@@ -23,14 +23,14 @@ const FlagRulesSchema = z
     try {
       return JSON.parse(raw) as unknown;
     } catch {
-      ctx.addIssue({ code: 'custom', message: 'FEATURE_FLAGS no es JSON' });
+      ctx.addIssue({ code: 'custom', message: 'FEATURE_FLAGS is not JSON' });
       return z.NEVER;
     }
   })
   .pipe(z.array(FlagRuleSchema))
   .refine(
     (rules) => new Set(rules.map((rule) => rule.flag)).size === rules.length,
-    { message: 'FEATURE_FLAGS repite un flag' },
+    { message: 'FEATURE_FLAGS repeats a flag' },
   );
 
 /** `FEATURE_FLAGS` is a JSON list of rules; without it no flag is on. */

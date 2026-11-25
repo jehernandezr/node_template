@@ -55,7 +55,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const inA = await createIn(
         TasksTestApp.TENANT_A,
         ANA,
-        'Enviar la factura de marzo',
+        'Send the March invoice',
       );
       const inB = await createIn(
         TasksTestApp.TENANT_B,
@@ -87,7 +87,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
     });
 
     it('never shows a task to a member of another tenant', async () => {
-      const inA = await createIn(TasksTestApp.TENANT_A, ANA, 'Solo de A');
+      const inA = await createIn(TasksTestApp.TENANT_A, ANA, 'Only in A');
       const fromB = await app.clientOf({
         userId: BEA,
         tenantId: TasksTestApp.TENANT_B,
@@ -104,13 +104,9 @@ new ContainerRuntime(process.env).describeIfAvailable(
     });
 
     it('purges in every shard only the tasks deleted before the retention', async () => {
-      const oldInA = await createIn(TasksTestApp.TENANT_A, ANA, 'Vieja en A');
-      const oldInB = await createIn(TasksTestApp.TENANT_B, BEA, 'Vieja en B');
-      const recent = await createIn(
-        TasksTestApp.TENANT_A,
-        ANA,
-        'Recién borrada',
-      );
+      const oldInA = await createIn(TasksTestApp.TENANT_A, ANA, 'Old in A');
+      const oldInB = await createIn(TasksTestApp.TENANT_B, BEA, 'Old in B');
+      const recent = await createIn(TasksTestApp.TENANT_A, ANA, 'Just deleted');
       for (const [tenantId, userId, id] of [
         [TasksTestApp.TENANT_A, ANA, oldInA.id],
         [TasksTestApp.TENANT_B, BEA, oldInB.id],
@@ -148,12 +144,12 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const inA = await createIn(
         TasksTestApp.TENANT_A,
         erased,
-        'De la persona borrada en A',
+        'From the person deleted in A',
       );
       const inB = await createIn(
         TasksTestApp.TENANT_B,
         erased,
-        'De la persona borrada en B',
+        'From the person deleted in B',
       );
       const input = {
         user: { userId: erased, homeTenantId: TasksTestApp.TENANT_A },

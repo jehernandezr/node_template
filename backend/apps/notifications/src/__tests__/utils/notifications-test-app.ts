@@ -104,7 +104,7 @@ export class NotificationsTestApp {
 
   private service(): RunningService {
     if (this.running === undefined) {
-      throw new Error('NotificationsTestApp no está iniciada');
+      throw new Error('NotificationsTestApp is not started');
     }
     return this.running;
   }

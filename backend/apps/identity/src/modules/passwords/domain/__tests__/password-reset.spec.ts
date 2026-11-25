@@ -8,12 +8,12 @@ function aReset(): PasswordReset {
   return PasswordReset.issue({
     id: '01941f29-7c00-7000-8000-000000000011',
     userId: '01941f29-7c00-7000-8000-000000000012',
-    tokenHash: 'huella-del-secreto',
+    tokenHash: 'secret-fingerprint',
     expiresAt: new Date(ISSUED_AT.getTime() + TTL_MS),
   });
 }
 
-const genuine = (tokenHash: string) => tokenHash === 'huella-del-secreto';
+const genuine = (tokenHash: string) => tokenHash === 'secret-fingerprint';
 const forged = () => false;
 
 describe('PasswordReset', () => {
@@ -63,7 +63,7 @@ describe('PasswordResetToken', () => {
     expect(parsed?.secret.equals(secret)).toBe(true);
   });
 
-  it.each(['pr2_u_t_r_abc', 'pr1_u_t', 'st1_u_t_r_abc', 'otro'])(
+  it.each(['pr2_u_t_r_abc', 'pr1_u_t', 'st1_u_t_r_abc', 'other'])(
     'rejects %s',
     (text) => {
       expect(PasswordResetToken.parse(text)).toBeUndefined();

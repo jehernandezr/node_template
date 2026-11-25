@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Reads the github_oidc outputs of the platform stack and exposes them as ARTIFACTS_BUCKET and ECR_PREFIX.
+# Reads the github_oidc outputs of the platform stack and leaves them as ARTIFACTS_BUCKET and ECR_PREFIX.
 # Usage: read-platform-outputs.sh <environment>
 # Writes to $GITHUB_ENV if it exists; outside Actions it prints them on stdout.
-# Fails if github_repository is not configured in platform (the output is null).
+# Fails if github_repository is not set in platform (the output is null).
 # Variables: DRY_RUN=1 prints the commands and leaves <dry-run> as the value.
 set -euo pipefail
 

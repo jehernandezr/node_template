@@ -99,7 +99,7 @@ export class ProvisionedService {
     ) as Record<string, { primary: { host: string; port: number } }>;
     const primary = instances[ServiceDatabases.INSTANCE]?.primary;
     if (primary === undefined) {
-      throw new Error('Sin instancia principal en DB_INSTANCES');
+      throw new Error('No primary instance in DB_INSTANCES');
     }
     return {
       host: primary.host,

@@ -73,7 +73,7 @@ describe('defineRoute', () => {
       request: ItemRequest,
       response: ItemRequest,
       access: Access.authenticated(),
-      description: 'Actualiza un ítem.',
+      description: 'Updates an item.',
     });
     expect(route.pathParams).toEqual(['itemId']);
     expect(route.version).toBe(1);
@@ -86,7 +86,7 @@ describe('defineRoute', () => {
       method: HttpMethod.Delete,
       path: '/v1/items',
       access: Access.authenticated(),
-      description: 'Borra todo.',
+      description: 'Deletes everything.',
     });
     expect(empty.request).toBe(EmptySchema);
     expect(empty.response).toBeNull();
@@ -112,7 +112,7 @@ describe('defineRoute', () => {
         path: '/v1/items/{itemId}',
         request: ItemRequest,
         access: Access.public(),
-        description: 'Lee un ítem.',
+        description: 'Reads an item.',
         ...override,
       }),
     ).toThrow(message);
@@ -137,7 +137,7 @@ describe('defineRoute', () => {
         tags: z.array(z.string()).optional(),
       }),
       access: Access.public(),
-      description: 'Busca.',
+      description: 'Searches.',
     });
     expect(route.version).toBe(2);
     expect(route.queryParams).toEqual([
@@ -161,7 +161,7 @@ describe('defineRoute', () => {
         path: '/v1/items',
         request: z.strictObject({ field }),
         access: Access.public(),
-        description: 'Lista.',
+        description: 'Lists.',
       }),
     ).toThrow(message);
   });
@@ -173,7 +173,7 @@ describe('defineRoute', () => {
       path: '/v1/items',
       request: z.strictObject({ nested: z.object({ a: z.string() }) }),
       access: Access.public(),
-      description: 'Crea.',
+      description: 'Creates.',
     });
     expect(route.queryParams).toEqual([]);
   });
@@ -184,7 +184,7 @@ describe('defineRoute', () => {
       method: HttpMethod.Get,
       path: '/v1/legacy',
       access: Access.public(),
-      description: 'Ruta vieja.',
+      description: 'Old route.',
     };
     expect(
       defineRoute({
@@ -221,7 +221,7 @@ describe('defineOperation', () => {
     input: ItemRequest,
     output: z.object({ ok: z.boolean() }),
     idempotent: true,
-    description: 'Crea un ítem.',
+    description: 'Creates an item.',
   };
 
   it('accepts a compensated mutating operation with OperationOptions fields', () => {
@@ -249,7 +249,7 @@ describe('defineOperation', () => {
       defineOperation({
         ...base,
         compensatedBy: Compensation.None,
-        compensationReason: 'Irreversible por diseño.',
+        compensationReason: 'Irreversible by design.',
       }).compensatedBy,
     ).toBe('none');
     const read = defineOperation({ ...base, mutating: false });
@@ -308,7 +308,7 @@ describe('defineEvent', () => {
     const event = defineEvent({
       type: 'sample.item.created.v2',
       payload: ItemRequest,
-      description: 'Se creó un ítem.',
+      description: 'An item was created.',
     });
     expect(event.version).toBe(2);
     expect(event.kind).toBe(MessageKind.Event);
@@ -330,7 +330,7 @@ describe('defineCommand', () => {
     const command = defineCommand({
       type: 'sample.report.generate.v1',
       payload: ItemRequest,
-      description: 'Genera un reporte.',
+      description: 'Generates a report.',
     });
     expect(command).toMatchObject({
       type: 'sample.report.generate.v1',
@@ -356,22 +356,22 @@ describe('defineTopic and defineQueue', () => {
   const created = defineEvent({
     type: 'sample.item.created.v1',
     payload: ItemRequest,
-    description: 'Se creó.',
+    description: 'Created.',
   });
   const deleted = defineEvent({
     type: 'sample.item.deleted.v1',
     payload: ItemRequest,
-    description: 'Se borró.',
+    description: 'Deleted.',
   });
   const generate = defineCommand({
     type: 'sample.report.generate.v1',
     payload: ItemRequest,
-    description: 'Genera.',
+    description: 'Generates.',
   });
   const topic = defineTopic({
     name: 'sample-events',
     events: [created, deleted],
-    description: 'Eventos.',
+    description: 'Events.',
   });
 
   it('fills the queue defaults and lists the delivered types', () => {
@@ -382,7 +382,7 @@ describe('defineTopic and defineQueue', () => {
         { topic },
         { topic: { ...topic, name: 'other-events' }, events: [created] },
       ],
-      description: 'Trabajo.',
+      description: 'Work.',
     });
     expect(queue).toMatchObject({
       fifo: false,
@@ -417,7 +417,7 @@ describe('defineTopic and defineQueue', () => {
       defineQueue({
         name: 'sample-work',
         commands: [generate],
-        description: 'Trabajo.',
+        description: 'Work.',
         ...override,
       }),
     ).toThrow(message);
@@ -433,7 +433,7 @@ describe('defineTopic and defineQueue', () => {
             events: [created],
           },
         ],
-        description: 'Trabajo.',
+        description: 'Work.',
       }),
     ).toThrow(/is not published/);
   });
@@ -461,7 +461,7 @@ describe('defineServiceContract', () => {
       httpStatus: 409,
       retryable: false,
       audience: ErrorAudience.Public,
-      description: 'Bloqueado.',
+      description: 'Blocked.',
     },
   });
   const route = defineRoute({
@@ -469,13 +469,13 @@ describe('defineServiceContract', () => {
     method: HttpMethod.Get,
     path: '/v1/items',
     access: Access.public(),
-    description: 'Lista.',
+    description: 'Lists.',
   });
 
   it('fills missing maps and freezes the contract', () => {
     const contract = defineServiceContract({
       service: 'sample',
-      description: 'Ejemplo.',
+      description: 'Example.',
       enums: { SampleError },
       errors: { SampleError: errors },
       routes: { listItems: route },
@@ -512,7 +512,7 @@ describe('defineServiceContract', () => {
       expect(() =>
         contractWith({
           compensatedBy: Compensation.None,
-          compensationReason: 'Es la reversa.',
+          compensationReason: 'It is the reverse.',
         }),
       ).not.toThrow();
     });
@@ -530,7 +530,7 @@ describe('defineServiceContract', () => {
         contractWith({
           idempotent: false,
           compensatedBy: Compensation.None,
-          compensationReason: 'Es la reversa.',
+          compensationReason: 'It is the reverse.',
         }),
       ).toThrow(/is not idempotent/);
     });

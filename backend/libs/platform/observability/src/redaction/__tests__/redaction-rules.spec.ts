@@ -24,23 +24,23 @@ describe('RedactionRules', () => {
 
   describe('extend', () => {
     it('adds the word in lowercase to the sensitive last words', () => {
-      const extended = RedactionRules.defaults().extend(['Pasaporte']);
+      const extended = RedactionRules.defaults().extend(['Passport']);
 
-      expect(extended.lists.sensitiveLastWords.has('pasaporte')).toBe(true);
+      expect(extended.lists.sensitiveLastWords.has('passport')).toBe(true);
     });
 
     it('does not mutate the original rules', () => {
       const original = RedactionRules.defaults();
 
-      original.extend(['pasaporte']);
+      original.extend(['passport']);
 
-      expect(original.lists.sensitiveLastWords.has('pasaporte')).toBe(false);
+      expect(original.lists.sensitiveLastWords.has('passport')).toBe(false);
     });
 
     it('keeps the other lists of the original rules', () => {
       const original = RedactionRules.defaults();
 
-      const extended = original.extend(['pasaporte']);
+      const extended = original.extend(['passport']);
 
       expect(extended.lists.publicLastWords).toEqual(
         original.lists.publicLastWords,

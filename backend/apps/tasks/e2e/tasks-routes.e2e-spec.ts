@@ -31,8 +31,8 @@ interface TaskPage {
 
 /** A valid body per route, so the response depends only on access. */
 const BODIES: Partial<Record<string, unknown>> = {
-  [TasksRoute.CreateTask]: { title: 'Revisar el acceso' },
-  [TasksRoute.UpdateTask]: { title: 'Acceso revisado' },
+  [TasksRoute.CreateTask]: { title: 'Review access' },
+  [TasksRoute.UpdateTask]: { title: 'Access reviewed' },
 };
 
 new ContainerRuntime(process.env).describeIfAvailable(
@@ -58,7 +58,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
     };
 
     const call = async (client: HttpTestClient, route: RouteDefinition) => {
-      const task = await create(`Para ${route.id}`);
+      const task = await create(`For ${route.id}`);
       return client.send(
         route.method,
         route.path.replace('{taskId}', task.id),
@@ -113,7 +113,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
     });
 
     it('creates, reads, lists, changes and deletes a task', async () => {
-      const created = await create('Preparar la reunión');
+      const created = await create('Prepare the meeting');
 
       const read = await ana.get(`/v1/tasks/${created.id}`);
       const listed = await ana.get('/v1/tasks');
@@ -125,7 +125,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
 
       expect(read.body).toMatchObject({
         id: created.id,
-        title: 'Preparar la reunión',
+        title: 'Prepare the meeting',
         status: TaskStatus.Open,
       });
       expect((listed.body as TaskPage).items.map((task) => task.id)).toContain(
@@ -154,16 +154,16 @@ new ContainerRuntime(process.env).describeIfAvailable(
     });
 
     it('rejects with 409 a change based on an old version', async () => {
-      const task = await create('Cerrar el mes');
+      const task = await create('Close the month');
       await ana.patch(`/v1/tasks/${task.id}`, {
         body: {
-          title: 'Cerrar el mes de marzo',
+          title: 'Close the month of March',
           expectedVersion: task.version,
         },
       });
 
       const stale = await ana.patch(`/v1/tasks/${task.id}`, {
-        body: { title: 'Otro', expectedVersion: task.version },
+        body: { title: 'Other', expectedVersion: task.version },
       });
 
       expect(stale.status).toBe(409);

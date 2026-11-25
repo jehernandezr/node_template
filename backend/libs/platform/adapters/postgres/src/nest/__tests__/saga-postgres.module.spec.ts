@@ -3,7 +3,7 @@ import { ShardedSagaScopes } from '../../saga/sharded-saga-scopes.js';
 import { TypeOrmSagaStore } from '../../saga/typeorm-saga-store.js';
 
 describe('SagaPostgresModule', () => {
-  it('exporta el almacén y los ámbitos de sagas', () => {
+  it('exports the store and the saga scopes', () => {
     const exported: unknown[] = Reflect.getMetadata(
       'exports',
       SagaPostgresModule,
@@ -15,7 +15,7 @@ describe('SagaPostgresModule', () => {
     expect(exported).toHaveLength(2);
   });
 
-  it('es global, como SagaModule', () => {
+  it('is global, like SagaModule', () => {
     expect(Reflect.getMetadata('__module:global__', SagaPostgresModule)).toBe(
       true,
     );

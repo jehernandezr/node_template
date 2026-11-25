@@ -16,7 +16,7 @@ final class WorkspacePubspec {
     final header = lines.indexOf('workspace:');
     if (header < 0) {
       throw const ScaffoldException(
-        'front/pubspec.yaml no tiene la lista workspace.',
+        'front/pubspec.yaml has no workspace list.',
       );
     }
     final members = <String>[];
@@ -28,7 +28,7 @@ final class WorkspacePubspec {
       end++;
     }
     if (members.contains(member)) {
-      throw ScaffoldException('$member ya está en la lista workspace.');
+      throw ScaffoldException('$member is already in the workspace list.');
     }
     var position = end;
     for (var i = 0; i < members.length; i++) {

@@ -8,7 +8,7 @@ TOPOLOGY="/etc/localstack/topology.json"
 PREFIX="${MESSAGING_NAME_PREFIX:-local}"
 
 if awslocal s3api head-bucket --bucket "${BUCKET}" >/dev/null 2>&1; then
-  echo "[init-aws] Bucket ${BUCKET} already exists"
+  echo "[init-aws] The bucket ${BUCKET} already exists"
 else
   awslocal s3 mb "s3://${BUCKET}"
   echo "[init-aws] Bucket ${BUCKET} created"
@@ -24,7 +24,7 @@ fi
 
 if [[ -f "${TOPOLOGY}" ]]; then
   "${PYTHON}" /etc/localstack/topology.py "${TOPOLOGY}" "${PREFIX}"
-  echo "[init-aws] Topology applied with prefix ${PREFIX}"
+  echo "[init-aws] Topology applied with the prefix ${PREFIX}"
 else
   echo "[init-aws] ${TOPOLOGY} not found: no queues or topics are created" >&2
 fi

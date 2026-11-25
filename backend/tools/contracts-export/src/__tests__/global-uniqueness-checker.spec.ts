@@ -21,7 +21,7 @@ const route = defineRoute({
   path: '/v1/items/{itemId}',
   request: Item,
   access: Access.public(),
-  description: 'Lee un ítem.',
+  description: 'Reads an item.',
 });
 
 const operation = defineOperation({
@@ -30,31 +30,31 @@ const operation = defineOperation({
   output: Item,
   idempotent: true,
   mutating: false,
-  description: 'Lee un ítem.',
+  description: 'Reads an item.',
 });
 
 const created = defineEvent({
   type: 'demo.item.created.v1',
   payload: Item,
-  description: 'Se creó un ítem.',
+  description: 'An item was created.',
 });
 
 const generate = defineCommand({
   type: 'demo.report.generate.v1',
   payload: Item,
-  description: 'Genera un reporte.',
+  description: 'Generates a report.',
 });
 
 const topic = defineTopic({
   name: 'demo-events',
   events: [created],
-  description: 'Eventos del servicio.',
+  description: 'Service events.',
 });
 
 const queue = defineQueue({
   name: 'demo-commands',
   commands: [generate],
-  description: 'Comandos del servicio.',
+  description: 'Service commands.',
 });
 
 const first = defineServiceContract({

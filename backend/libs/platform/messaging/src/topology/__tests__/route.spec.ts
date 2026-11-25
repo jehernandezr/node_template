@@ -9,13 +9,13 @@ import { TopicDef } from '../topic-def.js';
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
   payload: z.object({ id: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const GenerateReport = defineCommand({
   type: 'reports.report.generate.v1',
   payload: z.object({ reportId: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 describe('Route', () => {

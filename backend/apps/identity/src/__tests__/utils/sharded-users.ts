@@ -28,11 +28,11 @@ export interface PlacedUser {
 export class ShardedUsers {
   private static readonly MAX_CANDIDATES = 256;
   static readonly PASSWORD = [
-    'Una',
-    'frase',
-    'larga',
-    'de',
-    'prueba',
+    'A',
+    'long',
+    'test',
+    'phrase',
+    'for',
     '2026',
   ].join('-');
 
@@ -64,7 +64,7 @@ export class ShardedUsers {
       new Date(),
     );
     if (ref === undefined) {
-      throw new Error(`El email ${email} ya estaba registrado`);
+      throw new Error(`The email ${email} was already registered`);
     }
     await this.app.get(AccessFacade).addMember(this.homeTenantId(), ref, []);
     return ref;
@@ -92,7 +92,7 @@ export class ShardedUsers {
       }
     }
     if (chosen.size < probe.names().length) {
-      throw new Error('Ningún candidato cae en alguno de los shards');
+      throw new Error('No candidate falls in any of the shards');
     }
     return chosen;
   }

@@ -20,7 +20,7 @@ workers = {}
 `;
 
 describe('TfvarsBlockReader', () => {
-  it('distingue un bloque con contenido de uno vacío', () => {
+  it('tells a block with content from an empty one', () => {
     const reader = new TfvarsBlockReader(SAMPLE);
     assert.equal(reader.hasBlock('api'), true);
     assert.equal(reader.hasBlock('workers'), true);
@@ -29,7 +29,7 @@ describe('TfvarsBlockReader', () => {
     assert.equal(reader.hasBlock('consumers'), false);
   });
 
-  it('devuelve el texto del bloque respetando llaves anidadas y cadenas con llaves', () => {
+  it('returns the block text respecting nested braces and strings with braces', () => {
     const reader = new TfvarsBlockReader(SAMPLE);
     const block = reader.block('api');
     assert.match(block, /nested = \{/);
@@ -39,14 +39,14 @@ describe('TfvarsBlockReader', () => {
     assert.equal(withBraces.block('x').trim(), 's = "}"');
   });
 
-  it('lee runtime solo dentro del bloque pedido', () => {
+  it('reads runtime only inside the requested block', () => {
     const reader = new TfvarsBlockReader(SAMPLE);
     assert.equal(reader.stringIn('api', 'runtime'), 'fargate');
     assert.equal(reader.stringIn('workers', 'runtime'), undefined);
     assert.equal(reader.stringIn('api', 'missing'), undefined);
   });
 
-  it('no lee claves de un nivel más profundo ni de comentarios', () => {
+  it('does not read keys from a deeper level or from comments', () => {
     const reader = new TfvarsBlockReader(
       'api = {\n  nested = {\n    runtime = "lambda"\n  }\n}\n',
     );
@@ -58,25 +58,25 @@ describe('TfvarsBlockReader', () => {
     assert.equal(commented.stringIn('api', 'runtime'), undefined);
   });
 
-  it('ignora comentarios al leer valores', () => {
+  it('ignores comments when reading values', () => {
     const reader = new TfvarsBlockReader(
       'api = {\n  runtime = "fargate" # lambda\n}\n',
     );
     assert.equal(reader.stringIn('api', 'runtime'), 'fargate');
   });
 
-  it('lee valores sin sangría del nivel principal', () => {
+  it('reads unindented values from the top level', () => {
     const reader = new TfvarsBlockReader(SAMPLE);
     assert.equal(reader.topLevelString('service_name'), 'fixture-mixed');
     assert.equal(reader.topLevelString('runtime'), undefined);
     const indented = new TfvarsBlockReader(
-      'api = {\n  service_name = "otro"\n}\n',
+      'api = {\n  service_name = "other"\n}\n',
     );
     assert.equal(indented.topLevelString('service_name'), undefined);
   });
 
-  it('falla si un bloque no se cierra', () => {
+  it('fails if a block is not closed', () => {
     const reader = new TfvarsBlockReader('api = {\n  runtime = "fargate"\n');
-    assert.throws(() => reader.block('api'), /sin cerrar/);
+    assert.throws(() => reader.block('api'), /Unclosed block/);
   });
 });

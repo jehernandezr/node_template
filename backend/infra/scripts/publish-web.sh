@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Uploads the built web app to the environment web bucket and invalidates CloudFront.
+# Uploads the built web app to the web bucket of the environment and invalidates CloudFront.
 # Usage: publish-web.sh <environment>
-# Variables: NAME_PREFIX and AWS_REGION (required). Requires flutter build web to have run
-# in front/apps/web. Bootstrap files and manifests go with no-cache; the rest,
+# Variables: NAME_PREFIX and AWS_REGION (required). Requires having run flutter build web
+# in front/apps/web. The bootstrap files and the manifests go with no-cache; the rest,
 # immutable. If CloudFront has no distribution for the bucket, it ends without invalidating.
 # DRY_RUN=1 prints the commands.
 set -euo pipefail
@@ -24,7 +24,7 @@ fi
 
 account="$(capture aws sts get-caller-identity --query Account --output text)"
 bucket="$NAME_PREFIX-web-$account"
-log "Publishing the $ENVIRONMENT web app to s3://$bucket"
+log "Publishing the web app of $ENVIRONMENT to s3://$bucket"
 
 run aws s3 sync "$web_dir" "s3://$bucket" --delete \
   --cache-control 'public,max-age=31536000,immutable' \

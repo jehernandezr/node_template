@@ -54,7 +54,7 @@ function thrownBy(action: () => unknown): SagaError | null {
 
 describe('SagaInstance', () => {
   describe('start', () => {
-    it('nace en Running, en el paso 0 hacia delante, con versión 0 y el lease de la corrida', () => {
+    it('starts in Running, at step 0 going forward, with version 0 and the run lease', () => {
       const instance = SagaInstance.start(startInput(undefined));
 
       expect(instance.toProps()).toEqual({
@@ -81,7 +81,7 @@ describe('SagaInstance', () => {
       });
     });
 
-    it('normaliza el contexto y conserva solo los campos presentes', () => {
+    it('normalizes the context and keeps only the present fields', () => {
       const instance = SagaInstance.start(
         startInput({ tenantId: 'tenant-1', actorId: undefined }),
       );
@@ -90,7 +90,7 @@ describe('SagaInstance', () => {
       expect(Object.keys(instance.context ?? {})).toEqual(['tenantId']);
     });
 
-    it('guarda null cuando el contexto queda vacío', () => {
+    it('stores null when the context ends up empty', () => {
       const instance = SagaInstance.start(
         startInput({ tenantId: undefined, actorId: undefined }),
       );
@@ -99,7 +99,7 @@ describe('SagaInstance', () => {
       expect(instance.tenantId).toBeNull();
     });
 
-    it('expone el tenant del contexto', () => {
+    it('exposes the tenant of the context', () => {
       const instance = SagaInstance.start(
         startInput({ tenantId: 'tenant-7', traceparent: '00-a-b-01' }),
       );
@@ -110,7 +110,7 @@ describe('SagaInstance', () => {
   });
 
   describe('finish', () => {
-    it('detiene la saga en RequiresIntervention con el código y el detalle', () => {
+    it('stops the saga in RequiresIntervention with the code and the detail', () => {
       const instance = SagaInstanceBuilder.aSaga()
         .with({
           status: SagaStatus.Suspended,
@@ -118,18 +118,18 @@ describe('SagaInstance', () => {
           suspendedSince: at(0),
         })
         .build()
-        .finish(SagaStatus.RequiresIntervention, 'X.Y', 'detalle', at(50));
+        .finish(SagaStatus.RequiresIntervention, 'X.Y', 'detail', at(50));
 
       expect(instance.status).toBe(SagaStatus.RequiresIntervention);
       expect(instance.nextAttemptAt).toBeNull();
       expect(instance.suspendedSince).toBeNull();
       expect(instance.lastErrorCode).toBe('X.Y');
-      expect(instance.lastErrorDetail).toBe('detalle');
+      expect(instance.lastErrorDetail).toBe('detail');
       expect(instance.updatedAt).toEqual(at(50));
       expect(instance.isFinished()).toBe(true);
     });
 
-    it('también puede dejar la compensación en CompensationFailed', () => {
+    it('can also leave the compensation in CompensationFailed', () => {
       const instance = SagaInstanceBuilder.aSaga()
         .with({
           direction: StepDirection.Compensate,
@@ -145,7 +145,7 @@ describe('SagaInstance', () => {
     });
   });
 
-  describe('estados y plazo', () => {
+  describe('states and deadline', () => {
     it.each([
       SagaStatus.Completed,
       SagaStatus.Compensated,
@@ -161,13 +161,13 @@ describe('SagaInstance', () => {
       SagaStatus.Running,
       SagaStatus.Suspended,
       SagaStatus.Compensating,
-    ])('%s está abierta', (status) => {
+    ])('%s is open', (status) => {
       expect(
         SagaInstanceBuilder.aSaga().with({ status }).build().isFinished(),
       ).toBe(false);
     });
 
-    it('el plazo se cumple en su instante exacto y nunca si no existe', () => {
+    it('the deadline is met at its exact instant and never if it does not exist', () => {
       const withDeadline = SagaInstanceBuilder.aSaga()
         .with({ deadlineAt: at(1_000) })
         .build();
@@ -181,7 +181,7 @@ describe('SagaInstance', () => {
   });
 
   describe('reusableFor', () => {
-    it('devuelve la misma instancia con el mismo tipo y digest', () => {
+    it('returns the same instance with the same type and digest', () => {
       const instance = SagaInstanceBuilder.aSaga()
         .with({ inputDigest: 'd1' })
         .build();
@@ -189,15 +189,15 @@ describe('SagaInstance', () => {
       expect(instance.reusableFor('tenant.onboarding', 'd1')).toBe(instance);
     });
 
-    it('rechaza otro tipo con IdempotencyKeyConflict', () => {
+    it('rejects another type with IdempotencyKeyConflict', () => {
       const instance = SagaInstanceBuilder.aSaga().build();
 
       expect(
-        thrownBy(() => instance.reusableFor('otro', 'digest-1'))?.code,
+        thrownBy(() => instance.reusableFor('other', 'digest-1'))?.code,
       ).toBe(SagaErrorCode.IdempotencyKeyConflict);
     });
 
-    it('rechaza otro digest con IdempotencyKeyConflict y el id de la saga en details', () => {
+    it('rejects another digest with IdempotencyKeyConflict and the saga id in details', () => {
       const instance = SagaInstanceBuilder.aSaga()
         .with({ inputDigest: 'd1' })
         .build();
@@ -211,8 +211,8 @@ describe('SagaInstance', () => {
     });
   });
 
-  describe('transiciones', () => {
-    it('recordDispatch pasa a Running hacia delante y a Compensating al deshacer', () => {
+  describe('transitions', () => {
+    it('recordDispatch moves to Running going forward and to Compensating when undoing', () => {
       const instance = SagaInstanceBuilder.aSaga()
         .with({ nextAttemptAt: at(3) })
         .build();
@@ -226,7 +226,7 @@ describe('SagaInstance', () => {
       expect(back.status).toBe(SagaStatus.Compensating);
     });
 
-    it('completeStep avanza, aplica el estado y limpia el error de intentos previos', () => {
+    it('completeStep advances, applies the state and clears the error from previous attempts', () => {
       const compiled = new ThreeStepSaga().build(resolver);
       const instance = SagaInstanceBuilder.aSaga()
         .with({
@@ -251,7 +251,7 @@ describe('SagaInstance', () => {
       expect(next.updatedAt).toEqual(at(20));
     });
 
-    it('completeStep del último paso termina en Completed y deja el índice en ese paso', () => {
+    it('completeStep of the last step ends in Completed and leaves the index on that step', () => {
       const compiled = new ThreeStepSaga().build(resolver);
       const instance = SagaInstanceBuilder.aSaga()
         .with({ currentStep: 2 })
@@ -263,7 +263,7 @@ describe('SagaInstance', () => {
       expect(done.currentStep).toBe(2);
     });
 
-    it('startCompensation apunta al paso compensable más alto y conserva el error', () => {
+    it('startCompensation points to the highest compensable step and keeps the error', () => {
       const compiled = new ThreeStepSaga().build(resolver);
       const steps = StepLog.of([
         SagaInstanceBuilder.aStep(SAGA_ID, 0, { status: StepStatus.Succeeded }),
@@ -278,7 +278,7 @@ describe('SagaInstance', () => {
         steps,
         1,
         'SOLD_OUT',
-        'detalle',
+        'detail',
         at(4),
       );
 
@@ -286,10 +286,10 @@ describe('SagaInstance', () => {
       expect(compensating.status).toBe(SagaStatus.Compensating);
       expect(compensating.currentStep).toBe(1);
       expect(compensating.lastErrorCode).toBe('SOLD_OUT');
-      expect(compensating.lastErrorDetail).toBe('detalle');
+      expect(compensating.lastErrorDetail).toBe('detail');
     });
 
-    it('startCompensation termina en Compensated cuando nada necesita deshacerse', () => {
+    it('startCompensation ends in Compensated when nothing needs undoing', () => {
       const compiled = new ThreeStepSaga().build(resolver);
       const instance = SagaInstanceBuilder.aSaga()
         .with({ currentStep: 0 })
@@ -308,7 +308,7 @@ describe('SagaInstance', () => {
       expect(done.currentStep).toBe(0);
     });
 
-    it('startCompensation salta los pasos de solo lectura', () => {
+    it('startCompensation skips read-only steps', () => {
       const compiled = new LookupSaga().build(resolver);
       const steps = StepLog.of([
         SagaInstanceBuilder.aStep(SAGA_ID, 0, { status: StepStatus.Succeeded }),
@@ -330,7 +330,7 @@ describe('SagaInstance', () => {
       expect(compensating.currentStep).toBe(0);
     });
 
-    it('completeCompensation conserva la dirección y el error que inició la compensación', () => {
+    it('completeCompensation keeps the direction and the error that started the compensation', () => {
       const compiled = new ThreeStepSaga().build(resolver);
       const steps = StepLog.of([
         SagaInstanceBuilder.aStep(SAGA_ID, 0, { status: StepStatus.Succeeded }),
@@ -341,7 +341,7 @@ describe('SagaInstance', () => {
           status: SagaStatus.Compensating,
           currentStep: 1,
           lastErrorCode: 'SOLD_OUT',
-          lastErrorDetail: 'detalle',
+          lastErrorDetail: 'detail',
           attempts: 2,
         })
         .build();
@@ -353,10 +353,10 @@ describe('SagaInstance', () => {
       expect(next.currentStep).toBe(0);
       expect(next.attempts).toBe(0);
       expect(next.lastErrorCode).toBe('SOLD_OUT');
-      expect(next.lastErrorDetail).toBe('detalle');
+      expect(next.lastErrorDetail).toBe('detail');
     });
 
-    it('completeCompensation termina en Compensated al no quedar nada por deshacer', () => {
+    it('completeCompensation ends in Compensated when nothing is left to undo', () => {
       const compiled = new ThreeStepSaga().build(resolver);
       const instance = SagaInstanceBuilder.aSaga()
         .with({
@@ -376,7 +376,7 @@ describe('SagaInstance', () => {
       expect(next.status).toBe(SagaStatus.Compensated);
     });
 
-    it('suspend pausa con el backoff y conserva el inicio de la suspensión', () => {
+    it('suspend pauses with the backoff and keeps the suspension start', () => {
       const instance = SagaInstanceBuilder.aSaga().build();
 
       const first = instance.suspend('TRANSIENT', 'timeout', at(100), POLICY);
@@ -394,7 +394,7 @@ describe('SagaInstance', () => {
       expect(second.status).toBe(SagaStatus.Suspended);
     });
 
-    it('suspend exige intervención al superar los intentos y conserva el inicio', () => {
+    it('suspend requires intervention when attempts are exceeded and keeps the start', () => {
       const exhausted = SagaInstanceBuilder.aSaga()
         .with({ attempts: 2, suspendedSince: at(100) })
         .build()
@@ -405,7 +405,7 @@ describe('SagaInstance', () => {
       expect(exhausted.suspendedSince).toEqual(at(100));
     });
 
-    it('suspend exige intervención al superar la antigüedad máxima', () => {
+    it('suspend requires intervention when the maximum age is exceeded', () => {
       const aged = SagaInstanceBuilder.aSaga()
         .with({ suspendedSince: at(0) })
         .build()
@@ -415,7 +415,7 @@ describe('SagaInstance', () => {
       expect(aged.nextAttemptAt).toBeNull();
     });
 
-    it('withVersion y withLease cambian solo su campo', () => {
+    it('withVersion and withLease change only their field', () => {
       const instance = SagaInstanceBuilder.aSaga().build();
 
       expect(instance.withVersion(4).version).toBe(4);
@@ -423,7 +423,7 @@ describe('SagaInstance', () => {
       expect(instance.withLease(null, null).leaseUntil).toBeNull();
     });
 
-    it('rehydrate devuelve los mismos campos', () => {
+    it('rehydrate returns the same fields', () => {
       const instance = SagaInstanceBuilder.aSaga().build();
 
       expect(SagaInstance.rehydrate(instance.toProps()).toProps()).toEqual(

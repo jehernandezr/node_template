@@ -12,14 +12,14 @@ export class HttpRouteRegistry {
   register(entry: RegisteredEndpoint): void {
     const key = `${entry.route.method} ${entry.route.path}`;
     if (this.byRoute.has(key)) {
-      throw new Error(`La ruta ${key} tiene más de un handler`);
+      throw new Error(`Route ${key} has more than one handler`);
     }
     if (
       entry.route.access.kind === AccessKind.Public &&
       entry.options.auth !== undefined
     ) {
       throw new Error(
-        `La ruta pública ${entry.route.id} no puede declarar auth en @Endpoint`,
+        `Public route ${entry.route.id} cannot declare auth in @Endpoint`,
       );
     }
     this.byRoute.set(key, entry);
@@ -40,14 +40,12 @@ export class HttpRouteRegistry {
     }
     const parts: string[] = [];
     if (missing.length > 0) {
-      parts.push(`sin handler: ${missing.join(', ')}`);
+      parts.push(`no handler: ${missing.join(', ')}`);
     }
     if (extra.length > 0) {
-      parts.push(`fuera del contrato: ${extra.join(', ')}`);
+      parts.push(`outside the contract: ${extra.join(', ')}`);
     }
-    throw new Error(
-      `Las rutas no coinciden con el contrato (${parts.join('; ')})`,
-    );
+    throw new Error(`Routes do not match the contract (${parts.join('; ')})`);
   }
 
   findByRouteId(id: string): RegisteredEndpoint | undefined {

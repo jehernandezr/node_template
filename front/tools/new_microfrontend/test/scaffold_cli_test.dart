@@ -30,7 +30,7 @@ void main() {
 
   test('without an id it is a usage error', () async {
     expect(await cli().run(['--menu', 'Reportes']), 64);
-    expect(err.toString(), contains('Uso:'));
+    expect(err.toString(), contains('Usage:'));
   });
 
   test('without --menu it is a usage error', () async {

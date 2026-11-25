@@ -9,21 +9,21 @@ export const kernelErrorCatalog = defineErrorCatalog(KernelErrorCode, {
   [KernelErrorCode.InvalidId]: ErrorSpecs.pub(
     400,
     false,
-    'El identificador no tiene un formato válido.',
+    'The identifier does not have a valid format.',
   ),
   [KernelErrorCode.GuardViolation]: ErrorSpecs.internal(
     500,
     false,
-    'Un argumento no cumple el rango o el tipo esperado.',
+    'An argument does not meet the expected range or type.',
   ),
   [KernelErrorCode.InvalidTenantId]: ErrorSpecs.pub(
     400,
     false,
-    'El identificador del tenant no es válido.',
+    'The tenant identifier is not valid.',
   ),
   [KernelErrorCode.InvalidMoney]: ErrorSpecs.pub(
     400,
     false,
-    'El monto o la moneda no son válidos.',
+    'The amount or the currency is not valid.',
   ),
 });

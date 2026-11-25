@@ -16,7 +16,7 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // NestJS 12 is published only as ESM: it must be transformed for Jest to load it.
+  // NestJS 12 is published only as ESM: it has to be transformed for Jest to load it.
   transformIgnorePatterns: [
     '/node_modules/(?!(\\.pnpm/)?((uuid|cockatiel|uid|load-esm)[@/]|@nestjs[@/+]))',
   ],

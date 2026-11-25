@@ -10,12 +10,12 @@ describe('SchemaOwnership', () => {
       const invoice = z.object({ total: z.number() });
       const identity = defineServiceContract({
         service: 'identity',
-        description: 'Identidad.',
+        description: 'Identity.',
         schemas: { Session: session },
       });
       const billing = defineServiceContract({
         service: 'billing',
-        description: 'Facturación.',
+        description: 'Billing.',
         schemas: { Invoice: invoice },
       });
 
@@ -35,12 +35,12 @@ describe('SchemaOwnership', () => {
       const shared = z.object({ id: z.string() });
       const identity = defineServiceContract({
         service: 'identity',
-        description: 'Identidad.',
+        description: 'Identity.',
         schemas: { Shared: shared },
       });
       const platform = defineServiceContract({
         service: 'platform',
-        description: 'Plataforma.',
+        description: 'Platform.',
         schemas: { Other: shared },
       });
 

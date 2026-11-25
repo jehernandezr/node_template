@@ -9,7 +9,7 @@ describe('IdentityTestEnvironment', () => {
   });
 
   it('keeps identity as the service name even when the base sets another', () => {
-    const env = IdentityTestEnvironment.build({ SERVICE_NAME: 'otro' });
+    const env = IdentityTestEnvironment.build({ SERVICE_NAME: 'other' });
 
     expect(env['SERVICE_NAME']).toBe('identity');
     expect(identityConfigSchema.parse(env).SERVICE_NAME).toBe('identity');

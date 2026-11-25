@@ -80,12 +80,12 @@ describe('billing internal operations', () => {
       tenantId: Ids.tenant,
       invoiceId: Ids.item,
       paidAt: Now,
-      reference: 'pago-2026-11-13',
+      reference: 'payment-2026-11-13',
       amount: { amountMinor: 189_000, currency: 'COP' },
     };
     expect(validateContract(input, valid).ok).toBe(true);
     expect(validateContract(input, { ...valid, reference: '' }).ok).toBe(false);
-    expect(validateContract(input, { ...valid, paidAt: 'ayer' }).ok).toBe(
+    expect(validateContract(input, { ...valid, paidAt: 'yesterday' }).ok).toBe(
       false,
     );
     expect(validateContract(input, { ...valid, tenantId: UuidV4 }).ok).toBe(

@@ -77,7 +77,7 @@ export class ServiceTestServers {
 
   private service(): ProvisionedService {
     if (this.provisioned === undefined) {
-      throw new Error('ServiceTestServers no está iniciado');
+      throw new Error('ServiceTestServers is not started');
     }
     return this.provisioned;
   }

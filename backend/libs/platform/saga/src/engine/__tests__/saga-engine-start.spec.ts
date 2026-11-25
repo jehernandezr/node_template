@@ -38,8 +38,8 @@ async function codeOf(action: Promise<unknown>): Promise<unknown> {
 }
 
 describe('SagaEngine.start', () => {
-  describe('arranque idempotente', () => {
-    it('devuelve la instancia existente sin volver a correr la saga', async () => {
+  describe('idempotent start', () => {
+    it('returns the existing instance without running the saga again', async () => {
       const { kit, participant } = setup();
 
       const first = await kit.sagas.start(
@@ -62,7 +62,7 @@ describe('SagaEngine.start', () => {
       expect(participant.operations()).toHaveLength(3);
     });
 
-    it('considera la misma entrada aunque las llaves vengan en otro orden', async () => {
+    it('treats the input as the same even when the keys come in another order', async () => {
       const { kit, participant } = setup();
 
       const first = await kit.sagas.start(
@@ -80,7 +80,7 @@ describe('SagaEngine.start', () => {
       expect(participant.operations()).toHaveLength(3);
     });
 
-    it('rechaza la misma llave con otra entrada con IdempotencyKeyConflict', async () => {
+    it('rejects the same key with another input with IdempotencyKeyConflict', async () => {
       const { kit, participant } = setup();
       await kit.sagas.start(
         ThreeStepSaga,
@@ -100,7 +100,7 @@ describe('SagaEngine.start', () => {
       expect(participant.operations()).toHaveLength(3);
     });
 
-    it('rechaza la misma llave de otro tipo de saga', async () => {
+    it('rejects the same key from another saga type', async () => {
       const { kit } = setup();
       await kit.sagas.start(ThreeStepSaga, {}, { idempotencyKey: 'k1' });
 
@@ -109,7 +109,7 @@ describe('SagaEngine.start', () => {
       ).toBe(SagaErrorCode.IdempotencyKeyConflict);
     });
 
-    it('guarda la huella de la entrada inicial con la instancia', async () => {
+    it('stores the fingerprint of the initial input with the instance', async () => {
       const { kit } = setup();
 
       await kit.sagas.start(ThreeStepSaga, { a: 'x' }, {
@@ -123,8 +123,8 @@ describe('SagaEngine.start', () => {
     });
   });
 
-  describe('validación de entrada', () => {
-    it('rechaza un estado que no sobrevive a JSON con InvalidState', async () => {
+  describe('input validation', () => {
+    it('rejects a state that does not survive JSON with InvalidState', async () => {
       const { kit } = setup();
 
       expect(
@@ -135,7 +135,7 @@ describe('SagaEngine.start', () => {
       ).toBe(SagaErrorCode.InvalidState);
     });
 
-    it('rechaza un tipo de saga desconocido con UnknownDefinition', async () => {
+    it('rejects an unknown saga type with UnknownDefinition', async () => {
       const { kit } = setup();
 
       expect(await codeOf(kit.engine.start('unknown', {}))).toBe(
@@ -144,8 +144,8 @@ describe('SagaEngine.start', () => {
     });
   });
 
-  describe('transacciones del caso de uso', () => {
-    it('crea la instancia dentro de la transacción y la corre tras el commit', async () => {
+  describe('use case transactions', () => {
+    it('creates the instance inside the transaction and runs it after commit', async () => {
       const transactions = new InMemoryTransactionManager();
       const { kit, participant } = setup({ transactions });
       let id = '';
@@ -165,7 +165,7 @@ describe('SagaEngine.start', () => {
       expect(participant.operations()).toHaveLength(3);
     });
 
-    it('no ejecuta ningún paso si la transacción se deshace después de arrancar', async () => {
+    it('runs no step if the transaction rolls back after starting', async () => {
       const transactions = new InMemoryTransactionManager();
       const { kit, participant } = setup({ transactions });
 
@@ -179,7 +179,7 @@ describe('SagaEngine.start', () => {
       expect(participant.calls).toHaveLength(0);
     });
 
-    it('fuera de una transacción corre la saga de inmediato', async () => {
+    it('outside a transaction it runs the saga immediately', async () => {
       const transactions = new InMemoryTransactionManager();
       const { kit, participant } = setup({ transactions });
 
@@ -190,8 +190,8 @@ describe('SagaEngine.start', () => {
     });
   });
 
-  describe('eventos y oyentes', () => {
-    it('no emite nada al reanudar una saga ya terminada', async () => {
+  describe('events and listeners', () => {
+    it('emits nothing when resuming an already finished saga', async () => {
       const { kit } = setup();
       await kit.sagas.start(ThreeStepSaga, {}, { sagaId: 's1' });
       const events: SagaEventKind[] = [];
@@ -205,7 +205,7 @@ describe('SagaEngine.start', () => {
       expect(events).toEqual([]);
     });
 
-    it('no emite nada cuando un reintento deja la saga suspendida', async () => {
+    it('emits nothing when a retry leaves the saga suspended', async () => {
       const { kit, participant } = setup();
       participant.script(
         'b.create.v1',
@@ -227,7 +227,7 @@ describe('SagaEngine.start', () => {
       expect(events).toEqual([]);
     });
 
-    it('ignora los oyentes que lanzan o rechazan', async () => {
+    it('ignores listeners that throw or reject', async () => {
       const { kit } = setup();
       kit.events.subscribe(() => {
         throw new Error('sync listener');
@@ -240,8 +240,8 @@ describe('SagaEngine.start', () => {
     });
   });
 
-  describe('identificadores y tokens', () => {
-    it('genera el id de la saga y el token del lease con el IdGenerator', async () => {
+  describe('identifiers and tokens', () => {
+    it('generates the saga id and the lease token with the IdGenerator', async () => {
       const store = new (class extends InMemorySagaStore {
         readonly tokens: string[] = [];
 

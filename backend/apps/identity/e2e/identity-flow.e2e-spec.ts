@@ -18,7 +18,7 @@ runtime.describeIfAvailable('identity end to end', () => {
   jest.setTimeout(180_000);
 
   const app = new IdentityTestApp();
-  const ana = new IdentityJourney(app, 'ana.flujo@example.com');
+  const ana = new IdentityJourney(app, 'ana.flow@example.com');
   let first: SessionTokensBody;
   let fromBrowser: SessionTokensBody;
   let deviceId: string;
@@ -115,7 +115,7 @@ runtime.describeIfAvailable('identity end to end', () => {
   it('asks for step-up to change the password and then revokes the other sessions', async () => {
     const recognized = await ana.signInFromDevice(deviceId);
     const session = (recognized.body as { tokens: SessionTokensBody }).tokens;
-    const newPassword = ['Otra', 'frase', 'larga', 'distinta', '2026'].join(
+    const newPassword = ['Another', 'long', 'different', 'phrase', '2026'].join(
       '-',
     );
     const change = { currentPassword: IdentityJourney.PASSWORD, newPassword };
@@ -163,7 +163,7 @@ runtime.describeIfAvailable('identity end to end', () => {
   });
 
   it('closes the session on sign-out so the refresh is rejected', async () => {
-    const bob = new IdentityJourney(app, 'bob.salida@example.com');
+    const bob = new IdentityJourney(app, 'bob.exit@example.com');
     await bob.register();
     const session = await bob.signInWithEmailCode();
 
@@ -222,16 +222,13 @@ runtime.describeIfAvailable('identity end to end', () => {
   });
 
   it('locks the sign-in after five failures, also for an unknown email', async () => {
-    const stranger = new IdentityJourney(app, 'nadie.registrado@example.com');
+    const stranger = new IdentityJourney(app, 'nobody.registered@example.com');
     const attempts = [1, 2, 3, 4, 5];
 
     const responses = [];
     for (const attempt of attempts) {
       responses.push(
-        await stranger.signIn(
-          stranger.native(),
-          `contraseña-incorrecta-${attempt}`,
-        ),
+        await stranger.signIn(stranger.native(), `wrong-password-${attempt}`),
       );
     }
 

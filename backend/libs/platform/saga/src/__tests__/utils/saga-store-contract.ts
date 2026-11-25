@@ -20,7 +20,7 @@ export function runSagaStoreContract(
   name: string,
   createHarness: () => Promise<SagaStoreHarness>,
 ): void {
-  describe(`${name} cumple el contrato de SagaStore`, () => {
+  describe(`${name} meets the SagaStore contract`, () => {
     let harness: SagaStoreHarness;
     const inStore = <T>(body: () => Promise<T>): Promise<T> =>
       harness.within(body);
@@ -38,8 +38,8 @@ export function runSagaStoreContract(
       await harness.reset();
     });
 
-    describe('create, get y findByIdempotencyKey', () => {
-      it('guarda y devuelve todos los campos', () =>
+    describe('create, get and findByIdempotencyKey', () => {
+      it('stores and returns every field', () =>
         inStore(async () => {
           const original = saga(1)
             .with({
@@ -53,7 +53,7 @@ export function runSagaStoreContract(
               },
               deadlineAt: at(10_000),
               lastErrorCode: 'X.Y.Z',
-              lastErrorDetail: 'detalle',
+              lastErrorDetail: 'detail',
               attempts: 2,
               suspendedSince: at(5),
               nextAttemptAt: at(6),
@@ -64,13 +64,15 @@ export function runSagaStoreContract(
           expect(read?.toProps()).toEqual(original.toProps());
         }));
 
-      it('devuelve null para una saga que no existe', () =>
+      it('returns null for a saga that does not exist', () =>
         inStore(async () => {
           expect(await harness.store.get(id(99))).toBeNull();
-          expect(await harness.store.findByIdempotencyKey('nada')).toBeNull();
+          expect(
+            await harness.store.findByIdempotencyKey('nothing'),
+          ).toBeNull();
         }));
 
-      it('rechaza un id repetido con DuplicateSaga', () =>
+      it('rejects a repeated id with DuplicateSaga', () =>
         inStore(async () => {
           await harness.store.create(saga(1).build());
           await expect(
@@ -78,7 +80,7 @@ export function runSagaStoreContract(
           ).rejects.toMatchObject({ code: SagaErrorCode.DuplicateSaga });
         }));
 
-      it('rechaza una llave de idempotencia repetida y la encuentra', () =>
+      it('rejects a repeated idempotency key and finds it', () =>
         inStore(async () => {
           await harness.store.create(
             saga(1).with({ idempotencyKey: 'k' }).build(),
@@ -91,7 +93,7 @@ export function runSagaStoreContract(
           );
         }));
 
-      it('admite varias instancias sin llave', () =>
+      it('allows several instances without a key', () =>
         inStore(async () => {
           await harness.store.create(saga(1).build());
           await harness.store.create(saga(2).build());
@@ -99,8 +101,8 @@ export function runSagaStoreContract(
         }));
     });
 
-    describe('commitStep y dispatchStep', () => {
-      it('escribe instancia y paso juntos y sube la versión en uno', () =>
+    describe('commitStep and dispatchStep', () => {
+      it('writes instance and step together and bumps the version by one', () =>
         inStore(async () => {
           await createLeased(1);
           const dispatched = SagaInstanceBuilder.aStep(id(1), 0);
@@ -115,12 +117,12 @@ export function runSagaStoreContract(
           expect(await harness.store.steps(id(1))).toEqual([dispatched]);
         }));
 
-      it('no cambia el lease: lo manejan los métodos de lease', () =>
+      it('does not change the lease: the lease methods handle it', () =>
         inStore(async () => {
           await createLeased(1);
           const saved = await harness.store.commitStep({
             instance: saga(1)
-              .with({ leaseToken: 'otro', leaseUntil: null })
+              .with({ leaseToken: 'other', leaseUntil: null })
               .build(),
             expectedVersion: 0,
             leaseToken: TOKEN,
@@ -129,7 +131,7 @@ export function runSagaStoreContract(
           expect(saved.leaseUntil).toEqual(at(60_000));
         }));
 
-      it('reemplaza la entrada del mismo paso y dirección', () =>
+      it('replaces the entry for the same step and direction', () =>
         inStore(async () => {
           await createLeased(1);
           await harness.store.dispatchStep({
@@ -152,7 +154,7 @@ export function runSagaStoreContract(
           expect(await harness.store.steps(id(1))).toEqual([done]);
         }));
 
-      it('devuelve la bitácora por paso, con hacia delante antes que compensar', () =>
+      it('returns the log per step, with forward before compensate', () =>
         inStore(async () => {
           await createLeased(1);
           const entries = [
@@ -180,14 +182,14 @@ export function runSagaStoreContract(
           ]);
         }));
 
-      it('rechaza un token ajeno con LeaseLost sin escribir nada', () =>
+      it('rejects a foreign token with LeaseLost without writing anything', () =>
         inStore(async () => {
           await createLeased(1);
           await expect(
             harness.store.commitStep({
               instance: saga(1).with({ status: SagaStatus.Completed }).build(),
               expectedVersion: 0,
-              leaseToken: 'intruso',
+              leaseToken: 'intruder',
               step: SagaInstanceBuilder.aStep(id(1), 0),
             }),
           ).rejects.toMatchObject({ code: SagaErrorCode.LeaseLost });
@@ -197,7 +199,7 @@ export function runSagaStoreContract(
           expect(await harness.store.steps(id(1))).toEqual([]);
         }));
 
-      it('rechaza una versión vieja con ConcurrentModification sin escribir nada', () =>
+      it('rejects a stale version with ConcurrentModification without writing anything', () =>
         inStore(async () => {
           await createLeased(1);
           await harness.store.commitStep({
@@ -219,7 +221,7 @@ export function runSagaStoreContract(
           expect(await harness.store.steps(id(1))).toEqual([]);
         }));
 
-      it('rechaza una saga que no existe con NotFound', () =>
+      it('rejects a saga that does not exist with NotFound', () =>
         inStore(async () => {
           await expect(
             harness.store.commitStep({
@@ -230,7 +232,7 @@ export function runSagaStoreContract(
           ).rejects.toMatchObject({ code: SagaErrorCode.NotFound });
         }));
 
-      it('dispatchStep solo acepta entradas Dispatched', () =>
+      it('dispatchStep only accepts Dispatched entries', () =>
         inStore(async () => {
           await createLeased(1);
           await expect(
@@ -247,7 +249,7 @@ export function runSagaStoreContract(
     });
 
     describe('leases', () => {
-      it('toma el lease libre y lo rechaza mientras otro lo tiene', () =>
+      it('takes the free lease and rejects it while another holds it', () =>
         inStore(async () => {
           await harness.store.create(saga(1).build());
           expect(
@@ -256,7 +258,7 @@ export function runSagaStoreContract(
           expect(
             await harness.store.tryAcquireLease(
               id(1),
-              'otro',
+              'other',
               at(2_000),
               at(500),
             ),
@@ -266,41 +268,41 @@ export function runSagaStoreContract(
           expect(read?.leaseUntil).toEqual(at(1_000));
         }));
 
-      it('toma un lease vencido', () =>
+      it('takes over an expired lease', () =>
         inStore(async () => {
           await harness.store.create(saga(1).build());
           await harness.store.tryAcquireLease(id(1), TOKEN, at(1_000), NOW);
           expect(
             await harness.store.tryAcquireLease(
               id(1),
-              'otro',
+              'other',
               at(9_000),
               at(1_000),
             ),
           ).toBe(true);
-          expect((await harness.store.get(id(1)))?.leaseToken).toBe('otro');
+          expect((await harness.store.get(id(1)))?.leaseToken).toBe('other');
         }));
 
-      it('devuelve false al tomar el lease de una saga que no existe', () =>
+      it('returns false when taking the lease of a saga that does not exist', () =>
         inStore(async () => {
           expect(
             await harness.store.tryAcquireLease(id(9), TOKEN, at(1_000), NOW),
           ).toBe(false);
         }));
 
-      it('solo el dueño renueva y suelta', () =>
+      it('only the owner renews and releases', () =>
         inStore(async () => {
           await createLeased(1, at(1_000));
-          expect(await harness.store.renewLease(id(1), 'otro', at(5_000))).toBe(
-            false,
-          );
+          expect(
+            await harness.store.renewLease(id(1), 'other', at(5_000)),
+          ).toBe(false);
           expect(await harness.store.renewLease(id(1), TOKEN, at(5_000))).toBe(
             true,
           );
           expect((await harness.store.get(id(1)))?.leaseUntil).toEqual(
             at(5_000),
           );
-          await harness.store.releaseLease(id(1), 'otro');
+          await harness.store.releaseLease(id(1), 'other');
           expect((await harness.store.get(id(1)))?.leaseToken).toBe(TOKEN);
           await harness.store.releaseLease(id(1), TOKEN);
           const released = await harness.store.get(id(1));
@@ -310,7 +312,7 @@ export function runSagaStoreContract(
     });
 
     describe('findRecoverable', () => {
-      it('devuelve lo que necesita una corrida y nada más', () =>
+      it('returns what a run needs and nothing more', () =>
         inStore(async () => {
           const create = (
             n: number,
@@ -350,7 +352,7 @@ export function runSagaStoreContract(
           ]);
         }));
 
-      it('respeta el límite y entrega primero las más antiguas', () =>
+      it('respects the limit and delivers the oldest first', () =>
         inStore(async () => {
           for (const [n, updatedAt] of [
             [1, at(-30)],
@@ -365,7 +367,7 @@ export function runSagaStoreContract(
     });
 
     describe('purge', () => {
-      it('borra solo las terminadas con éxito y viejas, con su bitácora', () =>
+      it('deletes only old sagas that finished successfully, with their log', () =>
         inStore(async () => {
           const create = (n: number, status: SagaStatus, updatedAt: Date) =>
             harness.store.create(saga(n).with({ status, updatedAt }).build());
@@ -393,7 +395,7 @@ export function runSagaStoreContract(
           }
         }));
 
-      it('respeta el límite', () =>
+      it('respects the limit', () =>
         inStore(async () => {
           for (const n of [1, 2, 3]) {
             await harness.store.create(

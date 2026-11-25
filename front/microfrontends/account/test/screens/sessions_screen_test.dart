@@ -27,7 +27,7 @@ class _FlakyRepository extends FakeAccountRepository {
 }
 
 void main() {
-  testWidgets('muestra cargando y luego las sesiones', (tester) async {
+  testWidgets('shows loading and then the sessions', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -45,7 +45,7 @@ void main() {
     expect(find.text(es.sessionClose), findsNWidgets(2));
   });
 
-  testWidgets('muestra estado vacío sin sesiones', (tester) async {
+  testWidgets('shows empty state with no sessions', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -59,7 +59,7 @@ void main() {
     expect(find.text(es.sessionsEmptyTitle), findsOneWidget);
   });
 
-  testWidgets('cerrar sesión quita la fila', (tester) async {
+  testWidgets('signing out a session removes the row', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -77,28 +77,29 @@ void main() {
     expect(find.text(es.sessionClose), findsOneWidget);
   });
 
-  testWidgets('cerrar todas las demás pide MFA y deja solo la actual', (
-    tester,
-  ) async {
-    final es = await loadEs();
-    await tester.pumpWidget(
-      testApp(
-        SessionsScreen(
-          requestStepUp: approveStepUp,
-          repository: FakeAccountRepository(),
+  testWidgets(
+    'signing out all others requests MFA and keeps only the current one',
+    (tester) async {
+      final es = await loadEs();
+      await tester.pumpWidget(
+        testApp(
+          SessionsScreen(
+            requestStepUp: approveStepUp,
+            repository: FakeAccountRepository(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(es.sessionsCloseOthers));
-    await tester.pumpAndSettle();
-    expect(find.text('Safari en iPhone'), findsNothing);
-    expect(find.text('App en Pixel 8'), findsNothing);
-    expect(find.text('Chrome en MacBook'), findsOneWidget);
-    expect(find.text(es.sessionClose), findsNothing);
-  });
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(es.sessionsCloseOthers));
+      await tester.pumpAndSettle();
+      expect(find.text('Safari en iPhone'), findsNothing);
+      expect(find.text('App en Pixel 8'), findsNothing);
+      expect(find.text('Chrome en MacBook'), findsOneWidget);
+      expect(find.text(es.sessionClose), findsNothing);
+    },
+  );
 
-  testWidgets('un error de carga muestra el error con código y reintento', (
+  testWidgets('a load error shows the error with code and retry', (
     tester,
   ) async {
     final shared = await loadSharedEs();
@@ -119,26 +120,29 @@ void main() {
     );
   });
 
-  testWidgets('un error al cerrar una sesión muestra un aviso y deja la fila', (
+  testWidgets(
+    'an error signing out a session shows a notice and keeps the row',
+    (tester) async {
+      final es = await loadEs();
+      await tester.pumpWidget(
+        testApp(
+          SessionsScreen(
+            requestStepUp: approveStepUp,
+            repository: _FlakyRepository(failRevoke: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(es.sessionClose).first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(es.actionFailed), findsOneWidget);
+      expect(find.text('Safari en iPhone'), findsOneWidget);
+    },
+  );
+
+  testWidgets('with a recent second factor it does not request the step-up', (
     tester,
   ) async {
-    final es = await loadEs();
-    await tester.pumpWidget(
-      testApp(
-        SessionsScreen(
-          requestStepUp: approveStepUp,
-          repository: _FlakyRepository(failRevoke: true),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(es.sessionClose).first);
-    await tester.pumpAndSettle();
-    expect(find.textContaining(es.actionFailed), findsOneWidget);
-    expect(find.text('Safari en iPhone'), findsOneWidget);
-  });
-
-  testWidgets('con segundo factor reciente no pide el step-up', (tester) async {
     final es = await loadEs();
     final stepUp = RecordingStepUp();
     await tester.pumpWidget(
@@ -158,7 +162,7 @@ void main() {
     expect(find.text('Chrome en MacBook'), findsOneWidget);
   });
 
-  testWidgets('sin segundo factor reciente pide el step-up del shell', (
+  testWidgets('without a recent second factor it requests the shell step-up', (
     tester,
   ) async {
     final es = await loadEs();
@@ -178,7 +182,9 @@ void main() {
     expect(find.text('Safari en iPhone'), findsNothing);
   });
 
-  testWidgets('si el step-up no se completa, no cierra nada', (tester) async {
+  testWidgets('if the step-up is not completed, nothing is signed out', (
+    tester,
+  ) async {
     final es = await loadEs();
     final stepUp = RecordingStepUp(answer: false);
     await tester.pumpWidget(
@@ -197,7 +203,7 @@ void main() {
     expect(find.text('App en Pixel 8'), findsOneWidget);
   });
 
-  testWidgets('los textos salen en inglés con el locale en', (tester) async {
+  testWidgets('texts are in English with the en locale', (tester) async {
     final en = await loadEn();
     await tester.pumpWidget(
       testApp(

@@ -9,7 +9,7 @@ describe('persistenceErrorCatalog', () => {
     expect(persistenceErrorCatalog.map((entry) => entry.code)).toEqual(values);
   });
 
-  it.each(values)('uses the SERVICIO.SUBMODULO.ERROR format in %s', (code) => {
+  it.each(values)('uses the SERVICE.SUBMODULE.ERROR format in %s', (code) => {
     expect(code).toMatch(ERROR_CODE_PATTERN);
   });
 

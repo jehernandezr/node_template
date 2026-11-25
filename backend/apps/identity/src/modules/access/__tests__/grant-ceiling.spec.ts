@@ -128,14 +128,14 @@ describe('GrantCeiling', () => {
     await tenantAccess.insertGroup({
       id: 'group-custom',
       tenantId: TENANT,
-      name: 'Propio',
+      name: 'Own',
       systemRole: null,
       roleIds: [],
     });
     await tenantAccess.insertRole({
       id: 'role-custom',
       tenantId: TENANT,
-      name: 'Gestión',
+      name: 'Management',
       systemRole: null,
       permissions: [Permission.IdentityTenantManage],
     });
@@ -190,7 +190,7 @@ describe('GrantCeiling', () => {
 
   it('rejects groups that do not exist in the tenant', async () => {
     await expect(
-      members.setGroups(TENANT, ADMIN, ['group-ajeno'], ADMIN_PERMISSIONS),
+      members.setGroups(TENANT, ADMIN, ['group-foreign'], ADMIN_PERMISSIONS),
     ).rejects.toMatchObject({ code: PlatformErrorCode.ResourceNotFound });
   });
 
@@ -207,7 +207,7 @@ describe('GrantCeiling', () => {
       groups.setRoles(
         TENANT,
         'group-custom',
-        ['role-ajeno'],
+        ['role-foreign'],
         ADMIN_PERMISSIONS,
       ),
     ).rejects.toMatchObject({ code: PlatformErrorCode.ResourceNotFound });

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Uploads the built .aab to the artifacts bucket, under the commit tag.
 # Usage: publish-mobile.sh <environment>
-# Variables: ARTIFACTS_BUCKET, GIT_SHA and AWS_REGION (required). Store upload and release
-# signing are not automated here: they require the account holder's credentials.
+# Variables: ARTIFACTS_BUCKET, GIT_SHA and AWS_REGION (required). Upload to the stores and
+# release signing are not automated here: they need credentials of the account holder.
 # DRY_RUN=1 prints the commands and does not require the file.
 set -euo pipefail
 

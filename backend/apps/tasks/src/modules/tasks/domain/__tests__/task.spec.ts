@@ -12,7 +12,7 @@ const aSavedTask = (version = 3): Task =>
   Task.rehydrate({
     ...Task.create({
       id: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9c01',
-      title: 'Enviar la factura',
+      title: 'Send the invoice',
       description: '',
       createdBy: ANA,
       now: NOW,
@@ -24,8 +24,8 @@ describe('Task', () => {
   it('starts open, authored by its creator', () => {
     const task = Task.create({
       id: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9c01',
-      title: 'Enviar la factura',
-      description: 'De marzo',
+      title: 'Send the invoice',
+      description: 'For March',
       createdBy: ANA,
       now: NOW,
     });
@@ -43,7 +43,7 @@ describe('Task', () => {
       const task = aSavedTask();
 
       const change = task.change(
-        { title: 'Enviar la factura', status: TaskStatus.Done },
+        { title: 'Send the invoice', status: TaskStatus.Done },
         undefined,
         LATER,
       );
@@ -59,7 +59,7 @@ describe('Task', () => {
     it('reports nothing and keeps its state when no value differs', () => {
       const task = aSavedTask();
 
-      const change = task.change({ title: 'Enviar la factura' }, 3, LATER);
+      const change = task.change({ title: 'Send the invoice' }, 3, LATER);
 
       expect(change).toBeUndefined();
       expect(task.snapshot().updatedAt).toEqual(NOW);
@@ -68,7 +68,7 @@ describe('Task', () => {
     it('rejects a change based on a version that is no longer current', () => {
       const task = aSavedTask(3);
 
-      expect(() => task.change({ title: 'Otra' }, 2, LATER)).toThrow(
+      expect(() => task.change({ title: 'Another' }, 2, LATER)).toThrow(
         expect.objectContaining({ code: TasksErrorCode.TaskVersionConflict }),
       );
     });

@@ -4,13 +4,13 @@ import { ServiceInternalTransport } from './service-internal-api.js';
 
 /** Checks that a `ServiceDefinition` is consistent before building anything with it. */
 export class ServiceDefinitionValidator {
-  private static readonly EMPTY_NAME = 'el nombre del servicio está vacío';
+  private static readonly EMPTY_NAME = 'the service name is empty';
   private static readonly NAME_MISMATCH =
-    'el nombre no coincide con contract.service';
+    'the name does not match contract.service';
   private static readonly ROOT_MODULE_NOT_CLASS =
-    'rootModule debe ser la clase del módulo raíz';
+    'rootModule must be the root module class';
   private static readonly HTTP_SETTINGS_MISSING =
-    'la API interna por HTTP necesita la opción http';
+    'the internal HTTP API needs the http option';
 
   /**
    * @throws InvalidServiceDefinitionError when the name is empty or does not match `contract.service`,

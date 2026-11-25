@@ -53,7 +53,7 @@ describe('defineTenantDirectoryOperations', () => {
   it('fits in a service contract', () => {
     const contract = defineServiceContract({
       service: 'sample',
-      description: 'Servicio de prueba.',
+      description: 'Test service.',
       operations: { ...directory },
     });
     expect(Object.keys(contract.operations)).toEqual([

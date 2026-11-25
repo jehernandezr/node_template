@@ -12,11 +12,11 @@ import { DeviceKey } from './device-key.js';
 /** A test user who goes through identity over HTTP as the app would. */
 export class IdentityJourney {
   static readonly PASSWORD = [
-    'Una',
-    'frase',
-    'larga',
-    'de',
-    'prueba',
+    'A',
+    'long',
+    'test',
+    'phrase',
+    'for',
     '2026',
   ].join('-');
 
@@ -89,7 +89,7 @@ export class IdentityJourney {
       body: {
         email: this.email,
         password: IdentityJourney.PASSWORD,
-        displayName: 'Persona de prueba',
+        displayName: 'Test person',
         locale: 'es-MX',
         ...(invitationToken === undefined ? {} : { invitationToken }),
       },

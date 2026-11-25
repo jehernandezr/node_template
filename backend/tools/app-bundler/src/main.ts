@@ -2,7 +2,7 @@ import { AppBundler } from './app-bundler.js';
 import { DecoratorMetadataPlugin } from './decorator-metadata-plugin.js';
 
 const USAGE =
-  'Uso: app-bundler <proyecto> <carpeta-del-proyecto> [--entry=src/otra-entrada.ts ...]';
+  'Usage: app-bundler <project> <project-folder> [--entry=src/other-entry.ts ...]';
 const DEFAULT_ENTRY = 'src/main.ts';
 const ENTRY_FLAG = '--entry=';
 
@@ -23,7 +23,7 @@ async function main(args: readonly string[]): Promise<number> {
     projectRoot,
     entryPoints: [DEFAULT_ENTRY, ...extraEntries],
   });
-  console.log(`Empaquetado ${projectName} en ${outdir}`);
+  console.log(`Bundled ${projectName} into ${outdir}`);
   return 0;
 }
 

@@ -17,12 +17,12 @@ describe('IdentityShardScopes', () => {
   it('runs a user block with the home tenant and the user id as key', async () => {
     const { scopes, scope } = build();
     const userId = randomBytes(8).toString('hex');
-    const ref = { userId, homeTenantId: 'tenant-origen' };
+    const ref = { userId, homeTenantId: 'tenant-origin' };
 
     const seen = await scopes.inUserShard(ref, async () => scope.current());
 
     expect(seen).toEqual({
-      tenantId: 'tenant-origen',
+      tenantId: 'tenant-origin',
       keyKind: ShardKey.User,
       keyValue: userId,
     });
@@ -43,7 +43,7 @@ describe('IdentityShardScopes', () => {
     const { scopes, kit } = build();
 
     const seen = await kit.context.run(
-      { tenantId: 'tenant-sesion', actorId: 'u-1' },
+      { tenantId: 'tenant-session', actorId: 'u-1' },
       () => scopes.inTenantShard('tenant-x', async () => kit.context.current()),
     );
 
@@ -57,8 +57,8 @@ describe('IdentityShardScopes', () => {
     await expect(scopes.inUserShard(ref, async () => 42)).resolves.toBe(42);
     await expect(
       scopes.inUserShard(ref, async () => {
-        throw new Error('fallo del bloque');
+        throw new Error('block failure');
       }),
-    ).rejects.toThrow('fallo del bloque');
+    ).rejects.toThrow('block failure');
   });
 });

@@ -11,7 +11,7 @@ describe('InMemoryTokensFacade', () => {
       userId: '018f0000-0000-7000-8000-000000000001',
       tenantId: 'tenant-a',
       homeTenantId: 'tenant-a',
-      sessionId: 'sesion-9',
+      sessionId: 'session-9',
       authMethods: [AuthMethodReference.Password],
       authTime: START,
       sessionExpiresAt: new Date('2026-12-16T10:00:00.000Z'),
@@ -19,7 +19,7 @@ describe('InMemoryTokensFacade', () => {
 
     const issued = await facade.issue(input);
 
-    expect(issued.accessToken).toBe('token-for-sesion-9');
+    expect(issued.accessToken).toBe('token-for-session-9');
     expect(issued.accessExpiresAt.getTime()).toBe(START.getTime() + 600_000);
     expect(facade.issued).toEqual([input]);
   });

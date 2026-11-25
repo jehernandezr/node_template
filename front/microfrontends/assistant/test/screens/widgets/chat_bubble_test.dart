@@ -63,7 +63,7 @@ ToolConfirmationRequest _request() => ToolConfirmationRequest(
 
 void main() {
   group(ChatBubble, () {
-    testWidgets('el mensaje del usuario va alineado al final', (tester) async {
+    testWidgets('the user message is aligned to the end', (tester) async {
       await _pump(
         tester,
         const ChatMessage(
@@ -85,20 +85,18 @@ void main() {
       expect(align.alignment, AlignmentDirectional.centerEnd);
     });
 
-    testWidgets('una respuesta vacía en streaming muestra que escribe', (
-      tester,
-    ) async {
+    testWidgets('an empty streaming answer shows typing', (tester) async {
       await _pump(tester, _assistant(isStreaming: true));
       expect(find.text('Escribiendo...'), findsOneWidget);
     });
 
-    testWidgets('una respuesta detenida lo indica', (tester) async {
+    testWidgets('a stopped answer says so', (tester) async {
       await _pump(tester, _assistant(text: 'Puedo', wasStopped: true));
       expect(find.text('Respuesta detenida.'), findsOneWidget);
       expect(find.text('Puedo'), findsOneWidget);
     });
 
-    testWidgets('el uso se oculta mientras la respuesta llega', (tester) async {
+    testWidgets('usage is hidden while the answer arrives', (tester) async {
       await _pump(
         tester,
         _assistant(text: 'Hola', usage: _usage, isStreaming: true),
@@ -106,16 +104,12 @@ void main() {
       expect(find.textContaining('Tokens'), findsNothing);
     });
 
-    testWidgets('el uso se muestra cuando la respuesta terminó', (
-      tester,
-    ) async {
+    testWidgets('usage is shown when the answer finished', (tester) async {
       await _pump(tester, _assistant(text: 'Hola', usage: _usage));
       expect(find.textContaining('Tokens: 412'), findsOneWidget);
     });
 
-    testWidgets('confirmar la herramienta informa la decisión true', (
-      tester,
-    ) async {
+    testWidgets('confirming the tool reports decision true', (tester) async {
       final decisions = await _pump(
         tester,
         _assistant(toolRequest: _request()),
@@ -127,9 +121,7 @@ void main() {
       expect(decisions, [true]);
     });
 
-    testWidgets('cancelar la herramienta informa la decisión false', (
-      tester,
-    ) async {
+    testWidgets('cancelling the tool reports decision false', (tester) async {
       final decisions = await _pump(
         tester,
         _assistant(toolRequest: _request()),
@@ -141,7 +133,9 @@ void main() {
       expect(decisions, [false]);
     });
 
-    testWidgets('sin permiso de tareas no aparece confirmar', (tester) async {
+    testWidgets('without task permission confirm does not appear', (
+      tester,
+    ) async {
       await _pump(
         tester,
         _assistant(toolRequest: _request()),
@@ -151,7 +145,7 @@ void main() {
       expect(find.text('Cancelar'), findsOneWidget);
     });
 
-    testWidgets('una herramienta aprobada muestra el resultado sin botones', (
+    testWidgets('an approved tool shows the result without buttons', (
       tester,
     ) async {
       await _pump(
@@ -163,7 +157,7 @@ void main() {
       expect(find.byType(OutlinedButton), findsNothing);
     });
 
-    testWidgets('con locale en los textos salen en inglés', (tester) async {
+    testWidgets('with the en locale texts are in English', (tester) async {
       await _pump(
         tester,
         _assistant(
@@ -181,7 +175,7 @@ void main() {
       expect(find.textContaining('Tokens: 412 input'), findsOneWidget);
     });
 
-    testWidgets('la burbuja del asistente cumple las guías de accesibilidad', (
+    testWidgets('the assistant bubble meets the accessibility guidelines', (
       tester,
     ) async {
       await _pump(

@@ -12,12 +12,12 @@ final class ScaffoldNames {
   }) {
     if (!_idPattern.hasMatch(id)) {
       throw ScaffoldException(
-        'El id "$id" debe tener de 2 a 24 letras minúsculas o dígitos y '
-        'empezar por letra.',
+        'The id "$id" must have 2 to 24 lowercase letters or digits and '
+        'start with a letter.',
       );
     }
-    _checkLabel('español', menuLabelEs);
-    _checkLabel('inglés', menuLabelEn);
+    _checkLabel('Spanish', menuLabelEs);
+    _checkLabel('English', menuLabelEn);
   }
 
   static final RegExp _idPattern = RegExp(r'^[a-z][a-z0-9]{1,23}$');
@@ -54,17 +54,13 @@ final class ScaffoldNames {
 
   static void _checkLabel(String language, String label) {
     if (label.trim().isEmpty) {
-      throw ScaffoldException('La etiqueta en $language está vacía.');
+      throw ScaffoldException('The $language label is empty.');
     }
     if (label.codeUnits.any((unit) => unit < 0x20 || unit == 0x7F)) {
-      throw ScaffoldException(
-        'La etiqueta en $language tiene un carácter de control.',
-      );
+      throw ScaffoldException('The $language label has a control character.');
     }
     if (label.contains('{') || label.contains('}')) {
-      throw ScaffoldException(
-        'La etiqueta en $language no puede tener llaves.',
-      );
+      throw ScaffoldException('The $language label cannot contain braces.');
     }
   }
 

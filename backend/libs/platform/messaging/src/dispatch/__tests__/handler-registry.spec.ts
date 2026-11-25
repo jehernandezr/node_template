@@ -11,7 +11,7 @@ const TaskUpdated = defineEvent({
     id: z.string().min(1),
     tags: z.array(z.string()).default([]),
   }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 describe('HandlerRegistry', () => {

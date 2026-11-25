@@ -130,7 +130,7 @@ export class MailpitServer {
 
   private started(): StartedTestContainer {
     if (this.container === undefined) {
-      throw new Error('MailpitServer no está iniciado');
+      throw new Error('MailpitServer is not started');
     }
     return this.container;
   }

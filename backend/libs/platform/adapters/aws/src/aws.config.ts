@@ -14,7 +14,7 @@ export const awsConfigSchema = z.object({
   AWS_REGION: z
     .string()
     .trim()
-    .regex(/^[a-z]{2}(-[a-z]+)+-\d+$/, 'región de AWS inválida'),
+    .regex(/^[a-z]{2}(-[a-z]+)+-\d+$/, 'invalid AWS region'),
   /**
    * Endpoint for all services, only for LocalStack (`http://localhost:4566`).
    * Left empty in AWS. It is the same variable the SDK reads.
@@ -25,7 +25,7 @@ export const awsConfigSchema = z.object({
    * {@link LOCALSTACK_ACCOUNT_ID}. No default value, so a deployment
    * does not publish to the wrong account.
    */
-  AWS_ACCOUNT_ID: z.string().regex(/^\d{12}$/, 'la cuenta tiene 12 dígitos'),
+  AWS_ACCOUNT_ID: z.string().regex(/^\d{12}$/, 'the account has 12 digits'),
   /**
    * Prefix of the physical names of topics and queues: the `name_prefix` of the
    * Terraform `messaging` module (`<prefix>-<logical name>[.fifo]`).
@@ -33,7 +33,10 @@ export const awsConfigSchema = z.object({
   MESSAGING_NAME_PREFIX: z
     .string()
     .trim()
-    .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, 'minúsculas, dígitos y guiones'),
+    .regex(
+      /^[a-z0-9][a-z0-9-]*[a-z0-9]$/,
+      'lowercase letters, digits and hyphens',
+    ),
 });
 
 /** Validated configuration of the AWS adapter. */

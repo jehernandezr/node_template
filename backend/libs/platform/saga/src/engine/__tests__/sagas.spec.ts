@@ -15,7 +15,7 @@ class NotRegisteredSaga extends SagaDefinition<object> {
 }
 
 describe('Sagas', () => {
-  it('arranca la saga de la clase registrada', async () => {
+  it('starts the saga of the registered class', async () => {
     const kit = new SagaEngineKit({
       invoker: new FakeParticipant(),
       definitions: [new ThreeStepSaga()],
@@ -26,7 +26,7 @@ describe('Sagas', () => {
     expect(result.status).toBe(SagaStatus.Completed);
   });
 
-  it('rechaza una clase no registrada con UnknownDefinition', () => {
+  it('rejects an unregistered class with UnknownDefinition', () => {
     const kit = new SagaEngineKit({
       invoker: new FakeParticipant(),
       definitions: [new ThreeStepSaga()],

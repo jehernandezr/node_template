@@ -23,7 +23,7 @@ class SendHarness {
     new PasswordResetTokens(
       this.resets,
       new SecretGenerator(new SystemRandomSource()),
-      new HmacSecretHasher(['llave', 'de', 'prueba'].join('-')),
+      new HmacSecretHasher(['test', 'secret', 'key'].join('-')),
       TestShardScopes.create(),
       new SequentialIdGenerator(),
       new FixedClock(new Date('2026-11-25T10:00:00.000Z')),
@@ -84,7 +84,7 @@ describe('SendPasswordReset', () => {
     it('neither stores a reset nor emails anything', async () => {
       const harness = new SendHarness();
 
-      await harness.send.execute('nadie@example.com');
+      await harness.send.execute('nobody@example.com');
 
       expect(harness.resets.rows.size).toBe(0);
       expect(harness.mailer.sent).toEqual([]);

@@ -8,7 +8,7 @@ const LATER = new Date('2026-01-02T03:04:05.000Z');
 describe('SagaStepLogMapper', () => {
   const mapper = new SagaStepLogMapper();
 
-  it('ida y vuelta de una entrada completada', () => {
+  it('round trip of a completed entry', () => {
     const entry = SagaInstanceBuilder.aStep(ID, 1, {
       status: StepStatus.Succeeded,
       output: { id: 'a-1' },
@@ -22,7 +22,7 @@ describe('SagaStepLogMapper', () => {
     expect(back).toEqual(entry);
   });
 
-  it('entrada y salida indefinidas se guardan como null y vuelven como undefined', () => {
+  it('undefined input and output are stored as null and come back as undefined', () => {
     const entry = SagaInstanceBuilder.aStep(ID, 0, { input: undefined });
 
     const row = mapper.toPersistence(entry);
@@ -34,7 +34,7 @@ describe('SagaStepLogMapper', () => {
     expect(back.output).toBeUndefined();
   });
 
-  it('conserva la dirección de compensación y el estado de fallo', () => {
+  it('keeps the compensation direction and the failure status', () => {
     const entry = SagaInstanceBuilder.aStep(ID, 2, {
       direction: StepDirection.Compensate,
       status: StepStatus.Uncertain,

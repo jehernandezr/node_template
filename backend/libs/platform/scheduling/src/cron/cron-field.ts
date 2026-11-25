@@ -57,16 +57,16 @@ export class CronField {
     const invalid = (reason: string): InvalidCronExpressionError =>
       new InvalidCronExpressionError(
         expression,
-        `campo ${fieldName}: ${reason}`,
+        `field ${fieldName}: ${reason}`,
       );
     const [range, stepText, ...extra] = element.split('/');
     if (range === '' || extra.length > 0) {
-      throw invalid(`"${element}" no es un elemento válido`);
+      throw invalid(`"${element}" is not a valid element`);
     }
     const step = stepText === undefined ? 1 : Number(stepText);
     if (stepText !== undefined && (!DIGITS.test(stepText) || step < 1)) {
       throw invalid(
-        `el paso "${stepText}" debe ser un entero mayor o igual que 1`,
+        `the step "${stepText}" must be an integer greater than or equal to 1`,
       );
     }
     const bounds = CronField.boundsOf(range, min, max, invalid);
@@ -91,13 +91,13 @@ export class CronField {
     }
     const parts = range.split('-');
     if (parts.length > 2) {
-      throw invalid(`"${range}" no es un rango válido`);
+      throw invalid(`"${range}" is not a valid range`);
     }
     const [startText, endText = startText] = parts;
     const start = CronField.numberOf(startText, min, max, invalid);
     const end = CronField.numberOf(endText, min, max, invalid);
     if (start > end) {
-      throw invalid(`el rango "${range}" va de mayor a menor`);
+      throw invalid(`the range "${range}" goes from greater to smaller`);
     }
     return [start, end];
   }
@@ -109,11 +109,11 @@ export class CronField {
     invalid: (reason: string) => InvalidCronExpressionError,
   ): number {
     if (!DIGITS.test(text)) {
-      throw invalid(`"${text}" no es un número entero`);
+      throw invalid(`"${text}" is not an integer`);
     }
     const value = Number(text);
     if (value < min || value > max) {
-      throw invalid(`${value} está fuera del rango ${min}-${max}`);
+      throw invalid(`${value} is outside the range ${min}-${max}`);
     }
     return value;
   }

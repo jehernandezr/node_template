@@ -50,7 +50,7 @@ export class TransferTestDatabases {
       names.map((name) => this.connect(name, false)),
     );
     if (source === undefined || target === undefined) {
-      throw new Error('No se crearon las bases');
+      throw new Error('The databases were not created');
     }
     for (const dataSource of [source, target]) {
       for (const statement of LedgerSchema.STATEMENTS) {
@@ -93,7 +93,7 @@ export class TransferTestDatabases {
 
   private started(): StartedPostgreSqlContainer {
     if (this.container === undefined) {
-      throw new Error('TransferTestDatabases no está iniciado');
+      throw new Error('TransferTestDatabases is not started');
     }
     return this.container;
   }

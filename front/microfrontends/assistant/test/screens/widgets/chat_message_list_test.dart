@@ -31,7 +31,9 @@ ScrollPosition _position(WidgetTester tester) =>
 
 void main() {
   group(ChatMessageList, () {
-    testWidgets('al montar queda al final de la conversación', (tester) async {
+    testWidgets('on mount it stays at the end of the conversation', (
+      tester,
+    ) async {
       await _mount(tester, _messages(40));
 
       final position = _position(tester);
@@ -39,7 +41,7 @@ void main() {
       expect(position.pixels, position.maxScrollExtent);
     });
 
-    testWidgets('si el usuario subió a leer, la lista no se mueve', (
+    testWidgets('if the user scrolled up to read, the list does not move', (
       tester,
     ) async {
       await _mount(tester, _messages(40));
@@ -52,7 +54,7 @@ void main() {
       expect(_position(tester).pixels, before);
     });
 
-    testWidgets('si estaba al final y llega texto, sigue al final', (
+    testWidgets('if it was at the end and text arrives, it stays at the end', (
       tester,
     ) async {
       await _mount(tester, _messages(40));
@@ -63,17 +65,18 @@ void main() {
       expect(position.pixels, position.maxScrollExtent);
     });
 
-    testWidgets('si el usuario subió y se envía un mensaje, salta al final', (
-      tester,
-    ) async {
-      await _mount(tester, _messages(40));
-      await tester.drag(find.byType(ListView), const Offset(0, 400));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'if the user scrolled up and a message is sent, it jumps to the end',
+      (tester) async {
+        await _mount(tester, _messages(40));
+        await tester.drag(find.byType(ListView), const Offset(0, 400));
+        await tester.pumpAndSettle();
 
-      await _mount(tester, _messages(42));
+        await _mount(tester, _messages(42));
 
-      final position = _position(tester);
-      expect(position.pixels, position.maxScrollExtent);
-    });
+        final position = _position(tester);
+        expect(position.pixels, position.maxScrollExtent);
+      },
+    );
   });
 }

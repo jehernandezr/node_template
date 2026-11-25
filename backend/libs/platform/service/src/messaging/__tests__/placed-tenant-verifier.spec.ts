@@ -56,7 +56,7 @@ describe('PlacedTenantVerifier', () => {
     it.each([
       ['without a tenant', undefined, 'eu'],
       ['with an unknown tenant', TestTenants.Two, 'eu'],
-      ['with a malformed tenant', 'no-es-un-uuid', 'eu'],
+      ['with a malformed tenant', 'not-a-uuid', 'eu'],
       ['with a tenant of another region', TestTenants.One, 'us'],
     ])('rejects it %s', async (_case, tenantId, currentRegion) => {
       await expect(

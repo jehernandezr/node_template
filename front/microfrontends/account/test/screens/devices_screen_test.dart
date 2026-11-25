@@ -8,9 +8,7 @@ import 'package:ui/ui.dart';
 import '../utils/test_app.dart';
 
 void main() {
-  testWidgets('muestra cargando y luego dispositivos con verificador', (
-    tester,
-  ) async {
+  testWidgets('shows loading and then devices with verifier', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -27,7 +25,7 @@ void main() {
     expect(find.text(es.deviceRemove), findsNWidgets(2));
   });
 
-  testWidgets('muestra estado vacío sin dispositivos', (tester) async {
+  testWidgets('shows empty state with no devices', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -41,7 +39,7 @@ void main() {
     expect(find.text(es.devicesEmptyTitle), findsOneWidget);
   });
 
-  testWidgets('quitar confianza pide MFA y quita el dispositivo', (
+  testWidgets('removing trust requests MFA and removes the device', (
     tester,
   ) async {
     final es = await loadEs();

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Applies a service's migrations against the database of its environment.
+# Applies the migrations of a service against the database of its environment.
 # Usage: migrate-service.sh <environment> <service>
 #
-# The runner that executes this script must reach the database (RDS Proxy inside the VPC), so
-# deploy.yml uses vars.DEPLOY_RUNNER: a self-hosted runner inside the VPC, not a GitHub-hosted one.
+# The runner that executes this script must reach the database (RDS Proxy inside the VPC), which is why
+# deploy.yml uses vars.DEPLOY_RUNNER: a self-hosted runner inside the VPC, not one hosted by GitHub.
 #
 # Reads the db, service_databases and db_service_secret_arns outputs of the data stack, gets the
-# service credentials from Secrets Manager, masks them in the logs and exports DB_PROXY_HOST,
+# credentials of the service from Secrets Manager, masks them in the logs and exports DB_PROXY_HOST,
 # DB_PORT, DB_DATABASES and DB_CREDENTIALS for pnpm nx run <service>:migrate.
 # DRY_RUN=1 reads with capture, exports no real values and runs migrate only as a printed command.
 set -euo pipefail
@@ -43,7 +43,7 @@ else
   databases="$(json_get "$databases_json" "o['$SERVICE']")"
   secret_arn="$(json_get "$secrets_json" "o['$SERVICE']")"
   if [[ -z "$databases" || -z "$secret_arn" ]]; then
-    log "Service $SERVICE is not in service_databases of $ENVIRONMENT: add it to the data stack"
+    log "The service $SERVICE is not in service_databases of $ENVIRONMENT: add it to the data stack"
     exit 1
   fi
   credentials="$(aws secretsmanager get-secret-value --secret-id "$secret_arn" \

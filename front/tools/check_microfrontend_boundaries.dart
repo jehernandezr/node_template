@@ -54,7 +54,7 @@ const _sharedRules = {
 void main(List<String> args) {
   final all = args.contains('--all');
   final unknown = args.where((arg) => arg != '--all');
-  if (unknown.isNotEmpty) _fatal('Opción desconocida: ${unknown.first}');
+  if (unknown.isNotEmpty) _fatal('Unknown option: ${unknown.first}');
 
   final roots = all ? _allMicrofrontends() : [Directory.current];
   final violations = <String>[
@@ -62,13 +62,13 @@ void main(List<String> args) {
   ];
   if (violations.isEmpty) {
     stdout.writeln(
-      'OK: ${roots.length} microfrontend(s) respetan sus fronteras de import.',
+      'OK: ${roots.length} microfrontend(s) respect their import boundaries.',
     );
     return;
   }
   stderr.writeln(
-    'FALLO: fronteras de import. Lo compartido va en front/packages, y lo '
-    'que no es manifiesto, constante, enum o ciclo de vida se carga con '
+    'FAILURE: import boundaries. Shared code goes in front/packages, and '
+    'anything that is not a manifest, constant, enum or lifecycle is loaded with '
     '`deferred`:',
   );
   for (final violation in violations) {
@@ -80,15 +80,15 @@ void main(List<String> args) {
 /// Violations of the microfrontend rooted at [root].
 List<String> checkMicrofrontend(Directory root) {
   final pubspec = File('${root.path}/pubspec.yaml');
-  if (!pubspec.existsSync()) _fatal('No existe ${pubspec.path}.');
+  if (!pubspec.existsSync()) _fatal('${pubspec.path} does not exist.');
   final text = pubspec.readAsStringSync();
   final own = _name.firstMatch(text)?.group(1);
-  if (own == null) _fatal('${pubspec.path} no tiene `name`.');
+  if (own == null) _fatal('${pubspec.path} has no `name`.');
 
   final violations = <String>[
     for (final match in _dependency.allMatches(_dependencySections(text)))
       if (match.group(1) != own)
-        '${pubspec.path}: declara la dependencia ${match.group(1)}',
+        '${pubspec.path}: declares the dependency ${match.group(1)}',
   ];
   for (final folder in const ['lib', 'test', 'bin']) {
     final dir = Directory('${root.path}/$folder');
@@ -103,7 +103,7 @@ List<String> checkMicrofrontend(Directory root) {
     for (final file in files) {
       for (final match in _directive.allMatches(file.readAsStringSync())) {
         final target = match.group(1)!;
-        if (target != own) violations.add('${file.path}: usa package:$target');
+        if (target != own) violations.add('${file.path}: uses package:$target');
       }
     }
   }
@@ -120,7 +120,7 @@ List<String> checkMicrofrontend(Directory root) {
 /// [_eagerDirs].
 List<String> _eagerViolations(Directory lib, String own) {
   final manifest = File('${lib.path}/$own.dart');
-  if (!manifest.existsSync()) return ['${manifest.path}: no existe'];
+  if (!manifest.existsSync()) return ['${manifest.path}: does not exist'];
   final seen = <String>{};
   final pending = [manifest.absolute.path];
   final violations = <String>[];
@@ -131,7 +131,7 @@ List<String> _eagerViolations(Directory lib, String own) {
     if (relative.startsWith('src/') &&
         !_eagerDirs.any((dir) => relative.startsWith('src/$dir'))) {
       violations.add(
-        '${lib.path}/$relative: el manifiesto lo carga sin deferred',
+        '${lib.path}/$relative: the manifest loads it without deferred',
       );
     }
     for (final (target, deferred) in _localEdges(lib, own, path)) {
@@ -158,7 +158,7 @@ List<String> _sharedViolations(Directory lib, String own) {
     final folder = relative.split('/')[2];
     final allowed = _sharedRules[folder];
     if (allowed == null) {
-      violations.add('${lib.path}/$relative: carpeta compartida desconocida');
+      violations.add('${lib.path}/$relative: unknown shared folder');
       continue;
     }
     for (final (target, _) in _localEdges(lib, own, file.absolute.path)) {
@@ -169,8 +169,8 @@ List<String> _sharedViolations(Directory lib, String own) {
           (parts[2] == folder || allowed.contains(parts[2]));
       if (!ok) {
         violations.add(
-          '${lib.path}/$relative: importa ${parts.join('/')}, fuera de lo '
-          'que permite shared/$folder',
+          '${lib.path}/$relative: imports ${parts.join('/')}, outside what '
+          'shared/$folder allows',
         );
       }
     }
@@ -246,7 +246,7 @@ List<Directory> _allMicrofrontends() {
     }
     final parent = dir.parent;
     if (parent.path == dir.path) {
-      _fatal('No se encontró front/microfrontends desde ${Directory.current}.');
+      _fatal('front/microfrontends not found from ${Directory.current}.');
     }
     dir = parent;
   }

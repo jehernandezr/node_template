@@ -3,14 +3,14 @@ import baseConfig from '../../eslint.config.mjs';
 const awsSdk = {
   group: ['@aws-sdk/*'],
   message:
-    '@aws-sdk/* solo se importa dentro de backend/libs/platform/adapters/aws (ADR 0002).',
+    '@aws-sdk/* is only imported inside backend/libs/platform/adapters/aws (ADR 0002).',
 };
 
 // A module is imported only through its index.js; its internal layers are private.
 const crossModule = {
   regex:
     '^(\\.\\./)+(?!shared/)[a-z-]+/(domain|application|infrastructure|presentation)/',
-  message: 'Otro modulo se importa solo por su index.js',
+  message: 'Another module is imported only through its index.js',
 };
 
 export default [
@@ -33,7 +33,7 @@ export default [
             {
               regex: '(^|/)(infrastructure|presentation)/',
               message:
-                'La capa de aplicación no depende de infraestructura ni de presentación',
+                'The application layer does not depend on infrastructure or presentation',
             },
           ],
         },
@@ -52,12 +52,12 @@ export default [
             {
               group: ['@nestjs/*', 'typeorm', 'typeorm/*', 'pg', 'pg/*'],
               message:
-                'El dominio no depende de infraestructura ni de frameworks.',
+                'The domain does not depend on infrastructure or frameworks.',
             },
             {
               group: ['@platform/*', '!@platform/kernel'],
               message:
-                'El dominio solo usa el kernel de la plataforma, nada más.',
+                'The domain only uses the platform kernel, nothing else.',
             },
           ],
         },
@@ -74,7 +74,7 @@ export default [
             awsSdk,
             {
               regex: '(^|/)modules/',
-              message: 'shared/utils no importa nada de modules/',
+              message: 'shared/utils imports nothing from modules/',
             },
           ],
         },

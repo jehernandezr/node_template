@@ -14,7 +14,7 @@ class IssuerHarness {
   readonly issuer = new SessionTokenIssuer(
     new InMemoryTokensFacade(),
     new SecretGenerator(new SystemRandomSource()),
-    new HmacSecretHasher(['llave', 'de', 'prueba'].join('-')),
+    new HmacSecretHasher(['test', 'secret', 'key'].join('-')),
   );
 
   aSession(): Session {
@@ -39,7 +39,7 @@ class IssuerHarness {
   tokenOf(session: Session): SessionToken {
     const token = SessionToken.parse(this.issuer.sessionToken(session));
     if (token === undefined) {
-      throw new Error('El emisor armó un session token mal formado');
+      throw new Error('The issuer built a malformed session token');
     }
     return token;
   }

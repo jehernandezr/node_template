@@ -73,7 +73,7 @@ function codesOf(issues: { code: SagaDefinitionIssueCode }[]): string[] {
 }
 
 describe('SagaValidator', () => {
-  it('no encuentra problemas cuando los contratos coinciden con los pasos', () => {
+  it('finds no problems when the contracts match the steps', () => {
     const validator = new SagaValidator(
       resolver,
       10_000,
@@ -83,13 +83,13 @@ describe('SagaValidator', () => {
     expect(validator.validate(compiled())).toEqual([]);
   });
 
-  it('funciona sin registro de contratos: solo mira los contratos de los pasos', () => {
+  it('works without a contract registry: it only checks the step contracts', () => {
     const validator = new SagaValidator(resolver, 10_000);
 
     expect(validator.validate(compiled())).toEqual([]);
   });
 
-  it('reporta una operación que no está registrada', () => {
+  it('reports an operation that is not registered', () => {
     const validator = new SagaValidator(
       resolver,
       10_000,
@@ -105,7 +105,7 @@ describe('SagaValidator', () => {
     expect(issues[0]?.stepIndex).toBe(0);
   });
 
-  it('reporta una compensación distinta del compensatedBy del contrato', () => {
+  it('reports a compensation that differs from the contract compensatedBy', () => {
     const CreateOther = defineOperation({
       id: 'a.item.create.v1',
       input: z.object({ name: z.string() }),
@@ -127,7 +127,7 @@ describe('SagaValidator', () => {
     );
   });
 
-  it('reporta un paso anterior al pivote que muta y su contrato no declara compensación', () => {
+  it('reports a mutating step before the pivot whose contract declares no compensation', () => {
     const CreateFinal = defineOperation({
       id: 'a.item.create.v1',
       input: z.object({ name: z.string() }),
@@ -150,7 +150,7 @@ describe('SagaValidator', () => {
     );
   });
 
-  it('reporta un paso posterior al pivote que el contrato no marca idempotente', () => {
+  it('reports a step after the pivot that the contract does not mark idempotent', () => {
     const SendOnce = defineOperation({
       id: 'post.item.send.v1',
       input: z.unknown(),
@@ -173,7 +173,7 @@ describe('SagaValidator', () => {
     );
   });
 
-  it('reporta una compensación registrada que no es idempotente', () => {
+  it('reports a registered compensation that is not idempotent', () => {
     const RemoveOnce = defineOperation({
       id: 'a.item.remove.v1',
       input: z.object({ id: z.string() }),
@@ -196,7 +196,7 @@ describe('SagaValidator', () => {
     );
   });
 
-  it('reporta una compensación que no está registrada', () => {
+  it('reports a compensation that is not registered', () => {
     const issues = new SagaValidator(
       resolver,
       10_000,
@@ -208,7 +208,7 @@ describe('SagaValidator', () => {
     );
   });
 
-  it('reporta una llamada cuyo presupuesto supera maxStepDurationMs', () => {
+  it('reports a call whose budget exceeds maxStepDurationMs', () => {
     const issues = new SagaValidator(
       resolver,
       100,

@@ -171,8 +171,8 @@ new ContainerRuntime(process.env).describeIfAvailable(
 
     beforeAll(async () => {
       await app.start();
-      olga = new IdentityJourney(app.identity(), 'olga.flujo@example.com');
-      bruno = new IdentityJourney(app.identity(), 'bruno.flujo@example.com');
+      olga = new IdentityJourney(app.identity(), 'olga.flow@example.com');
+      bruno = new IdentityJourney(app.identity(), 'bruno.flow@example.com');
       await olga.register();
     });
 
@@ -185,7 +185,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
 
       const created = await olga
         .bearer(olgaSession.accessToken)
-        .post('/v1/tenants', { body: { slug: 'acme-flujo', name: 'Acme' } });
+        .post('/v1/tenants', { body: { slug: 'acme-flow', name: 'Acme' } });
       ({ tenantId } = created.body as TenantCreation);
       const saga = await olga
         .bearer(olgaSession.accessToken)
@@ -240,7 +240,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const first = await callAs(PlatformService.Tasks, member).post(
         '/v1/tasks',
         {
-          body: { title: 'Preparar el informe' },
+          body: { title: 'Prepare the report' },
         },
       );
       const second = await callAs(PlatformService.Tasks, member).post(

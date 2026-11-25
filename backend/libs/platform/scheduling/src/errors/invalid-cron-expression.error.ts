@@ -6,7 +6,7 @@ export class InvalidCronExpressionError extends PlatformError {
   override readonly code = SchedulingErrorCode.InvalidCronExpression;
 
   constructor(expression: string, reason: string) {
-    super(`Expresión cron inválida "${expression}": ${reason}`, {
+    super(`Invalid cron expression "${expression}": ${reason}`, {
       details: { expression, reason },
     });
   }

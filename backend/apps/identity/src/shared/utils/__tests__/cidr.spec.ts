@@ -32,7 +32,7 @@ describe('CIDR matching', () => {
   });
 
   it('returns false for an invalid address', () => {
-    expect(isIpInCidr('no-es-ip', '10.0.0.0/8')).toBe(false);
+    expect(isIpInCidr('not-an-ip', '10.0.0.0/8')).toBe(false);
   });
 
   it('matches when any block contains the address', () => {

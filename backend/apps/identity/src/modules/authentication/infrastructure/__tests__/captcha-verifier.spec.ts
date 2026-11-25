@@ -6,7 +6,7 @@ const IP = '203.0.113.30';
 
 describe('AcceptingCaptchaVerifier', () => {
   it.each([
-    ['a response', 'respuesta'],
+    ['a response', 'response'],
     ['no response', undefined],
   ])('approves %s while there is no provider', async (_case, response) => {
     const verifier: CaptchaVerifier = new AcceptingCaptchaVerifier();
@@ -17,18 +17,18 @@ describe('AcceptingCaptchaVerifier', () => {
 
 describe('RecordingCaptchaVerifier', () => {
   it('approves only the given responses and records each check', async () => {
-    const verifier = new RecordingCaptchaVerifier(['valida']);
+    const verifier = new RecordingCaptchaVerifier(['valid']);
 
     const results = [
-      await verifier.verify('valida', IP),
-      await verifier.verify('otra', IP),
+      await verifier.verify('valid', IP),
+      await verifier.verify('other', IP),
       await verifier.verify(undefined, IP),
     ];
 
     expect(results).toEqual([true, false, false]);
     expect(verifier.checked).toEqual([
-      { response: 'valida', ip: IP },
-      { response: 'otra', ip: IP },
+      { response: 'valid', ip: IP },
+      { response: 'other', ip: IP },
       { ip: IP },
     ]);
   });

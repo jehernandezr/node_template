@@ -53,8 +53,8 @@ function setup(
 }
 
 describe('StepExecutor', () => {
-  describe('fallas transitorias y plazos', () => {
-    it('suspende ante un fallo transitorio, deja el paso incierto y completa al reintentar', async () => {
+  describe('transient failures and deadlines', () => {
+    it('suspends on a transient failure, leaves the step uncertain and completes on retry', async () => {
       const { kit, participant, store } = setup();
       participant.script(
         'b.create.v1',
@@ -83,7 +83,7 @@ describe('StepExecutor', () => {
       ).toEqual(['s1:1:forward', 's1:1:forward']);
     });
 
-    it('usa la fórmula de backoff con jitter parejo al reintentar', async () => {
+    it('uses the backoff formula with equal jitter when retrying', async () => {
       const { kit, participant, store } = setup();
       participant.script(
         'b.create.v1',
@@ -99,7 +99,7 @@ describe('StepExecutor', () => {
       );
     });
 
-    it('trata un error transitorio lanzado por el invocador como suspensión', async () => {
+    it('treats a transient error thrown by the invoker as a suspension', async () => {
       const { kit, participant } = setup();
       participant.script('b.create.v1', new NetworkError());
 
@@ -109,7 +109,7 @@ describe('StepExecutor', () => {
       expect(result.lastErrorCode).toBe(SagaErrorCode.TransientFailure);
     });
 
-    it('compensa un paso incierto, incluido él mismo, cuando el plazo ya pasó', async () => {
+    it('compensates an uncertain step, including itself, when the deadline has passed', async () => {
       const { kit, participant } = setup();
       participant.script(
         'b.create.v1',
@@ -132,7 +132,7 @@ describe('StepExecutor', () => {
       expect(participant.removes()).toEqual(['b.remove.v1', 'a.remove.v1']);
     });
 
-    it('no despacha ningún paso antes del pivote si el plazo ya pasó al arrancar', async () => {
+    it('dispatches no step before the pivot if the deadline had passed at start', async () => {
       const { kit, participant } = setup();
 
       const result = await kit.sagas.start(
@@ -149,7 +149,7 @@ describe('StepExecutor', () => {
       expect(participant.calls).toEqual([]);
     });
 
-    it('exige intervención al superar el número de intentos de suspensión', async () => {
+    it('requires intervention when the number of suspension attempts is exceeded', async () => {
       const { kit, participant } = setup({ maxSuspendAttempts: 2 });
       participant.script(
         'b.create.v1',
@@ -166,7 +166,7 @@ describe('StepExecutor', () => {
       expect(exhausted.nextAttemptAt).toBeNull();
     });
 
-    it('exige intervención cuando la suspensión supera la antigüedad máxima', async () => {
+    it('requires intervention when the suspension exceeds the maximum age', async () => {
       const { kit, participant } = setup({ maxSuspendAgeMs: 500 });
       participant.script(
         'b.create.v1',
@@ -182,8 +182,8 @@ describe('StepExecutor', () => {
     });
   });
 
-  describe('pasos que avanzan por rondas', () => {
-    it('repite una ronda pendiente sin gastar las suspensiones y completa cuando termina', async () => {
+  describe('steps that advance in rounds', () => {
+    it('repeats a pending round without spending suspensions and completes when it finishes', async () => {
       const { kit, participant } = setup({ maxSuspendAttempts: 2 }, [
         new ProgressSaga(),
       ]);
@@ -205,7 +205,7 @@ describe('StepExecutor', () => {
       expect(result.status).toBe(SagaStatus.Completed);
     });
 
-    it('compensa antes del pivote una ronda que no termina dentro del plazo de la saga', async () => {
+    it('compensates before the pivot a round that does not finish within the saga deadline', async () => {
       const { kit, participant } = setup({}, [new ProgressSaga()]);
       participant.script(
         'b.create.v1',
@@ -229,7 +229,7 @@ describe('StepExecutor', () => {
       expect(participant.removes()).toEqual(['b.remove.v1', 'a.remove.v1']);
     });
 
-    it('sigue contando como suspensión un fallo transitorio de otro motivo en ese paso', async () => {
+    it('still counts a transient failure for another reason in that step as a suspension', async () => {
       const { kit, participant } = setup({}, [new ProgressSaga()]);
       participant.script(
         'b.create.v1',
@@ -243,8 +243,8 @@ describe('StepExecutor', () => {
     });
   });
 
-  describe('pivote y violaciones de protocolo', () => {
-    it('nunca compensa un fallo transitorio después del pivote, aunque el plazo haya pasado', async () => {
+  describe('pivot and protocol violations', () => {
+    it('never compensates a transient failure after the pivot, even if the deadline has passed', async () => {
       const { kit, participant } = setup();
       participant.script(
         'post.send.v1',
@@ -261,7 +261,7 @@ describe('StepExecutor', () => {
       expect(participant.removes()).toEqual([]);
     });
 
-    it('exige intervención ante un error de negocio después del pivote y no compensa', async () => {
+    it('requires intervention on a business error after the pivot and does not compensate', async () => {
       const { kit, participant } = setup();
       participant.script('post.send.v1', CallOutcome.businessError('NOPE'));
 
@@ -272,7 +272,7 @@ describe('StepExecutor', () => {
       expect(participant.removes()).toEqual([]);
     });
 
-    it('compensa una violación de protocolo antes del pivote, incluido el paso, y emite la alerta', async () => {
+    it('compensates a protocol violation before the pivot, including the step, and emits the alert', async () => {
       const { kit, participant, events } = setup();
       participant.script(
         'b.create.v1',
@@ -288,7 +288,7 @@ describe('StepExecutor', () => {
       expect(events).toContain(SagaEventKind.ProtocolViolation);
     });
 
-    it('exige intervención ante una violación de protocolo después del pivote', async () => {
+    it('requires intervention on a protocol violation after the pivot', async () => {
       const { kit, participant, events } = setup();
       participant.script('post.send.v1', CallOutcome.protocolViolation('bad'));
 
@@ -299,7 +299,7 @@ describe('StepExecutor', () => {
       expect(events).toContain(SagaEventKind.ProtocolViolation);
     });
 
-    it('trata una salida que no es JSON como violación de protocolo', async () => {
+    it('treats an output that is not JSON as a protocol violation', async () => {
       const { kit, participant } = setup();
       participant.script(
         'a.create.v1',
@@ -315,8 +315,8 @@ describe('StepExecutor', () => {
     });
   });
 
-  describe('estado, eventos y entradas', () => {
-    it('exige intervención si onSuccess lanza, y deja el paso como exitoso', async () => {
+  describe('state, events and inputs', () => {
+    it('requires intervention if onSuccess throws, and leaves the step as succeeded', async () => {
       const { kit, store } = setup({}, [new ThrowingSaga()]);
 
       const result = await kit.sagas.start(ThrowingSaga, {}, { sagaId: 's1' });
@@ -329,7 +329,7 @@ describe('StepExecutor', () => {
       ).toBe(StepStatus.Succeeded);
     });
 
-    it('deja de mostrar el error de intentos previos cuando el paso tiene éxito', async () => {
+    it('stops showing the error from previous attempts when the step succeeds', async () => {
       const { kit, participant } = setup();
       participant.script(
         'b.create.v1',
@@ -344,7 +344,7 @@ describe('StepExecutor', () => {
       expect(result.lastErrorDetail).toBeNull();
     });
 
-    it('exige intervención si onSuccess deja un valor que no es JSON', async () => {
+    it('requires intervention if onSuccess leaves a value that is not JSON', async () => {
       const { kit, events } = setup({}, [new DateStateSaga()]);
 
       const result = await kit.sagas.start(DateStateSaga, {}, { sagaId: 's1' });
@@ -354,7 +354,7 @@ describe('StepExecutor', () => {
       expect(events).toEqual([SagaEventKind.RequiresIntervention]);
     });
 
-    it('exige intervención si la entrada de un paso no es JSON, sin llamar al participante', async () => {
+    it('requires intervention if a step input is not JSON, without calling the participant', async () => {
       const { kit, participant } = setup({}, [new BigIntInputSaga()]);
 
       const result = await kit.sagas.start(
@@ -368,7 +368,7 @@ describe('StepExecutor', () => {
       expect(participant.calls).toEqual([]);
     });
 
-    it('exige intervención si la entrada lanza al construirse, con el nombre y el mensaje del error', async () => {
+    it('requires intervention if building the input throws, with the error name and message', async () => {
       const { kit } = setup({}, [new ThrowingInputSaga()]);
 
       const result = await kit.sagas.start(
@@ -381,7 +381,7 @@ describe('StepExecutor', () => {
       expect(result.lastErrorDetail).toBe('Error: cannot build');
     });
 
-    it('exige intervención si la entrada tiene un ciclo', async () => {
+    it('requires intervention if the input has a cycle', async () => {
       const { kit } = setup({}, [new CyclicInputSaga()]);
 
       const result = await kit.sagas.start(
@@ -393,7 +393,7 @@ describe('StepExecutor', () => {
       expect(result.lastErrorCode).toBe(SagaErrorCode.InputBuildFailed);
     });
 
-    it('reintenta con la entrada guardada y no reconstruye la entrada', async () => {
+    it('retries with the stored input and does not rebuild the input', async () => {
       const saga = new VolatileSaga();
       const { kit, participant } = setup({}, [saga]);
       participant.script(
@@ -414,8 +414,8 @@ describe('StepExecutor', () => {
     });
   });
 
-  describe('construcción de la configuración', () => {
-    it('usa la espera del backoff desde el generador aleatorio inyectado', () => {
+  describe('configuration building', () => {
+    it('takes the backoff wait from the injected random generator', () => {
       const settings = new SagaSettings(
         { owner: 'node-a' },
         new FixedRandomSource([0.5]),

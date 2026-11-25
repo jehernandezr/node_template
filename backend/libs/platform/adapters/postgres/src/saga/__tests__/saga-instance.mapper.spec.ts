@@ -9,7 +9,7 @@ const LATER = new Date('2026-01-02T03:04:05.000Z');
 describe('SagaInstanceMapper', () => {
   const mapper = new SagaInstanceMapper();
 
-  it('ida y vuelta: toDomain(toPersistence(x)) conserva todos los campos', () => {
+  it('round trip: toDomain(toPersistence(x)) keeps every field', () => {
     const instance = SagaInstanceBuilder.aSaga()
       .with({
         idempotencyKey: 'key-1',
@@ -37,7 +37,7 @@ describe('SagaInstanceMapper', () => {
     expect(back.toProps()).toEqual(instance.toProps());
   });
 
-  it('guarda el tenant recibido y no el del contexto de la instancia', () => {
+  it('stores the received tenant and not the one from the instance context', () => {
     const instance = SagaInstanceBuilder.aSaga().build();
 
     const row = mapper.toPersistence(instance, TENANT);
@@ -47,7 +47,7 @@ describe('SagaInstanceMapper', () => {
     expect(row.id).toBe(instance.id);
   });
 
-  it('un state indefinido se guarda como null y vuelve como undefined', () => {
+  it('an undefined state is stored as null and comes back as undefined', () => {
     const instance = SagaInstanceBuilder.aSaga()
       .with({ state: undefined })
       .build();
@@ -58,7 +58,7 @@ describe('SagaInstanceMapper', () => {
     expect(mapper.toDomain(row).state).toBeUndefined();
   });
 
-  it('un contexto nulo vuelve como null', () => {
+  it('a null context comes back as null', () => {
     const instance = SagaInstanceBuilder.aSaga()
       .with({ context: null })
       .build();

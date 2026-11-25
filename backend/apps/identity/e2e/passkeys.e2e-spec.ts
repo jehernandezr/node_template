@@ -43,14 +43,14 @@ runtime.describeIfAvailable('passkeys end to end', () => {
       body: {
         challengeId,
         credentialJson: authenticator.create(optionsJson),
-        name: 'Portátil',
+        name: 'Laptop',
       },
     });
     const replayed = await me.post('/v1/me/passkeys', {
       body: {
         challengeId,
         credentialJson: authenticator.create(optionsJson),
-        name: 'Otra',
+        name: 'Another',
       },
     });
     const listed = await me.get('/v1/me/passkeys');
@@ -61,7 +61,7 @@ runtime.describeIfAvailable('passkeys end to end', () => {
       code: IdentityErrorCode.PasskeyChallengeExpired,
     });
     expect(listed.body).toMatchObject({
-      items: [expect.objectContaining({ name: 'Portátil' })],
+      items: [expect.objectContaining({ name: 'Laptop' })],
     });
     const claims = AccessTokenClaimsReader.read(session.accessToken);
     const user = {

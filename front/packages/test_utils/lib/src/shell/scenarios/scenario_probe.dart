@@ -20,7 +20,7 @@ final class ScenarioProbe {
   /// Requires `Permission.backofficeAccess`.
   static const String restricted = '/probe/restricted';
 
-  /// Button `pedir step-up` asks `scope.services.requestStepUp()` and shows
+  /// Button `ask step-up` asks `scope.services.requestStepUp()` and shows
   /// `step-up: <answer>`.
   static const String sensitive = '/probe/sensitive';
 
@@ -28,35 +28,35 @@ final class ScenarioProbe {
   static const String api = '/probe/api';
 
   /// Title of the home page.
-  static const String homeTitle = 'Sonda';
+  static const String homeTitle = 'Probe';
 
   /// Body of the secure page.
-  static const String secureText = 'zona segura';
+  static const String secureText = 'secure area';
 
   /// Body of the sensitive page before it asks.
-  static const String notAsked = 'sin pedir';
+  static const String notAsked = 'not asked';
 
   /// Button of the sensitive page.
-  static const String askStepUp = 'pedir step-up';
+  static const String askStepUp = 'ask step-up';
 
   /// Body of the home page for [userId].
-  static String userText(String userId) => 'usuario $userId';
+  static String userText(String userId) => 'user $userId';
 
   /// Body of the sensitive page once the step-up answered [verified].
   static String stepUpText({required bool verified}) => 'step-up: $verified';
 
   /// Line of the api page with the shell mode.
-  static String modeText(ShellMode mode) => 'modo: ${mode.name}';
+  static String modeText(ShellMode mode) => 'mode: ${mode.name}';
 
   /// Line of the api page, in live mode, that identifies the client the
   /// screen received, so a scenario can tell it is the connection's own.
   static String clientText(Object client) =>
-      'cliente: ${identityHashCode(client)}';
+      'client: ${identityHashCode(client)}';
 
-  static const String _restrictedText = 'zona restringida';
-  static const String _secureTitle = 'Seguro';
-  static const String _restrictedTitle = 'Restringido';
-  static const String _sensitiveTitle = 'Acción sensible';
+  static const String _restrictedText = 'restricted area';
+  static const String _secureTitle = 'Secure';
+  static const String _restrictedTitle = 'Restricted';
+  static const String _sensitiveTitle = 'Sensitive action';
   static const String _apiTitle = 'Api';
 
   /// The manifest, for `AppPlatform.web` and `AppPlatform.mobile`.

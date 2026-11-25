@@ -94,7 +94,9 @@ export class ProblemDetailsMapper {
     entry: ErrorCatalogEntry | undefined,
   ): ErrorCatalogEntry {
     if (entry === undefined) {
-      throw new Error('Falta PLATFORM.INTERNAL.UNEXPECTED en el catálogo');
+      throw new Error(
+        'PLATFORM.INTERNAL.UNEXPECTED is missing from the catalog',
+      );
     }
     return entry;
   }

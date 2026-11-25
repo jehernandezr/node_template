@@ -15,10 +15,10 @@ module.exports = {
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
-  // uuid and NestJS 12 are published only as ESM: they must be transformed for Jest to load them.
+  // uuid and NestJS 12 are published only as ESM: they have to be transformed for Jest to load them.
   transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?(uuid|@nestjs)[@/])'],
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // main.ts and instrumentation.ts start the real process; their tests only read their source text.
+  // main.ts and instrumentation.ts start the real process; their tests only read their text.
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

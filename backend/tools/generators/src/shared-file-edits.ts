@@ -33,7 +33,7 @@ export class SharedFileEdits {
     if (match === null) {
       throw new GeneratorError(
         GeneratorErrorReason.MissingMarker,
-        'eslint.config.mjs no tiene la lista de servicios de la regla de límites',
+        'eslint.config.mjs has no service list in the boundaries rule',
       );
     }
     const services = (match[1] ?? '').trim().replace(/,\s*$/, '');

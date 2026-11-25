@@ -88,7 +88,7 @@ runtime.describeIfAvailable(
     };
 
     it('rotates once when two tabs refresh at the same time, in the shard of each user', async () => {
-      const sessions = await openSessionInEachShard('dos-pestanas');
+      const sessions = await openSessionInEachShard('two-tabs');
 
       const results = await Promise.all(
         sessions.map(async ([shard, session]) => {
@@ -128,7 +128,7 @@ runtime.describeIfAvailable(
     });
 
     it('answers a forged token of an old generation as unknown and keeps the session alive', async () => {
-      const sessions = await openSessionInEachShard('token-forjado');
+      const sessions = await openSessionInEachShard('token-forged');
 
       const outcomes = await Promise.all(
         sessions.map(async ([, session]) => {
@@ -167,7 +167,7 @@ runtime.describeIfAvailable(
     });
 
     it('revokes the session when the genuine token of an old generation comes back', async () => {
-      const sessions = await openSessionInEachShard('token-viejo');
+      const sessions = await openSessionInEachShard('token-old');
 
       const outcomes = await Promise.all(
         sessions.map(async ([, session]) => {
@@ -198,7 +198,7 @@ runtime.describeIfAvailable(
     });
 
     it('revokes in Valkey and leaves the events in the outbox of the shard of the user', async () => {
-      const sessions = await openSessionInEachShard('cierre');
+      const sessions = await openSessionInEachShard('close');
 
       const outcomes = await Promise.all(
         sessions.map(async ([shard, session]) => {
@@ -237,27 +237,25 @@ runtime.describeIfAvailable(
 
     it('publishes the revocation of every session of a user with the tenant of origin, so the consumers that require a placed tenant accept it', async () => {
       const outcomes = await Promise.all(
-        (await openSessionInEachShard('todas')).map(
-          async ([shard, session]) => {
-            await app.get(RevokeSessions).execute({
-              user: {
-                userId: session.ref.userId,
-                homeTenantId: session.ref.homeTenantId,
-              },
-              reason: RevocationReason.UserAction,
-            });
-            return {
-              shard,
-              envelopeTenants: await app
-                .shards()
-                .rowsIn<{ tenant: string }>(
-                  shard,
-                  `SELECT envelope->>'tenantid' AS tenant FROM outbox WHERE envelope->>'type' = '${IdentityEvent.TokensRevoked}' AND envelope->'data'->>'subjectId' = '${session.ref.userId}'`,
-                ),
+        (await openSessionInEachShard('all')).map(async ([shard, session]) => {
+          await app.get(RevokeSessions).execute({
+            user: {
+              userId: session.ref.userId,
               homeTenantId: session.ref.homeTenantId,
-            };
-          },
-        ),
+            },
+            reason: RevocationReason.UserAction,
+          });
+          return {
+            shard,
+            envelopeTenants: await app
+              .shards()
+              .rowsIn<{ tenant: string }>(
+                shard,
+                `SELECT envelope->>'tenantid' AS tenant FROM outbox WHERE envelope->>'type' = '${IdentityEvent.TokensRevoked}' AND envelope->'data'->>'subjectId' = '${session.ref.userId}'`,
+              ),
+            homeTenantId: session.ref.homeTenantId,
+          };
+        }),
       );
 
       for (const outcome of outcomes) {

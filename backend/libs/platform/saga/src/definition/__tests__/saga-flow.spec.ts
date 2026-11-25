@@ -94,7 +94,7 @@ function codeOf(fn: () => unknown): unknown {
 describe('SagaFlow', () => {
   const resolver = new OperationResolver();
 
-  it('compila los pasos, el pivote y las operaciones de compensación', () => {
+  it('compiles the steps, the pivot and the compensation operations', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow
       .step(CREATE_A)
@@ -124,7 +124,7 @@ describe('SagaFlow', () => {
     ]);
   });
 
-  it('usa la entrada hacia delante registrada como entrada de compensación por defecto', () => {
+  it('uses the recorded forward input as the default compensation input', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow.step(CREATE_A).input(() => ({ name: 'x' }));
 
@@ -143,7 +143,7 @@ describe('SagaFlow', () => {
     ).toEqual({ name: 'x' });
   });
 
-  it('la entrada por defecto de un paso es undefined', () => {
+  it('the default input of a step is undefined', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow.step(CREATE_B);
 
@@ -152,7 +152,7 @@ describe('SagaFlow', () => {
     expect(step?.input({ sku: 'x' })).toBeUndefined();
   });
 
-  it('rechaza un paso anterior al pivote sin compensación', () => {
+  it('rejects a step before the pivot without compensation', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow.step(UNDOABLE_A).step(CREATE_B);
 
@@ -161,14 +161,14 @@ describe('SagaFlow', () => {
     );
   });
 
-  it('acepta un paso sin compensación después del pivote', () => {
+  it('accepts a step without compensation after the pivot', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow.step(CREATE_A).pivot().step(SEND);
 
     expect(() => flow.compile('post-pivot')).not.toThrow();
   });
 
-  it('rechaza una saga sin pasos', () => {
+  it('rejects a saga with no steps', () => {
     const flow = new SagaFlow<Order>(resolver);
 
     expect(() => flow.compile('empty')).toThrow(SagaError);
@@ -177,7 +177,7 @@ describe('SagaFlow', () => {
     );
   });
 
-  it('rechaza un segundo pivote', () => {
+  it('rejects a second pivot', () => {
     const flow = new SagaFlow<Order>(resolver);
 
     expect(() => flow.step(CREATE_A).pivot().pivot()).toThrow(SagaError);
@@ -186,7 +186,7 @@ describe('SagaFlow', () => {
     );
   });
 
-  it('toma la compensación de compensatedBy y los tipos de los esquemas', () => {
+  it('takes the compensation from compensatedBy and the types from the schemas', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow
       .step(RESERVE)
@@ -207,7 +207,7 @@ describe('SagaFlow', () => {
     expect(compiled.steps[0]?.definition).toBe(RESERVE);
   });
 
-  it('rechaza antes del pivote una operación con Compensation.None', () => {
+  it('rejects an operation with Compensation.None before the pivot', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow.step(SHIP);
 
@@ -216,7 +216,7 @@ describe('SagaFlow', () => {
     );
   });
 
-  it('acepta una operación de solo lectura antes del pivote, sin nada que compensar', () => {
+  it('accepts a read-only operation before the pivot, with nothing to compensate', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow
       .step(LOOKUP)
@@ -231,7 +231,7 @@ describe('SagaFlow', () => {
     expect(compiled.steps[0]?.afterPivot).toBe(false);
   });
 
-  it('rechaza después del pivote una operación que no es idempotente', () => {
+  it('rejects a non-idempotent operation after the pivot', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow.step(RESERVE).pivot().step(EMAIL);
 
@@ -240,7 +240,7 @@ describe('SagaFlow', () => {
     );
   });
 
-  it('compile no muta el flujo y puede repetirse', () => {
+  it('compile does not mutate the flow and can be repeated', () => {
     const flow = new SagaFlow<Order>(resolver);
     flow.step(CREATE_A).pivot().step(SEND);
 

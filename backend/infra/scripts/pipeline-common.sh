@@ -1,6 +1,6 @@
 # shellcheck shell=bash
-# Shared functions of the pipeline scripts. They are loaded with source from scripts that
-# already enable set -euo pipefail. With DRY_RUN=1 each command is printed with the "+ " prefix
+# Shared functions of the pipeline scripts. They are loaded with source from scripts
+# that already enable set -euo pipefail. With DRY_RUN=1 each command is printed with the "+ " prefix
 # on stdout instead of running; capture returns "<dry-run>" and shows the command on stderr.
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
@@ -48,7 +48,7 @@ run() {
   "$@"
 }
 
-# Returns the command output. In DRY_RUN it shows the command on stderr and returns "<dry-run>".
+# Returns the output of the command. In DRY_RUN it shows it on stderr and returns "<dry-run>".
 capture() {
   if is_dry; then
     dry_print "$@" >&2
@@ -83,7 +83,7 @@ json_get() {
 require_identifier() {
   local label=$1 value=$2
   if [[ ! "$value" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
-    log "Invalid $label: $value"
+    log "invalid $label: $value"
     exit 1
   fi
 }

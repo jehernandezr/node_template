@@ -12,10 +12,10 @@ import { PasswordResetToken } from '../domain/password-reset-token.js';
 
 const runtime = new ContainerRuntime(process.env);
 
-const NEW_PHRASE = ['Otra', 'frase', 'nueva', 'para', 'volver', '2026'].join(
+const NEW_PHRASE = ['Another', 'new', 'phrase', 'to', 'return', '2026'].join(
   '-',
 );
-const SHORT_PHRASE = ['corta', '1'].join('-');
+const SHORT_PHRASE = ['short', '1'].join('-');
 
 runtime.describeIfAvailable('password resets in the shard of the user', () => {
   jest.setTimeout(180_000);
@@ -81,11 +81,11 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
 
   it('answers and writes the same for an email with an account and for one without', async () => {
     const [user] = [
-      ...(await new ShardedUsers(app).oneInEachShard('igual')).values(),
+      ...(await new ShardedUsers(app).oneInEachShard('same')).values(),
     ];
 
     const known = await traceOfRequest(String(user?.email));
-    const unknown = await traceOfRequest('nadie.igual@example.com');
+    const unknown = await traceOfRequest('nobody.same@example.com');
 
     expect(unknown).toEqual(known);
     expect(known.written).toEqual(expect.arrayContaining([1]));
@@ -93,10 +93,10 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
 
   it('emails only the account of a known email once the worker answers the requests', async () => {
     const [user] = [
-      ...(await new ShardedUsers(app).oneInEachShard('solo-cuenta')).values(),
+      ...(await new ShardedUsers(app).oneInEachShard('only-account')).values(),
     ];
     const known = new IdentityJourney(app, String(user?.email));
-    const unknown = new IdentityJourney(app, 'nadie.solo@example.com');
+    const unknown = new IdentityJourney(app, 'nobody.only@example.com');
     await known
       .native()
       .post('/v1/auth/password-resets', { body: { email: known.email } });
@@ -120,7 +120,7 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
   });
 
   it('keeps each reset in the shard of its user and lets its token work once', async () => {
-    const placed = await new ShardedUsers(app).oneInEachShard('recupera');
+    const placed = await new ShardedUsers(app).oneInEachShard('recover');
 
     const outcomes = await Promise.all(
       [...placed].map(async ([shard, user]) => {
@@ -155,7 +155,7 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
 
   it('leaves the token usable when the new password breaks the policy', async () => {
     const [user] = [
-      ...(await new ShardedUsers(app).oneInEachShard('politica')).values(),
+      ...(await new ShardedUsers(app).oneInEachShard('policy')).values(),
     ];
     const journey = new IdentityJourney(app, String(user?.email));
     const token = await requestReset(journey);
@@ -171,7 +171,7 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
 
   it('refuses a token whose secret does not match', async () => {
     const [user] = [
-      ...(await new ShardedUsers(app).oneInEachShard('forjado')).values(),
+      ...(await new ShardedUsers(app).oneInEachShard('forged')).values(),
     ];
     const journey = new IdentityJourney(app, String(user?.email));
     const token = await requestReset(journey);
@@ -191,7 +191,7 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
   });
 
   it('purges the resets that expired beyond the retention in every shard and keeps the recent ones', async () => {
-    const placed = await new ShardedUsers(app).oneInEachShard('retencion');
+    const placed = await new ShardedUsers(app).oneInEachShard('retention');
     const tokens = await Promise.all(
       [...placed.values()].map((user) =>
         requestReset(new IdentityJourney(app, user.email)),

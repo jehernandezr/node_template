@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Publishes a service artifact: image in ECR (Fargate, workers, real time) and/or package
+# Publishes the artifact of a service: image in ECR (Fargate, workers, real time) and/or package
 # in S3 (Lambda, consumers). Writes .artifacts/<service>.env with TF_VAR_image and
-# TF_VAR_lambda_package for the service stack to use when planning.
+# TF_VAR_lambda_package so the service stack uses them when planning.
 # Usage: publish-service.sh <environment> <service>
-# Variables: ARTIFACTS_BUCKET, ECR_PREFIX, AWS_REGION (required), GIT_SHA (default HEAD).
+# Variables: ARTIFACTS_BUCKET, ECR_PREFIX, AWS_REGION (required), GIT_SHA (HEAD by default).
 # DRY_RUN=1 prints the commands and does not write .artifacts.
 set -euo pipefail
 
@@ -94,5 +94,5 @@ if ! is_dry; then
   done
   log "Artifacts of $SERVICE written to $env_file"
 else
-  dry_text "write .artifacts/$SERVICE.env"
+  dry_text "escribir .artifacts/$SERVICE.env"
 fi

@@ -72,7 +72,7 @@ runtime.describeIfAvailable('identity access matrix', () => {
   jest.setTimeout(180_000);
 
   const app = new IdentityTestApp();
-  const member = new IdentityJourney(app, 'mario.miembro@example.com');
+  const member = new IdentityJourney(app, 'mario.member@example.com');
   let withMfa: SessionTokensBody;
   let withoutMfa: SessionTokensBody;
   /** Owner of an organization with a session without a recent second factor. */
@@ -89,8 +89,8 @@ runtime.describeIfAvailable('identity access matrix', () => {
     const tenantId = TestIds.next();
     await app.internal().invoke(CreateTenantOperation, {
       tenantId,
-      slug: 'matriz',
-      name: 'Matriz',
+      slug: 'matrix',
+      name: 'Matrix',
       region: 'eu',
       kind: TenantKind.Organization,
       ownerUserId: IdentityJourney.userIdFrom(withMfa.accessToken),

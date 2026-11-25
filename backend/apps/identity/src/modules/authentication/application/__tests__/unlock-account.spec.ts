@@ -17,13 +17,13 @@ describe('UnlockAccount', () => {
       clock,
     );
     const user = await users.register({
-      email: 'bloqueada@example.com',
-      password: ['no', 'se', 'usa', 'aqui'].join('-'),
-      displayName: 'Bloqueada',
+      email: 'locked@example.com',
+      password: ['not', 'used', 'here'].join('-'),
+      displayName: 'Locked',
       locale: 'es-MX',
       homeTenantId: HOME,
     });
-    const account = keys.account('bloqueada@example.com');
+    const account = keys.account('locked@example.com');
     for (
       let attempt = 0;
       attempt < LockoutRules.origin.maxFailures;

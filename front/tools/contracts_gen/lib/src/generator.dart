@@ -383,7 +383,9 @@ String _decode(DType type, String raw, int depth) => switch (type) {
   DPrimitive(dart: 'bool') => '$raw as bool',
   DPrimitive(dart: 'int') => '($raw as num).toInt()',
   DPrimitive(dart: 'double') => '($raw as num).toDouble()',
-  DPrimitive(:final dart) => throw GeneratorException('primitivo $dart'),
+  DPrimitive(:final dart) => throw GeneratorException(
+    'unsupported primitive $dart',
+  ),
   DDateTime() => 'DateTime.parse($raw as String)',
   DEnum(:final id) =>
     'decodeEnum($raw, ${id.name}.tryParse, ${dartString(id.name)})',

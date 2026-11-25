@@ -9,7 +9,7 @@ export class Eventually {
     const deadline = performance.now() + timeoutMs;
     while (!condition()) {
       if (performance.now() > deadline) {
-        throw new Error('condición no cumplida');
+        throw new Error('condition not met');
       }
       await new Promise((resolve) => setImmediate(resolve));
     }

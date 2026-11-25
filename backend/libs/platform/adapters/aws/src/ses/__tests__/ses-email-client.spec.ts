@@ -7,9 +7,9 @@ import { SesEmailClient } from '../ses-email-client.js';
 const email = {
   from: 'no-reply@example.com',
   to: 'ana@example.com',
-  subject: 'Bienvenida',
-  html: '<p>Hola</p>',
-  text: 'Hola',
+  subject: 'Welcome',
+  html: '<p>Hello</p>',
+  text: 'Hello',
 };
 
 class ThrottlingError extends Error {
@@ -36,10 +36,10 @@ describe('SesEmailClient', () => {
         Destination: { ToAddresses: ['ana@example.com'] },
         Content: {
           Simple: {
-            Subject: { Data: 'Bienvenida', Charset: 'UTF-8' },
+            Subject: { Data: 'Welcome', Charset: 'UTF-8' },
             Body: {
-              Html: { Data: '<p>Hola</p>', Charset: 'UTF-8' },
-              Text: { Data: 'Hola', Charset: 'UTF-8' },
+              Html: { Data: '<p>Hello</p>', Charset: 'UTF-8' },
+              Text: { Data: 'Hello', Charset: 'UTF-8' },
             },
           },
         },

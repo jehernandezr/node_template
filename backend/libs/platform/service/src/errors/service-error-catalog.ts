@@ -6,11 +6,11 @@ export const serviceErrorCatalog = defineErrorCatalog(ServiceErrorCode, {
   [ServiceErrorCode.InvalidDefinition]: ErrorSpecs.internal(
     500,
     false,
-    'La definición del servicio es inconsistente y el proceso no puede arrancar.',
+    'The service definition is inconsistent and the process cannot start.',
   ),
   [ServiceErrorCode.ShutdownTimeout]: ErrorSpecs.internal(
     500,
     false,
-    'El servicio no terminó de cerrar dentro del plazo de gracia.',
+    'The service did not finish shutting down within the grace period.',
   ),
 });

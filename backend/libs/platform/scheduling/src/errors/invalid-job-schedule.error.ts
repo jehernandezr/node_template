@@ -6,7 +6,7 @@ export class InvalidJobScheduleError extends PlatformError {
   override readonly code = SchedulingErrorCode.InvalidSchedule;
 
   constructor(jobName: string, reason: string) {
-    super(`Calendario inválido para el job ${jobName}: ${reason}`, {
+    super(`Invalid schedule for job ${jobName}: ${reason}`, {
       details: { jobName, reason },
     });
   }

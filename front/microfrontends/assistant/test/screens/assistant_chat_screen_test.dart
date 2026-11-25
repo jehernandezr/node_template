@@ -68,7 +68,7 @@ Future<void> _emit(WidgetTester tester, void Function() action) async {
 
 void main() {
   group(AssistantChatScreen, () {
-    testWidgets('muestra cargando y luego el historial', (tester) async {
+    testWidgets('shows loading and then the history', (tester) async {
       final repo = ScriptedAssistantRepository();
       await pumpAssistantRoutes(
         tester,
@@ -84,7 +84,7 @@ void main() {
       expect(find.text('Hola previo'), findsOneWidget);
     });
 
-    testWidgets('error al cargar ofrece reintentar y recarga la historia', (
+    testWidgets('a load error offers retry and reloads the history', (
       tester,
     ) async {
       final repo = ScriptedAssistantRepository();
@@ -110,9 +110,7 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
     });
 
-    testWidgets('enviar pregunta y muestra el texto en streaming', (
-      tester,
-    ) async {
+    testWidgets('sending a question shows the streamed text', (tester) async {
       final repo = await _mountWithHistory(tester);
 
       await _send(tester, 'Hola');
@@ -129,7 +127,7 @@ void main() {
       expect(_button('Enviar'), findsOneWidget);
     });
 
-    testWidgets('detener corta la respuesta y conserva el texto recibido', (
+    testWidgets('stopping cuts the answer and keeps the received text', (
       tester,
     ) async {
       final repo = await _mountWithHistory(tester);
@@ -147,7 +145,7 @@ void main() {
       expect(find.textContaining('Puedo ayudarte'), findsOneWidget);
     });
 
-    testWidgets('muestra fuentes y uso de tokens al terminar', (tester) async {
+    testWidgets('shows sources and token usage when finished', (tester) async {
       final repo = await _mountWithHistory(tester);
       await _send(tester, 'Hola');
 
@@ -165,9 +163,7 @@ void main() {
       expect(find.textContaining('Tokens: 412'), findsOneWidget);
     });
 
-    testWidgets('confirmar una herramienta resuelve la solicitud', (
-      tester,
-    ) async {
+    testWidgets('confirming a tool resolves the request', (tester) async {
       final repo = await _mountWithHistory(tester);
       await _send(tester, 'Crea una tarea');
       final request = ToolConfirmationRequest(
@@ -189,9 +185,7 @@ void main() {
       expect(find.text('Acción confirmada'), findsOneWidget);
     });
 
-    testWidgets('cancelar una herramienta informa la decisión false', (
-      tester,
-    ) async {
+    testWidgets('cancelling a tool reports decision false', (tester) async {
       final repo = await _mountWithHistory(tester);
       await _send(tester, 'Crea una tarea');
       final request = ToolConfirmationRequest(
@@ -210,7 +204,7 @@ void main() {
       expect(find.text('Acción cancelada'), findsOneWidget);
     });
 
-    testWidgets('sin permiso de tareas solo se puede cancelar', (tester) async {
+    testWidgets('without task permission it can only cancel', (tester) async {
       final repo = await _mountWithHistory(tester, session: readerSession());
       await _send(tester, 'Crea una tarea');
       await _emit(
@@ -224,7 +218,7 @@ void main() {
       expect(find.text('Cancelar'), findsOneWidget);
     });
 
-    testWidgets('con permiso de tareas se puede confirmar', (tester) async {
+    testWidgets('with task permission it can confirm', (tester) async {
       final repo = await _mountWithHistory(tester, session: writerSession());
       await _send(tester, 'Crea una tarea');
       await _emit(
@@ -238,7 +232,7 @@ void main() {
       expect(find.text('Cancelar'), findsOneWidget);
     });
 
-    testWidgets('la cuota agotada muestra el mensaje con el código', (
+    testWidgets('an exhausted quota shows the message with the code', (
       tester,
     ) async {
       final repo = await _mountWithHistory(tester);
@@ -260,9 +254,7 @@ void main() {
       expect(find.textContaining(quotaExceededCode), findsOneWidget);
     });
 
-    testWidgets('un error genérico muestra el mensaje genérico', (
-      tester,
-    ) async {
+    testWidgets('a generic error shows the generic message', (tester) async {
       final repo = await _mountWithHistory(tester);
       await _send(tester, 'Hola');
 
@@ -277,7 +269,7 @@ void main() {
       );
     });
 
-    testWidgets('el aviso de error sale una sola vez', (tester) async {
+    testWidgets('the error notice appears only once', (tester) async {
       final repo = await _mountWithHistory(tester);
       await _send(tester, 'Hola');
       repo.answers[0].addError(const FakeFailure());
@@ -285,20 +277,20 @@ void main() {
       await tester.pump();
 
       await tester.pump();
-      await tester.enterText(find.byType(TextField), 'Otra');
+      await tester.enterText(find.byType(TextField), 'Another');
       await tester.pump();
 
       expect(find.byType(SnackBar), findsOneWidget);
     });
 
-    testWidgets('con locale en los textos salen en inglés', (tester) async {
+    testWidgets('with the en locale texts are in English', (tester) async {
       await _mountWithHistory(tester, locale: const Locale('en'));
 
       expect(find.text('Conversation'), findsOneWidget);
       expect(find.text('Send'), findsOneWidget);
     });
 
-    testWidgets('con locale en el mensaje de cuota sale en inglés', (
+    testWidgets('with the en locale the quota message is in English', (
       tester,
     ) async {
       final repo = await _mountWithHistory(tester, locale: const Locale('en'));
@@ -320,7 +312,7 @@ void main() {
       );
     });
 
-    testWidgets('el campo tiene su etiqueta visible', (tester) async {
+    testWidgets('the field has a visible label', (tester) async {
       await _mountWithHistory(tester);
 
       expect(
@@ -329,7 +321,7 @@ void main() {
       );
     });
 
-    testWidgets('el chat con respuestas y tarjeta pendiente es accesible', (
+    testWidgets('the chat with answers and a pending card is accessible', (
       tester,
     ) async {
       final repo = await _mountWithHistory(tester);
@@ -361,9 +353,7 @@ void main() {
       await expectAccessible(tester);
     });
 
-    testWidgets('la respuesta completa se anuncia una sola vez', (
-      tester,
-    ) async {
+    testWidgets('the complete answer is announced only once', (tester) async {
       final repo = await _mountWithHistory(tester);
       tester.takeAnnouncements();
       await _send(tester, 'Hola');
@@ -392,7 +382,7 @@ void main() {
       expect(announcements.single.message, 'Puedo ayudarte con tus tareas.');
     });
 
-    testWidgets('una respuesta detenida no se anuncia', (tester) async {
+    testWidgets('a stopped answer is not announced', (tester) async {
       final repo = await _mountWithHistory(tester);
       tester.takeAnnouncements();
       await _send(tester, 'Hola');
@@ -408,7 +398,7 @@ void main() {
       expect(tester.takeAnnouncements(), isEmpty);
     });
 
-    testWidgets('una respuesta con error no se anuncia', (tester) async {
+    testWidgets('an answer with an error is not announced', (tester) async {
       final repo = await _mountWithHistory(tester);
       tester.takeAnnouncements();
       await _send(tester, 'Hola');
@@ -421,9 +411,7 @@ void main() {
       expect(tester.takeAnnouncements(), isEmpty);
     });
 
-    testWidgets('cerrar el scope a mitad de respuesta corta el texto', (
-      tester,
-    ) async {
+    testWidgets('closing the scope mid-answer cuts the text', (tester) async {
       final scope = TestScope();
       await pumpAssistantRoutes(
         tester,
@@ -445,9 +433,7 @@ void main() {
       expect(_button('Enviar'), findsOneWidget);
     });
 
-    testWidgets('cambiar de identidad corta la respuesta del anterior', (
-      tester,
-    ) async {
+    testWidgets('switching identity cuts the previous answer', (tester) async {
       final scopeA = TestScope();
       await pumpAssistantRoutes(
         tester,
@@ -479,7 +465,7 @@ void main() {
       expect(_button('Enviar'), findsOneWidget);
     });
 
-    testWidgets('salir del chat a mitad de respuesta cancela el stream', (
+    testWidgets('leaving the chat mid-answer cancels the stream', (
       tester,
     ) async {
       await pumpAssistantRoutes(
@@ -501,7 +487,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('un mensaje largo del asistente no pasa del ancho de lectura', (
+    testWidgets('a long assistant message does not exceed the reading width', (
       tester,
     ) async {
       final repo = ScriptedAssistantRepository();
@@ -539,7 +525,7 @@ void main() {
       );
     });
 
-    testWidgets('con texto al doble de tamaño el chat no se desborda', (
+    testWidgets('with text at double size the chat does not overflow', (
       tester,
     ) async {
       final repo = FakeAssistantRepository();

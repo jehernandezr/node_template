@@ -38,7 +38,7 @@ describe('defineTenantMoveOperations', () => {
   it('fits in a service contract', () => {
     const contract = defineServiceContract({
       service: 'sample',
-      description: 'Servicio de prueba.',
+      description: 'Test service.',
       operations: { ...moves },
     });
     expect(Object.keys(contract.operations)).toEqual([

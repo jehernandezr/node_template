@@ -3,14 +3,14 @@
 #   ENV=dev deploy-aws.sh plan    [all|<stack>]       # plan one stack or all of them, in order
 #   ENV=dev deploy-aws.sh apply   [all|<stack>]       # applies the saved plan: network, platform, data, messaging, edge
 #   ENV=dev deploy-aws.sh destroy [all|<stack>]       # destroy in reverse order
-#   ENV=dev deploy-aws.sh plan    service <service>   # a service stack (its own state)
+#   ENV=dev deploy-aws.sh plan    service <service>   # stack of one service (its own state)
 #   ENV=dev deploy-aws.sh apply   service <service>
-# plan saves the plan in PLAN_DIR (default backend/infra/terraform/.plans/<ENV>) and apply
-# applies that file and nothing else: what was reviewed is what gets applied. If the state changed
-# since the plan, Terraform rejects the stale plan and you must plan again. A stack that reads
-# outputs of another is planned after that other one is applied.
+# plan saves the plan in PLAN_DIR (by default backend/infra/terraform/.plans/<ENV>) and apply
+# applies that file and nothing else: what was reviewed is what is applied. If the state changed
+# since the plan, Terraform rejects the old plan and it has to be planned again. A stack that reads
+# outputs of another one is planned after that other one is applied.
 # Variables: ENV (dev), AUTO_APPROVE=1 skips the destroy confirmation, LOCK_TIMEOUT (5m).
-# A service's artifacts arrive as TF_VAR_image and TF_VAR_lambda_package when planning.
+# The artifacts of a service arrive as TF_VAR_image and TF_VAR_lambda_package when planning.
 # Credentials: OIDC in CI, a profile locally.
 set -euo pipefail
 
@@ -22,11 +22,11 @@ PLAN_DIR="${PLAN_DIR:-$TF_DIR/.plans/$ENV}"
 LOCK_TIMEOUT="${LOCK_TIMEOUT:-5m}"
 
 if [[ "$ENV" == "local" ]]; then
-  echo "There is no Terraform for local: use backend/infra/scripts/local.sh" >&2
+  echo "There is no Terraform locally: use backend/infra/scripts/local.sh" >&2
   exit 1
 fi
 
-# Environment stacks in dependency order.
+# Stacks of the environment in dependency order.
 stacks_of_env() {
   local stack
   for stack in "${ORDER[@]}"; do

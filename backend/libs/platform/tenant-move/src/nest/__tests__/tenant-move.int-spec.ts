@@ -259,7 +259,7 @@ runtime.describeIfAvailable(
           () =>
             client.call(
               OpenLedgerOperation,
-              { name: 'reintento' },
+              { name: 'retry' },
               { idempotencyKey: 'open-ledger-1', tenantId: tenant },
             ),
         );
@@ -288,7 +288,7 @@ runtime.describeIfAvailable(
       await (
         await regionA.connect(ledger.shards.a0)
       ).query(
-        "INSERT INTO ledgers (id, tenant_id, name, total) VALUES ($1, $2, 'abonos', 0)",
+        "INSERT INTO ledgers (id, tenant_id, name, total) VALUES ($1, $2, 'credits', 0)",
         [ledgerId, tenant],
       );
       const credit = EnvelopeBuilder.anEnvelope({

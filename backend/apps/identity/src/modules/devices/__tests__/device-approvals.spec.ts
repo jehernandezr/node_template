@@ -89,7 +89,7 @@ describe('DeviceApprovalsUseCase deny', () => {
         Device.register({
           id: deviceId,
           userId: user.userId,
-          name: 'Teléfono',
+          name: 'Phone',
           platform: ClientPlatform.Ios,
           publicKey: key.publicKey,
           firstSeenAt: clock.now(),

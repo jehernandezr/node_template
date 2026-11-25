@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { ServiceCatalog } from './service-catalog.mjs';
 
 const USAGE = [
-  'Uso:',
-  '  service-catalog-cli.mjs matrix <ambiente>',
-  '  service-catalog-cli.mjs list <ambiente>',
-  '  service-catalog-cli.mjs entry <ambiente> <servicio>',
+  'Usage:',
+  '  service-catalog-cli.mjs matrix <environment>',
+  '  service-catalog-cli.mjs list <environment>',
+  '  service-catalog-cli.mjs entry <environment> <service>',
 ].join('\n');
 
 const COMMANDS = Object.freeze({

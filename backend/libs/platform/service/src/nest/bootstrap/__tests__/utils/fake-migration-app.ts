@@ -22,7 +22,7 @@ export class FakeMigrationApp {
     if (token === DirectoryShardLister) {
       return this.lister;
     }
-    throw new Error('Token no esperado en FakeMigrationApp');
+    throw new Error('Unexpected token in FakeMigrationApp');
   }
 
   close(): Promise<void> {

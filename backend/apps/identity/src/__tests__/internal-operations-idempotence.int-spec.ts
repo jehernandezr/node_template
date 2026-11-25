@@ -78,7 +78,7 @@ class OperationFixture {
   /** The `CreateTenant` input for a new tenant with a new owner. */
   async tenantInput(tenantId: string) {
     const owner = await this.user();
-    const slug = `idempotente-${this.sequence}`;
+    const slug = `idempotent-${this.sequence}`;
     return {
       tenantId,
       slug,
@@ -91,7 +91,7 @@ class OperationFixture {
 
   async user(): Promise<{ userId: string; email: string }> {
     this.sequence += 1;
-    const email = `idempotente.${this.sequence}@example.com`;
+    const email = `idempotent.${this.sequence}@example.com`;
     const ref = await new ShardedUsers(this.app).register(email);
     return { userId: ref.userId, email };
   }

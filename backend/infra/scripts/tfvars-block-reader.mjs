@@ -66,7 +66,7 @@ export class TfvarsBlockReader {
         if (depth === 0) return index;
       }
     }
-    throw new Error('Bloque sin cerrar en terraform.tfvars');
+    throw new Error('Unclosed block in terraform.tfvars');
   }
 
   #stringAtDepthZero(from, to, key, indent) {

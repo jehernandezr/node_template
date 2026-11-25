@@ -77,16 +77,16 @@ describe('AsyncApiBuilder', () => {
 
     it('marks FIFO topics and queues in the channel description', () => {
       expect(channels['orders-events']?.['description']).toBe(
-        'FIFO topic of orders. Eventos de pedidos.',
+        'FIFO topic of orders. Order events.',
       );
       expect(channels['audit-events']?.['description']).toBe(
-        'Topic of audit. Eventos de auditoría.',
+        'Topic of audit. Audit events.',
       );
       expect(channels['reporting-events']?.['description']).toBe(
-        'FIFO queue of reporting. Todo lo que se reporta.',
+        'FIFO queue of reporting. Everything that is reported.',
       );
       expect(channels['payments-commands']?.['description']).toBe(
-        'Queue of payments. Comandos de pagos.',
+        'Queue of payments. Payment commands.',
       );
     });
 
@@ -131,7 +131,7 @@ describe('AsyncApiBuilder', () => {
     it('describes each message with its kind, version and owner', () => {
       expect(messages['orders.order.placed.v1']).toMatchObject({
         name: 'orders.order.placed.v1',
-        summary: 'Se hizo un pedido.',
+        summary: 'An order was placed.',
         contentType: 'application/json',
         payload: { $ref: 'orders/export/contract.json#/schemas/OrderPayload' },
         'x-kind': 'event',
@@ -155,7 +155,7 @@ describe('AsyncApiBuilder', () => {
       const anonymous = defineEvent({
         type: 'ghost.thing.happened.v1',
         payload: z.object({ id: IdSchema }),
-        description: 'Sin nombre.',
+        description: 'No name.',
       });
       const ghost = defineServiceContract({
         service: 'ghost',
@@ -179,7 +179,7 @@ describe('AsyncApiBuilder', () => {
       const anonymous = defineCommand({
         type: 'ghost.thing.do.v1',
         payload: z.object({ id: IdSchema }),
-        description: 'Sin nombre.',
+        description: 'No name.',
       });
       const ghost = defineServiceContract({
         service: 'ghost',

@@ -12,32 +12,32 @@ import { Topology, TopologyIssueKind, TopologySeverity } from '../topology.js';
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
   payload: z.object({ id: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const LedgerPosted = defineEvent({
   type: 'ledger.entry.posted.v1',
   payload: z.object({ amount: z.number() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const GenerateReport = defineCommand({
   type: 'reports.report.generate.v1',
   payload: z.object({ reportId: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 /** Generic contracts for the targeted validation tests. */
 const RunJob = defineCommand({
   type: 'tests.job.run.v1',
   payload: z.object({}),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const ThingHappened = defineEvent({
   type: 'tests.thing.happened.v1',
   payload: z.object({}),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 /** Canonical test topology. The JSON test further below checks its `toJSON()`. */

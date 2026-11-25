@@ -6,26 +6,26 @@ export const resilienceErrorCatalog = defineErrorCatalog(ResilienceErrorCode, {
   [ResilienceErrorCode.CircuitOpen]: ErrorSpecs.pub(
     503,
     true,
-    'Un servicio del que depende la operación no está disponible por ahora.',
+    'A service the operation depends on is unavailable right now.',
   ),
   [ResilienceErrorCode.Timeout]: ErrorSpecs.pub(
     504,
     true,
-    'La operación tardó más de lo permitido.',
+    'The operation took longer than allowed.',
   ),
   [ResilienceErrorCode.BulkheadFull]: ErrorSpecs.pub(
     503,
     true,
-    'Hay demasiadas operaciones en curso. Intenta de nuevo en unos instantes.',
+    'Too many operations in progress. Try again in a moment.',
   ),
   [ResilienceErrorCode.UnknownPolicy]: ErrorSpecs.internal(
     500,
     false,
-    'No existe la política de resiliencia pedida.',
+    'The requested resilience policy does not exist.',
   ),
   [ResilienceErrorCode.InvalidPolicy]: ErrorSpecs.internal(
     500,
     false,
-    'La configuración de una política de resiliencia no es válida.',
+    'The configuration of a resilience policy is not valid.',
   ),
 });

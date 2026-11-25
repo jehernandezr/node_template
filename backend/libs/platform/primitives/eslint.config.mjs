@@ -11,12 +11,12 @@ export default [
         {
           selector: 'Literal[value=/^PLATFORM\\./]',
           message:
-            'Usa PrimitivesErrorCode (o el enum de la librería) en lugar del código como texto.',
+            'Use PrimitivesErrorCode (or the library enum) instead of the code as text.',
         },
         {
           selector: 'TemplateElement[value.raw=/^PLATFORM\\./]',
           message:
-            'Usa PrimitivesErrorCode (o el enum de la librería) en lugar del código como texto.',
+            'Use PrimitivesErrorCode (or the library enum) instead of the code as text.',
         },
       ],
     },

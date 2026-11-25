@@ -15,7 +15,7 @@ enum InternalCode {
 }
 
 const internalCatalog = defineErrorCatalog(InternalCode, {
-  [InternalCode.Hidden]: ErrorSpecs.internal(503, true, 'Interno.'),
+  [InternalCode.Hidden]: ErrorSpecs.internal(503, true, 'Internal.'),
 });
 
 class UnknownCodeError extends PlatformError {

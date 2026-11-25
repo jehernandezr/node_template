@@ -101,8 +101,6 @@ class ApiAccountRepository implements AccountRepository {
 
   static Future<T> _unsupported<T>(AccountCapability capability) =>
       Future<T>.error(
-        UnsupportedError(
-          'identity no tiene contrato para ${capability.name} todavía',
-        ),
+        UnsupportedError('identity has no contract for ${capability.name} yet'),
       );
 }

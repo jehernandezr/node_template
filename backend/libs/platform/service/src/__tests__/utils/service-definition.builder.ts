@@ -14,7 +14,7 @@ export class ServiceDefinitionBuilder {
       rootModule: TestRootModule,
       contract: defineServiceContract({
         service: name,
-        description: 'Servicio de prueba',
+        description: 'Test service',
       }),
       migrations: {
         catalog: { entities: [], migrations: [] },

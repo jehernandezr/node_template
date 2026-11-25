@@ -12,13 +12,15 @@ describe('NodeDeviceSignatureVerifier', () => {
   it.each(['ieee-p1363', 'der'] as const)(
     'verifies an ES256 signature in %s',
     (encoding) => {
-      const signature = sign('sha256', Buffer.from('mensaje'), {
+      const signature = sign('sha256', Buffer.from('message'), {
         key: pair.privateKey,
         dsaEncoding: encoding,
       }).toString('base64url');
 
-      expect(verifier.verify(publicKey, 'mensaje', signature)).toBe(true);
-      expect(verifier.verify(publicKey, 'otro mensaje', signature)).toBe(false);
+      expect(verifier.verify(publicKey, 'message', signature)).toBe(true);
+      expect(verifier.verify(publicKey, 'another message', signature)).toBe(
+        false,
+      );
     },
   );
 
@@ -32,7 +34,7 @@ describe('NodeDeviceSignatureVerifier', () => {
       expect.objectContaining({ code: IdentityErrorCode.DeviceKeyInvalid }),
     );
     expect(() => verifier.assertValidKey(publicKey)).not.toThrow();
-    expect(verifier.verify(publicKey, 'mensaje', 'AAAA')).toBe(false);
-    expect(verifier.verify('no-es-clave', 'mensaje', 'AAAA')).toBe(false);
+    expect(verifier.verify(publicKey, 'message', 'AAAA')).toBe(false);
+    expect(verifier.verify('not-a-key', 'message', 'AAAA')).toBe(false);
   });
 });

@@ -47,14 +47,14 @@ describe('ServiceGenerator', () => {
       ),
     );
     expect(lines.join('\n')).toContain('stock_items_shard_0');
-    expect(lines.join('\n')).toContain('StockItemsTenantMoveOperations en ALL');
+    expect(lines.join('\n')).toContain('StockItemsTenantMoveOperations in ALL');
   });
 
   it('writes nothing over a service that already exists', async () => {
     const workspace = new GeneratorWorkspace();
     await workspace.backend.write(
       `${GeneratorWorkspace.BACKEND}/apps/stock-items/src/main.ts`,
-      'propio',
+      'existing',
     );
 
     await expect(
@@ -64,7 +64,7 @@ describe('ServiceGenerator', () => {
       `${GeneratorWorkspace.BACKEND}/apps/stock-items/src/main.ts`,
     ]);
     await expect(workspace.file('apps/stock-items/src/main.ts')).resolves.toBe(
-      'propio',
+      'existing',
     );
   });
 });

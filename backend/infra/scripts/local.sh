@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Local environment: Docker Compose (PostgreSQL, Valkey, LocalStack, Mailpit, OpenObserve) and the
-# local environment Terraform against LocalStack.
+# Terraform of the local environment against LocalStack.
 #   backend/infra/scripts/local.sh up           # starts the containers and waits until they are healthy
 #   backend/infra/scripts/local.sh tf plan      # plan of platform and messaging against LocalStack
 #   backend/infra/scripts/local.sh tf apply     # apply against LocalStack (state in its S3)
@@ -9,7 +9,7 @@
 #   backend/infra/scripts/local.sh reset        # removes containers and volumes
 # LocalStack creates the queues and topics of topology.json by itself on startup
 # (backend/infra/local/localstack/init-aws.sh). The local Terraform uses another prefix
-# (node-template-local) so it does not clash with those resources.
+# (node-template-local) so it does not collide with those resources.
 set -euo pipefail
 
 BACKEND_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -17,7 +17,7 @@ TF_DIR="$BACKEND_DIR/infra/terraform"
 ENDPOINT="${LOCALSTACK_ENDPOINT:-http://localhost:4566}"
 STACKS=(platform messaging)
 
-# Dummy credentials that LocalStack accepts. They are never real credentials.
+# Fake credentials that LocalStack accepts. They are never real credentials.
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-test}"
 export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-test}"
 export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
@@ -35,7 +35,7 @@ ensure_state_bucket() {
   local bucket
   bucket="$(state_bucket)"
   if ! curl -fs "$ENDPOINT/_localstack/health" >/dev/null; then
-    echo "LocalStack does not respond at $ENDPOINT. Run first: $0 up" >&2
+    echo "LocalStack does not answer at $ENDPOINT. Run first: $0 up" >&2
     exit 1
   fi
   curl -fs -o /dev/null -X PUT "$ENDPOINT/$bucket" || true

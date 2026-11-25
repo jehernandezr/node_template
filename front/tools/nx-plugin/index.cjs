@@ -1,15 +1,15 @@
 // Nx plugin that registers each member of the front/ pub workspace as a project.
 //
 // - Reads the `workspace:` list of front/pubspec.yaml; only those packages are projects.
-// - Each project is named `front-<pubspec name>` and has the tasks
-//   `analyze`, `format-check` and, if it has a test/ folder, `test`. All are cached.
+// - Each project is called `front-<pubspec name>` and has the tasks
+//   `analyze`, `format-check` and, if it has a test/ folder, `test`. All of them use the cache.
 // - In the microfrontends, `analyze` also runs
 //   `tools/check_microfrontend_boundaries.dart`: it fails if the microfrontend
 //   declares or imports another `mf_*`, if its manifest loads without `deferred` anything
 //   that is not a constant, enum or lifecycle, or if its `shared` folders
 //   do not follow the order enums, constants, types, utils.
-// - Dependencies between packages come from `dependencies` and `dev_dependencies`.
-// - `front-contracts` depends on the backend contract packages
+// - The dependencies between packages come from `dependencies` and `dev_dependencies`.
+// - `front-contracts` depends on the contract packages of the backend
 //   (backend/libs/contracts/*), because its Dart is generated from them.
 //
 // Requires `flutter pub get` in front/ before running the tasks.
@@ -53,7 +53,7 @@ function readPubspec(workspaceRoot, relativePath) {
   return parsePubspec(readFileSync(join(workspaceRoot, relativePath), 'utf8'));
 }
 
-/** Paths (relative to the root) of the workspace member pubspec.yaml files. */
+/** Paths (relative to the root) of the pubspec.yaml files of the workspace members. */
 function memberPubspecs(workspaceRoot) {
   const rootPubspec = join(FRONT_ROOT, 'pubspec.yaml');
   if (!existsSync(join(workspaceRoot, rootPubspec))) return new Set();
@@ -71,7 +71,7 @@ const sharedInputs = [
 function targetsFor(workspaceRoot, projectRoot, kind) {
   const inputs = ['default', '^default', ...sharedInputs];
   const isMicrofrontend = kind === MICROFRONTENDS_KIND;
-  // Script path relative to the project folder (front/microfrontends/<mf>).
+  // Path of the script relative to the project folder (front/microfrontends/<mf>).
   const boundaries = relative(join(workspaceRoot, projectRoot), join(workspaceRoot, BOUNDARIES_SCRIPT));
   const targets = {
     analyze: {

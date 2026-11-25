@@ -41,7 +41,7 @@ base class _ThrowingCreate extends FakeAssistantRepository {
 
 void main() {
   group(AssistantListScreen, () {
-    testWidgets('muestra cargando y luego las conversaciones', (tester) async {
+    testWidgets('shows loading and then the conversations', (tester) async {
       final list = Completer<List<Conversation>>();
       await pumpAssistantRoutes(tester, repository: _ControlledList(list));
       expect(find.byType(LoadingView), findsOneWidget);
@@ -53,7 +53,7 @@ void main() {
       expect(find.text('Plan de la semana'), findsOneWidget);
     });
 
-    testWidgets('un error al listar ofrece reintentar', (tester) async {
+    testWidgets('a listing error offers retry', (tester) async {
       final behavior = DemoBehavior()
         ..failNext(
           const FakeFailure(),
@@ -77,7 +77,9 @@ void main() {
       expect(find.text('Plan de la semana'), findsOneWidget);
     });
 
-    testWidgets('sin conversaciones muestra el estado vacío', (tester) async {
+    testWidgets('with no conversations it shows the empty state', (
+      tester,
+    ) async {
       await pumpAssistantRoutes(tester, repository: _EmptyList());
       await tester.pumpAndSettle();
 
@@ -85,7 +87,7 @@ void main() {
       expect(find.text('Aún no tienes conversaciones'), findsOneWidget);
     });
 
-    testWidgets('con locale en los textos salen en inglés', (tester) async {
+    testWidgets('with the en locale texts are in English', (tester) async {
       await pumpAssistantRoutes(
         tester,
         repository: FakeAssistantRepository(),
@@ -97,7 +99,7 @@ void main() {
       expect(find.text('New conversation'), findsOneWidget);
     });
 
-    testWidgets('crear una conversación abre su chat', (tester) async {
+    testWidgets('creating a conversation opens its chat', (tester) async {
       final router = await pumpAssistantRoutes(
         tester,
         repository: FakeAssistantRepository(),
@@ -114,7 +116,7 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
     });
 
-    testWidgets('un fallo al crear muestra el aviso', (tester) async {
+    testWidgets('a creation failure shows the notice', (tester) async {
       final behavior = DemoBehavior()
         ..failNext(
           const FakeFailure(),
@@ -135,7 +137,9 @@ void main() {
       );
     });
 
-    testWidgets('una violación de contrato al crear no escapa', (tester) async {
+    testWidgets('a contract violation on create does not escape', (
+      tester,
+    ) async {
       await pumpAssistantRoutes(tester, repository: _ThrowingCreate());
       await tester.pumpAndSettle();
 
@@ -149,14 +153,14 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('la lista cargada es accesible', (tester) async {
+    testWidgets('the loaded list is accessible', (tester) async {
       await pumpAssistantRoutes(tester, repository: FakeAssistantRepository());
       await tester.pumpAndSettle();
 
       await expectAccessible(tester);
     });
 
-    testWidgets('con texto al doble de tamaño la lista no se desborda', (
+    testWidgets('with text at double size the list does not overflow', (
       tester,
     ) async {
       final repo = FakeAssistantRepository();

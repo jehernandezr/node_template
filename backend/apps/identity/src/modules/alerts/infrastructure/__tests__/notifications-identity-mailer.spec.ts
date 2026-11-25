@@ -22,7 +22,7 @@ import { NotificationsIdentityMailer } from '../notifications-identity-mailer.js
 class RecordingSendEmailHandler extends OperationHandler<
   typeof SendEmailOperation
 > {
-  static readonly SUPPRESSED = 'rebota@example.com';
+  static readonly SUPPRESSED = 'bounces@example.com';
   static readonly BROKEN = 'roto@example.com';
   readonly received: SendEmailInput[] = [];
 
@@ -140,7 +140,7 @@ describe('NotificationsIdentityMailer', () => {
 
     await mailer.send({
       template: IdentityEmailTemplate.TenantInvitation,
-      to: 'nueva@example.com',
+      to: 'new@example.com',
       variables: { token: 'inv-1', tenantName: 'Acme' },
     });
 

@@ -24,9 +24,9 @@ export enum GeneratorSubcommand {
 /** Reads the arguments, runs the requested generator and translates its errors into a message and an exit code. */
 export class GeneratorCommand {
   private static readonly USAGE = [
-    'Uso:',
-    '  service --name=<servicio>',
-    '  module --service=<servicio> --name=<módulo>',
+    'Usage:',
+    '  service --name=<service>',
+    '  module --service=<service> --name=<module>',
     '  verify',
     '  smoke',
   ].join('\n');
@@ -60,7 +60,7 @@ export class GeneratorCommand {
         const lines = await this.services.generate(
           GeneratorCommand.required(values.name, 'name'),
         );
-        this.output.info('Servicio generado. Agrega a mano:');
+        this.output.info('Service generated. Add by hand:');
         lines.forEach((line) => this.output.info(`- ${line}`));
         return GeneratorExitCode.Success;
       }
@@ -69,7 +69,7 @@ export class GeneratorCommand {
           GeneratorCommand.required(values.service, 'service'),
           GeneratorCommand.required(values.name, 'name'),
         );
-        this.output.info('Módulo generado.');
+        this.output.info('Module generated.');
         return GeneratorExitCode.Success;
       case GeneratorSubcommand.Verify:
         return this.verify();
@@ -84,12 +84,12 @@ export class GeneratorCommand {
     const code = await this.smoke.run();
     if (code === 0) {
       this.output.info(
-        'El servicio y el módulo generados pasan lint, test, typecheck y build.',
+        'The generated service and module pass lint, test, typecheck and build.',
       );
       return GeneratorExitCode.Success;
     }
     this.output.error(
-      `El servicio o el módulo generados no pasan sus targets (salida ${code}).`,
+      `The generated service or module do not pass their targets (exit ${code}).`,
     );
     return GeneratorExitCode.Failure;
   }
@@ -97,13 +97,11 @@ export class GeneratorCommand {
   private async verify(): Promise<GeneratorExitCode> {
     const differences = await this.verifier.differences();
     if (differences.length === 0) {
-      this.output.info(
-        'La plantilla de servicio reproduce el esqueleto de tasks.',
-      );
+      this.output.info('The service template reproduces the tasks skeleton.');
       return GeneratorExitCode.Success;
     }
     differences.forEach((path) =>
-      this.output.error(`La plantilla de servicio no reproduce ${path}`),
+      this.output.error(`The service template does not reproduce ${path}`),
     );
     return GeneratorExitCode.Failure;
   }
@@ -127,7 +125,7 @@ export class GeneratorCommand {
     if (value === undefined) {
       throw new GeneratorError(
         GeneratorErrorReason.InvalidArguments,
-        `Falta --${option}\n${GeneratorCommand.USAGE}`,
+        `Missing --${option}\n${GeneratorCommand.USAGE}`,
       );
     }
     return value;

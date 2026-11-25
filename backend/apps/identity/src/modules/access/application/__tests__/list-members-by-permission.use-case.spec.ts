@@ -93,7 +93,7 @@ describe('ListMembersByPermission', () => {
   const readers: Role = {
     id: ids.next().toString(),
     tenantId,
-    name: 'Lectores',
+    name: 'Readers',
     systemRole: null,
     permissions: [Permission.IdentityMembersRead],
   };
@@ -107,7 +107,7 @@ describe('ListMembersByPermission', () => {
   const reading: Group = {
     id: ids.next().toString(),
     tenantId,
-    name: 'Lectura',
+    name: 'Read',
     systemRole: null,
     roleIds: [readers.id],
   };

@@ -85,7 +85,7 @@ describe('ServiceMigrator', () => {
   ])(
     'closes the application once and rethrows the failure of the %s target',
     async (target) => {
-      const failure = new Error('la base no responde');
+      const failure = new Error('the database does not respond');
       runner.failWith(failure);
 
       await expect(
@@ -105,7 +105,7 @@ describe('ServiceMigrator', () => {
 
   it('rejects an invalid definition without creating the application', async () => {
     const invalid = ServiceDefinitionBuilder.aDefinition('migrator-probe')
-      .with({ name: 'otro' })
+      .with({ name: 'other' })
       .build();
 
     await expect(

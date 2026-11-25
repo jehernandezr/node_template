@@ -4,7 +4,7 @@ import { SagaError } from '../saga-error.js';
 import { SagaErrorCode } from '../saga-error-code.enum.js';
 
 describe('SagaError', () => {
-  it('extiende PlatformError y conserva su código', () => {
+  it('extends PlatformError and keeps its code', () => {
     const error = new SagaError(SagaErrorCode.NotFound, 'missing');
 
     expect(error).toBeInstanceOf(PlatformError);
@@ -13,7 +13,7 @@ describe('SagaError', () => {
     expect(error.message).toBe('missing');
   });
 
-  it('solo es reintentable por contención: ConcurrentModification, LeaseNotAcquired y LeaseLost', () => {
+  it('is retryable only on contention: ConcurrentModification, LeaseNotAcquired and LeaseLost', () => {
     const retryable = [
       SagaErrorCode.ConcurrentModification,
       SagaErrorCode.LeaseNotAcquired,
@@ -28,7 +28,7 @@ describe('SagaError', () => {
     }
   });
 
-  it('clasifica la contención como transitoria y el resto como permanente', () => {
+  it('classifies contention as transient and the rest as permanent', () => {
     const lost = new SagaError(SagaErrorCode.LeaseLost, 'lost');
     const invalid = new SagaError(SagaErrorCode.InvalidState, 'bad');
 
@@ -38,7 +38,7 @@ describe('SagaError', () => {
     );
   });
 
-  it('acepta details sin cambiar el código ni la reintentabilidad', () => {
+  it('accepts details without changing the code or the retryability', () => {
     const error = new SagaError(SagaErrorCode.InvalidState, 'bad', {
       details: { sagaId: 'a' },
     });

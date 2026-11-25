@@ -46,9 +46,9 @@ describe('Invitation', () => {
 
 describe('InvitationToken', () => {
   it('carries the tenant to its shard', () => {
-    const token = new InvitationToken('tenant-1', Buffer.from('secreto'));
+    const token = new InvitationToken('tenant-1', Buffer.from('secret'));
 
     expect(InvitationToken.parse(token.format())?.tenantId).toBe('tenant-1');
-    expect(InvitationToken.parse('iv2_tenant_secreto')).toBeUndefined();
+    expect(InvitationToken.parse('iv2_tenant_secret')).toBeUndefined();
   });
 });

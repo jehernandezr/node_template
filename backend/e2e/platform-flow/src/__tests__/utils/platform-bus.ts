@@ -68,7 +68,7 @@ export class PlatformBus {
   private dispatcherOf(service: string): MessageDispatcher {
     const dispatcher = this.dispatchers.get(service);
     if (dispatcher === undefined) {
-      throw new Error(`Sin despachador para ${service}`);
+      throw new Error(`No dispatcher for ${service}`);
     }
     return dispatcher;
   }

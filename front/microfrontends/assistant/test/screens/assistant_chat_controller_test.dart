@@ -175,7 +175,7 @@ void main() {
       final controller = await _ready(repo);
 
       controller.send('Hola');
-      controller.send('Otra vez');
+      controller.send('Again');
 
       expect(repo.asked, hasLength(1));
     });
@@ -311,10 +311,10 @@ void main() {
       repo.answers[0].addError(const FakeFailure());
       await pumpEventQueue();
 
-      controller.send('Otra vez');
+      controller.send('Again');
 
       expect(_readyOf(controller).answer, isA<AnswerStreaming>());
-      expect(repo.asked, ['Hola', 'Otra vez']);
+      expect(repo.asked, ['Hola', 'Again']);
       expect(controller.takeError(), isNull);
     });
 

@@ -28,12 +28,12 @@ void main() {
       final repositoryA = scopeA.repository(TasksData.repository);
       final repositoryB = scopeB.repository(TasksData.repository);
 
-      await repositoryA.create(const TaskDraft(title: 'Solo de A'));
+      await repositoryA.create(const TaskDraft(title: 'Only in A'));
 
       final titlesB = (await repositoryB.list()).items.map((t) => t.title);
-      expect(titlesB, isNot(contains('Solo de A')));
+      expect(titlesB, isNot(contains('Only in A')));
       final titlesA = (await repositoryA.list()).items.map((t) => t.title);
-      expect(titlesA, contains('Solo de A'));
+      expect(titlesA, contains('Only in A'));
     });
 
     test('disposing the scope closes the repository', () async {

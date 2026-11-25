@@ -25,7 +25,7 @@ describe('ServiceDefinitionValidator', () => {
       ...base,
       internalApi: {
         transport: ServiceInternalTransport.Http,
-        http: () => ({ baseUrls: {}, secret: 'secreto-de-prueba' }),
+        http: () => ({ baseUrls: {}, secret: 'test-secret' }),
       },
     };
 
@@ -33,7 +33,7 @@ describe('ServiceDefinitionValidator', () => {
   });
 
   it('rejects an invalid definition with InvalidServiceDefinitionError', () => {
-    expect(() => validator.validate({ ...base, name: 'otro' })).toThrow(
+    expect(() => validator.validate({ ...base, name: 'other' })).toThrow(
       InvalidServiceDefinitionError,
     );
   });
@@ -41,7 +41,7 @@ describe('ServiceDefinitionValidator', () => {
   it.each<[string, ServiceDefinition]>([
     ['an empty name', withName('')],
     ['a blank name', withName('   ')],
-    ['a name that differs from contract.service', { ...base, name: 'otro' }],
+    ['a name that differs from contract.service', { ...base, name: 'other' }],
     ['a root module that is not a class', { ...base, rootModule: {} as never }],
     [
       'an HTTP internal API without settings',

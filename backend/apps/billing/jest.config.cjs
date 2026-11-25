@@ -16,16 +16,16 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // Besides the `src/**/__tests__` tests, the end-to-end tests of the whole app.
+  // Besides the tests of `src/**/__tests__`, the end-to-end tests of the whole app.
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.?(int-|contract-)spec.ts',
     '<rootDir>/e2e/**/*.e2e-spec.ts',
   ],
-  // @nestjs/*, uid and load-esm are published only as ESM: Jest must transform them to load them.
+  // @nestjs/*, uid and load-esm are published only as ESM: Jest has to transform them to load them.
   transformIgnorePatterns: [
     '/node_modules/(?!(\\.pnpm/)?(@nestjs\\+|@nestjs/|uid@|uid/|load-esm@|load-esm/))',
   ],
-  // The entry points start the real process: their tests only read their source text.
+  // The entry points start the real process: their tests only read their text.
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

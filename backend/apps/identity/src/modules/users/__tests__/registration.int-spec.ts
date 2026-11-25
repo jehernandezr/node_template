@@ -25,7 +25,7 @@ runtime.describeIfAvailable(
 
     it('writes each user, her password and her event in the shard the router picks', async () => {
       const probe = app.shards();
-      const placed = await users.oneInEachShard('reparto');
+      const placed = await users.oneInEachShard('spread');
 
       for (const [shard, { ref }] of placed) {
         expect(
@@ -57,7 +57,7 @@ runtime.describeIfAvailable(
       }
       try {
         await expect(
-          users.register('paso.dos@example.com'),
+          users.register('step.two@example.com'),
         ).rejects.toBeDefined();
       } finally {
         for (const shard of probe.names()) {
@@ -73,7 +73,7 @@ runtime.describeIfAvailable(
           `SELECT 1 FROM identity_lookup WHERE status = 'reserved'`,
         ),
       ).toEqual([]);
-      await expect(users.register('paso.dos@example.com')).resolves.toEqual(
+      await expect(users.register('step.two@example.com')).resolves.toEqual(
         expect.objectContaining({ userId: expect.any(String) }),
       );
     });

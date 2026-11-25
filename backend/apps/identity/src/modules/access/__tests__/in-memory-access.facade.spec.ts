@@ -48,11 +48,11 @@ describe('InMemoryAccessFacade', () => {
     await expect(facade.isMember(ANA.userId, 'tenant-a')).resolves.toBe(true);
     await expect(facade.isMember(ANA.userId, 'tenant-b')).resolves.toBe(false);
 
-    await facade.addMember('tenant-b', ANA, ['grupo-1']);
+    await facade.addMember('tenant-b', ANA, ['group-1']);
 
     await expect(facade.isMember(ANA.userId, 'tenant-b')).resolves.toBe(true);
     expect(facade.added).toEqual([
-      { tenantId: 'tenant-b', ref: ANA, groupIds: ['grupo-1'] },
+      { tenantId: 'tenant-b', ref: ANA, groupIds: ['group-1'] },
     ]);
   });
 
@@ -64,7 +64,7 @@ describe('InMemoryAccessFacade', () => {
 
     await expect(facade.defaultTenant(ANA)).resolves.toBe('tenant-a');
     await expect(
-      facade.defaultTenant({ userId: 'otro', homeTenantId: 'tenant-a' }),
+      facade.defaultTenant({ userId: 'other', homeTenantId: 'tenant-a' }),
     ).rejects.toThrow('Default tenant not found');
   });
 

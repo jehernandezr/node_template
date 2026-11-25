@@ -35,23 +35,25 @@ describe('UseCaseRunner', () => {
 
   describe('when the use case succeeds', () => {
     it('returns the output of the use case', async () => {
-      await expect(runner.run(new EchoUseCase(), 'hola')).resolves.toBe('hola');
+      await expect(runner.run(new EchoUseCase(), 'hello')).resolves.toBe(
+        'hello',
+      );
     });
 
     it('does not open a transaction by default', async () => {
-      await runner.run(new EchoUseCase(), 'hola');
+      await runner.run(new EchoUseCase(), 'hello');
 
       expect(transactions.openedCount).toBe(0);
     });
 
     it('opens one transaction when the transaction option is true', async () => {
-      await runner.run(new EchoUseCase(), 'hola', { transaction: true });
+      await runner.run(new EchoUseCase(), 'hello', { transaction: true });
 
       expect(transactions.openedCount).toBe(1);
     });
 
     it('records the duration with the success outcome and the class name', async () => {
-      await runner.run(new AdvancingUseCase(clock, 250), 'hola');
+      await runner.run(new AdvancingUseCase(clock, 250), 'hello');
 
       expect(metrics.measurements).toContainEqual({
         type: MeasurementType.Histogram,
@@ -69,7 +71,7 @@ describe('UseCaseRunner', () => {
     it.each<[string, Error, string]>([
       [
         'a platform error',
-        new InvalidServiceDefinitionError('identity', 'motivo'),
+        new InvalidServiceDefinitionError('identity', 'reason'),
         ServiceErrorCode.InvalidDefinition,
       ],
       ['a plain error', new TypeError('boom'), 'TypeError'],
@@ -77,7 +79,7 @@ describe('UseCaseRunner', () => {
       'rejects with the same error and counts it by type for %s',
       async (_label, error, errorType) => {
         await expect(
-          runner.run(new FailingUseCase(error), 'hola'),
+          runner.run(new FailingUseCase(error), 'hello'),
         ).rejects.toBe(error);
 
         expect(
@@ -91,7 +93,7 @@ describe('UseCaseRunner', () => {
 
     it('records the duration with the error outcome', async () => {
       await expect(
-        runner.run(new FailingUseCase(new TypeError('boom')), 'hola'),
+        runner.run(new FailingUseCase(new TypeError('boom')), 'hello'),
       ).rejects.toThrow(TypeError);
 
       expect(metrics.measurements).toContainEqual(

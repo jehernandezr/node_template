@@ -100,7 +100,7 @@ function registry(): SagaRegistry {
 }
 
 describe('SagaRegistry', () => {
-  it('compila todas las sagas al sellar, no solo la primera de cada tipo', () => {
+  it('compiles every saga on seal, not only the first of each type', () => {
     const sagas = registry();
     sagas.add(new Good(), new Empty());
 
@@ -109,7 +109,7 @@ describe('SagaRegistry', () => {
     expect(error?.code).toBe(SagaErrorCode.InvalidDefinition);
   });
 
-  it('sella, compila y devuelve la saga por su tipo', () => {
+  it('seals, compiles and returns the saga by its type', () => {
     const sagas = registry();
     sagas.add(new Good(), new Other());
 
@@ -117,7 +117,7 @@ describe('SagaRegistry', () => {
     expect(sagas.get('other').pivotIndex).toBe(1);
   });
 
-  it('rechaza un tipo repetido con InvalidDefinition y el código TypeMismatch', () => {
+  it('rejects a repeated type with InvalidDefinition and the TypeMismatch code', () => {
     const sagas = registry();
     sagas.add(new Good(), new Duplicate());
 
@@ -129,7 +129,7 @@ describe('SagaRegistry', () => {
     });
   });
 
-  it('no admite un registro después de sellarlo', () => {
+  it('does not accept a registration after sealing', () => {
     const sagas = registry();
     sagas.add(new Good());
     sagas.seal();
@@ -140,7 +140,7 @@ describe('SagaRegistry', () => {
     expect(error?.code).toBe(SagaErrorCode.InvalidConfiguration);
   });
 
-  it('seal es idempotente: una segunda llamada no recompila ni cambia las sagas', () => {
+  it('seal is idempotent: a second call does not recompile or change the sagas', () => {
     const sagas = registry();
     sagas.add(new Good());
     sagas.seal();
@@ -150,7 +150,7 @@ describe('SagaRegistry', () => {
     expect(sagas.get('good')).toBe(first);
   });
 
-  it('una definición inválida falla en seal con InvalidDefinition y la lista de problemas', () => {
+  it('an invalid definition fails on seal with InvalidDefinition and the list of problems', () => {
     const sagas = registry();
     sagas.add(new Good(), new Unfinished());
 
@@ -159,7 +159,7 @@ describe('SagaRegistry', () => {
     expect(error?.code).toBe(SagaErrorCode.MissingCompensation);
   });
 
-  it('get de un tipo no registrado da UnknownDefinition', () => {
+  it('get of an unregistered type gives UnknownDefinition', () => {
     const sagas = registry();
     sagas.add(new Good());
 
@@ -168,7 +168,7 @@ describe('SagaRegistry', () => {
     );
   });
 
-  it('typeOf devuelve el tipo de una clase registrada y falla con otra', () => {
+  it('typeOf returns the type of a registered class and fails with another', () => {
     const sagas = registry();
     sagas.add(new Good());
 

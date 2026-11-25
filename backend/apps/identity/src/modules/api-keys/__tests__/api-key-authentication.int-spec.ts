@@ -33,13 +33,13 @@ runtime.describeIfAvailable(
 
     beforeAll(async () => {
       await app.start();
-      const olga = new IdentityJourney(app, 'olga.llaves@example.com');
+      const olga = new IdentityJourney(app, 'olga.keys@example.com');
       await olga.register();
       const session = await olga.signInWithEmailCode();
       await app.internal().invoke(CreateTenantOperation, {
         tenantId,
-        slug: 'llaves',
-        name: 'Llaves',
+        slug: 'keys',
+        name: 'Keys',
         region: 'eu',
         kind: TenantKind.Organization,
         ownerUserId: IdentityJourney.userIdFrom(session.accessToken),
@@ -64,8 +64,8 @@ runtime.describeIfAvailable(
       const organization = TestIds.next();
       await app.internal().invoke(CreateTenantOperation, {
         tenantId: organization,
-        slug: `llaves-${organization.slice(-12)}`,
-        name: 'Llaves',
+        slug: `keys-${organization.slice(-12)}`,
+        name: 'Keys',
         region: 'eu',
         kind: TenantKind.Organization,
         ownerUserId: user.ref.userId,
@@ -89,7 +89,7 @@ runtime.describeIfAvailable(
     ): Promise<{ id: string; secret: string }> => {
       const account = await client.post('/v1/tenant/service-accounts', {
         body: {
-          name: `Cuenta ${TestIds.next()}`,
+          name: `Account ${TestIds.next()}`,
           permissions: [Permission.IdentityMembersRead],
         },
       });
@@ -104,7 +104,7 @@ runtime.describeIfAvailable(
     const copyOf = (secret: string) => {
       const parsed = ApiKeyFormat.parse(secret);
       if (parsed === undefined) {
-        throw new Error('La key no tiene el formato esperado');
+        throw new Error('The key does not have the expected format');
       }
       return app
         .get(AuthStateReader)
@@ -127,7 +127,7 @@ runtime.describeIfAvailable(
     });
 
     it('authenticates the keys of owners from each shard, each in the shard of its tenant', async () => {
-      const placed = await new ShardedUsers(app).oneInEachShard('llavero');
+      const placed = await new ShardedUsers(app).oneInEachShard('keyring');
 
       const outcomes = await Promise.all(
         [...placed.values()].map(async (user) => {

@@ -13,7 +13,7 @@ export const valkeyConfigSchema = z.object({
   VALKEY_URL: z
     .string()
     .trim()
-    .regex(/^rediss?:\/\/\S+$/, 'se espera una URL redis:// o rediss://')
+    .regex(/^rediss?:\/\/\S+$/, 'expected a redis:// or rediss:// URL')
     .optional(),
   /** AWS: cache endpoint. */
   VALKEY_HOST: z.string().trim().min(1).optional(),
@@ -33,7 +33,7 @@ export const valkeyConfigSchema = z.object({
     .trim()
     .regex(
       ValkeyKeyspace.PREFIX_PATTERN,
-      'se esperan de 1 a 64 caracteres en [A-Za-z0-9_-]',
+      'expected 1 to 64 characters in [A-Za-z0-9_-]',
     )
     .optional(),
 });

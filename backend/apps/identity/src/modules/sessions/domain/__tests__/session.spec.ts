@@ -18,7 +18,7 @@ function aSession(overrides: Partial<SessionState> = {}): Session {
     activeTenantId: '01941f29-7c00-7000-8000-000000000003',
     deviceName: 'web',
     platform: ClientPlatform.Web,
-    tokenSalt: 'sal-de-la-sesion',
+    tokenSalt: 'session-salt',
     generation: 1,
     amr: [AuthMethodReference.Password],
     authTime: START,
@@ -152,7 +152,7 @@ describe('Session', () => {
 });
 
 describe('SessionToken', () => {
-  const secret = Buffer.from('secreto-de-prueba-de-32-bytes!!');
+  const secret = Buffer.from('test-secret-with-32-bytes!!!!!!');
 
   it('round-trips the route and the secret', () => {
     const token = new SessionToken('u-1', 't-1', 's-1', 7, secret);
@@ -168,7 +168,7 @@ describe('SessionToken', () => {
     expect(parsed?.secret.equals(secret)).toBe(true);
   });
 
-  it.each(['st2_u_t_s_1_abc', 'st1_u_t_s_x_abc', 'st1_u_t', 'otro'])(
+  it.each(['st2_u_t_s_1_abc', 'st1_u_t_s_x_abc', 'st1_u_t', 'other'])(
     'rejects %s',
     (text) => {
       expect(SessionToken.parse(text)).toBeUndefined();

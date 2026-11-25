@@ -13,52 +13,52 @@ export const shardingErrorCatalog = defineErrorCatalog(ShardingErrorCode, {
   [ShardingErrorCode.KeyMissing]: ErrorSpecs.pub(
     400,
     false,
-    'Falta la clave de fragmentación del tenant en la solicitud.',
+    'The tenant shard key is missing from the request.',
   ),
   [ShardingErrorCode.CrossShardTransaction]: ErrorSpecs.pub(
     409,
     false,
-    'La transacción involucra datos de más de un fragmento.',
+    'The transaction involves data from more than one shard.',
   ),
   [ShardingErrorCode.TenantMigrating]: ErrorSpecs.pub(
     503,
     true,
-    'El tenant se está migrando. Intenta de nuevo en unos instantes.',
+    'The tenant is being migrated. Try again in a few moments.',
   ),
   [ShardingErrorCode.TenantNotWritable]: ErrorSpecs.pub(
     503,
     true,
-    'El tenant está en solo lectura por mantenimiento. Intenta más tarde.',
+    'The tenant is read-only for maintenance. Try again later.',
   ),
   [ShardingErrorCode.UnknownTenant]: ErrorSpecs.internal(
     500,
     false,
-    'El tenant no está en el directorio de fragmentos.',
+    'The tenant is not in the shard directory.',
   ),
   [ShardingErrorCode.UnknownShard]: ErrorSpecs.internal(
     500,
     false,
-    'El fragmento indicado no existe en la configuración.',
+    'The given shard does not exist in the configuration.',
   ),
   [ShardingErrorCode.WrongRegion]: ErrorSpecs.pub(
     421,
     false,
-    'El tenant vive en otra región. Repite la petición contra la URL de `details.apiBaseUrl`.',
+    'The tenant lives in another region. Repeat the request against the URL in `details.apiBaseUrl`.',
     [ProblemDetailKey.ApiBaseUrl, ProblemDetailKey.Region],
   ),
   [ShardingErrorCode.InvalidTenantId]: ErrorSpecs.internal(
     400,
     false,
-    'El id del tenant no tiene el formato esperado.',
+    'The tenant id does not have the expected format.',
   ),
   [ShardingErrorCode.InvalidKey]: ErrorSpecs.internal(
     400,
     false,
-    'La llave de enrutamiento no es válida.',
+    'The routing key is not valid.',
   ),
   [ShardingErrorCode.InvalidConfiguration]: ErrorSpecs.internal(
     500,
     false,
-    'La configuración de sharding no es válida.',
+    'The sharding configuration is not valid.',
   ),
 });

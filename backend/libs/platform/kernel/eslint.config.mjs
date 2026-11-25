@@ -1,7 +1,7 @@
 import baseConfig from '../../../eslint.config.mjs';
 
 const literalMessage =
-  'Usa KernelErrorCode (o el enum de la librería) en lugar del código como texto.';
+  'Use KernelErrorCode (or the library enum) instead of the code as text.';
 
 export default [
   ...baseConfig,

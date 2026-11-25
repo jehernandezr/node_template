@@ -18,7 +18,7 @@ class _FailingRepository extends FakeAccountRepository {
 }
 
 void main() {
-  testWidgets('muestra cargando y luego el perfil con enlaces', (tester) async {
+  testWidgets('shows loading and then the profile with links', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -40,7 +40,7 @@ void main() {
     expect(find.text(es.agreementsLinkTitle), findsOneWidget);
   });
 
-  testWidgets('muestra error genérico con reintento si falla la carga', (
+  testWidgets('shows a generic error with retry when loading fails', (
     tester,
   ) async {
     final es = await loadEs();
@@ -59,7 +59,7 @@ void main() {
     expect(find.text(shared.actionRetry), findsOneWidget);
   });
 
-  testWidgets('un ApiErrorException muestra el código y la traza', (
+  testWidgets('an ApiErrorException shows the code and the trace', (
     tester,
   ) async {
     final es = await loadEs();
@@ -85,7 +85,7 @@ void main() {
     );
   });
 
-  testWidgets('cerrar sesión llama a onSignOut', (tester) async {
+  testWidgets('signing out calls onSignOut', (tester) async {
     final shared = await loadSharedEs();
     var signOuts = 0;
     await tester.pumpWidget(

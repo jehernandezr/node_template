@@ -26,7 +26,7 @@ const events = new TopicDef('orders-events');
 const OrderChanged = defineEvent({
   type: 'orders.order.changed.v1',
   payload: z.object({ id: z.string() }),
-  description: 'Evento de prueba.',
+  description: 'Test event.',
 });
 
 function testTopology(): Topology {

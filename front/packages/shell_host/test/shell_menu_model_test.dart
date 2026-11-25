@@ -56,7 +56,7 @@ void main() {
     test('a location outside every entry selects nothing', () {
       final menu = model(
         entries: [entry('/tasks', 1), entry('/tasks2', 2)],
-        location: '/otra',
+        location: '/other',
       );
 
       expect(menu.selectedIndex, -1);

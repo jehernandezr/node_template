@@ -135,7 +135,7 @@ export class BillingTestApp {
 
   private service(): RunningService {
     if (this.running === undefined) {
-      throw new Error('BillingTestApp no está iniciada');
+      throw new Error('BillingTestApp is not started');
     }
     return this.running;
   }

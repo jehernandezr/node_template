@@ -18,7 +18,7 @@ api = {
   health_check_path      = "/health/ready"
 }
 
-# Non-secret values. INTERNAL_API_BASE_URLS comes from the deployment, with the internal address of identity.
+# Non-secret values. The deployment provides INTERNAL_API_BASE_URLS, with the internal address of identity.
 environment_variables = {
   INTERNAL_API_SIGNER = "hmac"
   TRUST_PROXY_HOPS    = "2"

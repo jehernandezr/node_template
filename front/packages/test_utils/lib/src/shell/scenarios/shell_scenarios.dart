@@ -748,7 +748,7 @@ abstract final class _Texts {
       'Ese método de verificación no está disponible. Elige otro.';
 
   /// Message the identity switch scenario shows for the first user.
-  static const String u1Error = 'Error de u1';
+  static const String u1Error = 'Error of u1';
 }
 
 /// Keys of the widgets the scenarios tap or fill.

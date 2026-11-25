@@ -34,16 +34,16 @@ const SessionRevoked = defineEvent({
     userId: z.uuid(),
     reason: z.enum(['logout', 'admin']).default('logout'),
   }),
-  description: 'Se revocó una sesión.',
+  description: 'A session was revoked.',
 });
 const IdentityEvents = defineTopic({
   name: 'identity-events',
   events: [SessionRevoked],
-  description: 'Eventos de identity.',
+  description: 'Identity events.',
 });
 const identity = defineServiceContract({
   service: 'identity',
-  description: 'Identidad.',
+  description: 'Identity.',
   events: { sessionRevoked: SessionRevoked },
   topics: { identityEvents: IdentityEvents },
 });
@@ -51,22 +51,22 @@ const identity = defineServiceContract({
 const LedgerPosted = defineEvent({
   type: 'ledger.entry.posted.v1',
   payload: z.object({ accountId: z.string(), amount: z.number() }),
-  description: 'Se registró un asiento.',
+  description: 'A ledger entry was recorded.',
 });
 const LedgerEvents = defineTopic({
   name: 'ledger-events',
   fifo: true,
   events: [LedgerPosted],
-  description: 'Asientos en orden por cuenta.',
+  description: 'Entries in order per account.',
 });
 const RecomputeBalance = defineCommand({
   type: 'ledger.balance.recompute.v1',
   payload: z.object({ accountId: z.string() }),
-  description: 'Recalcula un saldo.',
+  description: 'Recalculates a balance.',
 });
 const ledger = defineServiceContract({
   service: 'ledger',
-  description: 'Libro mayor.',
+  description: 'Ledger.',
   events: { ledgerPosted: LedgerPosted },
   commands: { recomputeBalance: RecomputeBalance },
   topics: { ledgerEvents: LedgerEvents },
@@ -76,7 +76,7 @@ const ledger = defineServiceContract({
       fifo: true,
       commands: [RecomputeBalance],
       subscriptions: [{ topic: LedgerEvents }],
-      description: 'Proyección ordenada del libro mayor.',
+      description: 'Ordered projection of the ledger.',
     }),
   },
 });
@@ -84,11 +84,11 @@ const ledger = defineServiceContract({
 const Remind = defineCommand({
   type: 'gateway.reminder.send.v1',
   payload: z.object({ userId: z.uuid() }),
-  description: 'Envía un recordatorio.',
+  description: 'Sends a reminder.',
 });
 const gateway = defineServiceContract({
   service: 'gateway',
-  description: 'Gateway de tiempo real.',
+  description: 'Real-time gateway.',
   commands: { remind: Remind },
   queues: {
     gatewayInbox: defineQueue({
@@ -96,7 +96,7 @@ const gateway = defineServiceContract({
       commands: [Remind],
       subscriptions: [{ topic: IdentityEvents, events: [SessionRevoked] }],
       retry: { maxAttempts: 2, baseMs: 1_000, maxMs: 1_000 },
-      description: 'Sesiones revocadas y recordatorios.',
+      description: 'Revoked sessions and reminders.',
     }),
   },
 });
@@ -240,7 +240,7 @@ describe('InMemoryBus with contracts of the kit', () => {
     const Impostor = defineCommand({
       type: 'identity.session.revoked.v1',
       payload: z.object({}),
-      description: 'Comando con el tipo de un evento.',
+      description: 'Command with the type of an event.',
     });
     await expect(bus.send(Impostor, {})).rejects.toMatchObject({
       code: MessagingErrorCode.UnknownRoute,

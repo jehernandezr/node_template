@@ -192,7 +192,7 @@ describe('AuthenticateApiKey', () => {
     await expect(useCase.execute(raw(SECRET), INSIDE)).rejects.toMatchObject({
       code: IdentityErrorCode.ApiKeyInvalid,
     });
-    await expect(useCase.execute('sk_nada')).rejects.toMatchObject({
+    await expect(useCase.execute('sk_nothing')).rejects.toMatchObject({
       code: IdentityErrorCode.ApiKeyInvalid,
     });
   });

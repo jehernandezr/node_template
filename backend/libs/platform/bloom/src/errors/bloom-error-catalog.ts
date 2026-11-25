@@ -6,16 +6,16 @@ export const bloomErrorCatalog = defineErrorCatalog(BloomErrorCode, {
   [BloomErrorCode.InvalidParameters]: ErrorSpecs.internal(
     500,
     false,
-    'Los parámetros del filtro de Bloom son inválidos.',
+    'The Bloom filter parameters are invalid.',
   ),
   [BloomErrorCode.CorruptedData]: ErrorSpecs.internal(
     500,
     false,
-    'Los datos serializados del filtro de Bloom están corruptos.',
+    'The serialized Bloom filter data is corrupt.',
   ),
   [BloomErrorCode.IncompatibleFilters]: ErrorSpecs.internal(
     500,
     false,
-    'Los filtros de Bloom no tienen los mismos parámetros.',
+    'The Bloom filters do not have the same parameters.',
   ),
 });

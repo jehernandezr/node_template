@@ -42,12 +42,12 @@ export class ServiceGenerator {
     const { kebab, snake } = forms;
     return [
       `backend/tsconfig.base.json (paths): "@contracts/${kebab}": ["./libs/contracts/${kebab}/src/index.ts"]`,
-      `backend/eslint.config.mjs (depConstraints): '${kebab}' en la lista de servicios con su scope:${kebab}`,
-      `backend/infra/local/postgres/init.sql: CREATE DATABASE ${snake}_shard_0; y ${snake}_shard_1; con la extensión vector`,
-      `backend/.env.example: DB_DATABASES con ${snake}_shard_0 y ${snake}_shard_1 para correr ${kebab} en local`,
-      `backend/tools/contracts-export/project.json (implicitDependencies): "contracts-${kebab}", y después nx run contracts-export:export`,
-      `backend/apps/identity/src/modules/tenant-moves/application/tenant-move-participants.ts: ${forms.pascal}TenantMoveOperations en ALL, para que la saga MoveTenant traslade sus datos`,
-      `backend/apps/identity/src/modules/tenants/application/tenant-directory-followers.ts: ${forms.pascal}TenantDirectoryOperations en ALL, para que el alta de un tenant lo ubique también en ${kebab}`,
+      `backend/eslint.config.mjs (depConstraints): '${kebab}' in the list of services with its scope:${kebab}`,
+      `backend/infra/local/postgres/init.sql: CREATE DATABASE ${snake}_shard_0; and ${snake}_shard_1; with the vector extension`,
+      `backend/.env.example: DB_DATABASES with ${snake}_shard_0 and ${snake}_shard_1 to run ${kebab} locally`,
+      `backend/tools/contracts-export/project.json (implicitDependencies): "contracts-${kebab}", then nx run contracts-export:export`,
+      `backend/apps/identity/src/modules/tenant-moves/application/tenant-move-participants.ts: ${forms.pascal}TenantMoveOperations in ALL, so the MoveTenant saga moves its data`,
+      `backend/apps/identity/src/modules/tenants/application/tenant-directory-followers.ts: ${forms.pascal}TenantDirectoryOperations in ALL, so registering a tenant also places it in ${kebab}`,
     ];
   }
 }

@@ -35,7 +35,7 @@ function saga(id: string, status: SagaStatus, ageMs: number) {
 }
 
 describe('SagaRetentionJob', () => {
-  it('borra las Completed y Compensated anteriores a now - retentionMs y deja el resto', async () => {
+  it('deletes the Completed and Compensated sagas older than now - retentionMs and leaves the rest', async () => {
     const store = new InMemorySagaStore();
     await store.create(
       saga('old-completed', SagaStatus.Completed, RETENTION_MS + 1),
@@ -79,7 +79,7 @@ describe('SagaRetentionJob', () => {
     expect(await store.get('old-compensated')).toBeNull();
   });
 
-  it('no borra nada cuando no hay sagas antiguas terminadas', async () => {
+  it('deletes nothing when there are no old finished sagas', async () => {
     const store = new InMemorySagaStore();
     await store.create(saga('fresh', SagaStatus.Completed, 0));
     const job = new SagaRetentionJob(store, settings(), new FixedClock(NOW));
@@ -89,7 +89,7 @@ describe('SagaRetentionJob', () => {
     expect((await store.get('fresh'))?.id).toBe('fresh');
   });
 
-  it('se programa cada hora con el nombre de su enum', () => {
+  it('is scheduled every hour with its enum name', () => {
     const job = new SagaRetentionJob(
       new InMemorySagaStore(),
       settings(),

@@ -236,7 +236,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const input = {
         messageId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9e52',
         template: EmailTemplate.MfaCode,
-        to: 'doble@example.com',
+        to: 'double@example.com',
         locale: 'es',
         parameters: [{ name: TemplateParameter.Code, value: '771204' }],
       };
@@ -245,7 +245,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         app.internal().invoke(SendEmailOperation, input),
         app.internal().invoke(SendEmailOperation, input),
       ]);
-      await app.mailpit.waitForMailTo('doble@example.com', 10_000);
+      await app.mailpit.waitForMailTo('double@example.com', 10_000);
       const retried = await app.internal().invoke(SendEmailOperation, input);
 
       expect(retried).toEqual({
@@ -254,7 +254,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       });
       expect(
         (await app.mailpit.received()).filter(
-          (mail) => mail.to === 'doble@example.com',
+          (mail) => mail.to === 'double@example.com',
         ),
       ).toHaveLength(1);
     });

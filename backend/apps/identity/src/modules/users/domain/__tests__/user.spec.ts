@@ -8,7 +8,7 @@ function aUser(): User {
     id: 'u-1',
     homeTenantId: 't-1',
     email: 'ana@example.com',
-    emailFingerprint: Buffer.from('huella'),
+    emailFingerprint: Buffer.from('fingerprint'),
     displayName: 'Ana',
     locale: 'es',
   });
@@ -38,7 +38,7 @@ describe('User', () => {
     const user = aUser();
 
     user.updateProfile({ displayName: 'Ana María' });
-    user.changeEmail('ana.maria@example.com', Buffer.from('otra'), NOW);
+    user.changeEmail('ana.maria@example.com', Buffer.from('other'), NOW);
     user.setLastTenant('t-2');
 
     expect(user.snapshot()).toMatchObject({

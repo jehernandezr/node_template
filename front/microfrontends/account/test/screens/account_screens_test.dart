@@ -12,7 +12,7 @@ import '../utils/recording_step_up.dart';
 import '../utils/test_app.dart';
 
 void main() {
-  testWidgets('revocar una sesión en un scope no afecta a un scope nuevo', (
+  testWidgets('revoking a session in one scope does not affect a new scope', (
     tester,
   ) async {
     final es = await loadEs();
@@ -31,7 +31,7 @@ void main() {
     expect(find.text('Safari en iPhone'), findsOneWidget);
   });
 
-  testWidgets('la pantalla reusa el repositorio del mismo scope', (
+  testWidgets('the screen reuses the repository of the same scope', (
     tester,
   ) async {
     final es = await loadEs();
@@ -47,7 +47,7 @@ void main() {
     expect(find.text('Safari en iPhone'), findsNothing);
   });
 
-  testWidgets('cerrar sesión de la cuenta llama a services.signOut', (
+  testWidgets('signing out of the account calls services.signOut', (
     tester,
   ) async {
     final shared = await loadSharedEs();
@@ -61,7 +61,7 @@ void main() {
     expect(signOuts, 1);
   });
 
-  testWidgets('cerrar el scope libera el repositorio', (tester) async {
+  testWidgets('closing the scope releases the repository', (tester) async {
     final scope = testScope();
     await tester.pumpWidget(testApp(AccountScreens.sessions(scope)));
     await tester.pumpAndSettle();
@@ -71,7 +71,7 @@ void main() {
     expect(repository.isDisposed, isTrue);
   });
 
-  testWidgets('las acciones sensibles piden el step-up de los servicios', (
+  testWidgets('sensitive actions request the step-up from the services', (
     tester,
   ) async {
     final es = await loadEs();
@@ -88,14 +88,14 @@ void main() {
     expect(find.text('Safari en iPhone'), findsOneWidget);
   });
 
-  group('en modo vivo', () {
+  group('in live mode', () {
     ApiClient client() => ApiClient(
       transport: ScriptedTransport(),
       baseUri: Uri.parse('https://api.example.com'),
       accessToken: () async => 'token',
     );
 
-    testWidgets('seguridad, sin contrato, se muestra como no disponible', (
+    testWidgets('security, without a contract, is shown as unavailable', (
       tester,
     ) async {
       final es = await loadEs();
@@ -113,19 +113,20 @@ void main() {
       expect(find.text(es.sectionUnavailableMessage), findsOneWidget);
     });
 
-    testWidgets('la cuenta no ofrece perfil ni secciones sin contrato', (
-      tester,
-    ) async {
-      final es = await loadEs();
-      final scope = liveScope(client());
-      addTearDown(scope.dispose);
-      await tester.pumpWidget(testApp(AccountScreens.overview(scope)));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'the account offers no profile or sections without a contract',
+      (tester) async {
+        final es = await loadEs();
+        final scope = liveScope(client());
+        addTearDown(scope.dispose);
+        await tester.pumpWidget(testApp(AccountScreens.overview(scope)));
+        await tester.pumpAndSettle();
 
-      expect(find.text(es.sessionsTitle), findsWidgets);
-      expect(find.text(es.securityLinkTitle), findsNothing);
-      expect(find.text(es.agreementsLinkTitle), findsNothing);
-      expect(find.text('Ana Pérez'), findsNothing);
-    });
+        expect(find.text(es.sessionsTitle), findsWidgets);
+        expect(find.text(es.securityLinkTitle), findsNothing);
+        expect(find.text(es.agreementsLinkTitle), findsNothing);
+        expect(find.text('Ana Pérez'), findsNothing);
+      },
+    );
   });
 }

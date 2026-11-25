@@ -9,7 +9,7 @@ const target = Object.values(MigrationTarget).find(
 );
 
 if (target === undefined) {
-  console.error(`Uso: migrate [${Object.values(MigrationTarget).join('|')}]`);
+  console.error(`Usage: migrate [${Object.values(MigrationTarget).join('|')}]`);
   process.exitCode = 2;
 } else {
   try {

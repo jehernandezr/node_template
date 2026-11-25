@@ -132,7 +132,7 @@ class SessionManager {
     if (registerDevice) {
       final keys = _deviceKeys;
       if (keys == null) {
-        throw StateError('registerDevice requiere un DeviceKeyPort');
+        throw StateError('registerDevice requires a DeviceKeyPort');
       }
       publicKey = base64Url.encode(await keys.publicKey()).replaceAll('=', '');
     }

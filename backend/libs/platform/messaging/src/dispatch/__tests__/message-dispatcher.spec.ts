@@ -20,13 +20,13 @@ import { InMemoryProcessedMessageStore } from '../../__tests__/utils/in-memory-p
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
   payload: z.object({ id: z.string().min(1) }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const GenerateReport = defineCommand({
   type: 'reports.report.generate.v1',
   payload: z.object({ reportId: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const policy = new RetryPolicy(3, 100, 10_000, BackoffStrategy.None);

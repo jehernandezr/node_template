@@ -9,11 +9,11 @@ describe('serviceErrorCatalog', () => {
   });
 
   it('gives the invalid definition error its code and details', () => {
-    const error = new InvalidServiceDefinitionError('identity', 'motivo');
+    const error = new InvalidServiceDefinitionError('identity', 'reason');
 
     expect(error).toMatchObject({
       code: ServiceErrorCode.InvalidDefinition,
-      details: { serviceName: 'identity', reason: 'motivo' },
+      details: { serviceName: 'identity', reason: 'reason' },
     });
   });
 

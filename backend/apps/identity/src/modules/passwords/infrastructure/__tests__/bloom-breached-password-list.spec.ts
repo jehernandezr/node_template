@@ -22,7 +22,7 @@ class FlakyFilter extends AsyncBloomFilter {
   async addMany(items: readonly string[]): Promise<void> {
     if (this.failures > 0) {
       this.failures -= 1;
-      throw new Error('valkey no responde');
+      throw new Error('valkey does not respond');
     }
     await this.inner.addMany(items);
   }
@@ -61,7 +61,7 @@ describe('BloomBreachedPasswordList', () => {
 
     await expect(list.contains('Password1234')).resolves.toBe(true);
     await expect(list.contains('Sunshine2024')).resolves.toBe(true);
-    await expect(list.contains('una frase que nadie usa 2026')).resolves.toBe(
+    await expect(list.contains('a phrase nobody uses 2026')).resolves.toBe(
       false,
     );
   });
@@ -73,7 +73,7 @@ describe('BloomBreachedPasswordList', () => {
     );
 
     await expect(list.contains('Password1234')).rejects.toThrow(
-      'valkey no responde',
+      'valkey does not respond',
     );
     await expect(list.contains('Password1234')).resolves.toBe(true);
   });

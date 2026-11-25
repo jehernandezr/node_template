@@ -21,22 +21,22 @@ const PayPayload = z.object({ paymentId: IdSchema });
 const taskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
   payload: TaskPayload,
-  description: 'Se actualizó una tarea.',
+  description: 'A task was updated.',
 });
 const taskDeleted = defineEvent({
   type: 'tasks.task.deleted.v1',
   payload: TaskPayload,
-  description: 'Se borró una tarea.',
+  description: 'A task was deleted.',
 });
 const tasksTopic = defineTopic({
   name: 'tasks-events',
   events: [taskUpdated, taskDeleted],
-  description: 'Eventos de tareas.',
+  description: 'Task events.',
 });
 const generateReport = defineCommand({
   type: 'reports.report.generate.v1',
   payload: ReportPayload,
-  description: 'Genera un reporte.',
+  description: 'Generates a report.',
 });
 
 const tasks = defineServiceContract({
@@ -58,19 +58,19 @@ const reports = defineServiceContract({
       visibilityTimeoutSeconds: 300,
       retry: { maxAttempts: 3, baseMs: 2_000, maxMs: 60_000 },
       commands: [generateReport],
-      description: 'Comandos de reportes.',
+      description: 'Report commands.',
     }),
   },
 });
 const notifications = defineServiceContract({
   service: 'notifications',
-  description: 'Notificaciones.',
+  description: 'Notifications.',
   queues: {
     tasksEvents: defineQueue({
       name: 'notifications-tasks-events',
       retry: { maxAttempts: 6, baseMs: 2_000, maxMs: 600_000 },
       subscriptions: [{ topic: tasksTopic, events: [taskUpdated] }],
-      description: 'Eventos de tareas que notifican.',
+      description: 'Task events that notify.',
     }),
   },
 });
@@ -78,49 +78,49 @@ const notifications = defineServiceContract({
 const orderPlaced = defineEvent({
   type: 'orders.order.placed.v1',
   payload: OrderPayload,
-  description: 'Se hizo un pedido.',
+  description: 'An order was placed.',
 });
 const orderShipped = defineEvent({
   type: 'orders.order.shipped.v1',
   payload: OrderPayload,
-  description: 'Se envió un pedido.',
+  description: 'An order was shipped.',
 });
 const auditLogged = defineEvent({
   type: 'audit.entry.logged.v1',
   payload: AuditPayload,
-  description: 'Se registró una auditoría.',
+  description: 'An audit was recorded.',
 });
 const charge = defineCommand({
   type: 'payments.payment.charge.v1',
   payload: PayPayload,
-  description: 'Cobra un pago.',
+  description: 'Charges a payment.',
 });
 const refund = defineCommand({
   type: 'payments.payment.refund.v1',
   payload: PayPayload,
-  description: 'Reembolsa un pago.',
+  description: 'Refunds a payment.',
 });
 const purge = defineCommand({
   type: 'payments.payment.purge.v1',
   payload: PayPayload,
-  description: 'Purga un pago.',
+  description: 'Purges a payment.',
 });
 
 const ordersTopic = defineTopic({
   name: 'orders-events',
   fifo: true,
   events: [orderPlaced, orderShipped],
-  description: 'Eventos de pedidos.',
+  description: 'Order events.',
 });
 const auditTopic = defineTopic({
   name: 'audit-events',
   events: [auditLogged],
-  description: 'Eventos de auditoría.',
+  description: 'Audit events.',
 });
 
 const orders = defineServiceContract({
   service: 'orders',
-  description: 'Pedidos.',
+  description: 'Orders.',
   schemas: { OrderPayload },
   events: { orderPlaced, orderShipped },
   topics: { events: ordersTopic },
@@ -128,7 +128,7 @@ const orders = defineServiceContract({
 });
 const audit = defineServiceContract({
   service: 'audit',
-  description: 'Auditoría.',
+  description: 'Audit.',
   schemas: { AuditPayload },
   events: { auditLogged },
   topics: { events: auditTopic },
@@ -136,19 +136,19 @@ const audit = defineServiceContract({
 });
 const payments = defineServiceContract({
   service: 'payments',
-  description: 'Pagos.',
+  description: 'Payments.',
   schemas: { PayPayload },
   commands: { charge, refund, purge },
   queues: {
     commands: defineQueue({
       name: 'payments-commands',
       commands: [charge, refund],
-      description: 'Comandos de pagos.',
+      description: 'Payment commands.',
     }),
     unused: defineQueue({
       name: 'payments-unused',
       commands: [purge],
-      description: 'Sin remitentes.',
+      description: 'No senders.',
     }),
   },
 });
@@ -163,7 +163,7 @@ const reporting = defineServiceContract({
         { topic: ordersTopic },
         { topic: auditTopic, events: [auditLogged] },
       ],
-      description: 'Todo lo que se reporta.',
+      description: 'Everything that is reported.',
     }),
   },
 });

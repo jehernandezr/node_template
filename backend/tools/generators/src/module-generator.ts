@@ -33,7 +33,7 @@ export class ModuleGenerator {
     if (!(await this.writer.exists(`${root}/project.json`))) {
       throw new GeneratorError(
         GeneratorErrorReason.MissingService,
-        `No existe el servicio ${service.kebab} en backend/apps`,
+        `The service ${service.kebab} does not exist in backend/apps`,
       );
     }
     const edits = [

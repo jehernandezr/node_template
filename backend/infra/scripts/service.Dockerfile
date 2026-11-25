@@ -9,5 +9,5 @@ COPY backend/dist/${SERVICE}/ ./
 
 USER node
 ENV NODE_ENV=production
-# Workers and real time override this command in their Fargate task definition.
+# Workers and real time change this command in the definition of their Fargate task.
 CMD ["node", "main.js"]

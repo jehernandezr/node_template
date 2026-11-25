@@ -14,7 +14,7 @@ export const demoErrorCatalog = defineErrorCatalog(DemoErrorCode, {
   [DemoErrorCode.ItemConflict]: ErrorSpecs.pub(
     409,
     false,
-    'El elemento ya existe.',
+    'The item already exists.',
   ),
 });
 
@@ -31,7 +31,7 @@ export const CreateItemRoute = defineRoute({
   response: z.strictObject({ id: z.string(), name: z.string() }),
   successStatus: 201,
   access: Access.public(),
-  description: 'Crea un elemento.',
+  description: 'Creates an item.',
 });
 
 export const ListItemsRoute = defineRoute({
@@ -41,7 +41,7 @@ export const ListItemsRoute = defineRoute({
   request: z.strictObject({ limit: z.number().int() }),
   response: z.strictObject({ limit: z.number().int() }),
   access: Access.public(),
-  description: 'Lista elementos.',
+  description: 'Lists items.',
 });
 
 export const GetMeRoute = defineRoute({
@@ -53,7 +53,7 @@ export const GetMeRoute = defineRoute({
     tenantId: z.string().optional(),
   }),
   access: Access.authenticated(),
-  description: 'Devuelve el usuario autenticado.',
+  description: 'Returns the authenticated user.',
 });
 
 export const ReadSecretRoute = defineRoute({
@@ -62,7 +62,7 @@ export const ReadSecretRoute = defineRoute({
   path: '/v1/secret',
   response: z.strictObject({ ok: z.literal(true) }),
   access: Access.authenticated({ permissions: [Permission.TasksRead] }),
-  description: 'Lee un secreto que exige un permiso.',
+  description: 'Reads a secret that requires a permission.',
 });
 
 export const DangerousRoute = defineRoute({
@@ -71,7 +71,7 @@ export const DangerousRoute = defineRoute({
   path: '/v1/dangerous',
   successStatus: 204,
   access: Access.authenticated({ mfaMaxAgeMinutes: 5 }),
-  description: 'Operación sensible que exige MFA reciente.',
+  description: 'Sensitive operation that requires recent MFA.',
 });
 
 export const IssueSessionRoute = defineRoute({
@@ -81,7 +81,7 @@ export const IssueSessionRoute = defineRoute({
   response: SessionSchema,
   successStatus: 201,
   access: Access.public(),
-  description: 'Inicia una sesión.',
+  description: 'Starts a session.',
 });
 
 export const RotateSessionRoute = defineRoute({
@@ -91,7 +91,7 @@ export const RotateSessionRoute = defineRoute({
   request: z.strictObject({ sessionToken: z.string().optional() }),
   response: SessionSchema,
   access: Access.public(),
-  description: 'Renueva una sesión.',
+  description: 'Renews a session.',
 });
 
 export const ClearSessionRoute = defineRoute({
@@ -101,7 +101,7 @@ export const ClearSessionRoute = defineRoute({
   request: z.strictObject({ sessionToken: z.string().optional() }),
   successStatus: 204,
   access: Access.public(),
-  description: 'Cierra la sesión.',
+  description: 'Ends the session.',
 });
 
 export const OldItemsRoute = defineRoute({
@@ -115,7 +115,7 @@ export const OldItemsRoute = defineRoute({
     sunset: '2099-01-01',
     replacement: 'demo.items.list',
   },
-  description: 'Ruta deprecada con reemplazo.',
+  description: 'Deprecated route with a replacement.',
 });
 
 export const GoneItemsRoute = defineRoute({
@@ -125,7 +125,7 @@ export const GoneItemsRoute = defineRoute({
   response: z.strictObject({ ok: z.literal(true) }),
   access: Access.public(),
   deprecated: { since: '2020-01-01', sunset: '2021-01-01' },
-  description: 'Ruta ya retirada.',
+  description: 'Route already retired.',
 });
 
 export const ConflictRoute = defineRoute({
@@ -134,7 +134,7 @@ export const ConflictRoute = defineRoute({
   path: '/v1/conflicts',
   errors: [DemoErrorCode.ItemConflict],
   access: Access.public(),
-  description: 'Responde un conflicto de negocio.',
+  description: 'Responds with a business conflict.',
 });
 
 export const BoomRoute = defineRoute({
@@ -142,7 +142,7 @@ export const BoomRoute = defineRoute({
   method: HttpMethod.Get,
   path: '/v1/boom',
   access: Access.public(),
-  description: 'Falla con un error común.',
+  description: 'Fails with a common error.',
 });
 
 export const BadOutputRoute = defineRoute({
@@ -151,7 +151,7 @@ export const BadOutputRoute = defineRoute({
   path: '/v1/bad-output',
   response: z.strictObject({ ok: z.boolean() }),
   access: Access.public(),
-  description: 'Devuelve una respuesta que no cumple su esquema.',
+  description: 'Returns a response that does not match its schema.',
 });
 
 export const SlowRoute = defineRoute({
@@ -159,7 +159,7 @@ export const SlowRoute = defineRoute({
   method: HttpMethod.Get,
   path: '/v1/slow',
   access: Access.public(),
-  description: 'Tarda más que su tope de tiempo.',
+  description: 'Takes longer than its time limit.',
 });
 
 export const LimitedRoute = defineRoute({
@@ -168,7 +168,7 @@ export const LimitedRoute = defineRoute({
   path: '/v1/auth/limited',
   successStatus: 204,
   access: Access.public(),
-  description: 'Ruta de credenciales con el límite por defecto.',
+  description: 'Credentials route with the default limit.',
 });
 
 export const ApiKeyItemsRoute = defineRoute({
@@ -177,12 +177,12 @@ export const ApiKeyItemsRoute = defineRoute({
   path: '/v1/api-key-items',
   response: z.strictObject({ ok: z.literal(true) }),
   access: Access.authenticated(),
-  description: 'Lista elementos con JWT o API key.',
+  description: 'Lists items with a JWT or an API key.',
 });
 
 export const demoContract = defineServiceContract({
   service: 'demo',
-  description: 'Contrato de prueba de la entrada HTTP.',
+  description: 'Test contract for the HTTP entry point.',
   enums: { DemoErrorCode },
   errors: { DemoErrorCode: demoErrorCatalog },
   routes: {

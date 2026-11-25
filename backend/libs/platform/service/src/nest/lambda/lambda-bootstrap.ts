@@ -48,7 +48,7 @@ export class LambdaBootstrap {
     if (address === undefined) {
       await running.stop();
       throw new Error(
-        `${definition.name} no reportó la dirección de loopback; la función no puede reenviar las peticiones`,
+        `${definition.name} did not report the loopback address; the function cannot forward requests`,
       );
     }
     return new LoopbackForwarder(

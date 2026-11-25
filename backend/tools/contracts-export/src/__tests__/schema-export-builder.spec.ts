@@ -214,7 +214,7 @@ describe('SchemaExportBuilder', () => {
     const generate = defineCommand({
       type: 'sample.report.generate.v1',
       payload: Payload,
-      description: 'Genera.',
+      description: 'Generates.',
     });
     const legacy = defineRoute({
       id: 'sample.items.legacy',
@@ -256,7 +256,7 @@ describe('SchemaExportBuilder', () => {
           kind: 'command',
           version: 1,
           payload: { $ref: '#/schemas/SamplePayload' },
-          description: 'Genera.',
+          description: 'Generates.',
         },
       ]);
       expect((doc['routes'] as Obj[])[0]?.['deprecated']).toEqual({

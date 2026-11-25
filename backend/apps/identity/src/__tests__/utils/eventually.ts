@@ -9,7 +9,7 @@ export class Eventually {
     const deadline = performance.now() + timeoutMs;
     while (!(await condition())) {
       if (performance.now() > deadline) {
-        throw new Error('La condición no se cumplió a tiempo');
+        throw new Error('The condition was not met in time');
       }
       await new Promise((resolve) => setTimeout(resolve, Eventually.POLL_MS));
     }

@@ -8,5 +8,5 @@ export const SmokeOrderCreated = defineEvent({
     orderId: z.string(),
     customer: z.string(),
   }),
-  description: 'Se registró un pedido.',
+  description: 'An order was registered.',
 });

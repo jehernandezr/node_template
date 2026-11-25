@@ -45,7 +45,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(ScenarioProbe.modeText(ShellMode.demo)), findsOneWidget);
-      expect(find.textContaining('cliente:'), findsNothing);
+      expect(find.textContaining('client:'), findsNothing);
     } finally {
       await scope.dispose();
     }

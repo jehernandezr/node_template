@@ -52,7 +52,7 @@ const commons = stacks.map((stack) => ({
 for (const { stack, content } of commons) {
   if (content !== commons[0].content) {
     failures.push(
-      `stacks/${stack}/variables_common.tf difiere de stacks/${commons[0].stack}`,
+      `stacks/${stack}/variables_common.tf differs from stacks/${commons[0].stack}`,
     );
   }
 }
@@ -70,12 +70,12 @@ for (const env of subdirs(environmentsDir)) {
     const expected = stack === 'services' ? 'service' : stack;
     if (!stacks.includes(expected))
       failures.push(
-        `environments/${env}/${stack}: no existe stacks/${expected}`,
+        `environments/${env}/${stack}: stacks/${expected} does not exist`,
       );
     for (const d of dirs) {
       for (const file of ['backend.tfvars', 'terraform.tfvars']) {
         if (!existsSync(join(environmentsDir, env, d, file))) {
-          failures.push(`environments/${env}/${d}/${file} no existe`);
+          failures.push(`environments/${env}/${d}/${file} does not exist`);
         }
       }
     }
@@ -88,7 +88,7 @@ for (const example of subdirs(join(terraformRoot, 'examples'))) {
 }
 
 if (failures.length > 0) {
-  console.error(`\nFallas:\n${failures.map((f) => `- ${f}`).join('\n')}`);
+  console.error(`\nFailures:\n${failures.map((f) => `- ${f}`).join('\n')}`);
   process.exit(1);
 }
-console.log('\nTerraform válido.');
+console.log('\nTerraform is valid.');

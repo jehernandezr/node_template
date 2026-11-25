@@ -4,7 +4,7 @@ import { SagaError } from '../../errors/saga-error.js';
 import { SagaSettings } from '../saga-settings.js';
 
 describe('SagaSettings', () => {
-  it('usa los valores por defecto cuando no se dan', () => {
+  it('uses the default values when none are given', () => {
     const settings = new SagaSettings(
       { owner: 'node-a' },
       new FixedRandomSource(),
@@ -18,7 +18,7 @@ describe('SagaSettings', () => {
     expect(settings.recoveryBatchSize).toBe(50);
   });
 
-  it('rechaza un lease que no supera el tiempo de un paso con InvalidConfiguration', () => {
+  it('rejects a lease that does not exceed the step time with InvalidConfiguration', () => {
     let error: unknown;
     try {
       new SagaSettings(
@@ -33,7 +33,7 @@ describe('SagaSettings', () => {
     expect((error as SagaError).code).toBe(SagaErrorCode.InvalidConfiguration);
   });
 
-  it('espera con jitter parejo tomado del generador aleatorio inyectado', () => {
+  it('waits with equal jitter taken from the injected random generator', () => {
     const settings = new SagaSettings(
       { owner: 'node-a' },
       new FixedRandomSource([0.5]),

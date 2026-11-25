@@ -69,7 +69,7 @@ function routeWith(access: RouteDefinition['access']): RouteDefinition {
     method: HttpMethod.Get,
     path: '/v1/items',
     access,
-    description: 'Ruta de prueba.',
+    description: 'Test route.',
   });
 }
 

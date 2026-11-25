@@ -19,7 +19,7 @@ class TokensHarness {
   readonly tokens = new PasswordResetTokens(
     this.repository,
     new SecretGenerator(new SystemRandomSource()),
-    new HmacSecretHasher(['llave', 'de', 'prueba'].join('-')),
+    new HmacSecretHasher(['test', 'secret', 'key'].join('-')),
     TestShardScopes.create(),
     new SequentialIdGenerator(),
     this.clock,
@@ -77,7 +77,7 @@ describe('PasswordResetTokens', () => {
       await expect(harness.tokens.redeem(text)).resolves.toBe(false);
     });
 
-    it.each(['pr1_malformado', 'otro'])(
+    it.each(['pr1_malformed', 'other'])(
       'refuses the malformed token %s',
       async (text) => {
         const harness = new TokensHarness();
