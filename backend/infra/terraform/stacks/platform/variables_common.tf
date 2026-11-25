@@ -1,40 +1,40 @@
-# Variables y locales comunes a todos los stacks. Este archivo es idéntico en cada stack;
-# backend/infra/scripts/tf-validate.mjs falla si alguno difiere. La lectura del estado de
-# otros stacks vive en remote_state.tf.
+# Variables and locals shared by all stacks. This file is identical in every stack;
+# backend/infra/scripts/tf-validate.mjs fails if any copy differs. Reading the state of
+# other stacks lives in remote_state.tf.
 
 variable "region" {
-  description = "Región de AWS del stack. Cada región tiene sus propios stacks y estados."
+  description = "AWS region of the stack. Each region has its own stacks and states."
   type        = string
 }
 
 variable "environment" {
-  description = "Ambiente: local (LocalStack), dev, staging o prod."
+  description = "Environment: local (LocalStack), dev, staging or prod."
   type        = string
 
   validation {
     condition     = contains(["local", "dev", "staging", "prod"], var.environment)
-    error_message = "environment debe ser local, dev, staging o prod."
+    error_message = "environment must be local, dev, staging or prod."
   }
 }
 
 variable "name_prefix" {
-  description = "Prefijo de los nombres de todos los recursos, por ejemplo node-template-dev."
+  description = "Name prefix for all resources, for example node-template-dev."
   type        = string
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,20}[a-z0-9]$", var.name_prefix))
-    error_message = "name_prefix debe usar minúsculas, números y guiones, y tener entre 3 y 22 caracteres."
+    error_message = "name_prefix must use lowercase letters, digits and hyphens, and be 3 to 22 characters long."
   }
 }
 
 variable "aws_endpoint_url" {
-  description = "Endpoint único de AWS para el ambiente local (LocalStack), por ejemplo http://localhost:4566. Null en AWS."
+  description = "Single AWS endpoint for the local environment (LocalStack), for example http://localhost:4566. Null on AWS."
   type        = string
   default     = null
 }
 
 variable "extra_tags" {
-  description = "Etiquetas adicionales para todos los recursos del stack."
+  description = "Additional tags for all resources of the stack."
   type        = map(string)
   default     = {}
 }

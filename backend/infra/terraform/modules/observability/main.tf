@@ -34,7 +34,7 @@ resource "terraform_data" "input_check" {
   lifecycle {
     precondition {
       condition     = var.create_internal_alb || (var.alb_listener_arn != null && var.alb_security_group_id != null && length(var.host_headers) > 0)
-      error_message = "Con create_internal_alb = false indica alb_listener_arn, alb_security_group_id y host_headers."
+      error_message = "With create_internal_alb = false, set alb_listener_arn, alb_security_group_id and host_headers."
     }
   }
 }
@@ -50,7 +50,7 @@ module "kms" {
   tags           = var.tags
 }
 
-# --- Almacenamiento: S3 para los datos y EFS para los metadatos -------------
+# --- Storage: S3 for data and EFS for metadata ------------------------------
 
 resource "aws_s3_bucket" "storage" {
   bucket        = local.bucket
@@ -122,8 +122,8 @@ resource "aws_s3_bucket_policy" "storage" {
   depends_on = [aws_s3_bucket_public_access_block.storage]
 }
 
-# OpenObserve en un solo nodo guarda sus metadatos (usuarios, dashboards, alertas) en SQLite.
-# EFS los conserva entre despliegues; los datos de telemetría van a S3.
+# Single-node OpenObserve stores its metadata (users, dashboards, alerts) in SQLite.
+# EFS keeps it across deployments; telemetry data goes to S3.
 resource "aws_security_group" "efs" {
   name        = "${local.name}-efs"
   description = "EFS de OpenObserve, solo desde sus tareas"
@@ -187,7 +187,7 @@ resource "aws_efs_access_point" "data" {
   tags = merge(var.tags, { Name = "${local.name}-data" })
 }
 
-# --- Secretos ---------------------------------------------------------------
+# --- Secrets ----------------------------------------------------------------
 
 resource "random_password" "root" {
   length           = 40
@@ -214,7 +214,7 @@ resource "aws_secretsmanager_secret_version" "root" {
   })
 }
 
-# --- Logs e IAM -------------------------------------------------------------
+# --- Logs and IAM -----------------------------------------------------------
 
 resource "aws_cloudwatch_log_group" "this" {
   name              = local.log_group
@@ -318,7 +318,7 @@ resource "aws_iam_role_policy" "task" {
   policy = data.aws_iam_policy_document.task.json
 }
 
-# --- Red --------------------------------------------------------------------
+# --- Network ----------------------------------------------------------------
 
 resource "aws_security_group" "service" {
   name        = local.name
@@ -337,7 +337,7 @@ resource "aws_vpc_security_group_ingress_rule" "service_from_alb" {
   description                  = "Tráfico del ALB"
 }
 
-# HTTPS saliente por NAT o endpoints de VPC (ADR 0016).
+# Outbound HTTPS through NAT or VPC endpoints (ADR 0016).
 # trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "service_https" {
   security_group_id = aws_security_group.service.id
@@ -464,7 +464,7 @@ resource "aws_lb_listener_rule" "shared" {
   tags = var.tags
 }
 
-# --- Tarea y servicio -------------------------------------------------------
+# --- Task and service -------------------------------------------------------
 
 resource "aws_ecs_task_definition" "this" {
   family                   = local.name
@@ -535,8 +535,8 @@ resource "aws_ecs_task_definition" "this" {
   depends_on = [aws_secretsmanager_secret_version.root, terraform_data.input_check]
 }
 
-# Un solo nodo con SQLite en EFS: nunca dos tareas a la vez, así que el despliegue
-# detiene la tarea anterior antes de iniciar la nueva.
+# Single node with SQLite on EFS: never two tasks at once, so a deployment
+# stops the old task before starting the new one.
 resource "aws_ecs_service" "this" {
   name            = "openobserve"
   cluster         = var.cluster_arn

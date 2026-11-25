@@ -1,5 +1,5 @@
 name: shell_core
-description: "Contrato de microfrontend y composición de los shells: manifiestos, registro, runtime, router y reglas de acceso."
+description: "Microfrontend contract and shell composition: manifests, registry, runtime, router and access rules."
 publish_to: none
 version: 0.0.1
 

@@ -1,20 +1,20 @@
 # web_shell
 
-Shell Flutter para web. Compone los microfrontends que declaran `AppPlatform.web` sobre `shell_host`.
+Flutter shell for the web. It composes the microfrontends that declare `AppPlatform.web` on top of `shell_host`.
 
-## Qué hace
+## What it does
 
-- `lib/main.dart` arranca `ShellHostApp` con el `ShellHost` de `buildWebHost`. Con `--dart-define=API_BASE_URL=...` le pasa la conexión real de `lib/src/config.dart` (cookie httpOnly y cliente del navegador con credenciales).
-- `lib/src/web_shell.dart`: `webManifests` (`account`, `tasks`, `notifications`, `assistant`, `billing`, `backoffice`), los perfiles de demostración que ofrece y el marco.
-- `lib/src/pages/web_shell_scaffold.dart`: `ShellChrome` sin barra superior (cada pantalla dibuja la suya con `AppPage`). Etiqueta, icono e insignia de cada destino salen de la `MenuEntry` del manifiesto; el shell no conoce ningún microfrontend.
+- `lib/main.dart` starts `ShellHostApp` with the `ShellHost` from `buildWebHost`. With `--dart-define=API_BASE_URL=...` it passes the real connection from `lib/src/config.dart` (httpOnly cookie and a browser client with credentials).
+- `lib/src/web_shell.dart`: `webManifests` (`account`, `tasks`, `notifications`, `assistant`, `billing`, `backoffice`), the demo profiles it offers and the frame.
+- `lib/src/pages/web_shell_scaffold.dart`: `ShellChrome` without a top bar (each screen draws its own with `AppPage`). Label, icon and badge of each destination come from the manifest's `MenuEntry`; the shell knows no microfrontend.
 
-Sesión, login, paso adicional, `/forbidden`, router, insignias y modo demo o vivo son de `shell_host`.
+Session, login, additional step, `/forbidden`, router, badges and demo or live mode belong to `shell_host`.
 
-## Modo demostración
+## Demo mode
 
-Sin `API_BASE_URL`, `/login` no valida credenciales y ofrece tres perfiles: cliente, administrador del tenant y superadministrador. Con API real solo aparecen los microfrontends que declaran `ShellMode.live`.
+Without `API_BASE_URL`, `/login` does not validate credentials and offers three profiles: customer, tenant administrator and super administrator. With a real API only the microfrontends that declare `ShellMode.live` appear.
 
-## Pruebas
+## Tests
 
 ```sh
 cd front/apps/web
@@ -22,4 +22,4 @@ flutter analyze
 flutter test
 ```
 
-`test/web_shell_test.dart` monta el shell con los manifiestos reales: redirecciones, menú por perfil, `/forbidden`, cierre de sesión, insignia de notificaciones, aislamiento entre usuarios, paso adicional y la sesión real con una `IdentityConnection` de prueba. Carga las librerías diferidas en `setUpAll` (ver `loadDeferredLibraries` en `package:shell_core/testing.dart`).
+`test/web_shell_test.dart` mounts the shell with the real manifests: redirects, menu per profile, `/forbidden`, sign-out, notifications badge, isolation between users, additional step and the real session with a test `IdentityConnection`. It loads the deferred libraries in `setUpAll` (see `loadDeferredLibraries` in `package:shell_core/testing.dart`).

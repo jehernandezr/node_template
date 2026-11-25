@@ -1,5 +1,5 @@
 name: auth
-description: "Sesión del front: SessionManager, repositorio de identity sobre ApiClient, puertos y fakes."
+description: "Front session: SessionManager, identity repository on top of ApiClient, ports and fakes."
 publish_to: none
 version: 0.0.1
 

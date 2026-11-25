@@ -1,4 +1,4 @@
-# Bucket con versionado y cifrado, creado una vez por ambiente (ver README).
+# Versioned, encrypted bucket, created once per environment (see README).
 bucket       = "node-template-dev-tfstate"
 key          = "us-east-1/services/notifications/terraform.tfstate"
 region       = "us-east-1"

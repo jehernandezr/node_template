@@ -1,5 +1,5 @@
 name: web_shell
-description: "Shell web: compone los microfrontends web sobre shell_host."
+description: "Web shell: composes the web microfrontends on top of shell_host."
 publish_to: 'none'
 version: 1.0.0+1
 

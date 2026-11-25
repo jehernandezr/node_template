@@ -1,4 +1,4 @@
-# Estado en el S3 de LocalStack. backend/infra/scripts/local.sh crea el bucket.
+# State in the LocalStack S3. backend/infra/scripts/local.sh creates the bucket.
 bucket                      = "node-template-local-tfstate"
 key                         = "us-east-1/platform/terraform.tfstate"
 region                      = "us-east-1"

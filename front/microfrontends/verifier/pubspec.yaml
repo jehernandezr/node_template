@@ -1,5 +1,5 @@
 name: mf_verifier
-description: "Microfrontend del verificador de inicios de sesión en el dispositivo."
+description: "On-device sign-in verifier microfrontend."
 publish_to: none
 version: 0.0.1
 

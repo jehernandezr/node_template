@@ -3,8 +3,8 @@ environment  = "prod"
 name_prefix  = "node-template-prod"
 state_bucket = "node-template-prod-tfstate"
 
-# Alarmas y costos: en prod es obligatorio un destino. Usa un buzón real; los valores de
-# ejemplo (REEMPLAZAR, example.com) se rechazan. El plan falla hasta definir uno.
+# Alarms and costs: a destination is required in prod. Use a real mailbox; example
+# values (REEMPLAZAR, example.com) are rejected. The plan fails until one is set.
 # alarm_email     = "alarmas@tu-dominio"
 # alarm_topic_arn = "arn:aws:sns:us-east-1:222222222222:alarmas"
 monthly_budget = 1500

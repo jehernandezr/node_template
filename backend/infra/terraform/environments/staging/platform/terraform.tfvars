@@ -3,8 +3,8 @@ environment  = "staging"
 name_prefix  = "node-template-staging"
 state_bucket = "node-template-staging-tfstate"
 
-# Alarmas y costos: en staging es obligatorio un destino. Usa un buzón real; los valores de
-# ejemplo (REEMPLAZAR, example.com) se rechazan.
+# Alarms and costs: a destination is required in staging. Use a real mailbox; example
+# values (REEMPLAZAR, example.com) are rejected.
 # alarm_email     = "alarmas-staging@tu-dominio"
 # alarm_topic_arn = "arn:aws:sns:us-east-1:111111111111:alarmas"
 monthly_budget = 400

@@ -1,54 +1,54 @@
 output "vpc_id" {
-  description = "ID de la VPC."
+  description = "VPC ID."
   value       = aws_vpc.this.id
 }
 
 output "private_subnet_ids" {
-  description = "IDs de las subredes privadas de aplicación (2 AZ, /22). Con egress distinto de none salen por NAT."
+  description = "IDs of the private application subnets (2 AZs, /22). With egress other than none they go out through NAT."
   value       = aws_subnet.private[*].id
 }
 
 output "public_subnet_ids" {
-  description = "IDs de las subredes públicas (2 AZ, /22)."
+  description = "IDs of the public subnets (2 AZs, /22)."
   value       = aws_subnet.public[*].id
 }
 
 output "data_subnet_ids" {
-  description = "IDs de las subredes de datos (2 AZ, /22). Sin ruta a Internet. Alojan RDS, RDS Proxy y Valkey."
+  description = "IDs of the data subnets (2 AZs, /22). No route to the Internet. They host RDS, RDS Proxy and Valkey."
   value       = aws_subnet.data[*].id
 }
 
 output "endpoint_security_group_id" {
-  description = "Security group de los endpoints de interfaz. Permite HTTPS desde la VPC."
+  description = "Security group of the interface endpoints. Allows HTTPS from the VPC."
   value       = aws_security_group.endpoints.id
 }
 
 output "private_route_table_ids" {
-  description = "IDs de las tablas de rutas de las subredes privadas (una por AZ)."
+  description = "IDs of the private subnet route tables (one per AZ)."
   value       = aws_route_table.private[*].id
 }
 
 output "data_route_table_id" {
-  description = "ID de la tabla de rutas de las subredes de datos."
+  description = "ID of the data subnet route table."
   value       = aws_route_table.data.id
 }
 
 output "nat_public_ips" {
-  description = "IPs públicas de los NAT gateways, para listas de permitidos de proveedores externos. Vacío con egress none."
+  description = "Public IPs of the NAT gateways, for external provider allowlists. Empty with egress none."
   value       = aws_eip.nat[*].public_ip
 }
 
 output "egress" {
-  description = "Modo de salida a Internet configurado."
+  description = "Configured Internet egress mode."
   value       = var.egress
 }
 
 output "flow_log_group_name" {
-  description = "Nombre del grupo de CloudWatch Logs de los flow logs."
+  description = "Name of the CloudWatch Logs group for the flow logs."
   value       = aws_cloudwatch_log_group.flow_logs.name
 }
 
 output "flow_logs_kms_key_arn" {
-  description = "ARN de la clave KMS de los flow logs."
+  description = "ARN of the flow logs KMS key."
   value       = module.flow_logs_kms.arn
 }

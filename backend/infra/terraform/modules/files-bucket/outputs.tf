@@ -1,24 +1,24 @@
 output "bucket_id" {
-  description = "Nombre del bucket de archivos."
+  description = "Name of the files bucket."
   value       = aws_s3_bucket.this.id
 }
 
 output "bucket_arn" {
-  description = "ARN del bucket de archivos."
+  description = "ARN of the files bucket."
   value       = aws_s3_bucket.this.arn
 }
 
 output "bucket_regional_domain_name" {
-  description = "Dominio regional del bucket."
+  description = "Regional domain name of the bucket."
   value       = aws_s3_bucket.this.bucket_regional_domain_name
 }
 
 output "kms_key_arn" {
-  description = "ARN de la clave KMS que cifra el bucket."
+  description = "ARN of the KMS key that encrypts the bucket."
   value       = local.kms_key_arn
 }
 
 output "read_write_policy_json" {
-  description = "Documento de política IAM con acceso de lectura y escritura al bucket y su clave, para adjuntar a los roles de los servicios que manejan archivos."
+  description = "IAM policy document with read and write access to the bucket and its key, to attach to the roles of services that handle files."
   value       = data.aws_iam_policy_document.read_write.json
 }

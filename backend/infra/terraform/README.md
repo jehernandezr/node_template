@@ -1,41 +1,41 @@
-# Infraestructura Terraform
+# Terraform infrastructure
 
-Infraestructura AWS de la plataforma, organizada en módulos, stacks con estado propio y valores por ambiente. La decisión está en el [ADR 0020](../../../docs/adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
+AWS infrastructure for the platform, organized in modules, stacks with their own state and per-environment values. The decision is in [ADR 0020](../../../docs/adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
 
-## Estructura
+## Structure
 
 ```
 backend/infra/
 ├── terraform/
-│   ├── modules/             Piezas reutilizables, sin backend ni proveedor (las CMK, con kms-key)
-│   ├── stacks/              Raíces con estado propio
-│   │   ├── network/         VPC, subredes, NAT, endpoints y flow logs (ADR 0016)
-│   │   ├── platform/        Alarmas y presupuesto, ECS, OpenObserve, API HTTP, ALB, archivos, SES y la CMK de logs del cómputo
-│   │   ├── data/            RDS con bases por shard y catálogo, RDS Proxy, réplicas y Valkey
-│   │   ├── messaging/       Tópicos, colas y DLQ de topology.json y la cola de eventos de SES
-│   │   ├── edge/            CloudFront con WAF y DNS
-│   │   └── service/         Un microservicio: se instancia una vez por servicio
-│   ├── environments/        <ambiente>/<stack>/{backend.tfvars,terraform.tfvars}
-│   │   └── <ambiente>/services/<servicio>/   Valores de cada servicio
-│   ├── examples/            Un uso mínimo de cada módulo, validado en CI
-│   ├── topology.json        Topología exportada por contracts-export (build-topology.ts)
-│   ├── .terraform-version   Versión de Terraform de CI
-│   ├── .tflint-version      Versión de tflint de CI
-│   └── .tflint.hcl          Reglas de tflint (incluye el ruleset de AWS)
-├── scripts/                 deploy-aws.sh, local.sh, tf-validate.mjs, check_vendor.py y fetch-rds-ca-bundle.sh
-└── local/                   init.sql de PostgreSQL, LocalStack y el OpenTelemetry Collector
+│   ├── modules/             Reusable pieces, without backend or provider (CMKs come from kms-key)
+│   ├── stacks/              Roots with their own state
+│   │   ├── network/         VPC, subnets, NAT, endpoints and flow logs (ADR 0016)
+│   │   ├── platform/        Alarms and budget, ECS, OpenObserve, HTTP API, ALB, files, SES and the compute logs CMK
+│   │   ├── data/            RDS with per-shard and catalog databases, RDS Proxy, replicas and Valkey
+│   │   ├── messaging/       Topics, queues and DLQs from topology.json and the SES events queue
+│   │   ├── edge/            CloudFront with WAF and DNS
+│   │   └── service/         One microservice: instantiated once per service
+│   ├── environments/        <environment>/<stack>/{backend.tfvars,terraform.tfvars}
+│   │   └── <environment>/services/<service>/   Values for each service
+│   ├── examples/            A minimal usage of each module, validated in CI
+│   ├── topology.json        Topology exported by contracts-export (build-topology.ts)
+│   ├── .terraform-version   Terraform version used in CI
+│   ├── .tflint-version      tflint version used in CI
+│   └── .tflint.hcl          tflint rules (includes the AWS ruleset)
+├── scripts/                 deploy-aws.sh, local.sh, tf-validate.mjs, check_vendor.py and fetch-rds-ca-bundle.sh
+└── local/                   PostgreSQL init.sql, LocalStack and the OpenTelemetry Collector
 ```
 
-Cada stack tiene:
+Each stack has:
 
-- `config.tf`: versiones, proveedor y `backend "s3" {}` vacío. El bucket y la clave llegan de `backend.tfvars`.
-- `variables_common.tf`: `region`, `environment`, `name_prefix`, `aws_endpoint_url` y etiquetas. Es idéntico en todos los stacks; `tf-validate.mjs` falla si difiere.
-- `remote_state.tf`: lee los stacks anteriores en `<región>/<stack>/terraform.tfstate`.
-- `tests/`: pruebas de `terraform test` con proveedores simulados, sin AWS.
+- `config.tf`: versions, provider and an empty `backend "s3" {}`. The bucket and key come from `backend.tfvars`.
+- `variables_common.tf`: `region`, `environment`, `name_prefix`, `aws_endpoint_url` and tags. It is identical in every stack; `tf-validate.mjs` fails if it differs.
+- `remote_state.tf`: reads the previous stacks from `<region>/<stack>/terraform.tfstate`.
+- `tests/`: `terraform test` tests with mocked providers, without AWS.
 
-## Stacks y orden
+## Stacks and order
 
-| Orden | Stack       | Lee                                | Ambientes                 |
+| Order | Stack       | Reads                              | Environments              |
 | ----- | ----------- | ---------------------------------- | ------------------------- |
 | 1     | `network`   |                                    | dev, staging, prod        |
 | 2     | `platform`  | network                            | local, dev, staging, prod |
@@ -44,96 +44,96 @@ Cada stack tiene:
 | 5     | `edge`      | platform                           | dev, staging, prod        |
 | 6     | `service`   | network, platform, data, messaging | dev, staging, prod        |
 
-Cada región tiene sus propios estados con el mismo código: la región forma parte de la clave.
+Each region has its own states with the same code: the region is part of the key.
 
-## Servicios
+## Services
 
-Un servicio es una instancia del stack `service` con su propio estado. Para agregar uno, copia `stacks/service/example.tfvars` a `environments/<ambiente>/services/<servicio>/terraform.tfvars` y crea a su lado un `backend.tfvars` con `key = "<región>/services/<servicio>/terraform.tfstate"`. Además:
+A service is an instance of the `service` stack with its own state. To add one, copy `stacks/service/example.tfvars` to `environments/<environment>/services/<service>/terraform.tfvars` and create a `backend.tfvars` next to it with `key = "<region>/services/<service>/terraform.tfstate"`. Also:
 
-- Agrégalo a `db_services` y a `valkey_services` en el `terraform.tfvars` del stack `data`.
-- Declara sus tópicos y colas en la topología. Los permisos de publicar, enviar y consumir salen de `producers` y `consumer` de `topology.json`; no se repiten en el `tfvars`.
+- Add it to `db_services` and `valkey_services` in the `terraform.tfvars` of the `data` stack.
+- Declare its topics and queues in the topology. The publish, send and consume permissions come from `producers` and `consumer` in `topology.json`; they are not repeated in the `tfvars`.
 
-Partes de un servicio:
+Parts of a service:
 
-- `api`: `runtime = "lambda"` (función con `lambda.ts` detrás de API Gateway HTTP) o `"fargate"` (contenedor con `main.ts` detrás del ALB interno, por el VPC link; requiere `fargate_api_enabled = true` en `platform` y un `listener_rule_priority` único). Las dos entran por la API HTTP compartida, detrás de CloudFront y su WAF. Cada prefijo de `route_prefixes` crea `ANY <prefijo>` y `ANY <prefijo>/{proxy+}`.
-- `realtime`: Socket.IO y SSE, siempre en Fargate detrás del ALB público de `platform` (`realtime_alb_certificate_arn`).
-- `workers`: Fargate con `worker.ts`, escala por la profundidad de su cola desde cero.
-- `consumers`: Lambdas consumidoras de una cola, con fallos parciales por lote.
+- `api`: `runtime = "lambda"` (a function with `lambda.ts` behind API Gateway HTTP) or `"fargate"` (a container with `main.ts` behind the internal ALB, through the VPC link; requires `fargate_api_enabled = true` in `platform` and a unique `listener_rule_priority`). Both enter through the shared HTTP API, behind CloudFront and its WAF. Each prefix in `route_prefixes` creates `ANY <prefix>` and `ANY <prefix>/{proxy+}`.
+- `realtime`: Socket.IO and SSE, always on Fargate behind the public ALB from `platform` (`realtime_alb_certificate_arn`).
+- `workers`: Fargate with `worker.ts`, scales from zero on the depth of its queue.
+- `consumers`: Lambdas that consume a queue, with partial batch failures.
 
-Permisos por parte (mínimo privilegio): la API, los workers y los consumidores publican y envían según `producers` de la topología; el tiempo real solo si `realtime.publish = true`. Cada worker consume solo su cola y cada consumidor la suya (la da el módulo `service-lambda`); la API y el tiempo real no consumen. `files_access` y `ses_send` se piden en cada parte (`api.files_access`, `workers.<x>.ses_send`...). `valkey_access` y `database_access` valen para todo el servicio, igual que `task_policies`.
+Permissions per part (least privilege): the API, the workers and the consumers publish and send according to `producers` in the topology; realtime only if `realtime.publish = true`. Each worker consumes only its queue and each consumer only its own (granted by the `service-lambda` module); the API and realtime do not consume. `files_access` and `ses_send` are requested per part (`api.files_access`, `workers.<x>.ses_send`...). `valkey_access` and `database_access` apply to the whole service, as does `task_policies`.
 
-Variables de entorno: son el contrato con los esquemas de configuración de `@platform/*` y `backend/.env.example` usa los mismos nombres. `tests/service.tftest.hcl` fija la lista exacta, así un cambio de un lado rompe la prueba.
+Environment variables: they are the contract with the `@platform/*` configuration schemas, and `backend/.env.example` uses the same names. `tests/service.tftest.hcl` pins the exact list, so a change on one side breaks the test.
 
-| Variable                                                                        | Cuándo                     | Contenido                                                                                                       |
-| ------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `SERVICE_NAME`, `DEPLOY_ENVIRONMENT`, `MESSAGING_NAME_PREFIX`, `AWS_ACCOUNT_ID` | siempre                    | Servicio, ambiente, prefijo de tópicos y colas, y cuenta (para armar ARN sin STS).                              |
-| `AWS_REGION`                                                                    | Fargate                    | Región. En Lambda la pone el runtime.                                                                           |
-| `DB_PROXY_HOST`, `DB_READER_HOSTS`, `DB_PORT`, `DB_DATABASES`                   | `database_access`          | RDS Proxy, réplicas separadas por coma, puerto y JSON con `shards` y `catalog`.                                 |
-| `DB_CREDENTIALS` / `DB_SECRET_ARN`                                              | `database_access`          | Fargate recibe el secreto (JSON con `username` y `password`) por `valueFrom`; Lambda, su ARN.                   |
-| `VALKEY_HOST`, `VALKEY_PORT`, `VALKEY_TLS`, `VALKEY_USER`                       | `valkey_access`            | Endpoint serverless, TLS (`true`) y usuario IAM del servicio.                                                   |
-| `VALKEY_AUTH`, `VALKEY_CACHE_NAME`                                              | `valkey_access`            | `iam-serverless`: el cliente firma un token IAM (SigV4, 15 minutos) para la caché `VALKEY_CACHE_NAME`.          |
-| `VALKEY_KEY_PREFIX`                                                             | `valkey_access`            | Nombre del servicio. Los adaptadores escriben `<prefijo>:...` en llaves y canales, lo único que permite la ACL. |
-| `FILES_BUCKET`                                                                  | `files_access` de la parte | Bucket de archivos.                                                                                             |
-| `QUEUE_URL`                                                                     | workers                    | URL de su cola.                                                                                                 |
+| Variable                                                                        | When                     | Content                                                                                                 |
+| ------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `SERVICE_NAME`, `DEPLOY_ENVIRONMENT`, `MESSAGING_NAME_PREFIX`, `AWS_ACCOUNT_ID` | always                   | Service, environment, topic and queue prefix, and account (to build ARNs without STS).                  |
+| `AWS_REGION`                                                                    | Fargate                  | Region. In Lambda the runtime sets it.                                                                  |
+| `DB_PROXY_HOST`, `DB_READER_HOSTS`, `DB_PORT`, `DB_DATABASES`                   | `database_access`        | RDS Proxy, comma-separated replicas, port and JSON with `shards` and `catalog`.                         |
+| `DB_CREDENTIALS` / `DB_SECRET_ARN`                                              | `database_access`        | Fargate receives the secret (JSON with `username` and `password`) through `valueFrom`; Lambda, its ARN. |
+| `VALKEY_HOST`, `VALKEY_PORT`, `VALKEY_TLS`, `VALKEY_USER`                       | `valkey_access`          | Serverless endpoint, TLS (`true`) and the service's IAM user.                                           |
+| `VALKEY_AUTH`, `VALKEY_CACHE_NAME`                                              | `valkey_access`          | `iam-serverless`: the client signs an IAM token (SigV4, 15 minutes) for the `VALKEY_CACHE_NAME` cache.  |
+| `VALKEY_KEY_PREFIX`                                                             | `valkey_access`          | Service name. The adapters write `<prefix>:...` in keys and channels, the only thing the ACL allows.    |
+| `FILES_BUCKET`                                                                  | `files_access` of a part | Files bucket.                                                                                           |
+| `QUEUE_URL`                                                                     | workers                  | URL of its queue.                                                                                       |
 
-`environment_variables` agrega variables propias, sin poder reemplazar las de la tabla. El pipeline pasa los artefactos con `TF_VAR_image` y `TF_VAR_lambda_package`. Las Lambdas usan el runtime de la versión mayor de `.nvmrc` (`nodejs24.x`); `service-lambda` rechaza otra en el plan.
+`environment_variables` adds custom variables, without being able to replace the ones in the table. The pipeline passes the artifacts with `TF_VAR_image` and `TF_VAR_lambda_package`. Lambdas use the runtime of the major version in `.nvmrc` (`nodejs24.x`); `service-lambda` rejects any other in the plan.
 
-## Datos
+## Data
 
-- Una instancia RDS PostgreSQL 17 por región. El bootstrap (Lambda en la VPC) crea un rol por servicio con su secreto rotado, una base por shard (`<servicio>_shard_<n>`, dueño el servicio) y la base `catalog` (dueño `catalog_owner`), todas con la extensión `vector`, igual que `backend/infra/local/postgres/init.sql`. `catalog = "owner"` hace al servicio miembro de `catalog_owner` (migra el catálogo con `SET ROLE catalog_owner`) y `"read"`, de `catalog_reader`. Quitar una base de la lista no la borra.
-- Escritura por RDS Proxy. Lectura directa a las réplicas: fuera de Aurora, RDS Proxy solo admite la instancia escritora. Las réplicas tienen su propio security group.
-- La Lambda de bootstrap carga sus dependencias de `vendor/` (Lambda solo pone `/var/task` en `sys.path`). Las versiones están en `requirements.txt`, que también leen OSV-Scanner y Renovate. CI corre `backend/infra/scripts/check_vendor.py`, que falla si `vendor/` no tiene exactamente esas versiones; una subida de Renovate necesita `vendor/` regenerado con el comando del encabezado de `requirements.txt`.
-- El bootstrap entra como usuario maestro y crea roles con contraseña, así que verifica el certificado de RDS (cadena y nombre) con `rds-ca-bundle.pem`, el bundle público de AWS junto al handler. `backend/infra/scripts/fetch-rds-ca-bundle.sh` lo descarga; se confirma en git y se renueva cuando AWS publica CA nuevas. Sin él, el bootstrap se niega a conectarse y el apply de `data` falla en la invocación.
-- La rotación usa la función oficial de AWS con `kmsKeyArn`, para descifrar los secretos cifrados con la CMK.
-- Logs de PostgreSQL, del bootstrap y de la rotación con retención (`log_retention_days`) y CMK.
-- Valkey 8 serverless (los comandos `BF.*` de Bloom llegan en 8.1): un usuario IAM por servicio con ACL `on ~<servicio>:* &<servicio>:* +@all -@dangerous`. Los adaptadores exigen el prefijo `VALKEY_KEY_PREFIX` y escriben `<servicio>:...` en llaves y canales. `valkey_acl_overrides` permite otra ACL, revisada.
-- Los servicios salen solo por HTTPS. El security group de clientes (`clients_security_group_id`) abre la salida exacta hacia RDS Proxy, las réplicas, Valkey y OpenObserve, y es el único origen que esos destinos aceptan.
+- One RDS PostgreSQL 17 instance per region. The bootstrap (a Lambda in the VPC) creates one role per service with its rotated secret, one database per shard (`<service>_shard_<n>`, owned by the service) and the `catalog` database (owned by `catalog_owner`), all with the `vector` extension, same as `backend/infra/local/postgres/init.sql`. `catalog = "owner"` makes the service a member of `catalog_owner` (it migrates the catalog with `SET ROLE catalog_owner`) and `"read"`, of `catalog_reader`. Removing a database from the list does not delete it.
+- Writes go through RDS Proxy. Reads go directly to the replicas: outside Aurora, RDS Proxy only supports the writer instance. The replicas have their own security group.
+- The bootstrap Lambda loads its dependencies from `vendor/` (Lambda only puts `/var/task` on `sys.path`). The versions are in `requirements.txt`, which OSV-Scanner and Renovate also read. CI runs `backend/infra/scripts/check_vendor.py`, which fails if `vendor/` does not have exactly those versions; a Renovate bump needs `vendor/` regenerated with the command in the header of `requirements.txt`.
+- The bootstrap connects as the master user and creates roles with passwords, so it verifies the RDS certificate (chain and name) with `rds-ca-bundle.pem`, the public AWS bundle next to the handler. `backend/infra/scripts/fetch-rds-ca-bundle.sh` downloads it; it is committed to git and renewed when AWS publishes new CAs. Without it, the bootstrap refuses to connect and the `data` apply fails at the invocation.
+- Rotation uses the official AWS function with `kmsKeyArn`, to decrypt the secrets encrypted with the CMK.
+- PostgreSQL, bootstrap and rotation logs with retention (`log_retention_days`) and CMK.
+- Valkey 8 serverless (the Bloom `BF.*` commands arrive in 8.1): one IAM user per service with ACL `on ~<service>:* &<service>:* +@all -@dangerous`. The adapters require the `VALKEY_KEY_PREFIX` prefix and write `<service>:...` in keys and channels. `valkey_acl_overrides` allows a different, reviewed ACL.
+- Services only go out over HTTPS. The clients security group (`clients_security_group_id`) opens the exact egress to RDS Proxy, the replicas, Valkey and OpenObserve, and it is the only source those destinations accept.
 
-## Topología de mensajería
+## Messaging topology
 
-El stack `messaging` lee `topology.json`, que exporta `backend/tools/contracts-export` y CI verifica (`contracts-export:check`). Su contrato:
+The `messaging` stack reads `topology.json`, which `backend/tools/contracts-export` exports and CI verifies (`contracts-export:check`). Its contract:
 
-- `topics`: `name`, `fifo` y, opcionales, `owner` y `producers`.
-- `queues`: `name`, `fifo`, `visibilityTimeoutSeconds`, `maxAttempts`, `dlq` (`name`, `maxReceiveCount`, `retentionSeconds`), `subscriptions` (`topic`, `filterTypes`) y, opcionales, `consumer` y `producers`.
-- `routes`: `type`, `kind` (`event` o `command`), `target` y `targetKind` (`topic` o `queue`).
+- `topics`: `name`, `fifo` and, optionally, `owner` and `producers`.
+- `queues`: `name`, `fifo`, `visibilityTimeoutSeconds`, `maxAttempts`, `dlq` (`name`, `maxReceiveCount`, `retentionSeconds`), `subscriptions` (`topic`, `filterTypes`) and, optionally, `consumer` and `producers`.
+- `routes`: `type`, `kind` (`event` or `command`), `target` and `targetKind` (`topic` or `queue`).
 
-Los filtros de suscripción leen el campo `type` del cuerpo CloudEvents; una lista vacía es sin filtro. Terraform valida que cada suscripción y cada ruta apunten a algo declarado, que `retentionSeconds` no supere 14 días y que los nombres finales no superen 80 caracteres.
+Subscription filters read the `type` field of the CloudEvents body; an empty list means no filter. Terraform validates that every subscription and every route points to something declared, that `retentionSeconds` does not exceed 14 days and that the final names do not exceed 80 characters.
 
-## Entrada pública
+## Public entry
 
-- `platform` crea la API HTTP con un autorizador que exige `X-Origin-Verify`. El valor se genera sin pasar por el estado de `platform` y se guarda en Secrets Manager; `edge` lo lee y lo envía desde CloudFront, así que queda en el estado de `edge` (un encabezado de origen de CloudFront no admite valores efímeros). Por eso los buckets de estado van cifrados y con acceso restringido.
-- Rotación sin corte: sube `origin_verify_secret_version` del módulo `http-api`, aplica `platform`, espera al menos 5 minutos y aplica `edge`. El valor anterior pasa a `AWSPREVIOUS` y el autorizador acepta los dos; además recarga el secreto cada 5 minutos, así ningún contenedor caliente se queda con un valor viejo. No rotes otra vez antes de aplicar `edge`.
-- `edge` crea CloudFront con WAF para la web (`web_aliases`) y la API (`api_aliases`). Hacia API Gateway no reenvía el `Host` del cliente (política `AllViewerExceptHostHeader`), pero sí los encabezados de geolocalización.
-- Tiempo real: el ALB público entra directo, con `realtime_hostname` en Route 53.
+- `platform` creates the HTTP API with an authorizer that requires `X-Origin-Verify`. The value is generated without going through the `platform` state and is stored in Secrets Manager; `edge` reads it and sends it from CloudFront, so it ends up in the `edge` state (a CloudFront origin header does not accept ephemeral values). That is why the state buckets are encrypted and access-restricted.
+- Rotation without downtime: bump `origin_verify_secret_version` of the `http-api` module, apply `platform`, wait at least 5 minutes and apply `edge`. The previous value moves to `AWSPREVIOUS` and the authorizer accepts both; it also reloads the secret every 5 minutes, so no warm container keeps an old value. Do not rotate again before applying `edge`.
+- `edge` creates CloudFront with WAF for the web (`web_aliases`) and the API (`api_aliases`). Toward API Gateway it does not forward the client's `Host` (policy `AllViewerExceptHostHeader`), but it does forward the geolocation headers.
+- Realtime: the public ALB is reached directly, with `realtime_hostname` in Route 53.
 
-## Alarmas y costos
+## Alarms and costs
 
-`platform` crea el tópico de alarmas con `alarm_email` (o usa `alarm_topic_arn`) y un presupuesto con `monthly_budget`. En staging y prod el destino es obligatorio y `alarm_email` rechaza valores de ejemplo (`REEMPLAZAR`, `example.com`).
+`platform` creates the alarms topic with `alarm_email` (or uses `alarm_topic_arn`) and a budget with `monthly_budget`. In staging and prod the destination is mandatory and `alarm_email` rejects example values (`REEMPLAZAR`, `example.com`).
 
-## Comandos
+## Commands
 
-Requisitos: Terraform de `.terraform-version` (o `>= 1.11`), credenciales de AWS (OIDC en CI) y un bucket de estado por ambiente con versionado, creado una vez: `node-template-<ambiente>-tfstate`.
-
-```bash
-ENV=dev backend/infra/scripts/deploy-aws.sh plan data               # guarda el plan de un stack
-ENV=dev backend/infra/scripts/deploy-aws.sh apply data              # aplica ese plan, sin volver a planear
-ENV=dev backend/infra/scripts/deploy-aws.sh plan service identity   # un servicio
-ENV=dev backend/infra/scripts/deploy-aws.sh destroy                 # en orden inverso
-```
-
-`plan` toma el candado del estado (espera hasta `LOCK_TIMEOUT`, 5 minutos) y guarda el plan en `backend/infra/terraform/.plans/<ambiente>/`; `apply` aplica exactamente ese archivo, así el pipeline aplica lo que se revisó. Si el estado cambió después del plan, Terraform lo rechaza y hay que volver a planear. Como un stack lee las salidas de los anteriores, con `all` conviene planear y aplicar stack por stack en orden.
-
-Ambiente local (Docker y LocalStack):
+Requirements: Terraform from `.terraform-version` (or `>= 1.11`), AWS credentials (OIDC in CI) and one versioned state bucket per environment, created once: `node-template-<environment>-tfstate`.
 
 ```bash
-backend/infra/scripts/local.sh up          # contenedores
-backend/infra/scripts/local.sh tf apply    # platform y messaging contra LocalStack
-backend/infra/scripts/local.sh reset       # borra contenedores y volúmenes
+ENV=dev backend/infra/scripts/deploy-aws.sh plan data               # saves the plan of a stack
+ENV=dev backend/infra/scripts/deploy-aws.sh apply data              # applies that plan, without planning again
+ENV=dev backend/infra/scripts/deploy-aws.sh plan service identity   # one service
+ENV=dev backend/infra/scripts/deploy-aws.sh destroy                 # in reverse order
 ```
 
-Al arrancar, LocalStack crea por sí solo los tópicos, colas, DLQ y suscripciones de `topology.json` con el prefijo `local` (`MESSAGING_NAME_PREFIX`), sin Terraform. El Terraform local usa el prefijo `node-template-local` para no chocar con ellos.
+`plan` takes the state lock (waits up to `LOCK_TIMEOUT`, 5 minutes) and saves the plan in `backend/infra/terraform/.plans/<environment>/`; `apply` applies exactly that file, so the pipeline applies what was reviewed. If the state changed after the plan, Terraform rejects it and you have to plan again. Since a stack reads the outputs of the previous ones, with `all` it is best to plan and apply stack by stack in order.
 
-Validación sin AWS, igual que CI:
+Local environment (Docker and LocalStack):
+
+```bash
+backend/infra/scripts/local.sh up          # containers
+backend/infra/scripts/local.sh tf apply    # platform and messaging against LocalStack
+backend/infra/scripts/local.sh reset       # deletes containers and volumes
+```
+
+On startup, LocalStack creates on its own the topics, queues, DLQs and subscriptions from `topology.json` with the `local` prefix (`MESSAGING_NAME_PREFIX`), without Terraform. The local Terraform uses the `node-template-local` prefix to avoid clashing with them.
+
+Validation without AWS, same as CI:
 
 ```bash
 terraform -chdir=backend/infra/terraform fmt -check -recursive
@@ -145,29 +145,29 @@ python3 -B -I -m unittest discover -s backend/infra/terraform/modules/http-api/a
 python3 -B -I backend/infra/scripts/check_vendor.py backend/infra/terraform/modules/rds-postgres/lambda/db_bootstrap
 ```
 
-## Pipeline de despliegue
+## Deployment pipeline
 
-Los workflows `deploy.yml`, `publish-web.yml` y `publish-mobile.yml` entran a AWS por OIDC. No hay claves de larga vida: cada job asume un rol con `aws-actions/configure-aws-credentials`. El módulo `modules/oidc-github` crea los roles y el bucket de artefactos, y el stack `platform` lo cablea cuando `github_repository` está configurado (si es `null`, el pipeline queda apagado).
+The `deploy.yml`, `publish-web.yml` and `publish-mobile.yml` workflows access AWS through OIDC. There are no long-lived keys: each job assumes a role with `aws-actions/configure-aws-credentials`. The `modules/oidc-github` module creates the roles and the artifacts bucket, and the `platform` stack wires it when `github_repository` is set (if it is `null`, the pipeline stays off).
 
-Roles y variables del repositorio de GitHub. Cada GitHub environment, con el mismo nombre que el ambiente (`dev`, `staging`, `prod`), guarda estas variables:
+Roles and variables of the GitHub repository. Each GitHub environment, named like the environment (`dev`, `staging`, `prod`), stores these variables:
 
-| Variable                    | Uso                                                                                                |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `vars.AWS_DEPLOY_ROLE_ARN`  | Rol de Terraform y de lectura del estado, de los stacks y de cada servicio.                        |
-| `vars.AWS_PUBLISH_ROLE_ARN` | Rol que sube imágenes a ECR y artefactos al bucket de artefactos.                                  |
-| `vars.AWS_WEB_ROLE_ARN`     | Rol que publica la web e invalida CloudFront.                                                      |
-| `vars.AWS_REGION`           | Región de AWS del ambiente.                                                                        |
-| `vars.NAME_PREFIX`          | Prefijo de nombres, por ejemplo `node-template-dev`. Lo usa la web.                                |
-| `vars.ARTIFACTS_BUCKET`     | Bucket de artefactos. Lo lee `publish-mobile.yml`; el pipeline de servicios lo toma de `platform`. |
-| `vars.DEPLOY_RUNNER`        | Opcional. Etiqueta de un runner propio dentro de la VPC; sin ella se usa `ubuntu-latest`.          |
+| Variable                    | Use                                                                                             |
+| --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `vars.AWS_DEPLOY_ROLE_ARN`  | Role for Terraform and for reading the state, of the stacks and of each service.                |
+| `vars.AWS_PUBLISH_ROLE_ARN` | Role that pushes images to ECR and artifacts to the artifacts bucket.                           |
+| `vars.AWS_WEB_ROLE_ARN`     | Role that publishes the web and invalidates CloudFront.                                         |
+| `vars.AWS_REGION`           | AWS region of the environment.                                                                  |
+| `vars.NAME_PREFIX`          | Name prefix, for example `node-template-dev`. Used by the web.                                  |
+| `vars.ARTIFACTS_BUCKET`     | Artifacts bucket. Read by `publish-mobile.yml`; the services pipeline takes it from `platform`. |
+| `vars.DEPLOY_RUNNER`        | Optional. Label of a self-hosted runner inside the VPC; without it `ubuntu-latest` is used.     |
 
-Orden por servicio. Los servicios se descubren recorriendo `environments/<ambiente>/services/*`: cada carpeta con `terraform.tfvars` y `backend.tfvars` es un servicio, y el workflow no tiene una lista fija. Para cada uno se hacen cuatro pasos en orden: publicar el artefacto (imagen con etiqueta `sha-<commit>` o paquete de Lambda en S3), migrar la base, planear y aplicar el stack `service`. El artefacto sale antes porque el `apply` necesita `TF_VAR_image` o `TF_VAR_lambda_package`. Antes de los servicios, el job de stacks aplica `network`, `platform`, `data`, `messaging` y `edge`, en ese orden, planeando y aplicando cada uno antes del siguiente porque lee sus salidas.
+Order per service. Services are discovered by walking `environments/<environment>/services/*`: every folder with `terraform.tfvars` and `backend.tfvars` is a service, and the workflow has no fixed list. For each one, four steps run in order: publish the artifact (an image tagged `sha-<commit>` or a Lambda package in S3), migrate the database, plan and apply the `service` stack. The artifact goes first because the `apply` needs `TF_VAR_image` or `TF_VAR_lambda_package`. Before the services, the stacks job applies `network`, `platform`, `data`, `messaging` and `edge`, in that order, planning and applying each one before the next because it reads their outputs.
 
-Migraciones. Las migraciones corren en el runner del job y necesitan alcanzar la base a través de RDS Proxy. Por eso conviene un runner dentro de la VPC (`vars.DEPLOY_RUNNER`), no uno hospedado por GitHub. `migrate-service.sh` lee la base y las credenciales del servicio desde las salidas del stack `data` y las enmascara en los logs.
+Migrations. Migrations run on the job's runner and need to reach the database through RDS Proxy. That is why a runner inside the VPC (`vars.DEPLOY_RUNNER`) is preferable to a GitHub-hosted one. `migrate-service.sh` reads the service's database and credentials from the `data` stack outputs and masks them in the logs.
 
-Aplicación móvil. El pipeline solo compila el `.aab` y lo sube al bucket de artefactos bajo el commit. La subida a las tiendas y la firma de release exigen credenciales del titular de la cuenta y no se automatizan.
+Mobile app. The pipeline only builds the `.aab` and uploads it to the artifacts bucket under the commit. Store upload and release signing require the account holder's credentials and are not automated.
 
-Probar los scripts sin tocar AWS. Con `DRY_RUN=1` cada comando se imprime con el prefijo `+ ` en lugar de ejecutarse, y las lecturas devuelven `<dry-run>`. Para probar contra el fixture de servicios:
+Testing the scripts without touching AWS. With `DRY_RUN=1` each command is printed with the `+ ` prefix instead of being executed, and reads return `<dry-run>`. To test against the services fixture:
 
 ```bash
 DRY_RUN=1 TF_ROOT=backend/infra/scripts/__tests__/utils/fixtures/terraform GIT_SHA=abc1234 \
@@ -176,10 +176,10 @@ DRY_RUN=1 TF_ROOT=backend/infra/scripts/__tests__/utils/fixtures/terraform GIT_S
 node --test backend/infra/scripts/__tests__/*.test.mjs
 ```
 
-## Decisiones
+## Decisions
 
-- Salida a Internet: `egress` (`none`, `single_nat` en dev, `per_az_nat` en staging y prod) pone NAT solo para las subredes privadas de aplicación. Las de datos no tienen ruta a Internet. Ver [ADR 0016](../../../docs/adr/0016-egress-de-red.md).
-- Terraform quita la regla de salida por defecto de los security groups: cada salida es explícita.
-- Las excepciones de Trivy (`trivy:ignore`) van junto al recurso con su motivo: salida HTTPS de los servicios por NAT, ALB público de tiempo real, HTTP del ALB interno detrás del VPC link y cifrado SSE-S3 de los access logs del ALB.
-- `db_deletion_protection` está activo y el snapshot final se crea salvo `db_skip_final_snapshot = true`. Desactívalos solo en ambientes desechables.
-- Claves KMS: todas salen del módulo `kms-key`, con la misma política base. Los logs de todos los servicios (Fargate y Lambda) comparten una CMK por ambiente del stack `platform`; los roles ya limitan qué log group escribe cada componente. RDS, mensajería, Valkey, archivos y los secretos conservan su propia CMK.
+- Internet egress: `egress` (`none`, `single_nat` in dev, `per_az_nat` in staging and prod) adds NAT only for the private application subnets. The data subnets have no route to the Internet. See [ADR 0016](../../../docs/adr/0016-egress-de-red.md).
+- Terraform removes the default egress rule from security groups: every egress is explicit.
+- Trivy exceptions (`trivy:ignore`) sit next to the resource with their reason: HTTPS egress of the services through NAT, the public realtime ALB, HTTP on the internal ALB behind the VPC link and SSE-S3 encryption of the ALB access logs.
+- `db_deletion_protection` is on and the final snapshot is created unless `db_skip_final_snapshot = true`. Turn them off only in disposable environments.
+- KMS keys: they all come from the `kms-key` module, with the same base policy. The logs of all services (Fargate and Lambda) share one CMK per environment from the `platform` stack; the roles already limit which log group each component writes to. RDS, messaging, Valkey, files and secrets keep their own CMK.

@@ -1,5 +1,5 @@
-# Cómputo compartido: clúster ECS, OpenObserve, la API HTTP con su ALB interno y el ALB
-# público de tiempo real. Los servicios se conectan a ellos desde su propio stack.
+# Shared compute: ECS cluster, OpenObserve, the HTTP API with its internal ALB and the public
+# realtime ALB. Services connect to them from their own stack.
 
 locals {
   network = var.compute_enabled ? data.terraform_remote_state.network[0].outputs : null
@@ -8,10 +8,10 @@ locals {
   api_alb_enabled      = var.compute_enabled && var.fargate_api_enabled
 }
 
-# Una CMK por ambiente para los logs de los servicios (tareas Fargate y Lambdas, con sus
-# variables de entorno y DLQ asíncronas). Una clave por componente multiplicaba el costo y
-# las llamadas a KMS sin aislar nada que importe: los roles de cada componente ya limitan
-# qué log group escriben. ECS Exec conserva la clave del clúster.
+# One CMK per environment for the service logs (Fargate tasks and Lambdas, with their
+# environment variables and async DLQs). One key per component multiplied the cost and
+# the KMS calls without isolating anything that matters: each component's roles already limit
+# which log group they write to. ECS Exec keeps the cluster key.
 module "compute_logs_kms" {
   count  = var.compute_enabled ? 1 : 0
   source = "../../modules/kms-key"
@@ -50,9 +50,9 @@ module "observability" {
   storage_force_destroy            = var.force_destroy_buckets
 }
 
-# --- API HTTP ----------------------------------------------------------------
-# Una sola API para todos los servicios, detrás de CloudFront y su WAF (stack edge).
-# Cada servicio agrega sus rutas: Lambda directo o Fargate por el VPC link y el ALB interno.
+# --- HTTP API ----------------------------------------------------------------
+# A single API for all services, behind CloudFront and its WAF (edge stack).
+# Each service adds its routes: Lambda directly or Fargate through the VPC link and the internal ALB.
 
 module "http_api" {
   count  = var.compute_enabled ? 1 : 0
@@ -69,7 +69,7 @@ module "http_api" {
   secret_recovery_window_days = var.secret_recovery_window_days
 }
 
-# ALB interno de las APIs que corren en Fargate. Solo lo alcanza el VPC link.
+# Internal ALB for the APIs that run on Fargate. Only the VPC link reaches it.
 module "api_alb" {
   count  = local.api_alb_enabled ? 1 : 0
   source = "../../modules/alb"
@@ -98,9 +98,9 @@ resource "aws_vpc_security_group_egress_rule" "vpc_link_to_api_alb" {
   description                  = "VPC link hacia el ALB interno de las APIs"
 }
 
-# --- Tiempo real ---------------------------------------------------------------
-# Socket.IO y SSE llegan directo al ALB público: conexiones largas que API Gateway HTTP
-# no admite. Los servicios con realtime agregan su regla al listener.
+# --- Realtime ------------------------------------------------------------------
+# Socket.IO and SSE go directly to the public ALB: long-lived connections that API Gateway HTTP
+# does not support. Services with realtime add their rule to the listener.
 
 module "realtime_alb" {
   count  = local.realtime_alb_enabled ? 1 : 0

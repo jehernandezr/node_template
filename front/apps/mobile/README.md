@@ -1,21 +1,21 @@
 # mobile_shell
 
-Shell móvil de Flutter. Compone los microfrontends que declaran `AppPlatform.mobile` sobre `shell_host`.
+Flutter mobile shell. It composes the microfrontends that declare `AppPlatform.mobile` on top of `shell_host`.
 
-## Cómo está armado
+## How it is built
 
-- `lib/main.dart` arranca `ShellHostApp` con el `ShellHost` de `buildMobileHost`. Con `--dart-define=API_BASE_URL=...` le pasa la conexión real de `lib/src/config.dart`.
-- `lib/src/mobile_shell.dart`: `mobileManifests` (`account`, `tasks`, `notifications`, `assistant`, `verifier`), los perfiles de demostración y el marco.
-- `lib/src/shell/mobile_shell_scaffold.dart`: `ShellChrome` sin barra superior propia. Más de cinco destinos se agrupan bajo "Más". Etiqueta, icono e insignia salen de la `MenuEntry` de cada manifiesto.
-- `lib/src/deep_links/deep_link_mapper.dart`: reconoce el esquema propio y el host web, y deja que el manifiesto del segmento (`MicrofrontendManifest.deepLinks`) decida a qué ruta lleva el resto del enlace. Aún no está conectado a un plugin de enlaces.
+- `lib/main.dart` starts `ShellHostApp` with the `ShellHost` from `buildMobileHost`. With `--dart-define=API_BASE_URL=...` it passes the real connection from `lib/src/config.dart`.
+- `lib/src/mobile_shell.dart`: `mobileManifests` (`account`, `tasks`, `notifications`, `assistant`, `verifier`), the demo profiles and the frame.
+- `lib/src/shell/mobile_shell_scaffold.dart`: `ShellChrome` without its own top bar. More than five destinations are grouped under "Más". Label, icon and badge come from the `MenuEntry` of each manifest.
+- `lib/src/deep_links/deep_link_mapper.dart`: recognizes the custom scheme and the web host, and lets the manifest of the segment (`MicrofrontendManifest.deepLinks`) decide which route the rest of the link leads to. It is not wired to a links plugin yet.
 
-Sesión, login, paso adicional, `/forbidden`, router, insignias y modo demo o vivo son de `shell_host`.
+Session, login, additional step, `/forbidden`, router, badges and demo or live mode belong to `shell_host`.
 
-## Sesión real
+## Real session
 
-Hasta que existan los adaptadores de Keychain/Keystore y de Secure Enclave, el session token vive en memoria (`InMemoryTokenStore`) y el login no registra el dispositivo: no hay clave de dispositivo con API real.
+Until the Keychain/Keystore and Secure Enclave adapters exist, the session token lives in memory (`InMemoryTokenStore`) and login does not register the device: there is no device key with a real API.
 
-## Verificación
+## Verification
 
 ```sh
 flutter analyze

@@ -10,8 +10,8 @@ data "aws_cloudfront_cache_policy" "disabled" {
   name = "Managed-CachingDisabled"
 }
 
-# API Gateway enruta por Host: el origen debe recibir su propio dominio, no el del cliente.
-# La política administrada reenvía todo lo demás, incluidos los encabezados de geolocalización.
+# API Gateway routes by Host: the origin must receive its own domain, not the client's.
+# The managed policy forwards everything else, including the geolocation headers.
 data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
@@ -25,8 +25,8 @@ locals {
   api_origin   = "api"
   waf_log_name = "aws-waf-logs-${var.name_prefix}"
 
-  # Ámbito de las reglas administradas: block usa la acción propia de la regla,
-  # count la reemplaza para observar sin bloquear.
+  # Managed rule scope: block uses the rule's own action,
+  # count overrides it to observe without blocking.
   managed_rules = {
     common = { name = "AWSManagedRulesCommonRuleSet", priority = 10 }
     bad    = { name = "AWSManagedRulesKnownBadInputsRuleSet", priority = 20 }
@@ -35,14 +35,14 @@ locals {
   }
 }
 
-# --- Bucket de la web -------------------------------------------------------
+# --- Web bucket -------------------------------------------------------------
 
 module "web_kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-web"
   description = "Cifrado del bucket web de ${var.name_prefix}"
-  # Se limita por cuenta y no por distribución para evitar una dependencia circular.
+  # Scoped by account, not by distribution, to avoid a circular dependency.
   service_principals = [{ sid = "AllowCloudFrontDecrypt", services = ["cloudfront.amazonaws.com"] }]
   tags               = var.tags
 }
@@ -141,7 +141,7 @@ resource "aws_s3_bucket_policy" "web" {
   depends_on = [aws_s3_bucket_public_access_block.web]
 }
 
-# --- Políticas compartidas --------------------------------------------------
+# --- Shared policies --------------------------------------------------------
 
 resource "aws_cloudfront_origin_access_control" "web" {
   name                              = "${var.name_prefix}-web"
@@ -202,8 +202,8 @@ resource "aws_cloudfront_response_headers_policy" "security" {
   }
 }
 
-# Origen que acepta el Host del cliente (por ejemplo un ALB): reenvía todas las cabeceras
-# del cliente más los encabezados de geolocalización que usa el contexto de MFA.
+# Origin that accepts the client Host (for example an ALB): forwards all client headers
+# plus the geolocation headers used by the MFA context.
 resource "aws_cloudfront_origin_request_policy" "api" {
   count = var.api_origin_forward_host_header ? 1 : 0
 
@@ -235,7 +235,7 @@ resource "aws_cloudfront_origin_request_policy" "api" {
   }
 }
 
-# --- Distribución de la web -------------------------------------------------
+# --- Web distribution -------------------------------------------------------
 
 resource "aws_cloudfront_distribution" "web" {
   enabled             = true
@@ -263,7 +263,7 @@ resource "aws_cloudfront_distribution" "web" {
     response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
   }
 
-  # Fallback de SPA: las rutas del cliente devuelven index.html.
+  # SPA fallback: client routes return index.html.
   custom_error_response {
     error_code            = 403
     response_code         = 200
@@ -303,7 +303,7 @@ resource "aws_cloudfront_distribution" "web" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-web" })
 }
 
-# --- Distribución de la API -------------------------------------------------
+# --- API distribution -------------------------------------------------------
 
 resource "aws_cloudfront_distribution" "api" {
   count = local.create_api ? 1 : 0
@@ -375,7 +375,7 @@ resource "aws_cloudfront_distribution" "api" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-api" })
 }
 
-# --- WAF (ámbito CloudFront: solo existe en us-east-1) ----------------------
+# --- WAF (CloudFront scope: only exists in us-east-1) -----------------------
 
 resource "aws_wafv2_web_acl" "this" {
   provider = aws.us_east_1

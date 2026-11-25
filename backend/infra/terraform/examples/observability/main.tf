@@ -28,8 +28,8 @@ module "observability" {
 
   root_user_email = "observability@dev.example.com"
 
-  # ALB interno propio. Para compartir el ALB público usa create_internal_alb = false
-  # con alb_listener_arn, alb_security_group_id y host_headers.
+  # Dedicated internal ALB. To share the public ALB use create_internal_alb = false
+  # with alb_listener_arn, alb_security_group_id and host_headers.
   create_internal_alb              = true
   internal_alb_certificate_arn     = "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
   internal_alb_deletion_protection = false

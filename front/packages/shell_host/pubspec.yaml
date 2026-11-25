@@ -1,5 +1,5 @@
 name: shell_host
-description: "Lo que comparten los shells web y móvil: sesión, login, paso adicional, páginas del shell, router y app raíz."
+description: "What the web and mobile shells share: session, login, additional step, shell pages, router and root app."
 publish_to: none
 version: 0.0.1
 

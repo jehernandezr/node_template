@@ -1,5 +1,5 @@
 name: mobile_shell
-description: "Shell móvil: compone los microfrontends móviles sobre shell_host."
+description: "Mobile shell: composes the mobile microfrontends on top of shell_host."
 publish_to: 'none'
 version: 1.0.0+1
 

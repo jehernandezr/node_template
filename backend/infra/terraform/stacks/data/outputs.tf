@@ -1,10 +1,10 @@
 output "clients_security_group_id" {
-  description = "Security group que adjuntan los servicios para llegar a RDS Proxy, las réplicas, Valkey y OpenObserve."
+  description = "Security group that services attach to reach RDS Proxy, the replicas, Valkey and OpenObserve."
   value       = aws_security_group.clients.id
 }
 
 output "db" {
-  description = "PostgreSQL: proxy_endpoint (escritura), reader_endpoints (réplicas, vacío sin réplicas), port, kms_key_arn y master_secret_arn (solo administración)."
+  description = "PostgreSQL: proxy_endpoint (writes), reader_endpoints (replicas, empty without replicas), port, kms_key_arn and master_secret_arn (administration only)."
   value = {
     proxy_endpoint    = module.rds.proxy_endpoint
     reader_endpoints  = module.rds.reader_endpoints
@@ -16,17 +16,17 @@ output "db" {
 }
 
 output "db_service_secret_arns" {
-  description = "ARN del secreto de cada usuario de base de datos, por nombre."
+  description = "Secret ARN of each database user, by name."
   value       = module.rds.service_secret_arns
 }
 
 output "service_databases" {
-  description = "Por servicio, sus bases: shards (lista ordenada <servicio>_shard_<n>) y catalog (null sin acceso)."
+  description = "Per service, its databases: shards (sorted list <service>_shard_<n>) and catalog (null without access)."
   value       = local.service_databases
 }
 
 output "valkey" {
-  description = "Valkey: endpoint, port, cache_name (host del token IAM), kms_key_arn, user_names y connect_resource_arns (por servicio)."
+  description = "Valkey: endpoint, port, cache_name (IAM token host), kms_key_arn, user_names and connect_resource_arns (per service)."
   value = {
     endpoint              = module.valkey.endpoint
     cache_name            = module.valkey.cache_name

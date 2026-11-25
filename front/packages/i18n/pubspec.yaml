@@ -1,5 +1,5 @@
 name: i18n
-description: "Textos compartidos del front en español e inglés y mensajes de los códigos de error."
+description: "Shared front texts in Spanish and English and the messages of the error codes."
 publish_to: none
 version: 0.0.1
 

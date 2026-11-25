@@ -1,6 +1,6 @@
-# OpenTelemetry Collector local: recibe OTLP de los servicios y exporta a OpenObserve.
-# Las trazas pasan por tail sampling: se guardan todas las que tienen un error y un
-# porcentaje del resto (OTEL_SAMPLING_PERCENT). Logs y métricas pasan completos.
+# Local OpenTelemetry Collector: receives OTLP from the services and exports to OpenObserve.
+# Traces go through tail sampling: all those with an error are kept, plus a
+# percentage of the rest (OTEL_SAMPLING_PERCENT). Logs and metrics pass through in full.
 
 extensions:
   health_check:

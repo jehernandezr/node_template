@@ -1,5 +1,5 @@
 name: mf_backoffice
-description: "Microfrontend del backoffice de la plataforma."
+description: "Platform backoffice microfrontend."
 publish_to: none
 version: 0.0.1
 

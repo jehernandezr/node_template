@@ -13,7 +13,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Servicio con tráfico entrante detrás del ALB.
+# Service with inbound traffic behind the ALB.
 module "realtime" {
   source = "../../modules/service-fargate"
 
@@ -51,7 +51,7 @@ module "realtime" {
   tags = { Environment = "dev" }
 }
 
-# Worker sin tráfico entrante que escala por la cola, con mínimo cero.
+# Worker with no inbound traffic that scales on the queue, with a minimum of zero.
 module "reports_worker" {
   source = "../../modules/service-fargate"
 

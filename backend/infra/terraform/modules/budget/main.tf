@@ -1,5 +1,5 @@
-# Presupuesto mensual de costo con avisos al tópico de alarmas. El tópico debe permitir
-# que budgets.amazonaws.com publique (y su CMK, que la use).
+# Monthly cost budget with notifications to the alarms topic. The topic must allow
+# budgets.amazonaws.com to publish (and its CMK must allow it to use the key).
 
 resource "aws_budgets_budget" "this" {
   name         = "${var.name_prefix}-monthly"

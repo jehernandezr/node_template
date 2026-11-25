@@ -1,31 +1,31 @@
 variable "name_prefix" {
-  description = "Prefijo del nombre del presupuesto."
+  description = "Prefix for the budget name."
   type        = string
 }
 
 variable "monthly_limit" {
-  description = "Límite mensual en la moneda indicada."
+  description = "Monthly limit in the given currency."
   type        = number
 
   validation {
     condition     = var.monthly_limit > 0
-    error_message = "monthly_limit debe ser mayor que cero."
+    error_message = "monthly_limit must be greater than zero."
   }
 }
 
 variable "currency" {
-  description = "Moneda del límite."
+  description = "Currency of the limit."
   type        = string
   default     = "USD"
 }
 
 variable "sns_topic_arn" {
-  description = "Tópico SNS que recibe los avisos."
+  description = "SNS topic that receives the notifications."
   type        = string
 }
 
 variable "notifications" {
-  description = "Avisos: porcentaje del límite y tipo (ACTUAL para el gasto real, FORECASTED para el pronóstico del mes)."
+  description = "Notifications: percentage of the limit and type (ACTUAL for actual spend, FORECASTED for the monthly forecast)."
   type = list(object({
     threshold_percent = number
     type              = string
@@ -38,18 +38,18 @@ variable "notifications" {
 
   validation {
     condition     = alltrue([for n in var.notifications : contains(["ACTUAL", "FORECASTED"], n.type)])
-    error_message = "El tipo de cada aviso debe ser ACTUAL o FORECASTED."
+    error_message = "Each notification type must be ACTUAL or FORECASTED."
   }
 }
 
 variable "cost_filter_tags" {
-  description = "Filtra el costo por etiquetas de asignación de costos activadas en Billing (clave a valor). Vacío cuenta toda la cuenta."
+  description = "Filters cost by cost allocation tags activated in Billing (key to value). Empty covers the whole account."
   type        = map(string)
   default     = {}
 }
 
 variable "tags" {
-  description = "Etiquetas adicionales del presupuesto."
+  description = "Additional tags for the budget."
   type        = map(string)
   default     = {}
 }

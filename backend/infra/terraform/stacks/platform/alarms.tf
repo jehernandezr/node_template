@@ -1,4 +1,4 @@
-# Destino de alarmas y avisos de costo. data, messaging y los servicios lo leen de este stack.
+# Destination for alarms and cost notices. data, messaging and the services read it from this stack.
 
 data "aws_caller_identity" "current" {}
 
@@ -9,17 +9,17 @@ locals {
   alarm_topic_arn    = local.create_alarm_topic ? aws_sns_topic.alarms[0].arn : var.alarm_topic_arn
 }
 
-# En staging y prod las alarmas y el presupuesto deben tener destino.
+# In staging and prod the alarms and the budget must have a destination.
 resource "terraform_data" "alarm_check" {
   lifecycle {
     precondition {
       condition     = !contains(["staging", "prod"], var.environment) || local.alarm_topic_arn != null
-      error_message = "En staging y prod define alarm_email o alarm_topic_arn: las alarmas de DLQ, RDS y presupuesto necesitan destino."
+      error_message = "In staging and prod set alarm_email or alarm_topic_arn: the DLQ, RDS and budget alarms need a destination."
     }
 
     precondition {
       condition     = var.monthly_budget == null || local.alarm_topic_arn != null
-      error_message = "monthly_budget necesita alarm_email o alarm_topic_arn para enviar los avisos."
+      error_message = "monthly_budget needs alarm_email or alarm_topic_arn to send the notices."
     }
   }
 }
@@ -36,8 +36,8 @@ module "alarms_kms" {
   }]
 }
 
-# Tópico propio cuando se indica un correo. La suscripción queda pendiente hasta que el
-# destinatario confirme el mensaje de AWS.
+# Dedicated topic when an email is given. The subscription stays pending until the
+# recipient confirms the AWS message.
 resource "aws_sns_topic" "alarms" {
   count = local.create_alarm_topic ? 1 : 0
 

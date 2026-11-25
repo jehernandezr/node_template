@@ -1,5 +1,5 @@
-# Pruebas del stack de servicio con proveedores simulados: no tocan AWS ni el backend.
-# Ejecuta: terraform init -backend=false && terraform test
+# Tests for the service stack with mocked providers: they touch neither AWS nor the backend.
+# Run: terraform init -backend=false && terraform test
 
 mock_provider "aws" {
   mock_data "aws_iam_policy_document" {
@@ -127,29 +127,29 @@ run "lambda_api_with_consumer" {
 
   assert {
     condition     = length(module.api_lambda) == 1 && length(module.api_fargate) == 0
-    error_message = "La API en Lambda no crea servicio ECS."
+    error_message = "The Lambda API does not create an ECS service."
   }
 
   assert {
     condition     = toset(module.api_routes[0].route_keys) == toset(["ANY /identity", "ANY /identity/{proxy+}"])
-    error_message = "Cada prefijo crea su raíz y su proxy."
+    error_message = "Each prefix creates its root and its proxy."
   }
 
   assert {
     condition     = jsondecode(local.lambda_environment["DB_DATABASES"]).shards[1] == "identity_shard_1"
-    error_message = "El servicio recibe el mapa de sus bases."
+    error_message = "The service receives the map of its databases."
   }
 
-  # Contrato con los esquemas de configuración de los adaptadores: cambiar un nombre aquí
-  # obliga a cambiarlo también en backend/libs y en backend/.env.example.
+  # Contract with the adapters' configuration schemas: changing a name here
+  # requires changing it in backend/libs and backend/.env.example too.
   assert {
     condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(["AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DB_SECRET_ARN", "DEPLOY_ENVIRONMENT", "MESSAGING_NAME_PREFIX", "SERVICE_NAME", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"])
-    error_message = "La API en Lambda recibe exactamente las variables del contrato con los adaptadores."
+    error_message = "The Lambda API receives exactly the variables of the adapter contract."
   }
 
   assert {
     condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(["AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DB_SECRET_ARN", "DEPLOY_ENVIRONMENT", "MESSAGING_NAME_PREFIX", "SERVICE_NAME", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"])
-    error_message = "Un consumidor Lambda recibe las mismas variables que la API en Lambda."
+    error_message = "A Lambda consumer receives the same variables as the Lambda API."
   }
 
   assert {
@@ -161,22 +161,22 @@ run "lambda_api_with_consumer" {
       local.lambda_environment["VALKEY_USER"] == "nt-dev-identity" &&
       local.lambda_environment["VALKEY_KEY_PREFIX"] == "identity"
     )
-    error_message = "Valkey se usa con TLS, token IAM de la caché serverless y el prefijo del servicio, que es el de su ACL."
+    error_message = "Valkey is used with TLS, an IAM token for the serverless cache and the service prefix, which is the one in its ACL."
   }
 
   assert {
     condition     = strcontains(local.policies["api"]["messaging"], "nt-dev-identity-events") && !strcontains(local.policies["api"]["messaging"], "sqs:ReceiveMessage")
-    error_message = "La API publica según producers y no consume colas."
+    error_message = "The API publishes according to producers and does not consume queues."
   }
 
   assert {
     condition     = !strcontains(local.policies["consumer-commands"]["messaging"], "sqs:ReceiveMessage")
-    error_message = "El consumidor Lambda recibe el permiso de su cola del módulo, no de la política del servicio."
+    error_message = "The Lambda consumer gets its queue permission from the module, not from the service policy."
   }
 
   assert {
     condition     = module.api_lambda[0].kms_key_arn == "arn:aws:kms:us-east-1:123456789012:key/compute-logs"
-    error_message = "Las Lambdas usan la CMK de logs del ambiente en lugar de crear una propia."
+    error_message = "The Lambdas use the environment logs CMK instead of creating their own."
   }
 }
 
@@ -194,37 +194,37 @@ run "fargate_api_with_realtime_and_worker" {
 
   assert {
     condition     = length(module.api_lambda) == 0 && length(module.api_fargate) == 1 && length(module.realtime) == 1
-    error_message = "La API en Fargate y el tiempo real crean servicios ECS."
+    error_message = "The Fargate API and realtime create ECS services."
   }
 
   assert {
     condition     = tolist(local.api_path_patterns) == tolist(["/identity", "/identity/*"])
-    error_message = "El ALB interno enruta los mismos prefijos que la API."
+    error_message = "The internal ALB routes the same prefixes as the API."
   }
 
   assert {
     condition     = local.fargate_secrets["DB_CREDENTIALS"] == "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf"
-    error_message = "Fargate recibe las credenciales por valueFrom."
+    error_message = "Fargate receives the credentials through valueFrom."
   }
 
   assert {
     condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(["AWS_ACCOUNT_ID", "AWS_REGION", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "MESSAGING_NAME_PREFIX", "SERVICE_NAME", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"])
-    error_message = "La API en Fargate recibe exactamente las variables del contrato con los adaptadores."
+    error_message = "The Fargate API receives exactly the variables of the adapter contract."
   }
 
   assert {
     condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"], { QUEUE_URL = "" }))) == sort(concat(["AWS_ACCOUNT_ID", "AWS_REGION", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "MESSAGING_NAME_PREFIX", "SERVICE_NAME", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["QUEUE_URL"]))
-    error_message = "Un worker recibe las variables de Fargate y la URL de su cola."
+    error_message = "A worker receives the Fargate variables and the URL of its queue."
   }
 
   assert {
     condition     = local.fargate_environment["AWS_REGION"] == "us-east-1"
-    error_message = "Fargate recibe la región."
+    error_message = "Fargate receives the region."
   }
 
   assert {
     condition     = !contains(keys(local.policies["realtime"]), "messaging") && !contains(keys(local.policies["api"]), "files")
-    error_message = "El tiempo real no publica ni consume por defecto, y nadie recibe archivos sin pedirlos."
+    error_message = "Realtime neither publishes nor consumes by default, and nobody gets files without asking for them."
   }
 
   assert {
@@ -232,7 +232,7 @@ run "fargate_api_with_realtime_and_worker" {
       strcontains(local.policies["worker-commands"]["messaging"], "nt-dev-identity-commands") &&
       !strcontains(local.policies["worker-commands"]["messaging"], "nt-dev-identity-reports")
     )
-    error_message = "Cada worker consume solo su cola."
+    error_message = "Each worker consumes only its own queue."
   }
 }
 
@@ -272,12 +272,12 @@ run "files_only_where_asked" {
 
   assert {
     condition     = contains(keys(local.policies["api"]), "files") && !contains(keys(local.policies["worker-commands"]), "files")
-    error_message = "Solo el componente que pide archivos recibe la política del bucket."
+    error_message = "Only the component that asks for files receives the bucket policy."
   }
 
   assert {
     condition     = local.component_environment["api"]["FILES_BUCKET"] == "nt-dev-files-123456789012" && length(local.component_environment["worker-commands"]) == 0
-    error_message = "Solo el componente con archivos recibe FILES_BUCKET."
+    error_message = "Only the component with files receives FILES_BUCKET."
   }
 }
 

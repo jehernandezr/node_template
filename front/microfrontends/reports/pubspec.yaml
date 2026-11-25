@@ -1,5 +1,5 @@
 name: mf_reports
-description: "Microfrontend de reportes: catálogo con parámetros, ejecuciones y descarga del resultado."
+description: "Reports microfrontend: catalog with parameters, runs and result download."
 publish_to: none
 version: 0.0.1
 

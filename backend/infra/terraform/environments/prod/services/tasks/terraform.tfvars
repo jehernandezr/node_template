@@ -5,9 +5,9 @@ state_bucket = "node-template-prod-tfstate"
 
 service_name = "tasks"
 
-# API en Fargate detrás del ALB interno. El mismo proceso corre el relay del outbox y los jobs: tasks no
-# consume colas. Para pasarla a Lambda: runtime = "lambda" (usa lambda.handler), quitar listener_rule_priority
-# y agregar un worker para los jobs.
+# API on Fargate behind the internal ALB. The same process runs the outbox relay and the jobs: tasks does not
+# consume queues. To move it to Lambda: runtime = "lambda" (uses lambda.handler), remove listener_rule_priority
+# and add a worker for the jobs.
 api = {
   runtime                = "fargate"
   route_prefixes         = ["/v1/tasks"]
@@ -19,12 +19,12 @@ api = {
   health_check_path      = "/health/ready"
 }
 
-# Valores no secretos.
-# INTERNAL_API_BASE_URLS es obligatoria y la da el despliegue: un JSON con la dirección interna de identity
-# (verificación de acceso) y de billing (cuotas de las rutas de integración) en este ambiente, por ejemplo
-# "{\"identity\":\"http://identity.prod.internal\",\"billing\":\"http://billing.prod.internal\"}". La API
-# interna de todos los servicios responde en el mismo path, así que el ALB compartido no sirve para llegar a
-# ellos. Sin alguna de esas URLs el servicio no arranca.
+# Non-secret values.
+# INTERNAL_API_BASE_URLS is required and comes from the deployment: a JSON with the internal address of identity
+# (access check) and of billing (integration route quotas) in this environment, for example
+# "{\"identity\":\"http://identity.prod.internal\",\"billing\":\"http://billing.prod.internal\"}". The internal
+# API of every service answers on the same path, so the shared ALB cannot be used to reach them. If any of
+# those URLs is missing, the service does not start.
 environment_variables = {
   INTERNAL_API_SIGNER          = "hmac"
   SEARCH_MODE                  = "text"
@@ -33,8 +33,8 @@ environment_variables = {
   TRUST_PROXY_HOPS             = "2"
 }
 
-# Secretos en Secrets Manager (nombre de variable a ARN, con clave JSON opcional). La config del servicio
-# exige INTERNAL_API_SHARED_SECRET.
+# Secrets in Secrets Manager (variable name to ARN, with an optional JSON key). The service config
+# requires INTERNAL_API_SHARED_SECRET.
 secrets = {}
 
 database_access = true

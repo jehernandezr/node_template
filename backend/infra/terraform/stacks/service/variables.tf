@@ -1,23 +1,23 @@
 variable "service_name" {
-  description = "Nombre del servicio, igual que su app en backend/apps y su clave en db_services y valkey_services del stack data."
+  description = "Service name, the same as its app in backend/apps and its key in db_services and valkey_services of the data stack."
   type        = string
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9_]{1,20}$", var.service_name))
-    error_message = "service_name usa minúsculas, números y guion bajo, empieza por letra y tiene entre 2 y 21 caracteres."
+    error_message = "service_name uses lowercase letters, digits and underscores, starts with a letter and is 2 to 21 characters long."
   }
 }
 
-# --- Artefactos (los pasa el pipeline con TF_VAR_image y TF_VAR_lambda_package) -----
+# --- Artifacts (the pipeline passes them with TF_VAR_image and TF_VAR_lambda_package) ---
 
 variable "image" {
-  description = "Imagen del servicio para todo lo que corre en Fargate (API, tiempo real y workers). Fíjala por digest o tag inmutable."
+  description = "Service image for everything that runs on Fargate (API, realtime and workers). Pin it by digest or immutable tag."
   type        = string
   default     = null
 }
 
 variable "lambda_package" {
-  description = "Bundle esbuild del servicio para todo lo que corre en Lambda (API y consumidores): s3_bucket y s3_key, o filename local."
+  description = "esbuild bundle of the service for everything that runs on Lambda (API and consumers): s3_bucket and s3_key, or a local filename."
   type = object({
     s3_bucket         = optional(string)
     s3_key            = optional(string)
@@ -28,14 +28,14 @@ variable "lambda_package" {
   default = null
 }
 
-# --- Entradas -------------------------------------------------------------------
+# --- Entry points ---------------------------------------------------------------
 
 variable "api" {
   description = <<-EOT
-    API HTTP del servicio en la API compartida, detrás de CloudFront y su WAF.
-    runtime "lambda": función con el adaptador lambda.ts; "fargate": contenedor con main.ts detrás
-    del ALB interno y el VPC link (requiere fargate_api_enabled en platform y listener_rule_priority
-    único entre servicios). Cambiar de runtime es cambiar este campo y el artefacto.
+    HTTP API of the service in the shared API, behind CloudFront and its WAF.
+    runtime "lambda": function with the lambda.ts adapter; "fargate": container with main.ts behind
+    the internal ALB and the VPC link (requires fargate_api_enabled in platform and a listener_rule_priority
+    unique across services). Changing the runtime means changing this field and the artifact.
   EOT
   type = object({
     runtime        = string
@@ -60,7 +60,7 @@ variable "api" {
     spot                   = optional(bool, false)
     listener_rule_priority = optional(number)
 
-    # Permisos propios de la API
+    # API's own permissions
     files_access = optional(bool, false)
     ses_send     = optional(bool, false)
   })
@@ -68,17 +68,17 @@ variable "api" {
 
   validation {
     condition     = var.api == null || contains(["lambda", "fargate"], try(var.api.runtime, ""))
-    error_message = "api.runtime debe ser lambda o fargate."
+    error_message = "api.runtime must be lambda or fargate."
   }
 
   validation {
     condition     = var.api == null || try(var.api.runtime, "") != "fargate" || try(var.api.listener_rule_priority, null) != null
-    error_message = "Una API en Fargate necesita listener_rule_priority, único entre los servicios del ALB interno."
+    error_message = "A Fargate API needs listener_rule_priority, unique across the services of the internal ALB."
   }
 }
 
 variable "realtime" {
-  description = "Gateway de tiempo real (Socket.IO y SSE). Siempre en Fargate detrás del ALB público de platform. listener_rule_priority es único entre servicios. publish le da los tópicos y colas de producers de la topología."
+  description = "Realtime gateway (Socket.IO and SSE). Always on Fargate behind the platform public ALB. listener_rule_priority is unique across services. publish grants it the producer topics and queues from the topology."
   type = object({
     listener_rule_priority = number
     path_patterns          = optional(list(string), [])
@@ -100,12 +100,12 @@ variable "realtime" {
 
   validation {
     condition     = var.realtime == null || length(try(var.realtime.path_patterns, [])) + length(try(var.realtime.host_headers, [])) > 0
-    error_message = "realtime necesita path_patterns o host_headers."
+    error_message = "realtime needs path_patterns or host_headers."
   }
 }
 
 variable "workers" {
-  description = "Workers Fargate (worker.ts) que consumen una cola y escalan por su profundidad, desde cero."
+  description = "Fargate workers (worker.ts) that consume a queue and scale on its depth, from zero."
   type = map(object({
     queue               = string
     command             = optional(list(string))
@@ -125,7 +125,7 @@ variable "workers" {
 }
 
 variable "consumers" {
-  description = "Consumidores Lambda de una cola (adaptador SQS con fallos parciales)."
+  description = "Lambda consumers of a queue (SQS adapter with partial failures)."
   type = map(object({
     queue                           = string
     handler                         = string
@@ -141,64 +141,64 @@ variable "consumers" {
   default = {}
 }
 
-# --- Acceso a recursos compartidos ---------------------------------------------------
+# --- Access to shared resources ------------------------------------------------------
 
 variable "database_access" {
-  description = "Usa su usuario y sus bases (shards y catálogo) del stack data. Recibe DB_CREDENTIALS o DB_SECRET_ARN y DB_DATABASES."
+  description = "Uses its user and its databases (shards and catalog) from the data stack. Receives DB_CREDENTIALS or DB_SECRET_ARN and DB_DATABASES."
   type        = bool
   default     = true
 }
 
 variable "valkey_access" {
-  description = "Usa su usuario Valkey (prefijo <servicio>:). Requiere el servicio en valkey_services del stack data."
+  description = "Uses its Valkey user (prefix <service>:). Requires the service in valkey_services of the data stack."
   type        = bool
   default     = true
 }
 
 variable "environment_variables" {
-  description = "Variables de entorno propias del servicio. No reemplazan las de la plataforma (SERVICE_NAME, AWS_*, DB_*, VALKEY_*...)."
+  description = "The service's own environment variables. They do not replace the platform ones (SERVICE_NAME, AWS_*, DB_*, VALKEY_*...)."
   type        = map(string)
   default     = {}
 }
 
 variable "secrets" {
-  description = "Secretos propios: nombre de variable a valueFrom (ARN de Secrets Manager, con clave JSON opcional)."
+  description = "Own secrets: variable name to valueFrom (Secrets Manager ARN, with an optional JSON key)."
   type        = map(string)
   default     = {}
 }
 
 variable "secrets_kms_key_arns" {
-  description = "CMK de los secretos propios."
+  description = "CMK of the own secrets."
   type        = list(string)
   default     = []
 }
 
 variable "task_policies" {
-  description = "Políticas IAM propias en línea (nombre a JSON) para todos los roles del servicio. Lo que use un solo componente va mejor en una opción de ese componente."
+  description = "Own inline IAM policies (name to JSON) for all roles of the service. What only one component uses fits better in an option of that component."
   type        = map(string)
   default     = {}
 }
 
 variable "lambda_runtime" {
-  description = "Runtime de las funciones del servicio. Debe ser la versión mayor de .nvmrc; service-lambda rechaza otra."
+  description = "Runtime of the service functions. It must be the major version in .nvmrc; service-lambda rejects any other."
   type        = string
   default     = "nodejs24.x"
 }
 
 variable "lambda_otel_layer_arn" {
-  description = "Capa ADOT de las Lambdas. Confirma el ARN vigente de la región y la arquitectura. Null la desactiva."
+  description = "ADOT layer of the Lambdas. Confirm the current ARN for the region and architecture. Null disables it."
   type        = string
   default     = null
 }
 
 variable "enable_execute_command" {
-  description = "ECS Exec en las tareas Fargate del servicio. Queda auditado con la CMK del clúster."
+  description = "ECS Exec on the Fargate tasks of the service. It is audited with the cluster CMK."
   type        = bool
   default     = false
 }
 
 variable "log_retention_days" {
-  description = "Días de retención de los logs del servicio."
+  description = "Retention in days of the service logs."
   type        = number
   default     = 30
 }

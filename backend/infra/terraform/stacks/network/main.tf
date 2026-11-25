@@ -1,5 +1,5 @@
-# Red de la región: VPC, subredes públicas, privadas y de datos, NAT según egress,
-# endpoints de VPC y flow logs (ADR 0016).
+# Regional network: VPC, public, private and data subnets, NAT depending on egress,
+# VPC endpoints and flow logs (ADR 0016).
 
 module "network" {
   source = "../../modules/network"

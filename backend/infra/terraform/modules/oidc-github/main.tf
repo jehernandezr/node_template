@@ -1,5 +1,5 @@
-# Acceso de GitHub Actions a AWS sin claves de larga vida: el job presenta su token OIDC y asume
-# un rol. Cada rol confía solo en un repositorio y un environment de GitHub, sin comodines.
+# GitHub Actions access to AWS without long-lived keys: the job presents its OIDC token and assumes
+# a role. Each role trusts only one GitHub repository and environment, with no wildcards.
 data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
 data "aws_region" "current" {}
@@ -51,7 +51,7 @@ data "aws_iam_policy_document" "trust" {
   }
 }
 
-# --- Artefactos: bundles de las Lambdas y compilados de la app móvil --------------------
+# --- Artifacts: Lambda bundles and mobile app builds ------------------------------------
 
 resource "aws_s3_bucket" "artifacts" {
   bucket        = local.artifacts_bucket
@@ -154,7 +154,7 @@ resource "aws_s3_bucket_policy" "artifacts" {
   depends_on = [aws_s3_bucket_public_access_block.artifacts]
 }
 
-# --- Rol de despliegue: terraform plan y apply de los stacks ---------------------------
+# --- Deploy role: terraform plan and apply of the stacks -------------------------------
 
 resource "aws_iam_role" "deploy" {
   name                 = "${var.name_prefix}-github-deploy"
@@ -204,7 +204,7 @@ resource "aws_iam_role_policy_attachment" "deploy" {
   policy_arn = each.value
 }
 
-# --- Rol de publicación: imágenes, bundles de Lambda y compilados móviles --------------
+# --- Publish role: images, Lambda bundles and mobile builds ----------------------------
 
 resource "aws_iam_role" "publish" {
   name                 = "${var.name_prefix}-github-publish"
@@ -264,7 +264,7 @@ resource "aws_iam_role_policy" "publish" {
   policy = data.aws_iam_policy_document.publish.json
 }
 
-# --- Rol de la web: sincroniza el build de Flutter y invalida CloudFront ---------------
+# --- Web role: syncs the Flutter build and invalidates CloudFront ----------------------
 
 resource "aws_iam_role" "web" {
   name                 = "${var.name_prefix}-github-web"
@@ -288,8 +288,8 @@ data "aws_iam_policy_document" "web" {
     resources = ["arn:${local.partition}:s3:::${local.web_bucket}/*"]
   }
 
-  # El bucket web va cifrado con su CMK, que vive en el stack edge: se permite por el servicio S3
-  # y por el contexto de cifrado del bucket, sin conocer el ARN de la clave.
+  # The web bucket is encrypted with its CMK, which lives in the edge stack: access is allowed by
+  # the S3 service and by the bucket encryption context, without knowing the key ARN.
   statement {
     sid       = "WebBucketKey"
     actions   = ["kms:GenerateDataKey", "kms:Decrypt", "kms:DescribeKey"]

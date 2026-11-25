@@ -1,30 +1,30 @@
 output "identity_arn" {
-  description = "ARN de la identidad de dominio de SES."
+  description = "ARN of the SES domain identity."
   value       = aws_sesv2_email_identity.this.arn
 }
 
 output "configuration_set_names" {
-  description = "Nombres de los configuration sets: tracked (con aperturas y clics) y security (sin seguimiento)."
+  description = "Configuration set names: tracked (with opens and clicks) and security (no tracking)."
   value       = { for k, c in aws_sesv2_configuration_set.this : k => c.configuration_set_name }
 }
 
 output "events_topic_arn" {
-  description = "ARN del tópico SNS que recibe los eventos de SES. Suscribe aquí la cola que alimenta el seguimiento de correo."
+  description = "ARN of the SNS topic that receives SES events. Subscribe the queue that feeds email tracking here."
   value       = aws_sns_topic.events.arn
 }
 
 output "events_kms_key_arn" {
-  description = "ARN de la clave KMS del tópico de eventos. Quien se suscriba necesita kms:Decrypt sobre ella."
+  description = "ARN of the events topic KMS key. Subscribers need kms:Decrypt on it."
   value       = module.events_kms.arn
 }
 
 output "dkim_tokens" {
-  description = "Tokens DKIM de la identidad."
+  description = "DKIM tokens of the identity."
   value       = aws_sesv2_email_identity.this.dkim_signing_attributes[0].tokens
 }
 
 output "dns_records" {
-  description = "Registros DNS que el dominio debe publicar. Si pasaste route53_zone_id ya existen."
+  description = "DNS records the domain must publish. They already exist if you passed route53_zone_id."
   value = concat(
     [
       for t in aws_sesv2_email_identity.this.dkim_signing_attributes[0].tokens : {
@@ -42,6 +42,6 @@ output "dns_records" {
 }
 
 output "send_policy_json" {
-  description = "Documento de política IAM para enviar correo con la identidad y los configuration sets, para el rol del servicio notifications."
+  description = "IAM policy document to send email with the identity and the configuration sets, for the notifications service role."
   value       = data.aws_iam_policy_document.send.json
 }
