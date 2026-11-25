@@ -1,6 +1,10 @@
 import { SNSClient } from '@aws-sdk/client-sns';
 import { ReceiveMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
-import { SystemClock } from '@platform/kernel';
+import {
+  SystemClock,
+  SystemRandomSource,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import {
   MessageDispatcher,
@@ -104,16 +108,22 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
     const queueDef = TestTopology.queue(queue);
     const publisher = new SnsSqsEnvelopePublisher(sns, sqs, names, errors);
     const bus = new SnsSqsMessageBus({
+      clock: new SystemClock(),
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
       topology,
       publisher,
       source: '/services/it',
       traceparent: () => TRACEPARENT,
     });
-    const dispatcher = new MessageDispatcher({
-      consumer: queue,
-      processed: new InMemoryProcessedMessageStore(),
-      topology,
-    });
+    const dispatcher = new MessageDispatcher(
+      {
+        clock: new SystemClock(),
+        consumer: queue,
+        processed: new InMemoryProcessedMessageStore(),
+        topology,
+      },
+      { random: new SystemRandomSource() },
+    );
     const processor = new SqsDeliveryProcessor(
       sqs,
       names,
@@ -238,12 +248,17 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
     });
     const store = new InMemoryOutboxStore();
     const relay = new OutboxRelay({
+      clock: new SystemClock(),
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
+      random: new SystemRandomSource(),
       store,
       publisher,
       topology,
       retryPolicy: new RetryPolicy(5, 100, 1_000, BackoffStrategy.None),
     });
     const outbox = new SnsSqsMessageBus({
+      clock: new SystemClock(),
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
       topology,
       publisher: {
         publish: (envelope, _target, options) => {

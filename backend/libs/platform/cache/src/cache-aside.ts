@@ -1,4 +1,3 @@
-import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { PolicyName } from '@platform/resilience';
 import type { CachePort } from './cache-port.js';
 import { CallerWait } from './caller-wait.js';
@@ -48,14 +47,11 @@ export class CacheAside {
     private readonly cache: CachePort,
     private readonly keyspace: VersionedKeyspace,
     options: CacheAsideOptions,
-    collaborators: CacheAsideCollaborators = {},
+    collaborators: CacheAsideCollaborators,
   ) {
-    // The defaults exist to use the class without NestJS; in the application they are injected.
-    this.wait = collaborators.wait ?? new CallerWait(new SystemClock());
-    this.singleFlight =
-      collaborators.singleFlight ?? new SingleFlight(this.wait);
-    this.jitter =
-      collaborators.jitter ?? new TtlJitter(new SystemRandomSource());
+    this.wait = collaborators.wait;
+    this.singleFlight = collaborators.singleFlight;
+    this.jitter = collaborators.jitter;
     this.transactions = options.transactions ?? new NoTransactionScope();
     this.reporter = options.reporter ?? new NoopCacheErrorReporter();
     this.resilience = options.resilience;

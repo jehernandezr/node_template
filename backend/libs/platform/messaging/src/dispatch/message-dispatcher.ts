@@ -1,4 +1,3 @@
-import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import {
   Redactor,
   TraceContextRestorer,
@@ -46,7 +45,7 @@ export class MessageDispatcher {
 
   constructor(
     private readonly options: MessageDispatcherOptions,
-    parts: MessageDispatcherParts = {},
+    parts: MessageDispatcherParts,
   ) {
     const guard = MessagingGuard.instance;
     if (options.minLeaseMs !== undefined) {
@@ -66,24 +65,19 @@ export class MessageDispatcher {
         : ClaimGuard.DEFAULT_LEASE_MS);
 
     const tracing = parts.tracing ?? new Tracing(new Redactor());
-    this.claimGuard = new ClaimGuard(
-      options.processed,
-      options.clock ?? new SystemClock(),
-      guard,
-      {
-        baseLeaseMs,
-        ...(options.leaseMarginMs === undefined
-          ? {}
-          : { leaseMarginMs: options.leaseMarginMs }),
-      },
-    );
+    this.claimGuard = new ClaimGuard(options.processed, options.clock, guard, {
+      baseLeaseMs,
+      ...(options.leaseMarginMs === undefined
+        ? {}
+        : { leaseMarginMs: options.leaseMarginMs }),
+    });
     this.tenantGate = new TenantGate(
       options.expectedTenantId,
       options.verifyTenant,
     );
     this.classifier = new DeliveryClassifier(
       parts.failures ?? new FailureClassifier(),
-      parts.random ?? new SystemRandomSource(),
+      parts.random,
       options.isPermanent,
     );
     this.execution = new DeliveryExecution(

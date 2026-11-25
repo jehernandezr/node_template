@@ -1,4 +1,8 @@
-import { SystemClock, UuidV7IdGenerator } from '@platform/kernel';
+import {
+  SystemClock,
+  UuidV7IdGenerator,
+  SystemRandomSource,
+} from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { TenantWriteFence } from '@platform/persistence';
 import type { DataSource } from 'typeorm';
@@ -13,7 +17,7 @@ import {
 import { BatchTenantDataTransfer } from '../batch/batch-tenant-data-transfer.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 
-const ids = new UuidV7IdGenerator();
+const ids = new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource());
 const newId = (): string => ids.next().toString();
 
 const OPTIONS = {

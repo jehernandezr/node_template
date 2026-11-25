@@ -1,3 +1,4 @@
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { context, trace } from '@opentelemetry/api';
 import {
@@ -114,11 +115,15 @@ function setup(traceparent?: () => string | undefined) {
     clock: { now: () => new Date(now) },
     ...(traceparent ? { traceparent } : {}),
   });
-  const dispatcher = new MessageDispatcher({
-    consumer: 'gateway-inbox',
-    processed: new InMemoryProcessedMessageStore(),
-    topology,
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      clock: new SystemClock(),
+      consumer: 'gateway-inbox',
+      processed: new InMemoryProcessedMessageStore(),
+      topology,
+    },
+    { random: new SystemRandomSource() },
+  );
   return {
     bus,
     dispatcher,

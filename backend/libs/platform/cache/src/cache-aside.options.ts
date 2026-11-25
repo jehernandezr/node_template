@@ -48,11 +48,11 @@ export interface CacheAsideOptions {
 /** Optional dependencies of `CacheAside`. If missing, they are created with system values. */
 export interface CacheAsideCollaborators {
   /** Shared load deduplicator. */
-  readonly singleFlight?: SingleFlight;
+  readonly singleFlight: SingleFlight;
   /** Random spread of the TTL. */
-  readonly jitter?: TtlJitter;
+  readonly jitter: TtlJitter;
   /** Wait of each caller. */
-  readonly wait?: CallerWait;
+  readonly wait: CallerWait;
 }
 
 /**

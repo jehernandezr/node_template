@@ -25,7 +25,7 @@ When creating files, folders, libraries or apps, load `backend-structure`; when 
 
 - All behavior goes in a class with one responsibility. No loose functions calling each other. Example in `references/classes.md`.
 - Collaborators through the constructor as `private readonly`, typed with the port.
-- Inheritance only for `DomainError`, `AggregateRoot`, `ValueObject` and stable bases such as `ShardedRepository`.
+- Inheritance only for `DomainError`, `AggregateRoot`, `ValueObject` and stable bases such as `TenantIsolatedRepository`.
 - No `new` of dependencies in business code: they are wired in the NestJS module (see `backend-nestjs-composition`).
 - No singletons, module state or import side effects.
 - Exported functions only where `check-structure.mjs` allows them (see `backend-structure`).

@@ -1,3 +1,4 @@
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import {
   ChangeMessageVisibilityCommand,
   GetQueueUrlCommand,
@@ -43,11 +44,15 @@ function setup(queueName = 'reports-work') {
   const errors = new AwsErrorTranslator();
   const names = new AwsMessagingNames(AWS_TEST_SETTINGS, sqs, errors);
   const topology = TestTopology.topology;
-  const dispatcher = new MessageDispatcher({
-    consumer: queueName,
-    processed: new InMemoryProcessedMessageStore(),
-    topology,
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      clock: new SystemClock(),
+      consumer: queueName,
+      processed: new InMemoryProcessedMessageStore(),
+      topology,
+    },
+    { random: new SystemRandomSource() },
+  );
   const logger = new RecordingLogger();
   const redriver = new SqsDeadLetterRedriver(
     sqs,
@@ -257,11 +262,15 @@ describe('SqsDeliveryProcessor', () => {
     const processor = new SqsDeliveryProcessor(
       sqs,
       names,
-      new ThrowingDispatcher({
-        consumer: 'reports-work',
-        processed: new InMemoryProcessedMessageStore(),
-        topology,
-      }),
+      new ThrowingDispatcher(
+        {
+          clock: new SystemClock(),
+          consumer: 'reports-work',
+          processed: new InMemoryProcessedMessageStore(),
+          topology,
+        },
+        { random: new SystemRandomSource() },
+      ),
       queue,
       new SqsDeadLetterRedriver(sqs, names, queue, logger, errors),
       logger,

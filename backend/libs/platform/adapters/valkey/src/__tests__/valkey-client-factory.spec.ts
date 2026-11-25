@@ -1,6 +1,17 @@
 import { ConfigValidationError } from '@platform/config';
-import { CacheAside, VersionedKeyspace } from '@platform/cache';
-import { FailureKind } from '@platform/kernel';
+import {
+  CacheAside,
+  VersionedKeyspace,
+  CallerWait,
+  SingleFlight,
+  TtlJitter,
+} from '@platform/cache';
+import {
+  FailureKind,
+  SystemClock,
+  SystemRandomSource,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import { ResilienceEventKind, ResilienceRegistry } from '@platform/resilience';
 import { ValkeyAuthMode } from '../valkey-auth-mode.enum.js';
 import type { ValkeyAuthRequest } from '../valkey-auth-request.js';
@@ -94,14 +105,31 @@ describe('ValkeyClientFactory', () => {
         failureKind: FailureKind.Transient,
       });
 
-      const registry = new ResilienceRegistry();
+      const registry = new ResilienceRegistry(
+        {},
+        { clock: new SystemClock(), random: new SystemRandomSource() },
+      );
       const events: ResilienceEventKind[] = [];
       registry.subscribe((event) => {
         events.push(event.kind);
       });
-      const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
-        resilience: registry,
-      });
+      const aside = new CacheAside(
+        cache,
+        new VersionedKeyspace(cache, {
+          ids: new UuidV7IdGenerator(
+            new SystemClock(),
+            new SystemRandomSource(),
+          ),
+        }),
+        {
+          resilience: registry,
+        },
+        {
+          wait: new CallerWait(new SystemClock()),
+          singleFlight: new SingleFlight(new CallerWait(new SystemClock())),
+          jitter: new TtlJitter(new SystemRandomSource()),
+        },
+      );
       for (let i = 0; i < 6; i += 1) {
         await expect(
           aside.getOrLoad({

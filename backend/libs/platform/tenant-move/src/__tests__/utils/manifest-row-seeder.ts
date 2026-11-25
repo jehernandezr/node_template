@@ -1,4 +1,8 @@
-import { UuidV7IdGenerator } from '@platform/kernel';
+import {
+  UuidV7IdGenerator,
+  SystemClock,
+  SystemRandomSource,
+} from '@platform/kernel';
 import type { DataSource } from 'typeorm';
 import { TenantMoveSelectorKind } from '../../manifest/tenant-move-selector-kind.enum.js';
 import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
@@ -32,7 +36,10 @@ export type FixedColumns = Readonly<
  * points to, takes the first value of a column's CHECK constraints and of enums, and fills the rest by type.
  */
 export class ManifestRowSeeder {
-  private readonly ids = new UuidV7IdGenerator();
+  private readonly ids = new UuidV7IdGenerator(
+    new SystemClock(),
+    new SystemRandomSource(),
+  );
   private sequence = 0;
 
   constructor(

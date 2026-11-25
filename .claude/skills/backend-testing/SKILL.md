@@ -36,6 +36,7 @@ The rules of `backend-code` apply to tests and their utilities:
 - Infrastructure: what it tests: repository, mapper, consumer against a real system; with: Testcontainers; doubles: none for the database
 - Contract: what it tests: the zod schema accepts valid input and rejects invalid input; producer and consumer match; with: Jest
 - Component: what it tests: a full NestJS module over HTTP; with: `@nestjs/testing` and supertest, real database; doubles: only external services
+- Service: what it tests: a whole service over HTTP, its internal API and its consumers; with: the service's test app, which composes `ServiceTestApp` from `@platform/service/test-utils` (databases, identity stub, peer stubs, migrations, tenant placement); doubles: only the other services
 - E2E: what it tests: a few critical flows with the packaged app; with: docker-compose
 
 Details and recipes in `references/layers-and-testcontainers.md`.

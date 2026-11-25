@@ -20,7 +20,11 @@ import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
-import { SystemRandomSource, UuidV7IdGenerator } from '@platform/kernel';
+import {
+  SystemRandomSource,
+  UuidV7IdGenerator,
+  SystemClock,
+} from '@platform/kernel';
 import { TelemetryOptionsReader } from '../config/telemetry-options.reader.js';
 import { NoopMetrics } from '../metrics/noop-metrics.js';
 import { OtelMetrics } from '../metrics/otel-metrics.js';
@@ -106,7 +110,8 @@ export class TelemetryBootstrap extends TelemetryHandle {
       : new BatchLogRecordProcessor({ exporter: logExporter });
 
     const codec = new TraceContextCodec(
-      options.ids ?? new UuidV7IdGenerator(),
+      options.ids ??
+        new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
       new SystemRandomSource(),
     );
     const factory = new InstrumentationFactory();

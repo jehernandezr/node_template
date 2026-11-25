@@ -1,7 +1,7 @@
 import { defineEvent } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { Deadline, BackoffStrategy, RetryPolicy } from '@platform/primitives';
-import { ClaimState } from '@platform/kernel';
+import { ClaimState, SystemRandomSource, SystemClock } from '@platform/kernel';
 import { z } from 'zod';
 import { QueueDef } from '../../topology/queue-def.js';
 import { Route } from '../../topology/route.js';
@@ -59,12 +59,15 @@ function setup(minLeaseMs?: number) {
     clock,
     new SequentialIdGenerator(),
   );
-  const dispatcher = new MessageDispatcher({
-    consumer: 'notifications',
-    processed: store,
-    clock,
-    ...(minLeaseMs === undefined ? {} : { minLeaseMs }),
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      consumer: 'notifications',
+      processed: store,
+      clock,
+      ...(minLeaseMs === undefined ? {} : { minLeaseMs }),
+    },
+    { random: new SystemRandomSource() },
+  );
   return { clock, store, dispatcher };
 }
 
@@ -156,12 +159,15 @@ describe('MessageDispatcher three-state claims', () => {
       clock,
       new SequentialIdGenerator(),
     );
-    const dispatcher = new MessageDispatcher({
-      consumer: 'notifications',
-      processed: store,
-      topology,
-      clock,
-    });
+    const dispatcher = new MessageDispatcher(
+      {
+        consumer: 'notifications',
+        processed: store,
+        topology,
+        clock,
+      },
+      { random: new SystemRandomSource() },
+    );
     dispatcher.register(TaskUpdated, new RecordingMessageHandler().handle);
 
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), { receiveCount: 1 });
@@ -188,11 +194,15 @@ describe('MessageDispatcher three-state claims', () => {
 
     expect(
       () =>
-        new MessageDispatcher({
-          consumer: 'x',
-          processed: store,
-          minLeaseMs: 0,
-        }),
+        new MessageDispatcher(
+          {
+            clock: new SystemClock(),
+            consumer: 'x',
+            processed: store,
+            minLeaseMs: 0,
+          },
+          { random: new SystemRandomSource() },
+        ),
     ).toThrow(
       expect.objectContaining({
         code: MessagingErrorCode.InvalidOptions,
@@ -207,12 +217,15 @@ describe('MessageDispatcher three-state claims', () => {
     const raw = envelopeFor({ id: 't1' });
 
     // A consumer took the claim with the same content and died without completing it.
-    const crashed = new MessageDispatcher({
-      consumer: 'notifications',
-      processed: store,
-      clock,
-      minLeaseMs: 30_000,
-    }).register(
+    const crashed = new MessageDispatcher(
+      {
+        consumer: 'notifications',
+        processed: store,
+        clock,
+        minLeaseMs: 30_000,
+      },
+      { random: new SystemRandomSource() },
+    ).register(
       TaskUpdated,
       new RecordingMessageHandler({ gates: [neverSettles()] }).handle,
     );
@@ -308,16 +321,19 @@ describe('MessageDispatcher three-state claims', () => {
 
   it('retries when completing the claim fails, then processes the redelivery', async () => {
     const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
-    const dispatcher = new MessageDispatcher({
-      consumer: 'notifications',
-      processed: new FailingProcessedMessageStore(
-        StoreOperation.Complete,
-        new Error('connection reset'),
-        1,
+    const dispatcher = new MessageDispatcher(
+      {
+        consumer: 'notifications',
+        processed: new FailingProcessedMessageStore(
+          StoreOperation.Complete,
+          new Error('connection reset'),
+          1,
+          clock,
+        ),
         clock,
-      ),
-      clock,
-    });
+      },
+      { random: new SystemRandomSource() },
+    );
     const handler = new RecordingMessageHandler();
     dispatcher.register(TaskUpdated, handler.handle);
     const raw = envelopeFor({ id: 't1' });

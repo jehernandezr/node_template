@@ -16,6 +16,7 @@ References: ADR 0004 (OpenTelemetry and OpenObserve), ADR 0003 (the `traceId` is
 
 - Every environment variable is declared in a zod schema in `@platform/config`, with a type, a sensible default and a description. It is validated once at startup: if it is missing or invalid, the process does not start and the message says which variable failed and why, without printing a secret's value.
 - The result is a typed, immutable object that gets injected (`AppConfig`). Nobody reads `process.env` outside `@platform/config`.
+- A library reads its section with `ConfigModule.forFeature(section)` and its token. A service reads its own schema through a `RootSettings<T>` subclass in its `config/` folder (`BillingSettings`); use cases and adapters inject that class, never `AppConfig.root<X>()`.
 - Configuration is grouped by topic (`database`, `messaging`, `auth`), not a flat list. Numbers carry their unit in the name (`timeoutMs`, `ttlSeconds`).
 - Values that depend on the environment (URLs, pool sizes) come from the environment. Business rules are not configuration: they are code.
 - Changing a behavior option at runtime (log level) goes through a feature flag, not a restart.

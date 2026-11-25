@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
 import { Criteria, CursorCodec } from '@platform/criteria';
 import { ActorType } from '@platform/observability';
@@ -81,7 +82,10 @@ describe('ShardedRepository', () => {
       actorId: ACTOR,
       actorType: ActorType.User,
     });
-    const router = new ShardRouter({ directory: new InMemoryDirectoryStore() });
+    const router = new ShardRouter({
+      clock: new SystemClock(),
+      directory: new InMemoryDirectoryStore(),
+    });
     scope = new ShardScope(router);
     dataSource = new StubDataSource('probes', [ProbeEntity]);
     await dataSource.initialize();

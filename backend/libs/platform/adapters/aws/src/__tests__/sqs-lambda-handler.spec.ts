@@ -1,3 +1,4 @@
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import {
   ChangeMessageVisibilityCommand,
   GetQueueUrlCommand,
@@ -40,11 +41,15 @@ function setup(queueName: string) {
   const names = new AwsMessagingNames(AWS_TEST_SETTINGS, sqs, errors);
   const logger = new RecordingLogger();
   const queue = TestTopology.queue(queueName);
-  const dispatcher = new MessageDispatcher({
-    consumer: queueName,
-    processed: new InMemoryProcessedMessageStore(),
-    topology: TestTopology.topology,
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      clock: new SystemClock(),
+      consumer: queueName,
+      processed: new InMemoryProcessedMessageStore(),
+      topology: TestTopology.topology,
+    },
+    { random: new SystemRandomSource() },
+  );
   const processor = new SqsDeliveryProcessor(
     sqs,
     names,

@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { InvalidArgumentError } from '@platform/primitives';
 import { InMemoryRateLimiter } from '../in-memory-rate-limiter.js';
@@ -46,13 +47,14 @@ describe('InMemoryRateLimiter', () => {
   });
 
   it('rejects a non-positive maxEntries', () => {
-    expect(() => new InMemoryRateLimiter({ maxEntries: 0 })).toThrow(
-      InvalidArgumentError,
-    );
+    expect(
+      () =>
+        new InMemoryRateLimiter({ clock: new SystemClock(), maxEntries: 0 }),
+    ).toThrow(InvalidArgumentError);
   });
 
   it('uses the system clock by default', async () => {
-    const limiter = new InMemoryRateLimiter();
+    const limiter = new InMemoryRateLimiter({ clock: new SystemClock() });
     await expect(
       limiter.consume('k', { name: 'sys', limit: 2, windowMs: 60_000 }),
     ).resolves.toMatchObject({

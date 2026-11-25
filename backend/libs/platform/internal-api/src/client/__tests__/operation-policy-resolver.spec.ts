@@ -1,3 +1,4 @@
+import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { defineOperation } from '@contracts/platform';
 import { ResilienceRegistry } from '@platform/resilience';
 import { z } from 'zod';
@@ -29,7 +30,10 @@ function operation(
 
 describe('OperationPolicyResolver', () => {
   function setup() {
-    const registry = new ResilienceRegistry();
+    const registry = new ResilienceRegistry(
+      {},
+      { clock: new SystemClock(), random: new SystemRandomSource() },
+    );
     registry.register(ExternalApiPolicy.NAME, ExternalApiPolicy.CONFIG);
     return { registry, resolver: new OperationPolicyResolver(registry) };
   }

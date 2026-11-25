@@ -1,4 +1,4 @@
-import { TenantId } from '@platform/kernel';
+import { TenantId, SystemClock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { Deadline, DeadlineExceededError } from '@platform/primitives';
 import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
@@ -410,7 +410,14 @@ describe('ShardRouter', () => {
       'rejects an invalid %s with InvalidConfiguration',
       async (option, overrides) => {
         await expect(
-          AsyncCall.run(() => new ShardRouter({ directory, ...overrides })),
+          AsyncCall.run(
+            () =>
+              new ShardRouter({
+                clock: new SystemClock(),
+                directory,
+                ...overrides,
+              }),
+          ),
         ).rejects.toMatchObject({
           code: ShardingErrorCode.InvalidConfiguration,
           details: { option },

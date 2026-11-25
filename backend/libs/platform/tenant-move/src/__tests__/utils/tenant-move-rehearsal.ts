@@ -2,7 +2,11 @@ import type {
   TenantMoveRef,
   TenantMoveVerification,
 } from '@contracts/platform';
-import { SystemClock, UuidV7IdGenerator } from '@platform/kernel';
+import {
+  SystemClock,
+  UuidV7IdGenerator,
+  SystemRandomSource,
+} from '@platform/kernel';
 import { platformSagaShardMigrations } from '@platform/adapters-postgres';
 import { TenantWriteFence, type MigrationClass } from '@platform/persistence';
 import { SagaStatus } from '@platform/saga';
@@ -101,7 +105,10 @@ export class TenantMoveRehearsal {
   /** The service manifest with the platform tables, as the module copies it. */
   readonly manifest: TenantMoveManifest;
   readonly db: ShardedTestDatabase;
-  private readonly ids = new UuidV7IdGenerator();
+  private readonly ids = new UuidV7IdGenerator(
+    new SystemClock(),
+    new SystemRandomSource(),
+  );
   private readonly seeder: ManifestRowSeeder;
   private readonly filter: TenantRowFilter;
   private readonly session = new TenantSession();

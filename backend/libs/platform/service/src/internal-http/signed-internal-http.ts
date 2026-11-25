@@ -1,7 +1,6 @@
 import { InternalRequestSignerSelector } from '@platform/adapters-aws';
 import type { AppConfig } from '@platform/config';
 import { InternalApiSignerKind } from '@platform/internal-api';
-import { SystemClock } from '@platform/kernel';
 import type {
   ServiceInternalHttpContext,
   ServiceInternalHttpSettings,
@@ -49,7 +48,7 @@ export class SignedInternalHttp {
       secret: hmacSecret,
       signer: this.selector.select(values.INTERNAL_API_SIGNER, {
         hmacSecret,
-        clock: new SystemClock(),
+        clock: context.clock,
         credentials: context.aws.credentials,
         sigv4: {
           region: context.aws.region,

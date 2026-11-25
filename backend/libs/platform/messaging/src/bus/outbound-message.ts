@@ -1,9 +1,4 @@
-import {
-  type Clock,
-  type IdGenerator,
-  SystemClock,
-  UuidV7IdGenerator,
-} from '@platform/kernel';
+import { type Clock, type IdGenerator } from '@platform/kernel';
 import {
   Redactor,
   TraceContextRestorer,
@@ -50,10 +45,10 @@ export interface OutboundMessage<T = unknown> {
 export interface OutboundMessageFactoryOptions {
   /** Value of the envelope `source` attribute. */
   readonly source: string;
-  /** Clock for the envelope times. Defaults to the system clock. */
-  readonly clock?: Clock;
-  /** Envelope id generator. Defaults to UUIDv7. */
-  readonly ids?: IdGenerator;
+  /** Clock for the envelope times. */
+  readonly clock: Clock;
+  /** Envelope id generator. */
+  readonly ids: IdGenerator;
   /** Source of the default `traceparent`. Defaults to the one of the active span. */
   readonly traceparent?: () => string | undefined;
 }
@@ -76,8 +71,8 @@ export class OutboundMessageFactory {
   constructor(topology: Topology, options: OutboundMessageFactoryOptions) {
     this.topology = topology;
     this.options = options;
-    this.clock = options.clock ?? new SystemClock();
-    this.ids = options.ids ?? new UuidV7IdGenerator();
+    this.clock = options.clock;
+    this.ids = options.ids;
     const restorer = new TraceContextRestorer(new Tracing(new Redactor()));
     this.traceparent = options.traceparent ?? (() => restorer.current());
     this.envelopes = new EnvelopeFactory(this.clock, this.ids);

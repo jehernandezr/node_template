@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { InProcessDirectoryChannel } from '../../in-process-directory-channel.js';
 import { ShardAccess } from '../../model/shard-access.enum.js';
 import { ShardKey } from '../../model/shard-key.enum.js';
@@ -25,7 +26,7 @@ function directoryWithTwoTenants(): InMemoryDirectoryStore {
 runTenantWriteGateContract('DirectoryWriteGate', {
   async create() {
     const directory = directoryWithTwoTenants();
-    const router = new ShardRouter({ directory });
+    const router = new ShardRouter({ clock: new SystemClock(), directory });
     return new DirectoryWriteGate(
       router,
       new PlacementTransition(directory, router),
@@ -36,7 +37,7 @@ runTenantWriteGateContract('DirectoryWriteGate', {
 describe('DirectoryWriteGate', () => {
   it('marks the placement as migrating with a new version', async () => {
     const directory = directoryWithTwoTenants();
-    const router = new ShardRouter({ directory });
+    const router = new ShardRouter({ clock: new SystemClock(), directory });
     const gate = new DirectoryWriteGate(
       router,
       new PlacementTransition(directory, router),
@@ -52,8 +53,15 @@ describe('DirectoryWriteGate', () => {
   it('lets every process that listens to the directory see the gate closed at once', async () => {
     const directory = directoryWithTwoTenants();
     const channel = new InProcessDirectoryChannel();
-    const writerRouter = new ShardRouter({ directory, changes: channel });
-    const otherRouter = new ShardRouter({ directory });
+    const writerRouter = new ShardRouter({
+      clock: new SystemClock(),
+      directory,
+      changes: channel,
+    });
+    const otherRouter = new ShardRouter({
+      clock: new SystemClock(),
+      directory,
+    });
     await otherRouter.listen(channel);
     await otherRouter.resolve({
       tenantId: TestTenants.One,

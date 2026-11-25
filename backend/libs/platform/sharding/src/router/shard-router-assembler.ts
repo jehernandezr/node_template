@@ -1,4 +1,4 @@
-import { SystemClock, TenantId } from '@platform/kernel';
+import { TenantId } from '@platform/kernel';
 import { ShardingError } from '../errors/sharding-error.js';
 import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
 import { ShardingGuard } from '../errors/sharding-guard.js';
@@ -46,7 +46,7 @@ export class ShardRouterAssembler {
     ShardingGuard.instance.positiveInteger('maxInstances', maxInstances);
     ShardingGuard.instance.positiveInteger('maxKeyLength', maxKeyLength);
 
-    const clock = options.clock ?? new SystemClock();
+    const clock = options.clock;
     const onError = options.onCacheError ?? (() => undefined);
     const normalizer = new RoutingKeyNormalizer(
       options.tenantIdPattern ?? TenantId.DEFAULT_PATTERN,

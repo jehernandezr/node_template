@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { DirectoryWriteResult } from '../../model/directory-write-result.enum.js';
 import type { TenantPlacement } from '../../model/tenant-placement.js';
 import { ShardingErrorCode } from '../../errors/sharding-error-code.enum.js';
@@ -34,7 +35,7 @@ describe('PlacementTransition', () => {
     directory.setPlacement(PlacementBuilder.aPlacement().build());
     const transition = new PlacementTransition(
       directory,
-      new ShardRouter({ directory }),
+      new ShardRouter({ clock: new SystemClock(), directory }),
     );
 
     const placement = await transition.apply(TestTenants.One, () => ({
@@ -57,7 +58,7 @@ describe('PlacementTransition', () => {
     directory.setPlacement(PlacementBuilder.aPlacement().build());
     const transition = new PlacementTransition(
       directory,
-      new ShardRouter({ directory }),
+      new ShardRouter({ clock: new SystemClock(), directory }),
     );
 
     const placement = await transition.apply(TestTenants.One, () => undefined);
@@ -70,7 +71,7 @@ describe('PlacementTransition', () => {
     directory.setPlacement(PlacementBuilder.aPlacement().build());
     const transition = new PlacementTransition(
       directory,
-      new ShardRouter({ directory }),
+      new ShardRouter({ clock: new SystemClock(), directory }),
     );
 
     const placement = await transition.apply(TestTenants.One, () => ({
@@ -84,7 +85,7 @@ describe('PlacementTransition', () => {
     const directory = new InMemoryDirectoryStore();
     const transition = new PlacementTransition(
       directory,
-      new ShardRouter({ directory }),
+      new ShardRouter({ clock: new SystemClock(), directory }),
     );
 
     await expect(
@@ -104,7 +105,7 @@ describe('PlacementTransition', () => {
     );
     const transition = new PlacementTransition(
       directory,
-      new ShardRouter({ directory }),
+      new ShardRouter({ clock: new SystemClock(), directory }),
     );
 
     await expect(

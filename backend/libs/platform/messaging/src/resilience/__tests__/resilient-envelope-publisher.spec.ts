@@ -1,3 +1,4 @@
+import { SystemRandomSource } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { CircuitOpenError, ResilienceRegistry } from '@platform/resilience';
 import {
@@ -23,7 +24,10 @@ const OTHER_QUEUE: OutboundTarget = {
 const envelope = EnvelopeBuilder.anEnvelope({ id: 'msg-1' });
 
 function setup() {
-  const registry = new ResilienceRegistry({}, { clock: new FixedClock() });
+  const registry = new ResilienceRegistry(
+    {},
+    { clock: new FixedClock(), random: new SystemRandomSource() },
+  );
   registry.register(MessagingPolicies.Queue, MessagingPolicies.queue);
   const inner = new RecordingEnvelopePublisher();
   const publisher = new ResilientEnvelopePublisher(inner, registry);

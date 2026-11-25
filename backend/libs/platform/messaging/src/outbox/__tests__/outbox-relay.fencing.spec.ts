@@ -1,3 +1,4 @@
+import { SystemRandomSource } from '@platform/kernel';
 import { defineEvent } from '@contracts/platform';
 import { z } from 'zod';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
@@ -78,6 +79,7 @@ function setup() {
   const publisher = new RecordingEnvelopePublisher();
   const relay = (extra: Partial<OutboxRelayOptions> = {}) =>
     new OutboxRelay({
+      random: new SystemRandomSource(),
       store,
       publisher,
       topology: testTopology(),

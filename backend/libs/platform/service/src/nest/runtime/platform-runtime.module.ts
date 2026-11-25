@@ -373,12 +373,14 @@ export class PlatformRuntimeModule {
       return InternalApiModule.forRootAsync({
         useFactory: (
           config: AppConfig,
+          clock: Clock,
           credentials?: AwsCredentialsProvider,
           aws?: AwsSettings,
         ) => ({
           operations,
           remoteOperations,
           http: resolveHttp(config, {
+            clock,
             ...(credentials === undefined || aws === undefined
               ? {}
               : { aws: { credentials, region: aws.AWS_REGION } }),
@@ -386,6 +388,7 @@ export class PlatformRuntimeModule {
         }),
         inject: [
           AppConfig,
+          Clock,
           { token: AwsCredentialsProvider, optional: true },
           { token: AwsConfig.token, optional: true },
         ],

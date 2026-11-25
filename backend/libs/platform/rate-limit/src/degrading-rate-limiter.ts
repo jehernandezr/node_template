@@ -1,4 +1,3 @@
-import { SystemClock } from '@platform/kernel';
 import { PrimitivesGuard } from '@platform/primitives';
 import type { DegradingRateLimiterOptions } from './degrading-rate-limiter.options.js';
 import { InMemoryRateLimiter } from './in-memory-rate-limiter.js';
@@ -37,8 +36,7 @@ export class DegradingRateLimiter extends RateLimiter {
     );
     this.primary = options.primary;
     this.fallback =
-      options.fallback ??
-      new InMemoryRateLimiter({ clock: options.clock ?? new SystemClock() });
+      options.fallback ?? new InMemoryRateLimiter({ clock: options.clock });
     this.onDegraded = options.onDegraded;
     this.reporter = options.reporter ?? new NoopRateLimitDegradationReporter();
   }

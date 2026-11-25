@@ -1,3 +1,4 @@
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { defineCommand, defineEvent } from '@contracts/platform';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
@@ -68,10 +69,14 @@ function setup() {
     clock: { now: () => new Date(clock) },
     ids: new SequentialIdGenerator(),
   });
-  const dispatcher = new MessageDispatcher({
-    consumer: 'notifications',
-    processed: new InMemoryProcessedMessageStore(),
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      clock: new SystemClock(),
+      consumer: 'notifications',
+      processed: new InMemoryProcessedMessageStore(),
+    },
+    { random: new SystemRandomSource() },
+  );
   return {
     bus,
     dispatcher,
@@ -236,10 +241,14 @@ describe('InMemoryBus', () => {
 
   it('delays sent commands until their delay elapses', async () => {
     const { bus, setClock } = setup();
-    const reportDispatcher = new MessageDispatcher({
-      consumer: 'reports',
-      processed: new InMemoryProcessedMessageStore(),
-    });
+    const reportDispatcher = new MessageDispatcher(
+      {
+        clock: new SystemClock(),
+        consumer: 'reports',
+        processed: new InMemoryProcessedMessageStore(),
+      },
+      { random: new SystemRandomSource() },
+    );
     reportDispatcher.register(GenerateReport, () => undefined);
     await bus.send(GenerateReport, { reportId: 'r1' }, { delayMs: 5_000 });
 

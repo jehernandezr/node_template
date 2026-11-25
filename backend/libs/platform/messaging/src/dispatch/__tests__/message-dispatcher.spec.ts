@@ -1,3 +1,4 @@
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { defineCommand, defineEvent } from '@contracts/platform';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { z, ZodError } from 'zod';
@@ -44,11 +45,15 @@ function setup(
   extra: Partial<ConstructorParameters<typeof MessageDispatcher>[0]> = {},
 ) {
   const processed = new InMemoryProcessedMessageStore();
-  const dispatcher = new MessageDispatcher({
-    consumer: 'notifications',
-    processed,
-    ...extra,
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      clock: new SystemClock(),
+      consumer: 'notifications',
+      processed,
+      ...extra,
+    },
+    { random: new SystemRandomSource() },
+  );
   return { processed, dispatcher };
 }
 
@@ -100,18 +105,18 @@ describe('MessageDispatcher', () => {
   it('releases the claim on failure so the redelivery is processed', async () => {
     const processed = new InMemoryProcessedMessageStore();
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
-    const failing = new MessageDispatcher({
-      consumer: 'notifications',
-      processed,
-    }).register(
+    const failing = new MessageDispatcher(
+      { clock: new SystemClock(), consumer: 'notifications', processed },
+      { random: new SystemRandomSource() },
+    ).register(
       TaskUpdated,
       new RecordingMessageHandler({ error: transient('transient') }).handle,
     );
     const handler = new RecordingMessageHandler();
-    const recovering = new MessageDispatcher({
-      consumer: 'notifications',
-      processed,
-    }).register(TaskUpdated, handler.handle);
+    const recovering = new MessageDispatcher(
+      { clock: new SystemClock(), consumer: 'notifications', processed },
+      { random: new SystemRandomSource() },
+    ).register(TaskUpdated, handler.handle);
 
     expect(
       (await failing.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
@@ -396,14 +401,18 @@ describe('MessageDispatcher', () => {
 
   it('keys idempotency on (consumer, id): two consumers both process the same message', async () => {
     const shared = new InMemoryProcessedMessageStore();
-    const first = new MessageDispatcher({
-      consumer: 'notifications',
-      processed: shared,
-    });
-    const second = new MessageDispatcher({
-      consumer: 'audit',
-      processed: shared,
-    });
+    const first = new MessageDispatcher(
+      {
+        clock: new SystemClock(),
+        consumer: 'notifications',
+        processed: shared,
+      },
+      { random: new SystemRandomSource() },
+    );
+    const second = new MessageDispatcher(
+      { clock: new SystemClock(), consumer: 'audit', processed: shared },
+      { random: new SystemRandomSource() },
+    );
     const handler = new RecordingMessageHandler();
     first.register(TaskUpdated, handler.handle);
     second.register(TaskUpdated, handler.handle);

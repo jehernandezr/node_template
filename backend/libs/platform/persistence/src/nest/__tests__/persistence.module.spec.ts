@@ -4,7 +4,7 @@ import { Global, Injectable, Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@platform/config/nest';
 import { FixedClock } from '@platform/kernel/test-utils';
-import { Clock, TransactionManager } from '@platform/kernel';
+import { Clock, TransactionManager, SystemClock } from '@platform/kernel';
 import {
   ActorType,
   LoggerPort,
@@ -92,7 +92,10 @@ class UserFeatureConsumer {
     },
     {
       provide: ShardRouter,
-      useValue: new ShardRouter({ directory: new InMemoryDirectoryStore() }),
+      useValue: new ShardRouter({
+        clock: new SystemClock(),
+        directory: new InMemoryDirectoryStore(),
+      }),
     },
     { provide: LoggerPort, useValue: new RecordingLogger() },
     SpecShardLister,

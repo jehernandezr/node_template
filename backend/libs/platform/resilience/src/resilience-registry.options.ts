@@ -8,11 +8,11 @@ import type { PolicyRegistry } from './policy/policy-registry.js';
 export interface ResilienceRegistryOptions {
   /**
    * Time source for deadlines, `Retry-After` waits, event
-   * timestamps and the breaker's half-open wait. Defaults to `SystemClock`.
+   * timestamps and the breaker's half-open wait.
    */
-  readonly clock?: Clock;
-  /** Random source for the backoff jitter. Defaults to `SystemRandomSource`. */
-  readonly random?: RandomSource;
+  readonly clock: Clock;
+  /** Random source for the backoff jitter. */
+  readonly random: RandomSource;
   /** Failure classifier. Defaults to `FailureClassifier` without custom rules. */
   readonly classifier?: FailureClassifier;
   readonly events?: ResilienceEventBus;

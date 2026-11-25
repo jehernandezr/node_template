@@ -1,4 +1,4 @@
-import { SystemClock, type Clock } from '@platform/kernel';
+import { SystemClock, type Clock, SystemRandomSource } from '@platform/kernel';
 import {
   Redactor,
   Tracing,
@@ -22,7 +22,10 @@ import { ScriptedTransport } from './scripted-transport.js';
  */
 export class InternalClientHarness {
   readonly transport = new ScriptedTransport();
-  readonly resilience = new ResilienceRegistry();
+  readonly resilience = new ResilienceRegistry(
+    {},
+    { clock: new SystemClock(), random: new SystemRandomSource() },
+  );
   readonly clock: Clock;
   readonly client: InternalClient;
 

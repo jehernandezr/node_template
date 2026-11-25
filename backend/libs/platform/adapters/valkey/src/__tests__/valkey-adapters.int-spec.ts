@@ -1,9 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { PartitionedBloomFilter } from '@platform/bloom';
-import { CacheAside, VersionedKeyspace } from '@platform/cache';
+import {
+  CacheAside,
+  VersionedKeyspace,
+  CallerWait,
+  SingleFlight,
+  TtlJitter,
+} from '@platform/cache';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
-import { HealthState, SystemRandomSource } from '@platform/kernel';
+import {
+  HealthState,
+  SystemRandomSource,
+  SystemClock,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import { PolicyName, ResilienceRegistry } from '@platform/resilience';
 import {
   ShardAccess,
@@ -188,7 +199,13 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
     it('agrees on one version token among concurrent first readers', async () => {
       const keyspaces = Array.from(
         { length: 10 },
-        () => new VersionedKeyspace(cache()),
+        () =>
+          new VersionedKeyspace(cache(), {
+            ids: new UuidV7IdGenerator(
+              new SystemClock(),
+              new SystemRandomSource(),
+            ),
+          }),
       );
       const tokens = await Promise.all(
         keyspaces.map((versions) => versions.version(['t1', 'orders'])),
@@ -199,19 +216,36 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
     it('serves CacheAside reads and invalidations', async () => {
       const absorbed = new RecordingCacheErrorReporter();
       const store = cache();
-      const aside = new CacheAside(store, new VersionedKeyspace(store), {
-        // The default policy cuts each call at 100 ms and the whole call at 200 ms; with
-        // all the suites in parallel a Valkey reply takes longer, CacheAside absorbs it by loading
-        // directly and the load count changes. This test is about the round trip to the server, not the deadlines:
-        // both budgets are widened together (widening only the attempt one leaves the total at 200 ms).
-        resilience: new ResilienceRegistry({
-          [PolicyName.Cache.value]: {
-            timeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
-            totalTimeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
-          },
+      const aside = new CacheAside(
+        store,
+        new VersionedKeyspace(store, {
+          ids: new UuidV7IdGenerator(
+            new SystemClock(),
+            new SystemRandomSource(),
+          ),
         }),
-        reporter: absorbed,
-      });
+        {
+          // The default policy cuts each call at 100 ms and the whole call at 200 ms; with
+          // all the suites in parallel a Valkey reply takes longer, CacheAside absorbs it by loading
+          // directly and the load count changes. This test is about the round trip to the server, not the deadlines:
+          // both budgets are widened together (widening only the attempt one leaves the total at 200 ms).
+          resilience: new ResilienceRegistry(
+            {
+              [PolicyName.Cache.value]: {
+                timeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
+                totalTimeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
+              },
+            },
+            { clock: new SystemClock(), random: new SystemRandomSource() },
+          ),
+          reporter: absorbed,
+        },
+        {
+          wait: new CallerWait(new SystemClock()),
+          singleFlight: new SingleFlight(new CallerWait(new SystemClock())),
+          jitter: new TtlJitter(new SystemRandomSource()),
+        },
+      );
       const loader = new CountingLoader({ total: 3 });
       const read = () =>
         aside.getOrLoad({
@@ -286,10 +320,12 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
         getInstance: (shard: string) => store.getInstance(shard),
       };
       const reader = new ShardRouter({
+        clock: new SystemClock(),
         directory: slowDirectory,
         sharedCache: routingCache(),
       });
       const mover = new ShardRouter({
+        clock: new SystemClock(),
         directory: store,
         sharedCache: routingCache(),
       });
@@ -304,6 +340,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       });
 
       const fresh = new ShardRouter({
+        clock: new SystemClock(),
         directory: store,
         sharedCache: routingCache(),
       });
@@ -335,11 +372,13 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       };
 
       const mover = new ShardRouter({
+        clock: new SystemClock(),
         directory: store,
         sharedCache: routingCache(),
         changes: channel(),
       });
       const other = new ShardRouter({
+        clock: new SystemClock(),
         directory: store,
         sharedCache: routingCache(),
       });

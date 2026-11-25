@@ -1,3 +1,4 @@
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import {
   DeleteMessageBatchCommand,
   GetQueueUrlCommand,
@@ -36,11 +37,15 @@ function setup(
   const errors = new AwsErrorTranslator();
   const names = new AwsMessagingNames(AWS_TEST_SETTINGS, sqs, errors);
   const queue = TestTopology.queue('reports-work');
-  const dispatcher = new MessageDispatcher({
-    consumer: 'reports-work',
-    processed: new InMemoryProcessedMessageStore(),
-    topology: TestTopology.topology,
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      clock: new SystemClock(),
+      consumer: 'reports-work',
+      processed: new InMemoryProcessedMessageStore(),
+      topology: TestTopology.topology,
+    },
+    { random: new SystemRandomSource() },
+  );
   const processor = new SqsDeliveryProcessor(
     sqs,
     names,

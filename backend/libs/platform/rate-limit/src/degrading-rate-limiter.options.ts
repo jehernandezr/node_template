@@ -16,7 +16,7 @@ export interface DegradingRateLimiterOptions {
   /** Local limiter. Defaults to an `InMemoryRateLimiter` with `clock`. */
   readonly fallback?: RateLimiter;
   /** Clock of the default local limiter. */
-  readonly clock?: Clock;
+  readonly clock: Clock;
   /**
    * Called with each failure of the shared limiter. An exception inside
    * it is ignored.

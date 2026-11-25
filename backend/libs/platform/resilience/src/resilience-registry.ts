@@ -1,4 +1,3 @@
-import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { FailureClassifier } from '@platform/primitives';
 import { PolicyExecutor } from './execution/policy-executor.js';
 import type {
@@ -26,17 +25,15 @@ export class ResilienceRegistry {
   private readonly executor: PolicyExecutor;
 
   /**
-   * The defaults allow using the library without NestJS; the module
-   * passes all the collaborators.
    * @param overrides Overrides by name over the base policies.
-   * @param options Optional collaborators.
+   * @param options The clock, the randomness and the optional collaborators.
    * @throws InvalidPolicyError if a merged policy is not valid.
    */
   constructor(
     overrides: ResilienceOverrides = {},
-    options: ResilienceRegistryOptions = {},
+    options: ResilienceRegistryOptions,
   ) {
-    const clock = options.clock ?? new SystemClock();
+    const clock = options.clock;
     const classifier = options.classifier ?? new FailureClassifier();
     this.events = options.events ?? new ResilienceEventBus(clock);
     this.policies =
@@ -46,7 +43,7 @@ export class ResilienceRegistry {
       options.executor ??
       new PolicyExecutor(
         clock,
-        options.random ?? new SystemRandomSource(),
+        options.random,
         this.events,
         classifier,
         new RetryAfterHint(clock),

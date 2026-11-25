@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { TaskStatus } from '@contracts/tasks';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { ShardScope } from '@platform/persistence';
@@ -16,7 +17,10 @@ const PAGE = 2;
 
 const setup = () => {
   const scope = new ShardScope(
-    new ShardRouter({ directory: new InMemoryDirectoryStore() }),
+    new ShardRouter({
+      clock: new SystemClock(),
+      directory: new InMemoryDirectoryStore(),
+    }),
   );
   const index = new InMemorySearchIndex();
   const tasks = new InMemoryTaskRepository(scope);

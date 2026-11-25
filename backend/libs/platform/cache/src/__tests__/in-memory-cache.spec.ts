@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { runCachePortContract } from './utils/index.js';
 import { InMemoryCache } from '../in-memory-cache.js';
@@ -11,7 +12,7 @@ runCachePortContract('InMemoryCache', (clock) => ({
 
 describe('InMemoryCache', () => {
   it('reads the system clock when no clock is given', async () => {
-    const cache = new InMemoryCache();
+    const cache = new InMemoryCache({ clock: new SystemClock() });
     await cache.set('key', 'value', 60_000);
     await expect(cache.get('key')).resolves.toBe('value');
   });

@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { ContainerRuntime, FixedClock } from '@platform/kernel/test-utils';
 import {
   DegradingRateLimiter,
@@ -224,6 +225,7 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
     ).create();
     const errors: unknown[] = [];
     const degrading = new DegradingRateLimiter({
+      clock: new SystemClock(),
       primary: new ValkeyRateLimiter(
         ValkeyExecutors.over(unreachable),
         keyspace,

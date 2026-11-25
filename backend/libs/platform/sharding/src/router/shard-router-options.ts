@@ -20,8 +20,8 @@ export interface ShardRouterOptions {
    * cache, so no overlapping invalidation can be undone.
    */
   readonly tombstoneTtlMs?: number;
-  /** Time source. Defaults to the system clock. */
-  readonly clock?: Clock;
+  /** Time source. */
+  readonly clock: Clock;
   /** Picks the shard within a group with more than one. Defaults to consistent hashing. */
   readonly strategy?: ShardingStrategy;
   /** Region this process serves. Placements from other regions throw `WrongRegionError`. */

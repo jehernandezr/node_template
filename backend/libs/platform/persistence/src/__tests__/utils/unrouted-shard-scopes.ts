@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import {
   Redactor,
   RequestContextStore,
@@ -14,7 +15,10 @@ import { ShardScopes } from '../../shard-scopes.js';
  */
 export class UnroutedShardScopes {
   readonly scope = new ShardScope(
-    new ShardRouter({ directory: new InMemoryDirectoryStore() }),
+    new ShardRouter({
+      clock: new SystemClock(),
+      directory: new InMemoryDirectoryStore(),
+    }),
   );
   readonly context = new RequestContextStore(new Tracing(new Redactor()));
   readonly scopes = new ShardScopes(this.scope, this.context);

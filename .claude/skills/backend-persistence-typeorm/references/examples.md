@@ -6,15 +6,20 @@ Long examples the skill cites. Read them only when the topic applies to you.
 
 ```ts
 @Injectable()
-export class TypeOrmUserRepository
-  extends ShardedRepository<User, UserEntity>
-  implements UserRepository
+export class TypeOrmTaskRepository
+  extends TenantIsolatedRepository
+  implements TaskRepository
 {
-  async findByEmail(email: Email): Promise<User | null> {
-    const row = await this.manager().findOne(UserEntity, {
-      where: { email: email.value },
-    });
-    return row ? this.mapper.toDomain(row) : null;
+  constructor(kit: RepositoryKit) {
+    super(kit);
+  }
+
+  async find(taskId: string): Promise<Task | undefined> {
+    const tenantId = this.tenantId();
+    const row = await this.readPrimary((manager) =>
+      manager.findOneBy(TaskEntity, { id: taskId, tenantId }),
+    );
+    return row === null ? undefined : TaskMapper.toDomain(row);
   }
 }
 ```

@@ -6,6 +6,7 @@ import {
   type IdGenerator,
   SystemClock,
   UuidV7IdGenerator,
+  SystemRandomSource,
 } from '@platform/kernel';
 import {
   ClaimRules,
@@ -40,7 +41,10 @@ export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
 
   constructor(
     private readonly clock: Clock = new SystemClock(),
-    private readonly ids: IdGenerator = new UuidV7IdGenerator(clock),
+    private readonly ids: IdGenerator = new UuidV7IdGenerator(
+      clock,
+      new SystemRandomSource(),
+    ),
   ) {
     super();
   }

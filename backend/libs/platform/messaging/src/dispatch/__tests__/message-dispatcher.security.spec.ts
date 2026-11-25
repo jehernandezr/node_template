@@ -1,3 +1,4 @@
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { defineEvent } from '@contracts/platform';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { z } from 'zod';
@@ -35,11 +36,15 @@ function envelopeFor(
 
 function setup(extra: Partial<MessageDispatcherOptions> = {}) {
   const handler = new RecordingMessageHandler();
-  const dispatcher = new MessageDispatcher({
-    consumer: 'notifications',
-    processed: new InMemoryProcessedMessageStore(),
-    ...extra,
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      clock: new SystemClock(),
+      consumer: 'notifications',
+      processed: new InMemoryProcessedMessageStore(),
+      ...extra,
+    },
+    { random: new SystemRandomSource() },
+  );
   dispatcher.register(TaskUpdated, handler.handle);
   return { dispatcher, handler };
 }

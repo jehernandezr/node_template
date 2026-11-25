@@ -1,6 +1,6 @@
 # 0024. Persistence on TypeORM with sharding and persistent sagas
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0037](0037-composition-shared-platform-pieces-and-domain-events.md) on the repository base
 - Date: 2026-11-14
 - Supersedes: [ADR 0009](0009-rds-postgresql-in-house-persistence-layer.md) in the persistence layer. The database is still RDS PostgreSQL with RDS Proxy and replicas.
 - Design: [persistence on TypeORM with sharding and persistent sagas](../design/typeorm-persistence-and-sagas.md)

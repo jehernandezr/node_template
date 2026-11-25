@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import {
   RegistryAppConfig,
   ConfigLoader,
@@ -27,7 +28,7 @@ describe('SignedInternalHttp', () => {
           identity: 'http://identity.internal',
         }),
       }),
-      {},
+      { clock: new SystemClock() },
     );
 
     expect(settings).toEqual({
@@ -44,7 +45,7 @@ describe('SignedInternalHttp', () => {
             identity: 'http://identity.internal',
           }),
         }),
-        {},
+        { clock: new SystemClock() },
       ),
     ).toThrow('INTERNAL_API_BASE_URLS does not have the URL of billing');
   });
@@ -54,7 +55,7 @@ describe('SignedInternalHttp', () => {
     expect(() =>
       new SignedInternalHttp().settings(
         configOf({ INTERNAL_API_SIGNER: sigV4 }),
-        {},
+        { clock: new SystemClock() },
       ),
     ).toThrow(/SigV4|sigv4/);
   });

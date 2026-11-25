@@ -1,4 +1,10 @@
-import { type Clock, type IdGenerator, SystemClock } from '@platform/kernel';
+import {
+  type Clock,
+  type IdGenerator,
+  SystemClock,
+  UuidV7IdGenerator,
+  SystemRandomSource,
+} from '@platform/kernel';
 import type {
   CommandDefinition,
   EventDefinition,
@@ -76,7 +82,9 @@ export class InMemoryBus implements MessageBus {
     this.factory = new OutboundMessageFactory(topology, {
       source: options.source,
       clock: this.clockSource,
-      ...(options.ids ? { ids: options.ids } : {}),
+      ids:
+        options.ids ??
+        new UuidV7IdGenerator(this.clockSource, new SystemRandomSource()),
       ...(options.traceparent ? { traceparent: options.traceparent } : {}),
     });
     for (const queue of topology.queues) {

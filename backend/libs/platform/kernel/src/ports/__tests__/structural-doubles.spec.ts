@@ -1,3 +1,4 @@
+import { SystemRandomSource } from '../../random/system-random-source.js';
 import type { Clock } from '../../time/clock.js';
 import type { IdGenerator } from '../../ids/id-generator.js';
 import { Id } from '../../ids/id.js';
@@ -17,7 +18,10 @@ describe('ports accept object literals as test doubles', () => {
     const generator: IdGenerator = { next: () => id };
     expect(generator.next()).toBe(id);
     expect(
-      new UuidV7IdGenerator({ now: () => new Date(0) }).next(),
+      new UuidV7IdGenerator(
+        { now: () => new Date(0) },
+        new SystemRandomSource(),
+      ).next(),
     ).toBeInstanceOf(Id);
   });
 

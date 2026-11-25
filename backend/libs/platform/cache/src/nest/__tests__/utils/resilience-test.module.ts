@@ -1,3 +1,4 @@
+import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { Global, Module } from '@nestjs/common';
 import { ResilienceRegistry } from '@platform/resilience';
 
@@ -5,7 +6,14 @@ import { ResilienceRegistry } from '@platform/resilience';
 @Global()
 @Module({
   providers: [
-    { provide: ResilienceRegistry, useFactory: () => new ResilienceRegistry() },
+    {
+      provide: ResilienceRegistry,
+      useFactory: () =>
+        new ResilienceRegistry(
+          {},
+          { clock: new SystemClock(), random: new SystemRandomSource() },
+        ),
+    },
   ],
   exports: [ResilienceRegistry],
 })

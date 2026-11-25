@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { ActorType } from '@platform/observability';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { ShardKey, ShardRouter } from '@platform/sharding';
@@ -70,7 +71,10 @@ export class StubShardedLayer {
       StubShardedLayer.INSTANCE,
     );
 
-    this.router = new ShardRouter({ directory: this.directory });
+    this.router = new ShardRouter({
+      clock: new SystemClock(),
+      directory: this.directory,
+    });
     this.sources = new ShardDataSources(
       this.factory,
       this.endpoints,

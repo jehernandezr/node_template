@@ -19,7 +19,9 @@ NestJS is a detail of `presentation/` and of the composition root. The domain an
 - One module per business module, in `presentation/<name>.module.ts`. It is the only place that binds a port to its adapter.
 - `providers` lists use cases, adapters and services. `exports` lists only the facade and the tokens other modules may use.
 - Modules import modules, never loose providers from another module. No `forwardRef`: a circular dependency is a design error, solved with an event or by moving the responsibility.
-- `@Global()` only for platform (config, logger, clock). Never for business.
+- `@Global()` only for platform modules (config, logger, `KernelModule`) and for a service's infrastructure modules that hold no business rules. Never for a business module ([ADR 0037](../../../docs/adr/0037-composition-shared-platform-pieces-and-domain-events.md)).
+- When the facades of a service's modules need each other in a cycle, split each module that others call: `<Name>CoreModule` holds the facade, its repositories and what the facade needs, and exports the facade; `<Name>Module` holds controllers, consumers, jobs, internal operations and the use cases nobody else calls, and imports its core and the cores it uses. Core modules import only core modules, without cycles. Identity is the example.
+- No `ModuleRef` lookups and no `forwardRef`: a dependency is imported or the design changes.
 - Providers use the default scope (singleton). `Scope.REQUEST` is forbidden in business code: it hurts performance and lifecycle hooks do not run. The request context (tenant, trace) lives in the platform `AsyncLocalStorage`.
 
 ## Tokens for ports
@@ -41,7 +43,9 @@ Example in `references/examples.md`, section "Tokens for ports".
 
 - Loose string tokens are forbidden. `Symbol` tokens are exported from a single file, next to the port.
 - `useFactory` with `inject` when the adapter needs configuration or an async client. The factory only assembles, it has no logic.
-- `Clock`, `IdGenerator`, `RandomSource` and `TransactionManager` from the kernel and `LoggerPort` from observability are abstract classes: they are injected by type, without `@Inject`.
+- `Clock`, `IdGenerator`, `RandomSource` and `TransactionManager` from the kernel and `LoggerPort` from observability are abstract classes: they are injected by type, without `@Inject`. `KernelModule` provides the first three once per process; a library module never registers its own and never falls back to a `new SystemClock()`.
+- A class never builds its collaborators: no `new SystemClock()`, `new CursorCodec()` or similar as a default. It receives them in the constructor.
+- A use case reads its service's variables through the service's `RootSettings` subclass in `config/`, never with `AppConfig.root<X>()`.
 - `useExisting` for an alias (one concrete class that fulfills two ports).
 - `@Inject()` and `@Injectable()` only in `infrastructure/`, `application/` (use cases) and `presentation/`. The domain never has them.
 - A use case has `@Injectable()`; it is the only framework annotation tolerated in `application/`.

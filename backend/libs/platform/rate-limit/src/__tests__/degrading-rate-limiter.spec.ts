@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { InvalidArgumentError } from '@platform/primitives';
 import { DegradingRateLimiter } from '../degrading-rate-limiter.js';
@@ -70,6 +71,7 @@ describe('DegradingRateLimiter', () => {
     const reporter = new RecordingDegradationReporter();
     const seen: RateLimitOperation[] = [];
     const limiter = new DegradingRateLimiter({
+      clock: new SystemClock(),
       primary,
       localDivisor: 1,
       reporter,
@@ -104,6 +106,7 @@ describe('DegradingRateLimiter', () => {
       }
     })();
     const limiter = new DegradingRateLimiter({
+      clock: new SystemClock(),
       primary,
       localDivisor: 1,
       reporter: throwing,
@@ -121,6 +124,7 @@ describe('DegradingRateLimiter', () => {
     const primary = new FakeRateLimiter(new FixedClock(START));
     const fallback = new FakeRateLimiter(new FixedClock(START));
     const limiter = new DegradingRateLimiter({
+      clock: new SystemClock(),
       primary,
       localDivisor: 1,
       fallback,
@@ -132,7 +136,11 @@ describe('DegradingRateLimiter', () => {
 
   it('uses the system clock when no fallback or clock is given', async () => {
     const primary = new FakeRateLimiter(new FixedClock(START));
-    const limiter = new DegradingRateLimiter({ primary, localDivisor: 1 });
+    const limiter = new DegradingRateLimiter({
+      clock: new SystemClock(),
+      primary,
+      localDivisor: 1,
+    });
     primary.failWith(DOWN);
     await expect(limiter.consume('k', RULE)).resolves.toMatchObject({
       allowed: true,
@@ -143,6 +151,7 @@ describe('DegradingRateLimiter', () => {
     expect(
       () =>
         new DegradingRateLimiter({
+          clock: new SystemClock(),
           primary: new FakeRateLimiter(),
           localDivisor,
         }),

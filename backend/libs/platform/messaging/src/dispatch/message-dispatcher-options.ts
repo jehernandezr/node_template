@@ -24,8 +24,8 @@ export interface MessageDispatcherOptions {
     envelope: MessageEnvelope,
     fn: () => Promise<void>,
   ) => Promise<void>;
-  /** Time source for the leases. Defaults to the system clock. */
-  readonly clock?: Clock;
+  /** Time source for the leases. */
+  readonly clock: Clock;
   /**
    * Minimum claim lease in milliseconds, a positive integer. It must cover the
    * queue visibility timeout. Defaults to the visibility timeout of the
@@ -46,8 +46,8 @@ export interface MessageDispatcherParts {
   readonly tracing?: Tracing;
   /** Continues the trace of the envelope `traceparent`. Defaults to one over `tracing`. */
   readonly restorer?: TraceContextRestorer;
-  /** Source of the retry wait jitter. Defaults to `SystemRandomSource`. */
-  readonly random?: RandomSource;
+  /** Source of the retry wait jitter. */
+  readonly random: RandomSource;
   /** Failure classifier. Defaults to `FailureClassifier` with no rules. */
   readonly failures?: FailureClassifier;
 }

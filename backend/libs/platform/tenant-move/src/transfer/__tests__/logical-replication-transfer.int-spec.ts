@@ -1,4 +1,8 @@
-import { SystemClock, UuidV7IdGenerator } from '@platform/kernel';
+import {
+  SystemClock,
+  UuidV7IdGenerator,
+  SystemRandomSource,
+} from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import type { DataSource } from 'typeorm';
 import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
@@ -12,7 +16,7 @@ import { LogicalReplicationTransfer } from '../logical/logical-replication-trans
 import { ReplicationNames } from '../logical/replication-names.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 
-const ids = new UuidV7IdGenerator();
+const ids = new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource());
 const newId = (): string => ids.next().toString();
 const clock = new SystemClock();
 const manifest = new LedgersOnlyManifest();

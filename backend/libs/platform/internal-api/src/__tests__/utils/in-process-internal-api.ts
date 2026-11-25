@@ -1,3 +1,4 @@
+import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { ClaimKeeper } from '../../server/claim-keeper.js';
 import { CompensationTombstones } from '../../server/compensation-tombstones.js';
 import type { OperationDefinition } from '@contracts/platform';
@@ -46,7 +47,10 @@ export class InProcessInternalApi {
   readonly registry: ContractRegistry;
   readonly router: InternalRouter;
   readonly transport: InProcessTransport;
-  readonly resilience = new ResilienceRegistry();
+  readonly resilience = new ResilienceRegistry(
+    {},
+    { clock: new SystemClock(), random: new SystemRandomSource() },
+  );
   readonly client: InternalClient;
 
   constructor(options: InProcessInternalApiOptions) {

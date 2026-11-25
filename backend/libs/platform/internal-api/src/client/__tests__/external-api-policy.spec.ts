@@ -1,3 +1,4 @@
+import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { ResilienceRegistry } from '@platform/resilience';
 import { OperationMetadata } from '../../contract/operation-metadata.js';
 import { ExternalApiPolicy } from '../external-api-policy.js';
@@ -17,7 +18,10 @@ describe('ExternalApiPolicy', () => {
   });
 
   it('registers and executes an operation in a resilience registry', async () => {
-    const registry = new ResilienceRegistry();
+    const registry = new ResilienceRegistry(
+      {},
+      { clock: new SystemClock(), random: new SystemRandomSource() },
+    );
 
     expect(() =>
       registry.register(ExternalApiPolicy.NAME, ExternalApiPolicy.CONFIG),

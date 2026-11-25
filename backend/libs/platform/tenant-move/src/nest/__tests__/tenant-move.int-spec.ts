@@ -4,7 +4,11 @@ import { InternalClient } from '@platform/internal-api';
 import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import { ActorType, RequestContextStore } from '@platform/observability';
-import { UuidV7IdGenerator } from '@platform/kernel';
+import {
+  UuidV7IdGenerator,
+  SystemClock,
+  SystemRandomSource,
+} from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
 import { ShardRouter, TenantStatus } from '@platform/sharding';
@@ -22,7 +26,7 @@ import {
   type AckedLedger,
 } from './utils/index.js';
 
-const ids = new UuidV7IdGenerator();
+const ids = new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource());
 const newId = (): string => ids.next().toString();
 /** A write rate a copy round can catch up with; without a pause, the copy would never reach the threshold. */
 const WRITE_PACE_MS = 20;

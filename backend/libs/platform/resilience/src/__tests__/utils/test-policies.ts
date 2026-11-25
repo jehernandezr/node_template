@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { FixedRandomSource } from '@platform/kernel/test-utils';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { PolicyName } from '../../policy/policy-name.js';
@@ -31,11 +32,15 @@ export class TestPolicies {
   /** Registry with the `API` policy; the jitter always takes 0.5. */
   static registry(
     overrides: Partial<ResiliencePolicyConfig> = {},
-    options: ResilienceRegistryOptions = {},
+    options: Partial<ResilienceRegistryOptions> = {},
   ): ResilienceRegistry {
     return new ResilienceRegistry(
       { [TestPolicies.API.value]: TestPolicies.config(overrides) },
-      { random: new FixedRandomSource([0.5]), ...options },
+      {
+        clock: new SystemClock(),
+        random: new FixedRandomSource([0.5]),
+        ...options,
+      },
     );
   }
 }

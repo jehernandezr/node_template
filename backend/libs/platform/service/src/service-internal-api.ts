@@ -1,3 +1,4 @@
+import type { Clock } from '@platform/kernel';
 import type { AwsCredentialsProvider } from '@platform/adapters-aws';
 import type { AppConfig } from '@platform/config';
 import type { InternalRequestSigner } from '@platform/internal-api';
@@ -29,6 +30,8 @@ export interface ServiceAwsIdentity {
 
 /** What the runtime offers the service to build its HTTP transport. */
 export interface ServiceInternalHttpContext {
+  /** The process clock, for the signatures of outgoing calls. */
+  readonly clock: Clock;
   /** Only with the AWS adapter enabled. */
   readonly aws?: ServiceAwsIdentity;
 }

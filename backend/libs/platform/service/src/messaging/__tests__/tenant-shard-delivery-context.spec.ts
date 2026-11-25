@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import {
   Redactor,
@@ -14,7 +15,10 @@ import { TenantShardDeliveryContext } from '../tenant-shard-delivery-context.js'
 
 class DeliveryHarness {
   readonly scope = new ShardScope(
-    new ShardRouter({ directory: new InMemoryDirectoryStore() }),
+    new ShardRouter({
+      clock: new SystemClock(),
+      directory: new InMemoryDirectoryStore(),
+    }),
   );
   readonly context = new RequestContextStore(new Tracing(new Redactor()));
   readonly delivery = new TenantShardDeliveryContext(this.scope, this.context);

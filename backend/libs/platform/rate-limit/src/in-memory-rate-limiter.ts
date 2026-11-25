@@ -1,4 +1,4 @@
-import { SystemClock, type Clock } from '@platform/kernel';
+import { type Clock } from '@platform/kernel';
 import { RateLimitArgumentGuard } from './errors/rate-limit-argument-guard.js';
 import type { InMemoryRateLimiterOptions } from './in-memory-rate-limiter.options.js';
 import type { RateLimitResult } from './rate-limit-result.js';
@@ -31,13 +31,13 @@ export class InMemoryRateLimiter extends RateLimiter {
   private readonly maxEntries: number;
 
   /** @throws InvalidArgumentError if `maxEntries` is not a positive integer. */
-  constructor(options: InMemoryRateLimiterOptions = {}) {
+  constructor(options: InMemoryRateLimiterOptions) {
     super();
     this.maxEntries = RateLimitArgumentGuard.instance.positiveInteger(
       'maxEntries',
       options.maxEntries ?? InMemoryRateLimiter.DEFAULT_MAX_ENTRIES,
     );
-    this.clock = options.clock ?? new SystemClock();
+    this.clock = options.clock;
   }
 
   async consume(

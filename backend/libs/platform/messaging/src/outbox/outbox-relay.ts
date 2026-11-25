@@ -3,9 +3,6 @@ import {
   ErrorDescriptor,
   type IdGenerator,
   type RandomSource,
-  SystemClock,
-  SystemRandomSource,
-  UuidV7IdGenerator,
 } from '@platform/kernel';
 import { Backoff, type RetryPolicy } from '@platform/primitives';
 import { ResilienceErrorCode } from '@platform/resilience';
@@ -38,12 +35,12 @@ export interface OutboxRelayOptions {
   readonly owner?: string;
   /** Lease duration in milliseconds. Defaults to 30 seconds. */
   readonly leaseMs?: number;
-  /** Time source. Defaults to the system clock. */
-  readonly clock?: Clock;
-  /** Source of the instance id and of the lease tokens of each pass. Defaults to UUIDv7. */
-  readonly ids?: IdGenerator;
-  /** Source of the jitter of the wait between attempts. Defaults to the system randomness. */
-  readonly random?: RandomSource;
+  /** Time source. */
+  readonly clock: Clock;
+  /** Source of the instance id and of the lease tokens of each pass. */
+  readonly ids: IdGenerator;
+  /** Source of the jitter of the wait between attempts. */
+  readonly random: RandomSource;
 }
 
 /** Counts of one pass of {@link OutboxRelay.relayOnce}. */
@@ -111,13 +108,10 @@ export class OutboxRelay {
     if (options.leaseMs !== undefined) {
       guard.positiveInteger('leaseMs', options.leaseMs);
     }
-    this.backoff = new Backoff(
-      options.retryPolicy,
-      options.random ?? new SystemRandomSource(),
-    );
+    this.backoff = new Backoff(options.retryPolicy, options.random);
     this.options = options;
-    this.clock = options.clock ?? new SystemClock();
-    this.ids = options.ids ?? new UuidV7IdGenerator();
+    this.clock = options.clock;
+    this.ids = options.ids;
     this.ownerId = `${options.owner ?? DEFAULT_OWNER}:${this.ids.next().toString()}`;
   }
 

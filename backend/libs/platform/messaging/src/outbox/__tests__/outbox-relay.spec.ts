@@ -1,3 +1,8 @@
+import {
+  SystemClock,
+  SystemRandomSource,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import { FixedClock, FixedRandomSource } from '@platform/kernel/test-utils';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { defineEvent } from '@contracts/platform';
@@ -78,6 +83,8 @@ function setup(): Setup {
   const publisher = new RecordingEnvelopePublisher();
   const relay = (extra: Partial<OutboxRelayOptions> = {}) =>
     new OutboxRelay({
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
+      random: new SystemRandomSource(),
       store,
       publisher,
       topology: testTopology(),
@@ -144,6 +151,8 @@ describe('OutboxRelay', () => {
     store.add(envelope('m1'), { now: t0 });
     store.add(envelope('m2'), { now: t0 });
     const relay = new OutboxRelay({
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
+      random: new SystemRandomSource(),
       store,
       publisher,
       topology: testTopology(),
@@ -208,6 +217,7 @@ describe('OutboxRelay', () => {
     publisher.failing.add('m1');
     clock.set(at(10_000));
     const relay = new OutboxRelay({
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
       store,
       publisher,
       topology: testTopology(),
