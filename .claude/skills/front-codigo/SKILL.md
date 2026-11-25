@@ -30,7 +30,7 @@ El front es software enterprise, no scripting. Todo código nuevo, y todo códig
 
 Detalle, firmas y ejemplos en [references/estado-y-errores.md](references/estado-y-errores.md). Resumen:
 
-- El estado de una pantalla es un tipo cerrado: `AsyncValue<T>` de `ui` (`AsyncLoading`, `AsyncData`, `AsyncError`) o una jerarquía `sealed` propia. Nada de pares `bool isLoading` más `Object? error` que permiten combinaciones imposibles.
+- El estado de una pantalla es un tipo cerrado: `AsyncValue<T>` de `ui` (`AsyncLoading`, `AsyncData`, `AsyncError`) o una jerarquía `sealed` propia.
 - Una carga la compone el controlador con `AsyncLoader<T>` de `ui`, que descarta la respuesta de una llamada vieja y no notifica después de `dispose`. Una acción del usuario pasa por `ActionRunner`, que devuelve un `ActionResult` (`ActionSucceeded`, `ActionFailed` o `ActionSkipped`).
 - Solo la lógica que no cabe en un `AsyncLoader` (búsqueda con filtros y paginación, como `TasksListController.reload`) lleva un `_requestId` propio.
 - El controlador expone estado inmutable. Cambia el estado asignando un valor nuevo y llamando a `notifyListeners`, nunca mutando una lista que ya se entregó.
@@ -59,11 +59,20 @@ Detalle en [references/dart3.md](references/dart3.md). Resumen:
 
 - Nombres que dicen qué es y siguen el rol: `TasksListController`, `ApiTasksRepository`, `TasksListScreen`, `taskStatusLabel`. Sin prefijos de tecnología ni nombres que choquen con tipos de Flutter (`Page`, `Route`, `State`, `Theme` a secas).
 - Booleanos con forma de pregunta (`isLoading`, `hasMore`, `canRetry`). Sin parámetros booleanos posicionales que cambian el comportamiento: dos métodos o un enum.
-- Métodos cortos. Un `build` que supera unas 60 líneas se parte en widgets (clases `StatelessWidget`), no en métodos `_buildX` que reconstruyen todo en cada cambio.
+- Un `build` que supera unas 60 líneas se parte en widgets (clases `StatelessWidget`), no en métodos `_buildX` que reconstruyen todo en cada cambio.
 - Enums generados para permisos, errores, planes y flags. Nunca literales de texto sueltos.
 - Los textos de la interfaz salen de los ARB (ver `front-i18n`); nunca se muestra el texto que manda el servidor.
-- Comentarios solo para el porqué, sin referencias al proceso. Los `///` de API pública siguen `front-analisis`.
+- El código se explica solo: sin comentarios en línea (`//`). Si un bloque necesita uno, se renombra o se extrae a un método o widget con nombre. La documentación es el `///` de cada método y miembro público, que sigue `front-analisis`.
 
 ## Antes de integrar el trabajo de un agente
 
 Revisa que el diff cumpla esta skill, `front-estructura` y `front-pruebas`, y la que aplique al cambio (accesibilidad, layout, i18n, navegación, rendimiento, seguridad). Si no cumple, se corrige antes del commit.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-model-the-domain` y `principle-type-system-discipline`: estados de pantalla como clases selladas con `switch` exhaustivo, sin banderas sueltas.
+- `principle-laziness-protocol` y `principle-minimize-reader-load`: sin capas ni envoltorios de un solo uso entre widget, controlador y repositorio.
+- Antes de una pantalla o un flujo no trivial: `architect` para fijar el puerto del repositorio, el controlador y sus estados.
+- Al revisar un diff del front: `interrogate`, y `blast-radius` si toca `shell_core`, `auth` o `api`.

@@ -68,3 +68,11 @@ export const databaseConfigSchema = z.strictObject({
 - [ ] Span propio en el caso de uso o consumidor nuevo
 - [ ] Timeout en cada llamada de red nueva
 ```
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-explain-the-number` y `benchmark-checklist` antes de reportar o actuar sobre una latencia, un throughput o una mejora medida.
+- `principle-boundary-discipline`: la configuración se valida con zod al arrancar y falla temprano. Adentro se confía en el tipo.
+- Un síntoma en vivo (fuga, CPU ociosa, picos): el playbook `runtime-forensics` de `poteto-mode`.

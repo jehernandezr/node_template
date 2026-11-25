@@ -44,7 +44,6 @@ export class EmailAlreadyRegisteredError extends DomainError {
 - Violación de índice único (`23505`) se traduce a la regla de negocio correspondiente. Conflicto de versión a `ConcurrencyConflictError` reintentable. Interbloqueo (`40P01`) y falla de serialización (`40001`) a reintentable.
 - Se clasifica con `FailureKind` y la clase `FailureClassifier` de `@platform/primitives` (`classify(error)`, `isTransient(error)`), a la que cada adaptador suma sus reglas: `Transient` se reintenta con backoff, `Permanent` no, `ProtocolViolation` nunca.
 - Se conserva la causa: `new XError(message, details, { cause })`. Nunca se pierde el stack original.
-- No se atrapa para callar. Un `catch` vacío o que solo loguea y sigue es un defecto.
 - Se lanza y se rechaza solo con `Error`. `return await` dentro de `try` para que el `catch` lo vea.
 
 ## Traducción a HTTP: Problem Details
@@ -99,3 +98,11 @@ export class ProblemDetailsFilter implements ExceptionFilter {
 ## Pruebas
 
 Verifica el `code`, no el mensaje: `await expect(promise).rejects.toMatchObject({ code: IdentityErrorCode.EmailAlreadyRegistered })`. Sin `try/catch` en la prueba.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-boundary-discipline`: se valida y se traduce donde los datos cruzan un borde (HTTP, mensajes, API interna, configuración), y adentro se confía en los tipos.
+- `principle-fix-root-causes`: un `catch` o una guarda solo es arreglo si el estado que maneja es legítimo. Si no, se corrige donde nace el error.
+- Para clasificar fallas transitorias y permanentes en reintentos, sagas o consumidores: `principle-make-operations-idempotent`.

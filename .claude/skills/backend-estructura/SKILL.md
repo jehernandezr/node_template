@@ -109,3 +109,11 @@ backend/libs/platform/kernel/
 - [ ] Target typecheck y test
 - [ ] pnpm nx lint <proyecto> pasa sin romper límites
 ```
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- Dónde debe vivir algo o qué proyecto lo posee: `how`. El porqué de una frontera existente: `why`.
+- Una regla de estructura que se repite en revisiones: `principle-encode-lessons-in-structure` y `correct`. Se convierte en un chequeo de `check-structure.mjs`, una regla de lint o un tag de Nx, no en más texto.
+- Al mover o reemplazar una API interna: `principle-migrate-callers-then-delete-legacy-apis`, en el mismo cambio. Antes de agregar: `principle-subtract-before-you-add`.

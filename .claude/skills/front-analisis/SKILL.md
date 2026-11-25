@@ -60,14 +60,15 @@ linter:
 
 ## Documentación con `///`
 
-- API pública de los paquetes compartidos y de cada microfrontend lleva `///`. Lo privado, solo si el porqué no es evidente.
+- Todo método, propiedad y clase pública de los paquetes compartidos y de cada microfrontend lleva `///`, completo y conciso. Lo privado no lleva `///`: su nombre basta.
+- No hay comentarios en línea (`//`). El código se explica con nombres, tipos y métodos o widgets extraídos. Excepciones: directivas del analizador (`// ignore: <regla>` con el motivo en la misma línea) y el código generado.
 - Primera línea: una oración que resume y termina en punto, separada del resto por una línea `///` vacía.
 - Propiedades con frase nominal (`/// Tasks of the current filter.`); booleanos con "Whether" (`/// Whether another page can be appended.`); métodos con verbo en tercera persona (`/// Loads the first page.`). Los comentarios de la API van en inglés, como en el resto del código; los textos de usuario, en el ARB.
-- Parámetros, retorno y excepciones se tejen en la prosa. Sin etiquetas `@param`, `@return` ni `@throws`.
+- Completo quiere decir que cubre cada parámetro, lo que devuelve y lo que lanza, tejidos en la prosa como pide Effective Dart. Sin etiquetas `@param`, `@return` ni `@throws`. Conciso quiere decir una frase por idea y nada que repita el nombre.
 - Los símbolos van entre corchetes (`[TasksRepository]`); las palabras clave y literales entre comillas invertidas (`null`, `true`). Sin paréntesis en los enlaces.
 - Un override que no cambia el contrato no repite la documentación. Con getter y setter, solo el getter se documenta.
 - Los bloques de código llevan el lenguaje (` ```dart `).
-- Los comentarios explican el porqué y el contrato, nunca el proceso ni la historia del cambio.
+- La documentación explica el contrato (efectos, condiciones, errores), nunca la implementación, el proceso ni la historia del cambio.
 
 ```dart
 /// Appends the next page.
@@ -76,3 +77,11 @@ linter:
 /// report. Does nothing when [hasMore] is false or a page is already loading.
 Future<void> loadMore() async { ... }
 ```
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- Un aviso del analizador que se repite en revisiones: `principle-encode-lessons-in-structure` y `correct`. Se vuelve una regla de `analysis_options` o un chequeo de script, no una nota.
+- `no-comments` borra los comentarios en línea; los `///` de la API pública se conservan y su prosa pasa por `unslop`.
+- Antes de integrar: `principle-prove-it-works` con `analyze`, `format-check` y `test` corridos de verdad.

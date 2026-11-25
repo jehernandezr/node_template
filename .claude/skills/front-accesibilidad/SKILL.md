@@ -50,3 +50,11 @@ Semantics(
 ## Informe de una auditoría
 
 Cada hallazgo lleva el criterio con su nombre (`2.5.8 Target Size (Minimum)`), severidad CRITICAL, MAJOR o MINOR, archivo, y la corrección como código Dart antes y después. Un hallazgo sin código de corrección no está terminado. Lo que no se puede decidir leyendo el código (contraste sin colores reales, orden del lector) va aparte como "fuera de alcance".
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-prove-it-works`: la accesibilidad se demuestra con `expectAccessible` y la prueba a escala 2x, no con la lectura del código.
+- `principle-experience-first` cuando un ajuste de accesibilidad compite con la conveniencia de implementación.
+- Para revisar una pantalla: `interrogate` sobre el diff, con estos criterios como reglas.

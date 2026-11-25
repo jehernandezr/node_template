@@ -49,3 +49,11 @@ Las rutas de un microfrontend se prueban montando su manifiesto en un `GoRouter`
 ## Descartado de las guías públicas
 
 Rutas tipadas con `@TypedGoRoute` y `go_router_builder` exigen un generador de código. Las constantes de `*Paths` dan el mismo resultado sin dependencia nueva.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-test-behavior-not-implementation`: toda pantalla con parámetro de ruta tiene una prueba que navega de un id a otro y comprueba que la pantalla muestra el nuevo.
+- `principle-model-the-domain`: rutas y parámetros con tipos, sin `extra` ni cadenas armadas a mano.
+- Al cambiar el router o los guardias: `blast-radius` sobre todos los microfrontends.

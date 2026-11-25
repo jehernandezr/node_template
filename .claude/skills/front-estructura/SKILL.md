@@ -68,3 +68,11 @@ lib/src/
 - La clase lleva el mismo rol que el archivo: `TasksListController`, `ApiTasksRepository`, `FakeTasksRepository`, `TasksListScreen`.
 - Constantes agrupadas en clases `abstract final class` (`TasksPaths`, `AppSpacing`), no como una nube de constantes sueltas.
 - Prefijo `Fake` para el adaptador en memoria, `Api` para el que habla con el servidor. Sin sufijos `Impl`.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- Dónde debe vivir algo o qué paquete lo posee: `how`. El porqué de una frontera: `why`.
+- Una regla de dependencias que se repite: `principle-encode-lessons-in-structure`. Se vuelve un chequeo de `check_microfrontend_boundaries` o de `check-structure.mjs`.
+- Al mover una API pública entre paquetes: `principle-migrate-callers-then-delete-legacy-apis`, en el mismo cambio.

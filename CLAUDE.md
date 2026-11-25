@@ -15,6 +15,8 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 
 ## Código
 
+- El código se explica solo: sin comentarios en línea. Cada método público lleva su JSDoc (o `///` en Dart) completo y conciso. Ver `backend-codigo-enterprise` y `front-analisis`.
+- pstack complementa las skills del repositorio; antes de seguir una skill de pstack, carga `pstack-en-node-template`.
 - Antes de escribir, revisar o integrar código, carga las skills de `.claude/skills`. Se cargan solas según la carpeta que toques (`paths`); la puerta de entrada es `backend-codigo-enterprise` en el backend y `front-codigo` en el front, y cada una enlaza a las demás.
 - Clases, composición e inyección de dependencias por constructor. Las únicas funciones exportadas son utilidades puras sin estado y las de la lista declarada en `check-structure.mjs` (fábricas `define*` de contracts, esquemas de `env.ts` y `secret()`, `main()` de las herramientas). Nada de módulos de funciones sueltas tipo script.
 - Persistencia con TypeORM ([ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)): entidades y migraciones generadas y aplicadas con su CLI. `synchronize` siempre apagado.

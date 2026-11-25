@@ -7,7 +7,7 @@ paths:
 
 # Rendimiento del front
 
-Se optimiza lo que se mide y se evita lo que casi siempre sale mal. Estas reglas son baratas y se aplican siempre.
+Estas reglas son baratas y se aplican siempre.
 
 ## En el código
 
@@ -33,4 +33,11 @@ Se optimiza lo que se mide y se evita lo que casi siempre sale mal. Estas reglas
 ## Cómo se mide
 
 - Sospecha antes de optimizar: Flutter DevTools (rendimiento, "Track widget rebuilds") en modo `--profile`, no en debug.
-- Una optimización que se hace sin una medición se justifica con una de estas reglas; si no, se deja el código legible.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `benchmark-checklist` y `principle-explain-the-number` antes de reportar una mejora o una regresión.
+- Una pantalla lenta se trabaja con el playbook `perf-issue` de `poteto-mode`, contra una línea base medida.
+- Un perfil capturado (timeline, heap): el playbook `trace-forensics`.

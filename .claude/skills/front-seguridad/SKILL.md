@@ -38,3 +38,10 @@ Uri taskUri(String id, {TaskStatus? status}) => Uri(
 ## Informe de una revisión
 
 Cada hallazgo es Critical (secreto en el binario, validación TLS apagada, token en almacenamiento en claro, datos sensibles en logs), Warning (sin validación de entrada, `Random()` en un identificador, backup habilitado) o Note (dependencia desactualizada, ofuscación ausente). Cada uno trae archivo, regla y el código corregido.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- Todo cambio en sesión, tokens, `ApiClient`, almacenamiento local o enlaces profundos pasa por `interrogate` y `blast-radius`.
+- `principle-boundary-discipline`: lo que llega del servidor o de un enlace se parsea en el borde contra el contrato.

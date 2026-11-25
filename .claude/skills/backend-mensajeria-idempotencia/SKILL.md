@@ -90,7 +90,7 @@ export class CreateTenantHandler {
 - Una operación que modifica datos y puede reintentarse (pagos, altas, sagas) recibe una llave de idempotencia (`Idempotency-Key` en HTTP, `sagaId:paso:dirección` en la API interna).
 - El resultado se guarda con `IdempotencyGate`, que hace `claim`, `complete` y `release` sobre `ProcessedOperationStore`, y `UnitOfWorkRunner` confirma el manejador y el `complete` en una sola transacción. Una repetición con la misma llave y la misma entrada devuelve el resultado guardado. Con la misma llave y distinta entrada responde 409 o 422.
 - Excepción, servicios con `requireScope` (ADR 0023): el shard de la operación lo decide su handler con la entrada, así que la llave vive en el catálogo (`CatalogIdempotencyStore`) y el handler abre sus propias transacciones (`HandlerUnitOfWork.Handler`). El `complete` no se confirma con los efectos: si el proceso cae entre los dos, la reintentada vuelve a correr el handler. Por eso cada operación que modifica datos de ese servicio es idempotente por su entrada (la misma entrada con otra llave no duplica efectos ni eventos), y una prueba de integración por operación la invoca dos veces con llaves distintas y verifica sus efectos y su outbox.
-- Operaciones naturalmente idempotentes (`PUT` de un estado, borrar si existe) no necesitan llave, pero su caso de uso se escribe para que repetirlo sea inocuo.
+- Operaciones naturalmente idempotentes (`PUT` de un estado, borrar si existe) no necesitan llave.
 - Las llaves caducan (por ejemplo, 24 horas) y la limpieza es `ProcessedOperationRetentionJob`, un `ScheduledJob` que corre cada hora.
 
 ## Sagas
@@ -123,3 +123,12 @@ export class CreateTenantHandler {
 - Servicio con `requireScope`: un consumidor se prueba de punta a punta por el `MessageDispatcher` con el sobre real del outbox (el claim cae en el shard del tenant, la reentrega es `Duplicate`), y cada operación interna que modifica datos con dos llaves para la misma entrada.
 - Contrato: el esquema del evento publicado se valida contra el del consumidor.
 - Los dobles (`InMemoryBus`, `InMemoryOutboxStore`, `InMemoryProcessedMessageStore`) salen de `@platform/messaging/test-utils` y pasan `runOutboxStoreContract` y `runProcessedMessageStoreContract`, igual que los stores reales.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-make-operations-idempotent` para consumidores, operaciones internas, pasos de saga y jobs: el mismo estado final sin importar reintentos ni caídas a mitad de camino.
+- `principle-separate-before-serializing-shared-state` para claims, leases y outbox: eliminar el estado compartido antes de serializarlo.
+- Sagas y protocolos con muchos estados: `statechart`. Carreras de outbox, claims o reentregas que las pruebas no alcanzan: `create-formal-verification-skill`.
+- Al revisar un cambio de mensajería: `interrogate` con escenarios de caída concretos (entre escribir y publicar, reentrega, failover corto).
