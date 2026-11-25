@@ -32,9 +32,9 @@ The general review of 2026-11-24 found that the services had grown their own cop
 ### Dependency injection
 
 - An adapter is picked by a selector class with its own tests (`EmailSenderSelector`, `PaymentProviderSelector`, `ReportResultStoreSelector`, `IdentityMailerSelector`), as `FlagStoreSelector` already did. The `useFactory` only calls it.
-- A service reads its own variables through a `RootSettings<T>` subclass in its `config/` folder (`BillingSettings`, `ReportsSettings` and so on). Use cases and adapters inject it; nothing outside `config/` calls `AppConfig.root<X>()`.
+- A service reads its own variables through a `RootSettings<T>` subclass in its `config/` folder (`BillingSettings`, `ReportsSettings` and so on). Use cases and adapters inject it and never call `AppConfig.root<X>()`; only composition code that receives `AppConfig` from a platform module option (such as the real-time `serveConnections` callback) still reads the root.
 - `KernelModule` (`@platform/kernel/nest`) is the only provider of `Clock`, `RandomSource` and `IdGenerator`. It is global and imported once at the root; no library module registers its own, and none injects `Clock` as optional with a `SystemClock` fallback.
-- A class receives its clock, randomness and id generator; none builds a default one. The composition roots that run before NestJS (the telemetry bootstrap and the migration generator command) are the exception.
+- A class receives its clock, randomness and id generator; none builds a default one. The composition roots that run before NestJS (the telemetry bootstrap and the migration generator command) are the exception. A selector class is a factory by definition: building the adapter it picks, such as `TenantDataTransferSelector` building `BatchTenantDataTransfer`, is its job, so its collaborators come through its constructor instead.
 - The tenant move ports and its application layer speak in shard locations; only the adapters reach a `DataSource`.
 
 ### Composition of a service
