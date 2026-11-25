@@ -109,20 +109,24 @@ describe('ValkeyAuthStateWriter', () => {
   });
 
   describe('permission versions', () => {
-    it('stores the tenant version under its own key', async () => {
+    it('raises the tenant version under its own key with a script', async () => {
       const { runner, writer } = writerOver();
 
       await writer.setPermissionVersion('t1', undefined, 3);
 
-      expect(runner.calls).toEqual([['SET', ['auth:pv:tenant:t1', '3']]]);
+      expect(runner.calls).toEqual([
+        ['EVALSHA', [expect.any(String), 1, 'auth:pv:tenant:t1', '3']],
+      ]);
     });
 
-    it('stores the user version under the tenant and user key', async () => {
+    it('raises the user version under the tenant and user key with a script', async () => {
       const { runner, writer } = writerOver();
 
       await writer.setPermissionVersion('t1', 'u1', 7);
 
-      expect(runner.calls).toEqual([['SET', ['auth:pv:user:t1:u1', '7']]]);
+      expect(runner.calls).toEqual([
+        ['EVALSHA', [expect.any(String), 1, 'auth:pv:user:t1:u1', '7']],
+      ]);
     });
 
     it.each([[-1], [1.5], [Number.NaN]])(
