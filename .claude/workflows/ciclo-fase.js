@@ -1,7 +1,7 @@
 // Ciclo de construcción y revisión de una fase del plan (docs/plan/README.md, olas 6 a 9).
 // Un constructor Opus planea, implementa y prueba en una copia de trabajo; un revisor Opus
-// independiente revisa el diff sin editarlo; el constructor corrige. Nadie hace commit: el general
-// integra, abre el PR y lo mezcla.
+// independiente revisa el diff sin editarlo; el constructor corrige. El constructor hace commits y push
+// en la rama troop/<key> a medida que avanza; el revisor no. El general integra, abre el PR y lo mezcla.
 //
 // Args:
 //   cycle: { key, title, path, area, plan, package, notes }
@@ -71,7 +71,7 @@ Reglas que mandan (léelas en ${t.path}/.claude/skills y ${t.path}/CLAUDE.md): l
 
 Verificación (todo en verde antes de terminar):
 ${VERIFY[t.area]}
-Nunca hagas commit ni uses --no-verify.
+Commits (solo el constructor; el revisor nunca hace commit): haz commits pequeños en la rama troop/${t.key} cada vez que una parte queda compilando y con sus pruebas en verde, y después de cada commit haz git -C ${t.path} push -u origin troop/${t.key}. Mensajes en Conventional Commits en español, asunto en minúsculas, sin Co-Authored-By ni ninguna atribución de IA. Nunca uses --no-verify ni reescribas commits ya publicados.
 
 CPU Y MEMORIA: la máquina es una Raspberry Pi con 4 núcleos y 8 GB. Un solo comando pesado a la vez: no lances tsc, lint o nx mientras corre Jest, ni comandos en segundo plano en paralelo. Nx con --parallel=1; Jest con --maxWorkers=2 en unitarias y --runInBand en integración; las pruebas de integración de a un proyecto, nunca todas a la vez. Al terminar cada corrida borra los contenedores de prueba (docker rm -f $(docker ps -aq --filter label=org.testcontainers=true)), mata los Jest colgados y detén el daemon de Nx de tu copia (pnpm nx daemon --stop). En fixtures, nada de literales con forma de credencial junto a llaves como token, key, secret o credential (gitleaks).`;
 
@@ -161,7 +161,7 @@ ${COMMON(t)}${corrections}
 Cómo trabajas:
 1. Lee el paquete y las decisiones que cita, las skills y el código actual. Si la copia ya tiene trabajo de una corrida anterior (git status), parte de ahí.
 2. Ordena el trabajo por fases del ciclo: cada parte queda compilando y con pruebas antes de pasar a la siguiente. Primero puertos e interfaces, luego implementaciones con pruebas, al final el cableado.
-3. Corre la verificación completa hasta verde y deja todo con git add -A. Sin commit.
+3. Corre la verificación completa hasta verde y cierra con un último commit y push: no dejes nada sin commit.
 Devuelve el reporte con el schema.`,
   {
     model: 'opus',
@@ -182,7 +182,7 @@ Reporte del constructor:
 ${JSON.stringify(report, null, 2)}
 
 Qué haces:
-1. Lee el diff completo (git -C ${t.path} diff --cached y status) contra el paquete del plan, las decisiones que cita y las skills.
+1. Lee el diff completo de la rama contra main (git -C ${t.path} log --oneline main..HEAD, git -C ${t.path} diff main...HEAD y status por si quedó algo sin commit) contra el paquete del plan, las decisiones que cita y las skills.
 2. Busca: lo que el paquete pide y no está; errores de lógica y de concurrencia; pruebas débiles o que no prueban lo que dicen; violaciones de las reglas (funciones sueltas, puertos que no son clases abstractas, literales donde van enums, imports de infraestructura en domain, NestJS fuera de src/nest); alternativas de la tabla 2.1 del diseño de F5 a F11 que faltan; secretos o literales con forma de credencial en fixtures; comentarios que narran el proceso.
 3. Corre tú la verificación completa para confirmar que está en verde.
 No edites archivos. approved es true solo si no queda ningún hallazgo bloqueante. Devuelve la revisión con el schema.`,
@@ -204,7 +204,7 @@ ${COMMON(t)}${corrections}
 Hallazgos:
 ${JSON.stringify(review.findings, null, 2)}
 
-Corrige todos los bloqueantes e importantes, y los menores que tengan sentido. Si no estás de acuerdo con un hallazgo, explícalo en deviations. Corre la verificación completa hasta verde y deja todo con git add -A. Sin commit. Devuelve el reporte con el schema.`,
+Corrige todos los bloqueantes e importantes, y los menores que tengan sentido. Si no estás de acuerdo con un hallazgo, explícalo en deviations. Corre la verificación completa hasta verde y cierra con commit y push: no dejes nada sin commit. Devuelve el reporte con el schema.`,
     {
       model: 'opus',
       phase: 'Corregir',
