@@ -124,7 +124,6 @@ describe('ListMembersByPermission', () => {
 
   const useCase = new ListMembersByPermission(
     new ReadOnlyTenantAccess(
-      // Desordenadas a propósito: la página sale ordenada por id de usuario.
       [third, reader, first, second],
       [admins, reading],
       [managers, readers],

@@ -27,13 +27,13 @@ import { ManageMembers } from '../application/manage-members.use-case.js';
 import { ManageRoles } from '../application/manage-roles.use-case.js';
 import { TenantAccessSetup } from '../application/tenant-access-setup.js';
 
-/** Las pruebas solo cubren rechazos: si algo llega a publicar, el rechazo no ocurrió. */
+/** The tests only cover rejections: if anything gets to publish, the rejection did not happen. */
 class UnreachableMessageBus extends MessageBus {
   publish(): Promise<MessageEnvelope<never>> {
-    throw new Error('El rechazo debía ocurrir antes de publicar');
+    throw new Error('The rejection should have happened before publishing');
   }
   send(): Promise<MessageEnvelope<never>> {
-    throw new Error('El rechazo debía ocurrir antes de enviar');
+    throw new Error('The rejection should have happened before sending');
   }
 }
 

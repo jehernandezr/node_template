@@ -7,7 +7,7 @@ import { SessionRepository } from '../../domain/session.repository.js';
 import { SessionEntity } from './entities/session.entity.js';
 import { SessionMapper } from './session.mapper.js';
 
-/** `SessionRepository` sobre `sessions` del shard del usuario. */
+/** `SessionRepository` over `sessions` of the user shard. */
 @Injectable()
 export class TypeOrmSessionRepository
   extends UserShardRepository

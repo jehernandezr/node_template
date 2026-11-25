@@ -167,11 +167,11 @@ import {
 } from './internal/index.js';
 import * as schemas from './schemas/index.js';
 
-/** Las operaciones de traslado de tenant de identity, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant move operations of identity, with their exact type to register and call them. */
 export const IdentityTenantMoveOperations =
   defineTenantMoveOperations('identity');
 
-/** Contrato del servicio identity: acceso, sesiones, cuentas, tenants, API keys y eventos. */
+/** Contract of the identity service: access, sessions, accounts, tenants, API keys and events. */
 export const identityContract = defineServiceContract({
   service: 'identity',
   description:
