@@ -23,6 +23,7 @@ import {
   type EmailReservation,
 } from '../../domain/email-ledger.js';
 import { EmailSender } from '../../domain/email-sender.js';
+import { LedgerRetryWait } from '../../domain/ledger-retry-wait.js';
 import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 import { RecipientFingerprint } from '../../domain/recipient-fingerprint.js';
 import { EmailTemplates } from '../../domain/templates/email-templates.js';
@@ -33,6 +34,7 @@ class InMemoryLedger extends EmailLedger {
   readonly suppressed = new Set<string>();
   readonly reservedAt = new Map<string, Date>();
   recordFailures = 0;
+  downUntil = new Date(0);
 
   constructor(private readonly clock: FixedClock) {
     super();
@@ -68,6 +70,9 @@ class InMemoryLedger extends EmailLedger {
   }
 
   async record(entry: EmailRecord) {
+    if (this.clock.now().getTime() < this.downUntil.getTime()) {
+      throw new Error('catalog down');
+    }
     if (this.recordFailures > 0) {
       this.recordFailures -= 1;
       throw new Error('catalog down');
@@ -81,6 +86,21 @@ class InMemoryLedger extends EmailLedger {
 
   async suppress(hash: string) {
     this.suppressed.add(hash);
+  }
+}
+
+class ClockAdvancingRetryWait extends LedgerRetryWait {
+  static readonly STEP_MS = 1_000;
+
+  readonly waited: number[] = [];
+
+  constructor(private readonly clock: FixedClock) {
+    super();
+  }
+
+  async before(retry: number): Promise<void> {
+    this.waited.push(retry);
+    this.clock.advance(ClockAdvancingRetryWait.STEP_MS);
   }
 }
 
@@ -136,6 +156,7 @@ const request = {
 const setup = (sender: EmailSender = new RecordingSender()) => {
   const clock = new FixedClock(new Date('2026-11-20T10:00:00.000Z'));
   const ledger = new InMemoryLedger(clock);
+  const retryWait = new ClockAdvancingRetryWait(clock);
   const send = new SendEmail(
     sender,
     ledger,
@@ -143,9 +164,10 @@ const setup = (sender: EmailSender = new RecordingSender()) => {
     new EmailTemplates(),
     new RequestContextStore(new Tracing(new Redactor())),
     new SilentLogger(),
+    retryWait,
     config,
   );
-  return { send, ledger, sender, clock };
+  return { send, ledger, sender, clock, retryWait };
 };
 
 describe('SendEmail', () => {
@@ -213,6 +235,20 @@ describe('SendEmail', () => {
 
     await expect(send.send(request)).resolves.toBe('provider-1');
     expect((sender as RecordingSender).sent).toHaveLength(1);
+  });
+
+  it('waits between tries to record a sent email, so a ledger outage shorter than the waits does not lose the record', async () => {
+    const { send, ledger, clock, retryWait } = setup();
+    ledger.downUntil = new Date(
+      clock.now().getTime() + 1.5 * ClockAdvancingRetryWait.STEP_MS,
+    );
+
+    await send.send(request);
+
+    expect(retryWait.waited).toEqual([1, 2]);
+    expect(ledger.records.get(request.messageId)?.status).toBe(
+      EmailStatus.Sent,
+    );
   });
 
   it('sends again after the abandonment window when the ledger never recorded the first send', async () => {

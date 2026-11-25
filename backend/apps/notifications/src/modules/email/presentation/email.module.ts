@@ -3,8 +3,10 @@ import { PersistenceModule } from '@platform/persistence/nest';
 import { EmailFacade } from '../application/email.facade.js';
 import { SendEmail } from '../application/send-email.use-case.js';
 import { EmailLedger } from '../domain/email-ledger.js';
+import { LedgerRetryWait } from '../domain/ledger-retry-wait.js';
 import { RecipientFingerprint } from '../domain/recipient-fingerprint.js';
 import { EmailTemplates } from '../domain/templates/email-templates.js';
+import { BackoffLedgerRetryWait } from '../infrastructure/backoff-ledger-retry-wait.js';
 import { HmacRecipientFingerprint } from '../infrastructure/hmac-recipient-fingerprint.js';
 import { EmailMessageEntity } from '../infrastructure/persistence/entities/email-message.entity.js';
 import { EmailSuppressionEntity } from '../infrastructure/persistence/entities/email-suppression.entity.js';
@@ -13,7 +15,7 @@ import { EmailInternalOperations } from './email.internal-operations.js';
 import { EmailSenderLifecycle } from './email-sender.lifecycle.js';
 import { EmailSenderProvider } from './email-sender.provider.js';
 
-/** Correo transaccional y de notificaciones con el proveedor de `NOTIFICATIONS_EMAIL_SENDER`. */
+/** Transactional and notification email through the provider of `NOTIFICATIONS_EMAIL_SENDER`. */
 @Global()
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { EmailSenderProvider } from './email-sender.provider.js';
     EmailSenderLifecycle,
     { provide: EmailLedger, useClass: TypeOrmEmailLedger },
     { provide: RecipientFingerprint, useClass: HmacRecipientFingerprint },
+    { provide: LedgerRetryWait, useClass: BackoffLedgerRetryWait },
     { provide: EmailTemplates, useValue: new EmailTemplates() },
     SendEmail,
     { provide: EmailFacade, useExisting: SendEmail },

@@ -7,7 +7,7 @@ import { ChargeInvoice } from './charge-invoice.use-case.js';
 import { PaymentsFacade, type PaymentNotice } from './payments.facade.js';
 import { RecordPaymentResult } from './record-payment-result.use-case.js';
 
-/** `PaymentsFacade` dentro del mismo proceso de billing. */
+/** `PaymentsFacade` inside the billing process itself. */
 @Injectable()
 export class LocalPaymentsFacade extends PaymentsFacade {
   constructor(
@@ -18,19 +18,21 @@ export class LocalPaymentsFacade extends PaymentsFacade {
   }
 
   /**
-   * Cobra el intento con `ChargeInvoice`, que nunca cobra dos veces el mismo.
-   * @param request Factura, número de intento y monto a cobrar.
-   * @returns La respuesta del proveedor, o `Requested` si otra corrida tiene el intento en vuelo.
+   * Charges the attempt with `ChargeInvoice`, which never charges the same one twice.
+   * @param request Invoice, attempt number and amount to charge.
+   * @returns The provider's answer, or `Requested` if another run has the attempt in flight.
    */
   charge(request: ChargeRequest): Promise<PaymentResult> {
     return this.chargeInvoice.execute(request);
   }
 
   /**
-   * Anota el aviso del proveedor con `RecordPaymentResult`.
-   * @param notice Aviso del proveedor.
-   * @returns El número del intento al que corresponde el aviso.
-   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` si `attemptId` no es un intento de la factura.
+   * Records the provider notice with `RecordPaymentResult`.
+   * @param notice Notice from the provider.
+   * @returns The number of the attempt the notice belongs to.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` if `attemptId` is not an attempt of the invoice, or
+   *   `BILLING.INVOICE.INVALID_STATE` if the notice contradicts the result already recorded for its attempt or the
+   *   attempt it would take is open on behalf of another charge.
    */
   record(notice: PaymentNotice): Promise<number> {
     return this.recordResult.execute(notice);

@@ -13,32 +13,33 @@ import { InvoiceRepository } from '../domain/invoice.repository.js';
 import type { Invoice, InvoiceState } from '../domain/invoice.js';
 import { SettleInvoice } from './settle-invoice.use-case.js';
 
-/** Un pago que el proveedor confirma después de pedido. */
+/** A payment the provider confirms after it was requested. */
 export interface PaidNotice {
   readonly tenantId: string;
   readonly invoiceId: string;
-  /** Intento que el proveedor recibió como llave de idempotencia, si el cobro salió de billing. */
+  /** Attempt the provider received as idempotency key, when the charge came from billing. */
   readonly attemptId?: string;
   readonly paidAt: Date;
   readonly reference: string;
   readonly amount: { readonly amountMinor: number; readonly currency: string };
 }
 
-/** Un rechazo que el proveedor confirma después de pedido. */
+/** A decline the provider confirms after it was requested. */
 export interface FailedNotice {
   readonly tenantId: string;
   readonly invoiceId: string;
-  /** Intento que el proveedor recibió como llave de idempotencia, si el cobro salió de billing. */
+  /** Attempt the provider received as idempotency key, when the charge came from billing. */
   readonly attemptId?: string;
   readonly failedAt: Date;
   readonly reason?: string;
 }
 
 /**
- * Lo que el proveedor informa por su webhook: anota el resultado en el intento al que se refiere el aviso, con su
- * referencia o su motivo, y lo aplica a la factura, todo en una transacción con la suscripción tomada. El intento sale
- * del aviso y no del estado de la factura: un aviso repetido no cuenta como un rechazo nuevo ni gasta un reintento. Un
- * pago por un monto distinto del total se rechaza sin tocar nada.
+ * What the provider reports through its webhook: records the result, with its reference or its reason, on the attempt
+ * the notice refers to and applies it to the invoice, all in one transaction with the subscription locked. The attempt
+ * comes from the notice and not from the state of the invoice: a repeated notice does not count as a new decline nor
+ * use up a retry. A payment for an amount other than the total, or a notice that contradicts the result already
+ * recorded for its attempt, is refused without changing anything.
  */
 @Injectable()
 export class RecordPaymentNotice {
@@ -52,11 +53,12 @@ export class RecordPaymentNotice {
   ) {}
 
   /**
-   * Anota el pago en su intento y salda la factura; repetir el aviso no cambia nada.
-   * @param notice Pago informado por el proveedor.
-   * @returns La factura después del aviso.
-   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` si la factura o el intento no existen,
-   *   `BILLING.INVOICE.INVALID_STATE` si está anulada o `BILLING.INVOICE.AMOUNT_MISMATCH` si el monto no es el total.
+   * Records the payment on its attempt and settles the invoice; repeating the notice changes nothing.
+   * @param notice Payment reported by the provider.
+   * @returns The invoice after the notice.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` if the invoice or the attempt do not exist,
+   *   `BILLING.INVOICE.INVALID_STATE` if the invoice is void or the attempt already has another result, or
+   *   `BILLING.INVOICE.AMOUNT_MISMATCH` if the amount is not the total.
    */
   paid(notice: PaidNotice): Promise<InvoiceState> {
     return this.inTransaction(
@@ -81,12 +83,13 @@ export class RecordPaymentNotice {
   }
 
   /**
-   * Anota el rechazo en su intento y lo aplica a la factura una sola vez: un aviso repetido, o el webhook de un rechazo
-   * que el job ya anotó, no programa otro reintento.
-   * @param notice Rechazo informado por el proveedor.
-   * @returns La factura después del aviso.
-   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` si la factura o el intento no existen, o
-   *   `BILLING.INVOICE.INVALID_STATE` si ya está pagada o anulada.
+   * Records the decline on its attempt and applies it to the invoice once: a repeated notice, or the webhook of a
+   * decline the job already recorded, does not schedule another retry.
+   * @param notice Decline reported by the provider.
+   * @returns The invoice after the notice.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` if the invoice or the attempt do not exist, or
+   *   `BILLING.INVOICE.INVALID_STATE` if the invoice is already paid or void or the attempt already has another
+   *   result.
    */
   failed(notice: FailedNotice): Promise<InvoiceState> {
     return this.inTransaction(

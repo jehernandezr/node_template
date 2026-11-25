@@ -3,32 +3,35 @@ import type {
   PaymentResult,
 } from '../domain/payment-provider.js';
 
-/** Lo que el proveedor informa por su webhook sobre el cobro de una factura. */
+/** What the provider reports through its webhook about the charge of an invoice. */
 export interface PaymentNotice {
   readonly tenantId: string;
   readonly invoiceId: string;
-  /** Id del intento que el proveedor recibió como llave de idempotencia, si el cobro salió de billing. */
+  /** Id of the attempt the provider received as idempotency key, when the charge came from billing. */
   readonly attemptId?: string;
-  /** Número que toma el aviso si no corresponde a ningún intento anotado: el próximo intento de la factura. */
+  /** Number the notice takes when it matches no recorded attempt: the next attempt of the invoice. */
   readonly nextAttempt: number;
   readonly result: PaymentResult;
 }
 
-/** Cobro de facturas para `invoices`. */
+/** Invoice charging for `invoices`. */
 export abstract class PaymentsFacade {
   /**
-   * Pide el intento de cobro, o retoma el que quedó anotado sin respuesta; nunca cobra dos veces el mismo intento.
-   * @param request Factura, número de intento y monto a cobrar.
-   * @returns La respuesta del proveedor, o `Requested` si otra corrida tiene el intento en vuelo.
+   * Requests the charge attempt, or resumes the one left recorded without an answer; never charges the same attempt
+   * twice.
+   * @param request Invoice, attempt number and amount to charge.
+   * @returns The provider's answer, or `Requested` if another run has the attempt in flight.
    */
   abstract charge(request: ChargeRequest): Promise<PaymentResult>;
 
   /**
-   * Anota un aviso del proveedor en el intento al que se refiere: el de `attemptId`, o sin él el último intento si
-   * sigue abierto. Un aviso repetido no anota nada.
-   * @param notice Aviso del proveedor.
-   * @returns El número del intento al que corresponde el aviso.
-   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` si `attemptId` no es un intento de la factura.
+   * Records a provider notice on the attempt it refers to: the one named by `attemptId`, or without it the latest
+   * attempt if it is still open. A repeated notice records nothing, and a notice never overwrites another result.
+   * @param notice Notice from the provider.
+   * @returns The number of the attempt the notice belongs to.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` if `attemptId` is not an attempt of the invoice, or
+   *   `BILLING.INVOICE.INVALID_STATE` if the notice contradicts the result already recorded for its attempt or the
+   *   attempt it would take is open on behalf of another charge.
    */
   abstract record(notice: PaymentNotice): Promise<number>;
 }

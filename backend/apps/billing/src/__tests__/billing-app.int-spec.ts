@@ -862,6 +862,53 @@ new ContainerRuntime(process.env).describeIfAvailable(
           ]);
         });
 
+        it('refuses a late approval of a declined attempt and leaves the retry the job reserved to its own notice', async () => {
+          const invoice = await issueToH();
+          const invoiceId = String(invoice?.id);
+          await app.internal().invoke(MarkInvoiceFailedOperation, {
+            tenantId: TENANT_H,
+            invoiceId,
+            failedAt: new Date().toISOString(),
+          });
+          await app.rowsOf(
+            TENANT_H,
+            `UPDATE invoices SET next_collection_at = now() - interval '1 minute' WHERE id = '${invoiceId}'`,
+          );
+          await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
+          await app.rowsOf(
+            TENANT_H,
+            `UPDATE payment_attempts SET status = 'requested' WHERE invoice_id = '${invoiceId}' AND attempt = 2`,
+          );
+
+          const refused = await app
+            .internal()
+            .invoke(MarkInvoicePaidOperation, {
+              tenantId: TENANT_H,
+              invoiceId,
+              attemptId: await attemptIdOf(invoiceId, 1),
+              paidAt: new Date().toISOString(),
+              reference: 'ref-of-first',
+              amount: {
+                amountMinor: Number(invoice?.totalMinor),
+                currency: String(invoice?.currency),
+              },
+            });
+
+          expect(refused).toMatchObject({
+            code: BillingErrorCode.InvoiceInvalidState,
+          });
+          await expect(attemptsOf(TENANT_H, invoiceId)).resolves.toEqual([
+            { attempt: 1, status: 'declined', reference: null, reason: null },
+            { attempt: 2, status: 'requested', reference: null, reason: null },
+          ]);
+          await expect(
+            app.rowsOf<{ status: string }>(
+              TENANT_H,
+              `SELECT status FROM invoices WHERE id = '${invoiceId}'`,
+            ),
+          ).resolves.toEqual([{ status: InvoiceStatus.Failed }]);
+        });
+
         it('refuses a notice about an attempt that is not one of the invoice', async () => {
           const invoice = await issueToH();
 
