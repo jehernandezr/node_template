@@ -13,6 +13,7 @@ import {
   InMemoryOutboxStore,
   RecordingEnvelopePublisher,
 } from '../../__tests__/utils/index.js';
+import { CircuitOpenError } from '@platform/resilience';
 import { OutboxRelay, type OutboxRelayOptions } from '../outbox-relay.js';
 import { EnvelopeLimits } from '../../envelope/envelope-limits.js';
 import type { MessageEnvelope } from '../../envelope/message-envelope.js';
@@ -224,7 +225,7 @@ describe('OutboxRelay', () => {
     expect(store.get('m1')?.nextAttemptAt).toEqual(at(10_500));
   });
 
-  it('marks a record Dead once it reaches maxAttempts', async () => {
+  it('keeps retrying a record through a ten minute outage of the transport and publishes it when the transport is back', async () => {
     const { clock, store, publisher, relay } = setup();
     store.add(envelope('m1'), { now: t0 });
     publisher.failing.add('m1');
@@ -232,20 +233,37 @@ describe('OutboxRelay', () => {
       retryPolicy: new RetryPolicy(3, 1_000, 60_000, BackoffStrategy.None),
     });
 
-    expect(await instance.relayOnce()).toMatchObject({ failed: 1, dead: 0 });
-    clock.set(at(1_000));
-    expect(await instance.relayOnce()).toMatchObject({ failed: 1, dead: 0 });
-    clock.set(at(3_000));
-    expect(await instance.relayOnce()).toEqual({
-      ...NO_RECORDS,
-      claimed: 1,
-      dead: 1,
+    for (let minute = 0; minute <= 10; minute += 1) {
+      clock.set(at(minute * 60_000));
+      expect(await instance.relayOnce()).toMatchObject({ dead: 0 });
+    }
+    publisher.failing.delete('m1');
+    clock.set(at(11 * 60_000));
+
+    expect(await instance.relayOnce()).toMatchObject({ published: 1 });
+    expect(store.get('m1')).toMatchObject({ status: OutboxStatus.Published });
+  });
+
+  it('does not spend an attempt on a record that the open circuit breaker rejected', async () => {
+    const { clock, store, publisher, relay } = setup();
+    store.add(envelope('m1'), { now: t0 });
+    store.add(envelope('m2'), { now: at(1) });
+    clock.set(at(10));
+    publisher.failing.add('m1');
+    publisher.failing.add('m2');
+    publisher.error = new CircuitOpenError('queue', 'topic:tasks-events');
+
+    expect(await relay().relayOnce()).toMatchObject({
+      claimed: 2,
+      failed: 0,
+      dead: 0,
+      deferred: 2,
     });
     expect(store.get('m1')).toMatchObject({
-      status: OutboxStatus.Dead,
-      attempts: 3,
-      lastError: 'transport down',
+      status: OutboxStatus.Pending,
+      attempts: 0,
     });
+    expect(store.get('m2')).toMatchObject({ attempts: 0 });
   });
 
   it('marks a record with no route Dead without publishing it', async () => {

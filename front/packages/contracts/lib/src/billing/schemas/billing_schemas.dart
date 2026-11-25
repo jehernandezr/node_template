@@ -4130,12 +4130,28 @@ abstract final class MarkInvoicePaidInputSchema {
         PlatformErrorCode.validationRequired.code,
       );
     }
+    if (json.containsKey('amount')) {
+      final value125 = json['amount'];
+      MoneyAmountSchema.check(
+        value125,
+        joinPath(path, 'amount'),
+        errors,
+        acceptUnknownEnums: acceptUnknownEnums,
+      );
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'amount'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
     for (final key in json.keys) {
       if (!const <String>{
         'tenantId',
         'invoiceId',
         'paidAt',
         'reference',
+        'amount',
       }.contains(key)) {
         addFieldError(
           errors,
@@ -4190,15 +4206,15 @@ abstract final class MarkInvoiceFailedInputSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value125 = json['tenantId'];
-      if (value125 is! String) {
+      final value126 = json['tenantId'];
+      if (value126 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value125)) {
+        if (!_pattern2.hasMatch(value126)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -4214,15 +4230,15 @@ abstract final class MarkInvoiceFailedInputSchema {
       );
     }
     if (json.containsKey('invoiceId')) {
-      final value126 = json['invoiceId'];
-      if (value126 is! String) {
+      final value127 = json['invoiceId'];
+      if (value127 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'invoiceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value126)) {
+        if (!_pattern2.hasMatch(value127)) {
           addFieldError(
             errors,
             joinPath(path, 'invoiceId'),
@@ -4238,15 +4254,15 @@ abstract final class MarkInvoiceFailedInputSchema {
       );
     }
     if (json.containsKey('failedAt')) {
-      final value127 = json['failedAt'];
-      if (value127 is! String) {
+      final value128 = json['failedAt'];
+      if (value128 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'failedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern1.hasMatch(value127)) {
+        if (!_pattern1.hasMatch(value128)) {
           addFieldError(
             errors,
             joinPath(path, 'failedAt'),
@@ -4262,22 +4278,22 @@ abstract final class MarkInvoiceFailedInputSchema {
       );
     }
     if (json.containsKey('reason')) {
-      final value128 = json['reason'];
-      if (value128 is! String) {
+      final value129 = json['reason'];
+      if (value129 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'reason'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value128.isEmpty) {
+        if (value129.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'reason'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value128.length > 200) {
+        if (value129.length > 200) {
           addFieldError(
             errors,
             joinPath(path, 'reason'),
@@ -4347,15 +4363,15 @@ abstract final class InvoiceStateResultSchema {
       return;
     }
     if (json.containsKey('invoiceId')) {
-      final value129 = json['invoiceId'];
-      if (value129 is! String) {
+      final value130 = json['invoiceId'];
+      if (value130 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'invoiceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value129)) {
+        if (!_pattern2.hasMatch(value130)) {
           addFieldError(
             errors,
             joinPath(path, 'invoiceId'),
@@ -4371,15 +4387,15 @@ abstract final class InvoiceStateResultSchema {
       );
     }
     if (json.containsKey('status')) {
-      final value130 = json['status'];
-      if (value130 is! String ||
+      final value131 = json['status'];
+      if (value131 is! String ||
           !const <String>{
             'draft',
             'issued',
             'paid',
             'failed',
             'void',
-          }.contains(value130)) {
+          }.contains(value131)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -4439,15 +4455,15 @@ abstract final class InvoiceChangeSchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value131 = json['id'];
-      if (value131 is! String) {
+      final value132 = json['id'];
+      if (value132 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value131)) {
+        if (!_pattern2.hasMatch(value132)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -4463,22 +4479,22 @@ abstract final class InvoiceChangeSchema {
       );
     }
     if (json.containsKey('number')) {
-      final value132 = json['number'];
-      if (value132 is! String) {
+      final value133 = json['number'];
+      if (value133 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'number'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value132.isEmpty) {
+        if (value133.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'number'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value132.length > 32) {
+        if (value133.length > 32) {
           addFieldError(
             errors,
             joinPath(path, 'number'),
@@ -4494,9 +4510,9 @@ abstract final class InvoiceChangeSchema {
       );
     }
     if (json.containsKey('period')) {
-      final value133 = json['period'];
+      final value134 = json['period'];
       BillingPeriodSchema.check(
-        value133,
+        value134,
         joinPath(path, 'period'),
         errors,
         acceptUnknownEnums: acceptUnknownEnums,
@@ -4509,15 +4525,15 @@ abstract final class InvoiceChangeSchema {
       );
     }
     if (json.containsKey('status')) {
-      final value134 = json['status'];
-      if (value134 is! String ||
+      final value135 = json['status'];
+      if (value135 is! String ||
           !const <String>{
             'draft',
             'issued',
             'paid',
             'failed',
             'void',
-          }.contains(value134)) {
+          }.contains(value135)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -4532,9 +4548,9 @@ abstract final class InvoiceChangeSchema {
       );
     }
     if (json.containsKey('currency')) {
-      final value135 = json['currency'];
-      if (value135 is! String ||
-          !const <String>{'COP', 'USD'}.contains(value135)) {
+      final value136 = json['currency'];
+      if (value136 is! String ||
+          !const <String>{'COP', 'USD'}.contains(value136)) {
         addFieldError(
           errors,
           joinPath(path, 'currency'),
@@ -4549,9 +4565,9 @@ abstract final class InvoiceChangeSchema {
       );
     }
     if (json.containsKey('total')) {
-      final value136 = json['total'];
+      final value137 = json['total'];
       MoneyAmountSchema.check(
-        value136,
+        value137,
         joinPath(path, 'total'),
         errors,
         acceptUnknownEnums: acceptUnknownEnums,
@@ -4564,15 +4580,15 @@ abstract final class InvoiceChangeSchema {
       );
     }
     if (json.containsKey('issuedAt')) {
-      final value137 = json['issuedAt'];
-      if (value137 is! String) {
+      final value138 = json['issuedAt'];
+      if (value138 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'issuedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern1.hasMatch(value137)) {
+        if (!_pattern1.hasMatch(value138)) {
           addFieldError(
             errors,
             joinPath(path, 'issuedAt'),
@@ -4588,16 +4604,16 @@ abstract final class InvoiceChangeSchema {
       );
     }
     if (json.containsKey('paidAt')) {
-      final value138 = json['paidAt'];
-      if (value138 != null) {
-        if (value138 is! String) {
+      final value139 = json['paidAt'];
+      if (value139 != null) {
+        if (value139 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'paidAt'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern1.hasMatch(value138)) {
+          if (!_pattern1.hasMatch(value139)) {
             addFieldError(
               errors,
               joinPath(path, 'paidAt'),
@@ -4659,26 +4675,26 @@ abstract final class InvoiceChangePageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value139 = json['items'];
-      if (value139 is! List) {
+      final value140 = json['items'];
+      if (value140 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value139.length > 100) {
+        if (value140.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i140 = 0; i140 < value139.length; i140++) {
-          final item141 = value139[i140];
+        for (var i141 = 0; i141 < value140.length; i141++) {
+          final item142 = value140[i141];
           InvoiceChangeSchema.check(
-            item141,
-            joinPath(joinPath(path, 'items'), '$i140'),
+            item142,
+            joinPath(joinPath(path, 'items'), '$i141'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -4692,30 +4708,30 @@ abstract final class InvoiceChangePageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value142 = json['nextCursor'];
-      if (value142 != null) {
-        if (value142 is! String) {
+      final value143 = json['nextCursor'];
+      if (value143 != null) {
+        if (value143 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value142.isEmpty) {
+          if (value143.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value142.length > 512) {
+          if (value143.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern3.hasMatch(value142)) {
+          if (!_pattern3.hasMatch(value143)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -4777,15 +4793,15 @@ abstract final class ListInvoiceChangesInputSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value143 = json['tenantId'];
-      if (value143 is! String) {
+      final value144 = json['tenantId'];
+      if (value144 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value143)) {
+        if (!_pattern2.hasMatch(value144)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -4801,24 +4817,24 @@ abstract final class ListInvoiceChangesInputSchema {
       );
     }
     if (json.containsKey('limit')) {
-      final value144 = json['limit'];
-      if (value144 is! num ||
-          !value144.isFinite ||
-          value144 != value144.roundToDouble()) {
+      final value145 = json['limit'];
+      if (value145 is! num ||
+          !value145.isFinite ||
+          value145 != value145.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'limit'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value144 < 1) {
+        if (value145 < 1) {
           addFieldError(
             errors,
             joinPath(path, 'limit'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value144 > 100) {
+        if (value145 > 100) {
           addFieldError(
             errors,
             joinPath(path, 'limit'),
@@ -4828,29 +4844,29 @@ abstract final class ListInvoiceChangesInputSchema {
       }
     }
     if (json.containsKey('after')) {
-      final value145 = json['after'];
-      if (value145 is! String) {
+      final value146 = json['after'];
+      if (value146 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'after'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value145.isEmpty) {
+        if (value146.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'after'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value145.length > 512) {
+        if (value146.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'after'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern3.hasMatch(value145)) {
+        if (!_pattern3.hasMatch(value146)) {
           addFieldError(
             errors,
             joinPath(path, 'after'),

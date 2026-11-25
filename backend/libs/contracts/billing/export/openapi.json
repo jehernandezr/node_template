@@ -871,9 +871,12 @@
           "paidAt": {
             "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
           },
-          "reference": { "type": "string", "minLength": 1, "maxLength": 120 }
+          "reference": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "amount": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          }
         },
-        "required": ["tenantId", "invoiceId", "paidAt", "reference"],
+        "required": ["tenantId", "invoiceId", "paidAt", "reference", "amount"],
         "additionalProperties": false,
         "description": "Marca una factura como pagada con la referencia del proveedor."
       },

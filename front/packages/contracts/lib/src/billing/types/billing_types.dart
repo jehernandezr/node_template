@@ -1648,6 +1648,7 @@ final class MarkInvoicePaidInput {
     required this.invoiceId,
     required this.paidAt,
     required this.reference,
+    required this.amount,
   });
 
   /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
@@ -1658,6 +1659,7 @@ final class MarkInvoicePaidInput {
         invoiceId: json['invoiceId'] as String,
         paidAt: DateTime.parse(json['paidAt'] as String),
         reference: json['reference'] as String,
+        amount: MoneyAmount.fromJson(json['amount'] as Map<String, dynamic>),
       );
     } on TypeError catch (error) {
       throw FormatException('Invalid MarkInvoicePaidInput: $error', json);
@@ -1672,12 +1674,15 @@ final class MarkInvoicePaidInput {
 
   final String reference;
 
+  final MoneyAmount amount;
+
   /// JSON del objeto; omite los campos opcionales nulos.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'invoiceId': invoiceId,
     'paidAt': paidAt.toUtc().toIso8601String(),
     'reference': reference,
+    'amount': amount.toJson(),
   };
 
   /// Igual a [toJson], para usar como tear-off constante.
@@ -1691,10 +1696,12 @@ final class MarkInvoicePaidInput {
           contractEquals(tenantId, other.tenantId) &&
           contractEquals(invoiceId, other.invoiceId) &&
           contractEquals(paidAt, other.paidAt) &&
-          contractEquals(reference, other.reference);
+          contractEquals(reference, other.reference) &&
+          contractEquals(amount, other.amount);
 
   @override
-  int get hashCode => contractHash([tenantId, invoiceId, paidAt, reference]);
+  int get hashCode =>
+      contractHash([tenantId, invoiceId, paidAt, reference, amount]);
 }
 
 /// Marca una factura como fallida después de un cobro rechazado.

@@ -387,8 +387,8 @@ describe('defineTopic and defineQueue', () => {
     expect(queue).toMatchObject({
       fifo: false,
       visibilityTimeoutSeconds: 30,
-      retry: { maxAttempts: 5, baseMs: 1000, maxMs: 300000 },
-      deadLetter: { maxReceiveCount: 5, retentionDays: 14 },
+      retry: { maxAttempts: 10, baseMs: 1000, maxMs: 300000 },
+      deadLetter: { maxReceiveCount: 100, retentionDays: 14 },
     });
     expect(deliveredTypes(queue)).toEqual([
       'sample.report.generate.v1',
@@ -403,7 +403,7 @@ describe('defineTopic and defineQueue', () => {
     [{ name: 'sample-work-dlq' }, /nombre inválido/],
     [{ visibilityTimeoutSeconds: 0 }, /visibilityTimeoutSeconds/],
     [{ retry: { maxAttempts: 0, baseMs: 1, maxMs: 1 } }, /retry/],
-    [{ deadLetter: { maxReceiveCount: 2 } }, /maxReceiveCount/],
+    [{ deadLetter: { maxReceiveCount: 9 } }, /maxReceiveCount/],
     [{ deadLetter: { retentionDays: 15 } }, /retentionDays/],
     [{ commands: [] }, /no recibe/],
     [{ commands: [generate, generate] }, /repetidos/],

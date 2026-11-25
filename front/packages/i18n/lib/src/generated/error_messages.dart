@@ -79,6 +79,8 @@ String errorMessageFor(AppLocalizations l10n, String code) {
       l10n.error_billing_plan_usage_exceeds_limit,
     'BILLING.INVOICE.NOT_FOUND' => l10n.error_billing_invoice_not_found,
     'BILLING.INVOICE.INVALID_STATE' => l10n.error_billing_invoice_invalid_state,
+    'BILLING.INVOICE.AMOUNT_MISMATCH' =>
+      l10n.error_billing_invoice_amount_mismatch,
     'BILLING.QUOTA.EXCEEDED' => l10n.error_billing_quota_exceeded,
     'IDENTITY.AUTH.INVALID_CREDENTIALS' =>
       l10n.error_identity_auth_invalid_credentials,

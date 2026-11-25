@@ -16,7 +16,10 @@ import { TopicDef } from '../../topology/topic-def.js';
 import { Topology } from '../../topology/topology.js';
 import { SingleRelayScope } from '../../relay/single-relay-scope.js';
 import { MessagingJob } from '../messaging-job.enum.js';
+import { InMemoryMetrics } from '@platform/observability/test-utils';
+import { OutboxMetric } from '../../outbox/outbox-metric.enum.js';
 import { OutboxRelayJob } from '../outbox-relay-job.js';
+import { RecordingLogger } from './utils/recording-logger.js';
 import { TwiceRelayScopes } from './utils/twice-relay-scopes.js';
 
 const t0 = new Date('2026-01-01T00:00:00.000Z');
@@ -112,5 +115,52 @@ describe('OutboxRelayJob', () => {
       status: OutboxStatus.Published,
       attempts: 1,
     });
+  });
+
+  it('publishes the report of each pass as counters and logs the records that can never be delivered', async () => {
+    const { store, publisher, relay } = setup();
+    store.add(
+      EnvelopeBuilder.anEnvelope({
+        id: 'e1',
+        type: UserRegistered.type,
+        source: '/test',
+        data: { userId: 'u-1' },
+      }),
+    );
+    store.add(
+      EnvelopeBuilder.anEnvelope({
+        id: 'e2',
+        type: 'tests.unrouted.v1',
+        source: '/test',
+        data: {},
+      }),
+    );
+    store.add(
+      EnvelopeBuilder.anEnvelope({
+        id: 'e3',
+        type: UserRegistered.type,
+        source: '/test',
+        data: { userId: 'u-3' },
+      }),
+    );
+    publisher.failing.add('e3');
+    const metrics = new InMemoryMetrics();
+    const logger = new RecordingLogger();
+
+    await new OutboxRelayJob(
+      relay,
+      new SingleRelayScope(),
+      metrics,
+      logger,
+    ).run();
+
+    expect(metrics.total(OutboxMetric.Published)).toBe(1);
+    expect(metrics.total(OutboxMetric.Dead)).toBe(1);
+    expect(metrics.total(OutboxMetric.Failed)).toBe(1);
+    expect(logger.errors).toEqual([
+      expect.objectContaining({
+        message: 'outbox records can never be delivered',
+      }),
+    ]);
   });
 });

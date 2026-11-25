@@ -41,6 +41,7 @@ export * from './jobs/outbox-retention-job.js';
 export * from './jobs/processed-message-retention-job.js';
 export * from './outbox/envelope-publisher.js';
 export * from './outbox/outbox.js';
+export * from './outbox/outbox-metric.enum.js';
 export * from './outbox/outbox-relay.js';
 export * from './outbox/outbox-store.js';
 export * from './outbox/outbox-writer.js';
