@@ -228,6 +228,33 @@ new ContainerRuntime(process.env).describeIfAvailable(
       ]);
     });
 
+    it('sends one email when the same message id arrives twice at once', async () => {
+      const input = {
+        messageId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9e52',
+        template: EmailTemplate.MfaCode,
+        to: 'doble@example.com',
+        locale: 'es',
+        parameters: [{ name: TemplateParameter.Code, value: '771204' }],
+      };
+
+      await Promise.allSettled([
+        app.internal().invoke(SendEmailOperation, input),
+        app.internal().invoke(SendEmailOperation, input),
+      ]);
+      await app.mailpit.waitForMailTo('doble@example.com', 10_000);
+      const retried = await app.internal().invoke(SendEmailOperation, input);
+
+      expect(retried).toEqual({
+        kind: CallOutcomeKind.Success,
+        value: { messageId: input.messageId },
+      });
+      expect(
+        (await app.mailpit.received()).filter(
+          (mail) => mail.to === 'doble@example.com',
+        ),
+      ).toHaveLength(1);
+    });
+
     it('retries in every shard the deliveries the provider refused, mails them, and purges old read notifications', async () => {
       const carl = {
         userId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9b03',

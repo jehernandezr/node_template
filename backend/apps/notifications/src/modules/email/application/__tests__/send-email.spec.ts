@@ -13,10 +13,14 @@ import {
   RequestContextStore,
   Tracing,
 } from '@platform/observability';
+import { FixedClock } from '@platform/kernel/test-utils';
+import { SilentLogger } from '@platform/messaging/test-utils';
 import {
   EmailLedger,
+  EmailReservationKind,
   EmailStatus,
   type EmailRecord,
+  type EmailReservation,
 } from '../../domain/email-ledger.js';
 import { EmailSender } from '../../domain/email-sender.js';
 import type { OutgoingEmail } from '../../domain/outgoing-email.js';
@@ -27,12 +31,46 @@ import { SendEmail } from '../send-email.use-case.js';
 class InMemoryLedger extends EmailLedger {
   readonly records = new Map<string, EmailRecord>();
   readonly suppressed = new Set<string>();
+  readonly reservedAt = new Map<string, Date>();
+  failRecords = false;
+
+  constructor(private readonly clock: FixedClock) {
+    super();
+  }
 
   async find(messageId: string) {
     return this.records.get(messageId);
   }
 
+  async reserve(
+    entry: Omit<EmailRecord, 'status' | 'providerId'>,
+    abandonedBefore: Date,
+  ): Promise<EmailReservation> {
+    const current = this.records.get(entry.messageId);
+    const reservedAt = this.reservedAt.get(entry.messageId);
+    const abandoned =
+      current?.status === EmailStatus.Sending &&
+      reservedAt !== undefined &&
+      reservedAt < abandonedBefore;
+    if (
+      current !== undefined &&
+      current.status !== EmailStatus.Failed &&
+      !abandoned
+    ) {
+      return { kind: EmailReservationKind.Taken, current };
+    }
+    this.records.set(entry.messageId, {
+      ...entry,
+      status: EmailStatus.Sending,
+    });
+    this.reservedAt.set(entry.messageId, this.clock.now());
+    return { kind: EmailReservationKind.Reserved };
+  }
+
   async record(entry: EmailRecord) {
+    if (this.failRecords) {
+      throw new Error('catalog down');
+    }
     this.records.set(entry.messageId, entry);
   }
 
@@ -60,6 +98,22 @@ class RecordingSender extends EmailSender {
   }
 }
 
+class GatedSender extends RecordingSender {
+  private open: () => void = () => undefined;
+  private readonly gate = new Promise<void>((resolve) => {
+    this.open = resolve;
+  });
+
+  override async send(email: OutgoingEmail): Promise<string> {
+    await this.gate;
+    return super.send(email);
+  }
+
+  release(): void {
+    this.open();
+  }
+}
+
 class FailingSender extends EmailSender {
   async send(): Promise<string> {
     throw new Error('smtp down');
@@ -79,16 +133,19 @@ const request = {
 };
 
 const setup = (sender: EmailSender = new RecordingSender()) => {
-  const ledger = new InMemoryLedger();
+  const clock = new FixedClock(new Date('2026-11-20T10:00:00.000Z'));
+  const ledger = new InMemoryLedger(clock);
   const send = new SendEmail(
     sender,
     ledger,
     new LowercaseFingerprint(),
     new EmailTemplates(),
     new RequestContextStore(new Tracing(new Redactor())),
+    clock,
+    new SilentLogger(),
     config,
   );
-  return { send, ledger, sender };
+  return { send, ledger, sender, clock };
 };
 
 describe('SendEmail', () => {
@@ -119,6 +176,61 @@ describe('SendEmail', () => {
 
     expect(second).toBe(first);
     expect((sender as RecordingSender).sent).toHaveLength(1);
+  });
+
+  it('sends once when the same message arrives twice at once and tells the second to retry', async () => {
+    const sender = new GatedSender();
+    const { send } = setup(sender);
+
+    const first = send.send(request);
+    const second = send.send(request);
+    await expect(second).rejects.toMatchObject({
+      code: NotificationsErrorCode.EmailInProgress,
+    });
+    sender.release();
+
+    await expect(first).resolves.toBe('provider-1');
+    await expect(send.send(request)).resolves.toBe('provider-1');
+    expect(sender.sent).toHaveLength(1);
+  });
+
+  it('keeps a sent email sent when the ledger fails afterwards', async () => {
+    const { send, ledger, sender } = setup();
+    ledger.failRecords = true;
+
+    await expect(send.send(request)).resolves.toBe('provider-1');
+    await expect(send.send(request)).rejects.toMatchObject({
+      code: NotificationsErrorCode.EmailInProgress,
+    });
+    expect((sender as RecordingSender).sent).toHaveLength(1);
+  });
+
+  it('takes over a reservation abandoned by a process that crashed', async () => {
+    const { send, ledger, sender, clock } = setup();
+    await ledger.reserve(
+      {
+        messageId: request.messageId,
+        template: EmailTemplate.MfaCode,
+        templateVersion: 1,
+        recipientHash: 'fp:ana@example.com',
+      },
+      clock.now(),
+    );
+    clock.advance(SendEmail.ABANDONED_AFTER_MS + 1);
+
+    await expect(send.send(request)).resolves.toBe('provider-1');
+    expect((sender as RecordingSender).sent).toHaveLength(1);
+  });
+
+  it('refuses a mandatory parameter that is missing instead of sending a blank code', async () => {
+    const { send, sender } = setup();
+
+    await expect(
+      send.send({ ...request, parameters: new Map() }),
+    ).rejects.toMatchObject({
+      code: NotificationsErrorCode.EmailTemplateParameterMissing,
+    });
+    expect((sender as RecordingSender).sent).toEqual([]);
   });
 
   it('refuses a suppressed recipient', async () => {
