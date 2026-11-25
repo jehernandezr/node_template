@@ -13,21 +13,21 @@ import { Session } from '../domain/session.js';
 import { SessionRepository } from '../domain/session.repository.js';
 import { SessionRevoker } from './session-revoker.js';
 
-/** Qué sesiones de un usuario se revocan. */
+/** Which sessions of a user are revoked. */
 export interface RevokeSessionsInput {
   readonly user: UserRef;
   readonly reason: RevocationReason;
-  /** Sesión que se conserva, por ejemplo la que cambia la contraseña. */
+  /** Session that is kept, for example the one that changes the password. */
   readonly except?: string;
-  /** Solo las sesiones de este dispositivo. */
+  /** Only the sessions of this device. */
   readonly deviceId?: string;
-  /** Solo esta sesión. */
+  /** Only this session. */
   readonly sessionId?: string;
 }
 
 /**
- * Revoca sesiones de un usuario en su shard. Revocar todas, sin excepción ni filtro, además mueve la época
- * del usuario: así cae también cualquier access token que la marca de sesión no alcance.
+ * Revokes sessions of a user in their shard. Revoking all of them, without exception or filter, also moves
+ * the epoch of the user: so any access token the session mark does not reach falls too.
  */
 @Injectable()
 export class RevokeSessions {
@@ -44,7 +44,11 @@ export class RevokeSessions {
     private readonly clock: Clock,
   ) {}
 
-  /** Devuelve cuántas sesiones revocó. */
+  /**
+   * Revokes the selected sessions of a user.
+   * @param input User, reason and filters.
+   * @returns How many sessions it revoked.
+   */
   async execute(input: RevokeSessionsInput): Promise<number> {
     const everything =
       input.except === undefined &&
@@ -71,6 +75,18 @@ export class RevokeSessions {
     return revoked;
   }
 
+  /**
+   * Revokes every session of a user whose account is being erased and then deletes them, with the IPs and
+   * user agents they keep. Repeating it changes nothing.
+   * @param user User.
+   */
+  async forget(user: UserRef): Promise<void> {
+    await this.execute({ user, reason: RevocationReason.AdminAction });
+    await this.scopes.inUserShard(user, () =>
+      this.sessions.forget(user.userId),
+    );
+  }
+
   private selected(session: Session, input: RevokeSessionsInput): boolean {
     const state = session.snapshot();
     return (
@@ -81,8 +97,8 @@ export class RevokeSessions {
   }
 
   /**
-   * La revocación de todo el usuario sale con su tenant de origen en el sobre: los consumidores que exigen un tenant
-   * ubicado (notifications cierra sus conexiones de tiempo real) la rechazarían sin él.
+   * The revocation of the whole user leaves with their home tenant in the envelope: consumers that require a
+   * placed tenant (notifications closes its real-time connections) would reject it without one.
    */
   private async publishUserRevocation(user: UserRef): Promise<void> {
     await this.bus.publish(
@@ -96,7 +112,7 @@ export class RevokeSessions {
     );
   }
 
-  /** Conserva la suspensión vigente: la escribe `users`, y esta época solo corre el corte. */
+  /** Keeps the current suspension: `users` writes it, and this epoch only moves the cut-off. */
   private async moveUserEpoch(userId: string): Promise<void> {
     const current = await this.reader.userEpoch(userId);
     await this.writer.setUserEpoch(userId, {

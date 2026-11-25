@@ -98,6 +98,12 @@ export class InMemorySessionsFacade extends SessionsFacade {
     };
   }
 
+  readonly forgotten: UserRef[] = [];
+
+  async forget(ref: UserRef): Promise<void> {
+    this.forgotten.push(ref);
+  }
+
   readonly replayed: Array<SessionRevokedPayload | TokensRevokedPayload> = [];
 
   async replaySessionRevocation(event: SessionRevokedPayload): Promise<void> {

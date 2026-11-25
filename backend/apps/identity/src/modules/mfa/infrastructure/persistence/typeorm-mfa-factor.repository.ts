@@ -151,6 +151,15 @@ export class TypeOrmMfaFactorRepository
     return result.affected ?? 0;
   }
 
+  /** {@inheritDoc MfaFactorRepository.forget} */
+  async forget(userId: string): Promise<void> {
+    await this.write(async (manager) => {
+      await manager.delete(TotpFactorEntity, { id: userId });
+      await manager.delete(RecoveryCodeEntity, { userId });
+      await manager.delete(MfaRecoveryEntity, { userId });
+    });
+  }
+
   private recoveryRow(recovery: MfaRecovery): MfaRecoveryEntity {
     const row = new MfaRecoveryEntity();
     row.id = recovery.id;

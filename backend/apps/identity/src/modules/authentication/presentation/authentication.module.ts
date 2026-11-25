@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { LockoutKeys } from '../application/lockout-keys.js';
+import { LoginAttemptHistory } from '../application/login-attempt-history.js';
 import { RotateLoginAttemptPartitionsJob } from '../application/rotate-login-attempt-partitions.job.js';
 import { LoginAttemptRetention } from '../domain/login-attempt-retention.js';
 import { TypeOrmLoginAttemptRetention } from '../infrastructure/persistence/typeorm-login-attempt-retention.js';
@@ -20,8 +21,8 @@ import { TypeOrmLoginAttemptRepository } from '../infrastructure/persistence/typ
 import { AuthenticationController } from './authentication.controller.js';
 
 /**
- * Inicio de sesión con contraseña, bloqueo por intentos y desbloqueo de cuentas. Es global solo para
- * compartir el bloqueo con las API keys y con el "No fui yo" de los dispositivos.
+ * Password sign-in, lockout by attempts and account unlock. It is global only to share the lockout with the
+ * API keys and with the "It was not me" of the devices, and the sign-in history with the account erasure.
  */
 @Global()
 @Module({
@@ -49,7 +50,8 @@ import { AuthenticationController } from './authentication.controller.js';
     RotateLoginAttemptPartitionsJob,
     LockoutKeys,
     SignInWithPassword,
+    LoginAttemptHistory,
   ],
-  exports: [LoginLockout, LockoutKeys],
+  exports: [LoginLockout, LockoutKeys, LoginAttemptHistory],
 })
 export class AuthenticationModule {}

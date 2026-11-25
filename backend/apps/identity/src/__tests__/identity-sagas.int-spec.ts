@@ -212,7 +212,7 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
     ]);
   });
 
-  it('deletes an account: every service erases its data and identity erases the user, its memberships and its email lookup', async () => {
+  it('deletes an account: every service erases its data and identity erases the user, its memberships, its sessions, its sign-in history, its second factors and its email lookup', async () => {
     const userId = IdentityJourney.userIdFrom(anaSession.accessToken);
 
     const started = await ana
@@ -266,6 +266,13 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
     await expect(
       probe.shardsWith(
         `SELECT 1 FROM tenant_members WHERE user_id = '${userId}'`,
+      ),
+    ).resolves.toEqual([]);
+    await expect(
+      probe.shardsWith(
+        ['sessions', 'login_attempts', 'recovery_codes', 'mfa_recoveries']
+          .map((table) => `SELECT 1 FROM ${table} WHERE user_id = '${userId}'`)
+          .join(' UNION ALL '),
       ),
     ).resolves.toEqual([]);
     await expect(

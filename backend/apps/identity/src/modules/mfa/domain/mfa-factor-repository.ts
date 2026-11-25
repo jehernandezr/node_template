@@ -89,4 +89,10 @@ export abstract class MfaFactorRepository {
    * @returns How many recoveries were cancelled.
    */
   abstract cancelPendingRecoveries(userId: string): Promise<number>;
+
+  /**
+   * Deletes every factor, recovery code and recovery of a user whose account is being erased.
+   * @param userId User.
+   */
+  abstract forget(userId: string): Promise<void>;
 }

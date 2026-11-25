@@ -67,6 +67,13 @@ export abstract class SessionsFacade {
   ): Promise<SessionTokens>;
 
   /**
+   * Revokes every session of a user whose account is being erased and deletes them with their IPs and
+   * user agents.
+   * @param ref User.
+   */
+  abstract forget(ref: UserRef): Promise<void>;
+
+  /**
    * Writes again into the shared auth state a published session revocation.
    * @param event Revocation of the session.
    */

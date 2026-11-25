@@ -6,32 +6,64 @@ import type {
 } from '@contracts/identity';
 import type { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import type { PendingAuthentication } from '../../../shared/types/pending-authentication.type.js';
+import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { StartPendingInput } from '../domain/start-pending-input.js';
 
-/** Lo que `mfa` ofrece a los otros módulos. */
+/** What `mfa` offers to the other modules. */
 export abstract class MfaFacade {
-  /** Guarda la autenticación pendiente y devuelve el `mfaToken` con los métodos que se ofrecen. */
+  /**
+   * Stores the pending authentication.
+   * @param input User, purpose, client and methods already satisfied.
+   * @returns The `mfaToken` with the offered methods.
+   */
   abstract startPending(input: StartPendingInput): Promise<PendingMfa>;
-  /** "No fui yo" desde el dispositivo verificador: el desafío deja de aceptar su código. */
+
+  /**
+   * "It was not me" from the verifier device: the challenge stops accepting its code.
+   * @param challengeId Denied challenge.
+   */
   abstract denyChallenge(challengeId: string): Promise<void>;
-  /** La autenticación pendiente de ese `mfaToken` y propósito, o `undefined` si venció o no existe. */
+
+  /**
+   * Reads the pending authentication of that `mfaToken` and purpose.
+   * @param mfaToken Pending token.
+   * @param purpose Expected purpose.
+   * @returns The pending authentication, or `undefined` if it expired or does not exist.
+   */
   abstract pending(
     mfaToken: string,
     purpose: PendingPurpose,
   ): Promise<PendingAuthentication | undefined>;
+
   /**
-   * Completa un inicio de sesión pendiente con un segundo factor verificado fuera de `mfa` (una passkey) y
-   * abre la sesión.
-   * @throws IdentityError `IDENTITY.MFA.TOKEN_INVALID` si el token ya se usó.
+   * Completes a pending sign-in with a second factor verified outside `mfa` (a passkey) and opens the
+   * session.
+   * @param mfaToken Pending token.
+   * @param methods Methods just verified.
+   * @param devicePublicKey Key of a new device to register, if any.
+   * @returns The open session.
+   * @throws IdentityError `IDENTITY.MFA.TOKEN_INVALID` if the token was already used.
    */
   abstract completeSignIn(
     mfaToken: string,
     methods: readonly AuthMethodReference[],
     devicePublicKey?: string,
   ): Promise<SignInResponse>;
-  /** Completa un step-up pendiente con un segundo factor verificado fuera de `mfa`. */
+
+  /**
+   * Completes a pending step-up with a second factor verified outside `mfa`.
+   * @param mfaToken Pending token.
+   * @param method Method just verified.
+   * @returns The new access token and the last MFA.
+   */
   abstract completeStepUp(
     mfaToken: string,
     method: AuthMethodReference,
   ): Promise<StepUpResult>;
+
+  /**
+   * Deletes the TOTP factor, recovery codes and recoveries of a user whose account is being erased.
+   * @param ref User.
+   */
+  abstract forget(ref: UserRef): Promise<void>;
 }

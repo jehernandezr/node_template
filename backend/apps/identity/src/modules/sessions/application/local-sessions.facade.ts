@@ -71,6 +71,11 @@ export class LocalSessionsFacade extends SessionsFacade {
     return this.mfa.execute(session, at, amr);
   }
 
+  /** {@inheritDoc SessionsFacade.forget} */
+  async forget(ref: UserRef): Promise<void> {
+    await this.revoke.forget(ref);
+  }
+
   /** {@inheritDoc SessionsFacade.replaySessionRevocation} */
   replaySessionRevocation(event: SessionRevokedPayload): Promise<void> {
     return this.replay.session(event);

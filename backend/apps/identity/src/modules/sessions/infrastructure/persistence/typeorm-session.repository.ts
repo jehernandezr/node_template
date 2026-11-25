@@ -54,6 +54,11 @@ export class TypeOrmSessionRepository
     return rows.map((row) => this.mapper.toDomain(row));
   }
 
+  /** {@inheritDoc SessionRepository.forget} */
+  async forget(userId: string): Promise<void> {
+    await this.write((manager) => manager.delete(SessionEntity, { userId }));
+  }
+
   async update(session: Session): Promise<void> {
     await this.updateVersioned(
       SessionEntity,
