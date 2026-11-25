@@ -1382,7 +1382,7 @@ abstract final class IdentityRoutes {
     decodeResponse: MyTenantPage.fromJson,
   );
 
-  /// Lista los miembros del tenant con sus grupos.
+  /// Lists the members of the tenant with their groups, a page at a time.
   ///
   /// `GET /v1/tenant/members`
   static const listMembers = RouteDescriptor<PageQuery, MemberPage>(
@@ -1411,7 +1411,7 @@ abstract final class IdentityRoutes {
     decodeResponse: MemberPage.fromJson,
   );
 
-  /// Quita a un miembro del tenant y revoca sus sesiones en él.
+  /// Removes a member from the tenant and revokes their sessions in it.
   ///
   /// `DELETE /v1/tenant/members/{userId}`
   static const removeMember = RouteDescriptor<RemoveMemberRequest, void>(
@@ -1430,17 +1430,19 @@ abstract final class IdentityRoutes {
       'IDENTITY.TENANT.SUSPENDED',
       'IDENTITY.TOKEN.STALE_PERMISSIONS',
       'PLATFORM.AUTH.FORBIDDEN',
+      'IDENTITY.MFA.STEP_UP_REQUIRED',
       'IDENTITY.ACCESS.LAST_OWNER',
       'PLATFORM.RESOURCE.NOT_FOUND',
     ],
     requiresAuth: true,
     permissions: <String>['identity:members:manage'],
     platformRoles: <String>[],
+    mfaMaxAgeMinutes: 10,
     encodeRequest: RemoveMemberRequest.encode,
     validateRequest: RemoveMemberRequestSchema.validate,
   );
 
-  /// Reemplaza los grupos de un miembro del tenant.
+  /// Replaces the groups of a member of the tenant.
   ///
   /// `PUT /v1/tenant/members/{userId}/groups`
   static const setMemberGroups = RouteDescriptor<SetMemberGroupsRequest, void>(
@@ -1459,16 +1461,18 @@ abstract final class IdentityRoutes {
       'IDENTITY.TENANT.SUSPENDED',
       'IDENTITY.TOKEN.STALE_PERMISSIONS',
       'PLATFORM.AUTH.FORBIDDEN',
+      'IDENTITY.MFA.STEP_UP_REQUIRED',
       'PLATFORM.RESOURCE.NOT_FOUND',
     ],
     requiresAuth: true,
     permissions: <String>['identity:members:manage'],
     platformRoles: <String>[],
+    mfaMaxAgeMinutes: 10,
     encodeRequest: SetMemberGroupsRequest.encode,
     validateRequest: SetMemberGroupsRequestSchema.validate,
   );
 
-  /// Lista los grupos del tenant.
+  /// Lists the groups of the tenant.
   ///
   /// `GET /v1/tenant/groups`
   static const listGroups = RouteDescriptor<PageQuery, GroupPage>(
@@ -1497,7 +1501,7 @@ abstract final class IdentityRoutes {
     decodeResponse: GroupPage.fromJson,
   );
 
-  /// Crea un grupo en el tenant.
+  /// Creates a group in the tenant.
   ///
   /// `POST /v1/tenant/groups`
   static const createGroup = RouteDescriptor<CreateGroupRequest, GroupSummary>(
@@ -1527,7 +1531,7 @@ abstract final class IdentityRoutes {
     decodeResponse: GroupSummary.fromJson,
   );
 
-  /// Cambia el nombre de un grupo del tenant.
+  /// Renames a group of the tenant.
   ///
   /// `PATCH /v1/tenant/groups/{groupId}`
   static const updateGroup = RouteDescriptor<UpdateGroupRequest, GroupSummary>(
@@ -1558,7 +1562,7 @@ abstract final class IdentityRoutes {
     decodeResponse: GroupSummary.fromJson,
   );
 
-  /// Borra un grupo del tenant y quita sus miembros del grupo.
+  /// Deletes a group of the tenant and takes its members out of it.
   ///
   /// `DELETE /v1/tenant/groups/{groupId}`
   static const deleteGroup = RouteDescriptor<DeleteGroupRequest, void>(
@@ -1586,7 +1590,7 @@ abstract final class IdentityRoutes {
     validateRequest: DeleteGroupRequestSchema.validate,
   );
 
-  /// Reemplaza los roles de un grupo del tenant.
+  /// Replaces the roles of a group of the tenant.
   ///
   /// `PUT /v1/tenant/groups/{groupId}/roles`
   static const setGroupRoles = RouteDescriptor<SetGroupRolesRequest, void>(
@@ -1605,16 +1609,18 @@ abstract final class IdentityRoutes {
       'IDENTITY.TENANT.SUSPENDED',
       'IDENTITY.TOKEN.STALE_PERMISSIONS',
       'PLATFORM.AUTH.FORBIDDEN',
+      'IDENTITY.MFA.STEP_UP_REQUIRED',
       'PLATFORM.RESOURCE.NOT_FOUND',
     ],
     requiresAuth: true,
     permissions: <String>['identity:groups:manage'],
     platformRoles: <String>[],
+    mfaMaxAgeMinutes: 10,
     encodeRequest: SetGroupRolesRequest.encode,
     validateRequest: SetGroupRolesRequestSchema.validate,
   );
 
-  /// Lista los roles del tenant con sus permisos.
+  /// Lists the roles of the tenant with their permissions.
   ///
   /// `GET /v1/tenant/roles`
   static const listRoles = RouteDescriptor<PageQuery, RolePage>(
@@ -1643,7 +1649,7 @@ abstract final class IdentityRoutes {
     decodeResponse: RolePage.fromJson,
   );
 
-  /// Crea un rol personalizado con sus permisos.
+  /// Creates a custom role with its permissions.
   ///
   /// `POST /v1/tenant/roles`
   static const createRole = RouteDescriptor<CreateRoleRequest, RoleSummary>(
@@ -1662,18 +1668,20 @@ abstract final class IdentityRoutes {
       'IDENTITY.TENANT.SUSPENDED',
       'IDENTITY.TOKEN.STALE_PERMISSIONS',
       'PLATFORM.AUTH.FORBIDDEN',
+      'IDENTITY.MFA.STEP_UP_REQUIRED',
       'IDENTITY.ACCESS.NAME_TAKEN',
     ],
     requiresAuth: true,
     permissions: <String>['identity:roles:manage'],
     platformRoles: <String>[],
+    mfaMaxAgeMinutes: 10,
     encodeRequest: CreateRoleRequest.encode,
     validateRequest: CreateRoleRequestSchema.validate,
     validateResponse: RoleSummarySchema.validateIncoming,
     decodeResponse: RoleSummary.fromJson,
   );
 
-  /// Cambia el nombre o los permisos de un rol del tenant.
+  /// Renames a role of the tenant or changes its permissions.
   ///
   /// `PATCH /v1/tenant/roles/{roleId}`
   static const updateRole = RouteDescriptor<UpdateRoleRequest, RoleSummary>(
@@ -1692,6 +1700,7 @@ abstract final class IdentityRoutes {
       'IDENTITY.TENANT.SUSPENDED',
       'IDENTITY.TOKEN.STALE_PERMISSIONS',
       'PLATFORM.AUTH.FORBIDDEN',
+      'IDENTITY.MFA.STEP_UP_REQUIRED',
       'IDENTITY.ACCESS.NAME_TAKEN',
       'IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE',
       'PLATFORM.RESOURCE.NOT_FOUND',
@@ -1699,13 +1708,14 @@ abstract final class IdentityRoutes {
     requiresAuth: true,
     permissions: <String>['identity:roles:manage'],
     platformRoles: <String>[],
+    mfaMaxAgeMinutes: 10,
     encodeRequest: UpdateRoleRequest.encode,
     validateRequest: UpdateRoleRequestSchema.validate,
     validateResponse: RoleSummarySchema.validateIncoming,
     decodeResponse: RoleSummary.fromJson,
   );
 
-  /// Borra un rol personalizado del tenant. Los roles de sistema no se borran.
+  /// Deletes a custom role of the tenant. System roles are not deleted.
   ///
   /// `DELETE /v1/tenant/roles/{roleId}`
   static const deleteRole = RouteDescriptor<DeleteRoleRequest, void>(
@@ -1734,7 +1744,7 @@ abstract final class IdentityRoutes {
     validateRequest: DeleteRoleRequestSchema.validate,
   );
 
-  /// Invita a un email a unirse al tenant en los grupos indicados.
+  /// Invites an email to join the tenant in the given groups.
   ///
   /// `POST /v1/tenant/invitations`
   static const inviteUser =
@@ -1754,17 +1764,19 @@ abstract final class IdentityRoutes {
           'IDENTITY.TENANT.SUSPENDED',
           'IDENTITY.TOKEN.STALE_PERMISSIONS',
           'PLATFORM.AUTH.FORBIDDEN',
+          'IDENTITY.MFA.STEP_UP_REQUIRED',
         ],
         requiresAuth: true,
         permissions: <String>['identity:invitations:manage'],
         platformRoles: <String>[],
+        mfaMaxAgeMinutes: 10,
         encodeRequest: InviteUserRequest.encode,
         validateRequest: InviteUserRequestSchema.validate,
         validateResponse: InvitationSummarySchema.validateIncoming,
         decodeResponse: InvitationSummary.fromJson,
       );
 
-  /// Lista las invitaciones del tenant con su estado.
+  /// Lists the invitations of the tenant with their status.
   ///
   /// `GET /v1/tenant/invitations`
   static const listInvitations = RouteDescriptor<PageQuery, InvitationPage>(
@@ -1793,7 +1805,7 @@ abstract final class IdentityRoutes {
     decodeResponse: InvitationPage.fromJson,
   );
 
-  /// Revoca una invitación pendiente.
+  /// Revokes a pending invitation.
   ///
   /// `DELETE /v1/tenant/invitations/{invitationId}`
   static const revokeInvitation =
@@ -1823,7 +1835,7 @@ abstract final class IdentityRoutes {
         validateRequest: RevokeInvitationRequestSchema.validate,
       );
 
-  /// Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado, y el plan del tenant debe tener cupo de usuarios.
+  /// Accepts an invitation. The email of the session must be the invited one and verified, its inviter must still be able to grant its groups, and the plan of the tenant must have a seat.
   ///
   /// `POST /v1/invitations/accept`
   static const acceptInvitation =
@@ -1854,7 +1866,7 @@ abstract final class IdentityRoutes {
         validateRequest: AcceptInvitationRequestSchema.validate,
       );
 
-  /// Lista las service accounts del tenant.
+  /// Lists the service accounts of the tenant.
   ///
   /// `GET /v1/tenant/service-accounts`
   static const listServiceAccounts =
@@ -1884,7 +1896,7 @@ abstract final class IdentityRoutes {
         decodeResponse: ServiceAccountPage.fromJson,
       );
 
-  /// Crea una service account con los permisos indicados.
+  /// Creates a service account with the given permissions.
   ///
   /// `POST /v1/tenant/service-accounts`
   static const createServiceAccount =
@@ -1904,18 +1916,20 @@ abstract final class IdentityRoutes {
           'IDENTITY.TENANT.SUSPENDED',
           'IDENTITY.TOKEN.STALE_PERMISSIONS',
           'PLATFORM.AUTH.FORBIDDEN',
+          'IDENTITY.MFA.STEP_UP_REQUIRED',
           'IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE',
         ],
         requiresAuth: true,
         permissions: <String>['identity:service-accounts:manage'],
         platformRoles: <String>[],
+        mfaMaxAgeMinutes: 10,
         encodeRequest: CreateServiceAccountRequest.encode,
         validateRequest: CreateServiceAccountRequestSchema.validate,
         validateResponse: ServiceAccountSummarySchema.validateIncoming,
         decodeResponse: ServiceAccountSummary.fromJson,
       );
 
-  /// Cambia el nombre o los permisos de una service account.
+  /// Changes the name or the permissions of a service account.
   ///
   /// `PATCH /v1/tenant/service-accounts/{serviceAccountId}`
   static const updateServiceAccount =
@@ -1935,19 +1949,21 @@ abstract final class IdentityRoutes {
           'IDENTITY.TENANT.SUSPENDED',
           'IDENTITY.TOKEN.STALE_PERMISSIONS',
           'PLATFORM.AUTH.FORBIDDEN',
+          'IDENTITY.MFA.STEP_UP_REQUIRED',
           'IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE',
           'PLATFORM.RESOURCE.NOT_FOUND',
         ],
         requiresAuth: true,
         permissions: <String>['identity:service-accounts:manage'],
         platformRoles: <String>[],
+        mfaMaxAgeMinutes: 10,
         encodeRequest: UpdateServiceAccountRequest.encode,
         validateRequest: UpdateServiceAccountRequestSchema.validate,
         validateResponse: ServiceAccountSummarySchema.validateIncoming,
         decodeResponse: ServiceAccountSummary.fromJson,
       );
 
-  /// Borra una service account y revoca sus API keys.
+  /// Deletes a service account and revokes its API keys.
   ///
   /// `DELETE /v1/tenant/service-accounts/{serviceAccountId}`
   static const deleteServiceAccount =
@@ -1976,7 +1992,7 @@ abstract final class IdentityRoutes {
         validateRequest: DeleteServiceAccountRequestSchema.validate,
       );
 
-  /// Lista las API keys de una service account sin sus secretos.
+  /// Lists the API keys of a service account without their secrets.
   ///
   /// `GET /v1/tenant/service-accounts/{serviceAccountId}/api-keys`
   static const listApiKeys = RouteDescriptor<ListApiKeysRequest, ApiKeyPage>(
@@ -2006,7 +2022,7 @@ abstract final class IdentityRoutes {
     decodeResponse: ApiKeyPage.fromJson,
   );
 
-  /// Crea una API key. El secreto aparece solo en esta respuesta.
+  /// Creates an API key whose account permissions the caller holds. The secret appears only in this response.
   ///
   /// `POST /v1/tenant/service-accounts/{serviceAccountId}/api-keys`
   static const createApiKey =
@@ -2041,7 +2057,7 @@ abstract final class IdentityRoutes {
         decodeResponse: CreatedApiKey.fromJson,
       );
 
-  /// Rota una API key: la nueva aparece una vez y la anterior sigue válida hasta su vencimiento.
+  /// Rotates an active API key whose account permissions the caller holds: the new one appears once and the previous one stays valid for the grace period.
   ///
   /// `POST /v1/tenant/api-keys/{apiKeyId}/rotate`
   static const rotateApiKey =
@@ -2075,7 +2091,7 @@ abstract final class IdentityRoutes {
         decodeResponse: CreatedApiKey.fromJson,
       );
 
-  /// Revoca una API key de inmediato.
+  /// Revokes an API key at once.
   ///
   /// `DELETE /v1/tenant/api-keys/{apiKeyId}`
   static const revokeApiKey = RouteDescriptor<RevokeApiKeyRequest, void>(
@@ -2103,7 +2119,7 @@ abstract final class IdentityRoutes {
     validateRequest: RevokeApiKeyRequestSchema.validate,
   );
 
-  /// Inicia el borrado de la cuenta del usuario autenticado. La saga se consulta con su id.
+  /// Starts the deletion of the account of the authenticated user, unless they are the last owner of a tenant with other members. The saga is read with its id.
   ///
   /// `POST /v1/me/deletion`
   static const startAccountDeletion =
@@ -2123,6 +2139,7 @@ abstract final class IdentityRoutes {
           'IDENTITY.TENANT.SUSPENDED',
           'IDENTITY.TOKEN.STALE_PERMISSIONS',
           'IDENTITY.MFA.STEP_UP_REQUIRED',
+          'IDENTITY.ACCESS.LAST_OWNER',
         ],
         requiresAuth: true,
         permissions: <String>[],
@@ -2134,7 +2151,7 @@ abstract final class IdentityRoutes {
         decodeResponse: AccountDeletionStarted.fromJson,
       );
 
-  /// Devuelve el estado de una saga propia o de su tenant.
+  /// Returns the status of an own saga or one of the tenant.
   ///
   /// `GET /v1/sagas/{sagaId}`
   static const getSaga = RouteDescriptor<GetSagaRequest, SagaSummary>(

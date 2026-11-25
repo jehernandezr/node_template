@@ -5,6 +5,7 @@ import {
   PageQuerySchema,
   PlatformErrorCode,
 } from '@contracts/platform';
+import { MfaRules } from '../constants/identity.constants.js';
 import { Permission } from '../enums/access.enum.js';
 import {
   BillingReference,
@@ -20,7 +21,7 @@ import {
 } from '../schemas/invitation.schema.js';
 import { SessionGuardErrors } from './session-guard.errors.js';
 
-/** `POST /v1/tenant/invitations`: invita a un email a unirse al tenant. */
+/** `POST /v1/tenant/invitations`: invites an email to join the tenant. Requires a recent MFA. */
 export const InviteUserRoute = defineRoute({
   id: IdentityRoute.InviteUser,
   method: HttpMethod.Post,
@@ -28,14 +29,19 @@ export const InviteUserRoute = defineRoute({
   request: InviteUserRequestSchema,
   response: InvitationSummarySchema,
   successStatus: 201,
-  errors: [...SessionGuardErrors, PlatformErrorCode.AuthForbidden],
+  errors: [
+    ...SessionGuardErrors,
+    PlatformErrorCode.AuthForbidden,
+    IdentityErrorCode.MfaStepUpRequired,
+  ],
   access: Access.authenticated({
     permissions: [Permission.IdentityInvitationsManage],
+    mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
-  description: 'Invita a un email a unirse al tenant en los grupos indicados.',
+  description: 'Invites an email to join the tenant in the given groups.',
 });
 
-/** `GET /v1/tenant/invitations`: invitaciones del tenant. */
+/** `GET /v1/tenant/invitations`: invitations of the tenant. */
 export const ListInvitationsRoute = defineRoute({
   id: IdentityRoute.ListInvitations,
   method: HttpMethod.Get,
@@ -46,10 +52,10 @@ export const ListInvitationsRoute = defineRoute({
   access: Access.authenticated({
     permissions: [Permission.IdentityInvitationsManage],
   }),
-  description: 'Lista las invitaciones del tenant con su estado.',
+  description: 'Lists the invitations of the tenant with their status.',
 });
 
-/** `DELETE /v1/tenant/invitations/{invitationId}`: revoca una invitación pendiente. */
+/** `DELETE /v1/tenant/invitations/{invitationId}`: revokes a pending invitation. */
 export const RevokeInvitationRoute = defineRoute({
   id: IdentityRoute.RevokeInvitation,
   method: HttpMethod.Delete,
@@ -64,10 +70,10 @@ export const RevokeInvitationRoute = defineRoute({
   access: Access.authenticated({
     permissions: [Permission.IdentityInvitationsManage],
   }),
-  description: 'Revoca una invitación pendiente.',
+  description: 'Revokes a pending invitation.',
 });
 
-/** `POST /v1/invitations/accept`: acepta una invitación con la sesión del usuario invitado. */
+/** `POST /v1/invitations/accept`: accepts an invitation with the session of the invited user. */
 export const AcceptInvitationRoute = defineRoute({
   id: IdentityRoute.AcceptInvitation,
   method: HttpMethod.Post,
@@ -82,5 +88,5 @@ export const AcceptInvitationRoute = defineRoute({
   ],
   access: Access.authenticated(),
   description:
-    'Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado, y el plan del tenant debe tener cupo de usuarios.',
+    'Accepts an invitation. The email of the session must be the invited one and verified, its inviter must still be able to grant its groups, and the plan of the tenant must have a seat.',
 });

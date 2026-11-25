@@ -1069,6 +1069,7 @@ enum IdentityTopic {
 /// así un valor nuevo del backend se ignora sin romper.
 enum IdentityQueue {
   accessProjection('identity-access-projection'),
+  authState('identity-auth-state'),
   billing('identity-billing');
 
   const IdentityQueue(this.wireCode);

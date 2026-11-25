@@ -2104,7 +2104,7 @@
     "/v1/tenant/members": {
       "get": {
         "operationId": "identity.members.list",
-        "description": "Lista los miembros del tenant con sus grupos.",
+        "description": "Lists the members of the tenant with their groups, a page at a time.",
         "parameters": [
           {
             "name": "limit",
@@ -2155,7 +2155,7 @@
     "/v1/tenant/members/{userId}": {
       "delete": {
         "operationId": "identity.members.remove",
-        "description": "Quita a un miembro del tenant y revoca sus sesiones en él.",
+        "description": "Removes a member from the tenant and revokes their sessions in it.",
         "parameters": [
           {
             "name": "userId",
@@ -2167,7 +2167,7 @@
         "responses": {
           "204": { "description": "Sin contenido." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.LAST_OWNER, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.LAST_OWNER, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2185,6 +2185,7 @@
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
           "PLATFORM.AUTH.FORBIDDEN",
+          "IDENTITY.MFA.STEP_UP_REQUIRED",
           "IDENTITY.ACCESS.LAST_OWNER",
           "PLATFORM.RESOURCE.NOT_FOUND"
         ],
@@ -2195,7 +2196,7 @@
     "/v1/tenant/members/{userId}/groups": {
       "put": {
         "operationId": "identity.members.set-groups",
-        "description": "Reemplaza los grupos de un miembro del tenant.",
+        "description": "Replaces the groups of a member of the tenant.",
         "parameters": [
           {
             "name": "userId",
@@ -2207,7 +2208,7 @@
         "responses": {
           "204": { "description": "Sin contenido." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2225,6 +2226,7 @@
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
           "PLATFORM.AUTH.FORBIDDEN",
+          "IDENTITY.MFA.STEP_UP_REQUIRED",
           "PLATFORM.RESOURCE.NOT_FOUND"
         ],
         "requestBody": {
@@ -2244,7 +2246,7 @@
     "/v1/tenant/groups": {
       "get": {
         "operationId": "identity.groups.list",
-        "description": "Lista los grupos del tenant.",
+        "description": "Lists the groups of the tenant.",
         "parameters": [
           {
             "name": "limit",
@@ -2293,7 +2295,7 @@
       },
       "post": {
         "operationId": "identity.groups.create",
-        "description": "Crea un grupo en el tenant.",
+        "description": "Creates a group in the tenant.",
         "parameters": [],
         "responses": {
           "201": {
@@ -2340,7 +2342,7 @@
     "/v1/tenant/groups/{groupId}": {
       "patch": {
         "operationId": "identity.groups.update",
-        "description": "Cambia el nombre de un grupo del tenant.",
+        "description": "Renames a group of the tenant.",
         "parameters": [
           {
             "name": "groupId",
@@ -2393,7 +2395,7 @@
       },
       "delete": {
         "operationId": "identity.groups.delete",
-        "description": "Borra un grupo del tenant y quita sus miembros del grupo.",
+        "description": "Deletes a group of the tenant and takes its members out of it.",
         "parameters": [
           {
             "name": "groupId",
@@ -2432,7 +2434,7 @@
     "/v1/tenant/groups/{groupId}/roles": {
       "put": {
         "operationId": "identity.groups.set-roles",
-        "description": "Reemplaza los roles de un grupo del tenant.",
+        "description": "Replaces the roles of a group of the tenant.",
         "parameters": [
           {
             "name": "groupId",
@@ -2444,7 +2446,7 @@
         "responses": {
           "204": { "description": "Sin contenido." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2462,6 +2464,7 @@
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
           "PLATFORM.AUTH.FORBIDDEN",
+          "IDENTITY.MFA.STEP_UP_REQUIRED",
           "PLATFORM.RESOURCE.NOT_FOUND"
         ],
         "requestBody": {
@@ -2479,7 +2482,7 @@
     "/v1/tenant/roles": {
       "get": {
         "operationId": "identity.roles.list",
-        "description": "Lista los roles del tenant con sus permisos.",
+        "description": "Lists the roles of the tenant with their permissions.",
         "parameters": [
           {
             "name": "limit",
@@ -2528,7 +2531,7 @@
       },
       "post": {
         "operationId": "identity.roles.create",
-        "description": "Crea un rol personalizado con sus permisos.",
+        "description": "Creates a custom role with its permissions.",
         "parameters": [],
         "responses": {
           "201": {
@@ -2540,7 +2543,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.NAME_TAKEN.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.NAME_TAKEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2558,6 +2561,7 @@
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
           "PLATFORM.AUTH.FORBIDDEN",
+          "IDENTITY.MFA.STEP_UP_REQUIRED",
           "IDENTITY.ACCESS.NAME_TAKEN"
         ],
         "requestBody": {
@@ -2575,7 +2579,7 @@
     "/v1/tenant/roles/{roleId}": {
       "patch": {
         "operationId": "identity.roles.update",
-        "description": "Cambia el nombre o los permisos de un rol del tenant.",
+        "description": "Renames a role of the tenant or changes its permissions.",
         "parameters": [
           {
             "name": "roleId",
@@ -2594,7 +2598,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.NAME_TAKEN, IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.NAME_TAKEN, IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2612,6 +2616,7 @@
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
           "PLATFORM.AUTH.FORBIDDEN",
+          "IDENTITY.MFA.STEP_UP_REQUIRED",
           "IDENTITY.ACCESS.NAME_TAKEN",
           "IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE",
           "PLATFORM.RESOURCE.NOT_FOUND"
@@ -2629,7 +2634,7 @@
       },
       "delete": {
         "operationId": "identity.roles.delete",
-        "description": "Borra un rol personalizado del tenant. Los roles de sistema no se borran.",
+        "description": "Deletes a custom role of the tenant. System roles are not deleted.",
         "parameters": [
           {
             "name": "roleId",
@@ -2669,7 +2674,7 @@
     "/v1/tenant/invitations": {
       "post": {
         "operationId": "identity.invitations.create",
-        "description": "Invita a un email a unirse al tenant en los grupos indicados.",
+        "description": "Invites an email to join the tenant in the given groups.",
         "parameters": [],
         "responses": {
           "201": {
@@ -2681,7 +2686,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2698,7 +2703,8 @@
           "IDENTITY.USER.SUSPENDED",
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
-          "PLATFORM.AUTH.FORBIDDEN"
+          "PLATFORM.AUTH.FORBIDDEN",
+          "IDENTITY.MFA.STEP_UP_REQUIRED"
         ],
         "requestBody": {
           "required": true,
@@ -2713,7 +2719,7 @@
       },
       "get": {
         "operationId": "identity.invitations.list",
-        "description": "Lista las invitaciones del tenant con su estado.",
+        "description": "Lists the invitations of the tenant with their status.",
         "parameters": [
           {
             "name": "limit",
@@ -2764,7 +2770,7 @@
     "/v1/tenant/invitations/{invitationId}": {
       "delete": {
         "operationId": "identity.invitations.revoke",
-        "description": "Revoca una invitación pendiente.",
+        "description": "Revokes a pending invitation.",
         "parameters": [
           {
             "name": "invitationId",
@@ -2804,7 +2810,7 @@
     "/v1/invitations/accept": {
       "post": {
         "operationId": "identity.invitations.accept",
-        "description": "Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado, y el plan del tenant debe tener cupo de usuarios.",
+        "description": "Accepts an invitation. The email of the session must be the invited one and verified, its inviter must still be able to grant its groups, and the plan of the tenant must have a seat.",
         "parameters": [],
         "responses": {
           "204": { "description": "Sin contenido." },
@@ -2848,7 +2854,7 @@
     "/v1/tenant/service-accounts": {
       "get": {
         "operationId": "identity.service-accounts.list",
-        "description": "Lista las service accounts del tenant.",
+        "description": "Lists the service accounts of the tenant.",
         "parameters": [
           {
             "name": "limit",
@@ -2897,7 +2903,7 @@
       },
       "post": {
         "operationId": "identity.service-accounts.create",
-        "description": "Crea una service account con los permisos indicados.",
+        "description": "Creates a service account with the given permissions.",
         "parameters": [],
         "responses": {
           "201": {
@@ -2911,7 +2917,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2929,6 +2935,7 @@
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
           "PLATFORM.AUTH.FORBIDDEN",
+          "IDENTITY.MFA.STEP_UP_REQUIRED",
           "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE"
         ],
         "requestBody": {
@@ -2948,7 +2955,7 @@
     "/v1/tenant/service-accounts/{serviceAccountId}": {
       "patch": {
         "operationId": "identity.service-accounts.update",
-        "description": "Cambia el nombre o los permisos de una service account.",
+        "description": "Changes the name or the permissions of a service account.",
         "parameters": [
           {
             "name": "serviceAccountId",
@@ -2969,7 +2976,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2987,6 +2994,7 @@
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
           "PLATFORM.AUTH.FORBIDDEN",
+          "IDENTITY.MFA.STEP_UP_REQUIRED",
           "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE",
           "PLATFORM.RESOURCE.NOT_FOUND"
         ],
@@ -3005,7 +3013,7 @@
       },
       "delete": {
         "operationId": "identity.service-accounts.delete",
-        "description": "Borra una service account y revoca sus API keys.",
+        "description": "Deletes a service account and revokes its API keys.",
         "parameters": [
           {
             "name": "serviceAccountId",
@@ -3044,7 +3052,7 @@
     "/v1/tenant/service-accounts/{serviceAccountId}/api-keys": {
       "get": {
         "operationId": "identity.api-keys.list",
-        "description": "Lista las API keys de una service account sin sus secretos.",
+        "description": "Lists the API keys of a service account without their secrets.",
         "parameters": [
           {
             "name": "serviceAccountId",
@@ -3100,7 +3108,7 @@
       },
       "post": {
         "operationId": "identity.api-keys.create",
-        "description": "Crea una API key. El secreto aparece solo en esta respuesta.",
+        "description": "Creates an API key whose account permissions the caller holds. The secret appears only in this response.",
         "parameters": [
           {
             "name": "serviceAccountId",
@@ -3157,7 +3165,7 @@
     "/v1/tenant/api-keys/{apiKeyId}/rotate": {
       "post": {
         "operationId": "identity.api-keys.rotate",
-        "description": "Rota una API key: la nueva aparece una vez y la anterior sigue válida hasta su vencimiento.",
+        "description": "Rotates an active API key whose account permissions the caller holds: the new one appears once and the previous one stays valid for the grace period.",
         "parameters": [
           {
             "name": "apiKeyId",
@@ -3213,7 +3221,7 @@
     "/v1/tenant/api-keys/{apiKeyId}": {
       "delete": {
         "operationId": "identity.api-keys.revoke",
-        "description": "Revoca una API key de inmediato.",
+        "description": "Revokes an API key at once.",
         "parameters": [
           {
             "name": "apiKeyId",
@@ -3252,7 +3260,7 @@
     "/v1/me/deletion": {
       "post": {
         "operationId": "identity.me.deletion",
-        "description": "Inicia el borrado de la cuenta del usuario autenticado. La saga se consulta con su id.",
+        "description": "Starts the deletion of the account of the authenticated user, unless they are the last owner of a tenant with other members. The saga is read with its id.",
         "parameters": [],
         "responses": {
           "202": {
@@ -3266,7 +3274,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED.",
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.LAST_OWNER.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3283,7 +3291,8 @@
           "IDENTITY.USER.SUSPENDED",
           "IDENTITY.TENANT.SUSPENDED",
           "IDENTITY.TOKEN.STALE_PERMISSIONS",
-          "IDENTITY.MFA.STEP_UP_REQUIRED"
+          "IDENTITY.MFA.STEP_UP_REQUIRED",
+          "IDENTITY.ACCESS.LAST_OWNER"
         ],
         "requestBody": {
           "required": true,
@@ -3302,7 +3311,7 @@
     "/v1/sagas/{sagaId}": {
       "get": {
         "operationId": "identity.sagas.get",
-        "description": "Devuelve el estado de una saga propia o de su tenant.",
+        "description": "Returns the status of an own saga or one of the tenant.",
         "parameters": [
           {
             "name": "sagaId",

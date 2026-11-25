@@ -95,7 +95,32 @@
       ],
       "consumer": "identity",
       "producers": [],
-      "description": "Proyección de acceso por usuario y tenant, alimentada por los cambios de membresía."
+      "description": "Access projection per user and tenant, fed by the membership changes."
+    },
+    {
+      "name": "identity-auth-state",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "identity-auth-state-dlq",
+        "maxReceiveCount": 100,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "identity-events",
+          "filterTypes": [
+            "identity.permissions.changed.v1",
+            "identity.session.revoked.v1",
+            "identity.tokens.revoked.v1"
+          ]
+        }
+      ],
+      "consumer": "identity",
+      "producers": [],
+      "description": "Replays the session revocations, user revocations and permission versions of identity into the shared auth state."
     },
     {
       "name": "identity-billing",
@@ -120,7 +145,7 @@
       ],
       "consumer": "identity",
       "producers": [],
-      "description": "Eventos de billing que identity aplica: suspende o reactiva el tenant y refresca sus funcionalidades."
+      "description": "Billing events that identity applies: it suspends or reactivates the tenant and refreshes its features."
     },
     {
       "name": "notifications-realtime-control",

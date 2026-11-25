@@ -25,7 +25,7 @@ import { SessionGuardErrors } from './session-guard.errors.js';
 
 const forbidden = [...SessionGuardErrors, PlatformErrorCode.AuthForbidden];
 
-/** `GET /v1/tenant/service-accounts`: service accounts del tenant. */
+/** `GET /v1/tenant/service-accounts`: service accounts of the tenant. */
 export const ListServiceAccountsRoute = defineRoute({
   id: IdentityRoute.ListServiceAccounts,
   method: HttpMethod.Get,
@@ -36,10 +36,10 @@ export const ListServiceAccountsRoute = defineRoute({
   access: Access.authenticated({
     permissions: [Permission.IdentityServiceAccountsManage],
   }),
-  description: 'Lista las service accounts del tenant.',
+  description: 'Lists the service accounts of the tenant.',
 });
 
-/** `POST /v1/tenant/service-accounts`: crea una service account. */
+/** `POST /v1/tenant/service-accounts`: creates a service account. Requires a recent MFA. */
 export const CreateServiceAccountRoute = defineRoute({
   id: IdentityRoute.CreateServiceAccount,
   method: HttpMethod.Post,
@@ -47,14 +47,19 @@ export const CreateServiceAccountRoute = defineRoute({
   request: CreateServiceAccountRequestSchema,
   response: ServiceAccountSummarySchema,
   successStatus: 201,
-  errors: [...forbidden, IdentityErrorCode.ApiKeyPermissionNotGrantable],
+  errors: [
+    ...forbidden,
+    IdentityErrorCode.MfaStepUpRequired,
+    IdentityErrorCode.ApiKeyPermissionNotGrantable,
+  ],
   access: Access.authenticated({
     permissions: [Permission.IdentityServiceAccountsManage],
+    mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
-  description: 'Crea una service account con los permisos indicados.',
+  description: 'Creates a service account with the given permissions.',
 });
 
-/** `PATCH /v1/tenant/service-accounts/{serviceAccountId}`: cambia nombre o permisos. */
+/** `PATCH /v1/tenant/service-accounts/{serviceAccountId}`: changes name or permissions. Requires a recent MFA. */
 export const UpdateServiceAccountRoute = defineRoute({
   id: IdentityRoute.UpdateServiceAccount,
   method: HttpMethod.Patch,
@@ -63,16 +68,18 @@ export const UpdateServiceAccountRoute = defineRoute({
   response: ServiceAccountSummarySchema,
   errors: [
     ...forbidden,
+    IdentityErrorCode.MfaStepUpRequired,
     IdentityErrorCode.ApiKeyPermissionNotGrantable,
     PlatformErrorCode.ResourceNotFound,
   ],
   access: Access.authenticated({
     permissions: [Permission.IdentityServiceAccountsManage],
+    mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
-  description: 'Cambia el nombre o los permisos de una service account.',
+  description: 'Changes the name or the permissions of a service account.',
 });
 
-/** `DELETE /v1/tenant/service-accounts/{serviceAccountId}`: borra la service account y sus API keys. */
+/** `DELETE /v1/tenant/service-accounts/{serviceAccountId}`: deletes the service account and its API keys. */
 export const DeleteServiceAccountRoute = defineRoute({
   id: IdentityRoute.DeleteServiceAccount,
   method: HttpMethod.Delete,
@@ -82,10 +89,10 @@ export const DeleteServiceAccountRoute = defineRoute({
   access: Access.authenticated({
     permissions: [Permission.IdentityServiceAccountsManage],
   }),
-  description: 'Borra una service account y revoca sus API keys.',
+  description: 'Deletes a service account and revokes its API keys.',
 });
 
-/** `GET /v1/tenant/service-accounts/{serviceAccountId}/api-keys`: API keys de una service account. */
+/** `GET /v1/tenant/service-accounts/{serviceAccountId}/api-keys`: API keys of a service account. */
 export const ListApiKeysRoute = defineRoute({
   id: IdentityRoute.ListApiKeys,
   method: HttpMethod.Get,
@@ -96,10 +103,10 @@ export const ListApiKeysRoute = defineRoute({
   access: Access.authenticated({
     permissions: [Permission.IdentityApiKeysManage],
   }),
-  description: 'Lista las API keys de una service account sin sus secretos.',
+  description: 'Lists the API keys of a service account without their secrets.',
 });
 
-/** `POST /v1/tenant/service-accounts/{serviceAccountId}/api-keys`: crea una API key. Exige MFA reciente. */
+/** `POST /v1/tenant/service-accounts/{serviceAccountId}/api-keys`: creates an API key. Requires a recent MFA. */
 export const CreateApiKeyRoute = defineRoute({
   id: IdentityRoute.CreateApiKey,
   method: HttpMethod.Post,
@@ -118,10 +125,11 @@ export const CreateApiKeyRoute = defineRoute({
     permissions: [Permission.IdentityApiKeysManage],
     mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
-  description: 'Crea una API key. El secreto aparece solo en esta respuesta.',
+  description:
+    'Creates an API key whose account permissions the caller holds. The secret appears only in this response.',
 });
 
-/** `POST /v1/tenant/api-keys/{apiKeyId}/rotate`: rota una API key. Exige MFA reciente. */
+/** `POST /v1/tenant/api-keys/{apiKeyId}/rotate`: rotates an API key. Requires a recent MFA. */
 export const RotateApiKeyRoute = defineRoute({
   id: IdentityRoute.RotateApiKey,
   method: HttpMethod.Post,
@@ -140,10 +148,10 @@ export const RotateApiKeyRoute = defineRoute({
     mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
   description:
-    'Rota una API key: la nueva aparece una vez y la anterior sigue válida hasta su vencimiento.',
+    'Rotates an active API key whose account permissions the caller holds: the new one appears once and the previous one stays valid for the grace period.',
 });
 
-/** `DELETE /v1/tenant/api-keys/{apiKeyId}`: revoca una API key de inmediato. */
+/** `DELETE /v1/tenant/api-keys/{apiKeyId}`: revokes an API key at once. */
 export const RevokeApiKeyRoute = defineRoute({
   id: IdentityRoute.RevokeApiKey,
   method: HttpMethod.Delete,
@@ -153,5 +161,5 @@ export const RevokeApiKeyRoute = defineRoute({
   access: Access.authenticated({
     permissions: [Permission.IdentityApiKeysManage],
   }),
-  description: 'Revoca una API key de inmediato.',
+  description: 'Revokes an API key at once.',
 });

@@ -112,16 +112,31 @@
     },
     "identity-access-projection": {
       "address": "identity-access-projection",
-      "description": "Cola de identity. Proyección de acceso por usuario y tenant, alimentada por los cambios de membresía.",
+      "description": "Cola de identity. Access projection per user and tenant, fed by the membership changes.",
       "messages": {
         "identity.membership.changed.v1": {
           "$ref": "#/components/messages/identity.membership.changed.v1"
         }
       }
     },
+    "identity-auth-state": {
+      "address": "identity-auth-state",
+      "description": "Cola de identity. Replays the session revocations, user revocations and permission versions of identity into the shared auth state.",
+      "messages": {
+        "identity.session.revoked.v1": {
+          "$ref": "#/components/messages/identity.session.revoked.v1"
+        },
+        "identity.tokens.revoked.v1": {
+          "$ref": "#/components/messages/identity.tokens.revoked.v1"
+        },
+        "identity.permissions.changed.v1": {
+          "$ref": "#/components/messages/identity.permissions.changed.v1"
+        }
+      }
+    },
     "identity-billing": {
       "address": "identity-billing",
-      "description": "Cola de identity. Eventos de billing que identity aplica: suspende o reactiva el tenant y refresca sus funcionalidades.",
+      "description": "Cola de identity. Billing events that identity applies: it suspends or reactivates the tenant and refreshes its features.",
       "messages": {
         "billing.subscription.suspended.v1": {
           "$ref": "#/components/messages/billing.subscription.suspended.v1"
@@ -368,6 +383,23 @@
       "messages": [
         {
           "$ref": "#/channels/identity-access-projection/messages/identity.membership.changed.v1"
+        }
+      ],
+      "x-consumer": "identity"
+    },
+    "identity-auth-state.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/identity-auth-state" },
+      "summary": "identity consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/identity-auth-state/messages/identity.session.revoked.v1"
+        },
+        {
+          "$ref": "#/channels/identity-auth-state/messages/identity.tokens.revoked.v1"
+        },
+        {
+          "$ref": "#/channels/identity-auth-state/messages/identity.permissions.changed.v1"
         }
       ],
       "x-consumer": "identity"

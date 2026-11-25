@@ -48,6 +48,7 @@ import { SecurityAlertType, UserStatus } from './enums/user.enum.js';
 import { identityErrorCatalog } from './errors/identity-error-catalog.js';
 import {
   AccessProjectionQueue,
+  AuthStateQueue,
   ApiKeyCreatedEvent,
   ApiKeyRevokedEvent,
   BillingEventsQueue,
@@ -490,6 +491,7 @@ export const identityContract = defineServiceContract({
   topics: { events: IdentityEventsTopic },
   queues: {
     accessProjection: AccessProjectionQueue,
+    authState: AuthStateQueue,
     billing: BillingEventsQueue,
   },
   sends: [RecordUsageReference],

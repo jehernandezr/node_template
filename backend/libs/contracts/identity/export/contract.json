@@ -563,6 +563,7 @@
     "IdentityQueue": {
       "values": [
         { "name": "AccessProjection", "value": "identity-access-projection" },
+        { "name": "AuthState", "value": "identity-auth-state" },
         { "name": "Billing", "value": "identity-billing" }
       ]
     },
@@ -4327,7 +4328,7 @@
         "kind": "authenticated",
         "permissions": ["identity:members:read"]
       },
-      "description": "Lista los miembros del tenant con sus grupos."
+      "description": "Lists the members of the tenant with their groups, a page at a time."
     },
     {
       "name": "removeMember",
@@ -4349,14 +4350,16 @@
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
         "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
         "IDENTITY.ACCESS.LAST_OWNER",
         "PLATFORM.RESOURCE.NOT_FOUND"
       ],
       "access": {
         "kind": "authenticated",
-        "permissions": ["identity:members:manage"]
+        "permissions": ["identity:members:manage"],
+        "mfaMaxAgeMinutes": 10
       },
-      "description": "Quita a un miembro del tenant y revoca sus sesiones en él."
+      "description": "Removes a member from the tenant and revokes their sessions in it."
     },
     {
       "name": "setMemberGroups",
@@ -4378,13 +4381,15 @@
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
         "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
         "PLATFORM.RESOURCE.NOT_FOUND"
       ],
       "access": {
         "kind": "authenticated",
-        "permissions": ["identity:members:manage"]
+        "permissions": ["identity:members:manage"],
+        "mfaMaxAgeMinutes": 10
       },
-      "description": "Reemplaza los grupos de un miembro del tenant."
+      "description": "Replaces the groups of a member of the tenant."
     },
     {
       "name": "listGroups",
@@ -4416,7 +4421,7 @@
         "kind": "authenticated",
         "permissions": ["identity:members:read"]
       },
-      "description": "Lista los grupos del tenant."
+      "description": "Lists the groups of the tenant."
     },
     {
       "name": "createGroup",
@@ -4444,7 +4449,7 @@
         "kind": "authenticated",
         "permissions": ["identity:groups:manage"]
       },
-      "description": "Crea un grupo en el tenant."
+      "description": "Creates a group in the tenant."
     },
     {
       "name": "updateGroup",
@@ -4473,7 +4478,7 @@
         "kind": "authenticated",
         "permissions": ["identity:groups:manage"]
       },
-      "description": "Cambia el nombre de un grupo del tenant."
+      "description": "Renames a group of the tenant."
     },
     {
       "name": "deleteGroup",
@@ -4501,7 +4506,7 @@
         "kind": "authenticated",
         "permissions": ["identity:groups:manage"]
       },
-      "description": "Borra un grupo del tenant y quita sus miembros del grupo."
+      "description": "Deletes a group of the tenant and takes its members out of it."
     },
     {
       "name": "setGroupRoles",
@@ -4523,13 +4528,15 @@
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
         "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
         "PLATFORM.RESOURCE.NOT_FOUND"
       ],
       "access": {
         "kind": "authenticated",
-        "permissions": ["identity:groups:manage"]
+        "permissions": ["identity:groups:manage"],
+        "mfaMaxAgeMinutes": 10
       },
-      "description": "Reemplaza los roles de un grupo del tenant."
+      "description": "Replaces the roles of a group of the tenant."
     },
     {
       "name": "listRoles",
@@ -4561,7 +4568,7 @@
         "kind": "authenticated",
         "permissions": ["identity:members:read"]
       },
-      "description": "Lista los roles del tenant con sus permisos."
+      "description": "Lists the roles of the tenant with their permissions."
     },
     {
       "name": "createRole",
@@ -4583,13 +4590,15 @@
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
         "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
         "IDENTITY.ACCESS.NAME_TAKEN"
       ],
       "access": {
         "kind": "authenticated",
-        "permissions": ["identity:roles:manage"]
+        "permissions": ["identity:roles:manage"],
+        "mfaMaxAgeMinutes": 10
       },
-      "description": "Crea un rol personalizado con sus permisos."
+      "description": "Creates a custom role with its permissions."
     },
     {
       "name": "updateRole",
@@ -4611,15 +4620,17 @@
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
         "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
         "IDENTITY.ACCESS.NAME_TAKEN",
         "IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE",
         "PLATFORM.RESOURCE.NOT_FOUND"
       ],
       "access": {
         "kind": "authenticated",
-        "permissions": ["identity:roles:manage"]
+        "permissions": ["identity:roles:manage"],
+        "mfaMaxAgeMinutes": 10
       },
-      "description": "Cambia el nombre o los permisos de un rol del tenant."
+      "description": "Renames a role of the tenant or changes its permissions."
     },
     {
       "name": "deleteRole",
@@ -4648,7 +4659,7 @@
         "kind": "authenticated",
         "permissions": ["identity:roles:manage"]
       },
-      "description": "Borra un rol personalizado del tenant. Los roles de sistema no se borran."
+      "description": "Deletes a custom role of the tenant. System roles are not deleted."
     },
     {
       "name": "inviteUser",
@@ -4669,13 +4680,15 @@
         "IDENTITY.USER.SUSPENDED",
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
-        "PLATFORM.AUTH.FORBIDDEN"
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED"
       ],
       "access": {
         "kind": "authenticated",
-        "permissions": ["identity:invitations:manage"]
+        "permissions": ["identity:invitations:manage"],
+        "mfaMaxAgeMinutes": 10
       },
-      "description": "Invita a un email a unirse al tenant en los grupos indicados."
+      "description": "Invites an email to join the tenant in the given groups."
     },
     {
       "name": "listInvitations",
@@ -4707,7 +4720,7 @@
         "kind": "authenticated",
         "permissions": ["identity:invitations:manage"]
       },
-      "description": "Lista las invitaciones del tenant con su estado."
+      "description": "Lists the invitations of the tenant with their status."
     },
     {
       "name": "revokeInvitation",
@@ -4736,7 +4749,7 @@
         "kind": "authenticated",
         "permissions": ["identity:invitations:manage"]
       },
-      "description": "Revoca una invitación pendiente."
+      "description": "Revokes a pending invitation."
     },
     {
       "name": "acceptInvitation",
@@ -4763,7 +4776,7 @@
         "BILLING.QUOTA.EXCEEDED"
       ],
       "access": { "kind": "authenticated" },
-      "description": "Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado, y el plan del tenant debe tener cupo de usuarios."
+      "description": "Accepts an invitation. The email of the session must be the invited one and verified, its inviter must still be able to grant its groups, and the plan of the tenant must have a seat."
     },
     {
       "name": "listServiceAccounts",
@@ -4795,7 +4808,7 @@
         "kind": "authenticated",
         "permissions": ["identity:service-accounts:manage"]
       },
-      "description": "Lista las service accounts del tenant."
+      "description": "Lists the service accounts of the tenant."
     },
     {
       "name": "createServiceAccount",
@@ -4817,13 +4830,15 @@
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
         "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
         "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE"
       ],
       "access": {
         "kind": "authenticated",
-        "permissions": ["identity:service-accounts:manage"]
+        "permissions": ["identity:service-accounts:manage"],
+        "mfaMaxAgeMinutes": 10
       },
-      "description": "Crea una service account con los permisos indicados."
+      "description": "Creates a service account with the given permissions."
     },
     {
       "name": "updateServiceAccount",
@@ -4845,14 +4860,16 @@
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
         "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
         "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE",
         "PLATFORM.RESOURCE.NOT_FOUND"
       ],
       "access": {
         "kind": "authenticated",
-        "permissions": ["identity:service-accounts:manage"]
+        "permissions": ["identity:service-accounts:manage"],
+        "mfaMaxAgeMinutes": 10
       },
-      "description": "Cambia el nombre o los permisos de una service account."
+      "description": "Changes the name or the permissions of a service account."
     },
     {
       "name": "deleteServiceAccount",
@@ -4880,7 +4897,7 @@
         "kind": "authenticated",
         "permissions": ["identity:service-accounts:manage"]
       },
-      "description": "Borra una service account y revoca sus API keys."
+      "description": "Deletes a service account and revokes its API keys."
     },
     {
       "name": "listApiKeys",
@@ -4911,7 +4928,7 @@
         "kind": "authenticated",
         "permissions": ["identity:api-keys:manage"]
       },
-      "description": "Lista las API keys de una service account sin sus secretos."
+      "description": "Lists the API keys of a service account without their secrets."
     },
     {
       "name": "createApiKey",
@@ -4943,7 +4960,7 @@
         "permissions": ["identity:api-keys:manage"],
         "mfaMaxAgeMinutes": 10
       },
-      "description": "Crea una API key. El secreto aparece solo en esta respuesta."
+      "description": "Creates an API key whose account permissions the caller holds. The secret appears only in this response."
     },
     {
       "name": "rotateApiKey",
@@ -4974,7 +4991,7 @@
         "permissions": ["identity:api-keys:manage"],
         "mfaMaxAgeMinutes": 10
       },
-      "description": "Rota una API key: la nueva aparece una vez y la anterior sigue válida hasta su vencimiento."
+      "description": "Rotates an active API key whose account permissions the caller holds: the new one appears once and the previous one stays valid for the grace period."
     },
     {
       "name": "revokeApiKey",
@@ -5002,7 +5019,7 @@
         "kind": "authenticated",
         "permissions": ["identity:api-keys:manage"]
       },
-      "description": "Revoca una API key de inmediato."
+      "description": "Revokes an API key at once."
     },
     {
       "name": "startAccountDeletion",
@@ -5025,10 +5042,11 @@
         "IDENTITY.USER.SUSPENDED",
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
-        "IDENTITY.MFA.STEP_UP_REQUIRED"
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "IDENTITY.ACCESS.LAST_OWNER"
       ],
       "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
-      "description": "Inicia el borrado de la cuenta del usuario autenticado. La saga se consulta con su id."
+      "description": "Starts the deletion of the account of the authenticated user, unless they are the last owner of a tenant with other members. The saga is read with its id."
     },
     {
       "name": "getSaga",
@@ -5052,7 +5070,7 @@
         "PLATFORM.RESOURCE.NOT_FOUND"
       ],
       "access": { "kind": "authenticated" },
-      "description": "Devuelve el estado de una saga propia o de su tenant."
+      "description": "Returns the status of an own saga or one of the tenant."
     }
   ],
   "operations": [

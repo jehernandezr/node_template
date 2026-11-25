@@ -14,8 +14,8 @@ import {
 import { SessionGuardErrors } from './session-guard.errors.js';
 
 /**
- * `POST /v1/me/deletion`: inicia la saga `DeleteAccount`. Exige MFA reciente
- * porque el borrado no se puede deshacer.
+ * `POST /v1/me/deletion`: starts the deletion of the account. Requires a recent MFA, and the last owner of a
+ * tenant with other members hands over ownership first.
  */
 export const StartAccountDeletionRoute = defineRoute({
   id: IdentityRoute.StartAccountDeletion,
@@ -23,15 +23,19 @@ export const StartAccountDeletionRoute = defineRoute({
   path: '/v1/me/deletion',
   response: AccountDeletionStartedSchema,
   successStatus: 202,
-  errors: [...SessionGuardErrors, IdentityErrorCode.MfaStepUpRequired],
+  errors: [
+    ...SessionGuardErrors,
+    IdentityErrorCode.MfaStepUpRequired,
+    IdentityErrorCode.AccessLastOwner,
+  ],
   access: Access.authenticated({
     mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
   description:
-    'Inicia el borrado de la cuenta del usuario autenticado. La saga se consulta con su id.',
+    'Starts the deletion of the account of the authenticated user, unless they are the last owner of a tenant with other members. The saga is read with its id.',
 });
 
-/** `GET /v1/sagas/{sagaId}`: estado de una saga que inició el usuario o su tenant. */
+/** `GET /v1/sagas/{sagaId}`: status of a saga started by the user or their tenant. */
 export const GetSagaRoute = defineRoute({
   id: IdentityRoute.GetSaga,
   method: HttpMethod.Get,
@@ -40,5 +44,5 @@ export const GetSagaRoute = defineRoute({
   response: SagaSummarySchema,
   errors: [...SessionGuardErrors, PlatformErrorCode.ResourceNotFound],
   access: Access.authenticated(),
-  description: 'Devuelve el estado de una saga propia o de su tenant.',
+  description: 'Returns the status of an own saga or one of the tenant.',
 });
