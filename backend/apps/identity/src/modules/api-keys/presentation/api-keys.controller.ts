@@ -1,5 +1,5 @@
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
-import { ActorGuards, type Actor } from '@platform/auth';
+import type { Actor } from '@platform/auth';
 import {
   ListServiceAccountsRoute,
   CreateServiceAccountRoute,
@@ -26,6 +26,7 @@ import { tenantOfActor } from '../../../shared/utils/user-actor.js';
 import { ManageApiKeys } from '../application/manage-api-keys.use-case.js';
 import { ManageServiceAccounts } from '../application/manage-service-accounts.use-case.js';
 
+/** HTTP edge of the service accounts and API keys of the active tenant. */
 @Resource(IdentityResource.ApiKeys)
 export class ApiKeysController {
   constructor(
@@ -33,6 +34,11 @@ export class ApiKeysController {
     private readonly keys: ManageApiKeys,
   ) {}
 
+  /**
+   * Lists the service accounts of the tenant.
+   * @param actor Caller.
+   * @returns The service accounts.
+   */
   @Endpoint(ListServiceAccountsRoute)
   listServiceAccounts(
     @CurrentActor() actor: Actor | undefined,
@@ -40,6 +46,12 @@ export class ApiKeysController {
     return this.accounts.list(tenantOfActor(actor));
   }
 
+  /**
+   * Creates a service account with permissions the caller holds.
+   * @param input Name, permissions and pinned API version.
+   * @param actor Caller.
+   * @returns The created account.
+   */
   @Endpoint(CreateServiceAccountRoute)
   createServiceAccount(
     @Input() input: CreateServiceAccountRequest,
@@ -48,6 +60,12 @@ export class ApiKeysController {
     return this.accounts.create(tenantOfActor(actor), actor, input);
   }
 
+  /**
+   * Updates a service account.
+   * @param input Account and the fields to change.
+   * @param actor Caller.
+   * @returns The updated account.
+   */
   @Endpoint(UpdateServiceAccountRoute)
   updateServiceAccount(
     @Input() input: UpdateServiceAccountRequest,
@@ -56,6 +74,11 @@ export class ApiKeysController {
     return this.accounts.update(tenantOfActor(actor), actor, input);
   }
 
+  /**
+   * Disables a service account and revokes its keys.
+   * @param input Account to disable.
+   * @param actor Caller.
+   */
   @Endpoint(DeleteServiceAccountRoute)
   async deleteServiceAccount(
     @Input() input: DeleteServiceAccountRequest,
@@ -64,6 +87,12 @@ export class ApiKeysController {
     await this.accounts.disable(tenantOfActor(actor), input.serviceAccountId);
   }
 
+  /**
+   * Lists the keys of a service account.
+   * @param input Account whose keys are listed.
+   * @param actor Caller.
+   * @returns The keys.
+   */
   @Endpoint(ListApiKeysRoute)
   listApiKeys(
     @Input() input: ListApiKeysRequest,
@@ -72,44 +101,44 @@ export class ApiKeysController {
     return this.keys.list(tenantOfActor(actor), input.serviceAccountId);
   }
 
+  /**
+   * Issues a key for a service account whose permissions the caller holds.
+   * @param input Account, environment, expiry and CIDRs.
+   * @param actor Caller.
+   * @returns The key and its secret.
+   */
   @Endpoint(CreateApiKeyRoute)
   createApiKey(
     @Input() input: CreateApiKeyRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<CreatedApiKey> {
-    return this.keys.create(
-      tenantOfActor(actor),
-      ApiKeysController.actorId(actor),
-      input,
-    );
+    return this.keys.create(tenantOfActor(actor), actor, input);
   }
 
+  /**
+   * Rotates a key whose account permissions the caller holds.
+   * @param input Key to rotate.
+   * @param actor Caller.
+   * @returns The new key and its secret.
+   */
   @Endpoint(RotateApiKeyRoute)
   rotateApiKey(
     @Input() input: RotateApiKeyRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<CreatedApiKey> {
-    return this.keys.rotate(
-      tenantOfActor(actor),
-      ApiKeysController.actorId(actor),
-      input.apiKeyId,
-    );
+    return this.keys.rotate(tenantOfActor(actor), actor, input.apiKeyId);
   }
 
+  /**
+   * Revokes a key.
+   * @param input Key to revoke.
+   * @param actor Caller.
+   */
   @Endpoint(RevokeApiKeyRoute)
   async revokeApiKey(
     @Input() input: RevokeApiKeyRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.keys.revoke(tenantOfActor(actor), input.apiKeyId);
-  }
-
-  private static actorId(actor: Actor | undefined): string {
-    if (actor !== undefined && ActorGuards.isUser(actor)) {
-      return actor.userId;
-    }
-    return actor !== undefined && ActorGuards.isServiceAccount(actor)
-      ? actor.serviceAccountId
-      : '';
   }
 }
