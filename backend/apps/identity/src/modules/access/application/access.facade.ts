@@ -49,6 +49,8 @@ export abstract class AccessFacade {
    * @param ref New member.
    * @param groupIds Groups of the member; the members group if empty.
    * @param seatLimit Members the plan admits, counted under the tenant lock; no limit if absent.
+   * @throws IdentityError `IDENTITY.INVITATION.INVALID` if a group does not exist in the tenant, or if every
+   *   owner is leaving and the new member is not an owner.
    * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` if the tenant already holds `seatLimit` members.
    */
   abstract addMember(

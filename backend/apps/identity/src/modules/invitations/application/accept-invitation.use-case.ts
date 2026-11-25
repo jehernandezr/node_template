@@ -42,7 +42,7 @@ export class AcceptInvitation {
    * @param text Emailed token.
    * @throws IdentityError `IDENTITY.INVITATION.EMAIL_MISMATCH` if the email is unverified or another.
    * @throws IdentityError `IDENTITY.INVITATION.INVALID` if the invitation is unusable or its inviter can no
-   *   longer grant its groups.
+   *   longer grant its groups, or every owner of the tenant is leaving.
    * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` if the plan admits no other user.
    */
   async execute(user: UserRef, text: string): Promise<void> {
@@ -58,7 +58,7 @@ export class AcceptInvitation {
    * @param text Emailed token.
    * @param user New account.
    * @throws IdentityError `IDENTITY.INVITATION.INVALID` if the invitation is unusable or its inviter can no
-   *   longer grant its groups.
+   *   longer grant its groups, or every owner of the tenant is leaving.
    * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` if the plan admits no other user.
    */
   async forNewUser(text: string, user: UserRef): Promise<void> {

@@ -107,6 +107,43 @@ describe('TenantOwnership', () => {
     });
   });
 
+  describe('a member who joins', () => {
+    it('refuses a member while every owner is leaving', () => {
+      const memberships = [MembershipBuilder.of('ana', OWNERS, LEAVING)];
+
+      expect(() => ownership.assertCanJoin([MEMBERS], memberships)).toThrow(
+        expect.objectContaining({ code: IdentityErrorCode.InvitationInvalid }),
+      );
+    });
+
+    it('lets a new owner join while every owner is leaving', () => {
+      const memberships = [MembershipBuilder.of('ana', OWNERS, LEAVING)];
+
+      expect(() =>
+        ownership.assertCanJoin([OWNERS], memberships),
+      ).not.toThrow();
+    });
+
+    it('lets a member join while an owner stays', () => {
+      const memberships = [
+        MembershipBuilder.of('ana', OWNERS, LEAVING),
+        MembershipBuilder.of('bea', OWNERS),
+      ];
+
+      expect(() =>
+        ownership.assertCanJoin([MEMBERS], memberships),
+      ).not.toThrow();
+    });
+
+    it('lets a member join a tenant that has no owner at all', () => {
+      const memberships = [MembershipBuilder.of('carla', MEMBERS)];
+
+      expect(() =>
+        ownership.assertCanJoin([MEMBERS], memberships),
+      ).not.toThrow();
+    });
+  });
+
   describe('a change of groups', () => {
     it('refuses to demote the only owner who is not leaving', () => {
       const bea = MembershipBuilder.of('bea', OWNERS);

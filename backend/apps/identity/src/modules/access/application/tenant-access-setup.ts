@@ -18,6 +18,7 @@ import {
   UserAccessRepository,
 } from '../domain/access-store.js';
 import type { Membership } from '../domain/membership.js';
+import { TenantOwnership } from '../domain/tenant-ownership.js';
 import { AccessVersionPublisher } from './access-version-publisher.js';
 
 /**
@@ -84,13 +85,14 @@ export class TenantAccessSetup {
 
   /**
    * Adds a member with those groups, or with the members group if none is given. If the user is already a
-   * member nothing changes.
+   * member nothing changes. While every owner of the tenant is leaving, only a new owner can join.
    * @param tenantId Tenant that gains the member.
    * @param ref New member.
    * @param groupIds Groups of the member.
    * @param seatLimit Members the plan admits; they are counted under the tenant lock, so concurrent
    *   additions never go past it. No limit if absent.
-   * @throws IdentityError `IDENTITY.INVITATION.INVALID` if a group does not exist in the tenant.
+   * @throws IdentityError `IDENTITY.INVITATION.INVALID` if a group does not exist in the tenant, or if every
+   *   owner is leaving and the new member is not an owner.
    * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` if the tenant already holds `seatLimit` members.
    */
   async addMember(
@@ -107,11 +109,13 @@ export class TenantAccessSetup {
         ) {
           return;
         }
-        if (seatLimit !== undefined) {
-          const members = (await this.tenantAccess.listMemberships()).length;
-          if (members >= seatLimit) {
-            throw new QuotaExceededError(UsageMetric.Users, seatLimit, members);
-          }
+        const memberships = await this.tenantAccess.listMemberships();
+        if (seatLimit !== undefined && memberships.length >= seatLimit) {
+          throw new QuotaExceededError(
+            UsageMetric.Users,
+            seatLimit,
+            memberships.length,
+          );
         }
         const groups = await this.tenantAccess.listGroups();
         const chosen =
@@ -123,6 +127,7 @@ export class TenantAccessSetup {
         if (chosen.some((id) => !groups.some((group) => group.id === id))) {
           throw new IdentityError(IdentityErrorCode.InvitationInvalid);
         }
+        new TenantOwnership(groups).assertCanJoin(chosen, memberships);
         await this.saveMembership(tenantId, ref, chosen);
       }),
     );
