@@ -4,8 +4,8 @@ import {
 } from '@platform/tenant-move';
 
 /**
- * Las tablas de shard de __name__ que viajan con un tenant, los padres antes que los hijos. Cada módulo que crea
- * una tabla de tenant la agrega aquí.
+ * The __name__ shard tables that travel with a tenant, parents before children. Each module that creates
+ * a tenant table adds it here.
  */
 export class __Name__TenantMoveManifest extends TenantMoveManifest {
   private static readonly TABLES: readonly TenantMoveTable[] = [];

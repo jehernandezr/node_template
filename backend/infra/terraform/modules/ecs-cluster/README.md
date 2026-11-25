@@ -1,28 +1,28 @@
-# Módulo ecs-cluster
+# ecs-cluster module
 
-Clúster ECS para Fargate con los capacity providers `FARGATE` y `FARGATE_SPOT`, Container Insights y ECS Exec auditado.
+ECS cluster for Fargate with the `FARGATE` and `FARGATE_SPOT` capacity providers, Container Insights and audited ECS Exec.
 
-## Qué crea
+## What it creates
 
-- Clúster ECS con Container Insights (`enhanced` por defecto).
-- Capacity providers `FARGATE` y `FARGATE_SPOT`, con una estrategia por defecto configurable.
-- Log group `/ecs/<name_prefix>/exec` cifrado con KMS para las sesiones de ECS Exec. El comando y su salida quedan registrados.
-- Clave KMS con rotación anual, o la que pases en `kms_key_arn`.
+- ECS cluster with Container Insights (`enhanced` by default).
+- `FARGATE` and `FARGATE_SPOT` capacity providers, with a configurable default strategy.
+- KMS-encrypted log group `/ecs/<name_prefix>/exec` for ECS Exec sessions. The command and its output are logged.
+- KMS key with yearly rotation, or the one you pass in `kms_key_arn`.
 
-## Entradas principales
+## Main inputs
 
-| Variable                             | Descripción                                                                                  |
-| ------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `name_prefix`                        | Prefijo y nombre del clúster.                                                                |
-| `container_insights`                 | `enhanced`, `enabled` o `disabled`.                                                          |
-| `default_capacity_provider_strategy` | Lista de `capacity_provider`, `weight` y `base`.                                             |
-| `kms_key_arn`                        | Clave existente. Debe permitir a `logs.<región>.amazonaws.com` sobre `/ecs/<name_prefix>/*`. |
+| Variable                             | Description                                                                       |
+| ------------------------------------ | --------------------------------------------------------------------------------- |
+| `name_prefix`                        | Prefix and cluster name.                                                          |
+| `container_insights`                 | `enhanced`, `enabled` or `disabled`.                                              |
+| `default_capacity_provider_strategy` | List of `capacity_provider`, `weight` and `base`.                                 |
+| `kms_key_arn`                        | Existing key. Must allow `logs.<region>.amazonaws.com` on `/ecs/<name_prefix>/*`. |
 
-## Salidas
+## Outputs
 
 `cluster_arn`, `cluster_name`, `cluster_id`, `kms_key_arn`, `exec_log_group_name`.
 
-## Uso
+## Usage
 
 ```hcl
 module "ecs_cluster" {
@@ -31,4 +31,4 @@ module "ecs_cluster" {
 }
 ```
 
-`service-fargate` recibe `cluster_arn` y `cluster_name`; `observability`, solo `cluster_arn`.
+`service-fargate` receives `cluster_arn` and `cluster_name`; `observability`, only `cluster_arn`.

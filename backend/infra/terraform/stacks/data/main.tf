@@ -1,14 +1,14 @@
-# Persistencia de la región: una instancia RDS PostgreSQL compartida con una base por shard
-# de cada servicio más el catálogo (ADR 0010), RDS Proxy para escribir, réplicas para leer,
-# y Valkey. Las bases, sus dueños y extensiones son los mismos que crea
-# backend/infra/local/postgres/init.sql en local.
+# Regional persistence: one shared RDS PostgreSQL instance with one database per shard
+# of each service plus the catalog (ADR 0010), RDS Proxy for writes, replicas for reads,
+# and Valkey. The databases, their owners and extensions are the same ones
+# backend/infra/local/postgres/init.sql creates locally.
 
 locals {
   catalog_database = "catalog"
   catalog_owner    = "catalog_owner"
   catalog_reader   = "catalog_reader"
 
-  # Bases de cada servicio: <servicio>_shard_<n> y, si tiene acceso, el catálogo.
+  # Databases of each service: <service>_shard_<n> and, if it has access, the catalog.
   service_databases = {
     for name, svc in var.db_services : name => {
       shards  = [for i in range(svc.shards) : "${name}_shard_${i}"]
@@ -21,7 +21,7 @@ locals {
     [for name in var.db_replication_users : { name = name, rds_replication = true }],
   )
 
-  # Quien migra el catálogo es miembro de catalog_owner; quien solo lo consulta, de catalog_reader.
+  # Whoever migrates the catalog is a member of catalog_owner; whoever only queries it, of catalog_reader.
   group_roles = [
     { name = local.catalog_owner, members = sort([for name, svc in var.db_services : name if svc.catalog == "owner"]) },
     { name = local.catalog_reader, members = sort([for name, svc in var.db_services : name if svc.catalog == "read"]) },
@@ -46,11 +46,11 @@ locals {
     ]),
   )
 
-  # Cada servicio ve sus llaves y canales: la capa de caché antepone el nombre del servicio. Además
-  # el estado de autenticación compartido (`auth:*`, ADR 0022) lo escribe solo el servicio dueño
-  # y los demás lo leen (`%R~`) y se suscriben al canal de revocaciones. La ACL de canales no separa
-  # publicar de suscribirse; un aviso falso solo cuesta una consulta, porque el verificador confirma
-  # cada revocación contra la llave `auth:revoked:{sid}`, que nadie más puede escribir.
+  # Each service sees its own keys and channels: the cache layer prefixes the service name. Also,
+  # the shared authentication state (`auth:*`, ADR 0022) is written only by the owner service
+  # and the others read it (`%R~`) and subscribe to the revocations channel. The channel ACL does not
+  # separate publishing from subscribing; a false notice only costs a lookup, because the verifier
+  # checks each revocation against the `auth:revoked:{sid}` key, which nobody else can write.
   valkey_auth_write_rules = "~auth:* &auth:*"
   valkey_auth_read_rules  = "%R~auth:* &auth:revocations"
 
@@ -68,9 +68,9 @@ locals {
   observability = local.platform.observability
 }
 
-# --- Clientes de datos ---------------------------------------------------------
-# Los servicios adjuntan este security group: abre la salida exacta hacia RDS Proxy, las
-# réplicas, Valkey y OpenObserve, y es el único origen que esos destinos aceptan.
+# --- Data clients --------------------------------------------------------------
+# Services attach this security group: it opens the exact egress to RDS Proxy, the
+# replicas, Valkey and OpenObserve, and it is the only source those destinations accept.
 
 resource "aws_security_group" "clients" {
   name        = "${var.name_prefix}-data-clients"

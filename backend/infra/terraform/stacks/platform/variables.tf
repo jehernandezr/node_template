@@ -1,13 +1,13 @@
 variable "compute_enabled" {
-  description = "Crea el clúster ECS, OpenObserve, la API HTTP y los ALB, y lee el stack network. false en el ambiente local: LocalStack solo emula archivos, correo y alarmas."
+  description = "Creates the ECS cluster, OpenObserve, the HTTP API and the ALBs, and reads the network stack. false in the local environment: LocalStack only emulates files, email and alarms."
   type        = bool
   default     = true
 }
 
-# --- Alarmas y costos ------------------------------------------------------------
+# --- Alarms and costs ------------------------------------------------------------
 
 variable "alarm_email" {
-  description = "Correo que recibe alarmas y avisos de costo. Crea un tópico SNS cifrado y la suscripción (el destinatario debe confirmarla). En staging y prod se requiere este valor o alarm_topic_arn."
+  description = "Email that receives alarms and cost notices. Creates an encrypted SNS topic and the subscription (the recipient must confirm it). In staging and prod this value or alarm_topic_arn is required."
   type        = string
   default     = null
 
@@ -15,166 +15,166 @@ variable "alarm_email" {
     condition = var.alarm_email == null || !contains(["staging", "prod"], var.environment) || (
       !strcontains(upper(var.alarm_email), "REEMPLAZAR") && !endswith(lower(var.alarm_email), "example.com")
     )
-    error_message = "En staging y prod alarm_email debe ser un buzón real, no un valor de ejemplo (REEMPLAZAR o example.com)."
+    error_message = "In staging and prod alarm_email must be a real mailbox, not an example value (REEMPLAZAR or example.com)."
   }
 }
 
 variable "alarm_topic_arn" {
-  description = "ARN de un tópico SNS existente para alarmas y avisos de costo. Se ignora si defines alarm_email."
+  description = "ARN of an existing SNS topic for alarms and cost notices. Ignored if you set alarm_email."
   type        = string
   default     = null
 }
 
 variable "monthly_budget" {
-  description = "Presupuesto mensual del ambiente en budget_currency. Avisa al tópico de alarmas al 80 % y al 100 % real y al 100 % pronosticado. Null no crea presupuesto."
+  description = "Monthly budget of the environment in budget_currency. Notifies the alarm topic at 80 % and 100 % actual and at 100 % forecasted. Null creates no budget."
   type        = number
   default     = null
 }
 
 variable "budget_currency" {
-  description = "Moneda del presupuesto."
+  description = "Budget currency."
   type        = string
   default     = "USD"
 }
 
 variable "budget_cost_filter_tags" {
-  description = "Etiquetas de asignación de costos (activadas en Billing) que filtran el presupuesto, por ejemplo { Environment = \"prod\" }. Vacío cuenta toda la cuenta."
+  description = "Cost allocation tags (activated in Billing) that filter the budget, for example { Environment = \"prod\" }. Empty counts the whole account."
   type        = map(string)
   default     = {}
 }
 
-# --- API HTTP y balanceadores ---------------------------------------------------
+# --- HTTP API and load balancers ------------------------------------------------
 
 variable "fargate_api_enabled" {
-  description = "Crea el VPC link y el ALB interno para los servicios cuya API corre en Fargate. No hace falta si todas las APIs son Lambda."
+  description = "Creates the VPC link and the internal ALB for services whose API runs on Fargate. Not needed if all APIs are Lambda."
   type        = bool
   default     = false
 }
 
 variable "api_throttling_burst_limit" {
-  description = "Ráfaga máxima de peticiones de la API HTTP."
+  description = "Maximum request burst of the HTTP API."
   type        = number
   default     = 500
 }
 
 variable "api_throttling_rate_limit" {
-  description = "Peticiones por segundo sostenidas de la API HTTP."
+  description = "Sustained requests per second of the HTTP API."
   type        = number
   default     = 1000
 }
 
 variable "realtime_alb_certificate_arn" {
-  description = "Certificado ACM regional del ALB público de tiempo real (Socket.IO y SSE). Null no crea el ALB."
+  description = "Regional ACM certificate of the public realtime ALB (Socket.IO and SSE). Null does not create the ALB."
   type        = string
   default     = null
 }
 
 variable "alb_idle_timeout_seconds" {
-  description = "Tiempo de inactividad del ALB de tiempo real. Mayor que el intervalo de ping de Socket.IO y SSE."
+  description = "Idle timeout of the realtime ALB. Greater than the Socket.IO and SSE ping interval."
   type        = number
   default     = 3600
 }
 
 variable "alb_deletion_protection" {
-  description = "Protección contra borrado de los ALB (tiempo real, API interna y OpenObserve)."
+  description = "Deletion protection for the ALBs (realtime, internal API and OpenObserve)."
   type        = bool
   default     = true
 }
 
-# --- Observabilidad -------------------------------------------------------------
+# --- Observability --------------------------------------------------------------
 
 variable "observability_root_user_email" {
-  description = "Correo del usuario raíz de OpenObserve. Null no despliega observabilidad y los servicios no exportan telemetría."
+  description = "Email of the OpenObserve root user. Null does not deploy observability and the services do not export telemetry."
   type        = string
   default     = null
 }
 
 variable "observability_data_retention_days" {
-  description = "Retención de la telemetría en OpenObserve."
+  description = "Telemetry retention in OpenObserve."
   type        = number
   default     = 30
 }
 
-# --- Archivos y correo -------------------------------------------------------------
+# --- Files and email ---------------------------------------------------------------
 
 variable "files_cors_allowed_origins" {
-  description = "Orígenes CORS del bucket de archivos de usuarios, por ejemplo https://app.example.com. Sin orígenes no se crea el bucket."
+  description = "CORS origins of the user files bucket, for example https://app.example.com. Without origins the bucket is not created."
   type        = list(string)
   default     = []
 }
 
 variable "ses_domain" {
-  description = "Dominio remitente de SES. Null no crea SES ni la cola de eventos de correo (stack messaging)."
+  description = "SES sender domain. Null creates neither SES nor the email events queue (messaging stack)."
   type        = string
   default     = null
 }
 
 variable "ses_dmarc_policy" {
-  description = "Política DMARC: none, quarantine o reject. Empieza en none."
+  description = "DMARC policy: none, quarantine or reject. Start with none."
   type        = string
   default     = "none"
 }
 
 variable "ses_dmarc_report_email" {
-  description = "Destino de los informes DMARC (rua)."
+  description = "Destination of the DMARC reports (rua)."
   type        = string
   default     = null
 }
 
 variable "route53_zone_id" {
-  description = "Zona de Route 53 para los registros de SES. Null los deja sin crear: publícalos tú (salida ses_dns_records)."
+  description = "Route 53 zone for the SES records. Null leaves them uncreated: publish them yourself (ses_dns_records output)."
   type        = string
   default     = null
 }
 
-# --- Comunes --------------------------------------------------------------------
+# --- Common ---------------------------------------------------------------------
 
 variable "log_retention_days" {
-  description = "Días de retención de los logs de la API HTTP y su autorizador."
+  description = "Retention in days for the logs of the HTTP API and its authorizer."
   type        = number
   default     = 30
 }
 
 variable "secret_recovery_window_days" {
-  description = "Días de recuperación de un secreto borrado. 0 lo borra de inmediato (solo desechables)."
+  description = "Recovery window in days for a deleted secret. 0 deletes it immediately (disposable environments only)."
   type        = number
   default     = 30
 }
 
 variable "force_destroy_buckets" {
-  description = "Permite borrar buckets con contenido (logs de ALB, archivos, OpenObserve). Solo para ambientes desechables."
+  description = "Allows deleting buckets with content (ALB logs, files, OpenObserve). Only for disposable environments."
   type        = bool
   default     = false
 }
 
-# --- Pipeline de despliegue (OIDC de GitHub) ------------------------------------------
+# --- Deployment pipeline (GitHub OIDC) ------------------------------------------------
 
 variable "github_repository" {
-  description = "Repositorio de GitHub (dueño/nombre) cuyos jobs asumen los roles de despliegue y publicación. Null no crea el acceso OIDC."
+  description = "GitHub repository (owner/name) whose jobs assume the deploy and publish roles. Null does not create OIDC access."
   type        = string
   default     = null
 }
 
 variable "github_environment" {
-  description = "Environment de GitHub que asume los roles. Null usa el nombre del ambiente."
+  description = "GitHub environment that assumes the roles. Null uses the environment name."
   type        = string
   default     = null
 }
 
 variable "oidc_create_provider" {
-  description = "Crea el proveedor OIDC de GitHub. Solo hay uno por cuenta: false si otro ambiente de la cuenta ya lo creó."
+  description = "Creates the GitHub OIDC provider. There is only one per account: false if another environment in the account already created it."
   type        = bool
   default     = true
 }
 
 variable "oidc_existing_provider_arn" {
-  description = "ARN del proveedor OIDC de GitHub existente. Obligatorio con oidc_create_provider = false."
+  description = "ARN of the existing GitHub OIDC provider. Required with oidc_create_provider = false."
   type        = string
   default     = null
 }
 
 variable "deploy_policy_arns" {
-  description = "Políticas administradas del rol de despliegue: lo que Terraform puede crear en la cuenta. Las eliges tú."
+  description = "Managed policies of the deploy role: what Terraform can create in the account. You choose them."
   type        = list(string)
   default     = []
 }

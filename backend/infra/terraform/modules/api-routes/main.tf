@@ -1,10 +1,10 @@
-# Rutas de un servicio en la API HTTP compartida. El runtime solo cambia la integración:
-# Lambda (AWS_PROXY) o Fargate detrás del ALB interno (HTTP_PROXY por el VPC link).
+# Routes of a service on the shared HTTP API. The runtime only changes the integration:
+# Lambda (AWS_PROXY) or Fargate behind the internal ALB (HTTP_PROXY through the VPC link).
 
 locals {
   is_lambda = var.target.type == "lambda"
 
-  # Cada prefijo atiende su raíz y todo lo que cuelga de ella.
+  # Each prefix serves its root and everything under it.
   route_keys = toset(flatten([
     for prefix in var.route_prefixes : ["ANY ${prefix}", "ANY ${prefix}/{proxy+}"]
   ]))
@@ -16,12 +16,12 @@ resource "terraform_data" "input_check" {
   lifecycle {
     precondition {
       condition     = !local.is_lambda || (var.target.lambda_function_name != null && var.target.lambda_invoke_arn != null)
-      error_message = "Un destino lambda requiere lambda_function_name y lambda_invoke_arn."
+      error_message = "A lambda target requires lambda_function_name and lambda_invoke_arn."
     }
 
     precondition {
       condition     = local.is_lambda || (var.target.vpc_link_id != null && var.target.listener_arn != null)
-      error_message = "Un destino vpc_link requiere vpc_link_id y listener_arn del ALB interno."
+      error_message = "A vpc_link target requires vpc_link_id and the internal ALB listener_arn."
     }
   }
 }

@@ -8,7 +8,7 @@ terraform {
     }
   }
 
-  # bucket, key y region llegan de environments/<ambiente>/network/backend.tfvars.
+  # bucket, key and region come from environments/<environment>/network/backend.tfvars.
   backend "s3" {}
 }
 
@@ -20,12 +20,12 @@ provider "aws" {
   }
 }
 
-# El ambiente local no tiene red propia: los servicios corren en Docker o en la máquina.
+# The local environment has no network of its own: services run in Docker or on the host.
 resource "terraform_data" "aws_only" {
   lifecycle {
     precondition {
       condition     = !local.localstack
-      error_message = "El stack network solo se despliega en AWS. En local usa los stacks platform y messaging."
+      error_message = "The network stack is deployed only on AWS. Locally use the platform and messaging stacks."
     }
   }
 }

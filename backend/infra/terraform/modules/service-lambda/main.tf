@@ -13,7 +13,7 @@ locals {
   create_key  = var.kms_key_arn == null
   kms_key_arn = local.create_key ? module.kms[0].arn : var.kms_key_arn
 
-  # Versión mayor de Node con la que se compila y prueba el código (.nvmrc de la raíz).
+  # Node major version used to build and test the code (root .nvmrc).
   node_major = split(".", trimspace(file("${path.module}/../../../../../.nvmrc")))[0]
 
   otel_env = var.otel_layer_arn == null ? {} : merge(
@@ -42,23 +42,23 @@ resource "terraform_data" "input_check" {
   lifecycle {
     precondition {
       condition     = (var.filename != null) != (var.s3_bucket != null && var.s3_key != null)
-      error_message = "Indica el paquete con filename o con s3_bucket y s3_key, no ambos."
+      error_message = "Set the package with filename or with s3_bucket and s3_key, not both."
     }
 
     precondition {
       condition     = !var.vpc_enabled || (var.vpc_id != null && length(var.subnet_ids) > 0)
-      error_message = "vpc_enabled requiere vpc_id y subnet_ids."
+      error_message = "vpc_enabled requires vpc_id and subnet_ids."
     }
 
-    # Un runtime de otra versión mayor puede romper en Lambda código que pasó tipos y pruebas.
+    # A runtime with another major version can break on Lambda code that passed type checks and tests.
     precondition {
       condition     = var.runtime == "nodejs${local.node_major}.x"
-      error_message = "runtime debe ser nodejs${local.node_major}.x, la versión mayor de .nvmrc."
+      error_message = "runtime must be nodejs${local.node_major}.x, the major version in .nvmrc."
     }
   }
 }
 
-# --- KMS, logs y DLQ --------------------------------------------------------
+# --- KMS, logs and DLQ ------------------------------------------------------
 
 module "kms" {
   count  = local.create_key ? 1 : 0
@@ -79,8 +79,8 @@ resource "aws_cloudwatch_log_group" "this" {
   tags = var.tags
 }
 
-# Cola de mensajes fallidos de invocaciones asíncronas. Los mensajes de SQS que fallan
-# van a la DLQ de la cola de origen, que define el módulo messaging.
+# Dead letter queue for failed asynchronous invocations. Failed SQS messages go
+# to the source queue's DLQ, which the messaging module defines.
 resource "aws_sqs_queue" "dlq" {
   name                      = "${local.full_name}-async-dlq"
   message_retention_seconds = var.async_dlq_retention_seconds
@@ -206,7 +206,7 @@ resource "aws_iam_role_policy_attachment" "vpc" {
   policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
-# --- Red --------------------------------------------------------------------
+# --- Network ----------------------------------------------------------------
 
 resource "aws_security_group" "this" {
   count = var.vpc_enabled ? 1 : 0
@@ -218,7 +218,7 @@ resource "aws_security_group" "this" {
   tags = merge(var.tags, { Name = local.full_name })
 }
 
-# HTTPS saliente por NAT o endpoints de VPC (ADR 0016).
+# Outbound HTTPS through NAT or VPC endpoints (ADR 0016).
 # trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "https" {
   count = var.vpc_enabled ? 1 : 0
@@ -231,7 +231,7 @@ resource "aws_vpc_security_group_egress_rule" "https" {
   description       = "HTTPS hacia endpoints de VPC y servicios externos"
 }
 
-# --- Función y origen de eventos --------------------------------------------
+# --- Function and event source ----------------------------------------------
 
 resource "aws_lambda_function" "this" {
   function_name = local.full_name
@@ -323,7 +323,7 @@ resource "aws_lambda_event_source_mapping" "sqs" {
   }
 }
 
-# --- Alarmas ----------------------------------------------------------------
+# --- Alarms -----------------------------------------------------------------
 
 resource "aws_cloudwatch_metric_alarm" "errors" {
   alarm_name          = "${local.full_name}-errors"

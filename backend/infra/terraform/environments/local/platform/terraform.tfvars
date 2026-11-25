@@ -4,7 +4,7 @@ name_prefix      = "node-template-local"
 state_bucket     = "node-template-local-tfstate"
 aws_endpoint_url = "http://localhost:4566"
 
-# LocalStack emula archivos y correo; el cómputo (ECS, API Gateway HTTP, ALB) no se crea.
+# LocalStack emulates files and email; compute (ECS, HTTP API Gateway, ALB) is not created.
 compute_enabled             = false
 files_cors_allowed_origins  = ["http://localhost:8080"]
 force_destroy_buckets       = true

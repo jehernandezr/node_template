@@ -1,274 +1,274 @@
 variable "name_prefix" {
-  description = "Prefijo de nombres compartido con la plataforma, por ejemplo nt-dev."
+  description = "Name prefix shared with the platform, for example nt-dev."
   type        = string
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,20}[a-z0-9]$", var.name_prefix))
-    error_message = "name_prefix debe usar minúsculas, números y guiones, y tener entre 3 y 22 caracteres."
+    error_message = "name_prefix must use lowercase letters, digits and hyphens, and be 3 to 22 characters long."
   }
 }
 
 variable "function_name" {
-  description = "Nombre corto de la función, por ejemplo billing-invoices. El nombre final es <name_prefix>-<function_name>."
+  description = "Short function name, for example billing-invoices. The final name is <name_prefix>-<function_name>."
   type        = string
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,30}[a-z0-9]$", var.function_name))
-    error_message = "function_name debe usar minúsculas, números y guiones, y tener entre 3 y 32 caracteres."
+    error_message = "function_name must use lowercase letters, digits and hyphens, and be 3 to 32 characters long."
   }
 }
 
 variable "description" {
-  description = "Descripción de la función."
+  description = "Function description."
   type        = string
   default     = null
 }
 
 variable "environment" {
-  description = "Entorno (dev, staging o prod). Se publica como deployment.environment en OpenTelemetry."
+  description = "Environment (dev, staging or prod). Published as deployment.environment in OpenTelemetry."
   type        = string
 }
 
 variable "handler" {
-  description = "Handler de la función, por ejemplo lambda.handler."
+  description = "Function handler, for example lambda.handler."
   type        = string
 }
 
 variable "runtime" {
-  description = "Runtime de Lambda. Su versión mayor de Node es la de .nvmrc, con la que CI compila y prueba."
+  description = "Lambda runtime. Its Node major version is the one in .nvmrc, which CI uses to build and test."
   type        = string
   default     = "nodejs24.x"
 }
 
 variable "filename" {
-  description = "Ruta local del zip del bundle. Usa filename o s3_bucket con s3_key, no ambos."
+  description = "Local path of the bundle zip. Use filename or s3_bucket with s3_key, not both."
   type        = string
   default     = null
 }
 
 variable "s3_bucket" {
-  description = "Bucket S3 con el zip del bundle."
+  description = "S3 bucket with the bundle zip."
   type        = string
   default     = null
 }
 
 variable "s3_key" {
-  description = "Clave S3 del zip del bundle."
+  description = "S3 key of the bundle zip."
   type        = string
   default     = null
 }
 
 variable "s3_object_version" {
-  description = "Versión del objeto S3 del bundle."
+  description = "S3 object version of the bundle."
   type        = string
   default     = null
 }
 
 variable "source_code_hash" {
-  description = "Hash base64 SHA256 del zip, para que Terraform detecte cambios del código."
+  description = "Base64 SHA256 hash of the zip, so Terraform detects code changes."
   type        = string
   default     = null
 }
 
 variable "memory_size" {
-  description = "Memoria en MB."
+  description = "Memory in MB."
   type        = number
   default     = 512
 
   validation {
     condition     = var.memory_size >= 128 && var.memory_size <= 10240
-    error_message = "memory_size debe estar entre 128 y 10240."
+    error_message = "memory_size must be between 128 and 10240."
   }
 }
 
 variable "timeout" {
-  description = "Tiempo máximo de ejecución en segundos. La visibilidad de la cola de origen debe ser al menos 6 veces este valor."
+  description = "Maximum execution time in seconds. The source queue visibility timeout must be at least 6 times this value."
   type        = number
   default     = 30
 
   validation {
     condition     = var.timeout >= 1 && var.timeout <= 900
-    error_message = "timeout debe estar entre 1 y 900."
+    error_message = "timeout must be between 1 and 900."
   }
 }
 
 variable "environment_variables" {
-  description = "Variables de entorno de la función, sin secretos. Se cifran con la clave KMS del módulo."
+  description = "Function environment variables, without secrets. They are encrypted with the module KMS key."
   type        = map(string)
   default     = {}
 }
 
 variable "secret_arns" {
-  description = "ARN de los secretos de Secrets Manager que la función puede leer."
+  description = "ARNs of the Secrets Manager secrets the function can read."
   type        = list(string)
   default     = []
 }
 
 variable "secrets_kms_key_arns" {
-  description = "Claves KMS que cifran esos secretos."
+  description = "KMS keys that encrypt those secrets."
   type        = list(string)
   default     = []
 }
 
 variable "reserved_concurrent_executions" {
-  description = "Concurrencia reservada. Protege la base de datos de un pico y evita que la función consuma toda la cuenta. Null no reserva."
+  description = "Reserved concurrency. It protects the database from a spike and keeps the function from using the whole account. Null reserves nothing."
   type        = number
   default     = null
 }
 
 variable "layers" {
-  description = "ARN de capas adicionales."
+  description = "ARNs of additional layers."
   type        = list(string)
   default     = []
 }
 
 variable "otel_layer_arn" {
-  description = "ARN de la capa ADOT de OpenTelemetry para esta región y arquitectura arm64. Null desactiva OpenTelemetry."
+  description = "ARN of the ADOT OpenTelemetry layer for this region and the arm64 architecture. Null disables OpenTelemetry."
   type        = string
   default     = null
 }
 
 variable "otel_collector_config_uri" {
-  description = "Ubicación de la configuración del collector de la capa, por ejemplo /var/task/collector.yaml, que reenvía a OpenObserve. Null usa la de la capa."
+  description = "Location of the layer collector config, for example /var/task/collector.yaml, which forwards to OpenObserve. Null uses the layer default."
   type        = string
   default     = null
 }
 
 variable "tracing_mode" {
-  description = "Trazado de X-Ray: Active o PassThrough."
+  description = "X-Ray tracing: Active or PassThrough."
   type        = string
   default     = "Active"
 
   validation {
     condition     = contains(["Active", "PassThrough"], var.tracing_mode)
-    error_message = "tracing_mode debe ser Active o PassThrough."
+    error_message = "tracing_mode must be Active or PassThrough."
   }
 }
 
 variable "application_log_level" {
-  description = "Nivel de log de la aplicación en logging_config. También alimenta LOG_LEVEL."
+  description = "Application log level in logging_config. It also feeds LOG_LEVEL."
   type        = string
   default     = "INFO"
 
   validation {
     condition     = contains(["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"], var.application_log_level)
-    error_message = "application_log_level debe ser TRACE, DEBUG, INFO, WARN, ERROR o FATAL."
+    error_message = "application_log_level must be TRACE, DEBUG, INFO, WARN, ERROR or FATAL."
   }
 }
 
 variable "log_retention_days" {
-  description = "Días de retención del log group."
+  description = "Retention days of the log group."
   type        = number
   default     = 30
 }
 
 variable "vpc_enabled" {
-  description = "Ejecuta la función dentro de la VPC (para llegar a RDS Proxy o Valkey). Requiere vpc_id y subnet_ids."
+  description = "Runs the function inside the VPC (to reach RDS Proxy or Valkey). Requires vpc_id and subnet_ids."
   type        = bool
   default     = false
 }
 
 variable "vpc_id" {
-  description = "ID de la VPC. Requerido con vpc_enabled."
+  description = "VPC ID. Required with vpc_enabled."
   type        = string
   default     = null
 }
 
 variable "additional_security_group_ids" {
-  description = "Security groups extra de la función. El de clientes de datos (stack data) abre la salida hacia RDS Proxy, las réplicas, Valkey y OpenObserve; el de la función solo sale por HTTPS."
+  description = "Extra security groups for the function. The data clients one (data stack) opens egress to RDS Proxy, the replicas, Valkey and OpenObserve; the function's own group only allows HTTPS egress."
   type        = list(string)
   default     = []
 }
 
 variable "subnet_ids" {
-  description = "Subredes privadas de la función. Requerido con vpc_enabled."
+  description = "Private subnets of the function. Required with vpc_enabled."
   type        = list(string)
   default     = []
 }
 
 variable "queue_arn" {
-  description = "ARN de la cola SQS de origen. Su DLQ y su redrive los define el módulo messaging. Null para una función sin cola, por ejemplo la API detrás de API Gateway."
+  description = "ARN of the source SQS queue. Its DLQ and redrive are defined by the messaging module. Null for a function without a queue, for example the API behind API Gateway."
   type        = string
   default     = null
 }
 
 variable "queue_kms_key_arn" {
-  description = "Clave KMS de la cola de origen, para descifrar sus mensajes. Null si la cola no usa una CMK."
+  description = "KMS key of the source queue, to decrypt its messages. Null if the queue does not use a CMK."
   type        = string
   default     = null
 }
 
 variable "batch_size" {
-  description = "Mensajes por invocación. Hasta 10 en FIFO y 10000 en colas estándar con ventana de agrupación."
+  description = "Messages per invocation. Up to 10 on FIFO and 10000 on standard queues with a batching window."
   type        = number
   default     = 10
 
   validation {
     condition     = var.batch_size >= 1 && var.batch_size <= 10000
-    error_message = "batch_size debe estar entre 1 y 10000."
+    error_message = "batch_size must be between 1 and 10000."
   }
 }
 
 variable "maximum_batching_window_seconds" {
-  description = "Segundos que Lambda espera para completar un lote. Entre 0 y 300."
+  description = "Seconds Lambda waits to fill a batch. Between 0 and 300."
   type        = number
   default     = 0
 
   validation {
     condition     = var.maximum_batching_window_seconds >= 0 && var.maximum_batching_window_seconds <= 300
-    error_message = "maximum_batching_window_seconds debe estar entre 0 y 300."
+    error_message = "maximum_batching_window_seconds must be between 0 and 300."
   }
 }
 
 variable "maximum_concurrency" {
-  description = "Invocaciones simultáneas máximas desde esta cola. Entre 2 y 1000. Null no limita."
+  description = "Maximum concurrent invocations from this queue. Between 2 and 1000. Null means no limit."
   type        = number
   default     = 5
 
   validation {
     condition     = var.maximum_concurrency == null || (coalesce(var.maximum_concurrency, 2) >= 2 && coalesce(var.maximum_concurrency, 2) <= 1000)
-    error_message = "maximum_concurrency debe estar entre 2 y 1000."
+    error_message = "maximum_concurrency must be between 2 and 1000."
   }
 }
 
 variable "filter_patterns" {
-  description = "Patrones de filtro de eventos de SQS en JSON. Vacío entrega todos los mensajes."
+  description = "SQS event filter patterns in JSON. Empty delivers all messages."
   type        = list(string)
   default     = []
 }
 
 variable "event_source_enabled" {
-  description = "Habilita el mapeo de la cola. Desactívalo para pausar el consumo."
+  description = "Enables the queue mapping. Disable it to pause consumption."
   type        = bool
   default     = true
 }
 
 variable "async_dlq_retention_seconds" {
-  description = "Retención de la cola de mensajes fallidos de invocaciones asíncronas."
+  description = "Retention of the dead letter queue for asynchronous invocations."
   type        = number
   default     = 1209600
 }
 
 variable "task_policies" {
-  description = "Políticas IAM en línea del rol: nombre a documento JSON. Aquí van los permisos de S3, SES, SNS y demás."
+  description = "Inline IAM policies of the role: name to JSON document. S3, SES, SNS and other permissions go here."
   type        = map(string)
   default     = {}
 }
 
 variable "alarm_topic_arn" {
-  description = "ARN de un tópico SNS para las alarmas de errores y de la DLQ. Si es null, las alarmas no notifican."
+  description = "ARN of an SNS topic for the error and DLQ alarms. If null, the alarms do not notify."
   type        = string
   default     = null
 }
 
 variable "kms_key_arn" {
-  description = "Clave KMS existente para variables de entorno, logs y la DLQ. Debe permitir a logs.<región>.amazonaws.com y a SQS. Si es null, el módulo crea la suya."
+  description = "Existing KMS key for environment variables, logs and the DLQ. It must allow logs.<region>.amazonaws.com and SQS. If null, the module creates its own."
   type        = string
   default     = null
 }
 
 variable "tags" {
-  description = "Etiquetas adicionales para los recursos del módulo."
+  description = "Additional tags for the module resources."
   type        = map(string)
   default     = {}
 }

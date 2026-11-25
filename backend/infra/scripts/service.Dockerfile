@@ -1,5 +1,5 @@
-# Imagen única para los servicios de backend. El servicio se elige al construir con SERVICE, y
-# NODE_VERSION sale de .nvmrc para que la imagen y el desarrollo usen la misma versión.
+# Single image for the backend services. The service is chosen at build time with SERVICE, and
+# NODE_VERSION comes from .nvmrc so the image and development use the same version.
 ARG NODE_VERSION
 FROM node:${NODE_VERSION}-alpine
 
@@ -9,5 +9,5 @@ COPY backend/dist/${SERVICE}/ ./
 
 USER node
 ENV NODE_ENV=production
-# Los workers y el tiempo real cambian este comando en la definición de su tarea de Fargate.
+# Workers and real time override this command in their Fargate task definition.
 CMD ["node", "main.js"]

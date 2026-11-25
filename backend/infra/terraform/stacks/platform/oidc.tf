@@ -1,5 +1,5 @@
-# Acceso de GitHub Actions a la cuenta por OIDC, sin claves de larga vida. Sin github_repository no
-# se crea nada: el pipeline queda apagado hasta que el ambiente lo pida.
+# GitHub Actions access to the account through OIDC, with no long-lived keys. Without github_repository
+# nothing is created: the pipeline stays off until the environment asks for it.
 module "oidc_github" {
   count  = var.github_repository == null ? 0 : 1
   source = "../../modules/oidc-github"

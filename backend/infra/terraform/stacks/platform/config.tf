@@ -16,14 +16,14 @@ terraform {
     }
   }
 
-  # bucket, key y region llegan de environments/<ambiente>/platform/backend.tfvars.
+  # bucket, key and region come from environments/<environment>/platform/backend.tfvars.
   backend "s3" {}
 }
 
 provider "aws" {
   region = var.region
 
-  # Ambiente local: todos los servicios van al endpoint de LocalStack.
+  # Local environment: all services go to the LocalStack endpoint.
   s3_use_path_style           = local.localstack
   skip_credentials_validation = local.localstack
   skip_metadata_api_check     = local.localstack

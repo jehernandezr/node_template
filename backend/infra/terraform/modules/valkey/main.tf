@@ -7,7 +7,7 @@ data "aws_region" "current" {}
 locals {
   cache_arn = aws_elasticache_serverless_cache.this.arn
 
-  # ARN de cada usuario IAM. Con el ARN de la caché forman los recursos de elasticache:Connect.
+  # ARN of each IAM user. Together with the cache ARN they form the elasticache:Connect resources.
   user_arns = {
     for name, u in aws_elasticache_user.app :
     name => "arn:${data.aws_partition.current.partition}:elasticache:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:user:${u.user_id}"
@@ -41,8 +41,8 @@ resource "aws_vpc_security_group_ingress_rule" "from_clients" {
   description                  = "Valkey desde un cliente autorizado"
 }
 
-# Autenticación: el usuario default queda deshabilitado y cada servicio entra con un
-# usuario propio autenticado por IAM. No hay contraseñas ni secretos que guardar.
+# Authentication: the default user is disabled and each service connects with its own
+# IAM-authenticated user. There are no passwords or secrets to store.
 resource "aws_elasticache_user" "default" {
   user_id       = "${var.name_prefix}-default-off"
   user_name     = "default"
@@ -56,8 +56,8 @@ resource "aws_elasticache_user" "default" {
   tags = var.tags
 }
 
-# El token IAM se firma con el user id y el cliente se autentica con el user name: ElastiCache
-# exige que sean iguales, así el cliente recibe un solo valor (VALKEY_USER).
+# The IAM token is signed with the user id and the client authenticates with the user name. ElastiCache
+# requires them to be equal, so the client receives a single value (VALKEY_USER).
 resource "aws_elasticache_user" "app" {
   for_each = var.users
 
@@ -84,8 +84,8 @@ resource "aws_elasticache_user_group" "this" {
   tags = var.tags
 }
 
-# La plataforma usa los comandos BF.* del módulo de Bloom, que llega con Valkey 8.1. Una
-# caché serverless sigue la última versión menor de su versión mayor.
+# The platform uses the BF.* commands of the Bloom module, which ships with Valkey 8.1. A
+# serverless cache follows the latest minor version of its major version.
 resource "aws_elasticache_serverless_cache" "this" {
   engine               = "valkey"
   major_engine_version = "8"

@@ -1,5 +1,5 @@
 name: ui
-description: "Widgets compartidos de los shells y los microfrontends: tema, layout adaptable y componentes."
+description: "Widgets shared by the shells and the microfrontends: theme, adaptive layout and components."
 publish_to: none
 version: 0.0.1
 

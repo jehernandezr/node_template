@@ -1,12 +1,12 @@
-# Módulo budget
+# budget module
 
-Presupuesto mensual de costo con AWS Budgets y avisos a un tópico SNS.
+Monthly cost budget with AWS Budgets and notifications to an SNS topic.
 
-## Qué crea
+## What it creates
 
-- Un presupuesto `COST` mensual con avisos al 80 % y al 100 % del gasto real y al 100 % del pronóstico (configurables en `notifications`).
-- Filtro opcional por etiquetas de asignación de costos (`cost_filter_tags`), que deben estar activadas en Billing.
+- A monthly `COST` budget with notifications at 80 % and 100 % of actual spend and at 100 % of the forecast (configurable in `notifications`).
+- Optional filter by cost allocation tags (`cost_filter_tags`), which must be activated in Billing.
 
-## Requisitos
+## Requirements
 
-El tópico debe permitir que `budgets.amazonaws.com` publique y, si se cifra con una CMK, que use la clave. El tópico de alarmas del stack platform ya lo permite.
+The topic must allow `budgets.amazonaws.com` to publish and, if it is encrypted with a CMK, to use the key. The alarms topic of the platform stack already allows it.

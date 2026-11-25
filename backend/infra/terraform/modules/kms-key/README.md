@@ -1,15 +1,15 @@
 # kms-key
 
-CMK con rotación anual y la política base de la plataforma: la cuenta la administra con IAM, CloudWatch Logs cifra solo los log groups indicados y los servicios de AWS listados (SNS, SQS, SES, CloudFront...) la usan solo para recursos de la cuenta (`aws:SourceAccount`).
+CMK with yearly rotation and the platform's base policy: the account manages it through IAM, CloudWatch Logs encrypts only the given log groups and the listed AWS services (SNS, SQS, SES, CloudFront...) use it only for resources of the account (`aws:SourceAccount`).
 
-Todos los módulos crean sus claves con este, así un ajuste a la política se hace en un solo lugar.
+Every module creates its keys with this one, so a policy adjustment is made in a single place.
 
 ```hcl
 module "kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-messaging"
-  description = "Cifrado de tópicos y colas"
+  description = "Encryption of topics and queues"
   service_principals = [
     { sid = "AllowSnsUse", services = ["sns.amazonaws.com"] },
     { sid = "AllowSqsUse", services = ["sqs.amazonaws.com"] },

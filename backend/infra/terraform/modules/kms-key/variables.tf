@@ -1,26 +1,26 @@
 variable "alias" {
-  description = "Alias de la clave, sin el prefijo alias/. Por ejemplo nt-dev-rds."
+  description = "Key alias, without the alias/ prefix. For example nt-dev-rds."
   type        = string
 
   validation {
     condition     = can(regex("^[a-zA-Z0-9/_-]{1,250}$", var.alias)) && !startswith(var.alias, "aws/")
-    error_message = "alias usa letras, números, /, _ y -, y no empieza por aws/."
+    error_message = "alias uses letters, digits, /, _ and -, and does not start with aws/."
   }
 }
 
 variable "description" {
-  description = "Para qué se usa la clave."
+  description = "What the key is used for."
   type        = string
 }
 
 variable "log_group_arns" {
-  description = "Patrones ARN de los log groups que CloudWatch Logs puede cifrar con la clave (admiten *). Vacío no da acceso a CloudWatch Logs."
+  description = "ARN patterns of the log groups that CloudWatch Logs can encrypt with the key (* allowed). Empty gives CloudWatch Logs no access."
   type        = list(string)
   default     = []
 }
 
 variable "service_principals" {
-  description = "Servicios de AWS que usan la clave para recursos de la cuenta: Sid, principales (por ejemplo sqs.amazonaws.com) y acciones."
+  description = "AWS services that use the key for resources in the account: Sid, principals (for example sqs.amazonaws.com) and actions."
   type = list(object({
     sid      = string
     services = list(string)
@@ -30,18 +30,18 @@ variable "service_principals" {
 }
 
 variable "deletion_window_in_days" {
-  description = "Días de espera antes de borrar la clave."
+  description = "Waiting period in days before the key is deleted."
   type        = number
   default     = 30
 
   validation {
     condition     = var.deletion_window_in_days >= 7 && var.deletion_window_in_days <= 30
-    error_message = "deletion_window_in_days debe estar entre 7 y 30."
+    error_message = "deletion_window_in_days must be between 7 and 30."
   }
 }
 
 variable "tags" {
-  description = "Etiquetas adicionales de la clave."
+  description = "Additional tags for the key."
   type        = map(string)
   default     = {}
 }

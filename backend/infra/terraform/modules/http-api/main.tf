@@ -32,7 +32,7 @@ module "kms" {
   tags = var.tags
 }
 
-# --- API y stage --------------------------------------------------------------
+# --- API and stage ------------------------------------------------------------
 
 resource "aws_apigatewayv2_api" "this" {
   name          = local.name
@@ -80,8 +80,8 @@ resource "aws_apigatewayv2_stage" "default" {
   tags = var.tags
 }
 
-# --- VPC link hacia el ALB interno de las APIs en Fargate ---------------------
-# La salida del security group la declara quien conoce el ALB (stack platform).
+# --- VPC link to the internal ALB of the Fargate APIs -------------------------
+# The security group egress is declared by whoever knows the ALB (platform stack).
 
 resource "aws_security_group" "vpc_link" {
   count = local.vpc_link_enabled ? 1 : 0
@@ -103,12 +103,12 @@ resource "aws_apigatewayv2_vpc_link" "this" {
   tags = var.tags
 }
 
-# --- Verificación de origen ----------------------------------------------------
-# La contraseña es efímera y se escribe con un atributo de solo escritura, así no queda en
-# el estado de este stack. Sí queda en el de edge: CloudFront la envía como encabezado de
-# origen, que es un atributo normal. Por eso los buckets de estado van cifrados y con acceso
-# restringido. Para rotarla, sube origin_verify_secret_version: el valor anterior pasa a
-# AWSPREVIOUS y el autorizador acepta los dos hasta que edge envía el nuevo.
+# --- Origin verification -------------------------------------------------------
+# The password is ephemeral and written through a write-only attribute, so it does not end up
+# in this stack's state. It does end up in the edge state: CloudFront sends it as an origin
+# header, which is a regular attribute. That is why the state buckets are encrypted and have
+# restricted access. To rotate it, bump origin_verify_secret_version: the previous value moves to
+# AWSPREVIOUS and the authorizer accepts both until edge sends the new one.
 
 ephemeral "random_password" "origin_verify" {
   count = var.origin_verify_enabled ? 1 : 0

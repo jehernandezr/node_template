@@ -1,7 +1,7 @@
-# Un microservicio con estado propio. Elige el runtime de su API (Lambda o Fargate), y
-# opcionalmente tiempo real (Fargate tras el ALB público), workers Fargate y consumidores
-# Lambda. Lee red, plataforma, datos y mensajería de sus stacks; no los modifica, salvo las
-# rutas que agrega a la API compartida y las reglas de sus listeners.
+# A microservice with its own state. Choose its API runtime (Lambda or Fargate), and
+# optionally realtime (Fargate behind the public ALB), Fargate workers and Lambda
+# consumers. It reads network, platform, data and messaging from their stacks; it does not modify them,
+# except for the routes it adds to the shared API and the rules of its listeners.
 
 data "aws_caller_identity" "current" {}
 
@@ -14,7 +14,7 @@ locals {
   uses_lambda = local.api_lambda || length(var.consumers) > 0
   uses_ecs    = local.api_fargate || var.realtime != null || length(var.workers) > 0
 
-  # Tópicos y colas según producers y consumer de la topología exportada.
+  # Topics and queues according to the producers and consumer of the exported topology.
   access = try(local.messaging.service_access[local.svc], {
     publish_topics = []
     send_queues    = []
@@ -27,16 +27,16 @@ locals {
   valkey_user   = var.valkey_access ? try(local.data.valkey.user_names[local.svc], null) : null
   observability = local.platform.observability
 
-  # Contrato con los adaptadores de @platform: los nombres de estas variables son los que
-  # validan sus esquemas de configuración. Las variables propias del servicio van primero,
-  # así no pueden pisar el contrato.
+  # Contract with the @platform adapters: the names of these variables are the ones their
+  # configuration schemas validate. The service's own variables go first,
+  # so they cannot override the contract.
   common_environment = merge(
     var.environment_variables,
     {
       SERVICE_NAME          = local.svc
       DEPLOY_ENVIRONMENT    = var.environment
       MESSAGING_NAME_PREFIX = local.messaging.name_prefix
-      # El adaptador de AWS arma los ARN de los tópicos sin llamar a STS.
+      # The AWS adapter builds the topic ARNs without calling STS.
       AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
     },
     var.database_access ? {
@@ -45,8 +45,8 @@ locals {
       DB_PORT         = tostring(local.data.db.port)
       DB_DATABASES    = jsonencode(local.databases)
     } : {},
-    # Valkey serverless exige TLS y autenticación IAM: el cliente firma un token con su rol
-    # para VALKEY_CACHE_NAME y entra como VALKEY_USER. La ACL limita llaves y canales a
+    # Serverless Valkey requires TLS and IAM authentication: the client signs a token with its role
+    # for VALKEY_CACHE_NAME and connects as VALKEY_USER. The ACL limits keys and channels to
     # VALKEY_KEY_PREFIX.
     local.valkey_user == null ? {} : {
       VALKEY_HOST       = local.data.valkey.endpoint
@@ -59,15 +59,15 @@ locals {
     },
   )
 
-  # Lambda define AWS_REGION por su cuenta (es una variable reservada); Fargate no la
-  # garantiza en todas las versiones de plataforma.
+  # Lambda sets AWS_REGION on its own (it is a reserved variable); Fargate does not
+  # guarantee it on every platform version.
   fargate_environment = merge(local.common_environment, { AWS_REGION = var.region })
   lambda_environment  = merge(local.common_environment, local.db_secret_arn == null ? {} : { DB_SECRET_ARN = local.db_secret_arn })
 
-  # --- IAM por componente ---------------------------------------------------------
-  # Cada componente recibe solo lo que usa: la API y el tiempo real no consumen colas, cada
-  # worker consume solo la suya y archivos y SES se piden por componente. Las Lambdas
-  # consumidoras reciben el permiso de su cola del módulo service-lambda.
+  # --- IAM per component ---------------------------------------------------------
+  # Each component gets only what it uses: the API and realtime do not consume queues, each
+  # worker consumes only its own, and files and SES are requested per component. Consumer
+  # Lambdas get their queue permission from the service-lambda module.
   components = merge(
     var.api == null ? {} : {
       api = { publish = true, queue = null, files = var.api.files_access, ses = var.api.ses_send }
@@ -145,11 +145,11 @@ locals {
     local.observability == null ? [] : [local.observability.kms_key_arn],
   ))
 
-  # Fargate recibe el secreto por valueFrom; Lambda recibe el ARN y lo lee al arrancar.
+  # Fargate gets the secret through valueFrom; Lambda gets the ARN and reads it at startup.
   fargate_secrets = merge(var.secrets, local.db_secret_arn == null ? {} : { DB_CREDENTIALS = local.db_secret_arn })
   lambda_secrets  = distinct(concat([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)], local.db_secret_arn == null ? [] : [local.db_secret_arn]))
 
-  # Una CMK de logs por ambiente para todo el cómputo (stack platform).
+  # One logs CMK per environment for all compute (platform stack).
   logs_kms_key_arn = local.platform.compute_logs_kms_key_arn
 
   data_security_groups = [local.data.clients_security_group_id]
@@ -157,46 +157,46 @@ locals {
   api_path_patterns = local.api_fargate ? flatten([for p in var.api.route_prefixes : [p, "${p}/*"]]) : []
 }
 
-# Referencias a otros stacks que la validación de variables no alcanza a comprobar.
+# References to other stacks that variable validation cannot check.
 resource "terraform_data" "service_check" {
   input = local.svc
 
   lifecycle {
     precondition {
       condition     = !local.uses_ecs || var.image != null
-      error_message = "La API en Fargate, el tiempo real y los workers necesitan image."
+      error_message = "The Fargate API, realtime and workers need image."
     }
     precondition {
       condition     = !local.uses_lambda || var.lambda_package != null
-      error_message = "La API en Lambda y los consumidores necesitan lambda_package."
+      error_message = "The Lambda API and consumers need lambda_package."
     }
     precondition {
       condition     = !local.api_fargate || local.platform.api_alb != null
-      error_message = "Una API en Fargate necesita fargate_api_enabled = true en el stack platform."
+      error_message = "A Fargate API needs fargate_api_enabled = true in the platform stack."
     }
     precondition {
       condition     = var.realtime == null || local.platform.realtime_alb != null
-      error_message = "realtime necesita realtime_alb_certificate_arn en el stack platform."
+      error_message = "realtime needs realtime_alb_certificate_arn in the platform stack."
     }
     precondition {
       condition     = !var.database_access || (local.databases != null && local.db_secret_arn != null)
-      error_message = "database_access necesita el servicio en db_services del stack data."
+      error_message = "database_access needs the service in db_services of the data stack."
     }
     precondition {
       condition     = !var.valkey_access || local.valkey_user != null
-      error_message = "valkey_access necesita el servicio en valkey_services del stack data."
+      error_message = "valkey_access needs the service in valkey_services of the data stack."
     }
     precondition {
       condition     = alltrue([for q in local.component_queues : contains(keys(local.messaging.queue_arns), q)])
-      error_message = "Un worker o consumidor usa una cola que no está en la topología ni es ses-events."
+      error_message = "A worker or consumer uses a queue that is neither in the topology nor ses-events."
     }
     precondition {
       condition     = !anytrue([for c in values(local.components) : c.files]) || local.platform.files_bucket != null
-      error_message = "files_access necesita el bucket de archivos (files_cors_allowed_origins en platform)."
+      error_message = "files_access needs the files bucket (files_cors_allowed_origins in platform)."
     }
     precondition {
       condition     = !anytrue([for c in values(local.components) : c.ses]) || local.platform.ses != null
-      error_message = "ses_send necesita ses_domain en el stack platform."
+      error_message = "ses_send needs ses_domain in the platform stack."
     }
   }
 }
@@ -290,7 +290,7 @@ module "api_fargate" {
   depends_on = [terraform_data.service_check]
 }
 
-# Rutas en la API compartida. Cambiar de runtime solo cambia el destino.
+# Routes in the shared API. Changing the runtime only changes the target.
 module "api_routes" {
   count  = var.api == null ? 0 : 1
   source = "../../modules/api-routes"
@@ -314,7 +314,7 @@ module "api_routes" {
   depends_on = [module.api_fargate]
 }
 
-# --- Tiempo real ------------------------------------------------------------------
+# --- Realtime ---------------------------------------------------------------------
 
 module "realtime" {
   count  = var.realtime == null ? 0 : 1
@@ -364,7 +364,7 @@ module "realtime" {
   depends_on = [terraform_data.service_check]
 }
 
-# --- Workers y consumidores ---------------------------------------------------------
+# --- Workers and consumers ----------------------------------------------------------
 
 module "worker" {
   for_each = var.workers

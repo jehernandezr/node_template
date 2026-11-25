@@ -1,26 +1,26 @@
 # mf_account
 
-Microfrontend de la cuenta del usuario, para web y móvil. Todas las rutas viven bajo `/account`.
+Microfrontend for the user's account, for web and mobile. All routes live under `/account`.
 
-- `/account`: resumen del perfil y enlaces a las secciones.
-- `/account/sessions`: sesiones activas, cierre remoto y cierre de las demás.
-- `/account/devices`: dispositivos de confianza, con el verificador marcado.
-- `/account/security`: MFA, passkeys y códigos de recuperación. Las acciones sensibles piden un segundo factor reciente con el step-up del shell (`ShellServices.requestStepUp`); la cuenta no verifica códigos por su cuenta.
-- `/account/agreements`: acuerdos pendientes de aceptar e historial.
+- `/account`: profile summary and links to the sections.
+- `/account/sessions`: active sessions, remote sign-out and sign-out of the others.
+- `/account/devices`: trusted devices, with the verifier marked.
+- `/account/security`: MFA, passkeys and recovery codes. Sensitive actions ask for a recent second factor with the shell's step-up (`ShellServices.requestStepUp`); the account does not verify codes on its own.
+- `/account/agreements`: agreements pending acceptance and history.
 
-## Estructura
+## Structure
 
-- `lib/mf_account.dart`: exporta `accountManifest`. Solo importa `shell_core`, `go_router`, `material_ui` y la librería diferida de pantallas. Las rutas reciben `load` y `scope`; las secciones son hijas de `/account`.
-- `lib/src/screens/screen_builders.dart`: funciones `buildAccount*Screen(MicrofrontendScope)`. Obtienen el `AccountRepository` del scope (`scope.get`), envuelven la pantalla con `Localizations.override` y, en el resumen, pasan `scope.services.signOut`.
-- `lib/src/data/`: `AccountRepository` (abstracto, con sus `capabilities`), `FakeAccountRepository` (modo demo, con datos de ejemplo) y `ApiAccountRepository` (modo vivo). El real solo sirve lo que tiene contrato `identity`, sesiones y dispositivos; el perfil, la confianza de dispositivos, la seguridad y los acuerdos lanzan `UnsupportedError`, y las pantallas no los ofrecen o los muestran como no disponibles.
-- `lib/src/screens/`: pantallas, reunidas en `screens.dart`. Cada pantalla tiene su `AppBar`.
-- `lib/src/screens/widgets/`: componentes compartidos de las pantallas y `step_up.dart`, que pide el step-up al shell cuando `accountStepUpRule` no se cumple.
-- `lib/src/shared/constants/`: ruta base, tamaños y `accountStepUpRule` (ventana de `MfaRules.stepUpMaxAgeMinutes`). Es lo único, junto con `shared/enums`, que el manifiesto carga de entrada.
-- Las fechas se muestran con `formatDate` y `formatDateTime` de `packages/utils`, en el locale y la zona horaria del usuario.
-- `lib/src/l10n/`: textos propios en `app_es.arb` (plantilla) y `app_en.arb`. Las palabras compartidas (cancelar, reintentar, confirmar, cerrar, cargando, cerrar sesión y errores) salen de `AppLocalizations` del paquete `i18n`.
-  - Tras cambiar los ARB, ejecuta `flutter gen-l10n` y versiona `lib/src/l10n/generated/`.
+- `lib/mf_account.dart`: exports `accountManifest`. It only imports `shell_core`, `go_router`, `material_ui` and the deferred screens library. Routes receive `load` and `scope`; the sections are children of `/account`.
+- `lib/src/screens/screen_builders.dart`: `buildAccount*Screen(MicrofrontendScope)` functions. They get the `AccountRepository` from the scope (`scope.get`), wrap the screen with `Localizations.override` and, in the summary, pass `scope.services.signOut`.
+- `lib/src/data/`: `AccountRepository` (abstract, with its `capabilities`), `FakeAccountRepository` (demo mode, with sample data) and `ApiAccountRepository` (live mode). The real one only serves what has an `identity` contract, sessions and devices; profile, device trust, security and agreements throw `UnsupportedError`, and the screens do not offer them or show them as unavailable.
+- `lib/src/screens/`: screens, gathered in `screens.dart`. Each screen has its own `AppBar`.
+- `lib/src/screens/widgets/`: components shared by the screens and `step_up.dart`, which asks the shell for step-up when `accountStepUpRule` is not met.
+- `lib/src/shared/constants/`: base route, sizes and `accountStepUpRule` (window of `MfaRules.stepUpMaxAgeMinutes`). Together with `shared/enums`, it is the only thing the manifest loads upfront.
+- Dates are shown with `formatDate` and `formatDateTime` from `packages/utils`, in the user's locale and time zone.
+- `lib/src/l10n/`: own texts in `app_es.arb` (template) and `app_en.arb`. Shared words (cancel, retry, confirm, close, loading, sign out and errors) come from `AppLocalizations` in the `i18n` package.
+  - After changing the ARB files, run `flutter gen-l10n` and commit `lib/src/l10n/generated/`.
 
-## Pruebas
+## Tests
 
 ```sh
 flutter gen-l10n && flutter analyze && flutter test

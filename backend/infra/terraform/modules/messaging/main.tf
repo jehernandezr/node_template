@@ -8,8 +8,8 @@ locals {
   queue_names = { for name, q in local.queues_by_name : name => "${var.name_prefix}-${name}${q.fifo ? ".fifo" : ""}" }
   dlq_names   = { for name, q in local.queues_by_name : name => "${var.name_prefix}-${q.dlq.name}${q.fifo ? ".fifo" : ""}" }
 
-  # Una entrada por cada par cola-tópico declarado en las suscripciones.
-  # filterTypes null o ausente equivale a lista vacía: sin filtro.
+  # One entry per queue-topic pair declared in the subscriptions.
+  # A null or missing filterTypes means an empty list: no filter.
   subscriptions = {
     for pair in flatten([
       for q in local.topology.queues : [
@@ -23,15 +23,15 @@ locals {
     ]) : pair.key => pair
   }
 
-  # Colas con al menos una suscripción; la política de la cola autoriza a sus tópicos.
+  # Queues with at least one subscription; the queue policy authorizes their topics.
   queue_topics = {
     for q in local.topology.queues : q.name => distinct([for s in q.subscriptions : s.topic])
     if length(q.subscriptions) > 0
   }
 
-  # Permisos por servicio derivados de la topología exportada: quién publica en cada tópico
-  # (producers), quién envía a cada cola (producers) y quién la consume (consumer). Los
-  # stacks de servicio arman su IAM con esto, sin repetir nombres en los tfvars.
+  # Per-service permissions derived from the exported topology: who publishes to each topic
+  # (producers), who sends to each queue (producers) and who consumes it (consumer). The
+  # service stacks build their IAM from this, without repeating names in the tfvars.
   topic_producers = { for t in local.topology.topics : t.name => try(tolist(t.producers), []) }
   queue_producers = { for q in local.topology.queues : q.name => try(tolist(q.producers), []) }
   queue_consumers = { for q in local.topology.queues : q.name => try(tostring(q.consumer), null) }
@@ -51,8 +51,8 @@ locals {
   }
 }
 
-# Validaciones de la topología. Un terraform_data con precondiciones falla
-# el plan con un mensaje claro si el JSON no es coherente.
+# Topology validations. A terraform_data with preconditions fails
+# the plan with a clear message if the JSON is inconsistent.
 resource "terraform_data" "topology_check" {
   input = local.topology
 
@@ -61,14 +61,14 @@ resource "terraform_data" "topology_check" {
       condition = alltrue([
         for s in local.subscriptions : contains(keys(local.topics_by_name), s.topic)
       ])
-      error_message = "Una suscripción apunta a un tópico que no está declarado en topics."
+      error_message = "A subscription points to a topic that is not declared in topics."
     }
 
     precondition {
       condition = alltrue([
         for r in local.routes : (r.kind == "event" && r.targetKind == "topic") || (r.kind == "command" && r.targetKind == "queue")
       ])
-      error_message = "Cada ruta debe ser kind event con targetKind topic, o kind command con targetKind queue."
+      error_message = "Each route must be kind event with targetKind topic, or kind command with targetKind queue."
     }
 
     precondition {
@@ -79,17 +79,17 @@ resource "terraform_data" "topology_check" {
           false
         )
       ])
-      error_message = "El target de cada ruta debe ser un tópico declarado si targetKind es topic, o una cola declarada si targetKind es queue."
+      error_message = "Each route target must be a declared topic if targetKind is topic, or a declared queue if targetKind is queue."
     }
 
     precondition {
       condition     = alltrue([for q in local.topology.queues : q.dlq.retentionSeconds <= 1209600])
-      error_message = "dlq.retentionSeconds no puede superar 1209600 (14 días)."
+      error_message = "dlq.retentionSeconds cannot exceed 1209600 (14 days)."
     }
 
     precondition {
       condition     = alltrue([for n in concat(values(local.queue_names), values(local.dlq_names)) : length(n) <= 80])
-      error_message = "Los nombres finales de colas y DLQ, con prefijo y .fifo, no pueden superar 80 caracteres."
+      error_message = "Final queue and DLQ names, with prefix and .fifo, cannot exceed 80 characters."
     }
   }
 }
@@ -144,7 +144,7 @@ resource "aws_sqs_queue" "this" {
   kms_master_key_id                 = module.kms.arn
   kms_data_key_reuse_period_seconds = var.kms_data_key_reuse_period_seconds
 
-  # maxAttempts lo usa el dispatcher de la aplicación para el backoff. Terraform lo etiqueta.
+  # The application dispatcher uses maxAttempts for backoff. Terraform sets it as a tag.
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq[each.key].arn
     maxReceiveCount     = coalesce(var.max_receive_count, each.value.dlq.maxReceiveCount)
@@ -169,7 +169,7 @@ resource "aws_sqs_queue_redrive_allow_policy" "dlq" {
   })
 }
 
-# Toda cola exige TLS. Las que tienen suscripciones también autorizan a sus tópicos.
+# Every queue requires TLS. Queues with subscriptions also authorize their topics.
 resource "aws_sqs_queue_policy" "this" {
   for_each = local.queues_by_name
 
@@ -210,7 +210,7 @@ resource "aws_sns_topic_subscription" "this" {
   endpoint             = aws_sqs_queue.this[each.value.queue].arn
   raw_message_delivery = true
 
-  # El filtro lee el campo type del cuerpo del mensaje CloudEvents.
+  # The filter reads the type field from the CloudEvents message body.
   filter_policy_scope = "MessageBody"
   filter_policy = length(each.value.filter_types) > 0 ? jsonencode({
     type = each.value.filter_types
@@ -242,7 +242,7 @@ resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
   tags = var.tags
 }
 
-# Mensajes atascados en la DLQ: nadie los reprocesa (redrive) dentro del plazo.
+# Messages stuck in the DLQ: nobody reprocesses them (redrive) within the time limit.
 resource "aws_cloudwatch_metric_alarm" "dlq_old_message" {
   for_each = var.alarms_enabled ? local.queues_by_name : {}
 
@@ -266,7 +266,7 @@ resource "aws_cloudwatch_metric_alarm" "dlq_old_message" {
   tags = var.tags
 }
 
-# Consumidor detenido o lento: el mensaje más viejo de la cola principal supera el umbral.
+# Stopped or slow consumer: the oldest message in the main queue exceeds the threshold.
 resource "aws_cloudwatch_metric_alarm" "queue_old_message" {
   for_each = var.alarms_enabled ? local.queues_by_name : {}
 

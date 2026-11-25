@@ -3,7 +3,7 @@ environment  = "staging"
 name_prefix  = "node-template-staging"
 state_bucket = "node-template-staging-tfstate"
 
-# Igual que prod en forma (Multi-AZ y réplica) para probar la promoción, con menos capacidad.
+# Same shape as prod (Multi-AZ and replica) to test promotion, with less capacity.
 db_instance_class          = "db.t4g.large"
 db_allocated_storage       = 50
 db_max_allocated_storage   = 200

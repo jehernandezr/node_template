@@ -32,7 +32,7 @@ module "billing_worker" {
   reserved_concurrent_executions = 10
   maximum_concurrency            = 5
 
-  # Capa ADOT para arm64 de la región; confirma el ARN y la versión vigentes.
+  # ADOT layer for arm64 in the region; confirm the current ARN and version.
   otel_layer_arn            = "arn:aws:lambda:us-east-1:901920570463:layer:aws-otel-collector-arm64-ver-0-102-1:1"
   otel_collector_config_uri = "/var/task/collector.yaml"
 

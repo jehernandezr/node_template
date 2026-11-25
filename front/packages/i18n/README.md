@@ -1,22 +1,22 @@
 # i18n
 
-Textos en español (plantilla) e inglés, generados con `gen-l10n` desde `lib/l10n/*.arb`.
+Texts in Spanish (template) and English, generated with `gen-l10n` from `lib/l10n/*.arb`.
 
-- `lib/src/generated/` contiene el código generado y se versiona, así otros paquetes compilan sin ejecutar el generador.
-- `AppLocalizations`, `supportedLocales` y `errorMessage(l10n, code)` se exportan desde `lib/i18n.dart`. `errorMessage` devuelve el mensaje del código `PLATFORM.*` o el texto genérico `errorFallback` si el código no se conoce.
-- Cada código de `PlatformErrorCode` tiene una clave `error_<código en minúsculas, con _>`, por ejemplo `error_platform_validation_invalid_input`.
+- `lib/src/generated/` holds the generated code and is committed, so other packages compile without running the generator.
+- `AppLocalizations`, `supportedLocales` and `errorMessage(l10n, code)` are exported from `lib/i18n.dart`. `errorMessage` returns the message for the `PLATFORM.*` code or the generic `errorFallback` text if the code is unknown.
+- Each `PlatformErrorCode` code has a key `error_<code in lowercase, with _>`, for example `error_platform_validation_invalid_input`.
 
-- Las etiquetas de menú no viven aquí: cada microfrontend declara la suya en su manifiesto (`MenuLabel`), así este paquete no conoce los microfrontends. Solo `menuMore` es del shell.
-- Las palabras compartidas (acciones como `confirm`, `delete`, `edit`, `close`, `back`, `search`, `loadMore`, `emptyListTitle`, y las etiquetas de la shell como `demoModeTitle`, `forbiddenTitle`, `goHome`, `loading`) viven en este paquete y se usan desde cualquier microfrontend.
+- Menu labels do not live here: each microfrontend declares its own in its manifest (`MenuLabel`), so this package does not know the microfrontends. Only `menuMore` belongs to the shell.
+- Shared words (actions such as `confirm`, `delete`, `edit`, `close`, `back`, `search`, `loadMore`, `emptyListTitle`, and shell labels such as `demoModeTitle`, `forbiddenTitle`, `goHome`, `loading`) live in this package and are used from any microfrontend.
 
-Para regenerar: `flutter gen-l10n` dentro del paquete.
+To regenerate: `flutter gen-l10n` inside the package.
 
-## Localización por microfrontend
+## Localization per microfrontend
 
-Cada microfrontend localiza sus propios textos con el mismo patrón. Así sus cadenas viajan en su chunk diferido y el shell no las carga.
+Each microfrontend localizes its own texts with the same pattern. This way its strings ship in its deferred chunk and the shell does not load them.
 
-1. **Archivos propios.** El microfrontend tiene su `l10n.yaml` y sus ARB en `lib/src/l10n/` (plantilla `app_es.arb` y `app_en.arb`). Genera la clase `<Name>Localizations` dentro del paquete del microfrontend, y ese código generado se versiona para que otros paquetes compilen sin ejecutar el generador.
-2. **Override en la pantalla diferida.** El builder de cada pantalla, que vive en la librería diferida, envuelve la pantalla con `Localizations.override` y el delegado del microfrontend. El shell no registra delegados de microfrontends:
+1. **Own files.** The microfrontend has its `l10n.yaml` and its ARB files in `lib/src/l10n/` (template `app_es.arb` and `app_en.arb`). It generates the `<Name>Localizations` class inside the microfrontend package, and that generated code is committed so other packages compile without running the generator.
+2. **Override in the deferred screen.** The builder of each screen, which lives in the deferred library, wraps the screen with `Localizations.override` and the microfrontend's delegate. The shell does not register microfrontend delegates:
 
    ```dart
    Widget buildTasksListScreen(MicrofrontendScope scope) => Builder(
@@ -28,7 +28,7 @@ Cada microfrontend localiza sus propios textos con el mismo patrón. Así sus ca
    );
    ```
 
-3. **Etiqueta del menú.** Es lo único que el shell dibuja antes de cargar el microfrontend, así que va en el manifiesto como `MenuLabel` con un texto por idioma. El registro rechaza una etiqueta sin alguno de los `supportedLocales`.
-4. **Palabras compartidas.** Los textos comunes (acciones, estados y errores de plataforma) salen de este paquete. El microfrontend no repite esas claves en sus ARB.
+3. **Menu label.** It is the only thing the shell draws before loading the microfrontend, so it goes in the manifest as a `MenuLabel` with one text per language. The registry rejects a label missing any of the `supportedLocales`.
+4. **Shared words.** Common texts (actions, states and platform errors) come from this package. The microfrontend does not repeat those keys in its ARB files.
 
-Un microfrontend solo añade claves propias en sus ARB. Si una palabra aparece en más de un microfrontend, se mueve a este paquete.
+A microfrontend only adds its own keys in its ARB files. If a word appears in more than one microfrontend, it moves to this package.

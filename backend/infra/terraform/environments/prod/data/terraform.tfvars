@@ -12,7 +12,7 @@ db_deletion_protection     = true
 db_backup_retention_period = 14
 db_skip_final_snapshot     = false
 
-# Una base por shard de cada servicio y el catálogo. replication (por defecto) sirve a SagaType.MoveShard.
+# One database per shard of each service plus the catalog. replication (the default) serves SagaType.MoveShard.
 db_services = {
   identity      = { shards = 2, catalog = "owner" }
   tasks         = { shards = 1, catalog = "read" }

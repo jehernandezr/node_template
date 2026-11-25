@@ -5,8 +5,8 @@ state_bucket = "node-template-prod-tfstate"
 
 service_name = "billing"
 
-# API en Fargate detrás del ALB interno. El proceso de la API corre también los jobs (cierre de periodos y
-# morosidad); los workers aplican el uso que envían los servicios y los cambios de membresía de identity.
+# API on Fargate behind the internal ALB. The API process also runs the jobs (period closing and
+# delinquency); the workers apply the usage that services send and the membership changes from identity.
 api = {
   runtime                = "fargate"
   route_prefixes         = ["/v1/billing"]
@@ -23,12 +23,12 @@ workers = {
   identity = { queue = "billing-identity", max_capacity = 4 }
 }
 
-# Valores no secretos. Los días de prueba y de gracia son una decisión comercial: el servicio no arranca sin
-# ellos y estos son los de la plantilla.
-# INTERNAL_API_BASE_URLS es obligatoria y la da el despliegue: un JSON con la dirección interna de identity
-# (verificación de acceso) en este ambiente, por ejemplo "{\"identity\":\"http://identity.prod.internal\"}".
-# La API interna de todos los servicios responde en el mismo path, así que el ALB compartido no sirve para
-# llegar a identity. Sin esa URL el servicio no arranca.
+# Non-secret values. Trial and grace days are a business decision: the service does not start without
+# them, and these are the template defaults.
+# INTERNAL_API_BASE_URLS is required and comes from the deployment: a JSON with the internal address of identity
+# (access check) in this environment, for example "{\"identity\":\"http://identity.prod.internal\"}".
+# The internal API of every service answers on the same path, so the shared ALB cannot be used to
+# reach identity. The service does not start without that URL.
 environment_variables = {
   INTERNAL_API_SIGNER          = "hmac"
   BILLING_TRIAL_DAYS           = "14"
@@ -40,8 +40,8 @@ environment_variables = {
   TRUST_PROXY_HOPS             = "2"
 }
 
-# Secretos en Secrets Manager (nombre de variable a ARN, con clave JSON opcional). La config del servicio
-# exige INTERNAL_API_SHARED_SECRET.
+# Secrets in Secrets Manager (variable name to ARN, with an optional JSON key). The service config
+# requires INTERNAL_API_SHARED_SECRET.
 secrets = {}
 
 database_access = true

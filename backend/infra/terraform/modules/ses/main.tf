@@ -8,8 +8,8 @@ locals {
   mail_from_domain = "${var.mail_from_subdomain}.${var.domain}"
   create_dns       = var.route53_zone_id != null
 
-  # Dos configuration sets: uno con seguimiento de aperturas y clics para correo masivo
-  # y otro sin seguimiento para correo de seguridad, que solo reporta entrega y fallos.
+  # Two configuration sets: one with open and click tracking for bulk email
+  # and one without tracking for security email, which only reports delivery and failures.
   configuration_sets = {
     tracked = {
       name  = "${var.name_prefix}-tracked"

@@ -1,129 +1,129 @@
 variable "name_prefix" {
-  description = "Prefijo de nombres compartido con el clúster, por ejemplo nt-dev."
+  description = "Name prefix shared with the cluster, for example nt-dev."
   type        = string
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,20}[a-z0-9]$", var.name_prefix))
-    error_message = "name_prefix debe usar minúsculas, números y guiones, y tener entre 3 y 22 caracteres."
+    error_message = "name_prefix must use lowercase letters, digits and hyphens, and be 3 to 22 characters long."
   }
 }
 
 variable "service_name" {
-  description = "Nombre corto del servicio, por ejemplo reports o realtime."
+  description = "Short service name, for example reports or realtime."
   type        = string
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,20}[a-z0-9]$", var.service_name))
-    error_message = "service_name debe usar minúsculas, números y guiones, y tener entre 3 y 22 caracteres."
+    error_message = "service_name must use lowercase letters, digits and hyphens, and be 3 to 22 characters long."
   }
 }
 
 variable "environment" {
-  description = "Entorno (dev, staging o prod). Se publica como deployment.environment en OpenTelemetry."
+  description = "Environment (dev, staging or prod). Published as deployment.environment in OpenTelemetry."
   type        = string
 }
 
 variable "cluster_arn" {
-  description = "ARN del clúster ECS."
+  description = "ECS cluster ARN."
   type        = string
 }
 
 variable "cluster_name" {
-  description = "Nombre del clúster ECS, para autoescalado y métricas."
+  description = "ECS cluster name, for autoscaling and metrics."
   type        = string
 }
 
 variable "vpc_id" {
-  description = "ID de la VPC."
+  description = "VPC ID."
   type        = string
 }
 
 variable "additional_security_group_ids" {
-  description = "Security groups extra de las tareas. El de clientes de datos (stack data) abre la salida hacia RDS Proxy, las réplicas, Valkey y OpenObserve; el del servicio solo sale por HTTPS."
+  description = "Extra security groups for the tasks. The data clients one (data stack) opens egress to RDS Proxy, the replicas, Valkey and OpenObserve; the service one only allows outbound HTTPS."
   type        = list(string)
   default     = []
 }
 
 variable "subnet_ids" {
-  description = "Subredes privadas donde corren las tareas."
+  description = "Private subnets where the tasks run."
   type        = list(string)
 }
 
 variable "image" {
-  description = "Imagen del contenedor con su etiqueta o digest, por ejemplo <cuenta>.dkr.ecr.<región>.amazonaws.com/reports:1.2.3."
+  description = "Container image with its tag or digest, for example <account>.dkr.ecr.<region>.amazonaws.com/reports:1.2.3."
   type        = string
 }
 
 variable "command" {
-  description = "Comando del contenedor. Null usa el de la imagen. Un mismo servicio puede correr su worker con otro comando."
+  description = "Container command. Null uses the image default. The same service can run its worker with a different command."
   type        = list(string)
   default     = null
 }
 
 variable "container_port" {
-  description = "Puerto del contenedor. Null para workers sin tráfico entrante."
+  description = "Container port. Null for workers without inbound traffic."
   type        = number
   default     = null
 }
 
 variable "cpu" {
-  description = "Unidades de CPU de la tarea (256, 512, 1024, 2048, 4096, 8192 o 16384)."
+  description = "Task CPU units (256, 512, 1024, 2048, 4096, 8192 or 16384)."
   type        = number
   default     = 512
 
   validation {
     condition     = contains([256, 512, 1024, 2048, 4096, 8192, 16384], var.cpu)
-    error_message = "cpu debe ser 256, 512, 1024, 2048, 4096, 8192 o 16384."
+    error_message = "cpu must be 256, 512, 1024, 2048, 4096, 8192 or 16384."
   }
 }
 
 variable "memory" {
-  description = "Memoria de la tarea en MiB. Debe ser una combinación válida de Fargate para cpu."
+  description = "Task memory in MiB. Must be a valid Fargate combination for cpu."
   type        = number
   default     = 1024
 }
 
 variable "cpu_architecture" {
-  description = "Arquitectura de la tarea: ARM64 o X86_64."
+  description = "Task architecture: ARM64 or X86_64."
   type        = string
   default     = "ARM64"
 
   validation {
     condition     = contains(["ARM64", "X86_64"], var.cpu_architecture)
-    error_message = "cpu_architecture debe ser ARM64 o X86_64."
+    error_message = "cpu_architecture must be ARM64 or X86_64."
   }
 }
 
 variable "desired_count" {
-  description = "Tareas iniciales. El autoescalado las ajusta y Terraform no las revierte."
+  description = "Initial task count. Autoscaling adjusts it and Terraform does not revert it."
   type        = number
   default     = 1
 }
 
 variable "min_capacity" {
-  description = "Mínimo de tareas del autoescalado. 0 para workers que escalan por cola."
+  description = "Autoscaling minimum task count. 0 for workers that scale on a queue."
   type        = number
   default     = 1
 
   validation {
     condition     = var.min_capacity >= 0
-    error_message = "min_capacity no puede ser negativo."
+    error_message = "min_capacity cannot be negative."
   }
 }
 
 variable "max_capacity" {
-  description = "Máximo de tareas del autoescalado."
+  description = "Autoscaling maximum task count."
   type        = number
   default     = 4
 
   validation {
     condition     = var.max_capacity >= 1
-    error_message = "max_capacity debe ser al menos 1."
+    error_message = "max_capacity must be at least 1."
   }
 }
 
 variable "capacity_provider_strategy" {
-  description = "Estrategia de capacity providers del servicio. Usa FARGATE_SPOT solo para workers tolerantes a interrupciones."
+  description = "Capacity provider strategy for the service. Use FARGATE_SPOT only for interruption-tolerant workers."
   type = list(object({
     capacity_provider = string
     weight            = number
@@ -133,147 +133,147 @@ variable "capacity_provider_strategy" {
 
   validation {
     condition     = alltrue([for s in var.capacity_provider_strategy : contains(["FARGATE", "FARGATE_SPOT"], s.capacity_provider)])
-    error_message = "capacity_provider debe ser FARGATE o FARGATE_SPOT."
+    error_message = "capacity_provider must be FARGATE or FARGATE_SPOT."
   }
 }
 
 variable "environment_variables" {
-  description = "Variables de entorno de la aplicación, sin secretos."
+  description = "Application environment variables, without secrets."
   type        = map(string)
   default     = {}
 }
 
 variable "secrets" {
-  description = "Secretos como variable de entorno: nombre de la variable a ARN de Secrets Manager, con clave JSON opcional (arn:...:secret:nombre-xxxxxx:CLAVE::)."
+  description = "Secrets as environment variables: variable name to Secrets Manager ARN, with an optional JSON key (arn:...:secret:name-xxxxxx:KEY::)."
   type        = map(string)
   default     = {}
 
   validation {
     condition     = alltrue([for v in values(var.secrets) : can(regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v))])
-    error_message = "Cada valor de secrets debe ser un ARN de Secrets Manager."
+    error_message = "Each secrets value must be a Secrets Manager ARN."
   }
 }
 
 variable "secrets_kms_key_arns" {
-  description = "Claves KMS que cifran los secretos, para que el rol de ejecución pueda descifrarlos."
+  description = "KMS keys that encrypt the secrets, so the execution role can decrypt them."
   type        = list(string)
   default     = []
 }
 
 variable "otlp_endpoint" {
-  description = "Endpoint OTLP HTTP base de OpenObserve (salida otlp_http_endpoint del módulo observability). Null desactiva OpenTelemetry."
+  description = "Base OTLP HTTP endpoint of OpenObserve (otlp_http_endpoint output of the observability module). Null disables OpenTelemetry."
   type        = string
   default     = null
 }
 
 variable "otlp_authorization_secret" {
-  description = "Secreto con la cabecera Authorization del OTLP, como valueFrom (salida otlp_authorization_value_from de observability)."
+  description = "Secret with the OTLP Authorization header, as a valueFrom (otlp_authorization_value_from output of observability)."
   type        = string
   default     = null
 }
 
 variable "otel_collector_sidecar" {
-  description = "Corre el collector ADOT como sidecar. La aplicación exporta a localhost y el collector reenvía a OpenObserve. Si es false, la aplicación exporta directo al endpoint."
+  description = "Runs the ADOT collector as a sidecar. The application exports to localhost and the collector forwards to OpenObserve. If false, the application exports straight to the endpoint."
   type        = bool
   default     = true
 }
 
 variable "otel_collector_image" {
-  description = "Imagen del collector ADOT del sidecar. Fija una versión revisada."
+  description = "ADOT collector image for the sidecar. Pin a reviewed version."
   type        = string
   default     = "public.ecr.aws/aws-observability/aws-otel-collector:v0.43.1"
 }
 
 variable "enable_load_balancer" {
-  description = "Conecta el servicio a un ALB con target group y regla de listener. Requiere container_port."
+  description = "Attaches the service to an ALB with a target group and a listener rule. Requires container_port."
   type        = bool
   default     = false
 }
 
 variable "alb_listener_arn" {
-  description = "ARN del listener HTTPS del ALB, donde se crea la regla. Requerido con enable_load_balancer."
+  description = "ARN of the ALB HTTPS listener where the rule is created. Required with enable_load_balancer."
   type        = string
   default     = null
 }
 
 variable "alb_security_group_id" {
-  description = "Security group del ALB. El módulo agrega su salida hacia el servicio. Requerido con enable_load_balancer."
+  description = "ALB security group. The module adds its egress to the service. Required with enable_load_balancer."
   type        = string
   default     = null
 }
 
 variable "listener_rule_priority" {
-  description = "Prioridad de la regla del listener. Única por listener."
+  description = "Listener rule priority. Unique per listener."
   type        = number
   default     = 100
 }
 
 variable "path_patterns" {
-  description = "Patrones de ruta que enrutan al servicio, por ejemplo [\"/realtime/*\"]."
+  description = "Path patterns that route to the service, for example [\"/realtime/*\"]."
   type        = list(string)
   default     = []
 }
 
 variable "host_headers" {
-  description = "Hosts que enrutan al servicio, por ejemplo [\"realtime.example.com\"]."
+  description = "Hosts that route to the service, for example [\"realtime.example.com\"]."
   type        = list(string)
   default     = []
 }
 
 variable "health_check_path" {
-  description = "Ruta del health check del target group."
+  description = "Target group health check path."
   type        = string
   default     = "/health"
 }
 
 variable "health_check_grace_period_seconds" {
-  description = "Segundos de gracia antes de que el health check del ALB cuente contra una tarea nueva."
+  description = "Grace period in seconds before the ALB health check counts against a new task."
   type        = number
   default     = 60
 }
 
 variable "deregistration_delay_seconds" {
-  description = "Segundos que el ALB espera al drenar conexiones. Súbelo para conexiones largas de WebSocket y SSE."
+  description = "Seconds the ALB waits while draining connections. Raise it for long-lived WebSocket and SSE connections."
   type        = number
   default     = 60
 }
 
 variable "stop_timeout_seconds" {
-  description = "Segundos entre SIGTERM y SIGKILL del contenedor. Máximo 120."
+  description = "Seconds between SIGTERM and SIGKILL for the container. Maximum 120."
   type        = number
   default     = 30
 
   validation {
     condition     = var.stop_timeout_seconds >= 2 && var.stop_timeout_seconds <= 120
-    error_message = "stop_timeout_seconds debe estar entre 2 y 120."
+    error_message = "stop_timeout_seconds must be between 2 and 120."
   }
 }
 
 variable "container_health_check_command" {
-  description = "Comando de health check del contenedor, por ejemplo [\"CMD-SHELL\", \"curl -f http://localhost:3000/health || exit 1\"]. Null no lo define."
+  description = "Container health check command, for example [\"CMD-SHELL\", \"curl -f http://localhost:3000/health || exit 1\"]. Null leaves it undefined."
   type        = list(string)
   default     = null
 }
 
 variable "cpu_target_percent" {
-  description = "Objetivo de CPU media del autoescalado. Null desactiva esta política."
+  description = "Autoscaling target for average CPU. Null disables this policy."
   type        = number
   default     = 60
 
   validation {
     condition     = var.cpu_target_percent == null || (coalesce(var.cpu_target_percent, 50) > 0 && coalesce(var.cpu_target_percent, 50) < 100)
-    error_message = "cpu_target_percent debe estar entre 1 y 99."
+    error_message = "cpu_target_percent must be between 1 and 99."
   }
 }
 
 variable "memory_target_percent" {
-  description = "Objetivo de memoria media del autoescalado. Null desactiva esta política."
+  description = "Autoscaling target for average memory. Null disables this policy."
   type        = number
   default     = null
 }
 
 variable "sqs_scaling" {
-  description = "Autoescalado por profundidad de cola: sube tareas según los mensajes visibles (messages_per_task por tarea, hasta steps escalones) y baja a min_capacity cuando la cola y los mensajes en proceso llegan a cero. Combínalo con cpu_target_percent = null en workers."
+  description = "Queue depth autoscaling: adds tasks based on visible messages (messages_per_task per task, up to steps steps) and scales down to min_capacity when the queue and in-flight messages reach zero. Combine it with cpu_target_percent = null in workers."
   type = object({
     queue_name          = string
     scale_out_threshold = optional(number, 1)
@@ -285,54 +285,54 @@ variable "sqs_scaling" {
 
   validation {
     condition     = var.sqs_scaling == null || (try(var.sqs_scaling.steps, 2) >= 2 && try(var.sqs_scaling.messages_per_task, 1) >= 1)
-    error_message = "sqs_scaling.steps debe ser al menos 2 y messages_per_task al menos 1."
+    error_message = "sqs_scaling.steps must be at least 2 and messages_per_task at least 1."
   }
 }
 
 variable "task_policies" {
-  description = "Políticas IAM en línea del rol de la tarea: nombre a documento JSON. Aquí van los permisos de SQS, S3, SES y demás."
+  description = "Inline IAM policies for the task role: name to JSON document. SQS, S3, SES and other permissions go here."
   type        = map(string)
   default     = {}
 }
 
 variable "enable_execute_command" {
-  description = "Habilita ECS Exec para depurar. Las sesiones se registran con la clave y el log group del clúster."
+  description = "Enables ECS Exec for debugging. Sessions are logged with the cluster key and log group."
   type        = bool
   default     = false
 }
 
 variable "exec_kms_key_arn" {
-  description = "Clave KMS del clúster (salida kms_key_arn de ecs-cluster), para que la tarea abra sesiones de ECS Exec."
+  description = "Cluster KMS key (kms_key_arn output of ecs-cluster), so the task can open ECS Exec sessions."
   type        = string
   default     = null
 }
 
 variable "exec_log_group_arn" {
-  description = "ARN del log group de ECS Exec del clúster. Si es null, el rol puede escribir en cualquier log group de /ecs/."
+  description = "ARN of the cluster ECS Exec log group. If null, the role can write to any log group under /ecs/."
   type        = string
   default     = null
 }
 
 variable "readonly_root_filesystem" {
-  description = "Monta el sistema de archivos raíz del contenedor de solo lectura."
+  description = "Mounts the container root filesystem as read-only."
   type        = bool
   default     = true
 }
 
 variable "log_retention_days" {
-  description = "Días de retención del log group del servicio."
+  description = "Retention in days for the service log group."
   type        = number
   default     = 30
 }
 
 variable "kms_key_arn" {
-  description = "Clave KMS del log group. Debe permitir a logs.<región>.amazonaws.com sobre /ecs/<name_prefix>/*; la de ecs-cluster sirve. Si es null, el módulo crea la suya."
+  description = "KMS key for the log group. It must allow logs.<region>.amazonaws.com on /ecs/<name_prefix>/*; the ecs-cluster key works. If null, the module creates its own."
   type        = string
   default     = null
 }
 
 variable "tags" {
-  description = "Etiquetas adicionales para los recursos del módulo."
+  description = "Additional tags for the module resources."
   type        = map(string)
   default     = {}
 }

@@ -1,5 +1,5 @@
 name: api
-description: "ApiClient: valida la petición contra el contrato generado antes de llamar por HTTP y decodifica respuestas y errores."
+description: "ApiClient: validates the request against the generated contract before calling over HTTP and decodes responses and errors."
 publish_to: none
 version: 0.0.1
 

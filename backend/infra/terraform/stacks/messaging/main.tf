@@ -1,6 +1,6 @@
-# Tópicos, colas y DLQ leídos de la topología que exporta backend/tools/contracts-export
-# (backend/infra/terraform/topology.json, confirmado en git y verificado en CI), más la cola
-# de eventos de SES cuando el stack platform tiene SES.
+# Topics, queues and DLQs read from the topology exported by backend/tools/contracts-export
+# (backend/infra/terraform/topology.json, committed to git and verified in CI), plus the SES
+# events queue when the platform stack has SES.
 
 locals {
   topology_file = startswith(var.topology_file, "/") ? var.topology_file : abspath("${path.root}/${var.topology_file}")
@@ -16,13 +16,13 @@ module "messaging" {
   alarm_topic_arn   = local.platform.alarm_topic_arn
   max_receive_count = var.max_receive_count
 
-  # LocalStack no emula bien las alarmas ni el borrado de redrive_allow_policy.
+  # LocalStack does not emulate alarms or the removal of redrive_allow_policy well.
   alarms_enabled               = !local.localstack
   redrive_allow_policy_enabled = !local.localstack
 }
 
-# Cola de eventos de SES para el seguimiento de correo. La política de las colas de la
-# topología solo autoriza a sus propios tópicos, así que esta cola se declara aparte.
+# SES events queue for email tracking. The policy of the topology queues only authorizes
+# their own topics, so this queue is declared separately.
 resource "aws_sqs_queue" "ses_events_dlq" {
   count = local.ses == null ? 0 : 1
 

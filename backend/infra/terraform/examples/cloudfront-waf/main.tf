@@ -13,7 +13,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# CloudFront, su certificado y el WAF de ámbito CloudFront viven en us-east-1.
+# CloudFront, its certificate and the CloudFront-scoped WAF live in us-east-1.
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"

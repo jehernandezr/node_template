@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
-# Terraform por stack contra AWS. Lo usan el pipeline y las personas, con las mismas reglas.
-#   ENV=dev deploy-aws.sh plan    [all|<stack>]       # plan de un stack o de todos, en orden
-#   ENV=dev deploy-aws.sh apply   [all|<stack>]       # aplica el plan guardado: network, platform, data, messaging, edge
-#   ENV=dev deploy-aws.sh destroy [all|<stack>]       # destroy en orden inverso
-#   ENV=dev deploy-aws.sh plan    service <servicio>  # stack de un servicio (estado propio)
-#   ENV=dev deploy-aws.sh apply   service <servicio>
-# plan guarda el plan en PLAN_DIR (por defecto backend/infra/terraform/.plans/<ENV>) y apply
-# aplica ese archivo y nada más: lo que se revisó es lo que se aplica. Si el estado cambió
-# desde el plan, Terraform rechaza el plan viejo y hay que volver a planear. Un stack que lee
-# salidas de otro se planea después de aplicar ese otro.
-# Variables: ENV (dev), AUTO_APPROVE=1 omite la confirmación de destroy, LOCK_TIMEOUT (5m).
-# Los artefactos de un servicio llegan como TF_VAR_image y TF_VAR_lambda_package al planear.
-# Credenciales: OIDC en CI, perfil en local.
+# Terraform per stack against AWS. The pipeline and people use it, with the same rules.
+#   ENV=dev deploy-aws.sh plan    [all|<stack>]       # plan one stack or all of them, in order
+#   ENV=dev deploy-aws.sh apply   [all|<stack>]       # applies the saved plan: network, platform, data, messaging, edge
+#   ENV=dev deploy-aws.sh destroy [all|<stack>]       # destroy in reverse order
+#   ENV=dev deploy-aws.sh plan    service <service>   # a service stack (its own state)
+#   ENV=dev deploy-aws.sh apply   service <service>
+# plan saves the plan in PLAN_DIR (default backend/infra/terraform/.plans/<ENV>) and apply
+# applies that file and nothing else: what was reviewed is what gets applied. If the state changed
+# since the plan, Terraform rejects the stale plan and you must plan again. A stack that reads
+# outputs of another is planned after that other one is applied.
+# Variables: ENV (dev), AUTO_APPROVE=1 skips the destroy confirmation, LOCK_TIMEOUT (5m).
+# A service's artifacts arrive as TF_VAR_image and TF_VAR_lambda_package when planning.
+# Credentials: OIDC in CI, a profile locally.
 set -euo pipefail
 
 TF_DIR="$(cd "$(dirname "$0")/../terraform" && pwd)"
 ENV="${ENV:-dev}"
 ORDER=(network platform data messaging edge)
 PLAN_DIR="${PLAN_DIR:-$TF_DIR/.plans/$ENV}"
-# Espera el candado del estado en lugar de leer un estado a medio escribir por otro apply.
+# Waits for the state lock instead of reading a state half written by another apply.
 LOCK_TIMEOUT="${LOCK_TIMEOUT:-5m}"
 
 if [[ "$ENV" == "local" ]]; then
-  echo "En local no hay Terraform: usa backend/infra/scripts/local.sh" >&2
+  echo "There is no Terraform for local: use backend/infra/scripts/local.sh" >&2
   exit 1
 fi
 
-# Stacks del ambiente en el orden de dependencias.
+# Environment stacks in dependency order.
 stacks_of_env() {
   local stack
   for stack in "${ORDER[@]}"; do
@@ -41,12 +41,12 @@ selected() {
   esac
 }
 
-# $1: carpeta del stack (stacks/<x>), $2: carpeta de valores (environments/<env>/<y>), $3: acción.
+# $1: stack folder (stacks/<x>), $2: values folder (environments/<env>/<y>), $3: action.
 tf_run() {
   local code="$TF_DIR/stacks/$1" values="$TF_DIR/environments/$ENV/$2" action=$3
   local plan_file="$PLAN_DIR/${2//\//-}.tfplan"
   if [[ ! -f "$values/terraform.tfvars" ]]; then
-    echo "No existe $values/terraform.tfvars" >&2
+    echo "$values/terraform.tfvars does not exist" >&2
     exit 1
   fi
   terraform -chdir="$code" init -input=false -reconfigure -backend-config="$values/backend.tfvars" >/dev/null
@@ -58,7 +58,7 @@ tf_run() {
       ;;
     apply)
       if [[ ! -f "$plan_file" ]]; then
-        echo "No hay plan guardado en $plan_file. Corre primero: ENV=$ENV $0 plan" >&2
+        echo "No saved plan in $plan_file. Run first: ENV=$ENV $0 plan" >&2
         exit 1
       fi
       terraform -chdir="$code" apply -input=false -lock-timeout="$LOCK_TIMEOUT" "$plan_file"
@@ -84,7 +84,7 @@ run_stacks() {
 }
 
 run_service() {
-  local action=$1 service=${2:?Falta el nombre del servicio}
+  local action=$1 service=${2:?Missing the service name}
   echo "==> terraform $action service $service ($ENV)"
   tf_run service "services/$service" "$action"
 }
@@ -93,7 +93,7 @@ action="${1:-plan}"
 case "$action" in
   plan | apply | destroy) ;;
   *)
-    echo "Uso: ENV=<dev|staging|prod> $0 <plan|apply|destroy> [all|<stack>|service <servicio>]" >&2
+    echo "Usage: ENV=<dev|staging|prod> $0 <plan|apply|destroy> [all|<stack>|service <service>]" >&2
     exit 1
     ;;
 esac

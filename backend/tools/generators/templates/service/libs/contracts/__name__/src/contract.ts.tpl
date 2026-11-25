@@ -5,14 +5,14 @@ import {
 } from '@contracts/platform';
 import { __Name__Operation } from './enums/identifiers.enum.js';
 
-/** Las operaciones de traslado de tenant de __name__, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant move operations of __name__, with their exact type to register and call them. */
 export const __Name__TenantMoveOperations = defineTenantMoveOperations('__name__');
 
-/** Las operaciones del directorio de tenants de __name__, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant directory operations of __name__, with their exact type to register and call them. */
 export const __Name__TenantDirectoryOperations =
   defineTenantDirectoryOperations('__name__');
 
-/** Contrato del servicio __name__. Sus rutas, eventos y errores se agregan aquí con sus enums. */
+/** Contract of the __name__ service. Its routes, events and errors are added here with their enums. */
 export const __nameCamel__Contract = defineServiceContract({
   service: '__name__',
   description: 'Servicio __name__.',

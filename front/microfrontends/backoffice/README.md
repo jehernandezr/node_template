@@ -1,67 +1,67 @@
 # mf_backoffice
 
-Microfrontend de backoffice de plataforma. Solo web y solo para roles de plataforma (`PlatformRole`) con segundo factor reciente. Sigue el contrato de microfrontend del [ADR 0018](../../../docs/adr/0018-contrato-de-microfrontend.md).
+Platform backoffice microfrontend. Web only and only for platform roles (`PlatformRole`) with a recent second factor. It follows the microfrontend contract of [ADR 0018](../../../docs/adr/0018-contrato-de-microfrontend.md).
 
-## Rutas
+## Routes
 
-El manifiesto declara `screens: [ScreenRoute(...)]` anidadas bajo `/backoffice`. Cada pantalla es dueña de su única barra superior (`AppPage`); la navegación de secciones va dentro de la página.
+The manifest declares `screens: [ScreenRoute(...)]` nested under `/backoffice`. Each screen owns its single top bar (`AppPage`); section navigation goes inside the page.
 
-| Ruta                      | Pantalla                                                               | Acceso extra            |
-| ------------------------- | ---------------------------------------------------------------------- | ----------------------- |
-| `/backoffice`             | Resumen: tenants, sagas que requieren intervención, mensajes en DLQ    |                         |
-| `/backoffice/tenants`     | Lista con búsqueda, filtros de región y estado                         |                         |
-| `/backoffice/tenants/:id` | Detalle: plan, grupo de shards, usuarios y auditoría                   |                         |
-| `/backoffice/sagas`       | Lista con filtro de estado; las que requieren intervención se resaltan | lectores de operaciones |
-| `/backoffice/sagas/:id`   | Línea de tiempo de pasos, acciones manuales y auditoría                | (hereda)                |
-| `/backoffice/dlq`         | Colas muertas                                                          | lectores de operaciones |
-| `/backoffice/dlq/:queue`  | Mensajes de una cola concreta, con redistribución                      | (hereda)                |
+| Route | Screen | Extra access |
+| --- | --- | --- |
+| `/backoffice` | Summary: tenants, sagas that need intervention, messages in DLQ | |
+| `/backoffice/tenants` | List with search, region and status filters | |
+| `/backoffice/tenants/:id` | Detail: plan, shard group, users and audit | |
+| `/backoffice/sagas` | List with status filter; those that need intervention are highlighted | operations readers |
+| `/backoffice/sagas/:id` | Timeline of steps, manual actions and audit | (inherits) |
+| `/backoffice/dlq` | Dead-letter queues | operations readers |
+| `/backoffice/dlq/:queue` | Messages of a specific queue, with redrive | (inherits) |
 
-## Acceso
+## Access
 
-Las reglas viven en `lib/src/shared/constants/backoffice_access.dart`:
+The rules live in `lib/src/shared/constants/backoffice_access.dart`:
 
-- **Manifiesto:** `AccessRule.all([platformRoles(todos), mfa(backofficeMfaMaxAge)])`, con la ventana de step-up del contrato (`MfaRules.stepUpMaxAgeMinutes`). Un rol de plataforma sin segundo factor reciente va a la página de step-up del shell; un usuario sin rol de plataforma va a `forbidden`.
-- **Lectura de operaciones** (sagas y DLQ): `superAdmin`, `support` y `readOnly`, con `ScreenRoute(access:)`. `finance` solo ve la parte de facturación: el resumen con la tarjeta de tenants y los tenants con su plan.
-- **Acciones** (acciones manuales de saga y redistribución de DLQ): solo `superAdmin` y `support`, con `AccessGate`. Para los demás roles los botones no aparecen.
+- **Manifest:** `AccessRule.all([platformRoles(all), mfa(backofficeMfaMaxAge)])`, with the contract's step-up window (`MfaRules.stepUpMaxAgeMinutes`). A platform role without a recent second factor goes to the shell's step-up page; a user without a platform role goes to `forbidden`.
+- **Operations read** (sagas and DLQ): `superAdmin`, `support` and `readOnly`, with `ScreenRoute(access:)`. `finance` only sees the billing part: the summary with the tenants card and the tenants with their plan.
+- **Actions** (manual saga actions and DLQ redrive): only `superAdmin` and `support`, with `AccessGate`. For the other roles the buttons do not appear.
 
-La interfaz solo oculta; la API vuelve a comprobar cada petición.
+The interface only hides; the API checks every request again.
 
-## Carga diferida
+## Deferred loading
 
-`lib/mf_backoffice.dart` es el manifiesto y se carga con el shell. Importa `shell_core`, las constantes de `src/shared/constants` y, como import diferido, `src/screens/screens.dart`. Nada de `src/{data,screens,l10n}` puede alcanzarse sin `deferred as` desde el manifiesto: los clientes lo descargarían y los textos ARB del backoffice aparecerían en `main.dart.js` (lo comprueba `front/tools/check_deferred_chunks.dart`). `front/tools/check_microfrontend_boundaries.dart`, que corre en `analyze`, recorre el grafo de imports del manifiesto y vigila esta regla.
+`lib/mf_backoffice.dart` is the manifest and loads with the shell. It imports `shell_core`, the constants in `src/shared/constants` and, as a deferred import, `src/screens/screens.dart`. Nothing in `src/{data,screens,l10n}` may be reachable from the manifest without `deferred as`: clients would download it and the backoffice ARB texts would appear in `main.dart.js` (checked by `front/tools/check_deferred_chunks.dart`). `front/tools/check_microfrontend_boundaries.dart`, which runs in `analyze`, walks the manifest's import graph and enforces this rule.
 
-`src/screens/screens.dart` expone un punto de entrada por pantalla (`overviewPage(scope)`, `dlqPage(scope, queue: ...)`, ...), sin `BuildContext`. Cada uno obtiene el repositorio del `MicrofrontendScope` de la identidad actual y envuelve la pantalla en `BackofficeLocalized`, que añade `BackofficeLocalizations.delegate`. Los diálogos se abren con `showBackofficeDialog`, porque viven en el navegador raíz, fuera de la página.
+`src/screens/screens.dart` exposes one entry point per screen (`overviewPage(scope)`, `dlqPage(scope, queue: ...)`, ...), without `BuildContext`. Each one gets the repository from the `MicrofrontendScope` of the current identity and wraps the screen in `BackofficeLocalized`, which adds `BackofficeLocalizations.delegate`. Dialogs open with `showBackofficeDialog`, because they live in the root navigator, outside the page.
 
-## Estructura
+## Structure
 
 ```
 lib/src/
   shared/
-    enums/      TenantStatus, TenantRegion, SagaStatus, ... (no existen aún en package:contracts)
-    constants/  rutas (BackofficePaths) y reglas de acceso
-    types/      modelos de lectura (Tenant, Saga, AuditEntry, ...)
+    enums/      TenantStatus, TenantRegion, SagaStatus, ... (not yet in package:contracts)
+    constants/  routes (BackofficePaths) and access rules
+    types/      read models (Tenant, Saga, AuditEntry, ...)
     utils/      formatTimestamp
-  data/         BackofficeRepository (interfaz, ScopedResource) y FakeBackofficeRepository
-  screens/      pantallas y widgets comunes (BackofficePage, AsyncBody, AuditTimeline)
-  l10n/         ARB, código generado y etiquetas de enums
+  data/         BackofficeRepository (interface, ScopedResource) and FakeBackofficeRepository
+  screens/      screens and common widgets (BackofficePage, AsyncBody, AuditTimeline)
+  l10n/         ARB, generated code and enum labels
 ```
 
-## Datos
+## Data
 
-`BackofficeRepository` es el contrato e implementa `ScopedResource`: el scope lo crea con `scope.get(...)` y lo libera al cambiar de identidad. `FakeBackofficeRepository` guarda los datos en memoria, una instancia por identidad, y lanza `ApiErrorException` con códigos de `PlatformErrorCode`. `package:contracts` todavía no publica las operaciones del backoffice; cuando lo haga, la implementación real usará `ApiClient` de `package:api` y los enums generados reemplazarán a los de `shared/enums`.
+`BackofficeRepository` is the contract and implements `ScopedResource`: the scope creates it with `scope.get(...)` and releases it when the identity changes. `FakeBackofficeRepository` keeps the data in memory, one instance per identity, and throws `ApiErrorException` with codes from `PlatformErrorCode`. `package:contracts` does not publish the backoffice operations yet; when it does, the real implementation will use `ApiClient` from `package:api` and the generated enums will replace the ones in `shared/enums`.
 
-Los estados de carga, error y datos se muestran con `AsyncValueView`; los errores de una acción, con `showActionError` de `package:ui`.
+Loading, error and data states are shown with `AsyncValueView`; action errors, with `showActionError` from `package:ui`.
 
-## Localización
+## Localization
 
-- `l10n.yaml` genera `BackofficeLocalizations` desde `lib/src/l10n/app_es.arb` (plantilla) y `app_en.arb`, en `lib/src/l10n/generated/`. El código generado se versiona.
-- Las palabras compartidas (cancelar, confirmar, reintentar, errores de la plataforma) salen de `AppLocalizations` del paquete `i18n`.
-- Las etiquetas de enums viven en `lib/src/l10n/backoffice_labels.dart`.
+- `l10n.yaml` generates `BackofficeLocalizations` from `lib/src/l10n/app_es.arb` (template) and `app_en.arb`, into `lib/src/l10n/generated/`. The generated code is committed.
+- Shared words (cancel, confirm, retry, platform errors) come from `AppLocalizations` in the `i18n` package.
+- Enum labels live in `lib/src/l10n/backoffice_labels.dart`.
 
-## Pruebas
+## Tests
 
 ```sh
 flutter gen-l10n && flutter analyze && flutter test
 ```
 
-Las pruebas montan las rutas reales con `backofficeManifest.buildRoutes(...)` (o con `buildShellRouter` para el acceso del manifiesto) y cubren manifiesto, frontera diferida, aislamiento del scope, l10n en es y en, estados y acceso por rol.
+The tests mount the real routes with `backofficeManifest.buildRoutes(...)` (or with `buildShellRouter` for the manifest's access) and cover the manifest, the deferred boundary, scope isolation, l10n in es and en, states and access per role.

@@ -1,64 +1,64 @@
 variable "name_prefix" {
-  description = "Prefijo de los nombres de roles, bucket y repositorios, por ejemplo node-template-dev."
+  description = "Prefix for the role, bucket and repository names, for example node-template-dev."
   type        = string
 }
 
 variable "github_repository" {
-  description = "Repositorio de GitHub que puede asumir los roles, con la forma dueño/nombre."
+  description = "GitHub repository that can assume the roles, in the form owner/name."
   type        = string
 
   validation {
     condition     = can(regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", var.github_repository))
-    error_message = "github_repository debe tener la forma dueño/nombre, sin comodines."
+    error_message = "github_repository must have the form owner/name, without wildcards."
   }
 }
 
 variable "github_environment" {
-  description = "Environment de GitHub cuyos jobs pueden asumir los roles. Es la única identidad que acepta la política de confianza."
+  description = "GitHub environment whose jobs can assume the roles. It is the only identity the trust policy accepts."
   type        = string
 
   validation {
     condition     = can(regex("^[A-Za-z0-9_.-]+$", var.github_environment))
-    error_message = "github_environment no admite comodines ni espacios."
+    error_message = "github_environment does not allow wildcards or spaces."
   }
 }
 
 variable "create_provider" {
-  description = "Crea el proveedor OIDC de GitHub. Solo puede haber uno por cuenta: en la segunda región o ambiente de la misma cuenta, pon false y pasa existing_provider_arn."
+  description = "Creates the GitHub OIDC provider. There can only be one per account: in the second region or environment of the same account, set false and pass existing_provider_arn."
   type        = bool
   default     = true
 }
 
 variable "existing_provider_arn" {
-  description = "ARN del proveedor OIDC de GitHub que ya existe en la cuenta. Obligatorio con create_provider = false."
+  description = "ARN of the GitHub OIDC provider that already exists in the account. Required with create_provider = false."
   type        = string
   default     = null
 
   validation {
     condition     = var.create_provider || var.existing_provider_arn != null
-    error_message = "Con create_provider = false hay que indicar existing_provider_arn."
+    error_message = "With create_provider = false, existing_provider_arn must be set."
   }
 }
 
 variable "state_bucket" {
-  description = "Bucket de los estados de Terraform del ambiente. El rol de despliegue lo lee y lo escribe."
+  description = "Bucket for the environment's Terraform state. The deploy role reads and writes it."
   type        = string
 }
 
 variable "deploy_policy_arns" {
-  description = "Políticas administradas que se suman al rol de despliegue: lo que Terraform necesita crear en la cuenta. La plantilla no elige un alcance por ti."
+  description = "Managed policies added to the deploy role: what Terraform needs to create in the account. The template does not choose a scope for you."
   type        = list(string)
   default     = []
 }
 
 variable "artifacts_force_destroy" {
-  description = "Permite borrar el bucket de artefactos con contenido. Solo para ambientes desechables."
+  description = "Allows deleting the artifacts bucket with content. Only for disposable environments."
   type        = bool
   default     = false
 }
 
 variable "tags" {
-  description = "Etiquetas de los recursos del módulo."
+  description = "Tags for the module resources."
   type        = map(string)
   default     = {}
 }

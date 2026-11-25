@@ -1,4 +1,4 @@
-# Archivos de usuarios y correo. Existen también en el ambiente local (LocalStack).
+# User files and email. They also exist in the local environment (LocalStack).
 
 module "files_bucket" {
   count  = length(var.files_cors_allowed_origins) > 0 ? 1 : 0

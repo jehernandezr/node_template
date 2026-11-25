@@ -1,2 +1,2 @@
-/** Lo que `__name__` ofrece a los otros módulos. Cada caso de uso que otro módulo necesita se declara aquí. */
+/** What `__name__` offers to the other modules. Each use case another module needs is declared here. */
 export abstract class __Name__Facade {}

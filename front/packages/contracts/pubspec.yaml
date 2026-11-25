@@ -1,5 +1,5 @@
 name: contracts
-description: "Dart generado desde los contratos del backend (tipos, validadores, rutas y códigos) y su núcleo escrito a mano."
+description: "Dart generated from the backend contracts (types, validators, routes and codes) and its handwritten core."
 publish_to: none
 version: 0.0.1
 

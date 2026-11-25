@@ -16,11 +16,11 @@ terraform {
     }
   }
 
-  # bucket, key y region llegan de environments/<ambiente>/data/backend.tfvars.
+  # bucket, key and region come from environments/<environment>/data/backend.tfvars.
   backend "s3" {}
 }
 
-# Sin ambiente local: en local PostgreSQL y Valkey corren en Docker (backend/docker-compose.yml).
+# No local environment: locally PostgreSQL and Valkey run in Docker (backend/docker-compose.yml).
 provider "aws" {
   region = var.region
 
@@ -33,7 +33,7 @@ resource "terraform_data" "aws_only" {
   lifecycle {
     precondition {
       condition     = !local.localstack
-      error_message = "El stack data solo se despliega en AWS. En local PostgreSQL y Valkey corren en Docker."
+      error_message = "The data stack is deployed only on AWS. Locally PostgreSQL and Valkey run in Docker."
     }
   }
 }

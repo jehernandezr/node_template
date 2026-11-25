@@ -1,5 +1,5 @@
 name: contracts_gen
-description: Genera el Dart de packages/contracts desde backend/libs/contracts/*/export/contract.json.
+description: Generates the Dart of packages/contracts from backend/libs/contracts/*/export/contract.json.
 publish_to: none
 version: 0.0.1
 

@@ -1,10 +1,10 @@
-# Stack de desarrollo local.
+# Local development stack.
 #
-# Imágenes fijadas por tag y digest; Renovate (gestor docker-compose) propone las subidas.
-# Los puertos se publican solo en 127.0.0.1: nada queda expuesto a la red local.
+# Images pinned by tag and digest; Renovate (docker-compose manager) proposes the upgrades.
+# Ports are published only on 127.0.0.1: nothing is exposed to the local network.
 #
-# Uso: docker compose up -d --wait  (o backend/infra/scripts/local.sh up)
-# Guía completa: docs/local-development.md
+# Usage: docker compose up -d --wait  (or backend/infra/scripts/local.sh up)
+# Full guide: docs/local-development.md
 
 name: node-template-local
 
@@ -26,7 +26,7 @@ services:
       retries: 20
 
   valkey:
-    # El bundle trae los módulos de Valkey (Bloom con BF.*, JSON, búsqueda) que usa la plataforma.
+    # The bundle ships the Valkey modules (Bloom with BF.*, JSON, search) the platform uses.
     image: valkey/valkey-bundle:8.1.11@sha256:3f57cc71a102e0e66991ae203b069038d8c3f6214ca887ff32f9a381091af8de
     ports:
       - '127.0.0.1:6379:6379'
@@ -39,8 +39,8 @@ services:
       timeout: 3s
       retries: 20
 
-  # Región B simulada (sa-east-1): su propio PostgreSQL y su propio Valkey, en otros puertos. Los servicios
-  # corren una segunda vez con SERVICE_REGION=sa-east-1 apuntando aquí.
+  # Simulated region B (sa-east-1): its own PostgreSQL and its own Valkey, on other ports. The services
+  # run a second time with SERVICE_REGION=sa-east-1 pointing here.
   postgres-b:
     image: pgvector/pgvector:0.8.7-pg17@sha256:b513c48566e4777cd3370451400000c78eda6a08131d68f4c31d4a76f27bd8fd
     environment:
@@ -71,8 +71,8 @@ services:
       retries: 20
 
   localstack:
-    # 4.14.0 es la última versión 4.x. Las versiones con fecha (2026.x) pueden exigir
-    # LOCALSTACK_AUTH_TOKEN: valida el plan vigente antes de subir (docs/local-development.md).
+    # 4.14.0 is the last 4.x version. Dated versions (2026.x) may require
+    # LOCALSTACK_AUTH_TOKEN: check the current plan before upgrading (docs/local-development.md).
     image: localstack/localstack:4.14.0@sha256:3ebc37595918b8accb852f8048fef2aff047d465167edd655528065b07bc364a
     environment:
       SERVICES: sqs,sns,s3,s3control,kms,scheduler,ses,secretsmanager,sts,iam,cloudwatch,logs
@@ -113,7 +113,7 @@ services:
   openobserve:
     image: openobserve/openobserve:v1.1.2@sha256:4a154849432f75c4fb024de32fe34163c02406c905dab22bf8d213d2e3386392
     environment:
-      # Solo para desarrollo local. No reutilizar en ningún otro entorno.
+      # Local development only. Do not reuse in any other environment.
       ZO_ROOT_USER_EMAIL: admin@local.test
       ZO_ROOT_USER_PASSWORD: localdev123
     ports:
@@ -126,9 +126,9 @@ services:
       timeout: 5s
       retries: 20
 
-  # Collector entre los servicios y OpenObserve: tail sampling de trazas (todas las que
-  # tienen error y OTEL_SAMPLING_PERCENT del resto). Los servicios envían OTLP a :4318.
-  # La imagen no trae shell: compose solo espera a que el contenedor esté en ejecución.
+  # Collector between the services and OpenObserve: tail sampling of traces (all those
+  # with an error and OTEL_SAMPLING_PERCENT of the rest). The services send OTLP to :4318.
+  # The image has no shell: compose only waits for the container to be running.
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.164.0@sha256:340c9ca6a36617084c6661bdc4f0fe92b7cda5a805d61673ec8db375fddc522b
     command: ['--config=/etc/otelcol/config.yaml']
