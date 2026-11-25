@@ -35,7 +35,7 @@ describe('TopologyBuilder', () => {
             maxAttempts: 6,
             dlq: {
               name: 'notifications-tasks-events-dlq',
-              maxReceiveCount: 6,
+              maxReceiveCount: 60,
               retentionSeconds: 1_209_600,
             },
             subscriptions: [
@@ -161,11 +161,11 @@ describe('TopologyBuilder', () => {
       expect(
         queues.find((q) => q['name'] === 'payments-commands'),
       ).toMatchObject({
-        maxAttempts: 5,
+        maxAttempts: 10,
         visibilityTimeoutSeconds: 30,
         dlq: {
           name: 'payments-commands-dlq',
-          maxReceiveCount: 5,
+          maxReceiveCount: 100,
           retentionSeconds: 1_209_600,
         },
       });
