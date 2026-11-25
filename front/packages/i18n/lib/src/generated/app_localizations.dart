@@ -927,6 +927,12 @@ abstract class AppLocalizations {
   /// **'Esa factura no admite esta operación en su estado actual.'**
   String get error_billing_invoice_invalid_state;
 
+  /// No description provided for @error_billing_invoice_amount_mismatch.
+  ///
+  /// In es, this message translates to:
+  /// **'El monto pagado no coincide con el total de la factura.'**
+  String get error_billing_invoice_amount_mismatch;
+
   /// No description provided for @error_billing_quota_exceeded.
   ///
   /// In es, this message translates to:

@@ -148,6 +148,7 @@
   "error_billing_plan_usage_exceeds_limit": "Your current usage exceeds the limits of that plan. Reduce usage or pick another plan.",
   "error_billing_invoice_not_found": "We could not find that invoice.",
   "error_billing_invoice_invalid_state": "That invoice does not allow this operation in its current state.",
+  "error_billing_invoice_amount_mismatch": "The amount paid does not match the total of the invoice.",
   "error_billing_quota_exceeded": "You reached your plan limit. Change plans to continue.",
 
   "errorFallback": "Something went wrong. Try again."

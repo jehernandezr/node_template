@@ -520,6 +520,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'That invoice does not allow this operation in its current state.';
 
   @override
+  String get error_billing_invoice_amount_mismatch =>
+      'The amount paid does not match the total of the invoice.';
+
+  @override
   String get error_billing_quota_exceeded =>
       'You reached your plan limit. Change plans to continue.';
 

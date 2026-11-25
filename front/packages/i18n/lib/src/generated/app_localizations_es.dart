@@ -522,6 +522,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esa factura no admite esta operación en su estado actual.';
 
   @override
+  String get error_billing_invoice_amount_mismatch =>
+      'El monto pagado no coincide con el total de la factura.';
+
+  @override
   String get error_billing_quota_exceeded =>
       'Alcanzaste el límite de tu plan. Cambia de plan para continuar.';
 
