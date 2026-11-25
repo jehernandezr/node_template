@@ -120,6 +120,12 @@ export class SingleRelayScope extends RelayScopes {} // por defecto, una sola ba
 // @platform/adapters-postgres: ShardedRelayScopes usa AcrossShards y ShardScope de persistence.
 ```
 
+### Lo que garantiza `exclusive`
+
+`exclusive` garantiza exclusión mutua mientras dura el lease, no una corrida por ocurrencia del calendario. El lease vence a los `timeoutMs`: si la corrida sigue, otra réplica puede tomar el lock y empezar otra. Dos ocurrencias seguidas pueden correr en procesos distintos y una ocurrencia perdida en un reinicio no se recupera. Por eso todo job, exclusivo o no, es idempotente por su entrada y respeta `context.signal` entre unidades de trabajo: al abortarse deja de tomar trabajo nuevo, así la siguiente réplica no se solapa con lo que la primera tiene en vuelo. Lo que no se puede repetir (un cobro, un correo) se reserva por unidad en la base, no se confía al lock.
+
+Un job diario usa `JobScheduleKind.Cron` anclado en UTC y no un intervalo de 24 h: el intervalo cuenta desde el arranque y, con despliegues seguidos, no se cumple nunca. Si una ocurrencia perdida no es aceptable, el job corre cada hora y decide por sus datos qué le toca, como el cierre de facturas.
+
 ### Apagado
 
 `JobRunner.stop(graceMs)` corre en `BeforeApplicationShutdown`. Espera los jobs en curso hasta `graceMs` y aborta su `signal`.
