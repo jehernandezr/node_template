@@ -1,9 +1,9 @@
 import { Global, Module } from '@nestjs/common';
 import { IdentitySettings } from '../../../config/identity-settings.js';
-import { IdentityMailerKind } from '../../../config/identity-mailer-kind.enum.js';
 import { IdentityMailer } from '../domain/identity-mailer.js';
 import { SecurityAlerts } from '../domain/security-alerts.js';
 import { ConsoleIdentityMailer } from '../infrastructure/console-identity-mailer.js';
+import { IdentityMailerSelector } from '../infrastructure/identity-mailer-selector.js';
 import { MemoryIdentityMailer } from '../infrastructure/memory-identity-mailer.js';
 import { NotificationsIdentityMailer } from '../infrastructure/notifications-identity-mailer.js';
 import { OutboxSecurityAlerts } from '../infrastructure/outbox-security-alerts.js';
@@ -25,16 +25,10 @@ import { OutboxSecurityAlerts } from '../infrastructure/outbox-security-alerts.j
         memory: MemoryIdentityMailer,
         console: ConsoleIdentityMailer,
         notifications: NotificationsIdentityMailer,
-      ): IdentityMailer => {
-        switch (settings.values.IDENTITY_MAILER) {
-          case IdentityMailerKind.Memory:
-            return memory;
-          case IdentityMailerKind.Console:
-            return console;
-          case IdentityMailerKind.Notifications:
-            return notifications;
-        }
-      },
+      ): IdentityMailer =>
+        new IdentityMailerSelector(memory, console, notifications).select(
+          settings.values.IDENTITY_MAILER,
+        ),
       inject: [
         IdentitySettings,
         MemoryIdentityMailer,

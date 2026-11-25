@@ -1,9 +1,8 @@
 import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { SubscriptionStatus } from '@contracts/billing';
-import { AppConfig } from '@platform/config';
 import { Clock, TransactionManager } from '@platform/kernel';
-import type { BillingConfig } from '../../../config/billing.config.js';
+import { BillingSettings } from '../../../config/billing-settings.js';
 import { PlansFacade } from '../../plans/index.js';
 import { BillingPeriod } from '../domain/billing-period.js';
 import { SubscriptionRepository } from '../domain/subscription.repository.js';
@@ -22,9 +21,9 @@ export class SubscriptionStanding {
     private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
-    config: AppConfig,
+    settings: BillingSettings,
   ) {
-    this.graceDays = config.root<BillingConfig>().BILLING_GRACE_DAYS;
+    this.graceDays = settings.values.BILLING_GRACE_DAYS;
   }
 
   markPastDue(tenantId: string): Promise<void> {

@@ -1,13 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { AppConfig } from '@platform/config';
+import { AppConfig, RootSettings } from '@platform/config';
 import type { IdentityConfig } from './identity.config.js';
 
-/** Identity's validated, typed configuration, to inject into adapters and use cases. */
+/** Identity's validated, typed configuration, to inject into use cases and adapters instead of `AppConfig`. */
 @Injectable()
-export class IdentitySettings {
-  readonly values: IdentityConfig;
-
+export class IdentitySettings extends RootSettings<IdentityConfig> {
   constructor(config: AppConfig) {
-    this.values = config.root<IdentityConfig>();
+    super(config);
   }
 }

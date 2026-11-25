@@ -27,6 +27,7 @@ import { LedgerRetryWait } from '../../domain/ledger-retry-wait.js';
 import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 import { RecipientFingerprint } from '../../domain/recipient-fingerprint.js';
 import { EmailTemplates } from '../../domain/templates/email-templates.js';
+import { NotificationsSettings } from '../../../../config/notifications-settings.js';
 import { SendEmail } from '../send-email.use-case.js';
 
 class InMemoryLedger extends EmailLedger {
@@ -165,7 +166,7 @@ const setup = (sender: EmailSender = new RecordingSender()) => {
     new RequestContextStore(new Tracing(new Redactor())),
     new SilentLogger(),
     retryWait,
-    config,
+    new NotificationsSettings(config),
   );
   return { send, ledger, sender, clock, retryWait };
 };

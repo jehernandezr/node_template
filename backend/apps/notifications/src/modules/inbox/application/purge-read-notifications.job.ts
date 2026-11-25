@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { AppConfig } from '@platform/config';
 import {
   Clock,
   JobScheduleKind,
   ScheduledJob,
   type JobSchedule,
 } from '@platform/kernel';
-import type { NotificationsConfig } from '../../../config/notifications.config.js';
+import { NotificationsSettings } from '../../../config/notifications-settings.js';
 import { NotificationsJob } from '../../../shared/enums/notifications-job.enum.js';
 import { InboxMaintenance } from '../domain/inbox-maintenance.js';
 
@@ -26,11 +25,11 @@ export class PurgeReadNotificationsJob extends ScheduledJob {
   constructor(
     private readonly maintenance: InboxMaintenance,
     private readonly clock: Clock,
-    config: AppConfig,
+    settings: NotificationsSettings,
   ) {
     super();
     this.retentionMs =
-      config.root<NotificationsConfig>().NOTIFICATIONS_INBOX_RETENTION_DAYS *
+      settings.values.NOTIFICATIONS_INBOX_RETENTION_DAYS *
       PurgeReadNotificationsJob.DAY_MS;
   }
 

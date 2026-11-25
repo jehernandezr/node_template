@@ -15,6 +15,7 @@ import { SubscriptionEntity } from '../infrastructure/persistence/entities/subsc
 import { TypeOrmSubscriptionMaintenance } from '../infrastructure/persistence/typeorm-subscription-maintenance.js';
 import { TypeOrmSubscriptionRepository } from '../infrastructure/persistence/typeorm-subscription.repository.js';
 import { SubscriptionsController } from './subscriptions.controller.js';
+import { BillingSettings } from '../../../config/billing-settings.js';
 
 /** Each tenant's subscription: plan, periods, proration and delinquency. Global only for its facade. */
 @Global()
@@ -27,6 +28,7 @@ import { SubscriptionsController } from './subscriptions.controller.js';
   ],
   controllers: [SubscriptionsController],
   providers: [
+    BillingSettings,
     {
       provide: SubscriptionRepository,
       useClass: TypeOrmSubscriptionRepository,

@@ -10,6 +10,7 @@ import { NotificationEntity } from '../infrastructure/persistence/entities/notif
 import { TypeOrmInboxMaintenance } from '../infrastructure/persistence/typeorm-inbox-maintenance.js';
 import { TypeOrmInboxRepository } from '../infrastructure/persistence/typeorm-inbox.repository.js';
 import { InboxController } from './inbox.controller.js';
+import { NotificationsSettings } from '../../../config/notifications-settings.js';
 
 /** Per-user notification inbox. Global only for its facade. */
 @Global()
@@ -22,6 +23,7 @@ import { InboxController } from './inbox.controller.js';
   ],
   controllers: [InboxController],
   providers: [
+    NotificationsSettings,
     { provide: InboxRepository, useClass: TypeOrmInboxRepository },
     { provide: InboxMaintenance, useClass: TypeOrmInboxMaintenance },
     ManageInbox,

@@ -1,8 +1,7 @@
 import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
-import { AppConfig } from '@platform/config';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
-import type { BillingConfig } from '../../../config/billing.config.js';
+import { BillingSettings } from '../../../config/billing-settings.js';
 import { PlansFacade } from '../../plans/index.js';
 import { BillingPeriod } from '../domain/billing-period.js';
 import { SubscriptionRepository } from '../domain/subscription.repository.js';
@@ -16,8 +15,6 @@ import { SubscriptionEvents } from './subscription-events.js';
  */
 @Injectable()
 export class OpenSubscription {
-  private readonly settings: BillingConfig;
-
   constructor(
     private readonly subscriptions: SubscriptionRepository,
     private readonly plans: PlansFacade,
@@ -26,10 +23,8 @@ export class OpenSubscription {
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
-    config: AppConfig,
-  ) {
-    this.settings = config.root<BillingConfig>();
-  }
+    private readonly settings: BillingSettings,
+  ) {}
 
   /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` if the trial plan is not in the catalog. */
   execute(tenantId: string): Promise<CurrentSubscription> {
@@ -43,13 +38,13 @@ export class OpenSubscription {
           };
         }
         const plan = await this.plans.requireCode(
-          this.settings.BILLING_TRIAL_PLAN,
+          this.settings.values.BILLING_TRIAL_PLAN,
         );
         const subscription = Subscription.open({
           id: this.ids.next().toString(),
           plan: plan.snapshot(),
           today: BillingPeriod.dateOf(this.clock.now()),
-          trialDays: this.settings.BILLING_TRIAL_DAYS,
+          trialDays: this.settings.values.BILLING_TRIAL_DAYS,
         });
         await this.subscriptions.insert(subscription);
         await this.events.planChanged(tenantId, subscription, null, plan);

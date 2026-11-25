@@ -14,6 +14,7 @@ import { TypeOrmEmailLedger } from '../infrastructure/persistence/typeorm-email-
 import { EmailInternalOperations } from './email.internal-operations.js';
 import { EmailSenderLifecycle } from './email-sender.lifecycle.js';
 import { EmailSenderProvider } from './email-sender.provider.js';
+import { NotificationsSettings } from '../../../config/notifications-settings.js';
 
 /** Transactional and notification email through the provider of `NOTIFICATIONS_EMAIL_SENDER`. */
 @Global()
@@ -25,6 +26,7 @@ import { EmailSenderProvider } from './email-sender.provider.js';
     }),
   ],
   providers: [
+    NotificationsSettings,
     EmailSenderProvider,
     EmailSenderLifecycle,
     { provide: EmailLedger, useClass: TypeOrmEmailLedger },

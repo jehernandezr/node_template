@@ -1,10 +1,9 @@
 import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { InvoiceIssuedEvent } from '@contracts/billing';
-import { AppConfig } from '@platform/config';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import type { BillingConfig } from '../../../config/billing.config.js';
+import { BillingSettings } from '../../../config/billing-settings.js';
 import { BillingDefaults } from '../../../shared/constants/billing-defaults.constants.js';
 import { SubscriptionsFacade } from '../../subscriptions/index.js';
 import { UsageFacade } from '../../usage/index.js';
@@ -31,9 +30,9 @@ export class IssueInvoice {
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
-    config: AppConfig,
+    settings: BillingSettings,
   ) {
-    this.series = config.root<BillingConfig>().BILLING_INVOICE_SERIES;
+    this.series = settings.values.BILLING_INVOICE_SERIES;
   }
 
   execute(tenantId: string, today: string): Promise<InvoiceState | undefined> {

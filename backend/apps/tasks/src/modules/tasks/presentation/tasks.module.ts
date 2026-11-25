@@ -21,6 +21,7 @@ import { TaskEntity } from '../infrastructure/persistence/entities/task.entity.j
 import { TypeOrmTaskMaintenance } from '../infrastructure/persistence/typeorm-task-maintenance.js';
 import { TypeOrmTaskRepository } from '../infrastructure/persistence/typeorm-task.repository.js';
 import { TasksController } from './tasks.controller.js';
+import { TasksSettings } from '../../../config/tasks-settings.js';
 
 /** Tenant tasks: routes, search, events and the purge of deleted ones. Global only for its facade. */
 @Global()
@@ -33,6 +34,7 @@ import { TasksController } from './tasks.controller.js';
   ],
   controllers: [TasksController],
   providers: [
+    TasksSettings,
     { provide: TaskRepository, useClass: TypeOrmTaskRepository },
     { provide: TaskMaintenance, useClass: TypeOrmTaskMaintenance },
     {

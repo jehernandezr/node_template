@@ -19,6 +19,7 @@ import { TypeOrmInvoiceNumbering } from '../infrastructure/persistence/typeorm-i
 import { TypeOrmInvoiceRepository } from '../infrastructure/persistence/typeorm-invoice.repository.js';
 import { InvoicesController } from './invoices.controller.js';
 import { InvoicesInternalOperations } from './invoices.internal-operations.js';
+import { BillingSettings } from '../../../config/billing-settings.js';
 
 /** Invoices: period closing, numbering, charging and its result. Global only for its facade. */
 @Global()
@@ -31,6 +32,7 @@ import { InvoicesInternalOperations } from './invoices.internal-operations.js';
   ],
   controllers: [InvoicesController],
   providers: [
+    BillingSettings,
     { provide: InvoiceRepository, useClass: TypeOrmInvoiceRepository },
     { provide: InvoiceNumbering, useClass: TypeOrmInvoiceNumbering },
     { provide: InvoiceMaintenance, useClass: TypeOrmInvoiceMaintenance },
