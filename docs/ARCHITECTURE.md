@@ -1,138 +1,138 @@
-# Arquitectura de la plataforma
+# Platform architecture
 
-Este documento describe qué es la plataforma y cómo está construida. Las fases, su estado, el orden de ejecución y el registro de decisiones están en el [plan](plan/README.md).
+This document describes what the platform is and how it is built. The phases, their status, the execution order and the decision log are in the [plan](plan/README.md).
 
-## Resumen
+## Summary
 
-La plataforma es un monorepo reutilizable para construir backends de microservicios en NestJS con TypeORM sobre PostgreSQL, arquitectura hexagonal y despliegue en AWS. Reemplaza al repositorio `node_template` y sirve como punto de partida para cualquier producto nuevo: se clona, se renombra y se agregan servicios con un generador.
+The platform is a reusable monorepo for building microservice backends in NestJS with TypeORM on PostgreSQL, hexagonal architecture and deployment on AWS. It replaces the `node_template` repository and serves as the starting point for any new product: you clone it, rename it and add services with a generator.
 
-Trae resuelto lo que todo backend necesita y casi nunca se hace bien desde el inicio: identidad con MFA, multitenancy, auditoría, mensajería con reintentos, sagas recuperables, archivos, notificaciones, facturación por uso y trazabilidad de punta a punta.
+It comes with what every backend needs and is almost never done well from the start: identity with MFA, multitenancy, auditing, messaging with retries, recoverable sagas, files, notifications, usage-based billing and end-to-end traceability.
 
-**Principios que guían cada decisión**
+**Principles that guide every decision**
 
-- **Hexagonal estricto.** El dominio y los casos de uso desconocen NestJS, TypeORM y AWS. Todo lo externo entra por puertos.
-- **Agnóstico a la plataforma.** Migrar de AWS a otro proveedor significa reescribir adaptadores, nunca lógica de negocio.
-- **Tipado antes que strings.** Operaciones, eventos, colas, permisos, errores y jobs se nombran con enums. Un cambio de nombre lo detecta el compilador.
-- **Contratos explícitos.** Cada servicio publica lo que expone (operaciones, eventos, errores) con validación en tiempo de ejecución en ambos lados.
-- **Todo deja rastro.** Cada request, mensaje, paso de saga y cambio en una tabla queda asociado a un `traceId` y a un actor.
-- **Seguro por defecto.** Todo endpoint exige autenticación salvo que se declare público, y cada operación que modifica datos declara cómo se revierte.
+- **Strict hexagonal.** The domain and the use cases know nothing about NestJS, TypeORM or AWS. Everything external comes in through ports.
+- **Platform agnostic.** Moving from AWS to another provider means rewriting adapters, never business logic.
+- **Types before strings.** Operations, events, queues, permissions, errors and jobs are named with enums. The compiler catches a rename.
+- **Explicit contracts.** Each service publishes what it exposes (operations, events, errors) with runtime validation on both sides.
+- **Everything leaves a trace.** Every request, message, saga step and table change is tied to a `traceId` and an actor.
+- **Secure by default.** Every endpoint requires authentication unless it is declared public, and every operation that changes data declares how it is reverted.
 
-## Monorepo con Nx
+## Monorepo with Nx
 
-La raíz del repositorio es mínima ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md)). Contiene dos aplicaciones, `backend/` y `front/`, Nx como orquestador y las herramientas del repositorio. Cada aplicación es dueña de sus librerías: nada compartido entre backend y front vive en la raíz, y el front recibe los contratos generados desde el backend.
+The repository root is minimal ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md)). It holds two applications, `backend/` and `front/`, Nx as orchestrator and the repository tooling. Each application owns its libraries: nothing shared between backend and front lives at the root, and the front receives the contracts generated from the backend.
 
 ```text
-backend/                       backend: todas sus dependencias externas en backend/package.json
-  package.json                 dependencias externas con versión exacta (único package.json del backend)
-  tsconfig.base.json           opciones de TypeScript y alias de las librerías (@platform/kernel...)
-  dist/<app>/                  paquete de cada app, generado con esbuild (no se confirma)
+backend/                       backend: all its external dependencies in backend/package.json
+  package.json                 external dependencies with exact versions (the backend's only package.json)
+  tsconfig.base.json           TypeScript options and library aliases (@platform/kernel...)
+  dist/<app>/                  each app's bundle, built with esbuild (not committed)
   libs/
-    contracts/platform/        @contracts/platform: kit de contratos y piezas transversales
-    contracts/identity/        @contracts/identity: contrato del servicio identity
+    contracts/platform/        @contracts/platform: contract kit and cross-cutting pieces
+    contracts/identity/        @contracts/identity: contract of the identity service
     platform/                  kernel, primitives, config, observability, persistence, criteria,
                                sharding, cache, bloom, resilience, rate-limit, messaging,
                                internal-api, saga
-    platform/adapters/         aws, postgres y valkey: un adaptador por proveedor
-    shared/utils/              @shared/utils: funciones puras sobre los tipos de los contratos
-  tools/contracts-export/      exporta los contratos a JSON (proyecto Nx contracts-export)
-  tools/app-bundler/           empaqueta las apps con esbuild en backend/dist/<app>/
-  infra/terraform/             módulos, stacks y ambientes de AWS (ADR 0020)
-  infra/scripts/               deploy-aws.sh, local.sh, tf-validate.mjs y utilitarios
-  infra/local/                 arranque de PostgreSQL, LocalStack y el OpenTelemetry Collector
-  docker-compose.yml           stack local
-front/                         pub workspace de Flutter
+    platform/adapters/         aws, postgres and valkey: one adapter per provider
+    shared/utils/              @shared/utils: pure functions over the contract types
+  tools/contracts-export/      exports the contracts to JSON (Nx project contracts-export)
+  tools/app-bundler/           bundles the apps with esbuild into backend/dist/<app>/
+  infra/terraform/             AWS modules, stacks and environments (ADR 0020)
+  infra/scripts/               deploy-aws.sh, local.sh, tf-validate.mjs and utilities
+  infra/local/                 startup of PostgreSQL, LocalStack and the OpenTelemetry Collector
+  docker-compose.yml           local stack
+front/                         Flutter pub workspace
   apps/{web,mobile}/           shells
   microfrontends/              account, assistant, backoffice, billing, notifications, tasks, verifier
   packages/                    api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
-  tools/                       contracts_gen, new_microfrontend, nx-plugin, check_deferred_chunks.dart y check_microfrontend_boundaries.dart
-docs/                          arquitectura, plan (plan/), ADR, diseños por fase (design/) y auditorías (audits/)
-.claude/                       skills de backend y front, hooks y agentes para las herramientas de IA
+  tools/                       contracts_gen, new_microfrontend, nx-plugin, check_deferred_chunks.dart and check_microfrontend_boundaries.dart
+docs/                          architecture, plan (plan/), ADRs, per-phase designs (design/) and audits (audits/)
+.claude/                       backend and front skills, hooks and agents for the AI tools
 nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.json
 .github/  .husky/  commitlint.config.mjs  lint-staged.config.mjs  .prettierrc  renovate.json
 ```
 
-**Un solo grafo para backend y front**
+**A single graph for backend and front**
 
-- Cada proyecto del backend es un `project.json` con su nombre y sus tags: `platform-saga`, `contracts-identity`, `shared-utils`. Las librerías no son paquetes de npm: no tienen `package.json` ni `node_modules`, y se importan por los alias de `backend/tsconfig.base.json`. Nx lee esos alias para armar el grafo y aplicar los límites entre proyectos.
-- `nx.json` registra los plugins `@nx/jest/plugin` (`test`) y `@nx/eslint/plugin` (`lint`), limitados a `backend/**`. `typecheck` y `build` salen de `targetDefaults`: cada proyecto los declara vacíos en su `project.json`.
-- `front/tools/nx-plugin/index.cjs` lee la lista `workspace:` de `front/pubspec.yaml` y registra cada miembro como proyecto `front-<nombre del pubspec>`: `front-shell_core`, `front-mf_tasks`, `front-web_shell`. Cada uno tiene `analyze`, `format-check` y, si tiene carpeta `test/`, `test`, todas con caché. Las dependencias entre paquetes Dart salen de sus `pubspec.yaml`.
-- `front-contracts` depende de los proyectos de `backend/libs/contracts`. Un cambio de contrato marca como afectados los paquetes y microfrontends del front que lo usan.
-- Las librerías no se compilan por separado. Su target es `typecheck`: `tsc` sin emitir sobre `tsconfig.lib.json` (código de producción) y `tsconfig.spec.json` (código y pruebas). Jest y las herramientas leen el TypeScript de las librerías por sus alias.
-- Solo las apps se empaquetan. Una app declara `"build": {}` en su `project.json` y hereda el target de `nx.json`, que corre `backend/tools/app-bundler` con esbuild y deja el resultado en `backend/dist/<app>/`. Las librerías entran al paquete; las dependencias de `node_modules` quedan externas.
-- `pnpm nx affected -t lint test typecheck build analyze format-check` es el comando de uso diario y el de CI.
+- Each backend project is a `project.json` with its name and tags: `platform-saga`, `contracts-identity`, `shared-utils`. The libraries are not npm packages: they have no `package.json` or `node_modules`, and they are imported through the aliases in `backend/tsconfig.base.json`. Nx reads those aliases to build the graph and enforce the boundaries between projects.
+- `nx.json` registers the plugins `@nx/jest/plugin` (`test`) and `@nx/eslint/plugin` (`lint`), limited to `backend/**`. `typecheck` and `build` come from `targetDefaults`: each project declares them empty in its `project.json`.
+- `front/tools/nx-plugin/index.cjs` reads the `workspace:` list in `front/pubspec.yaml` and registers each member as a project `front-<pubspec name>`: `front-shell_core`, `front-mf_tasks`, `front-web_shell`. Each one has `analyze`, `format-check` and, if it has a `test/` folder, `test`, all cached. The dependencies between Dart packages come from their `pubspec.yaml`.
+- `front-contracts` depends on the projects in `backend/libs/contracts`. A contract change marks the front packages and microfrontends that use it as affected.
+- The libraries are not compiled separately. Their target is `typecheck`: `tsc` without emitting over `tsconfig.lib.json` (production code) and `tsconfig.spec.json` (code and tests). Jest and the tools read the libraries' TypeScript through their aliases.
+- Only the apps are bundled. An app declares `"build": {}` in its `project.json` and inherits the target from `nx.json`, which runs `backend/tools/app-bundler` with esbuild and leaves the result in `backend/dist/<app>/`. The libraries go into the bundle; the `node_modules` dependencies stay external.
+- `pnpm nx affected -t lint test typecheck build analyze format-check` is the everyday command and the CI one.
 
-**Servicios**
+**Services**
 
-Cada microservicio será una app en `backend/apps/<servicio>` (proyecto de Nx con `project.json`, sin `package.json`) con su dominio, su base de datos, sus migraciones y su despliegue. Los servicios previstos son `identity`, `tasks`, `reports`, `notifications`, `realtime`, `billing`, `files`, `agreements`, `assistant` y `backoffice-api`. El primero es `identity`, con su diseño en [`docs/design/f4-identity.md`](design/f4-identity.md).
+Each microservice will be an app in `backend/apps/<service>` (an Nx project with `project.json`, without `package.json`) with its domain, its database, its migrations and its deployment. The planned services are `identity`, `tasks`, `reports`, `notifications`, `realtime`, `billing`, `files`, `agreements`, `assistant` and `backoffice-api`. The first is `identity`, with its design in [`docs/design/f4-identity.md`](design/f4-identity.md).
 
-**Estructura de cada librería**
+**Structure of each library**
 
 ```text
 backend/libs/platform/kernel/
-  project.json        nombre, tags y targets
-  tsconfig.json       el que usa el editor (extiende tsconfig.spec.json)
-  tsconfig.lib.json   código de producción: src sin __tests__
-  tsconfig.spec.json  código y pruebas
+  project.json        name, tags and targets
+  tsconfig.json       the one the editor uses (extends tsconfig.spec.json)
+  tsconfig.lib.json   production code: src without __tests__
+  tsconfig.spec.json  code and tests
   jest.config.cjs
   src/
-    index.ts          entrada del alias @platform/kernel
-    id-generator.ts   puerto IdGenerator y UuidV7IdGenerator
+    index.ts          entry point of the @platform/kernel alias
+    id-generator.ts   IdGenerator port and UuidV7IdGenerator
     __tests__/
       id-generator.spec.ts
-      utils/          FixedClock y SequentialIdGenerator, alias @platform/kernel/test-utils
+      utils/          FixedClock and SequentialIdGenerator, alias @platform/kernel/test-utils
 ```
 
-El código va directo en `src/`, sin `src/lib/`. Las pruebas de cada carpeta van en su `__tests__/`, unitarias (`*.spec.ts`) y de integración (`*.int-spec.ts`). Los dobles y el soporte que comparten varias carpetas van en `src/__tests__/utils/`; si otra librería los usa, se exportan con el alias `@platform/<lib>/test-utils` (hoy `@platform/kernel/test-utils` y `@platform/rate-limit/test-utils`).
+Code goes directly in `src/`, without `src/lib/`. Each folder's tests go in its `__tests__/`, unit (`*.spec.ts`) and integration (`*.int-spec.ts`). Test doubles and support shared by several folders go in `src/__tests__/utils/`; if another library uses them, they are exported with the alias `@platform/<lib>/test-utils` (today `@platform/kernel/test-utils` and `@platform/rate-limit/test-utils`).
 
-**Estructura interna de cada módulo**
+**Internal structure of each module**
 
 ```text
-backend/apps/<servicio>/src/
-  modules/<módulo>/
-    domain/          entidades puras, value objects, puertos, errores
-    application/     casos de uso
-    infrastructure/  persistence/{entities,mappers} y repositorios de TypeORM, clientes
-    presentation/    controllers, gateways, handlers de mensajes
-  shared/{enums,constants,types,utils}/   compartido entre los módulos del servicio
-  database/          DataSource de referencia del shard y del catálogo
-backend/apps/<servicio>/migrations/{shard,catalog}/   migraciones de TypeORM
+backend/apps/<service>/src/
+  modules/<module>/
+    domain/          pure entities, value objects, ports, errors
+    application/     use cases
+    infrastructure/  persistence/{entities,mappers} and TypeORM repositories, clients
+    presentation/    controllers, gateways, message handlers
+  shared/{enums,constants,types,utils}/   shared across the service's modules
+  database/          reference DataSource for the shard and the catalog
+backend/apps/<service>/migrations/{shard,catalog}/   TypeORM migrations
 ```
 
-**Reglas de dependencia**
+**Dependency rules**
 
-- Entre proyectos manda la regla `@nx/enforce-module-boundaries` de `backend/eslint.config.mjs`, por tags: `type:contracts` depende solo de `type:contracts`; `type:util` de `type:util` y `type:contracts`; `type:platform` de `type:platform`, `type:util` y `type:contracts`; `type:tool` de contratos, utilidades y plataforma. `pnpm nx affected -t lint` la verifica.
-- Una app de servicio (`type:app`) importa de otro servicio solo su paquete `@contracts/<servicio>`, nunca su código interno.
-- Dentro de un módulo, `domain` depende solo de `kernel`; `application` depende de `domain`; `infrastructure` y `presentation` dependen de los dos. Estas capas se verifican en CI con `dependency-cruiser` cuando llega el primer servicio, `identity` (ADR 0020).
-- `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); una regla `no-restricted-imports` lo impide en el resto. Trae `SnsSqsEnvelopePublisher` (lo usa el relay del outbox), `SnsSqsMessageBus`, `SqsPoller` (long polling, dentro de `SqsConsumerModule`, que no es global para cerrarse antes que `AwsModule`) y `SqsLambdaHandler` (Lambda con fallos parciales por lote). Ambos usan `SqsDeliveryProcessor`, que aplica `ChangeMessageVisibility` y envía a la DLQ los fallos permanentes. La topología de ejecución sale de los contratos con `topologyFromContracts`.
-- Los puertos de transacción (`TransactionManager`, `UnitOfWork`) y de idempotencia (`IdempotencyStore`) viven en `@platform/kernel`, así `messaging` e `internal-api` usan la transacción sin depender de `@platform/persistence`.
-- Los adaptadores PostgreSQL de los puertos de otras librerías viven en `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `TypeOrmOutboxStore` escribe el outbox en la misma transacción que el cambio de negocio y lo reclama con `FOR UPDATE SKIP LOCKED`, lease con fencing y orden FIFO por grupo; `TypeOrmProcessedMessageStore` guarda la idempotencia de los consumidores en `processed_messages`; `TypeOrmIdempotencyStore` guarda la de la API interna y `TypeOrmDirectoryStore` el directorio de shards. Sus tablas son entidades y migraciones de TypeORM (`platformShardEntities`, `platformCatalogEntities` y sus migraciones), junto con la bitácora de sagas ([diseño de persistencia](design/persistencia-typeorm-y-sagas.md)).
+- Between projects, the `@nx/enforce-module-boundaries` rule in `backend/eslint.config.mjs` rules, by tags: `type:contracts` depends only on `type:contracts`; `type:util` on `type:util` and `type:contracts`; `type:platform` on `type:platform`, `type:util` and `type:contracts`; `type:tool` on contracts, utilities and platform. `pnpm nx affected -t lint` checks it.
+- A service app (`type:app`) imports from another service only its `@contracts/<service>` package, never its internal code.
+- Inside a module, `domain` depends only on `kernel`; `application` depends on `domain`; `infrastructure` and `presentation` depend on both. These layers are checked in CI with `dependency-cruiser` once the first service, `identity`, arrives (ADR 0020).
+- `@aws-sdk/*` only appears in `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); a `no-restricted-imports` rule blocks it everywhere else. It provides `SnsSqsEnvelopePublisher` (used by the outbox relay), `SnsSqsMessageBus`, `SqsPoller` (long polling, inside `SqsConsumerModule`, which is not global so it closes before `AwsModule`) and `SqsLambdaHandler` (Lambda with partial batch failures). Both use `SqsDeliveryProcessor`, which applies `ChangeMessageVisibility` and sends permanent failures to the DLQ. The runtime topology comes from the contracts with `topologyFromContracts`.
+- The transaction ports (`TransactionManager`, `UnitOfWork`) and the idempotency port (`IdempotencyStore`) live in `@platform/kernel`, so `messaging` and `internal-api` use the transaction without depending on `@platform/persistence`.
+- The PostgreSQL adapters for other libraries' ports live in `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `TypeOrmOutboxStore` writes the outbox in the same transaction as the business change and claims it with `FOR UPDATE SKIP LOCKED`, a lease with fencing and FIFO order per group; `TypeOrmProcessedMessageStore` stores consumer idempotency in `processed_messages`; `TypeOrmIdempotencyStore` stores the internal API's and `TypeOrmDirectoryStore` the shard directory. Their tables are TypeORM entities and migrations (`platformShardEntities`, `platformCatalogEntities` and their migrations), together with the saga log ([persistence design](design/persistencia-typeorm-y-sagas.md)).
 
-## Front: shells y microfrontends
+## Front: shells and microfrontends
 
-`front/` reúne todo el cliente en un pub workspace de Flutter ([ADR 0012](adr/0012-front-flutter-shells-microfrontends.md)). Dos shells, `web` y `mobile`, componen los mismos microfrontends: un dominio se escribe una vez y aparece en las dos plataformas. Nx orquesta el workspace con el plugin propio `front/tools/nx-plugin/index.cjs`.
+`front/` gathers the whole client in a Flutter pub workspace ([ADR 0012](adr/0012-front-flutter-shells-microfrontends.md)). Two shells, `web` and `mobile`, compose the same microfrontends: a domain is written once and shows up on both platforms. Nx orchestrates the workspace with its own plugin `front/tools/nx-plugin/index.cjs`.
 
-| Pieza                    | Qué es                                                                                                                                                                 |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `front/apps/web`         | Shell web (`web_shell`). `WebShell` registra los microfrontends, crea el `ShellRuntime` y arma el router con `ShellRouterFactory`, con página de step-up en `/step-up` |
-| `front/apps/mobile`      | Shell para iOS y Android (`mobile_shell`), con su registro, su router y deep links                                                                                     |
-| `front/microfrontends/*` | Un paquete por dominio (`mf_<dominio>`) con su manifiesto, pantallas, datos y textos                                                                                   |
-| `front/packages/*`       | Piezas compartidas por los shells y los microfrontends                                                                                                                 |
+| Piece                    | What it is                                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `front/apps/web`         | Web shell (`web_shell`). `WebShell` registers the microfrontends, creates the `ShellRuntime` and builds the router with `ShellRouterFactory`, with a step-up page at `/step-up` |
+| `front/apps/mobile`      | Shell for iOS and Android (`mobile_shell`), with its registry, its router and deep links                                                                                        |
+| `front/microfrontends/*` | One package per domain (`mf_<domain>`) with its manifest, screens, data and texts                                                                                               |
+| `front/packages/*`       | Pieces shared by the shells and the microfrontends                                                                                                                              |
 
-| Microfrontend   | Web | Móvil | Contenido                                             |
-| --------------- | --- | ----- | ----------------------------------------------------- |
-| `account`       | Sí  | Sí    | Resumen, sesiones, dispositivos, seguridad y acuerdos |
-| `tasks`         | Sí  | Sí    | CRUD de ejemplo                                       |
-| `notifications` | Sí  | Sí    | Bandeja y preferencias                                |
-| `assistant`     | Sí  | Sí    | Lista de conversaciones y chat con el asistente de IA |
-| `billing`       | Sí  | No    | Plan, facturas y detalle de factura                   |
-| `backoffice`    | Sí  | No    | Tenants, sagas y DLQ                                  |
-| `verifier`      | No  | Sí    | Verificación en el dispositivo registrado             |
+| Microfrontend   | Web | Mobile | Content                                              |
+| --------------- | --- | ------ | ---------------------------------------------------- |
+| `account`       | Yes | Yes    | Overview, sessions, devices, security and agreements |
+| `tasks`         | Yes | Yes    | Sample CRUD                                          |
+| `notifications` | Yes | Yes    | Inbox and preferences                                |
+| `assistant`     | Yes | Yes    | Conversation list and chat with the AI assistant     |
+| `billing`       | Yes | No     | Plan, invoices and invoice detail                    |
+| `backoffice`    | Yes | No     | Tenants, sagas and DLQ                               |
+| `verifier`      | No  | Yes    | Verification on the registered device                |
 
-Cada shell registra solo los microfrontends que declaran su plataforma en el manifiesto (`platforms`).
+Each shell registers only the microfrontends that declare its platform in the manifest (`platforms`).
 
-**Contrato de microfrontend**
+**Microfrontend contract**
 
-Cada microfrontend exporta un `MicrofrontendManifest` de `shell_core` y cumple el contrato del [ADR 0018](adr/0018-contrato-de-microfrontend.md). Así se ve el de `tasks`, recortado:
+Each microfrontend exports a `MicrofrontendManifest` from `shell_core` and follows the contract in [ADR 0018](adr/0018-contrato-de-microfrontend.md). This is the one for `tasks`, trimmed:
 
 ```dart
 final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
@@ -156,7 +156,7 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
       library: screens.loadLibrary,
       build: (scope, params) => screens.TasksScreens.list(scope),
       routes: [
-        // Ruta `new` y ruta `:id` con su hija `edit`, recortadas.
+        // `new` route and `:id` route with its `edit` child, trimmed.
         ScreenRoute.deferred(
           ':${TasksPaths.idParam}',
           library: screens.loadLibrary,
@@ -171,210 +171,210 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
 );
 ```
 
-- **Pantallas:** `screens: [ScreenRoute.deferred(path, library: ..., build: (scope, params) => ...)]`. `library` es el `loadLibrary` del import diferido y `build` recibe el `MicrofrontendScope` y los `params`, que unen query y path (gana el path). `TasksScreens` es una clase estática que arma cada pantalla con su repositorio y con `DeferredLocalizations`. Las subrutas van en `routes` y se protegen con `access`.
-- **Identidad:** `ShellRuntime.identityEpoch` sube con cada cambio de usuario o tenant. `ShellRouterFactory` envuelve cada página en un `KeyedSubtree` con ese valor y la pantalla se reconstruye desde cero para la nueva identidad.
-- **Ciclo de vida:** `lifecycleFactory` crea una instancia por activación. Los eventos salen con `ShellContext.emit` y se escuchan con `ShellContext.listen`; al rotar la identidad el contexto se cancela.
-- **Recursos:** los repositorios implementan `ScopedResource` y el scope los cierra.
-- **Acceso:** `AccessRule.mfa(maxAge)` exige un segundo factor reciente. Las acciones se protegen con `AccessGate` o `context.can(regla)`.
-- **Layout:** cada pantalla es dueña de su única barra superior con `AppPage` de `ui`. El shell usa `ShellChrome`.
-- **Estados y errores:** cada pantalla tiene un controlador (`ChangeNotifier`) probado sin widgets. La carga la compone un `AsyncLoader` y las acciones un `ActionRunner`; la pantalla es un `StatelessWidget` que crea el controlador con `ControllerBuilder`. Los errores de una acción se muestran con `showActionResult`.
+- **Screens:** `screens: [ScreenRoute.deferred(path, library: ..., build: (scope, params) => ...)]`. `library` is the `loadLibrary` of the deferred import and `build` receives the `MicrofrontendScope` and the `params`, which merge query and path (path wins). `TasksScreens` is a static class that builds each screen with its repository and with `DeferredLocalizations`. Subroutes go in `routes` and are protected with `access`.
+- **Identity:** `ShellRuntime.identityEpoch` goes up with every change of user or tenant. `ShellRouterFactory` wraps each page in a `KeyedSubtree` with that value and the screen is rebuilt from scratch for the new identity.
+- **Lifecycle:** `lifecycleFactory` creates one instance per activation. Events are sent with `ShellContext.emit` and listened to with `ShellContext.listen`; when the identity rotates, the context is cancelled.
+- **Resources:** repositories implement `ScopedResource` and the scope closes them.
+- **Access:** `AccessRule.mfa(maxAge)` requires a recent second factor. Actions are protected with `AccessGate` or `context.can(rule)`.
+- **Layout:** each screen owns its single top bar with `AppPage` from `ui`. The shell uses `ShellChrome`.
+- **States and errors:** each screen has a controller (`ChangeNotifier`) tested without widgets. Loading is composed by an `AsyncLoader` and actions by an `ActionRunner`; the screen is a `StatelessWidget` that creates the controller with `ControllerBuilder`. An action's errors are shown with `showActionResult`.
 
-Los siete manifiestos usan `screens:`, y `notifications` crea su ciclo de vida con `lifecycleFactory`. Las API anteriores (`routes:`, `lifecycle:`, `ShellContext.eventBus` y `AdaptiveScaffold.compactActions`) se eliminaron.
+All seven manifests use `screens:`, and `notifications` creates its lifecycle with `lifecycleFactory`. The previous APIs (`routes:`, `lifecycle:`, `ShellContext.eventBus` and `AdaptiveScaffold.compactActions`) were removed.
 
-**Carga diferida**
+**Deferred loading**
 
-El manifiesto se importa de forma inmediata: el shell lo lee al arrancar para armar rutas, menú y visibilidad. Las pantallas, los datos y los textos viven detrás de `deferred as` y se descargan cuando alguien navega a ellas. `DeferredLibraryLoader` de `shell_core` carga cada biblioteca una vez por instancia y muestra la página mientras espera. Así la web de un cliente sin acceso al backoffice nunca ejecuta su código.
+The manifest is imported eagerly: the shell reads it at startup to build routes, menu and visibility. Screens, data and texts live behind `deferred as` and are downloaded when someone navigates to them. `DeferredLibraryLoader` from `shell_core` loads each library once per instance and shows the page while it waits. This way the web app of a client without backoffice access never runs its code.
 
-`front/tools/check_deferred_chunks.dart` lo comprueba después de `flutter build web --release --source-maps`, desde `front/apps/web`. Falla si:
+`front/tools/check_deferred_chunks.dart` checks this after `flutter build web --release --source-maps`, from `front/apps/web`. It fails if:
 
-1. `main.dart.js.map` lista fuentes de `microfrontends/*/lib/src/{data,screens,l10n}`.
-2. Algún texto ARB del backoffice de 12 caracteres o más aparece en `main.dart.js`.
+1. `main.dart.js.map` lists sources from `microfrontends/*/lib/src/{data,screens,l10n}`.
+2. Any backoffice ARB text of 12 characters or more appears in `main.dart.js`.
 
-El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto, así que carga `src/data` con `deferred as` a través de un puente (`lifecycle/unread_counts.dart`). En la VM, las pruebas cargan las librerías diferidas de los manifiestos una vez en `setUpAll` con `DeferredLibrariesPreloader` del paquete `test_utils`.
+The `notifications` lifecycle ships in the initial bundle with the manifest, so it loads `src/data` with `deferred as` through a bridge (`lifecycle/unread_counts.dart`). On the VM, tests load the manifests' deferred libraries once in `setUpAll` with `DeferredLibrariesPreloader` from the `test_utils` package.
 
-**Reglas**
+**Rules**
 
-- Los microfrontends dependen solo de `front/packages` y nunca entre sí. Se comunican por eventos del shell y por rutas.
-- Pantallas adaptativas: los widgets de `ui` se ajustan a pantalla grande y pequeña. Una pantalla con versión propia por plataforma se declara con `PlatformScreen`.
-- Visibilidad por permisos, plan y feature flag con los enums generados desde el backend. La interfaz oculta lo que el usuario no puede usar; la autoridad es la API.
-- Nada en `front/` importa librerías del backend; solo usa lo generado en `front/packages/contracts`.
-- Lo compartido entre pantallas de un microfrontend vive en su `lib/src/shared/{enums,constants,types,utils}`.
+- Microfrontends depend only on `front/packages` and never on each other. They communicate through shell events and routes.
+- Adaptive screens: the `ui` widgets adjust to large and small screens. A screen with its own version per platform is declared with `PlatformScreen`.
+- Visibility by permissions, plan and feature flag with the enums generated from the backend. The interface hides what the user cannot use; the API is the authority.
+- Nothing in `front/` imports backend libraries; it only uses what is generated in `front/packages/contracts`.
+- What is shared between screens of a microfrontend lives in its `lib/src/shared/{enums,constants,types,utils}`.
 
-**Paquetes compartidos** (`front/packages`)
+**Shared packages** (`front/packages`)
 
-| Paquete      | Qué contiene                                                                                                                                                                                                                                                                                                                                                          |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shell_host` | Lo común de los dos shells: arranque, sesión, login, step-up, página de acceso denegado y modo demo                                                                                                                                                                                                                                                                   |
-| `shell_core` | `MicrofrontendManifest`, `ScreenRoute` con `ScreenRoute.deferred`, registro, `ShellRuntime`, `ShellContext`, `ShellNavigator` y `ShellRouterFactory` (router), `DeferredLibraryLoader`, `RepositoryBinding`, `DemoBehavior`, `DeferredLocalizations` con `showLocalizedDialog` y reglas de acceso                                                                     |
-| `api`        | `ApiClient` con un `HttpTransport` inyectable: valida la petición contra el contrato antes de llamar y decodifica respuestas y errores                                                                                                                                                                                                                                |
-| `contracts`  | `lib/src/core` escrito a mano y `lib/src/<servicio>` generado por `contracts_gen` desde `backend/libs/contracts`                                                                                                                                                                                                                                                      |
-| `utils`      | `Clock` y `systemClock`, el único lugar con `DateTime.now()`; funciones puras sobre los tipos de `contracts`: montos, fechas y errores de campo                                                                                                                                                                                                                       |
-| `auth`       | Puertos, modelos y `SessionManager` de la sesión                                                                                                                                                                                                                                                                                                                      |
-| `ui`         | Widgets adaptativos, `AsyncValue`, `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors` (`context.statusColors`), layout (`AppPage`, `ShellChrome`, `PlatformScreen`, `ContentColumn`) y tema                                                                                                                                                           |
-| `test_utils` | `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope`, `FakeClock`, `ScriptedTransport` con `ScriptedApi`, `DeferredLibrariesPreloader`, `expectAccessible`, `pumpAtWidths` y `pumpAtTextScale`, los escenarios compartidos de los shells y los dobles de `auth`. Solo en `dev_dependencies`. Lo que usan las pruebas de un solo paquete va en su `test/utils/` |
-| `tokens`     | Colores y escalas de diseño en Dart                                                                                                                                                                                                                                                                                                                                   |
-| `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores, y `ErrorPresenter` con `ErrorDetails` para describir un error                                                                                                                                                                                                                       |
+| Package      | What it contains                                                                                                                                                                                                                                                                                                                                            |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shell_host` | What both shells have in common: startup, session, login, step-up, access denied page and demo mode                                                                                                                                                                                                                                                         |
+| `shell_core` | `MicrofrontendManifest`, `ScreenRoute` with `ScreenRoute.deferred`, registry, `ShellRuntime`, `ShellContext`, `ShellNavigator` and `ShellRouterFactory` (router), `DeferredLibraryLoader`, `RepositoryBinding`, `DemoBehavior`, `DeferredLocalizations` with `showLocalizedDialog` and access rules                                                         |
+| `api`        | `ApiClient` with an injectable `HttpTransport`: validates the request against the contract before calling and decodes responses and errors                                                                                                                                                                                                                  |
+| `contracts`  | `lib/src/core` written by hand and `lib/src/<service>` generated by `contracts_gen` from `backend/libs/contracts`                                                                                                                                                                                                                                           |
+| `utils`      | `Clock` and `systemClock`, the only place with `DateTime.now()`; pure functions over the `contracts` types: amounts, dates and field errors                                                                                                                                                                                                                 |
+| `auth`       | Session ports, models and `SessionManager`                                                                                                                                                                                                                                                                                                                  |
+| `ui`         | Adaptive widgets, `AsyncValue`, `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors` (`context.statusColors`), layout (`AppPage`, `ShellChrome`, `PlatformScreen`, `ContentColumn`) and theme                                                                                                                                                 |
+| `test_utils` | `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope`, `FakeClock`, `ScriptedTransport` with `ScriptedApi`, `DeferredLibrariesPreloader`, `expectAccessible`, `pumpAtWidths` and `pumpAtTextScale`, the shells' shared scenarios and the `auth` test doubles. Only in `dev_dependencies`. What a single package's tests use goes in its `test/utils/` |
+| `tokens`     | Design colors and scales in Dart                                                                                                                                                                                                                                                                                                                            |
+| `i18n`       | Texts in Spanish and English (ARB), including the error catalog messages, and `ErrorPresenter` with `ErrorDetails` to describe an error                                                                                                                                                                                                                     |
 
-**Crear un microfrontend nuevo**
+**Creating a new microfrontend**
 
-`dart run front/tools/new_microfrontend.dart reports --menu "Reportes"` crea `front/microfrontends/reports` con su manifiesto, sus pantallas diferidas, su repositorio de demostración y sus pruebas, y agrega el miembro a `front/pubspec.yaml`. Imprime las líneas que cada app necesita. Los pasos a mano y la lista de lo que se escribe están en la [skill front-nuevo-microfrontend](../.claude/skills/front-nuevo-microfrontend/SKILL.md).
+`dart run front/tools/new_microfrontend.dart reports --menu "Reportes"` creates `front/microfrontends/reports` with its manifest, its deferred screens, its demo repository and its tests, and adds the member to `front/pubspec.yaml`. It prints the lines each app needs. The manual steps and the list of what gets written are in the [front-nuevo-microfrontend skill](../.claude/skills/front-nuevo-microfrontend/SKILL.md).
 
-**Datos reales.** Cada microfrontend de negocio (tasks, notifications, billing y reports) declara `RepositoryBinding(demo:, live:)`: en demo usa su fake en memoria y en live un `Api<Nombre>Repository` sobre `ApiClient` y las rutas generadas, que valida cada petición contra el contrato. Los enums del contrato se reexportan desde el `shared/enums` del microfrontend. Las notificaciones en vivo y el conteo de no leídos llegan por `SseNotificationsStream`, que lee `GET /v1/notifications/stream` con el token de la sesión y reanuda con `Last-Event-ID` sin perder ni repetir avisos. Ante `PLATFORM.SHARDING.WRONG_REGION`, `ApiClient` repite la petición una vez en `details.apiBaseUrl` y se queda con esa base. Las pruebas usan `ScriptedTransport` de `test_utils` y no necesitan backend ([ADR 0034](adr/0034-repositorios-live-del-front-sse-y-region.md)).
+**Real data.** Each business microfrontend (tasks, notifications, billing and reports) declares `RepositoryBinding(demo:, live:)`: in demo it uses its in-memory fake and in live an `Api<Name>Repository` on top of `ApiClient` and the generated routes, which validates each request against the contract. The contract enums are re-exported from the microfrontend's `shared/enums`. Live notifications and the unread count arrive through `SseNotificationsStream`, which reads `GET /v1/notifications/stream` with the session token and resumes with `Last-Event-ID` without losing or repeating notices. On `PLATFORM.SHARDING.WRONG_REGION`, `ApiClient` repeats the request once at `details.apiBaseUrl` and keeps that base. Tests use `ScriptedTransport` from `test_utils` and need no backend ([ADR 0034](adr/0034-repositorios-live-del-front-sse-y-region.md)).
 
-**Despliegue.** El módulo `cloudfront-waf` crea el bucket S3 y la distribución de CloudFront de la web.
+**Deployment.** The `cloudfront-waf` module creates the S3 bucket and the CloudFront distribution for the web app.
 
-## Agnóstico a la plataforma
+## Platform agnostic
 
-Cada capacidad externa es un puerto en la librería de plataforma que la usa (por ejemplo `CachePort` en `@platform/cache` o `RateLimiter` en `@platform/rate-limit`), con un adaptador por proveedor en `backend/libs/platform/adapters/<proveedor>` (hoy `aws`, `postgres` y `valkey`). El negocio habla con el puerto; el módulo de cada servicio elige el adaptador por configuración. Cambiar de nube significa escribir adaptadores nuevos y otro Terraform.
+Each external capability is a port in the platform library that uses it (for example `CachePort` in `@platform/cache` or `RateLimiter` in `@platform/rate-limit`), with one adapter per provider in `backend/libs/platform/adapters/<provider>` (today `aws`, `postgres` and `valkey`). Business code talks to the port; each service's module picks the adapter by configuration. Changing clouds means writing new adapters and different Terraform.
 
-| Capacidad                   | Puerto                              | Adaptador AWS                               | Adaptador local y alternativas                                      |
-| --------------------------- | ----------------------------------- | ------------------------------------------- | ------------------------------------------------------------------- |
-| Tópicos (pub/sub)           | `TopicPublisher`                    | SNS                                         | En memoria; Google Pub/Sub, Kafka                                   |
-| Colas                       | `QueueSender`, `QueueConsumer`      | SQS                                         | En memoria, BullMQ sobre Valkey; RabbitMQ                           |
-| Archivos                    | `FileStorage`                       | S3                                          | Sistema de archivos local, MinIO; GCS, Azure Blob                   |
-| Jobs programados            | `JobScheduler`                      | EventBridge Scheduler                       | `node-cron`; Cloud Scheduler, CronJob de Kubernetes                 |
-| Caché y datos de vida corta | `Cache`, `KeyValueStore`            | ElastiCache for Valkey                      | Valkey en Docker; cualquier servidor compatible con Redis           |
-| Email                       | `EmailSender`                       | SES                                         | SMTP con Mailpit                                                    |
-| Push                        | `PushSender`                        | APNs, FCM y Web Push directos               | Igual en cualquier nube                                             |
-| Secretos                    | `SecretsProvider`                   | Secrets Manager                             | Variables de entorno; Vault                                         |
-| Feature flags               | OpenFeature                         | Proveedor propio sobre DB + Valkey          | flagd; AppConfig                                                    |
-| Tiempo real                 | `RealtimeGateway`                   | Socket.IO y SSE en NestJS sobre Fargate     | Los mismos gateways en local o Kubernetes                           |
-| Firmas y cifrado            | `Signer`, `KeyManagement`           | KMS                                         | Claves locales                                                      |
-| Entrada de cómputo          | `main.ts`, `lambda.ts`, `worker.ts` | Lambda, Fargate                             | Cualquier contenedor                                                |
-| Observabilidad              | OpenTelemetry                       | Collector ADOT hacia OpenObserve en Fargate | OpenObserve en un contenedor; cualquier backend compatible con OTel |
+| Capability                 | Port                                | AWS adapter                              | Local adapter and alternatives                          |
+| -------------------------- | ----------------------------------- | ---------------------------------------- | ------------------------------------------------------- |
+| Topics (pub/sub)           | `TopicPublisher`                    | SNS                                      | In memory; Google Pub/Sub, Kafka                        |
+| Queues                     | `QueueSender`, `QueueConsumer`      | SQS                                      | In memory, BullMQ on Valkey; RabbitMQ                   |
+| Files                      | `FileStorage`                       | S3                                       | Local file system, MinIO; GCS, Azure Blob               |
+| Scheduled jobs             | `JobScheduler`                      | EventBridge Scheduler                    | `node-cron`; Cloud Scheduler, Kubernetes CronJob        |
+| Cache and short-lived data | `Cache`, `KeyValueStore`            | ElastiCache for Valkey                   | Valkey in Docker; any Redis-compatible server           |
+| Email                      | `EmailSender`                       | SES                                      | SMTP with Mailpit                                       |
+| Push                       | `PushSender`                        | APNs, FCM and Web Push directly          | Same on any cloud                                       |
+| Secrets                    | `SecretsProvider`                   | Secrets Manager                          | Environment variables; Vault                            |
+| Feature flags              | OpenFeature                         | Own provider on DB + Valkey              | flagd; AppConfig                                        |
+| Real time                  | `RealtimeGateway`                   | Socket.IO and SSE in NestJS on Fargate   | The same gateways locally or on Kubernetes              |
+| Signatures and encryption  | `Signer`, `KeyManagement`           | KMS                                      | Local keys                                              |
+| Compute entry point        | `main.ts`, `lambda.ts`, `worker.ts` | Lambda, Fargate                          | Any container                                           |
+| Observability              | OpenTelemetry                       | ADOT Collector to OpenObserve on Fargate | OpenObserve in a container; any OTel-compatible backend |
 
-La topología de mensajería, los jobs y los buckets se declaran en código de forma abstracta (tópico, cola, job). El Terraform de AWS lee esas declaraciones; otro proveedor tendría su propio módulo leyendo las mismas.
+The messaging topology, the jobs and the buckets are declared in code in an abstract way (topic, queue, job). The AWS Terraform reads those declarations; another provider would have its own module reading the same ones.
 
-**Entradas agnósticas**
+**Agnostic entry points**
 
-Endpoints, handlers de eventos, jobs, operaciones internas y mensajes en tiempo real se escriben una sola vez con decoradores de la plataforma (`@Endpoint`, `@Subscribe`, `@ScheduledJob`, `@InternalOperation`, `@RealtimeHandler`) y llaman casos de uso. Un adaptador de entrada traduce cada runtime a esas declaraciones.
+Endpoints, event handlers, jobs, internal operations and real-time messages are written once with platform decorators (`@Endpoint`, `@Subscribe`, `@ScheduledJob`, `@InternalOperation`, `@RealtimeHandler`) and call use cases. An entry adapter translates each runtime into those declarations.
 
-| Runtime                     | Adaptador de entrada                                                               |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| Lambda con API Gateway HTTP | `lambda.ts` convierte el evento en un request de NestJS                            |
-| Lambda con SQS              | Convierte el lote en mensajes para `@Subscribe` y reporta fallos parciales         |
-| EventBridge Scheduler       | Convierte el disparo en la ejecución de su `@ScheduledJob`                         |
-| Contenedor de tiempo real   | `@WebSocketGateway` (Socket.IO) y `@Sse()` de NestJS llaman a `@RealtimeHandler`   |
-| Fargate, Kubernetes o local | `main.ts` y `worker.ts`: servidor HTTP, consumidores por long polling, cron y `ws` |
+| Runtime                      | Entry adapter                                                                 |
+| ---------------------------- | ----------------------------------------------------------------------------- |
+| Lambda with HTTP API Gateway | `lambda.ts` turns the event into a NestJS request                             |
+| Lambda with SQS              | Turns the batch into messages for `@Subscribe` and reports partial failures   |
+| EventBridge Scheduler        | Turns the trigger into the run of its `@ScheduledJob`                         |
+| Real-time container          | NestJS `@WebSocketGateway` (Socket.IO) and `@Sse()` call `@RealtimeHandler`   |
+| Fargate, Kubernetes or local | `main.ts` and `worker.ts`: HTTP server, long polling consumers, cron and `ws` |
 
-Cambiar de runtime es cambiar el adaptador de entrada. Controllers, handlers y casos de uso quedan iguales.
+Changing runtime means changing the entry adapter. Controllers, handlers and use cases stay the same.
 
-## Identificadores, trazabilidad y observabilidad
+## Identifiers, traceability and observability
 
-**Identificadores UUIDv7**
+**UUIDv7 identifiers**
 
-- Todo identificador es un UUIDv7: usuarios, tenants, sesiones, dispositivos, eventos, sagas, jobs, archivos, facturas y el propio `traceId`.
-- La app genera el ID con `UuidV7IdGenerator` (sobre `node:crypto`, puerto `IdGenerator`), así la entidad tiene identidad antes de persistirse. La columna es `uuid` y es la llave primaria.
-- Los UUIDv7 se ordenan por tiempo: los índices de Postgres crecen en orden y sirven como cursor de paginación (`?after=<id>`).
-- Los secretos usan 256 bits aleatorios de `crypto.randomBytes`: refresh tokens, `mfaToken`, OTP, tokens de reset y API keys.
-- Un UUIDv7 revela su fecha de creación al milisegundo. Se tiene en cuenta en IDs públicos donde esa fecha sea sensible.
+- Every identifier is a UUIDv7: users, tenants, sessions, devices, events, sagas, jobs, files, invoices and the `traceId` itself.
+- The app generates the ID with `UuidV7IdGenerator` (on `node:crypto`, port `IdGenerator`), so the entity has an identity before it is persisted. The column is `uuid` and it is the primary key.
+- UUIDv7 values sort by time: Postgres indexes grow in order and serve as a pagination cursor (`?after=<id>`).
+- Secrets use 256 random bits from `crypto.randomBytes`: refresh tokens, `mfaToken`, OTP, reset tokens and API keys.
+- A UUIDv7 reveals its creation date to the millisecond. This is taken into account for public IDs where that date is sensitive.
 
-**Trazabilidad**
+**Traceability**
 
-- El `traceId` es un UUIDv7 generado al entrar al sistema. Sus 128 bits sin guiones forman un trace-id W3C válido dentro de `traceparent`, compatible con OpenTelemetry y X-Ray.
-- Viaja en headers HTTP, atributos de cada mensaje, pasos de saga, auditoría y como comentario en cada SQL.
-- La respuesta devuelve `x-trace-id` para que soporte encuentre el caso en segundos.
-- Si un cliente externo envía su propio `traceparent`, se guarda como `externalTraceId`.
+- The `traceId` is a UUIDv7 generated on entering the system. Its 128 bits without hyphens form a valid W3C trace-id inside `traceparent`, compatible with OpenTelemetry and X-Ray.
+- It travels in HTTP headers, in each message's attributes, in saga steps, in auditing and as a comment on every SQL statement.
+- The response returns `x-trace-id` so support can find the case in seconds.
+- If an external client sends its own `traceparent`, it is stored as `externalTraceId`.
 
-**Observabilidad con OpenTelemetry**
+**Observability with OpenTelemetry**
 
-OpenTelemetry (OTel) es el estándar abierto de instrumentación: produce logs, trazas y métricas enlazados por el mismo `traceId` y los envía a cualquier backend. El backend es la herramienta donde se consultan, al estilo de Datadog.
+OpenTelemetry (OTel) is the open instrumentation standard: it produces logs, traces and metrics linked by the same `traceId` and sends them to any backend. The backend is the tool where they are queried, in the style of Datadog.
 
-- Instrumentación automática de HTTP, NestJS, `pg`, el cliente de Valkey, el SDK de AWS y `fetch`. Spans propios en casos de uso, pasos de saga, handlers de mensajes y jobs.
-- Logs: el `LoggerPort` escribe JSON con `trace_id` y `span_id` y los exporta como logs OTel, así cada log abre su traza completa. Campos como `password`, `token` y `authorization` se ocultan automáticamente.
-- Métricas: latencia por endpoint, errores por código, profundidad y edad de colas, reintentos, sagas detenidas, aciertos de caché y uso por tenant.
-- Un OpenTelemetry Collector recibe todo y lo reenvía: en Lambda como capa (ADOT, la distribución de AWS), en Fargate como sidecar y en local dentro de `docker-compose`. Cambiar de backend es cambiar la configuración del Collector.
+- Automatic instrumentation of HTTP, NestJS, `pg`, the Valkey client, the AWS SDK and `fetch`. Custom spans in use cases, saga steps, message handlers and jobs.
+- Logs: the `LoggerPort` writes JSON with `trace_id` and `span_id` and exports it as OTel logs, so each log opens its full trace. Fields such as `password`, `token` and `authorization` are hidden automatically.
+- Metrics: latency per endpoint, errors per code, queue depth and age, retries, stalled sagas, cache hits and usage per tenant.
+- An OpenTelemetry Collector receives everything and forwards it: in Lambda as a layer (ADOT, the AWS distribution), in Fargate as a sidecar and locally inside `docker-compose`. Changing backend means changing the Collector configuration.
 
-Una sola herramienta concentra logs, métricas, trazas, dashboards y alertas en todos los entornos: **OpenObserve**.
+A single tool gathers logs, metrics, traces, dashboards and alerts in every environment: **OpenObserve**.
 
-| Herramienta | Qué es                                                                                                                      | Uso                                                                                               |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| OpenObserve | Open source y nativo OTel; logs, métricas, trazas, dashboards y alertas en una interfaz; corre en un solo contenedor Docker | Todos los entornos: un contenedor en local y una tarea de Fargate con almacenamiento en S3 en AWS |
-| SigNoz      | Open source con vistas de APM más completas; corre con Docker Compose sobre ClickHouse                                      | Alternativa si se necesita un análisis de trazas más profundo                                     |
+| Tool        | What it is                                                                                                                    | Use                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| OpenObserve | Open source and OTel native; logs, metrics, traces, dashboards and alerts in one interface; runs in a single Docker container | Every environment: a container locally and a Fargate task with S3 storage on AWS |
+| SigNoz      | Open source with more complete APM views; runs with Docker Compose on ClickHouse                                              | Alternative if deeper trace analysis is needed                                   |
 
-**Control del volumen de logs**
+**Log volume control**
 
-| Control                                        | Uso                                                                             |
-| ---------------------------------------------- | ------------------------------------------------------------------------------- |
-| `LOG_LEVEL` (`debug`, `info`, `warn`, `error`) | Nivel global; en Lambda también alimenta `logging_config.application_log_level` |
-| `LOG_SAMPLE_RATE`                              | Porcentaje de requests que loguean en debug (ejemplo: 0.01)                     |
-| `LOG_DEBUG_CONTEXTS`                           | Debug solo para módulos específicos (ejemplo: `auth,reports`)                   |
-| `DB_LOG_QUERIES`, `DB_SLOW_QUERY_MS`           | SQL apagado por defecto, queries lentas siempre registradas                     |
-| Feature flag `log-level`                       | Cambio de nivel en caliente, sin redeploy                                       |
+| Control                                        | Use                                                                          |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| `LOG_LEVEL` (`debug`, `info`, `warn`, `error`) | Global level; in Lambda it also feeds `logging_config.application_log_level` |
+| `LOG_SAMPLE_RATE`                              | Percentage of requests that log at debug (example: 0.01)                     |
+| `LOG_DEBUG_CONTEXTS`                           | Debug only for specific modules (example: `auth,reports`)                    |
+| `DB_LOG_QUERIES`, `DB_SLOW_QUERY_MS`           | SQL off by default, slow queries always logged                               |
+| Feature flag `log-level`                       | Hot level change, without redeploy                                           |
 
-El muestreo de trazas se configura en el Collector (todas las trazas con error y un porcentaje del resto). La retención es de 14 días en dev y 30 en prod.
+Trace sampling is configured in the Collector (every trace with an error and a percentage of the rest). Retention is 14 days in dev and 30 in prod.
 
-## Errores
+## Errors
 
-Cada error tiene un código único y legible con la forma `SERVICIO.SUBMÓDULO.ERROR`. El cliente reacciona al código; el mensaje es solo para personas y no incluye valores de entrada.
+Each error has a unique, readable code in the form `SERVICE.SUBMODULE.ERROR`. The client reacts to the code; the message is only for people and does not include input values.
 
-**Códigos como enums**
+**Codes as enums**
 
-Los códigos se declaran como enums, nunca como literales sueltos:
+Codes are declared as enums, never as loose literals:
 
-- Cada librería de `backend/libs/platform` declara sus códigos en su propio enum, con prefijo `PLATFORM.` (por ejemplo `SagaErrorCode.UncertainOutcome = 'PLATFORM.SAGA.UNCERTAIN_OUTCOME'`) y su catálogo con `defineErrorCatalog`. Un código con audiencia interna nunca llega al cliente: `toProblemDetails` responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId`.
-- `@contracts/platform` guarda en `PlatformErrorCode` solo los códigos públicos y transversales, los que el cliente ve y el front traduce.
-- Cada servicio declara los suyos en su paquete de contratos, como `IdentityErrorCode` en `backend/libs/contracts/identity/src/enums`.
+- Each library in `backend/libs/platform` declares its codes in its own enum, with the `PLATFORM.` prefix (for example `SagaErrorCode.UncertainOutcome = 'PLATFORM.SAGA.UNCERTAIN_OUTCOME'`) and its catalog with `defineErrorCatalog`. A code with internal audience never reaches the client: `toProblemDetails` responds `PLATFORM.INTERNAL.UNEXPECTED` with its `traceId`.
+- `@contracts/platform` keeps in `PlatformErrorCode` only the public, cross-cutting codes, the ones the client sees and the front translates.
+- Each service declares its own in its contracts package, like `IdentityErrorCode` in `backend/libs/contracts/identity/src/enums`.
 
-`PlatformError` de `@platform/kernel` es la base de todos los errores: lleva `code`, `retryable` y `details`. `DomainError` la extiende para las reglas de negocio y por defecto no es reintentable. `ErrorCode.PATTERN` y `ErrorCode.isValid` validan el formato del código, y `PlatformError.is` reconoce un error de plataforma.
+`PlatformError` from `@platform/kernel` is the base of every error: it carries `code`, `retryable` and `details`. `DomainError` extends it for business rules and is not retryable by default. `ErrorCode.PATTERN` and `ErrorCode.isValid` validate the code format, and `PlatformError.is` recognizes a platform error.
 
-**Catálogos**
+**Catalogs**
 
-`defineErrorCatalog` de `@contracts/platform` crea una entrada por cada valor del enum, con `httpStatus`, `retryable`, `audience` (`public` o `internal`), `description` y `messageKey`. `messageKey` se deriva del código con la misma regla del front: `PLATFORM.AUTH.FORBIDDEN` da `error_platform_auth_forbidden`.
+`defineErrorCatalog` from `@contracts/platform` creates one entry for each enum value, with `httpStatus`, `retryable`, `audience` (`public` or `internal`), `description` and `messageKey`. `messageKey` is derived from the code with the same rule as the front: `PLATFORM.AUTH.FORBIDDEN` gives `error_platform_auth_forbidden`.
 
-- `platformErrorCatalog` cubre solo los códigos públicos y transversales de plataforma. Su prueba falla si un código se repite, si no cumple el formato o si declara uno interno. Cada librería de `backend/libs/platform` tiene su propio catálogo para los suyos, y el servicio los compone con `ErrorCatalog.register`.
-- `identityErrorCatalog` cubre los códigos de identity.
-- Los códigos públicos llegan al front generados, con su `messageKey`. Una prueba de `front/packages/contracts` exige el mensaje en español y en inglés de cada uno en los ARB de `front/packages/i18n`. Los internos nunca llegan al cliente.
+- `platformErrorCatalog` covers only the public, cross-cutting platform codes. Its test fails if a code repeats, if it does not match the format or if it declares an internal one. Each library in `backend/libs/platform` has its own catalog for its codes, and the service composes them with `ErrorCatalog.register`.
+- `identityErrorCatalog` covers the identity codes.
+- Public codes reach the front generated, with their `messageKey`. A test in `front/packages/contracts` requires the Spanish and English message for each one in the ARB files of `front/packages/i18n`. Internal ones never reach the client.
 
-**Clasificación de fallas**
+**Failure classification**
 
-`FailureKind` vive en `@platform/kernel` y `FailureClassifier` en `@platform/primitives`. Los comparten resilience, cache, messaging, sharding, internal-api y saga:
+`FailureKind` lives in `@platform/kernel` and `FailureClassifier` in `@platform/primitives`. They are shared by resilience, cache, messaging, sharding, internal-api and saga:
 
-| `FailureKind`       | Significado                                                         |
+| `FailureKind`       | Meaning                                                             |
 | ------------------- | ------------------------------------------------------------------- |
-| `Transient`         | Reintentar la misma llamada puede funcionar                         |
-| `Permanent`         | Repetirla da el mismo resultado: regla de negocio, 4xx, inexistente |
-| `ProtocolViolation` | Contrato roto o fallo de implementación; nunca se reintenta         |
-| `Timeout`           | Se agotó el tiempo; el efecto pudo aplicarse o no                   |
-| `Cancelled`         | Quien llama abortó; el efecto pudo aplicarse o no                   |
+| `Transient`         | Retrying the same call may work                                     |
+| `Permanent`         | Repeating it gives the same result: business rule, 4xx, nonexistent |
+| `ProtocolViolation` | Broken contract or implementation failure; never retried            |
+| `Timeout`           | Time ran out; the effect may or may not have been applied           |
+| `Cancelled`         | The caller aborted; the effect may or may not have been applied     |
 
-`FailureClassifier.classify` recorre el error y hasta tres niveles de `cause`, y usa la primera señal explícita, en este orden:
+`FailureClassifier.classify` walks the error and up to three levels of `cause`, and uses the first explicit signal, in this order:
 
-1. Una propiedad `failureKind`. Es la forma en que cada adaptador traduce los errores de su proveedor (Postgres, AWS, Valkey), y la que declaran `DomainError` y los errores de la plataforma.
-2. `name` igual a `AbortError` (cancelado) o `TimeoutError` (tiempo agotado).
-3. `retryable: true`, como el de un `PlatformError` reintentable.
-4. Un código de red de Node o de su `fetch` (undici).
-5. Un estado HTTP: 408, 425, 429, 502, 503 y 504 son pasajeros; el resto de 4xx y 5xx, permanentes.
+1. A `failureKind` property. It is how each adapter translates its provider's errors (Postgres, AWS, Valkey), and the one declared by `DomainError` and the platform errors.
+2. `name` equal to `AbortError` (cancelled) or `TimeoutError` (timed out).
+3. `retryable: true`, like that of a retryable `PlatformError`.
+4. A network code from Node or from its `fetch` (undici).
+5. An HTTP status: 408, 425, 429, 502, 503 and 504 are transient; the rest of 4xx and 5xx, permanent.
 
-Sin señal, un `TypeError`, `ReferenceError`, `SyntaxError`, `RangeError` o `ZodError` es una violación de protocolo, y cualquier otra cosa es permanente. Lo desconocido no se reintenta.
+Without a signal, a `TypeError`, `ReferenceError`, `SyntaxError`, `RangeError` or `ZodError` is a protocol violation, and anything else is permanent. The unknown is not retried.
 
-`CallOutcome.fromError` traduce esa clase al resultado de una llamada entre procesos: un `DomainError` es `business-error`; `Transient`, `transient-failure`; `Timeout` y `Cancelled`, `uncertain`; el resto, `protocol-violation`.
+`CallOutcome.fromError` translates that class into the result of a call between processes: a `DomainError` is `business-error`; `Transient`, `transient-failure`; `Timeout` and `Cancelled`, `uncertain`; the rest, `protocol-violation`.
 
-**Respuesta HTTP** en formato RFC 9457 (Problem Details). `toProblemDetails` de `@contracts/platform` arma la respuesta desde una entrada del catálogo:
+**HTTP response** in RFC 9457 format (Problem Details). `toProblemDetails` from `@contracts/platform` builds the response from a catalog entry:
 
 ```json
 {
-  "type": "https://docs.<dominio>/errors/IDENTITY.MFA.CODE_EXPIRED",
-  "title": "El código expiró",
+  "type": "https://docs.<domain>/errors/IDENTITY.MFA.CODE_EXPIRED",
+  "title": "The code expired",
   "status": 400,
   "code": "IDENTITY.MFA.CODE_EXPIRED",
-  "detail": "Solicita un código nuevo.",
+  "detail": "Request a new code.",
   "traceId": "0193f1c2-...",
   "errors": [{ "field": "code", "code": "PLATFORM.VALIDATION.REQUIRED" }]
 }
 ```
 
-Los errores de campo usan los códigos `PLATFORM.VALIDATION.*` y rutas con punto (`items.0.name`), los mismos en el servidor y en el cliente.
+Field errors use the `PLATFORM.VALIDATION.*` codes and dotted paths (`items.0.name`), the same on the server and the client.
 
-**Reglas**
+**Rules**
 
-- Los casos de uso solo lanzan errores de dominio.
-- Cada operación interna declara los códigos que puede devolver. El cliente trata un código no declarado como violación de protocolo.
-- El filtro global de HTTP es `ProblemDetailsFilter` de `@platform/http`: traduce los errores con el catálogo y responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId` y sin detalles internos ante un error inesperado.
+- Use cases only throw domain errors.
+- Each internal operation declares the codes it can return. The client treats an undeclared code as a protocol violation.
+- The global HTTP filter is `ProblemDetailsFilter` from `@platform/http`: it translates errors with the catalog and responds `PLATFORM.INTERNAL.UNEXPECTED` with its `traceId` and no internal details on an unexpected error.
 
 ## Endpoints
 
-Un solo decorador, `@Endpoint`, toma la ruta del contrato y reúne autenticación, autorización, MFA, rate limit, versión y deprecación. El método, el path, los esquemas, los códigos de error y el acceso salen del `RouteDefinition` de `@contracts/<servicio>`, así el servidor no puede divergir del contrato que consume el front (decisión 3 del [diseño de F4](design/f4-identity.md#11-decisions-that-require-the-user)).
+A single decorator, `@Endpoint`, takes the route from the contract and brings together authentication, authorization, MFA, rate limit, version and deprecation. The method, the path, the schemas, the error codes and the access come from the `RouteDefinition` in `@contracts/<service>`, so the server cannot diverge from the contract the front consumes (decision 3 of the [F4 design](design/f4-identity.md#11-decisions-that-require-the-user)).
 
 ```ts
 @Resource(IdentityResource.Sessions)
@@ -397,43 +397,43 @@ export class SessionsController {
 }
 ```
 
-`@Endpoint` falla al arrancar si una ruta pública declara `auth`, si un path se registra dos veces o si el contrato del servicio tiene una ruta sin handler.
+`@Endpoint` fails at startup if a public route declares `auth`, if a path is registered twice or if the service contract has a route without a handler.
 
-**Pipeline de cada request**
+**Pipeline of each request**
 
-1. Middleware: `traceId` y contexto de request con `AsyncLocalStorage` (`RequestContextStore`), cabeceras de seguridad y política de `Origin`, que fija el canal web o nativo.
-2. Guard: autenticación (JWT o API key), tenant, rate limit, acceso y fecha de cierre de la versión.
-3. Interceptores: contexto con tenant y actor, timeout, `Api-Version`, cabeceras de deprecación y cookie de sesión.
-4. Pipe: valida la entrada contra el esquema zod de la ruta (`PLATFORM.VALIDATION.INVALID_INPUT` con errores por campo).
-5. Filtro: errores en formato RFC 9457.
+1. Middleware: `traceId` and request context with `AsyncLocalStorage` (`RequestContextStore`), security headers and the `Origin` policy, which sets the web or native channel.
+2. Guard: authentication (JWT or API key), tenant, rate limit, access and the version's sunset date.
+3. Interceptors: context with tenant and actor, timeout, `Api-Version`, deprecation headers and session cookie.
+4. Pipe: validates the input against the route's zod schema (`PLATFORM.VALIDATION.INVALID_INPUT` with per-field errors).
+5. Filter: errors in RFC 9457 format.
 
-Los casos de uso corren dentro de un `UseCaseRunner` con comportamientos encadenables (transacción, auditoría, métricas, reintentos). Esos comportamientos aplican igual si el caso de uso se invoca por HTTP, por la API interna, desde una cola o por WebSocket.
+Use cases run inside a `UseCaseRunner` with chainable behaviors (transaction, auditing, metrics, retries). Those behaviors apply the same whether the use case is invoked over HTTP, through the internal API, from a queue or over WebSocket.
 
-La conexión a base de datos se define en el módulo y queda fuera del endpoint: `PersistenceModule.forFeature({ entities: [TaskEntity], sharding: { key: ShardKey.Tenant } })`.
+The database connection is defined in the module and stays outside the endpoint: `PersistenceModule.forFeature({ entities: [TaskEntity], sharding: { key: ShardKey.Tenant } })`.
 
-**Matriz de acceso.** CI genera la lista de todos los endpoints con su autenticación y permisos. Un endpoint público aparece señalado y requiere aprobación en el PR.
+**Access matrix.** CI generates the list of every endpoint with its authentication and permissions. A public endpoint shows up flagged and requires approval in the PR.
 
-**Versionamiento**
+**Versioning**
 
-- **Versión mayor en la URL** (`/v1`, `/v2`) para rediseños completos, con el versionamiento nativo de NestJS.
-- **Versión por request dentro de la mayor**: el cliente envía `Api-Version: 2026-11-01` (si lo omite, se usa la versión fijada a su API key o tenant). La lógica de negocio vive una sola vez en la versión actual; transformadores por versión convierten el request antiguo al actual y la respuesta actual al formato antiguo. Cuando una versión cambia el comportamiento de verdad, `@Endpoint({ versions: { [ApiVersion.V2026_06]: LegacyCreateTask } })` resuelve otro caso de uso por inyección de dependencias. Así el negocio queda libre de condicionales por versión.
+- **Major version in the URL** (`/v1`, `/v2`) for complete redesigns, with NestJS's native versioning.
+- **Per-request version within the major**: the client sends `Api-Version: 2026-11-01` (if omitted, the version pinned to its API key or tenant is used). Business logic lives only once in the current version; per-version transformers convert the old request to the current one and the current response to the old format. When a version really changes behavior, `@Endpoint({ versions: { [ApiVersion.V2026_06]: LegacyCreateTask } })` resolves a different use case through dependency injection. This keeps business code free of per-version conditionals.
 
-**Deprecación**
+**Deprecation**
 
-- `@Endpoint({ deprecated: { since, sunset, replacement } })` agrega los headers `Deprecation`, `Sunset` y `Link`.
-- Se mide el uso por versión, tenant y API key, y `notifications` avisa a quienes la usan 90, 30 y 7 días antes del cierre.
-- Después del `sunset`, el endpoint responde `410` con `PLATFORM.API.VERSION_SUNSET`.
+- `@Endpoint({ deprecated: { since, sunset, replacement } })` adds the `Deprecation`, `Sunset` and `Link` headers.
+- Usage is measured per version, tenant and API key, and `notifications` warns those who use it 90, 30 and 7 days before the sunset.
+- After the `sunset`, the endpoint responds `410` with `PLATFORM.API.VERSION_SUNSET`.
 
-**Documentación autogenerada**
+**Generated documentation**
 
-- OpenAPI generado desde `contract.json`, sin `@nestjs/swagger` (decisión 4 del diseño de F4), con UI en Scalar ([ADR 0033](adr/0033-generadores-y-openapi.md)).
-- AsyncAPI para eventos y colas, generado desde la topología y los contratos.
-- Un portal que reúne todos los servicios, el catálogo de errores y la matriz de acceso. En prod queda detrás de autenticación.
-- El front recibe los contratos generados en Dart (`front/packages/contracts`) y llama a la API con `ApiClient`.
+- OpenAPI generated from `contract.json`, without `@nestjs/swagger` (decision 4 of the F4 design), with a Scalar UI ([ADR 0033](adr/0033-generadores-y-openapi.md)).
+- AsyncAPI for events and queues, generated from the topology and the contracts.
+- A portal that brings together every service, the error catalog and the access matrix. In prod it sits behind authentication.
+- The front receives the contracts generated in Dart (`front/packages/contracts`) and calls the API with `ApiClient`.
 
-## Persistencia
+## Persistence
 
-TypeORM es el ORM, y `backend/libs/platform/persistence` lo envuelve y le suma lo propio de la plataforma: elegir el shard lógico, llegar a la instancia física, mantener una transacción en un solo shard, leer de la réplica y migrar todas las bases ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)). El dominio ve solo puertos de repositorio. El servicio escribe entidades, mappers, repositorios y migraciones, y el ruteo es transparente. El detalle está en el [diseño de persistencia](design/persistencia-typeorm-y-sagas.md).
+TypeORM is the ORM, and `backend/libs/platform/persistence` wraps it and adds what is specific to the platform: picking the logical shard, reaching the physical instance, keeping a transaction on a single shard, reading from the replica and migrating every database ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)). The domain sees only repository ports. The service writes entities, mappers, repositories and migrations, and routing is transparent. The details are in the [persistence design](design/persistencia-typeorm-y-sagas.md).
 
 ```ts
 @Module({
@@ -468,168 +468,168 @@ export class TypeOrmUserRepository
 }
 ```
 
-**Piezas de `@platform/persistence`**
+**Pieces of `@platform/persistence`**
 
-| Clase                                     | Responsabilidad                                                                                                                                                                     |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ShardDataSources`                        | Un `DataSource` de TypeORM por base física (instancia más shard lógico), con primario y réplicas. Los crea al primer uso y cierra el viejo cuando un shard cambia de instancia      |
-| `CatalogDataSource`                       | El `DataSource` del catálogo                                                                                                                                                        |
-| `ShardResolver`                           | Saca la llave del contexto según el módulo, llama a `ShardRouter` y devuelve el `DataSource` del shard                                                                              |
-| `TypeOrmTransactionManager`               | Implementa el puerto `TransactionManager` de `@platform/kernel` con un `QueryRunner` del shard. Corre los hooks `afterCommit` y rechaza tocar otro shard en la misma transacción    |
-| `EntityManagerProvider`                   | El `EntityManager` de la transacción actual o, fuera de ella, el de la réplica. `this.readPrimary(fn)` fuerza el primario                                                           |
-| `ShardedRepository` y `CatalogRepository` | Base de los repositorios: tenant, versión optimista (`@VersionColumn`), borrado lógico (`@DeleteDateColumn`), auditoría y `Criteria` con paginación por cursor UUIDv7               |
-| `RepositoryKit`                           | Lo que un repositorio necesita además de su mapper: la declaración del módulo, el proveedor de managers, el escritor optimista, el contexto y el `ShardScope`. `forFeature` lo arma |
-| `PersistenceFeature`                      | Declaración de sharding de un módulo ya validada (`ShardKey`, estrategia) con sus entidades. `forFeature` la crea                                                                   |
-| `OptimisticWriter`                        | `UPDATE` que solo aplica si la versión sigue vigente. Si ninguna fila cambia lanza `OptimisticLockError`                                                                            |
-| `ShardLister`                             | Puerto que lista los shards lógicos del servicio con su instancia. Lo implementa el directorio y `forRoot` lo exige                                                                 |
-| `TypeOrmCriteriaTranslator`               | Traduce el AST de `Criteria` a un `QueryBuilder`: filtros con parámetros, orden, paginación por cursor y lista blanca de campos                                                     |
-| `MigrationGenerator`                      | Genera una migración comparando las entidades con una base temporal a la que se le aplican las migraciones existentes                                                               |
-| `ShardScope`                              | Ejecuta un bloque en el shard de una llave explícita, como el usuario de otro tenant ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md))                                    |
-| `AcrossShards`                            | Recorre varios shards para reportes y mantenimiento, con plazo y concurrencia acotada                                                                                               |
-| `ShardedMigrationRunner`                  | Corre las migraciones de cada shard lógico y del catálogo, cada uno bajo `pg_advisory_lock`                                                                                         |
-| `PersistenceModule`                       | `forRoot(config)` arma todo con valores por defecto, y `forFeature({ entities, sharding })` registra los repositorios de un módulo con su llave                                     |
+| Class                                       | Responsibility                                                                                                                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ShardDataSources`                          | One TypeORM `DataSource` per physical database (instance plus logical shard), with primary and replicas. It creates them on first use and closes the old one when a shard changes instance  |
+| `CatalogDataSource`                         | The catalog's `DataSource`                                                                                                                                                                  |
+| `ShardResolver`                             | Takes the key from the context according to the module, calls `ShardRouter` and returns the shard's `DataSource`                                                                            |
+| `TypeOrmTransactionManager`                 | Implements the `TransactionManager` port from `@platform/kernel` with a `QueryRunner` on the shard. Runs the `afterCommit` hooks and refuses to touch another shard in the same transaction |
+| `EntityManagerProvider`                     | The current transaction's `EntityManager` or, outside one, the replica's. `this.readPrimary(fn)` forces the primary                                                                         |
+| `ShardedRepository` and `CatalogRepository` | Base of the repositories: tenant, optimistic version (`@VersionColumn`), soft delete (`@DeleteDateColumn`), auditing and `Criteria` with UUIDv7 cursor pagination                           |
+| `RepositoryKit`                             | What a repository needs besides its mapper: the module's declaration, the manager provider, the optimistic writer, the context and the `ShardScope`. `forFeature` builds it                 |
+| `PersistenceFeature`                        | A module's already validated sharding declaration (`ShardKey`, strategy) with its entities. `forFeature` creates it                                                                         |
+| `OptimisticWriter`                          | `UPDATE` that only applies if the version is still current. If no row changes it throws `OptimisticLockError`                                                                               |
+| `ShardLister`                               | Port that lists the service's logical shards with their instance. The directory implements it and `forRoot` requires it                                                                     |
+| `TypeOrmCriteriaTranslator`                 | Translates the `Criteria` AST into a `QueryBuilder`: parameterized filters, ordering, cursor pagination and a field allowlist                                                               |
+| `MigrationGenerator`                        | Generates a migration by comparing the entities with a temporary database to which the existing migrations are applied                                                                      |
+| `ShardScope`                                | Runs a block on the shard of an explicit key, such as a user from another tenant ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md))                                                |
+| `AcrossShards`                              | Walks several shards for reports and maintenance, with a deadline and bounded concurrency                                                                                                   |
+| `ShardedMigrationRunner`                    | Runs the migrations of each logical shard and of the catalog, each one under `pg_advisory_lock`                                                                                             |
+| `PersistenceModule`                         | `forRoot(config)` sets everything up with defaults, and `forFeature({ entities, sharding })` registers a module's repositories with its key                                                 |
 
-**Entidades y migraciones**
+**Entities and migrations**
 
-- Las entidades base (`AuditedEntity`, `VersionedEntity`) traen `id` uuid, auditoría, versión y borrado lógico en `timestamptz`. El `id` es un UUIDv7 que genera la app.
-- La llave de shard de cada módulo se declara en `forFeature`, no en decoradores sobre la entidad.
-- Cada servicio guarda sus migraciones en `migrations/shard` y `migrations/catalog`. La librería trae `pnpm nx run platform-persistence:migration-generate --name=<Nombre> --definition=<modulo> --out=<carpeta>`, que genera la migración comparando las entidades con una base temporal. Cada servicio tendrá su target sobre esa CLI. `migration-run` y `migration-revert` usan los mismos `DataSource`. `synchronize` va siempre apagado.
-- Las tablas de la plataforma (outbox, mensajes procesados, idempotencia, directorio de shards y bitácora de sagas) traen sus entidades y migraciones desde `@platform/adapters-postgres`.
+- The base entities (`AuditedEntity`, `VersionedEntity`) come with a uuid `id`, auditing, version and soft delete in `timestamptz`. The `id` is a UUIDv7 generated by the app.
+- Each module's shard key is declared in `forFeature`, not in decorators on the entity.
+- Each service keeps its migrations in `migrations/shard` and `migrations/catalog`. The library provides `pnpm nx run platform-persistence:migration-generate --name=<Nombre> --definition=<modulo> --out=<carpeta>`, which generates the migration by comparing the entities with a temporary database. Each service will have its own target on top of that CLI. `migration-run` and `migration-revert` use the same `DataSource` objects. `synchronize` is always off.
+- The platform tables (outbox, processed messages, idempotency, shard directory and saga log) bring their entities and migrations from `@platform/adapters-postgres`.
 
-**Código actual.** El núcleo de persistencia sobre TypeORM está construido. El código viejo sobre `pg` quedó aislado en `src/legacy/` y se reexporta hasta que las tablas de la plataforma migren a TypeORM. El ADR 0009 sigue reemplazado.
+**Current code.** The persistence core on TypeORM is built. The old code on `pg` was isolated in `src/legacy/` and is re-exported until the platform tables migrate to TypeORM. ADR 0009 remains superseded.
 
-**Particionamiento**
+**Partitioning**
 
-- Se declara en la migración, por rango, lista o hash.
-- Como el UUIDv7 contiene la fecha, se particiona por rango del propio `id` y la llave primaria sigue siendo solo `id`.
-- La migración crea las primeras particiones, y un job programado crea las futuras y archiva las vencidas.
-- En desarrollo, la capa avisa cuando una query sobre tabla particionada omite la llave de partición.
+- It is declared in the migration, by range, list or hash.
+- Since the UUIDv7 contains the date, tables are partitioned by range of the `id` itself and the primary key remains just `id`.
+- The migration creates the first partitions, and a scheduled job creates future ones and archives expired ones.
+- In development, the layer warns when a query on a partitioned table omits the partition key.
 
-**Sharding**: el enrutamiento de cada query al shard correcto se detalla en [Sharding y enrutamiento de datos](#sharding-y-enrutamiento-de-datos).
+**Sharding**: routing each query to the right shard is detailed in [Sharding and data routing](#sharding-and-data-routing).
 
-**Caché de queries con Valkey**
+**Query cache with Valkey**
 
-- Cache-aside en la capa, activable por repositorio o por módulo, con TTL corto (2 a 10 segundos) y variación aleatoria.
-- Invalidación por versión: cada tenant y entidad tiene un contador que forma parte de la clave. Una escritura lo incrementa y las claves anteriores quedan obsoletas al instante.
-- Single-flight: ante una clave expirada, una sola petición consulta la base y las demás esperan su resultado.
-- Las lecturas dentro de una transacción van directo a la base.
+- Cache-aside in the layer, enabled per repository or per module, with a short TTL (2 to 10 seconds) and random jitter.
+- Invalidation by version: each tenant and entity has a counter that is part of the key. A write increments it and the previous keys become stale instantly.
+- Single-flight: on an expired key, a single request queries the database and the rest wait for its result.
+- Reads inside a transaction go straight to the database.
 
-**Auditoría de cambios**
+**Change auditing**
 
-- `@Audited({ exclude: ['passwordHash'] })` en la entidad genera, en la migración, un trigger que escribe en `audit_log`.
-- La capa ejecuta `set_config('app.actor_id' | 'app.tenant_id' | 'app.trace_id', …, true)` en cada transacción. Así el trigger sabe quién hizo el cambio, incluso en updates masivos o SQL manual.
-- Cada registro guarda tabla, id, operación, valores antes y después (solo campos cambiados), actor, tenant, `traceId` y fecha.
-- `audit_log` está particionada por mes, solo admite inserciones y tiene retención configurable.
-- El backoffice muestra el historial de cualquier registro.
+- `@Audited({ exclude: ['passwordHash'] })` on the entity generates, in the migration, a trigger that writes to `audit_log`.
+- The layer runs `set_config('app.actor_id' | 'app.tenant_id' | 'app.trace_id', …, true)` in every transaction. That way the trigger knows who made the change, even in bulk updates or manual SQL.
+- Each record stores table, id, operation, values before and after (only changed fields), actor, tenant, `traceId` and date.
+- `audit_log` is partitioned by month, only allows inserts and has configurable retention.
+- The backoffice shows the history of any record.
 
-## Sharding y enrutamiento de datos
+## Sharding and data routing
 
-Cada query llega a su shard sin que el código de negocio lo pida: el repositorio toma la llave del contexto, el router resuelve el shard y la capa elige primario o réplica. La plantilla arranca con un shard y crece a N con el mismo código.
+Each query reaches its shard without the business code asking for it: the repository takes the key from the context, the router resolves the shard and the layer picks primary or replica. The template starts with one shard and grows to N with the same code.
 
-| Concepto         | Qué es                                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Shard lógico     | Una base PostgreSQL con el esquema completo del servicio. Varios shards lógicos conviven en una instancia física                                 |
-| Instancia física | Un servidor RDS con su RDS Proxy y sus réplicas; aloja uno o más shards lógicos                                                                  |
-| Grupo de shards  | Los shards lógicos asignados a un tenant dentro de su región: uno para un tenant pequeño, varios para uno grande                                 |
-| Llave de shard   | El valor que elige el shard dentro del grupo. Cada servicio o entidad declara la suya según cómo se consultan sus datos                          |
-| Región           | País o región donde vive la información del tenant, elegida por el tenant                                                                        |
-| Catálogo         | Base global pequeña con el directorio tenant → región → grupo, el mapa shard lógico → instancia, los índices globales y las tablas de referencia |
+| Concept           | What it is                                                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logical shard     | A PostgreSQL database with the service's complete schema. Several logical shards live together on one physical instance                         |
+| Physical instance | An RDS server with its RDS Proxy and its replicas; it hosts one or more logical shards                                                          |
+| Shard group       | The logical shards assigned to a tenant within its region: one for a small tenant, several for a large one                                      |
+| Shard key         | The value that picks the shard within the group. Each service or entity declares its own according to how its data is queried                   |
+| Region            | Country or region where the tenant's information lives, chosen by the tenant                                                                    |
+| Catalog           | Small global database with the tenant → region → group directory, the logical shard → instance map, the global indexes and the reference tables |
 
-La cadena de enrutamiento es **tenant → región → grupo de shards → shard lógico → instancia física**. Tenants y shards son independientes: crecer es agregar shards lógicos a un grupo o mover shards lógicos a instancias nuevas, sin tocar los tenants uno por uno.
+The routing chain is **tenant → region → shard group → logical shard → physical instance**. Tenants and shards are independent: growing means adding logical shards to a group or moving logical shards to new instances, without touching tenants one by one.
 
-**Declaración en código**
+**Declaration in code**
 
-Cada módulo declara su llave al registrar sus entidades. El repositorio y la entidad son los mismos con cualquier reparto.
+Each module declares its key when it registers its entities. The repository and the entity are the same with any distribution.
 
 ```ts
-// tasks reparte por tenant.
+// tasks distributes by tenant.
 PersistenceModule.forFeature({
   entities: [TaskEntity],
   sharding: { key: ShardKey.Tenant },
 });
 
-// identity reparte los datos de usuario por usuario (ADR 0023).
+// identity distributes user data by user (ADR 0023).
 PersistenceModule.forFeature({
   entities: [UserEntity],
   sharding: { key: ShardKey.User },
 });
 ```
 
-**La llave según la necesidad**
+**The key according to the need**
 
-| Llave             | Cuándo                                                       | Ejemplos                                                      |
-| ----------------- | ------------------------------------------------------------ | ------------------------------------------------------------- |
-| `ShardKey.Tenant` | Los datos se consultan por tenant y caben en un shard        | tasks, billing, reportes                                      |
-| `ShardKey.User`   | Los datos se consultan por usuario o el tenant es muy grande | identity, preferencias, bandeja de notificaciones             |
-| `ShardKey.Custom` | Otro patrón de acceso, con un `ShardKeyResolver`             | Una entidad que se reparte por cuenta o por región de negocio |
+| Key               | When                                                | Examples                                               |
+| ----------------- | --------------------------------------------------- | ------------------------------------------------------ |
+| `ShardKey.Tenant` | Data is queried by tenant and fits in one shard     | tasks, billing, reports                                |
+| `ShardKey.User`   | Data is queried by user or the tenant is very large | identity, preferences, notification inbox              |
+| `ShardKey.Custom` | Another access pattern, with a `ShardKeyResolver`   | An entity distributed by account or by business region |
 
-Cuando la llave es distinta del tenant, el router ubica primero el grupo del tenant y luego elige el shard lógico con hash consistente sobre la llave. Así un tenant compartido con millones de clientes se reparte en varios shards sin crear un shard caliente.
+When the key is not the tenant, the router first locates the tenant's group and then picks the logical shard with consistent hashing over the key. This way a shared tenant with millions of customers is spread across several shards without creating a hot shard.
 
-**Índices globales.** Las consultas que llegan sin la llave usan un índice en el catálogo. El login por email consulta `identity_lookup`, que guarda el HMAC del email con el `userId`, la región y el shard: datos de enrutamiento, sin datos personales en claro.
+**Global indexes.** Queries that arrive without the key use an index in the catalog. Login by email queries `identity_lookup`, which stores the HMAC of the email with the `userId`, the region and the shard: routing data, with no personal data in clear text.
 
-**Primera implementación: identity.** El sharding se estrena en `identity` (usuarios, credenciales, sesiones, dispositivos) con un shard lógico por región en producción y dos en local y pruebas. Los demás servicios usan el mismo código con un solo shard y activan más cuando su tráfico lo pida, por configuración.
+**First implementation: identity.** Sharding debuts in `identity` (users, credentials, sessions, devices) with one logical shard per region in production and two locally and in tests. The other services use the same code with a single shard and turn on more when their traffic calls for it, through configuration.
 
-**Cómo se enruta una query**
+**How a query is routed**
 
 ```mermaid
 flowchart TD
-  E["Entrada: HTTP, cola, job o socket fija tenant y llave"] --> R["Repositorio pide conexión con la llave del contexto"]
-  R --> SR["ShardRouter resuelve el shard (sin llave: SHARDING.KEY_MISSING)"]
-  SR --> M["Memoria (TTL 60 s)"] --> V["Valkey"] --> C["Catálogo (directorio)"]
-  SR --> CR["ShardDataSources: DataSource del shard"]
-  CR --> D{"¿Dentro de una transacción o con readPrimary?"}
-  D -- no --> RP["Réplica del shard"]
-  D -- sí --> PR["Primario del shard"]
-  RP --> PG["PostgreSQL del shard: RLS, particiones, RDS Proxy"]
+  E["Entry: HTTP, queue, job or socket sets tenant and key"] --> R["Repository asks for a connection with the context key"]
+  R --> SR["ShardRouter resolves the shard (no key: SHARDING.KEY_MISSING)"]
+  SR --> M["Memory (TTL 60 s)"] --> V["Valkey"] --> C["Catalog (directory)"]
+  SR --> CR["ShardDataSources: shard DataSource"]
+  CR --> D{"Inside a transaction or with readPrimary?"}
+  D -- no --> RP["Shard replica"]
+  D -- yes --> PR["Shard primary"]
+  RP --> PG["Shard PostgreSQL: RLS, partitions, RDS Proxy"]
   PR --> PG
 ```
 
-El resultado del directorio se cachea en tres niveles. Dentro de una transacción se lee del primario; fuera de ella, de la réplica. Quien necesita leer lo que acaba de confirmar sin transacción usa `readPrimary()`, porque la siguiente petición puede caer en otro proceso.
+The directory result is cached on three levels. Inside a transaction, reads go to the primary; outside one, to the replica. Code that needs to read what it just committed without a transaction uses `readPrimary()`, because the next request may land on another process.
 
-Si el contexto llega sin llave de shard, la capa responde `PLATFORM.SHARDING.KEY_MISSING` y la query se detiene. Nunca existe un shard por defecto.
+If the context arrives without a shard key, the layer responds `PLATFORM.SHARDING.KEY_MISSING` and the query stops. There is never a default shard.
 
-**Estrategias** (interfaz `ShardingStrategy`, intercambiable por módulo)
+**Strategies** (`ShardingStrategy` interface, swappable per module)
 
-| Estrategia                | Cómo decide                           | Cuándo usarla                                          |
-| ------------------------- | ------------------------------------- | ------------------------------------------------------ |
-| `Directory` (por defecto) | Tabla `tenant → shard` en el catálogo | Mover tenants y dar shards dedicados a tenants grandes |
-| `ConsistentHash`          | Anillo con nodos virtuales            | Muchas llaves pequeñas sin catálogo                    |
-| `Range`                   | Rangos de la llave                    | Llaves con orden natural, como fechas                  |
-| Propia                    | Implementación de `ShardingStrategy`  | Reglas de negocio específicas                          |
+| Strategy              | How it decides                        | When to use it                                              |
+| --------------------- | ------------------------------------- | ----------------------------------------------------------- |
+| `Directory` (default) | `tenant → shard` table in the catalog | Moving tenants and giving dedicated shards to large tenants |
+| `ConsistentHash`      | Ring with virtual nodes               | Many small keys without a catalog                           |
+| `Range`               | Ranges of the key                     | Keys with a natural order, such as dates                    |
+| Custom                | Implementation of `ShardingStrategy`  | Specific business rules                                     |
 
-Los tenants nuevos reciben shard con una `ShardPlacementPolicy` durante la saga de alta: el shard con menos carga, la región del tenant o un shard dedicado para planes enterprise.
+New tenants get a shard through a `ShardPlacementPolicy` during the onboarding saga: the least loaded shard, the tenant's region or a dedicated shard for enterprise plans.
 
-**Consultas entre shards**, siempre explícitas: `AcrossShards` recorre los shards del servicio en paralelo, con límite de concurrencia y plazo por shard, e indica cuando un resultado llega parcial. Se usa en backoffice, reportes y tareas de mantenimiento como la recuperación de sagas.
+**Queries across shards**, always explicit: `AcrossShards` walks the service's shards in parallel, with a concurrency limit and a per-shard deadline, and indicates when a result arrives partial. It is used in the backoffice, reports and maintenance tasks such as saga recovery.
 
-**Transacciones.** Una transacción vive dentro de un shard. Tocar dos shards en la misma transacción responde `PLATFORM.SHARDING.CROSS_SHARD_TX`; ese caso se resuelve con una saga.
+**Transactions.** A transaction lives inside one shard. Touching two shards in the same transaction responds `PLATFORM.SHARDING.CROSS_SHARD_TX`; that case is solved with a saga.
 
-**Migraciones.** El binario `migrate` de cada app usa `ShardedMigrationRunner`: migra el catálogo y cada shard lógico, cada uno bajo `pg_advisory_lock`, así dos tareas que arrancan a la vez no aplican la misma migración. Si un shard falla, el despliegue del servicio se detiene.
+**Migrations.** Each app's `migrate` binary uses `ShardedMigrationRunner`: it migrates the catalog and each logical shard, each one under `pg_advisory_lock`, so two tasks that start at the same time do not apply the same migration. If a shard fails, the service deployment stops.
 
-**Mover datos sin interrupción** (`SagaType.MoveShard` lleva un shard lógico a otra instancia; `SagaType.MoveTenant` lleva un tenant a otro grupo o región)
+**Moving data without downtime** (`SagaType.MoveShard` takes a logical shard to another instance; `SagaType.MoveTenant` takes a tenant to another group or region)
 
-1. **Copia inicial**: snapshot de las filas del tenant, o de la base lógica completa, en el destino.
-2. **Sincronización continua**: replicación lógica de PostgreSQL con filtro por `tenant_id` (filtros de fila disponibles desde PostgreSQL 15) mantiene el destino al día. El origen sigue atendiendo lecturas y escrituras.
-3. **Verificación**: conteos y checksums por tabla mientras el retraso de replicación baja a cero.
-4. **Corte**: un candado por tenant en Valkey retiene las escrituras nuevas por un instante (objetivo: menos de un segundo). Las peticiones esperan, ninguna falla. Con retraso cero se cambia el directorio y se publica `PlatformEvent.ShardDirectoryChanged`.
-5. **Cierre**: las escrituras siguen contra el destino. El origen se conserva durante un periodo de gracia para volver atrás si hace falta, y luego se limpia.
+1. **Initial copy**: snapshot of the tenant's rows, or of the whole logical database, at the destination.
+2. **Continuous sync**: PostgreSQL logical replication with a `tenant_id` filter (row filters available since PostgreSQL 15) keeps the destination up to date. The source keeps serving reads and writes.
+3. **Verification**: counts and checksums per table while the replication lag drops to zero.
+4. **Cutover**: a per-tenant lock in Valkey holds new writes for an instant (target: under one second). Requests wait, none fail. With zero lag the directory is switched and `PlatformEvent.ShardDirectoryChanged` is published.
+5. **Close**: writes continue against the destination. The source is kept for a grace period to roll back if needed, and then cleaned up.
 
-**Residencia de datos por región**
+**Data residency by region**
 
-- Cada tenant elige país o región al crearse; el directorio lo guarda y la saga de alta lo ubica en un grupo de shards de esa región.
-- Cada servicio tiene su propio directorio en su catálogo. Identity elige la región y el grupo de shards del tenant, y la saga de alta lo anota en tasks, notifications, reports y billing con `<servicio>.tenant-directory.place.v1` antes de abrir su cuenta de facturación, con `<servicio>.tenant-directory.remove.v1` como reversa; la siembra de identity hace lo mismo con los tenants fijos de la región. Un grupo es el declarado en `TENANT_MOVE_TARGETS` o, sin él, el nombre del shard sin el prefijo del servicio ([ADR 0032](adr/0032-traslado-de-tenants-y-regiones.md)).
-- Cada región despliega su propio stack: servicios, shards, Valkey, colas y almacenamiento de archivos. Los datos del tenant permanecen en su región.
-- El catálogo global guarda solo datos de enrutamiento (ids, región, shard y HMAC del email). Vive en la región principal con réplicas de lectura en las demás.
-- El login consulta el catálogo y devuelve la URL regional (por ejemplo `co.api.<dominio>`). El JWT lleva la región (`rgn`) y el SDK del cliente usa esa URL. Una petición que llega a otra región recibe una redirección.
-- Cambiar de región es un `MoveTenant` entre regiones, con el mismo traslado sin interrupción.
-- La primera versión despliega una región; agregar otra es desplegar su stack con Terraform.
+- Each tenant chooses a country or region when it is created; the directory stores it and the onboarding saga places it in a shard group of that region.
+- Each service has its own directory in its catalog. Identity picks the tenant's region and shard group, and the onboarding saga records it in tasks, notifications, reports and billing with `<service>.tenant-directory.place.v1` before opening its billing account, with `<service>.tenant-directory.remove.v1` as the reverse; the identity seed does the same with the region's fixed tenants. A group is the one declared in `TENANT_MOVE_TARGETS` or, without it, the shard name without the service prefix ([ADR 0032](adr/0032-traslado-de-tenants-y-regiones.md)).
+- Each region deploys its own stack: services, shards, Valkey, queues and file storage. The tenant's data stays in its region.
+- The global catalog stores only routing data (ids, region, shard and email HMAC). It lives in the main region with read replicas in the others.
+- Login queries the catalog and returns the regional URL (for example `co.api.<domain>`). The JWT carries the region (`rgn`) and the client SDK uses that URL. A request that arrives at another region receives a redirect.
+- Changing region is a `MoveTenant` between regions, with the same zero-downtime move.
+- The first version deploys one region; adding another means deploying its stack with Terraform.
 
-**Operaciones de sharding como código.** Los shards se declaran en la configuración versionada de cada servicio y en Terraform. Agregar un shard o mover un tenant es un cambio en el repositorio que sigue el ciclo normal: PR, revisión y pipeline. El pipeline aplica la infraestructura, corre las migraciones y, cuando el cambio incluye traslados, lanza la saga `SagaType.MoveShard`. Cada ejecución queda en la auditoría con el commit que la originó.
+**Sharding operations as code.** Shards are declared in each service's versioned configuration and in Terraform. Adding a shard or moving a tenant is a change in the repository that follows the normal cycle: PR, review and pipeline. The pipeline applies the infrastructure, runs the migrations and, when the change includes moves, launches the `SagaType.MoveShard` saga. Each run is recorded in the audit with the commit that originated it.
 
-**Operación.** Cada span lleva `db.shard`; hay métricas por shard (conexiones, latencia, tamaño, tenants) y una alarma por desbalance. En local y en las pruebas de integración corren dos shards, así el enrutamiento se ejercita desde el primer día.
+**Operation.** Each span carries `db.shard`; there are per-shard metrics (connections, latency, size, tenants) and an imbalance alarm. Locally and in integration tests two shards run, so routing is exercised from day one.
 
-## Búsqueda vectorial e híbrida
+## Vector and hybrid search
 
-PostgreSQL resuelve la búsqueda semántica con la extensión pgvector, en el mismo shard y bajo las mismas reglas de tenant que el resto de los datos. No hace falta un motor de búsqueda aparte.
+PostgreSQL handles semantic search with the pgvector extension, on the same shard and under the same tenant rules as the rest of the data. No separate search engine is needed.
 
 ```ts
 @Searchable({
@@ -646,28 +646,28 @@ const results = await this.taskSearch.search({
 });
 ```
 
-- **Almacenamiento**: una tabla de embeddings por entidad buscable (`entity_id`, `tenant_id`, modelo, versión del modelo, vector, `content_hash`), en el shard del tenant, con índice HNSW.
-- **Generación asíncrona**: al guardar la entidad, el outbox publica el cambio y un consumidor calcula el embedding con el puerto `EmbeddingProvider`. El `content_hash` evita recalcular cuando el texto no cambió.
-- **Búsqueda híbrida**: texto completo de Postgres (`tsvector` con configuración en español) y similitud vectorial, fusionados con Reciprocal Rank Fusion. Modos `SearchMode.Text`, `Vector` e `Hybrid`.
-- **Filtros**: RLS por tenant más los criterios de la query; los escaneos iterativos de índice de pgvector mantienen el número de resultados cuando el filtro es selectivo.
-- **Cambio de modelo**: cada vector guarda su versión de modelo; un job reindexa en segundo plano y la búsqueda usa la versión activa hasta completar.
-- **Proveedores de embeddings**: Voyage AI, Amazon Bedrock o un modelo local para desarrollo y pruebas, intercambiables por configuración.
-- El módulo de IA usa esta misma búsqueda para recuperar contexto (RAG).
+- **Storage**: one embeddings table per searchable entity (`entity_id`, `tenant_id`, model, model version, vector, `content_hash`), on the tenant's shard, with an HNSW index.
+- **Asynchronous generation**: when the entity is saved, the outbox publishes the change and a consumer computes the embedding with the `EmbeddingProvider` port. The `content_hash` avoids recomputing when the text did not change.
+- **Hybrid search**: Postgres full text (`tsvector` with Spanish configuration) and vector similarity, merged with Reciprocal Rank Fusion. Modes `SearchMode.Text`, `Vector` and `Hybrid`.
+- **Filters**: RLS by tenant plus the query criteria; pgvector's iterative index scans keep the number of results when the filter is selective.
+- **Model change**: each vector stores its model version; a job reindexes in the background and search uses the active version until it completes.
+- **Embedding providers**: Voyage AI, Amazon Bedrock or a local model for development and tests, swappable by configuration.
+- The AI module uses this same search to retrieve context (RAG).
 
-## Módulo de IA
+## AI module
 
-`backend/libs/platform/ai` le da a cualquier servicio capacidades de IA con las mismas reglas del resto de la plataforma: puertos, tenant, permisos, auditoría, costos y trazas. El servicio de ejemplo `backend/apps/assistant` es un asistente con búsqueda sobre los datos del tenant y herramientas que ejecutan casos de uso.
+`backend/libs/platform/ai` gives any service AI capabilities with the same rules as the rest of the platform: ports, tenant, permissions, auditing, costs and traces. The sample service `backend/apps/assistant` is an assistant with search over the tenant's data and tools that run use cases.
 
-**Proveedores**
+**Providers**
 
-| Puerto                                                                 | Adaptador por defecto              | Alternativas                                                                                 |
-| ---------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------- |
-| `LlmProvider` (mensajes, streaming, herramientas, salida estructurada) | Claude API con `@anthropic-ai/sdk` | Claude en Amazon Bedrock (`AnthropicBedrockMantle`); modelo local con Ollama para desarrollo |
-| `EmbeddingProvider`                                                    | Voyage AI                          | Amazon Bedrock; modelo local                                                                 |
+| Port                                                          | Default adapter                     | Alternatives                                                                                 |
+| ------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| `LlmProvider` (messages, streaming, tools, structured output) | Claude API with `@anthropic-ai/sdk` | Claude on Amazon Bedrock (`AnthropicBedrockMantle`); local model with Ollama for development |
+| `EmbeddingProvider`                                           | Voyage AI                           | Amazon Bedrock; local model                                                                  |
 
-Los modelos se eligen por enum, así cambiar de modelo es configuración: `AiModel.Default` apunta a `claude-opus-5-5`; `AiModel.Fast` a `claude-haiku-5-5` para clasificación y extracción masiva.
+Models are chosen by enum, so changing model is configuration: `AiModel.Default` points to `claude-opus-5-5`; `AiModel.Fast` to `claude-haiku-5-5` for bulk classification and extraction.
 
-**Prompts, salidas y herramientas**
+**Prompts, outputs and tools**
 
 ```ts
 @AiPrompt({
@@ -680,43 +680,43 @@ export class SummarizeTaskPrompt extends PromptDefinition<
   SummarizeInput,
   TaskSummary
 > {
-  readonly output = TaskSummarySchema; // zod, validado al recibir
+  readonly output = TaskSummarySchema; // zod, validated on receipt
 }
 
-@AiTool({ description: 'Crea una tarea para el usuario actual', confirm: true })
+@AiTool({ description: 'Creates a task for the current user', confirm: true })
 export class CreateTaskTool extends UseCaseTool<CreateTaskUseCase> {}
 ```
 
-- Prompts como clases versionadas, con su esquema de salida y pruebas.
-- Salida estructurada con el formato JSON del proveedor, validada con zod antes de llegar al caso de uso.
-- `@AiTool` expone un caso de uso existente como herramienta. Corre con el `Actor`, el tenant y los permisos del usuario que conversa. Las herramientas que modifican datos piden confirmación al usuario.
-- El bucle de herramientas usa el tool runner del SDK de Anthropic.
-- Respuestas en streaming hacia el cliente por SSE.
+- Prompts as versioned classes, with their output schema and tests.
+- Structured output with the provider's JSON format, validated with zod before reaching the use case.
+- `@AiTool` exposes an existing use case as a tool. It runs with the `Actor`, the tenant and the permissions of the user in the conversation. Tools that change data ask the user for confirmation.
+- The tool loop uses the Anthropic SDK's tool runner.
+- Streaming responses to the client over SSE.
 
-**RAG**: el contexto sale de la búsqueda híbrida del tenant. Los documentos recuperados entran al modelo como datos y nunca como instrucciones, con citas hacia su origen.
+**RAG**: context comes from the tenant's hybrid search. Retrieved documents enter the model as data and never as instructions, with citations to their source.
 
-**Costos y límites**
+**Costs and limits**
 
-- Cada llamada publica `BillingEvent.UsageRecorded` con tokens de entrada y salida por tenant, usuario y modelo.
-- Cuotas por plan con entitlements (`Feature.AiAssistant`, `Quota.AiTokensMonthly`) y límites por usuario.
-- Prompt caching del proveedor: herramientas y system prompt estables van primero.
-- Trabajos masivos por cola con la API de Batches del proveedor, que cuesta la mitad.
+- Each call publishes `BillingEvent.UsageRecorded` with input and output tokens per tenant, user and model.
+- Quotas per plan with entitlements (`Feature.AiAssistant`, `Quota.AiTokensMonthly`) and per-user limits.
+- Provider prompt caching: stable tools and system prompt go first.
+- Bulk jobs through a queue with the provider's Batches API, which costs half.
 
-**Seguridad y resiliencia**
+**Security and resilience**
 
-- Redacción de datos personales antes de enviar, configurable por tenant.
-- Si el modelo rechaza una solicitud (`stop_reason: refusal`), se usa el fallback del servidor (`fallbacks: "default"`) y el caso queda registrado.
-- Timeout, circuit breaker, bulkhead para respetar el rate limit del proveedor y fallback a otro adaptador.
-- Registro de cada interacción (prompt, versión, respuesta, herramientas usadas) con retención configurable y auditoría.
+- Redaction of personal data before sending, configurable per tenant.
+- If the model refuses a request (`stop_reason: refusal`), the server fallback (`fallbacks: "default"`) is used and the case is recorded.
+- Timeout, circuit breaker, bulkhead to respect the provider's rate limit and fallback to another adapter.
+- Record of each interaction (prompt, version, response, tools used) with configurable retention and auditing.
 
-**Observabilidad y calidad**
+**Observability and quality**
 
-- Spans de OpenTelemetry por llamada con modelo, tokens, latencia y costo, visibles en OpenObserve junto al resto de la traza.
-- Un conjunto de casos de evaluación por prompt. CI los corre cuando un prompt cambia y compara contra la versión anterior.
+- OpenTelemetry spans per call with model, tokens, latency and cost, visible in OpenObserve alongside the rest of the trace.
+- A set of evaluation cases per prompt. CI runs them when a prompt changes and compares against the previous version.
 
-## Resiliencia y Bloom filters
+## Resilience and Bloom filters
 
-`backend/libs/platform/resilience` aplica políticas con nombre (`PolicyName`) a cada adaptador de salida. La librería trae `PolicyName.Cache` y `PolicyName.Database`, y cada servicio registra las suyas con `PolicyName.of` y `ResilienceModule.forFeature`. El circuit breaker y el bulkhead son propios, sobre el puerto `Clock`, sin librerías externas.
+`backend/libs/platform/resilience` applies named policies (`PolicyName`) to each outbound adapter. The library provides `PolicyName.Cache` and `PolicyName.Database`, and each service registers its own with `PolicyName.of` and `ResilienceModule.forFeature`. The circuit breaker and the bulkhead are in-house, on the `Clock` port, without external libraries.
 
 ```ts
 export class VoyageEmbeddingAdapter implements EmbeddingProvider {
@@ -734,234 +734,234 @@ export class VoyageEmbeddingAdapter implements EmbeddingProvider {
 }
 ```
 
-Los reintentos solo aplican a operaciones marcadas como idempotentes, y cada dependencia tiene su propio circuit breaker y bulkhead. `execute` entrega a la operación un `AbortSignal` por intento para cancelar el trabajo cuando vence el timeout o el plazo de quien llama.
+Retries only apply to operations marked as idempotent, and each dependency has its own circuit breaker and bulkhead. `execute` hands the operation an `AbortSignal` per attempt to cancel the work when the timeout or the caller's deadline expires.
 
-| Patrón                                     | Qué hace                                                                      | Dónde se usa                         |
-| ------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------ |
-| Timeout                                    | Corta llamadas lentas                                                         | Toda llamada de red                  |
-| Reintento con backoff exponencial y jitter | Reintenta solo errores transitorios en operaciones idempotentes               | Clientes HTTP, Valkey, colas         |
-| Circuit breaker                            | Deja de llamar a una dependencia caída y la prueba de nuevo tras un intervalo | APIs externas, IA, email             |
-| Bulkhead                                   | Limita las llamadas concurrentes por dependencia                              | IA, consultas entre shards, archivos |
-| Fallback                                   | Responde degradado: caché anterior, proveedor alterno o valor por defecto     | Lecturas, IA, feature flags          |
-| Load shedding                              | Responde 503 con `Retry-After` cuando la carga supera un umbral               | Gateway HTTP y tiempo real           |
+| Pattern                                   | What it does                                                                 | Where it is used                 |
+| ----------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------- |
+| Timeout                                   | Cuts off slow calls                                                          | Every network call               |
+| Retry with exponential backoff and jitter | Retries only transient errors on idempotent operations                       | HTTP clients, Valkey, queues     |
+| Circuit breaker                           | Stops calling a dependency that is down and tries it again after an interval | External APIs, AI, email         |
+| Bulkhead                                  | Limits concurrent calls per dependency                                       | AI, queries across shards, files |
+| Fallback                                  | Responds degraded: previous cache, alternate provider or default value       | Reads, AI, feature flags         |
+| Load shedding                             | Responds 503 with `Retry-After` when load exceeds a threshold                | HTTP gateway and real time       |
 
-- **Degradación elegante**: si Valkey falla, la caché se omite y se lee de la base, el rate limit pasa a límites locales y los feature flags usan el último valor conocido.
-- **Health checks** de liveness y readiness propios, sin `@nestjs/terminus` (diseño de F4, sección 9); una instancia sin sus dependencias críticas sale del balanceador.
-- **Infraestructura**: RDS y Valkey en Multi-AZ con failover automático.
-- Cada política emite métricas y spans (estado del circuito, reintentos, rechazos).
-- **Pruebas de fallos**: en integración, Toxiproxy inyecta latencia y cortes entre los servicios y sus dependencias.
+- **Graceful degradation**: if Valkey fails, the cache is skipped and reads go to the database, rate limiting switches to local limits and feature flags use the last known value.
+- In-house liveness and readiness **health checks**, without `@nestjs/terminus` (F4 design, section 9); an instance without its critical dependencies leaves the load balancer.
+- **Infrastructure**: RDS and Valkey in Multi-AZ with automatic failover.
+- Each policy emits metrics and spans (circuit state, retries, rejections).
+- **Failure tests**: in integration, Toxiproxy injects latency and outages between the services and their dependencies.
 
 **Bloom filters**
 
-El puerto `BloomFilter` responde "seguro que no" o "quizás sí" en microsegundos y con muy poca memoria. Un "quizás" siempre se confirma en la fuente real, porque el filtro admite falsos positivos y nunca falsos negativos. Adaptadores: Valkey (comandos `BF.*` del módulo de Bloom) y en memoria.
+The `BloomFilter` port answers "definitely not" or "maybe yes" in microseconds and with very little memory. A "maybe" is always confirmed against the real source, because the filter allows false positives and never false negatives. Adapters: Valkey (`BF.*` commands of the Bloom module) and in memory.
 
-| Uso                   | Para qué                                                                                                                                 |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Contraseñas filtradas | Rechaza al registrarse o cambiar clave una contraseña presente en la lista pública de Have I Been Pwned, sin llamar a servicios externos |
-| Tokens revocados      | Descarta en memoria los tokens sanos antes de consultar Valkey                                                                           |
-| Mensajes procesados   | Atajo de idempotencia antes de consultar `processed_messages`                                                                            |
-| Protección de caché   | Evita ir a la base por llaves que no existen                                                                                             |
-| Deduplicación         | Eventos de medición y webhooks entrantes repetidos                                                                                       |
+| Use                | What for                                                                                                                          |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Breached passwords | On sign-up or password change, rejects a password present in the public Have I Been Pwned list, without calling external services |
+| Revoked tokens     | Discards healthy tokens in memory before querying Valkey                                                                          |
+| Processed messages | Idempotency shortcut before querying `processed_messages`                                                                         |
+| Cache protection   | Avoids going to the database for keys that do not exist                                                                           |
+| Deduplication      | Repeated metering events and incoming webhooks                                                                                    |
 
-Cada filtro declara su tasa de falsos positivos (por defecto 1 %) y su reconstrucción periódica con un job programado.
+Each filter declares its false positive rate (1 % by default) and its periodic rebuild with a scheduled job.
 
-## Identidad
+## Identity
 
-El servicio `identity` emite y controla toda la identidad: usuarios, sesiones, dispositivos, MFA, API keys, tenants y grupos. Los demás servicios solo verifican, con `@platform/auth`. El detalle técnico está en su [diseño](design/f4-identity.md).
+The `identity` service issues and controls all identity: users, sessions, devices, MFA, API keys, tenants and groups. The other services only verify, with `@platform/auth`. The technical details are in its [design](design/f4-identity.md).
 
-`backend/apps/identity` está organizado en módulos (`users`, `passwords`, `authentication`, `devices`, `mfa`, `passkeys`, `sessions`, `tokens`, `tenants`, `access`, `invitations`, `api-keys` y `alerts`), cada uno con `domain`, `application`, `infrastructure` y `presentation`. Un módulo solo usa a otro por la fachada de su `index.ts`. Los datos de usuario se enrutan por usuario dentro del grupo de su tenant de origen y los de tenant por tenant, siempre dentro de un `ShardScope` ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md)). Los tokens efímeros (desafíos MFA, aprobaciones de dispositivo, pruebas de email, reset de contraseña, desafíos WebAuthn y contadores de bloqueo) viven en Valkey bajo el prefijo del servicio. Las tablas de tenant tienen RLS por `tenant_id`, y `user_tenants` es una proyección que el caso de uso escribe después del commit y que repara el consumidor de `identity.membership.changed.v1`. `login_attempts` se particiona por mes y un job borra lo de más de 12 meses. Las contraseñas filtradas se buscan en un Bloom (`identity.breached-passwords`) que reconstruye su job. Nadie otorga ni quita un permiso que no tiene: la regla se aplica a roles, grupos, miembros e invitaciones. Las pruebas de extremo a extremo están en `backend/apps/identity/e2e`, la [matriz de acceso](identity/matriz-de-acceso.md) se genera desde el contrato y la rotación de claves sigue su [runbook](runbooks/rotacion-claves-identity.md). El alta de tenant por `POST /v1/tenants` corre la saga `TenantOnboarding`, la baja de cuenta corre `DeleteAccount` y el traslado de un tenant corre `MoveTenant` ([ADR 0031](adr/0031-reportes-facturacion-y-sagas-de-identity.md) y [ADR 0032](adr/0032-traslado-de-tenants-y-regiones.md)); el traslado se opera con su [runbook](runbooks/traslado-de-tenant.md).
+`backend/apps/identity` is organized in modules (`users`, `passwords`, `authentication`, `devices`, `mfa`, `passkeys`, `sessions`, `tokens`, `tenants`, `access`, `invitations`, `api-keys` and `alerts`), each with `domain`, `application`, `infrastructure` and `presentation`. A module only uses another through the facade in its `index.ts`. User data is routed by user within the group of their home tenant and tenant data by tenant, always inside a `ShardScope` ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md)). Ephemeral tokens (MFA challenges, device approvals, email proofs, password reset, WebAuthn challenges and lockout counters) live in Valkey under the service prefix. Tenant tables have RLS by `tenant_id`, and `user_tenants` is a projection that the use case writes after the commit and that the `identity.membership.changed.v1` consumer repairs. `login_attempts` is partitioned by month and a job deletes anything older than 12 months. Breached passwords are looked up in a Bloom filter (`identity.breached-passwords`) rebuilt by its job. Nobody grants or removes a permission they do not have: the rule applies to roles, groups, members and invitations. End-to-end tests are in `backend/apps/identity/e2e`, the [access matrix](identity/matriz-de-acceso.md) is generated from the contract and key rotation follows its [runbook](runbooks/rotacion-claves-identity.md). Tenant onboarding through `POST /v1/tenants` runs the `TenantOnboarding` saga, account deletion runs `DeleteAccount` and moving a tenant runs `MoveTenant` ([ADR 0031](adr/0031-reportes-facturacion-y-sagas-de-identity.md) and [ADR 0032](adr/0032-traslado-de-tenants-y-regiones.md)); the move is operated with its [runbook](runbooks/traslado-de-tenant.md).
 
-**Sesiones y JWT**
+**Sessions and JWT**
 
-| Token                    | Qué es                                                              | Vida                                                                                                                              | Dónde vive en el cliente                                                                          |
-| ------------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Access token (JWT ES256) | Sin estado; cada servicio lo verifica con la clave pública del JWKS | 10 a 15 min                                                                                                                       | Memoria                                                                                           |
-| Session token (opaco)    | Apunta a una fila de `sessions`; en la base se guarda su hash       | Vence tras 1 día sin actividad; cada refresh mientras se usa la app extiende la ventana otro día, con un tope absoluto de 30 días | Web: cookie `__Host-session`, `HttpOnly`, `Secure`, `SameSite=Strict`. Móvil: Keychain o Keystore |
+| Token                    | What it is                                                   | Lifetime                                                                                                                                      | Where it lives on the client                                                                        |
+| ------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Access token (JWT ES256) | Stateless; each service verifies it with the JWKS public key | 10 to 15 min                                                                                                                                  | Memory                                                                                              |
+| Session token (opaque)   | Points to a row in `sessions`; the database stores its hash  | Expires after 1 day without activity; each refresh while the app is in use extends the window by another day, with an absolute cap of 30 days | Web: `__Host-session` cookie, `HttpOnly`, `Secure`, `SameSite=Strict`. Mobile: Keychain or Keystore |
 
-- Header `{ alg: 'ES256', typ: 'at+jwt', kid }`. Claims: `iss`, `aud`, `sub`, `tid` (tenant activo), `htid` (tenant de origen), `sid` (sesión), `did` (dispositivo), `amr` (métodos usados), `auth_time`, `roles`, `proles` (roles de plataforma), `pv` (versión de permisos del tenant y del usuario), `rgn` (región), `sxp` (tope absoluto de la sesión), `iat`, `exp` y `jti` ([ADR 0022](adr/0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md)).
-- Canal web o nativo por header: la app móvil envía `Authorization: Bearer <session token>` en refresh y cierre de sesión, y `X-Session-Transport: bearer` en el login y la verificación MFA. Con eso recibe el token en el cuerpo. Sin esos headers el canal es web y el token viaja solo en la cookie. Un `Origin` fuera de la lista permitida responde `PLATFORM.AUTH.ORIGIN_REJECTED`.
-- Cada refresh rota el session token. Reusar uno anterior revoca la sesión completa.
-- Revocar una sesión publica `IdentityEvent.SessionRevoked` y agrega el `sid` a una lista en Valkey con TTL igual a la vida restante del access token. El estado de revocación vive en el espacio `auth:*` de Valkey: identity lo escribe y los demás servicios lo leen (ADR 0022).
-- La clave de firma rota con `kid` en el JWKS; la anterior convive durante la ventana de transición.
-- Contraseñas con argon2id de `node:crypto` (Node 24.22.2, fijado en `.nvmrc`), de 12 caracteres como mínimo. Cambiar la contraseña revoca las demás sesiones.
+- Header `{ alg: 'ES256', typ: 'at+jwt', kid }`. Claims: `iss`, `aud`, `sub`, `tid` (active tenant), `htid` (home tenant), `sid` (session), `did` (device), `amr` (methods used), `auth_time`, `roles`, `proles` (platform roles), `pv` (permission version of the tenant and the user), `rgn` (region), `sxp` (absolute session cap), `iat`, `exp` and `jti` ([ADR 0022](adr/0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md)).
+- Web or native channel by header: the mobile app sends `Authorization: Bearer <session token>` on refresh and logout, and `X-Session-Transport: bearer` on login and MFA verification. With that it receives the token in the body. Without those headers the channel is web and the token travels only in the cookie. An `Origin` outside the allowlist responds `PLATFORM.AUTH.ORIGIN_REJECTED`.
+- Each refresh rotates the session token. Reusing a previous one revokes the whole session.
+- Revoking a session publishes `IdentityEvent.SessionRevoked` and adds the `sid` to a list in Valkey with a TTL equal to the remaining lifetime of the access token. The revocation state lives in the `auth:*` space in Valkey: identity writes it and the other services read it (ADR 0022).
+- The signing key rotates with `kid` in the JWKS; the previous one coexists during the transition window.
+- Passwords with argon2id from `node:crypto` (Node 24.22.2, pinned in `.nvmrc`), at least 12 characters. Changing the password revokes the other sessions.
 
-**Invalidación de tokens**
+**Token invalidation**
 
-Un access token es válido hasta su `exp`, así que la plataforma lo invalida antes con los mecanismos de esta tabla. El guard revisa en orden la firma, la expiración, la sesión, las épocas y la versión de permisos.
+An access token is valid until its `exp`, so the platform invalidates it earlier with the mechanisms in this table. The guard checks, in order, the signature, the expiration, the session, the epochs and the permission version.
 
-| Mecanismo                           | Qué invalida                           | Cómo                                                                                                                                      |
-| ----------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Sesión revocada (`sid`)             | Una sesión y todos sus tokens          | Lista en Valkey con TTL igual a la vida restante del access token, con un Bloom filter delante para descartar en memoria los tokens sanos |
-| Época del usuario (`revokedBefore`) | Todos los tokens de un usuario         | Marca de tiempo en Valkey; se rechaza todo token con `iat` anterior                                                                       |
-| Época del tenant                    | Todos los tokens de un tenant          | La misma marca a nivel de tenant, para suspensiones                                                                                       |
-| Versión de permisos (`pv`)          | Tokens con roles o grupos viejos       | El token lleva `pv`; si no coincide con la versión actual, responde `IDENTITY.TOKEN.STALE_PERMISSIONS` y el cliente refresca              |
-| Rotación de emergencia de la clave  | Todos los tokens firmados con un `kid` | Se retira el `kid` del JWKS                                                                                                               |
+| Mechanism                    | What it invalidates             | How                                                                                                                                             |
+| ---------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Revoked session (`sid`)      | A session and all its tokens    | List in Valkey with a TTL equal to the remaining lifetime of the access token, with a Bloom filter in front to discard healthy tokens in memory |
+| User epoch (`revokedBefore`) | All of a user's tokens          | Timestamp in Valkey; any token with an earlier `iat` is rejected                                                                                |
+| Tenant epoch                 | All of a tenant's tokens        | The same mark at tenant level, for suspensions                                                                                                  |
+| Permission version (`pv`)    | Tokens with old roles or groups | The token carries `pv`; if it does not match the current version, it responds `IDENTITY.TOKEN.STALE_PERMISSIONS` and the client refreshes       |
+| Emergency key rotation       | All tokens signed with a `kid`  | The `kid` is removed from the JWKS                                                                                                              |
 
-**Qué dispara cada invalidación**: logout, cierre de todas las sesiones, cambio de contraseña o de MFA, dispositivo eliminado, reuso de un session token, cambio de roles o grupos, usuario o tenant suspendido, acción de un administrador y compromiso de una clave.
+**What triggers each invalidation**: logout, closing all sessions, password or MFA change, deleted device, reuse of a session token, change of roles or groups, suspended user or tenant, an administrator action and a compromised key.
 
-- `identity` publica `IdentityEvent.TokensRevoked` con el alcance (sesión, usuario o tenant). Cada servicio actualiza su caché local en segundos.
-- El gateway de tiempo real cierra en el acto las conexiones Socket.IO y SSE de las sesiones afectadas.
-- Cada invalidación queda en la auditoría con su motivo y su actor.
+- `identity` publishes `IdentityEvent.TokensRevoked` with the scope (session, user or tenant). Each service updates its local cache within seconds.
+- The real-time gateway immediately closes the Socket.IO and SSE connections of the affected sessions.
+- Each invalidation is recorded in the audit with its reason and its actor.
 
-**Dispositivos**
+**Devices**
 
-- Cada dispositivo registrado guarda una clave ES256. El login lo reconoce solo con una firma de esa clave sobre la ruta, el id público del dispositivo, la hora, un nonce de un solo uso y el email o el reto WebAuthn (`device: DeviceSignatureFields`). Una prueba que no verifica deja el dispositivo como desconocido y pide un segundo factor ([ADR 0036](adr/0036-seguridad-de-identity-factores-acceso-y-ciclo-de-vida.md)).
-- Tabla `devices`: nombre legible ("iPhone · Safari"), plataforma, primera y última vez visto, última IP, `trustedUntil`, push token.
-- Tabla `login_attempts`: cada intento con resultado, motivo, IP, dispositivo y `traceId`. Alimenta la auditoría y el bloqueo por fuerza bruta. Un intento con un email inexistente se anota sin usuario en el shard del tenant por defecto, así un fallo cuesta lo mismo exista o no la cuenta.
-- El usuario ve sus dispositivos y sesiones, cierra sesiones remotas, cierra todas menos la actual y retira la confianza de un dispositivo.
-- Datos personales bajo Ley 1581: retención configurable y sin fingerprinting invasivo.
+- Each registered device stores an ES256 key. Login recognizes it only with a signature by that key over the route, the device's public id, the time, a single-use nonce and the email or the WebAuthn challenge (`device: DeviceSignatureFields`). A proof that does not verify leaves the device as unknown and asks for a second factor ([ADR 0036](adr/0036-seguridad-de-identity-factores-acceso-y-ciclo-de-vida.md)).
+- `devices` table: readable name ("iPhone · Safari"), platform, first and last seen, last IP, `trustedUntil`, push token.
+- `login_attempts` table: each attempt with result, reason, IP, device and `traceId`. It feeds the audit and brute force lockout. An attempt with a nonexistent email is recorded without a user on the default tenant's shard, so a failure costs the same whether or not the account exists.
+- The user sees their devices and sessions, closes remote sessions, closes all but the current one and removes trust from a device.
+- Personal data under Law 1581: configurable retention and no invasive fingerprinting.
 
-**Bloqueo por intentos fallidos**
+**Lockout after failed attempts**
 
-| Nivel                              | Regla                                      | Efecto                                                                                                                     |
-| ---------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Cuenta y origen (IP o dispositivo) | 5 fallos en 15 min                         | Ese origen queda bloqueado 15 min; cada bloqueo nuevo duplica la espera (15, 30, 60 min) hasta un tope de 24 h             |
-| Cuenta                             | 20 fallos en 1 h desde varios orígenes     | Modo protegido: solo entran dispositivos registrados y passkeys; cualquier otro origen necesita además un código por email |
-| IP                                 | 50 fallos en 15 min sobre cualquier cuenta | Bloqueo de la IP y regla de rate limit en WAF contra relleno de credenciales                                               |
+| Level                             | Rule                                    | Effect                                                                                                   |
+| --------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Account and origin (IP or device) | 5 failures in 15 min                    | That origin is locked for 15 min; each new lockout doubles the wait (15, 30, 60 min) up to a cap of 24 h |
+| Account                           | 20 failures in 1 h from several origins | Protected mode: only registered devices and passkeys get in; any other origin also needs a code by email |
+| IP                                | 50 failures in 15 min on any account    | IP lockout and a WAF rate limit rule against credential stuffing                                         |
 
-- Contadores en Valkey con TTL, sobre `@platform/rate-limit` y su adaptador `ValkeyRateLimiter` (ventana deslizante en un script Lua).
-- Respuesta uniforme `IDENTITY.AUTH.INVALID_CREDENTIALS`, con `Retry-After` cuando hay bloqueo. Los emails inexistentes cuentan igual, así el bloqueo nunca revela si una cuenta existe.
-- El modo protegido impide que un atacante deje afuera al dueño: desde su dispositivo registrado o su passkey sigue entrando.
-- Al activarse un bloqueo o el modo protegido, el usuario recibe alerta por email y push. Se desbloquea al vencer la espera, con un enlace por email o desde backoffice con auditoría.
-- Umbrales configurables por tenant dentro de límites seguros. Un desafío CAPTCHA (Turnstile o hCaptcha) detrás de un puerto es opcional desde el tercer fallo.
-- Las mismas reglas aplican a los intentos de MFA, recuperación de clave y verificación de API keys.
+- Counters in Valkey with TTL, on `@platform/rate-limit` and its `ValkeyRateLimiter` adapter (sliding window in a Lua script).
+- Uniform response `IDENTITY.AUTH.INVALID_CREDENTIALS`, with `Retry-After` when there is a lockout. Nonexistent emails count the same, so the lockout never reveals whether an account exists.
+- Protected mode prevents an attacker from locking out the owner: from their registered device or their passkey they still get in.
+- When a lockout or protected mode kicks in, the user receives an alert by email and push. It unlocks when the wait expires, with a link by email or from the backoffice with auditing.
+- Thresholds configurable per tenant within safe limits. A CAPTCHA challenge (Turnstile or hCaptcha) behind a port is optional from the third failure.
+- The same rules apply to MFA attempts, password recovery and API key verification.
 
-**MFA y dispositivos registrados**
+**MFA and registered devices**
 
-El MFA protege dos momentos: el registro de cada dispositivo nuevo, obligatorio para todos los usuarios, y cada login de un administrador.
+MFA protects two moments: the registration of each new device, mandatory for every user, and every administrator login.
 
-| Quién                                     | Cuándo se pide MFA                                                                                          |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Clientes                                  | Al registrar un dispositivo. Desde un dispositivo registrado, el login usa el código que la app genera sola |
-| Administradores de tenant y de backoffice | En cada login                                                                                               |
+| Who                                  | When MFA is required                                                                                  |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| Customers                            | When registering a device. From a registered device, login uses the code the app generates on its own |
+| Tenant and backoffice administrators | On every login                                                                                        |
 
-**Registro del dispositivo.** La app genera un par de claves en Secure Enclave, Android Keystore o WebCrypto (no exportable) y envía la clave pública. Desde ese momento el dispositivo firma sus solicitudes y queda ligado al usuario.
+**Device registration.** The app generates a key pair in Secure Enclave, Android Keystore or WebCrypto (non-exportable) and sends the public key. From then on the device signs its requests and is bound to the user.
 
-**Login desde un dispositivo registrado.** La app verificadora obtiene el código de 8 dígitos con una petición firmada con la clave del dispositivo y lo envía sin intervención del usuario. Para el cliente, el login es email y contraseña, o solo su passkey.
+**Login from a registered device.** The verifier app gets the 8-digit code with a request signed with the device key and sends it without user intervention. For the customer, login is email and password, or just their passkey.
 
-**Login desde un dispositivo nuevo** (termina registrándolo)
+**Login from a new device** (ends up registering it)
 
-1. `POST /v1/auth/sign-in` con email y contraseña. Responde los tokens o un desafío MFA con `mfaToken` y `methods`.
+1. `POST /v1/auth/sign-in` with email and password. Responds with the tokens or an MFA challenge with `mfaToken` and `methods`.
 2. `POST /v1/auth/mfa/challenges { mfaToken, method }`.
-   - Si el usuario ya tiene un dispositivo registrado: código de **8 dígitos** (2 a 3 min) visible solo en la app de ese dispositivo. Un push la abre en la pantalla del código con el contexto del intento (navegador, sistema, ciudad aproximada, IP) y el botón "No fui yo".
-   - Si es su primer dispositivo: código de **6 dígitos** al email verificado (5 min).
-3. `POST /v1/auth/mfa/verify { mfaToken, challengeId, code, devicePublicKey }` crea la sesión y registra el dispositivo nuevo.
+   - If the user already has a registered device: an **8-digit** code (2 to 3 min) visible only in that device's app. A push opens it on the code screen with the context of the attempt (browser, system, approximate city, IP) and the "No fui yo" ("It wasn't me") button.
+   - If it is their first device: a **6-digit** code to the verified email (5 min).
+3. `POST /v1/auth/mfa/verify { mfaToken, challengeId, code, devicePublicKey }` creates the session and registers the new device.
 
-**Passkeys desde la primera versión** (WebAuthn con `@simplewebauthn/server`). Permiten login sin contraseña; una passkey en un dispositivo registrado cumple los dos factores. En backoffice es el método recomendado. Las opciones y la respuesta de WebAuthn viajan en base64url dentro del JSON del contrato (`optionsJson`, `credentialJson`), y el servidor las valida con zod antes de verificarlas.
+**Passkeys from the first version** (WebAuthn with `@simplewebauthn/server`). They allow passwordless login; a passkey on a registered device satisfies both factors. In the backoffice it is the recommended method. The WebAuthn options and response travel as base64url inside the contract JSON (`optionsJson`, `credentialJson`), and the server validates them with zod before verifying them.
 
-**Reglas.** El código queda atado al `mfaToken` que lo pidió, se guarda como HMAC y es de un solo uso. Máximo 5 intentos por challenge y 3 challenges cada 15 min. Con un dispositivo registrado, el email deja de ofrecerse. TOTP y códigos de recuperación quedan como respaldo.
+**Rules.** The code is bound to the `mfaToken` that requested it, is stored as an HMAC and is single use. At most 5 attempts per challenge and 3 challenges every 15 min. With a registered device, email is no longer offered. TOTP and recovery codes remain as backup.
 
-**Recuperación sin dispositivo.** Por email, con alerta inmediata a todos los canales del usuario. La espera crece de forma exponencial con cada recuperación en los últimos 90 días: 24 h, 48 h, 96 h y así sucesivamente (`MFA_RECOVERY_BASE_HOURS = 24`).
+**Recovery without a device.** By email, with an immediate alert to all of the user's channels. The wait grows exponentially with each recovery in the last 90 days: 24 h, 48 h, 96 h and so on (`MFA_RECOVERY_BASE_HOURS = 24`).
 
-**Paso adicional (step-up).** Una operación sensible (cambiar email o clave, desactivar MFA, crear API keys) lo declara en la ruta de su contrato con `Access.authenticated({ mfaMaxAgeMinutes: 10 })`, y `@Endpoint` lo toma de ahí como el resto del acceso. El guard lo evalúa con `evaluateAccess` ([diseño de F4, 3.2.4](design/f4-identity.md#324-authorization)): si el último MFA es antiguo, responde `IDENTITY.MFA.STEP_UP_REQUIRED` y el dispositivo registrado lo resuelve con su código automático.
+**Additional step (step-up).** A sensitive operation (changing email or password, disabling MFA, creating API keys) declares it in its contract route with `Access.authenticated({ mfaMaxAgeMinutes: 10 })`, and `@Endpoint` takes it from there like the rest of the access. The guard evaluates it with `evaluateAccess` ([F4 design, 3.2.4](design/f4-identity.md#324-authorization)): if the last MFA is old, it responds `IDENTITY.MFA.STEP_UP_REQUIRED` and the registered device resolves it with its automatic code.
 
-**Alertas de seguridad** (siempre por email y push): login desde dispositivo nuevo, registro de verificador, recuperación de clave o de verificador, cambio de email, MFA desactivado, uso de código de recuperación, API key creada o revocada.
+**Security alerts** (always by email and push): login from a new device, verifier registration, password or verifier recovery, email change, MFA disabled, use of a recovery code, API key created or revoked.
 
 **API keys**
 
-- Formato `sk_live_<prefijo>_<secreto>`. El prefijo se guarda en claro para buscar la key; el secreto como HMAC con pepper. Se muestra una sola vez.
-- Pertenecen a una service account del tenant, con permisos acotados, expiración, IPs permitidas opcionales, último uso y nivel de rate limit.
-- Operaciones: crear (con step-up de MFA), listar, rotar (la anterior sigue válida N horas) y revocar (evento que invalida la caché en todos los servicios al instante).
-- Los casos de uso reciben un `Actor` (usuario o service account) sin importar cómo se autenticó.
+- Format `sk_live_<prefix>_<secret>`. The prefix is stored in clear text to look up the key; the secret as an HMAC with a pepper. It is shown only once.
+- They belong to a tenant service account, with scoped permissions, expiration, optional allowed IPs, last use and rate limit tier.
+- Operations: create (with MFA step-up), list, rotate (the previous one stays valid for N hours) and revoke (an event that invalidates the cache in every service instantly).
+- Use cases receive an `Actor` (user or service account) regardless of how it authenticated.
 
-## Multitenancy, grupos y backoffice
+## Multitenancy, groups and backoffice
 
 **Tenants**
 
-- Un tenant es una organización. Todo usuario pertenece al menos a uno; los clientes finales pueden compartir un tenant común, como el de clientes de la plataforma. Un usuario puede pertenecer a varias con roles distintos; el JWT lleva el tenant activo (`tid`) y cambiar de tenant emite un token nuevo.
-- Aislamiento: tablas compartidas con `tenant_id` y Row-Level Security de Postgres como segunda barrera. La capa de persistencia fija `app.tenant_id` en cada transacción. El comportamiento de RDS Proxy con estas variables se valida en la fase de persistencia.
-- Cada tenant tiene su región y su grupo de shards. Un tenant grande o compartido recibe un grupo de varios shards, y uno que lo exija recibe shards dedicados (modelo pool y silo).
-- El tenant se resuelve desde el JWT, la API key o el subdominio y header en endpoints públicos. Se propaga a logs, eventos, claves de caché, rate limits, feature flags y métricas de facturación.
-- Ciclo de vida: alta con saga (`SagaType.TenantOnboarding`), suspensión por facturación, reactivación y borrado con saga.
+- A tenant is an organization. Every user belongs to at least one; end customers can share a common tenant, such as the platform's customers tenant. A user can belong to several with different roles; the JWT carries the active tenant (`tid`) and switching tenant issues a new token.
+- Isolation: shared tables with `tenant_id` and Postgres Row-Level Security as a second barrier. The persistence layer sets `app.tenant_id` in every transaction. The behavior of RDS Proxy with these variables is validated in the persistence phase.
+- Each tenant has its region and its shard group. A large or shared tenant gets a group of several shards, and one that requires it gets dedicated shards (pool and silo model).
+- The tenant is resolved from the JWT, the API key, or the subdomain and a header on public endpoints. It is propagated to logs, events, cache keys, rate limits, feature flags and billing metrics.
+- Lifecycle: onboarding with a saga (`SagaType.TenantOnboarding`), suspension for billing, reactivation and deletion with a saga.
 
-**Grupos, roles y permisos**
+**Groups, roles and permissions**
 
-- Dentro de cada tenant, los usuarios pertenecen a grupos; los grupos tienen roles; los roles tienen permisos.
-- El catálogo de permisos es un enum en código (`Permission.TasksCreate`). Las asignaciones viven en la base y se editan sin deploy.
-- Los permisos efectivos de cada usuario se cachean en Valkey con versión por tenant.
-- Roles de tenant iniciales: `Owner`, `Admin`, `Member`, `Billing`.
+- Within each tenant, users belong to groups; groups have roles; roles have permissions.
+- The permission catalog is an enum in code (`Permission.TasksCreate`). Assignments live in the database and are edited without a deploy.
+- Each user's effective permissions are cached in Valkey with a per-tenant version.
+- Initial tenant roles: `Owner`, `Admin`, `Member`, `Billing`.
 
-**Backoffice con perfiles**
+**Backoffice with profiles**
 
-- Los roles de plataforma son independientes de los roles de tenant: `PlatformRole.SuperAdmin`, `Support`, `Finance`, `ReadOnly`, extensible.
-- `backend/apps/backoffice-api` es un BFF con audiencia propia (`aud: backoffice`) que llama a la API interna de cada servicio.
-- Acceso con MFA obligatorio (passkey recomendada) y lista de IPs opcional.
-- Suplantación ("ver como") con motivo, duración limitada, auditoría completa y aviso al usuario.
-- Vistas iniciales: tenants y usuarios, sesiones y dispositivos, historial de auditoría, sagas y DLQs, facturación y uso, feature flags, deprecaciones.
+- Platform roles are independent of tenant roles: `PlatformRole.SuperAdmin`, `Support`, `Finance`, `ReadOnly`, extensible.
+- `backend/apps/backoffice-api` is a BFF with its own audience (`aud: backoffice`) that calls each service's internal API.
+- Access with mandatory MFA (passkey recommended) and an optional IP list.
+- Impersonation ("view as") with a reason, limited duration, full auditing and a notice to the user.
+- Initial views: tenants and users, sessions and devices, audit history, sagas and DLQs, billing and usage, feature flags, deprecations.
 
-## Acuerdos: términos, consentimientos y documentos firmados
+## Agreements: terms, consents and signed documents
 
-El servicio `backend/apps/agreements` es genérico: maneja cualquier documento que un usuario o un tenant deba aceptar o firmar, con versiones, audiencias, evidencia y efectos sobre permisos.
+The `backend/apps/agreements` service is generic: it handles any document that a user or a tenant must accept or sign, with versions, audiences, evidence and effects on permissions.
 
-| Concepto        | Qué es                                                                                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tipo de acuerdo | Enum `AgreementType`, ampliable: `TermsOfService`, `PrivacyPolicy`, `DataProcessingConsent`, `MarketingConsent`, `FeatureTerms`, `Contract` |
-| Documento       | Versión inmutable de un acuerdo: contenido guardado en `files`, hash SHA-256, idioma, fecha de vigencia y tipo de cambio (mayor o menor)    |
-| Audiencia       | A quién aplica: todos, un tenant, un plan, un rol, un grupo, una feature o un país                                                          |
-| Requisito       | Bloqueante (sin aceptar no se usa lo que protege) u opcional, con plazo de gracia                                                           |
-| Aceptación      | Quién, cuándo, qué versión y hash, IP, dispositivo, `traceId` y método                                                                      |
-| Revocación      | Retiro de un consentimiento revocable, con fecha y efecto inmediato                                                                         |
+| Concept        | What it is                                                                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agreement type | `AgreementType` enum, extensible: `TermsOfService`, `PrivacyPolicy`, `DataProcessingConsent`, `MarketingConsent`, `FeatureTerms`, `Contract` |
+| Document       | Immutable version of an agreement: content stored in `files`, SHA-256 hash, language, effective date and change type (major or minor)        |
+| Audience       | Who it applies to: everyone, a tenant, a plan, a role, a group, a feature or a country                                                       |
+| Requirement    | Blocking (without accepting, what it protects cannot be used) or optional, with a grace period                                               |
+| Acceptance     | Who, when, which version and hash, IP, device, `traceId` and method                                                                          |
+| Revocation     | Withdrawal of a revocable consent, with date and immediate effect                                                                            |
 
-**Métodos de aceptación, de menor a mayor evidencia**
+**Acceptance methods, from least to most evidence**
 
-1. Clic en "Acepto".
-2. Clic más código de verificación (6 dígitos por email o el código automático del dispositivo registrado).
-3. Firma del hash del documento con la clave del dispositivo registrado.
-4. Firma digital certificada por un proveedor externo, conectado por el puerto `DigitalSignatureProvider`.
+1. Click on "Acepto" ("I accept").
+2. Click plus a verification code (6 digits by email or the registered device's automatic code).
+3. Signature of the document hash with the registered device's key.
+4. Certified digital signature by an external provider, connected through the `DigitalSignatureProvider` port.
 
-**Uso en endpoints**
+**Use in endpoints**
 
 ```ts
 @Endpoint.post('/reports', { ..., agreements: [AgreementType.DataProcessingConsent] })
 ```
 
-Si falta una aceptación, la respuesta es `LEGAL.AGREEMENT.ACCEPTANCE_REQUIRED` con la lista de documentos por aceptar, y el frontend los muestra para aceptarlos.
+If an acceptance is missing, the response is `LEGAL.AGREEMENT.ACCEPTANCE_REQUIRED` with the list of documents to accept, and the frontend shows them so they can be accepted.
 
-**Efectos sobre permisos.** Aceptar un acuerdo publica `AgreementsEvent.Accepted`, que puede habilitar permisos o features (por ejemplo, compartir datos con un tercero). Revocarlo publica `AgreementsEvent.Revoked` y los retira.
+**Effects on permissions.** Accepting an agreement publishes `AgreementsEvent.Accepted`, which can enable permissions or features (for example, sharing data with a third party). Revoking it publishes `AgreementsEvent.Revoked` and removes them.
 
-**Versiones.** Un cambio mayor exige aceptar de nuevo y se vuelve bloqueante al vencer el plazo de gracia. Un cambio menor solo se notifica.
+**Versions.** A major change requires accepting again and becomes blocking when the grace period expires. A minor change is only notified.
 
-**Evidencia.** Cada aceptación o firma genera un paquete PDF con el documento, el registro (quién, cuándo, cómo) y los hashes, guardado de forma inmutable (S3 Object Lock). El usuario y el backoffice lo descargan.
+**Evidence.** Each acceptance or signature generates a PDF package with the document, the record (who, when, how) and the hashes, stored immutably (S3 Object Lock). The user and the backoffice download it.
 
-**Marco legal.** El diseño sigue la Ley 1581 de 2012 (consentimiento previo, expreso, informado y revocable) y la Ley 527 de 1999 con el Decreto 2364 de 2012 (mensajes de datos y firma electrónica). Los textos y el nivel de firma de cada acuerdo se validan con asesoría legal.
+**Legal framework.** The design follows Law 1581 of 2012 (prior, express, informed and revocable consent) and Law 527 of 1999 with Decree 2364 of 2012 (data messages and electronic signature). The texts and the signature level of each agreement are validated with legal counsel.
 
-**Backoffice.** Crear versiones, programar su vigencia, ver el porcentaje de aceptación por audiencia y exportar evidencia.
+**Backoffice.** Create versions, schedule when they take effect, see the acceptance percentage per audience and export evidence.
 
-## Contratos y API interna
+## Contracts and internal API
 
-Los contratos son la única forma en que un servicio conoce a otro y en que el front conoce al backend. Se escriben una vez, en TypeScript con zod, y de ahí salen el JSON intermedio y el Dart del front ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md) y [ADR 0017](adr/0017-export-de-contratos.md)).
+Contracts are the only way one service knows another and the front knows the backend. They are written once, in TypeScript with zod, and from them come the intermediate JSON and the front's Dart ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md) and [ADR 0017](adr/0017-export-de-contratos.md)).
 
-**Dónde viven**
+**Where they live**
 
 ```text
 backend/libs/contracts/
-  platform/              @contracts/platform: kit, esquemas transversales y catálogo PLATFORM.*
-  <servicio>/            @contracts/<servicio>: lo que el servicio expone
+  platform/              @contracts/platform: kit, cross-cutting schemas and PLATFORM.* catalog
+  <service>/             @contracts/<service>: what the service exposes
     src/
-      enums/             solo enums (accesos, códigos de error, rutas, operaciones, eventos)
-      constants/         valores constantes y objetos `as const`
+      enums/             only enums (accesses, error codes, routes, operations, events)
+      constants/         constant values and `as const` objects
       types/             interfaces
-      schemas/           esquemas zod con `satisfies z.ZodType<Tipo>`
-      http/              rutas públicas que consume el front
-      internal/          operaciones internas entre servicios
-      events/            eventos publicados
-      errors/            catálogo de errores del servicio
-      contract.ts        ServiceContract del servicio
-    export/contract.json generado, se confirma en git
+      schemas/           zod schemas with `satisfies z.ZodType<Type>`
+      http/              public routes the front consumes
+      internal/          internal operations between services
+      events/            published events
+      errors/            the service's error catalog
+      contract.ts        the service's ServiceContract
+    export/contract.json generated, committed to git
 ```
 
-Hoy existen `platform` e `identity`. Los proyectos llevan los tags `type:contracts` y `scope:<servicio>`.
+Today `platform` and `identity` exist. The projects carry the tags `type:contracts` and `scope:<service>`.
 
-**Kit de `@contracts/platform`**
+**`@contracts/platform` kit**
 
-- `defineRoute`: método, path, esquema de petición y de respuesta, códigos de error y requisito de acceso (`Access.public()` o `Access.authenticated(...)`).
-- `defineOperation`: operación interna con `id`, `input`, `output`, `idempotent`, `mutating`, `compensatedBy` (o `Compensation.None` con `compensationReason`), `errors`, `timeoutMs`, `retry` y `description`.
-- `defineEvent`: tipo CloudEvents con la versión al final y esquema del payload.
-- `defineErrorCatalog`: catálogo de errores (ver [Errores](#errores)).
-- `defineServiceContract`: reúne todo lo anterior y valida nombres e identificadores únicos.
-- `validateContract` y `fieldErrorsFromZod`: traducen los issues de zod a `FieldError` con códigos `PLATFORM.VALIDATION.*`.
+- `defineRoute`: method, path, request and response schema, error codes and access requirement (`Access.public()` or `Access.authenticated(...)`).
+- `defineOperation`: internal operation with `id`, `input`, `output`, `idempotent`, `mutating`, `compensatedBy` (or `Compensation.None` with `compensationReason`), `errors`, `timeoutMs`, `retry` and `description`.
+- `defineEvent`: CloudEvents type with the version at the end and the payload schema.
+- `defineErrorCatalog`: error catalog (see [Errors](#errors)).
+- `defineServiceContract`: brings together everything above and validates unique names and identifiers.
+- `validateContract` and `fieldErrorsFromZod`: translate zod issues into `FieldError` with `PLATFORM.VALIDATION.*` codes.
 
-**Una operación con su compensación declarada**
+**An operation with its declared compensation**
 
 ```ts
 export const RevokeUserSessionsOperation = defineOperation({
@@ -971,33 +971,33 @@ export const RevokeUserSessionsOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'Revocar sesiones no se deshace por seguridad: el usuario vuelve a iniciar sesión.',
+    'Revoking sessions is not undone for security: the user signs in again.',
   errors: [IdentityErrorCode.UserNotFound],
   timeoutMs: 3000,
-  description: 'Revoca todas las sesiones de un usuario y publica el evento.',
+  description: "Revokes all of a user's sessions and publishes the event.",
 });
 ```
 
-`defineOperation` rechaza una operación que modifica datos sin `compensatedBy`, un `Compensation.None` sin motivo, una operación que se compensa a sí misma y códigos de error con formato inválido o repetidos.
+`defineOperation` rejects an operation that changes data without `compensatedBy`, a `Compensation.None` without a reason, an operation that compensates itself and error codes with an invalid format or repeated.
 
-**Del TypeScript al Dart**
+**From TypeScript to Dart**
 
-1. `pnpm nx run contracts-export:export` escribe `backend/libs/contracts/<servicio>/export/contract.json`: JSON Schema 2020-12 con enums, constantes, esquemas, rutas, operaciones, eventos y errores.
-2. `dart run contracts_gen` (dentro de `front/`) lee esos JSON y escribe `front/packages/contracts/lib/src/<servicio>/{enums,constants,types,schemas,http}` con la cabecera `// GENERATED, do not edit.`.
-3. `pnpm nx run contracts-export:check` y `dart run contracts_gen --check` fallan si lo confirmado difiere de lo que produce el TypeScript. CI los corre en el job `contracts`.
+1. `pnpm nx run contracts-export:export` writes `backend/libs/contracts/<service>/export/contract.json`: JSON Schema 2020-12 with enums, constants, schemas, routes, operations, events and errors.
+2. `dart run contracts_gen` (inside `front/`) reads those JSON files and writes `front/packages/contracts/lib/src/<service>/{enums,constants,types,schemas,http}` with the header `// GENERATED, do not edit.`.
+3. `pnpm nx run contracts-export:check` and `dart run contracts_gen --check` fail if what is committed differs from what the TypeScript produces. CI runs them in the `contracts` job.
 
-Un cambio en `backend/libs/contracts` incluye en el mismo commit el JSON exportado y el Dart regenerado. Un servicio nuevo se registra en `backend/tools/contracts-export/src/registry.ts`.
+A change in `backend/libs/contracts` includes, in the same commit, the exported JSON and the regenerated Dart. A new service is registered in `backend/tools/contracts-export/src/registry.ts`.
 
-**Validar antes de llamar**
+**Validate before calling**
 
-Todo cliente valida la petición contra el contrato antes de salir por la red. El servidor vuelve a validar siempre: la autoridad es el servidor.
+Every client validates the request against the contract before going out on the network. The server always validates again: the server is the authority.
 
-- Backend: `InternalClient.call(operación, entrada, opciones)` valida la entrada con el esquema de la operación. Si es inválida, devuelve `protocol-violation` con los `FieldError` y no llama al transporte. También valida la salida y los códigos de error al recibirlos.
-- Front: `ApiClient` de `front/packages/api` valida la petición con el validador generado. Si falla, lanza `ContractViolationException` con los mismos `FieldError` del servidor y no llama al `HttpTransport`. Las respuestas de error se leen como `ProblemDetails` y se lanzan como `ApiErrorException`.
+- Backend: `InternalClient.call(operation, input, options)` validates the input with the operation's schema. If it is invalid, it returns `protocol-violation` with the `FieldError` list and does not call the transport. It also validates the output and the error codes when it receives them.
+- Front: `ApiClient` from `front/packages/api` validates the request with the generated validator. If it fails, it throws `ContractViolationException` with the same `FieldError` list as the server and does not call the `HttpTransport`. Error responses are read as `ProblemDetails` and thrown as `ApiErrorException`.
 
-**API interna** (`@platform/internal-api`)
+**Internal API** (`@platform/internal-api`)
 
-El descriptor de `defineOperation` se pasa directamente a las piezas de la API interna, sin clases ni decoradores:
+The `defineOperation` descriptor is passed directly to the internal API pieces, without classes or decorators:
 
 ```ts
 registry.register(RevokeUserSessionsOperation);
@@ -1007,34 +1007,34 @@ const outcome = await client.call(RevokeUserSessionsOperation, input, {
 });
 ```
 
-- `ContractRegistry` registra las operaciones y valida que cada `compensatedBy` exista.
-- `InternalRouter` es el lado servidor: valida la entrada, aplica idempotencia por tenant, operación y llave con un claim de tres estados, revisa plazos y resultados contra el contrato y despacha al handler.
-- `InternalClient` es el lado cliente: aplica reintentos, backoff y presupuesto de tiempo. Solo reintenta operaciones `idempotent: true`, y solo ante `transient-failure` o `uncertain`.
-- El resultado es siempre un `CallOutcome`: `success`, `business-error` (código declarado en el contrato), `transient-failure`, `uncertain` o `protocol-violation`. Quien llama decide qué hacer con cada caso.
-- La idempotencia del servidor tiene dos almacenes: `InMemoryProcessedOperationStore` para pruebas y `TypeOrmIdempotencyStore` de `@platform/adapters-postgres`. `InternalRouter` recibe el `TransactionManager` del servicio y guarda el resultado en la misma transacción que los efectos del handler.
-- Mientras corre el handler, `ClaimKeeper` renueva el lease de su llave cada 2 s: otro intento con la misma llave responde `in-progress` y solo la toma si el proceso dueño dejó de renovarla. El handler recibe en `CallMeta.signal` una señal que aborta al vencer el plazo del intento.
-- Antes de correr una compensación de saga, `CompensationTombstones` deja una lápida en la llave del paso que deshace (`ADR 0008`): un envío tardío del paso ya no aplica su efecto.
-- Un error lanzado por el handler se clasifica con el `FailureClassifier` del servicio (`PlatformFailureClassifier`, con las reglas de Postgres, AWS y Valkey): un failover de la base es `transient-failure` y el cliente reintenta.
+- `ContractRegistry` registers the operations and validates that each `compensatedBy` exists.
+- `InternalRouter` is the server side: it validates the input, applies idempotency per tenant, operation and key with a three-state claim, checks deadlines and results against the contract and dispatches to the handler.
+- `InternalClient` is the client side: it applies retries, backoff and a time budget. It only retries `idempotent: true` operations, and only on `transient-failure` or `uncertain`.
+- The result is always a `CallOutcome`: `success`, `business-error` (a code declared in the contract), `transient-failure`, `uncertain` or `protocol-violation`. The caller decides what to do with each case.
+- Server idempotency has two stores: `InMemoryProcessedOperationStore` for tests and `TypeOrmIdempotencyStore` from `@platform/adapters-postgres`. `InternalRouter` receives the service's `TransactionManager` and stores the result in the same transaction as the handler's effects.
+- While the handler runs, `ClaimKeeper` renews its key's lease every 2 s: another attempt with the same key responds `in-progress` and only takes it over if the owning process stopped renewing it. The handler receives in `CallMeta.signal` a signal that aborts when the attempt's deadline expires.
+- Before running a saga compensation, `CompensationTombstones` leaves a tombstone on the key of the step it undoes (`ADR 0008`): a late delivery of the step no longer applies its effect.
+- An error thrown by the handler is classified with the service's `FailureClassifier` (`PlatformFailureClassifier`, with the Postgres, AWS and Valkey rules): a database failover is `transient-failure` and the client retries.
 
-Hoy existe el transporte en proceso (`InProcessTransport`). El transporte HTTP, `POST /internal/operations/:operationId`, se suma a `@platform/internal-api` con `HttpTransport` e `InternalApiController` (paquete WP-08 del [plan del backend](plan/backend.md)), con firma HMAC en local y SigV4 en AWS con la fase F12.
+Today the in-process transport exists (`InProcessTransport`). The HTTP transport, `POST /internal/operations/:operationId`, is added to `@platform/internal-api` with `HttpTransport` and `InternalApiController` (work package WP-08 of the [backend plan](plan/backend.md)), with HMAC signing locally and SigV4 on AWS with phase F12.
 
-**Reglas del contrato**
+**Contract rules**
 
-- Toda operación que modifica datos declara su `compensatedBy`, o `Compensation.None` con un motivo.
-- Toda operación es idempotente por llave: el servidor devuelve el resultado guardado si la llamada se repite.
-- Un cambio incompatible crea una versión nueva de la operación o del evento. La anterior convive mientras alguien la use.
+- Every operation that changes data declares its `compensatedBy`, or `Compensation.None` with a reason.
+- Every operation is idempotent by key: the server returns the stored result if the call repeats.
+- An incompatible change creates a new version of the operation or the event. The previous one coexists while anyone uses it.
 
-## Bus de mensajería
+## Message bus
 
-`backend/libs/platform/messaging` despacha eventos y comandos sin que el negocio sepa si van a un tópico o a una cola. Una topología tipada es la única fuente de verdad: de ella salen el despacho en ejecución, la infraestructura, el entorno local, los tests y la documentación.
+`backend/libs/platform/messaging` dispatches events and commands without the business code knowing whether they go to a topic or a queue. A typed topology is the single source of truth: from it come runtime dispatch, infrastructure, the local environment, the tests and the documentation.
 
-| Tipo     | Cuándo                                   | Mecanismo                          | Ejemplo                                        |
-| -------- | ---------------------------------------- | ---------------------------------- | ---------------------------------------------- |
-| Evento   | Algo pasó y a otros les interesa         | Tópico con una cola por consumidor | `TasksEvent.TaskUpdated` hacia `notifications` |
-| Comando  | Pedir trabajo a un servicio concreto     | Cola del servicio dueño            | `ReportsCommand.GenerateReport`                |
-| Consulta | Un dato inmediato que no conviene copiar | API interna                        | `TasksOperation.GetTaskSummary`                |
+| Type    | When                                         | Mechanism                         | Example                                     |
+| ------- | -------------------------------------------- | --------------------------------- | ------------------------------------------- |
+| Event   | Something happened and others care           | Topic with one queue per consumer | `TasksEvent.TaskUpdated` to `notifications` |
+| Command | Ask a specific service for work              | Queue of the owning service       | `ReportsCommand.GenerateReport`             |
+| Query   | An immediate piece of data not worth copying | Internal API                      | `TasksOperation.GetTaskSummary`             |
 
-**Topología**
+**Topology**
 
 ```ts
 const tasksEvents = new TopicDef(Topic.TasksEvents);
@@ -1067,17 +1067,17 @@ export class PlatformTopology extends Topology {
 }
 ```
 
-**De la topología sale**
+**What comes out of the topology**
 
-- **Ejecución**: `bus.publish(event)` y `bus.send(command)` resuelven la ruta y usan el adaptador configurado (SNS y SQS en AWS).
-- **Terraform**: un comando exporta la topología a JSON y el módulo crea tópicos, colas, DLQs, suscripciones con filtros y permisos IAM. Agregar un tópico conectado a tres colas es editar esta clase.
-- **Local**: un script crea lo mismo en LocalStack; los tests usan un bus en memoria.
-- **Documentación**: AsyncAPI.
-- **Validación al arrancar**: cada ruta apunta a un tópico o cola declarado y cada evento tiene su esquema.
+- **Runtime**: `bus.publish(event)` and `bus.send(command)` resolve the route and use the configured adapter (SNS and SQS on AWS).
+- **Terraform**: a command exports the topology to JSON and the module creates topics, queues, DLQs, subscriptions with filters and IAM permissions. Adding a topic connected to three queues means editing this class.
+- **Local**: a script creates the same in LocalStack; tests use an in-memory bus.
+- **Documentation**: AsyncAPI.
+- **Startup validation**: each route points to a declared topic or queue and each event has its schema.
 
-**Formato del mensaje**
+**Message format**
 
-Los mensajes siguen CloudEvents 1.0, la especificación de la CNCF para eventos independiente del proveedor. Cualquier broker o consumidor externo los entiende.
+Messages follow CloudEvents 1.0, the CNCF specification for provider-independent events. Any broker or external consumer understands them.
 
 ```json
 {
@@ -1095,29 +1095,29 @@ Los mensajes siguen CloudEvents 1.0, la especificación de la CNCF para eventos 
 }
 ```
 
-**Consumidores**
+**Consumers**
 
-- Se declaran con `@Subscribe(TasksEvent.TaskUpdated)` en la capa de presentación.
-- Corren en Lambda (lotes con fallos parciales) o en Fargate (long polling) con el mismo `MessageDispatcher`: valida el esquema, revisa idempotencia (`processed_messages`), restaura `traceId`, tenant y actor, y ejecuta el handler.
+- They are declared with `@Subscribe(TasksEvent.TaskUpdated)` in the presentation layer.
+- They run on Lambda (batches with partial failures) or on Fargate (long polling) with the same `MessageDispatcher`: it validates the schema, checks idempotency (`processed_messages`), restores `traceId`, tenant and actor, and runs the handler.
 
-**Reintentos y DLQ**
+**Retries and DLQ**
 
-- Backoff exponencial real: el dispatcher calcula `base · 2^intento + jitter` y lo aplica con `ChangeMessageVisibility`, porque SQS por sí solo reintenta con intervalo fijo.
-- Errores permanentes (validación, mensaje corrupto) van directo a la DLQ sin gastar reintentos.
-- Cada DLQ tiene alarma, vista en backoffice e inspección y redrive con `StartMessageMoveTask`.
+- Real exponential backoff: the dispatcher computes `base · 2^attempt + jitter` and applies it with `ChangeMessageVisibility`, because SQS on its own retries at a fixed interval.
+- Permanent errors (validation, corrupt message) go straight to the DLQ without spending retries.
+- Each DLQ has an alarm, a backoffice view and inspection and redrive with `StartMessageMoveTask`.
 
-**Garantías adicionales**
+**Additional guarantees**
 
-- Outbox: el evento se guarda en la misma transacción del cambio, se publica justo después del commit y un barrido periódico recoge lo que haya quedado.
-- Orden por agregado con colas FIFO y `MessageGroupId = aggregateId` cuando el orden importa.
-- Claim-check en almacenamiento de archivos para mensajes que superan el tamaño máximo.
-- Mensajes diferidos: `bus.send(cmd, { delay })` usa el retraso de la cola hasta 15 min y el scheduler para plazos mayores.
+- Outbox: the event is stored in the same transaction as the change, published right after the commit, and a periodic sweep picks up anything left behind.
+- Ordering per aggregate with FIFO queues and `MessageGroupId = aggregateId` when order matters.
+- Claim-check in file storage for messages that exceed the maximum size.
+- Delayed messages: `bus.send(cmd, { delay })` uses the queue delay up to 15 min and the scheduler for longer delays.
 
 ## Sagas
 
-`backend/libs/platform/saga` coordina operaciones entre servicios con una bitácora persistente de cada paso. Si el nodo que ejecuta una saga se cae, otro la retoma exactamente donde quedó, incluidas las compensaciones a medio camino. La saga orquesta; los reintentos y timeouts de cada llamada son del cliente de la API interna.
+`backend/libs/platform/saga` coordinates operations across services with a persistent log of each step. If the node running a saga goes down, another one picks it up exactly where it left off, including half-finished compensations. The saga orchestrates; each call's retries and timeouts belong to the internal API client.
 
-**Definición con clases y contratos**
+**Definition with classes and contracts**
 
 ```ts
 export class TenantOnboardingSaga extends SagaDefinition<TenantOnboardingState> {
@@ -1141,88 +1141,88 @@ export class TenantOnboardingSaga extends SagaDefinition<TenantOnboardingState> 
   }
 }
 
-// Desde un caso de uso, con SagaModule.forFeature([TenantOnboardingSaga]) en el módulo:
+// From a use case, with SagaModule.forFeature([TenantOnboardingSaga]) in the module:
 await this.sagas.start(TenantOnboardingSaga, state, { idempotencyKey });
 ```
 
-Cada paso recibe el descriptor de `defineOperation` que publica el servicio dueño en `@contracts/<servicio>`. Los tipos de entrada y salida salen de sus esquemas zod, y la compensación sale de su `compensatedBy`, así la saga usa las reversas que ese servicio ya declara. Renombrar una operación rompe la compilación.
+Each step receives the `defineOperation` descriptor that the owning service publishes in `@contracts/<service>`. The input and output types come from its zod schemas, and the compensation comes from its `compensatedBy`, so the saga uses the reverse operations that service already declares. Renaming an operation breaks the build.
 
-**Validaciones al arrancar**
+**Startup validations**
 
-- Los pasos antes de `pivot()` tienen compensación.
-- Los pasos después de `pivot()` son idempotentes: se reintentan hasta completar y nunca disparan compensación.
-- Cada contrato referenciado está registrado y su reversa existe.
+- Steps before `pivot()` have a compensation.
+- Steps after `pivot()` are idempotent: they are retried until they complete and never trigger compensation.
+- Each referenced contract is registered and its reverse exists.
 
-**Bitácora en base de datos**
+**Log in the database**
 
-Cada servicio que orquesta guarda su bitácora en un esquema `saga` dentro de su base de shard, con sus propias migraciones y permisos ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)). Así la saga arranca en la misma transacción que el cambio local que la provoca, y sus datos se quedan en la región del tenant. Una base común para todos los servicios los acoplaría y sería un punto único de falla.
+Each service that orchestrates stores its log in a `saga` schema inside its shard database, with its own migrations and permissions ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)). That way the saga starts in the same transaction as the local change that triggers it, and its data stays in the tenant's region. A database shared by every service would couple them and would be a single point of failure.
 
-| Tabla                       | Contenido                                                                                                                                                                                                  |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `saga.instances`            | Tipo de saga, estado, `state`, paso actual, dirección, `version`, lease, `next_attempt_at`, plazo, tenant, actor y tenant de origen, `traceparent`, llave de idempotencia y canal de respuesta             |
-| `saga.step_log`             | Un registro por intento de paso: operación, dirección (avance o compensación), estado, llave `sagaId:paso:dirección`, entrada y salida (cifradas cuando llevan datos personales), código de error y fechas |
-| `saga_directory` (catálogo) | Dónde vive cada saga: servicio, tenant, región, shard lógico, tipo y estado. Sin payloads. Soporte, backoffice y la consulta de estado encuentran cualquier saga por su id sin recorrer shards             |
+| Table                      | Content                                                                                                                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `saga.instances`           | Saga type, status, `state`, current step, direction, `version`, lease, `next_attempt_at`, deadline, tenant, actor and home tenant, `traceparent`, idempotency key and reply channel                |
+| `saga.step_log`            | One record per step attempt: operation, direction (forward or compensation), status, key `sagaId:step:direction`, input and output (encrypted when they carry personal data), error code and dates |
+| `saga_directory` (catalog) | Where each saga lives: service, tenant, region, logical shard, type and status. No payloads. Support, the backoffice and the status query find any saga by its id without walking shards           |
 
-`TypeOrmSagaStore` de `@platform/adapters-postgres` implementa el puerto `SagaStore`: guarda la instancia y su paso en la misma transacción, y cada escritura protegida es un `UPDATE ... WHERE version = :v AND lease_token = :t`. El resultado de una saga sale por el outbox como evento (`SagaCompleted`, `SagaCompensated`) o por `GET /v1/sagas/{sagaId}`. Un job purga las sagas terminadas después de la retención, y un payload grande se guarda por referencia.
+`TypeOrmSagaStore` from `@platform/adapters-postgres` implements the `SagaStore` port: it stores the instance and its step in the same transaction, and each guarded write is an `UPDATE ... WHERE version = :v AND lease_token = :t`. A saga's result goes out through the outbox as an event (`SagaCompleted`, `SagaCompensated`) or through `GET /v1/sagas/{sagaId}`. A job purges finished sagas after the retention period, and a large payload is stored by reference.
 
-**Protocolo de cada paso (write-ahead)**
+**Protocol of each step (write-ahead)**
 
-1. En una transacción: registra el paso como `Dispatched` con su llave `sagaId:paso:dirección` y avanza la `version` de la instancia.
-2. Llama la operación con el cliente de la API interna, que aplica su propia política de reintentos y timeout.
-3. En otra transacción: guarda el resultado, actualiza el `state` y decide el siguiente paso.
+1. In one transaction: records the step as `Dispatched` with its key `sagaId:step:direction` and advances the instance's `version`.
+2. Calls the operation with the internal API client, which applies its own retry and timeout policy.
+3. In another transaction: stores the result, updates the `state` and decides the next step.
 
-Si el proceso muere entre el paso 1 y el 3, el registro queda en `Dispatched`. Al retomar, la saga repite la llamada con la misma llave. El servicio destino devuelve el resultado guardado si ya la había ejecutado, o la ejecuta por primera vez. El efecto ocurre una sola vez.
+If the process dies between step 1 and step 3, the record stays in `Dispatched`. On resuming, the saga repeats the call with the same key. The target service returns the stored result if it had already run it, or runs it for the first time. The effect happens only once.
 
-**Recuperación**
+**Recovery**
 
-- Quien ejecuta una saga toma un lease (`lease_owner`, `lease_until` = ahora + 30 s) y lo renueva mientras trabaja.
-- `SagaRecoveryJob` corre cada minuto y al arrancar cada instancia, programado con EventBridge en AWS y con cron en local. Recorre los shards con `AcrossShards`, toma con `FOR UPDATE SKIP LOCKED` las sagas activas con lease vencido o `next_attempt_at` cumplido y las retoma desde la bitácora. La retoma el servicio dueño, sin depender de quien la invocó.
-- Pasos asíncronos (respuesta por cola) quedan en `WaitingReply`, correlacionados por la llave. Si la respuesta tarda más de lo que declara el contrato, la recuperación reenvía el comando con la misma llave.
+- Whoever runs a saga takes a lease (`lease_owner`, `lease_until` = now + 30 s) and renews it while working.
+- `SagaRecoveryJob` runs every minute and when each instance starts, scheduled with EventBridge on AWS and with cron locally. It walks the shards with `AcrossShards`, takes with `FOR UPDATE SKIP LOCKED` the active sagas with an expired lease or a due `next_attempt_at` and resumes them from the log. The owning service resumes it, without depending on whoever invoked it.
+- Asynchronous steps (reply through a queue) stay in `WaitingReply`, correlated by the key. If the reply takes longer than the contract declares, recovery resends the command with the same key.
 
-**Cómo reacciona a cada resultado**
+**How it reacts to each result**
 
-| Resultado del cliente | En avance                                                                                                                                      | En compensación                                             |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `Success`             | Siguiente paso                                                                                                                                 | Siguiente compensación                                      |
-| `BusinessError`       | Antes del pivote, inicia compensación en orden inverso. Después del pivote, estado `RequiresIntervention`                                      | Estado `CompensationFailed`, alerta e intervención manual   |
-| `TransientFailure`    | Estado `Suspended`; la recuperación la retoma más tarde. Al cumplirse `deadline_at`, compensa                                                  | Estado `Suspended`; la recuperación insiste hasta completar |
-| `Uncertain`           | Estado `Suspended` con `PLATFORM.SAGA.UNCERTAIN_OUTCOME`; se reintenta con la misma llave. Al cumplirse `deadline_at`, compensa desde ese paso | Estado `Suspended`; la recuperación insiste hasta completar |
+| Client result      | Going forward                                                                                                                                            | During compensation                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `Success`          | Next step                                                                                                                                                | Next compensation                                            |
+| `BusinessError`    | Before the pivot, starts compensation in reverse order. After the pivot, status `RequiresIntervention`                                                   | Status `CompensationFailed`, alert and manual intervention   |
+| `TransientFailure` | Status `Suspended`; recovery resumes it later. When `deadline_at` is reached, it compensates                                                             | Status `Suspended`; recovery keeps trying until it completes |
+| `Uncertain`        | Status `Suspended` with `PLATFORM.SAGA.UNCERTAIN_OUTCOME`; it is retried with the same key. When `deadline_at` is reached, it compensates from that step | Status `Suspended`; recovery keeps trying until it completes |
 
-Las compensaciones son idempotentes y toleran el caso en que la operación original nunca se aplicó (responden éxito sin hacer nada). Por eso un paso con resultado incierto se compensa con seguridad.
+Compensations are idempotent and tolerate the case where the original operation was never applied (they respond success without doing anything). That is why a step with an uncertain outcome is compensated safely.
 
-Un paso tiene resultado incierto cuando la llamada supera `maxStepDurationMs` o termina por tiempo agotado o cancelación. Si la suspensión se agota (por defecto, más de 20 intentos o 24 horas), la saga pasa a `RequiresIntervention`. El detalle está en el [ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md#uncertain-outcome).
+A step has an uncertain outcome when the call exceeds `maxStepDurationMs` or ends by timeout or cancellation. If the suspension runs out (by default, more than 20 attempts or 24 hours), the saga moves to `RequiresIntervention`. The details are in [ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md#uncertain-outcome).
 
-**Aislamiento.** Mientras la saga corre, los recursos involucrados quedan en un estado intermedio del dominio (por ejemplo, tenant `Provisioning`) para que nadie los use a medias.
+**Isolation.** While the saga runs, the resources involved stay in an intermediate domain state (for example, tenant `Provisioning`) so nobody uses them half-done.
 
-**Operación y visibilidad**
+**Operation and visibility**
 
-- El backoffice muestra la línea de tiempo de cada saga con sus pasos, entradas, salidas y errores, enlazada por `traceId`.
-- Acciones manuales auditadas: reintentar un paso, forzar compensación, marcar como resuelta con motivo.
-- Eventos `PlatformEvent.SagaCompleted`, `SagaCompensated` y `SagaCompensationFailed`; métricas de duración y sagas detenidas; alarma por `CompensationFailed`.
+- The backoffice shows the timeline of each saga with its steps, inputs, outputs and errors, linked by `traceId`.
+- Audited manual actions: retry a step, force compensation, mark as resolved with a reason.
+- Events `PlatformEvent.SagaCompleted`, `SagaCompensated` and `SagaCompensationFailed`; metrics for duration and stalled sagas; an alarm on `CompensationFailed`.
 
-**Sagas de ejemplo**: alta de tenant, borrado de cuenta en todos los servicios (habeas data) y traslado de tenant entre shards.
+**Sample sagas**: tenant onboarding, account deletion across every service (habeas data) and moving a tenant between shards.
 
-Los flujos simples, sin necesidad de deshacer, siguen como coreografía por eventos.
+Simple flows, with no need to undo, remain as event choreography.
 
-**Código actual.** Hoy `@platform/saga` trae el protocolo completo (write-ahead, lease, pivote, resultado incierto, recuperación) sobre el puerto `SagaStore`, con `InMemorySagaStore` y el doble `CrashingSagaStore` de sus pruebas. El motor rediseñado está en la [sección 5 del diseño de persistencia](design/persistencia-typeorm-y-sagas.md#5-sagas), y cuándo se construye, en el [plan](plan/README.md#execution-order-by-waves).
+**Current code.** Today `@platform/saga` provides the complete protocol (write-ahead, lease, pivot, uncertain outcome, recovery) on the `SagaStore` port, with `InMemorySagaStore` and the `CrashingSagaStore` test double from its tests. The redesigned engine is in [section 5 of the persistence design](design/persistencia-typeorm-y-sagas.md#5-sagas), and when it gets built, in the [plan](plan/README.md#execution-order-by-waves).
 
-## Capacidades compartidas
+## Shared capabilities
 
-**Archivos**
+**Files**
 
-El puerto `FileStorage` ofrece `put`, `get` (stream), `head`, `delete`, `createUploadUrl`, `createDownloadUrl` y carga multipart. El servicio `files` guarda los metadatos y expone el flujo.
+The `FileStorage` port offers `put`, `get` (stream), `head`, `delete`, `createUploadUrl`, `createDownloadUrl` and multipart upload. The `files` service stores the metadata and exposes the flow.
 
-1. `POST /files/upload-intents` con nombre, tipo y tamaño. Responde `{ fileId, uploadUrl, headers, expiresAt }`.
-2. El cliente sube directo a la URL.
-3. El evento del almacenamiento (o `POST /files/{id}/complete`) dispara la verificación de tamaño, tipo y checksum, y el escaneo de malware.
-4. El archivo pasa de `PendingUpload` a `Ready` (o `Rejected`) y se publica `FilesEvent.FileReady`.
+1. `POST /files/upload-intents` with name, type and size. Responds `{ fileId, uploadUrl, headers, expiresAt }`.
+2. The client uploads directly to the URL.
+3. The storage event (or `POST /files/{id}/complete`) triggers the size, type and checksum verification, and the malware scan.
+4. The file moves from `PendingUpload` to `Ready` (or `Rejected`) and `FilesEvent.FileReady` is published.
 
-- Con S3, la URL es prefirmada por S3.
-- Con un proveedor sin URLs prefirmadas, el adaptador devuelve una URL del propio servicio `files` con un token HMAC que fija expiración, tamaño y tipo; `files` recibe el stream y lo escribe en el almacenamiento. Para el cliente el flujo es idéntico.
-- Descargas con URL firmada de vida corta, o stream a través de la API para archivos privados pequeños.
-- Metadatos: tenant, dueño, llave, tamaño, tipo, checksum, estado y retención. Los límites de tamaño y cuota salen del plan del tenant.
+- With S3, the URL is presigned by S3.
+- With a provider without presigned URLs, the adapter returns a URL of the `files` service itself with an HMAC token that fixes expiration, size and type; `files` receives the stream and writes it to storage. For the client the flow is identical.
+- Downloads with a short-lived signed URL, or streamed through the API for small private files.
+- Metadata: tenant, owner, key, size, type, checksum, status and retention. Size and quota limits come from the tenant's plan.
 
-**Jobs programados**
+**Scheduled jobs**
 
 ```ts
 @ScheduledJob({ id: JobId.PurgeLoginAttempts, cron: '0 3 * * *', timezone: 'America/Bogota' })
@@ -1231,251 +1231,251 @@ export class PurgeLoginAttemptsJob implements JobHandler { ... }
 await this.scheduler.scheduleOnce(JobId.ExpireTrial, at, { tenantId });
 ```
 
-- El puerto `JobScheduler` cubre jobs recurrentes y de una sola vez. En AWS, EventBridge Scheduler publica en una cola; en local, `node-cron`.
-- Un lock distribuido en Valkey evita ejecuciones dobles.
-- Tabla `job_runs`: estado, duración, error y `traceId`. Vista y ejecución manual en backoffice.
-- Jobs incluidos: particiones futuras, purga por retención, cierre de periodo de facturación, recuperación de sagas, barrido del outbox, avisos de deprecación.
+- The `JobScheduler` port covers recurring and one-off jobs. On AWS, EventBridge Scheduler publishes to a queue; locally, `node-cron`.
+- A distributed lock in Valkey prevents double runs.
+- `job_runs` table: status, duration, error and `traceId`. View and manual run in the backoffice.
+- Included jobs: future partitions, retention purge, billing period close, saga recovery, outbox sweep, deprecation notices.
 
 **Feature flags**
 
-- OpenFeature como puerto estándar. Proveedor por defecto propio (definiciones en base de datos, caché en Valkey); AppConfig o flagd como alternativas.
-- Segmentación por tenant, plan, usuario, grupo y porcentaje.
-- Flags como enum (`Flag.NewReports`) y uso en endpoints: `@Endpoint({ flag: Flag.NewReports })`.
-- El nivel de log se controla también por flag.
+- OpenFeature as the standard port. In-house default provider (definitions in the database, cache in Valkey); AppConfig or flagd as alternatives.
+- Targeting by tenant, plan, user, group and percentage.
+- Flags as an enum (`Flag.NewReports`) and use in endpoints: `@Endpoint({ flag: Flag.NewReports })`.
+- The log level is also controlled by a flag.
 
-**Webhooks y firmas**
+**Webhooks and signatures**
 
-- Utilidad `SignatureVerifier` reutilizable con esquemas intercambiables (`SignatureScheme.HmacSha256`, `StandardWebhooks`, esquemas por proveedor). Valida firma, ventana de tiempo y nonce en Valkey contra repeticiones.
-- **Webhooks entrantes**: un endpoint se marca con `@Endpoint({ auth: AuthMethod.Signature, signature: SignatureScheme.HmacSha256 })`. Solo los servicios que lo necesitan los declaran.
-- **Webhooks salientes** (módulo opcional): los tenants registran URLs y eventos de interés; las entregas siguen la especificación Standard Webhooks (`webhook-id`, `webhook-timestamp`, `webhook-signature`), con reintentos exponenciales por cola, registro de cada entrega, desactivación tras fallos repetidos y rotación de secretos.
+- Reusable `SignatureVerifier` utility with swappable schemes (`SignatureScheme.HmacSha256`, `StandardWebhooks`, per-provider schemes). It validates signature, time window and nonce in Valkey against replays.
+- **Incoming webhooks**: an endpoint is marked with `@Endpoint({ auth: AuthMethod.Signature, signature: SignatureScheme.HmacSha256 })`. Only the services that need them declare them.
+- **Outgoing webhooks** (optional module): tenants register URLs and events of interest; deliveries follow the Standard Webhooks specification (`webhook-id`, `webhook-timestamp`, `webhook-signature`), with exponential retries through a queue, a record of each delivery, deactivation after repeated failures and secret rotation.
 
-## Notificaciones
+## Notifications
 
-El servicio `notifications` maneja todos los canales con una sola entrada: `notify(userId, NotificationType.SecurityNewDeviceLogin, data)`. El tipo define la criticidad; las preferencias del usuario definen los canales. Las alertas de seguridad salen siempre por email y push.
+The `notifications` service handles every channel with a single entry point: `notify(userId, NotificationType.SecurityNewDeviceLogin, data)`. The type defines the criticality; the user's preferences define the channels. Security alerts always go out by email and push.
 
 **Email**
 
-- Puerto `EmailSender`; adaptador SES en AWS y SMTP con Mailpit en local.
-- Terraform configura dominio, DKIM, SPF, DMARC y un configuration set que envía los eventos de SES al bus.
-- Plantillas versionadas con React Email o MJML, con i18n y vista previa.
-- Correos de seguridad sin seguimiento. Correos masivos con `List-Unsubscribe` de un clic, requisito de Gmail y Yahoo.
-- Lista de supresión automática para rebotes y quejas.
+- `EmailSender` port; SES adapter on AWS and SMTP with Mailpit locally.
+- Terraform configures the domain, DKIM, SPF, DMARC and a configuration set that sends SES events to the bus.
+- Versioned templates with React Email or MJML, with i18n and preview.
+- Security emails without tracking. Bulk emails with one-click `List-Unsubscribe`, a Gmail and Yahoo requirement.
+- Automatic suppression list for bounces and complaints.
 
-**Registro de cada correo** (`email_messages` y `email_events`)
+**Record of each email** (`email_messages` and `email_events`)
 
-| Evento                                                       | Fuente                                                                                           |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Enviado, entregado, rebote, queja, rechazo, entrega demorada | Eventos del proveedor                                                                            |
-| Abierto (primera vez y conteo)                               | Píxel de seguimiento. Apple Mail lo descarga automáticamente, así que es un indicador aproximado |
-| Click                                                        | Enlaces con seguimiento                                                                          |
+| Event                                                      | Source                                                                                   |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Sent, delivered, bounce, complaint, reject, delivery delay | Provider events                                                                          |
+| Opened (first time and count)                              | Tracking pixel. Apple Mail downloads it automatically, so it is an approximate indicator |
+| Click                                                      | Tracked links                                                                            |
 
-Cada registro guarda tenant, usuario, plantilla y versión, destinatario, id del proveedor, `traceId` y las fechas de cada evento. El cierre de un correo queda fuera de lo que un cliente de email reporta. La retención es configurable.
+Each record stores tenant, user, template and version, recipient, provider id, `traceId` and the dates of each event. When an email is closed is outside what an email client reports. Retention is configurable.
 
-**Push desde nuestro servidor**
+**Push from our own server**
 
-- Conexión directa con APNs (iOS, token `.p8`), FCM HTTP v1 (Android) y Web Push con VAPID (navegadores). Sin intermediarios como OneSignal.
-- En móvil, el sistema operativo exige pasar por APNs o FCM. Con la app abierta se usa WebSocket.
-- Push tokens ligados a `devices`, limpiados cuando el proveedor los reporta inválidos.
-- Registro de envío, entrega y apertura (la app reporta la apertura).
-- El push de MFA abre la app verificadora en la pantalla del código.
+- Direct connection to APNs (iOS, `.p8` token), FCM HTTP v1 (Android) and Web Push with VAPID (browsers). No intermediaries such as OneSignal.
+- On mobile, the operating system requires going through APNs or FCM. With the app open, WebSocket is used.
+- Push tokens tied to `devices`, cleaned up when the provider reports them invalid.
+- Record of send, delivery and open (the app reports the open).
+- The MFA push opens the verifier app on the code screen.
 
-**Tiempo real: Socket.IO y SSE**
+**Real time: Socket.IO and SSE**
 
-`backend/apps/realtime` es un gateway de NestJS en Fargate, detrás de un ALB, con dos canales alimentados por el mismo origen de mensajes:
+`backend/apps/realtime` is a NestJS gateway on Fargate, behind an ALB, with two channels fed by the same message source:
 
-| Canal                           | Dirección               | Uso                                                                                               |
-| ------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
-| Socket.IO (`@WebSocketGateway`) | Bidireccional           | Pantallas que envían y reciben: colaboración en tasks, confirmaciones, presencia                  |
-| SSE (`@Sse()`)                  | Del servidor al cliente | Notificaciones, estado de jobs, código de MFA. Es HTTP normal, atraviesa proxies y reconecta solo |
+| Channel                         | Direction        | Use                                                                                                   |
+| ------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
+| Socket.IO (`@WebSocketGateway`) | Bidirectional    | Screens that send and receive: collaboration in tasks, confirmations, presence                        |
+| SSE (`@Sse()`)                  | Server to client | Notifications, job status, MFA code. It is plain HTTP, goes through proxies and reconnects on its own |
 
-- Autenticación con el JWT en el handshake de Socket.IO y con la cookie de sesión en SSE. Salas por usuario, tenant y recurso.
-- Escala horizontal con el adaptador de Socket.IO sobre Valkey. El transporte es solo WebSocket, así el balanceador no necesita sesiones pegajosas.
-- Recuperación tras un corte: Socket.IO usa _connection state recovery_ y SSE usa `Last-Event-ID`. Ambos reponen los mensajes de los últimos minutos desde un Valkey Stream, así un código de MFA llega aunque la conexión se haya caído.
-- `notifications` decide qué enviar; `realtime` solo entrega. El negocio usa el puerto `RealtimeGateway`.
+- Authentication with the JWT in the Socket.IO handshake and with the session cookie in SSE. Rooms per user, tenant and resource.
+- Horizontal scaling with the Socket.IO adapter on Valkey. The transport is WebSocket only, so the load balancer does not need sticky sessions.
+- Recovery after an outage: Socket.IO uses _connection state recovery_ and SSE uses `Last-Event-ID`. Both replay the messages of the last few minutes from a Valkey Stream, so an MFA code arrives even if the connection dropped.
+- `notifications` decides what to send; `realtime` only delivers. Business code uses the `RealtimeGateway` port.
 
-**Push dentro y fuera de la app**
+**Push inside and outside the app**
 
-SSE y Socket.IO entregan mientras la app o la pestaña están abiertas: ese es el push dentro de la app. Con la app o el navegador cerrados, el sistema operativo solo despierta la app con su servicio de push nativo. `notifications` elige el canal según la presencia que el gateway registra en Valkey:
+SSE and Socket.IO deliver while the app or the tab is open: that is in-app push. With the app or the browser closed, the operating system only wakes the app with its native push service. `notifications` picks the channel according to the presence that the gateway records in Valkey:
 
-| Estado del usuario    | Canal                               |
-| --------------------- | ----------------------------------- |
-| App o pestaña abierta | SSE o Socket.IO                     |
-| Web cerrada           | Push web vía FCM con Service Worker |
-| App móvil cerrada     | APNs (iOS) o FCM (Android)          |
+| User state        | Channel                                    |
+| ----------------- | ------------------------------------------ |
+| App or tab open   | SSE or Socket.IO                           |
+| Web closed        | Web push through FCM with a Service Worker |
+| Mobile app closed | APNs (iOS) or FCM (Android)                |
 
-Las alertas de seguridad salen por todos los canales a la vez. Cada notificación queda en la bandeja persistente con estado leída o no leída, y aplican las preferencias por tipo y canal y el horario de silencio.
+Security alerts go out on every channel at once. Each notification stays in the persistent inbox with a read or unread status, and the per-type and per-channel preferences and quiet hours apply.
 
-## Planes, medición y facturación
+## Plans, metering and billing
 
-El servicio `billing` calcula qué debe pagar cada tenant y lleva el estado de cada factura. El cobro es un proceso aparte que se conecta por un puerto y mueve esos estados.
+The `billing` service computes what each tenant must pay and tracks the status of each invoice. Collection is a separate process that connects through a port and moves those statuses.
 
-| Componente    | Qué hace                                                                                                                                                 |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Planes        | Catálogo versionado con precio, periodicidad, features incluidas (`Feature`) y límites (`Quota`)                                                         |
-| Suscripciones | Tenant, plan, periodo vigente y estado (`Trialing`, `Active`, `PastDue`, `Suspended`, `Canceled`)                                                        |
-| Medición      | Los servicios publican `BillingEvent.UsageRecorded` con métrica, cantidad y llave de idempotencia; `billing` agrega por tenant y periodo                 |
-| Entitlements  | `@Endpoint({ entitlement: Feature.Webhooks })` y verificación de cuotas con caché en Valkey; al superar el límite responde `BILLING.QUOTA.EXCEEDED`      |
-| Facturas      | Un job cierra cada periodo y genera la factura (`Draft`, `Issued`, `Paid`, `Failed`, `Void`) con sus líneas de cargo fijo y uso                          |
-| Cobro         | Puerto `PaymentProvider` y operaciones internas `BillingOperation.MarkInvoicePaid` y `MarkInvoiceFailed`, para que el proceso externo informe resultados |
+| Component     | What it does                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plans         | Versioned catalog with price, billing period, included features (`Feature`) and limits (`Quota`)                                                        |
+| Subscriptions | Tenant, plan, current period and status (`Trialing`, `Active`, `PastDue`, `Suspended`, `Canceled`)                                                      |
+| Metering      | Services publish `BillingEvent.UsageRecorded` with metric, quantity and idempotency key; `billing` aggregates per tenant and period                     |
+| Entitlements  | `@Endpoint({ entitlement: Feature.Webhooks })` and quota checks with a cache in Valkey; when the limit is exceeded it responds `BILLING.QUOTA.EXCEEDED` |
+| Invoices      | A job closes each period and generates the invoice (`Draft`, `Issued`, `Paid`, `Failed`, `Void`) with its fixed charge and usage lines                  |
+| Collection    | `PaymentProvider` port and internal operations `BillingOperation.MarkInvoicePaid` and `MarkInvoiceFailed`, so the external process reports results      |
 
-- Dinero en enteros de la unidad mínima con su moneda.
-- Ciclo de morosidad: `Failed` lleva la suscripción a `PastDue`; tras el periodo de gracia, a `Suspended`, que publica un evento e `identity` suspende el tenant.
-- Cambios de plan con prorrateo y un evento que actualiza los entitlements al instante.
-- Las facturas de `billing` son documentos internos de cobro. La factura electrónica ante la DIAN se emite en la integración con el proveedor de cobro y facturación.
+- Money as integers of the smallest unit with its currency.
+- Delinquency cycle: `Failed` takes the subscription to `PastDue`; after the grace period, to `Suspended`, which publishes an event and `identity` suspends the tenant.
+- Plan changes with proration and an event that updates the entitlements instantly.
+- `billing` invoices are internal collection documents. The electronic invoice before the DIAN is issued in the integration with the collection and invoicing provider.
 
-## Infraestructura AWS y CI/CD
+## AWS infrastructure and CI/CD
 
-La infraestructura vive en `backend/infra/terraform` y se organiza en módulos reutilizables, stacks con estado propio y valores por ambiente ([ADR 0020](adr/0020-terraform-por-stacks-y-runtime-por-servicio.md)). El detalle de variables, salidas y comandos está en el [README de Terraform](../backend/infra/terraform/README.md).
+The infrastructure lives in `backend/infra/terraform` and is organized in reusable modules, stacks with their own state and per-environment values ([ADR 0020](adr/0020-terraform-por-stacks-y-runtime-por-servicio.md)). The details of variables, outputs and commands are in the [Terraform README](../backend/infra/terraform/README.md).
 
-| Stack                        | Recursos                                                                                                                                                                                                 |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `network`                    | VPC con subredes públicas, privadas y de datos, NAT según `egress`, endpoints de VPC y flow logs                                                                                                         |
-| `platform`                   | Tópico de alarmas y presupuesto; clúster ECS; OpenObserve; API Gateway HTTP con su autorizador de origen; ALB interno de APIs en Fargate y VPC link; ALB público de tiempo real; bucket de archivos; SES |
-| `data`                       | RDS PostgreSQL con RDS Proxy y réplicas, una base por shard de cada servicio y el catálogo; Valkey; security group de clientes                                                                           |
-| `messaging`                  | Tópicos, colas y DLQ leídos de `topology.json`, y la cola de eventos de SES                                                                                                                              |
-| `edge`                       | CloudFront con WAF para la web Flutter y la API, y los registros DNS                                                                                                                                     |
-| `service` (uno por servicio) | API (Lambda o Fargate) y sus rutas, tiempo real, workers Fargate, consumidores Lambda, IAM derivado de la topología, logs y alarmas                                                                      |
+| Stack                       | Resources                                                                                                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `network`                   | VPC with public, private and data subnets, NAT according to `egress`, VPC endpoints and flow logs                                                                                 |
+| `platform`                  | Alarm topic and budget; ECS cluster; OpenObserve; HTTP API Gateway with its origin authorizer; internal ALB for Fargate APIs and VPC link; public real-time ALB; file bucket; SES |
+| `data`                      | RDS PostgreSQL with RDS Proxy and replicas, one database per shard of each service and the catalog; Valkey; client security group                                                 |
+| `messaging`                 | Topics, queues and DLQs read from `topology.json`, and the SES events queue                                                                                                       |
+| `edge`                      | CloudFront with WAF for the Flutter web app and the API, and the DNS records                                                                                                      |
+| `service` (one per service) | API (Lambda or Fargate) and its routes, real time, Fargate workers, Lambda consumers, IAM derived from the topology, logs and alarms                                              |
 
-**Stacks y ambientes**
+**Stacks and environments**
 
-- Cada stack tiene su `config.tf` con backend S3 vacío, su `remote_state.tf` para leer a los anteriores y el mismo `variables_common.tf`. Los valores viven en `environments/<ambiente>/<stack>/{backend.tfvars,terraform.tfvars}`; un servicio, en `environments/<ambiente>/services/<servicio>/`.
-- El orden de despliegue es network, platform, data, messaging, edge y luego cada servicio. Desplegar un servicio no planea ni aplica la red, la base ni la plataforma.
-- Ambientes `local` (LocalStack), `dev`, `staging` y `prod`. La clave de cada estado es `<región>/<stack>/terraform.tfstate`: otra región es otro juego de estados con el mismo código.
-- `backend/infra/scripts/deploy-aws.sh` corre plan, apply o destroy por stack o por servicio; `local.sh` levanta Docker y aplica el ambiente local.
-- Terraform `>= 1.11` y provider de AWS `>= 6.0, < 7.0`. CI usa la versión de `.terraform-version` y tflint la de `.tflint-version`.
+- Each stack has its `config.tf` with an empty S3 backend, its `remote_state.tf` to read the previous ones and the same `variables_common.tf`. The values live in `environments/<environment>/<stack>/{backend.tfvars,terraform.tfvars}`; a service's, in `environments/<environment>/services/<service>/`.
+- The deployment order is network, platform, data, messaging, edge and then each service. Deploying a service neither plans nor applies the network, the database or the platform.
+- Environments `local` (LocalStack), `dev`, `staging` and `prod`. The key of each state is `<region>/<stack>/terraform.tfstate`: another region is another set of states with the same code.
+- `backend/infra/scripts/deploy-aws.sh` runs plan, apply or destroy per stack or per service; `local.sh` starts Docker and applies the local environment.
+- Terraform `>= 1.11` and AWS provider `>= 6.0, < 7.0`. CI uses the version in `.terraform-version` and tflint the one in `.tflint-version`.
 
-**Runtime por servicio**
+**Runtime per service**
 
-- La API de cada servicio elige `runtime = "lambda"` (API Gateway HTTP) o `"fargate"` (ALB interno detrás del VPC link). En los dos casos entra por la misma API HTTP, detrás de CloudFront y su WAF, y un autorizador exige el encabezado `X-Origin-Verify` que solo CloudFront conoce. Cambiar de runtime es cambiar ese campo y el artefacto.
-- El tiempo real (Socket.IO y SSE) corre siempre en Fargate detrás del ALB público, porque API Gateway HTTP corta a los 30 segundos.
-- Los permisos de mensajería salen de `producers` y `consumer` de la topología exportada: el `tfvars` del servicio no repite tópicos ni colas.
+- Each service's API picks `runtime = "lambda"` (HTTP API Gateway) or `"fargate"` (internal ALB behind the VPC link). In both cases it comes in through the same HTTP API, behind CloudFront and its WAF, and an authorizer requires the `X-Origin-Verify` header that only CloudFront knows. Changing runtime means changing that field and the artifact.
+- Real time (Socket.IO and SSE) always runs on Fargate behind the public ALB, because HTTP API Gateway cuts off at 30 seconds.
+- Messaging permissions come from `producers` and `consumer` in the exported topology: the service's `tfvars` does not repeat topics or queues.
 
-**Red y salida a Internet**
+**Network and Internet egress**
 
-La variable `egress` del stack `network` decide la salida de las subredes privadas ([ADR 0016](adr/0016-egress-de-red.md)): `none`, `single_nat` (dev) o `per_az_nat` (staging y prod). Las subredes de datos (RDS, RDS Proxy, Valkey) no tienen ruta a Internet y llegan a AWS solo por endpoints de VPC. Los servicios salen solo por HTTPS; el security group de clientes del stack `data` abre la salida exacta hacia RDS Proxy, las réplicas, Valkey y OpenObserve.
+The `egress` variable of the `network` stack decides the egress of the private subnets ([ADR 0016](adr/0016-egress-de-red.md)): `none`, `single_nat` (dev) or `per_az_nat` (staging and prod). The data subnets (RDS, RDS Proxy, Valkey) have no route to the Internet and reach AWS only through VPC endpoints. Services go out only over HTTPS; the client security group of the `data` stack opens the exact egress to RDS Proxy, the replicas, Valkey and OpenObserve.
 
-**Datos**
+**Data**
 
-- Una instancia RDS por región con una base por shard lógico de cada servicio (`<servicio>_shard_<n>`) y la base `catalog` ([ADR 0010](adr/0010-sharding-logico-residencia-region.md)), igual que `backend/infra/local/postgres/init.sql`. Una Lambda de bootstrap dentro de la VPC crea roles, bases con su dueño y la extensión `vector`; nunca borra.
-- Las apps nunca usan el usuario maestro. Cada servicio tiene su rol, dueño de sus shards, y un secreto con rotación. El catálogo pertenece a `catalog_owner`; los servicios con `catalog = "owner"` lo migran y los de `"read"` lo consultan por `catalog_reader`.
-- Cada servicio recibe `DB_DATABASES` con el mapa de sus bases, escribe por `DB_PROXY_HOST` (RDS Proxy) y lee de `DB_READER_HOSTS`, directo a las réplicas: fuera de Aurora, RDS Proxy solo admite la instancia escritora.
-- El grupo de parámetros activa `rds.logical_replication`, que habilita los traslados de shard sin corte.
-- Valkey autentica por IAM con un usuario por servicio limitado a `~<servicio>:*`; la caché antepone el nombre del servicio a sus llaves. Con F4, la ACL suma el espacio compartido `auth:*`: identity lo escribe y los demás servicios lo leen (ADR 0022).
-- Los logs de PostgreSQL y de las Lambdas de administración tienen retención y CMK.
+- One RDS instance per region with one database per logical shard of each service (`<service>_shard_<n>`) and the `catalog` database ([ADR 0010](adr/0010-sharding-logico-residencia-region.md)), the same as `backend/infra/local/postgres/init.sql`. A bootstrap Lambda inside the VPC creates roles, databases with their owner and the `vector` extension; it never deletes.
+- Apps never use the master user. Each service has its role, owner of its shards, and a secret with rotation. The catalog belongs to `catalog_owner`; services with `catalog = "owner"` migrate it and those with `"read"` query it through `catalog_reader`.
+- Each service receives `DB_DATABASES` with the map of its databases, writes through `DB_PROXY_HOST` (RDS Proxy) and reads from `DB_READER_HOSTS`, directly to the replicas: outside Aurora, RDS Proxy only supports the writer instance.
+- The parameter group turns on `rds.logical_replication`, which enables zero-downtime shard moves.
+- Valkey authenticates through IAM with one user per service limited to `~<service>:*`; the cache prefixes its keys with the service name. With F4, the ACL adds the shared `auth:*` space: identity writes it and the other services read it (ADR 0022).
+- The logs of PostgreSQL and of the administration Lambdas have retention and a CMK.
 
-**Costos y alarmas**
+**Costs and alarms**
 
-El stack `platform` crea el tópico de alarmas (obligatorio en staging y prod) y un presupuesto mensual con AWS Budgets (`monthly_budget`) que avisa al 80 % y al 100 % real y al 100 % pronosticado. `alarm_email` rechaza valores de ejemplo en staging y prod.
+The `platform` stack creates the alarm topic (mandatory in staging and prod) and a monthly budget with AWS Budgets (`monthly_budget`) that alerts at 80 % and 100 % actual and at 100 % forecast. `alarm_email` rejects example values in staging and prod.
 
-**Validación en CI**
+**Validation in CI**
 
-El job `terraform` de `ci.yml` corre cuando cambia `backend/infra/**`: `terraform fmt -check -recursive`, `backend/infra/scripts/tf-validate.mjs` (init sin backend, `validate` y `terraform test` con proveedores simulados en cada stack y ejemplo), las pruebas en Python de la Lambda de bootstrap y del script de LocalStack, `shellcheck` y `tflint` con el ruleset de AWS. `security.yml` revisa la configuración con Trivy y las dependencias de la Lambda con OSV-Scanner (ver [Calidad y seguridad](#calidad-y-seguridad)).
+The `terraform` job in `ci.yml` runs when `backend/infra/**` changes: `terraform fmt -check -recursive`, `backend/infra/scripts/tf-validate.mjs` (init without backend, `validate` and `terraform test` with mocked providers in each stack and example), the Python tests of the bootstrap Lambda and of the LocalStack script, `shellcheck` and `tflint` with the AWS ruleset. `security.yml` checks the configuration with Trivy and the Lambda's dependencies with OSV-Scanner (see [Quality and security](#quality-and-security)).
 
-**Pipeline de despliegue**
+**Deployment pipeline**
 
-El pipeline de despliegue corre en GitHub Actions con OIDC hacia AWS, sobre `deploy-aws.sh`. Se construye en F12 ([plan](plan/README.md#phases)):
+The deployment pipeline runs on GitHub Actions with OIDC to AWS, on top of `deploy-aws.sh`. It is built in F12 ([plan](plan/README.md#phases)):
 
-1. `terraform plan` de los stacks y servicios afectados como comentario en el PR.
-2. Al hacer merge, migraciones de cada servicio afectado en todos sus shards, como tarea única en Fargate.
-3. `terraform apply` del stack del servicio con su imagen o su bundle (`TF_VAR_image`, `TF_VAR_lambda_package`).
-4. Smoke tests contra el entorno y promoción de `staging` a `prod` con aprobación manual.
+1. `terraform plan` of the affected stacks and services as a comment on the PR.
+2. On merge, migrations of each affected service on all its shards, as a one-off Fargate task.
+3. `terraform apply` of the service's stack with its image or its bundle (`TF_VAR_image`, `TF_VAR_lambda_package`).
+4. Smoke tests against the environment and promotion from `staging` to `prod` with manual approval.
 
-**Desarrollo local**
+**Local development**
 
-`backend/docker-compose.yml` levanta PostgreSQL con pgvector (bases `catalog`, `identity_shard_0`, `identity_shard_1` y `tasks_shard_0`), Valkey con sus módulos (Bloom), LocalStack, Mailpit, OpenObserve y un OpenTelemetry Collector con tail sampling. Las imágenes van fijadas por digest y los puertos solo se publican en `127.0.0.1`. Al arrancar, LocalStack crea las colas, DLQ, tópicos y suscripciones de `topology.json` con el prefijo `local`. La guía está en [Desarrollo local](local-development.md).
+`backend/docker-compose.yml` starts PostgreSQL with pgvector (databases `catalog`, `identity_shard_0`, `identity_shard_1` and `tasks_shard_0`), Valkey with its modules (Bloom), LocalStack, Mailpit, OpenObserve and an OpenTelemetry Collector with tail sampling. Images are pinned by digest and ports are only published on `127.0.0.1`. At startup, LocalStack creates the queues, DLQs, topics and subscriptions from `topology.json` with the `local` prefix. The guide is in [Local development](local-development.md).
 
-Con los adaptadores de cada capacidad, el siguiente paso son dos modos de ejecución:
+With the adapters for each capability, the next step is two execution modes:
 
-| Modo         | Adaptadores                                                  | Para qué                                         |
-| ------------ | ------------------------------------------------------------ | ------------------------------------------------ |
-| `local`      | En memoria, Postgres, Valkey y Mailpit                       | Desarrollo diario rápido, sin AWS                |
-| `localstack` | Adaptadores AWS contra LocalStack, el simulador local de AWS | Probar la integración con AWS antes de desplegar |
+| Mode         | Adapters                                                 | What for                                     |
+| ------------ | -------------------------------------------------------- | -------------------------------------------- |
+| `local`      | In memory, Postgres, Valkey and Mailpit                  | Fast everyday development, without AWS       |
+| `localstack` | AWS adapters against LocalStack, the local AWS simulator | Testing the AWS integration before deploying |
 
-El ambiente `local` de Terraform aplica `platform` (archivos, correo y alarmas, sin cómputo) y `messaging` contra LocalStack con el prefijo `node-template-local`, para probar el Terraform antes de AWS.
+The `local` Terraform environment applies `platform` (files, email and alarms, without compute) and `messaging` against LocalStack with the `node-template-local` prefix, to test the Terraform before AWS.
 
-## Calidad y seguridad
+## Quality and security
 
-Las decisiones de CI, seguridad y versiones de herramientas están en el [ADR 0019](adr/0019-ci-y-toolchain.md). Los workflows son `.github/workflows/ci.yml` y `.github/workflows/security.yml`.
+The CI, security and tool version decisions are in [ADR 0019](adr/0019-ci-y-toolchain.md). The workflows are `.github/workflows/ci.yml` and `.github/workflows/security.yml`.
 
 **CI (`ci.yml`)**
 
-Corre en cada PR y en cada push a `main`. Un job `changes` (`dorny/paths-filter`) decide qué jobs condicionales corren. Cada job tiene `timeout-minutes` y permisos mínimos.
+It runs on every PR and every push to `main`. A `changes` job (`dorny/paths-filter`) decides which conditional jobs run. Each job has `timeout-minutes` and minimal permissions.
 
-| Job            | Corre cuando cambia                                                 | Qué hace                                                                                                                                                                                                             |
-| -------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nx`           | siempre                                                             | `pnpm install --frozen-lockfile` (y falla si queda un `node_modules` fuera de la raíz), `flutter pub get` en `front/`, `pnpm nx affected -t lint test typecheck build analyze format-check` y `pnpm nx format:check` |
-| `contracts`    | `backend/libs/contracts`, `front/packages/contracts`, `front/tools` | `pnpm nx run contracts-export:check` y `dart run contracts_gen --check`                                                                                                                                              |
-| `web-deferred` | `front/**`                                                          | `flutter build web --release --source-maps` y `front/tools/check_deferred_chunks.dart`                                                                                                                               |
-| `terraform`    | `backend/infra/**`                                                  | `terraform fmt`, `tf-validate.mjs` (`init -backend=false`, `validate` y `terraform test` de cada stack y ejemplo), pruebas en Python, `shellcheck` y `tflint`                                                        |
-| `ci-ok`        | siempre                                                             | Agrega el resultado de todos los jobs                                                                                                                                                                                |
+| Job            | Runs when this changes                                              | What it does                                                                                                                                                                                                              |
+| -------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nx`           | always                                                              | `pnpm install --frozen-lockfile` (and fails if a `node_modules` is left outside the root), `flutter pub get` in `front/`, `pnpm nx affected -t lint test typecheck build analyze format-check` and `pnpm nx format:check` |
+| `contracts`    | `backend/libs/contracts`, `front/packages/contracts`, `front/tools` | `pnpm nx run contracts-export:check` and `dart run contracts_gen --check`                                                                                                                                                 |
+| `web-deferred` | `front/**`                                                          | `flutter build web --release --source-maps` and `front/tools/check_deferred_chunks.dart`                                                                                                                                  |
+| `terraform`    | `backend/infra/**`                                                  | `terraform fmt`, `tf-validate.mjs` (`init -backend=false`, `validate` and `terraform test` of each stack and example), Python tests, `shellcheck` and `tflint`                                                            |
+| `ci-ok`        | always                                                              | Aggregates the result of every job                                                                                                                                                                                        |
 
-Un cambio en `ci.yml` activa todos los filtros. `ci-ok` falla si algún job terminó en `failure` o `cancelled`; un job omitido por el filtro cuenta como válido. `ci-ok` es el único check requerido para `main`, así los jobs condicionales no bloquean los PR que no los tocan.
+A change in `ci.yml` turns on every filter. `ci-ok` fails if any job ended in `failure` or `cancelled`; a job skipped by the filter counts as valid. `ci-ok` is the only required check for `main`, so conditional jobs do not block PRs that do not touch them.
 
-El job `nx` guarda la caché de `.nx/cache` y usa `nrwl/nx-set-shas` para calcular lo afectado contra `main`.
+The `nx` job keeps the `.nx/cache` cache and uses `nrwl/nx-set-shas` to compute what is affected against `main`.
 
-**Seguridad (`security.yml`)**
+**Security (`security.yml`)**
 
-Corre en cada PR, en cada push a `main` y los lunes a las 06:00 UTC:
+It runs on every PR, every push to `main` and on Mondays at 06:00 UTC:
 
-- **gitleaks** 8.30.1, instalado desde la release con verificación SHA-256, sobre todo el historial.
-- **dependency-review-action** en los PR, con severidad alta o crítica.
-- **OSV-Scanner** sobre `pnpm-lock.yaml` y `front/pubspec.lock`.
-- **Trivy** en modo configuración sobre `backend/infra/terraform`, con severidad `HIGH` y `CRITICAL`.
-- **CodeQL** para `javascript-typescript`.
+- **gitleaks** 8.30.1, installed from the release with SHA-256 verification, over the whole history.
+- **dependency-review-action** on PRs, with high or critical severity.
+- **OSV-Scanner** over `pnpm-lock.yaml` and `front/pubspec.lock`.
+- **Trivy** in configuration mode over `backend/infra/terraform`, with `HIGH` and `CRITICAL` severity.
+- **CodeQL** for `javascript-typescript`.
 
-**Versiones fijadas**
+**Pinned versions**
 
-- Node: `.nvmrc` en la raíz (24). pnpm: campo `packageManager` del `package.json` de la raíz.
-- Dependencias de npm: versión exacta en `package.json` (Nx y herramientas de git) y `backend/package.json` (todo el backend). `pnpm-workspace.yaml` usa `nodeLinker: hoisted`, así que hay un solo `node_modules`, en la raíz.
-- Flutter: `front/.flutter-version`. CI la lee y la pasa a `subosito/flutter-action`.
+- Node: `.nvmrc` at the root (24). pnpm: the `packageManager` field of the root `package.json`.
+- npm dependencies: exact version in `package.json` (Nx and git tooling) and `backend/package.json` (the whole backend). `pnpm-workspace.yaml` uses `nodeLinker: hoisted`, so there is a single `node_modules`, at the root.
+- Flutter: `front/.flutter-version`. CI reads it and passes it to `subosito/flutter-action`.
 - Terraform: `backend/infra/terraform/.terraform-version`.
-- Toda acción de terceros se referencia por el SHA completo del commit, con la versión en un comentario. Renovate (`renovate.json`, con `helpers:pinGitHubActionDigests`) mantiene los SHA, las dependencias y las versiones de Node, Flutter y Terraform.
+- Every third-party action is referenced by the full commit SHA, with the version in a comment. Renovate (`renovate.json`, with `helpers:pinGitHubActionDigests`) keeps the SHAs, the dependencies and the Node, Flutter and Terraform versions up to date.
 
-**Hooks de git**
+**Git hooks**
 
-- `commit-msg`: commitlint con `@commitlint/config-conventional`.
-- `pre-commit`: lint-staged. Prettier formatea JS, TS, JSON, Markdown y YAML; ESLint corrige el TypeScript de `backend/` (también rechaza una prueba fuera de `__tests__/` y cualquier archivo en `src/lib/`); `dart format` formatea el Dart de `front/`.
+- `commit-msg`: commitlint with `@commitlint/config-conventional`.
+- `pre-commit`: lint-staged. Prettier formats JS, TS, JSON, Markdown and YAML; ESLint fixes the TypeScript in `backend/` (it also rejects a test outside `__tests__/` and any file in `src/lib/`); `dart format` formats the Dart in `front/`.
 
-**Estándares de código**
+**Code standards**
 
-- TypeScript con `strict: true` y ESM con `module: nodenext` (`backend/tsconfig.base.json`). Las importaciones relativas terminan en `.js`.
-- ESLint con flat config (`backend/eslint.config.mjs`) y la regla `@nx/enforce-module-boundaries`.
-- Prettier con la configuración de `.prettierrc` en la raíz. El Dart se formatea con `dart format` y se analiza con `flutter analyze`.
+- TypeScript with `strict: true` and ESM with `module: nodenext` (`backend/tsconfig.base.json`). Relative imports end in `.js`.
+- ESLint with flat config (`backend/eslint.config.mjs`) and the `@nx/enforce-module-boundaries` rule.
+- Prettier with the configuration in `.prettierrc` at the root. Dart is formatted with `dart format` and analyzed with `flutter analyze`.
 
-**Pruebas**
+**Tests**
 
-- Cada librería del backend tiene su `jest.config.cjs` con `@swc/jest`. El preset (`backend/jest.preset.js`) solo busca pruebas en `src/**/__tests__/` (`*.spec.ts` y `*.int-spec.ts`) y fija la cobertura mínima. El chequeo de tipos corre aparte, en el target `typecheck`.
-- Cada miembro del pub workspace con carpeta `test/` tiene el target `test` (`flutter test`).
-- Las pruebas de `@platform/saga` simulan la caída del proceso justo después de registrar un paso (`CrashingSagaStore.crashAfterDispatch`, en `__tests__/utils`) y verifican que la saga retomada repita la llamada con la misma llave y produzca un solo efecto.
-- Las pruebas de integración (`*.int-spec.ts`) corren contra Postgres y Valkey reales con Testcontainers.
+- Each backend library has its `jest.config.cjs` with `@swc/jest`. The preset (`backend/jest.preset.js`) only looks for tests in `src/**/__tests__/` (`*.spec.ts` and `*.int-spec.ts`) and sets the minimum coverage. Type checking runs separately, in the `typecheck` target.
+- Each pub workspace member with a `test/` folder has the `test` target (`flutter test`).
+- The `@platform/saga` tests simulate the process crashing right after recording a step (`CrashingSagaStore.crashAfterDispatch`, in `__tests__/utils`) and verify that the resumed saga repeats the call with the same key and produces a single effect.
+- Integration tests (`*.int-spec.ts`) run against real Postgres and Valkey with Testcontainers.
 
-- Cada servicio trae sus pruebas e2e en `backend/apps/<servicio>/e2e`, contra la app completa con PostgreSQL y Valkey reales y una matriz de acceso por ruta.
-- `backend/e2e/platform-flow` (`pnpm nx run platform-flow:e2e`) arranca los cinco servicios en un proceso, unidos por un bus en memoria, y recorre el alta de un tenant, tareas, avisos, reportes, factura y traslado del tenant, sin simular ningún paso de la plataforma ([ADR 0035](adr/0035-flujo-de-punta-a-punta-de-la-plataforma.md)).
+- Each service brings its e2e tests in `backend/apps/<service>/e2e`, against the complete app with real PostgreSQL and Valkey and a per-route access matrix.
+- `backend/e2e/platform-flow` (`pnpm nx run platform-flow:e2e`) starts the five services in one process, joined by an in-memory bus, and walks through tenant onboarding, tasks, notices, reports, invoice and tenant move, without simulating any platform step ([ADR 0035](adr/0035-flujo-de-punta-a-punta-de-la-plataforma.md)).
 
-Las pruebas de carga con k6 contra staging quedan para después de F12.
+Load tests with k6 against staging are left for after F12.
 
-**Herramientas de IA en el repositorio** (`.claude/`)
+**AI tools in the repository** (`.claude/`)
 
-- Skills de backend (`backend-*`) y de front (`front-*`) con las reglas vigentes de código, estructura, pruebas, persistencia con TypeORM, seguridad y accesibilidad. Cada una declara `paths` y se carga sola al tocar su carpeta; las puertas de entrada son `backend-codigo-enterprise` y `front-codigo`.
-- `backend-estructura` y `front-estructura` traen un script `check-structure.mjs` que revisa sus reglas sobre los archivos cambiados (`--changed`) o sobre todo el árbol (`--all`).
-- Hooks: `guard-paths.mjs` rechaza antes de escribir una ruta prohibida (`src/lib/`, una prueba fuera de `__tests__/`, un `package.json` de librería, un `.env`); `format-file.mjs` formatea después de escribir; `verify-on-stop.mjs` corre los scripts de estructura antes de que un agente termine.
-- Agentes de tropa: `backend-guia` y `front-guia` planean y revisan, y `backend-implementador` y `front-implementador` escriben un paquete de trabajo ya planeado.
+- Backend (`backend-*`) and front (`front-*`) skills with the current rules for code, structure, tests, persistence with TypeORM, security and accessibility. Each one declares `paths` and loads on its own when its folder is touched; the entry points are `backend-codigo-enterprise` and `front-codigo`.
+- `backend-estructura` and `front-estructura` come with a `check-structure.mjs` script that checks their rules over the changed files (`--changed`) or over the whole tree (`--all`).
+- Hooks: `guard-paths.mjs` rejects a forbidden path before writing (`src/lib/`, a test outside `__tests__/`, a library `package.json`, a `.env`); `format-file.mjs` formats after writing; `verify-on-stop.mjs` runs the structure scripts before an agent finishes.
+- Squad agents: `backend-guia` and `front-guia` plan and review, and `backend-implementador` and `front-implementador` write an already planned work package.
 
-**Documentación del repositorio**: README, el [plan](plan/README.md), ADRs para cada decisión de arquitectura, diseños por fase en [`docs/design/`](design/), auditorías de calidad en [`docs/audits/`](audits/), [guía de contribución](../CONTRIBUTING.md) y [desarrollo local](local-development.md).
+**Repository documentation**: README, the [plan](plan/README.md), ADRs for each architecture decision, per-phase designs in [`docs/design/`](design/), quality audits in [`docs/audits/`](audits/), [contribution guide](../CONTRIBUTING.md) and [local development](local-development.md).
 
-## Mapa de la plataforma
+## Platform map
 
-Los diagramas resumen lo construido. El detalle de cada pieza está en su sección y en su ADR.
+The diagrams summarize what has been built. The details of each piece are in its section and in its ADR.
 
-**Servicios y cómo se hablan**
+**Services and how they talk**
 
 ```mermaid
 flowchart LR
   subgraph Front["Front (Flutter)"]
-    WEB["Shell web"]
-    MOB["Shell móvil"]
+    WEB["Web shell"]
+    MOB["Mobile shell"]
   end
-  subgraph Servicios["Servicios (un stack por región)"]
+  subgraph Services["Services (one stack per region)"]
     ID["identity"]
     TK["tasks"]
     NT["notifications"]
@@ -1483,28 +1483,28 @@ flowchart LR
     BL["billing"]
     RT["realtime"]
   end
-  subgraph Datos["Por servicio"]
-    PG[("PostgreSQL: catálogo y shards")]
+  subgraph Data["Per service"]
+    PG[("PostgreSQL: catalog and shards")]
     VK[("Valkey")]
   end
-  BUS{{"SNS y SQS"}}
-  WEB -- "HTTP con ApiClient" --> ID & TK & NT & RP & BL
-  MOB -- "HTTP con ApiClient" --> ID & TK & NT
+  BUS{{"SNS and SQS"}}
+  WEB -- "HTTP with ApiClient" --> ID & TK & NT & RP & BL
+  MOB -- "HTTP with ApiClient" --> ID & TK & NT
   WEB -- "SSE" --> NT
-  NT -- "stream por usuario" --> RT
-  ID -- "API interna firmada" --> BL & NT & TK & RP
-  TK & BL & ID -- "eventos" --> BUS
-  BUS -- "colas" --> NT & RP & BL & ID
-  RP -- "comando de ejecución" --> BUS
+  NT -- "per-user stream" --> RT
+  ID -- "signed internal API" --> BL & NT & TK & RP
+  TK & BL & ID -- "events" --> BUS
+  BUS -- "queues" --> NT & RP & BL & ID
+  RP -- "run command" --> BUS
   ID & TK & NT & RP & BL --> PG
   ID & TK & NT & RP & BL --> VK
 ```
 
-**Librerías de plataforma**
+**Platform libraries**
 
 ```mermaid
 flowchart BT
-  kernel["kernel: puertos, reloj, ids, errores"]
+  kernel["kernel: ports, clock, ids, errors"]
   primitives["primitives"] --> kernel
   sharding["sharding"] --> kernel
   persistence["persistence"] --> sharding
@@ -1524,72 +1524,72 @@ flowchart BT
   adapters["adapters: postgres, valkey, aws"] --> persistence
   adapters --> messaging
   adapters --> saga
-  service["service: runtime de cada servicio"] --> adapters
+  service["service: runtime of each service"] --> adapters
   service --> http
   service --> saga
   tenantmove["tenant-move"] --> service
 ```
 
-**Una petición**
+**A request**
 
 ```mermaid
 sequenceDiagram
   participant C as Front
   participant H as "@platform/http"
-  participant U as Caso de uso
+  participant U as Use case
   participant S as ShardRouter
-  participant DB as Shard del tenant
+  participant DB as Tenant shard
   participant O as Outbox
-  C->>H: petición con token (validada contra el contrato en el cliente)
-  H->>H: autentica, autoriza, valida con zod y fija tenant y traceId
-  H->>U: comando
-  U->>S: conexión con la llave del contexto
-  S-->>U: shard (o 421 WRONG_REGION con la URL de la región)
-  U->>DB: escrituras y evento en la misma transacción
-  DB->>O: evento pendiente
-  U-->>C: respuesta o Problem Details
-  O-->>O: el relay publica después del commit
+  C->>H: request with token (validated against the contract on the client)
+  H->>H: authenticates, authorizes, validates with zod and sets tenant and traceId
+  H->>U: command
+  U->>S: connection with the context key
+  S-->>U: shard (or 421 WRONG_REGION with the region URL)
+  U->>DB: writes and event in the same transaction
+  DB->>O: pending event
+  U-->>C: response or Problem Details
+  O-->>O: the relay publishes after the commit
 ```
 
-**Un evento entre servicios**
+**An event between services**
 
 ```mermaid
 sequenceDiagram
   participant T as tasks
-  participant B as SNS y SQS
+  participant B as SNS and SQS
   participant N as notifications
   participant R as realtime
   participant F as Front
-  T->>B: tasks.task.updated.v1 (desde el outbox)
-  B->>N: entrega al menos una vez
-  N->>N: claim en processed_messages del shard del tenant
-  N->>N: crea la notificación y cuenta las no leídas
-  N->>R: tramas en el stream del usuario
-  R-->>F: SSE con id; al reconectar, Last-Event-ID
+  T->>B: tasks.task.updated.v1 (from the outbox)
+  B->>N: at-least-once delivery
+  N->>N: claim in processed_messages on the tenant shard
+  N->>N: creates the notification and counts the unread ones
+  N->>R: frames on the user's stream
+  R-->>F: SSE with id; on reconnect, Last-Event-ID
 ```
 
 **Sagas**
 
 ```mermaid
 flowchart LR
-  subgraph Alta["TenantOnboarding"]
-    A1["crear tenant"] --> A2["abrir cuenta en billing"] --> AP(("pivote")) --> A3["activar tenant"] --> A4["avisar al dueño"]
+  subgraph Onboarding["TenantOnboarding"]
+    A1["create tenant"] --> A2["open billing account"] --> AP(("pivot")) --> A3["activate tenant"] --> A4["notify the owner"]
   end
-  subgraph Baja["DeleteAccount"]
-    D1["suspender usuario"] --> DP(("pivote")) --> D2["borrar en tasks, notifications y reports"] --> D3["borrar en identity"]
+  subgraph Deletion["DeleteAccount"]
+    D1["suspend user"] --> DP(("pivot")) --> D2["delete in tasks, notifications and reports"] --> D3["delete in identity"]
   end
-  subgraph Traslado["MoveTenant"]
-    M1["sync en los cinco"] --> M2["finalize en los cinco"] --> MP(("pivote")) --> M3["switch en los cinco"] --> M4["FinishMove"]
-    M4 -. "pasada la gracia" .-> M5["TenantMoveCleanupJob"]
+  subgraph Move["MoveTenant"]
+    M1["sync in all five"] --> M2["finalize in all five"] --> MP(("pivot")) --> M3["switch in all five"] --> M4["FinishMove"]
+    M4 -. "after the grace period" .-> M5["TenantMoveCleanupJob"]
   end
 ```
 
-Antes del pivote cada paso tiene compensación; después, cada paso es idempotente y se repite hasta completarse ([ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md)).
+Before the pivot each step has a compensation; after it, each step is idempotent and is repeated until it completes ([ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md)).
 
-**Operación**
+**Operation**
 
-Los procedimientos para operar lo construido están en [`docs/runbooks`](runbooks/README.md): salud, jobs, colas y DLQ de cada servicio, traslado de un tenant y rotación de claves y secretos.
+The procedures to operate what has been built are in [`docs/runbooks`](runbooks/README.md): health, jobs, queues and DLQs of each service, moving a tenant, and key and secret rotation.
 
 ## Plan
 
-Las fases F0 a F12, su estado, el orden de ejecución por olas, las decisiones tomadas y las abiertas, y el alcance de las fases posteriores están en [`docs/plan/README.md`](plan/README.md).
+Phases F0 to F12, their status, the execution order by waves, the decisions made and the open ones, and the scope of the later phases are in [`docs/plan/README.md`](plan/README.md).
