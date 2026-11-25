@@ -9,7 +9,10 @@ import { CallOutcome } from '@platform/primitives';
 import { SagaStatus } from '@platform/saga';
 import { SagaEngineKit } from '@platform/saga/test-utils';
 import { regionsConfigSchema, ServiceRegions } from '@platform/service';
-import { TenantMoveTargets } from '@platform/tenant-move';
+import {
+  TenantMoveTargets,
+  tenantMoveConfigSchema,
+} from '@platform/tenant-move';
 import { IdentitySettings } from '../../../../config/identity-settings.js';
 import {
   RecordingParticipants,
@@ -76,6 +79,7 @@ describe('StartTenantMove', () => {
       new IdentitySettings(
         new StaticAppConfig({ IDENTITY_PLATFORM_TENANT_ID: PLATFORM }),
       ),
+      tenantMoveConfigSchema.parse({ TENANT_MOVE_DEADLINE_MS: '3600000' }),
     );
     return { kit, log, participants, start };
   };
@@ -93,6 +97,9 @@ describe('StartTenantMove', () => {
       status: SagaStatus.Completed,
       tenantId: PLATFORM,
     });
+    expect(saga?.deadlineAt?.getTime()).toBe(
+      (saga?.createdAt.getTime() ?? 0) + 3_600_000,
+    );
     expect(log.find(launch.moveId)).toMatchObject({
       tenantId: ACME,
       targetGroup: 'sa-group-1',

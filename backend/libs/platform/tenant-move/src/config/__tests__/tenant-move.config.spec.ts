@@ -7,7 +7,14 @@ describe('tenantMoveConfigSchema', () => {
       TENANT_MOVE_TARGETS: {},
       TENANT_MOVE_STRATEGY: TenantMoveStrategy.Batch,
       TENANT_MOVE_GRACE_DAYS: 7,
+      TENANT_MOVE_DEADLINE_MS: 21_600_000,
     });
+  });
+
+  it('refuses a grace of zero days, which would lower the fence while a stale placement can still write', () => {
+    expect(
+      tenantMoveConfigSchema.safeParse({ TENANT_MOVE_GRACE_DAYS: '0' }).success,
+    ).toBe(false);
   });
 
   it('reads the target groups from JSON', () => {

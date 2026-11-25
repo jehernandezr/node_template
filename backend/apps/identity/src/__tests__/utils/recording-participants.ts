@@ -1,10 +1,10 @@
 import { OperationInvoker } from '@platform/saga';
-import { CallOutcome } from '@platform/primitives';
+import { CallOutcome, isFinalOutcome } from '@platform/primitives';
 
 /**
  * Los servicios que llama una saga, de mentira: cada operación responde éxito salvo que la prueba le guarde
- * otro resultado, y una llamada repetida con la misma llave devuelve la respuesta guardada sin un segundo
- * efecto, como lo hace un participante real con su registro de idempotencia.
+ * otro resultado, y una llamada repetida con la misma llave devuelve la respuesta final guardada sin un segundo
+ * efecto, como lo hace un participante real con su registro de idempotencia, que no guarda un fallo pasajero.
  */
 export class RecordingParticipants extends OperationInvoker {
   private readonly calls: {
@@ -57,7 +57,9 @@ export class RecordingParticipants extends OperationInvoker {
     const outcome =
       this.scripted.get(operationId)?.shift() ?? CallOutcome.success({});
     this.effects.set(operationId, this.effectsOf(operationId) + 1);
-    this.answered.set(idempotencyKey, outcome);
+    if (isFinalOutcome(outcome)) {
+      this.answered.set(idempotencyKey, outcome);
+    }
     return outcome;
   }
 }

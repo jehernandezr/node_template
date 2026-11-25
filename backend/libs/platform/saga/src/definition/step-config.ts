@@ -35,6 +35,16 @@ export class StepConfig<TState, TIn, TOut> {
     return this;
   }
 
+  /**
+   * Motivos de `transient-failure` que dicen que el participante avanzó y pide otra llamada, como una ronda de copia
+   * que no cupo en su plazo. El paso se repite sin gastar las suspensiones, que quedan para los fallos de verdad; antes
+   * del pivote lo acota el plazo de la saga.
+   */
+  progressOn(...reasons: readonly string[]): this {
+    this.draft.progressReasons = reasons;
+    return this;
+  }
+
   /** Agrega el siguiente paso, que llama a la operación de un contrato. */
   step<D extends OperationDefinition>(
     operation: D,

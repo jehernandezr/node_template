@@ -84,6 +84,7 @@ export class SagaFlow<TState> {
         compensationOperationId: afterPivot ? null : compensatedBy,
         afterPivot,
         definition: operation,
+        progressReasons: new Set(draft.progressReasons ?? []),
         input: draft.input ?? (() => undefined),
         onSuccess: draft.onSuccess ?? (() => undefined),
         compensationInput:

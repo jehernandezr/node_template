@@ -7,6 +7,7 @@ import {
   CyclicInputSaga,
   DateStateSaga,
   PivotSaga,
+  ProgressSaga,
   ThreeStepSaga,
   ThrowingInputSaga,
   ThrowingSaga,
@@ -178,6 +179,67 @@ describe('StepExecutor', () => {
       const result = await kit.engineFor('node-b').resume('s1');
 
       expect(result.status).toBe(SagaStatus.RequiresIntervention);
+    });
+  });
+
+  describe('pasos que avanzan por rondas', () => {
+    it('repite una ronda pendiente sin gastar las suspensiones y completa cuando termina', async () => {
+      const { kit, participant } = setup({ maxSuspendAttempts: 2 }, [
+        new ProgressSaga(),
+      ]);
+      participant.script(
+        'b.create.v1',
+        ...Array.from({ length: 5 }, () =>
+          CallOutcome.transientFailure(ProgressSaga.ROUND_PENDING),
+        ),
+      );
+      let result = await kit.sagas.start(ProgressSaga, {}, { sagaId: 's1' });
+
+      for (let round = 0; round < 5; round += 1) {
+        expect(result.status).toBe(SagaStatus.Suspended);
+        expect(result.attempts).toBe(0);
+        kit.clock.advance(2_000);
+        result = await kit.engineFor('node-b').resume('s1');
+      }
+
+      expect(result.status).toBe(SagaStatus.Completed);
+    });
+
+    it('compensa antes del pivote una ronda que no termina dentro del plazo de la saga', async () => {
+      const { kit, participant } = setup({}, [new ProgressSaga()]);
+      participant.script(
+        'b.create.v1',
+        ...Array.from({ length: 5 }, () =>
+          CallOutcome.transientFailure(ProgressSaga.ROUND_PENDING),
+        ),
+      );
+      await kit.sagas.start(
+        ProgressSaga,
+        {},
+        { sagaId: 's1', deadlineMs: 3_000 },
+      );
+
+      kit.clock.advance(2_000);
+      await kit.engineFor('node-b').resume('s1');
+      kit.clock.advance(2_000);
+      const result = await kit.engineFor('node-b').resume('s1');
+
+      expect(result.status).toBe(SagaStatus.Compensated);
+      expect(result.lastErrorCode).toBe(SagaErrorCode.DeadlineExceeded);
+      expect(participant.removes()).toEqual(['b.remove.v1', 'a.remove.v1']);
+    });
+
+    it('sigue contando como suspensión un fallo transitorio de otro motivo en ese paso', async () => {
+      const { kit, participant } = setup({}, [new ProgressSaga()]);
+      participant.script(
+        'b.create.v1',
+        CallOutcome.transientFailure('timeout'),
+      );
+
+      const result = await kit.sagas.start(ProgressSaga, {}, { sagaId: 's1' });
+
+      expect(result.status).toBe(SagaStatus.Suspended);
+      expect(result.attempts).toBe(1);
     });
   });
 

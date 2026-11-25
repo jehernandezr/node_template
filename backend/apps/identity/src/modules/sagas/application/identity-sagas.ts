@@ -23,6 +23,8 @@ export interface IdentitySagaStart<TState> {
   readonly tenantId: string;
   readonly requestedBy: string;
   readonly state: TState;
+  /** Plazo desde el arranque: pasado antes del pivote, la saga compensa. */
+  readonly deadlineMs?: number;
 }
 
 /**
@@ -78,6 +80,9 @@ export class IdentitySagas {
       this.sagas.start(start.definition, start.state, {
         sagaId: start.sagaId,
         idempotencyKey: start.sagaId,
+        ...(start.deadlineMs === undefined
+          ? {}
+          : { deadlineMs: start.deadlineMs }),
         context: { tenantId: start.tenantId, actorId: start.requestedBy },
       }),
     );
