@@ -13,7 +13,6 @@ import {
   InMemoryTenantsFacade,
   PlanEntitlementsProvider,
 } from '../../tenants/__tests__/utils/index.js';
-import { InMemoryUsersFacade } from '../../users/__tests__/utils/index.js';
 import {
   InMemoryTenantAccessRepository,
   InMemoryUserAccessRepository,
@@ -81,7 +80,6 @@ describe('GrantCeiling', () => {
   );
   const members = new ManageMembers(
     tenantAccess,
-    new InMemoryUsersFacade(),
     setup,
     ceiling,
     versions,

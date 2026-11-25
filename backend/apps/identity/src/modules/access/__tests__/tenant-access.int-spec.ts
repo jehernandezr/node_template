@@ -288,6 +288,24 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
     ]);
   });
 
+  it('reads a page of members after a user id, in ascending user id', async () => {
+    const { tenantId, firstOwner, secondOwner } =
+      await organizationWithTwoOwners('paginas');
+    const [lower, higher] = [firstOwner.userId, secondOwner.userId].sort();
+    const page = (after: string | undefined) =>
+      app
+        .get(IdentityShardScopes)
+        .inTenantShard(tenantId, () =>
+          app.get(TenantAccessRepository).listMembershipsAfter(after, 1),
+        );
+
+    const pages = [await page(undefined), await page(lower)];
+
+    expect(
+      pages.map((memberships) => memberships.map(({ userId }) => userId)),
+    ).toEqual([[lower], [higher]]);
+  });
+
   it('keeps one owner when two owners are removed at the same time', async () => {
     const { tenantId, shard, firstOwner, secondOwner } =
       await organizationWithTwoOwners('dos-duenas');

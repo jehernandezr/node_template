@@ -4,16 +4,13 @@ import {
   MembershipChangeKind,
   MembershipChangedEvent,
   TenantRole,
-  type MemberPage,
   type Permission,
 } from '@contracts/identity';
-import { Pagination, type PageQuery } from '@contracts/platform';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
-import { UsersFacade } from '../../users/index.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
 import type { Group } from '../domain/group.js';
 import type { Membership } from '../domain/membership.js';
@@ -23,7 +20,7 @@ import { GrantCeiling } from './grant-ceiling.js';
 import { TenantAccessSetup } from './tenant-access-setup.js';
 
 /**
- * Members of the tenant: list, remove and change their groups. A tenant never ends without an owner, and
+ * Members of the tenant: remove them and change their groups. A tenant never ends without an owner, and
  * the editor neither touches a member with permissions the editor lacks nor grants groups that give more
  * than the editor's own. A removal keeps the last permission version, so a later return starts above it.
  */
@@ -31,7 +28,6 @@ import { TenantAccessSetup } from './tenant-access-setup.js';
 export class ManageMembers {
   constructor(
     private readonly tenantAccess: TenantAccessRepository,
-    private readonly users: UsersFacade,
     private readonly setup: TenantAccessSetup,
     private readonly ceiling: GrantCeiling,
     private readonly versions: AccessVersionPublisher,
@@ -40,47 +36,6 @@ export class ManageMembers {
     private readonly bus: MessageBus,
     private readonly clock: Clock,
   ) {}
-
-  /**
-   * Lists a page of members of the tenant with their profile, ordered by user id. The cursor is the last
-   * user id of the page: ids are UUIDv7 and fit the cursor alphabet.
-   * @param tenantId Tenant.
-   * @param page Page size and the cursor after which the page starts.
-   * @returns The page of members.
-   */
-  async list(tenantId: string, page: PageQuery = {}): Promise<MemberPage> {
-    const limit = page.limit ?? Pagination.defaultLimit;
-    const after = page.after;
-    const remaining = (
-      await this.scopes.inTenantShard(tenantId, () =>
-        this.tenantAccess.listMemberships(),
-      )
-    )
-      .filter((membership) => after === undefined || membership.userId > after)
-      .sort((a, b) => (a.userId < b.userId ? -1 : 1));
-    const memberships = remaining.slice(0, limit);
-    const items = await Promise.all(
-      memberships.map(async (membership) => {
-        const user = await this.users.getByRef({
-          userId: membership.userId,
-          homeTenantId: membership.homeTenantId,
-        });
-        return {
-          userId: membership.userId,
-          email: user.email,
-          displayName: user.displayName,
-          groupIds: [...membership.groupIds],
-          joinedAt: membership.joinedAt.toISOString(),
-        };
-      }),
-    );
-    const last = memberships.at(-1);
-    return {
-      items,
-      nextCursor:
-        remaining.length > limit && last !== undefined ? last.userId : null,
-    };
-  }
 
   /**
    * Removes a member.

@@ -26,6 +26,9 @@ class ReadOnlyTenantAccess extends TenantAccessRepository {
   listRoles(): Promise<readonly Role[]> {
     return Promise.resolve(this.roles);
   }
+  listMembershipsAfter(): never {
+    throw new Error('not used');
+  }
   findMembership(): never {
     throw new Error('not used');
   }

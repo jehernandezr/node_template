@@ -21,6 +21,16 @@ export class InMemoryTenantAccessRepository extends TenantAccessRepository {
     return [...this.memberships.values()];
   }
 
+  async listMembershipsAfter(
+    after: string | undefined,
+    limit: number,
+  ): Promise<readonly Membership[]> {
+    return [...this.memberships.values()]
+      .filter((membership) => after === undefined || membership.userId > after)
+      .sort((a, b) => a.userId.localeCompare(b.userId))
+      .slice(0, limit);
+  }
+
   async insertMembership(membership: Membership): Promise<void> {
     this.tombstones.delete(membership.userId);
     this.memberships.set(membership.userId, membership);

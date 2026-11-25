@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Permission, TenantRole } from '@contracts/identity';
 import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
-import { IsNull, Not } from 'typeorm';
+import { IsNull, MoreThan, Not } from 'typeorm';
 import { TenantAccessRepository } from '../../domain/access-store.js';
 import type { Group } from '../../domain/group.js';
 import type { Membership } from '../../domain/membership.js';
@@ -47,6 +47,25 @@ export class TypeOrmTenantAccessRepository
       manager.find(TenantMemberEntity, {
         where: { tenantId },
         order: { joinedAt: 'ASC' },
+      }),
+    );
+    return rows.map((row) => this.membershipOf(row));
+  }
+
+  /** {@inheritDoc TenantAccessRepository.listMembershipsAfter} */
+  async listMembershipsAfter(
+    after: string | undefined,
+    limit: number,
+  ): Promise<readonly Membership[]> {
+    const tenantId = this.tenantId();
+    const rows = await this.read((manager) =>
+      manager.find(TenantMemberEntity, {
+        where:
+          after === undefined
+            ? { tenantId }
+            : { tenantId, userId: MoreThan(after) },
+        order: { userId: 'ASC' },
+        take: limit,
       }),
     );
     return rows.map((row) => this.membershipOf(row));

@@ -20,6 +20,17 @@ export abstract class TenantAccessRepository {
   abstract listMemberships(): Promise<readonly Membership[]>;
 
   /**
+   * Reads one page of the current memberships in ascending user id, without loading the rest.
+   * @param after User id the page starts after, or `undefined` for the first page.
+   * @param limit Most memberships to read.
+   * @returns Up to `limit` memberships whose user id is greater than `after`.
+   */
+  abstract listMembershipsAfter(
+    after: string | undefined,
+    limit: number,
+  ): Promise<readonly Membership[]>;
+
+  /**
    * Inserts a membership, replacing the tombstone a previous removal of that user left.
    * @param membership New membership.
    */

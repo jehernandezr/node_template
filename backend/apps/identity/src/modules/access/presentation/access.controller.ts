@@ -39,6 +39,7 @@ import {
 } from '../../../shared/utils/user-actor.js';
 import { ActorPermissions } from '../application/actor-permissions.js';
 import { GetSessionAccess } from '../application/get-session-access.use-case.js';
+import { ListMembers } from '../application/list-members.use-case.js';
 import { ManageGroups } from '../application/manage-groups.use-case.js';
 import { ManageMembers } from '../application/manage-members.use-case.js';
 import { ManageRoles } from '../application/manage-roles.use-case.js';
@@ -48,6 +49,7 @@ import { ManageRoles } from '../application/manage-roles.use-case.js';
 export class AccessController {
   constructor(
     private readonly sessionAccess: GetSessionAccess,
+    private readonly listing: ListMembers,
     private readonly members: ManageMembers,
     private readonly groups: ManageGroups,
     private readonly roles: ManageRoles,
@@ -77,7 +79,7 @@ export class AccessController {
     @Input() input: PageQuery,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<MemberPage> {
-    return this.members.list(tenantOfActor(actor), input);
+    return this.listing.execute(tenantOfActor(actor), input);
   }
 
   /**
