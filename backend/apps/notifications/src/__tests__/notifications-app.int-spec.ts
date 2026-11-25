@@ -23,8 +23,10 @@ import { SseTestClient } from '@platform/realtime/test-utils';
 import { RetryDeliveriesJob } from '../modules/dispatch/application/retry-deliveries.job.js';
 import { DeliveryStatus } from '../modules/dispatch/domain/delivery.js';
 import { DeliveryRepository } from '../modules/dispatch/domain/delivery.repository.js';
+import { SendEmail } from '../modules/email/application/send-email.use-case.js';
 import {
   EmailLedger,
+  EmailReservationKind,
   EmailStatus,
 } from '../modules/email/domain/email-ledger.js';
 import { UserShard } from '../shared/utils/user-shard.js';
@@ -408,6 +410,40 @@ new ContainerRuntime(process.env).describeIfAvailable(
           `SELECT version FROM email_messages WHERE message_id = '${messageId}'`,
         );
       expect(rows).toEqual([{ version: 2 }]);
+    });
+
+    it('takes over a reservation that stayed in sending longer than the window, measured with the clock of the database', async () => {
+      const ledger = app.get(EmailLedger);
+      const entry = (messageId: string) => ({
+        messageId,
+        template: EmailTemplate.MfaCode,
+        templateVersion: 1,
+        recipientHash: 'b'.repeat(64),
+      });
+      const stale = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f81';
+      const fresh = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f82';
+      await ledger.reserve(entry(stale), SendEmail.ABANDONED_AFTER_MS);
+      await ledger.reserve(entry(fresh), SendEmail.ABANDONED_AFTER_MS);
+      await app.servers
+        .catalog()
+        .query(
+          `UPDATE email_messages SET updated_at = now() - interval '3 minutes' WHERE message_id = '${stale}'`,
+        );
+
+      const retaken = await ledger.reserve(
+        entry(stale),
+        SendEmail.ABANDONED_AFTER_MS,
+      );
+      const inFlight = await ledger.reserve(
+        entry(fresh),
+        SendEmail.ABANDONED_AFTER_MS,
+      );
+
+      expect(retaken).toEqual({ kind: EmailReservationKind.Reserved });
+      expect(inFlight).toMatchObject({
+        kind: EmailReservationKind.Taken,
+        current: { status: EmailStatus.Sending },
+      });
     });
 
     it('saves the same new delivery twice at once without a duplicate key and counts both writes', async () => {

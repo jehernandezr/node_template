@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { CatalogDataSource } from '@platform/persistence';
+import {
+  CatalogDataSource,
+  PersistenceError,
+  PersistenceErrorCode,
+} from '@platform/persistence';
 import type { EntityManager } from 'typeorm';
 import {
   EmailLedger,
@@ -26,16 +30,21 @@ export class TypeOrmEmailLedger extends EmailLedger {
   }
 
   /**
-   * Un `INSERT ... ON CONFLICT DO UPDATE ... WHERE`: Postgres toma la fila con su candado, así de dos reservas
-   * simultáneas solo una devuelve la fila.
+   * Reserva con un `INSERT ... ON CONFLICT DO UPDATE ... WHERE`: Postgres toma la fila con su candado, así de dos
+   * reservas simultáneas solo una devuelve la fila. El plazo de abandono se mide con el reloj de la base, el mismo que
+   * escribe `updated_at`.
+   * @param entry Correo a reservar.
+   * @param abandonedAfterMs Milisegundos tras los que una reserva en `Sending` se da por abandonada.
+   * @returns `Reserved` si este envío es el dueño, o `Taken` con el registro vigente.
+   * @throws PersistenceError `PLATFORM.PERSISTENCE.CONTENTION` si la fila desaparece entre la reserva y su lectura.
    */
   async reserve(
     entry: Omit<EmailRecord, 'status' | 'providerId'>,
-    abandonedBefore: Date,
+    abandonedAfterMs: number,
   ): Promise<EmailReservation> {
     const reserved: unknown[] = await this.run((manager) =>
       manager.query(
-        `INSERT INTO "email_messages" ("message_id", "template", "template_version", "recipient_hash", "status", "provider_id", "trace_id", "version") VALUES ($1, $2, $3, $4, $5, NULL, $6, 1) ON CONFLICT ("message_id") DO UPDATE SET "template" = EXCLUDED."template", "template_version" = EXCLUDED."template_version", "recipient_hash" = EXCLUDED."recipient_hash", "status" = EXCLUDED."status", "provider_id" = NULL, "trace_id" = EXCLUDED."trace_id", "version" = "email_messages"."version" + 1, "updated_at" = now() WHERE "email_messages"."status" = $7 OR ("email_messages"."status" = $5 AND "email_messages"."updated_at" < $8) RETURNING "message_id"`,
+        `INSERT INTO "email_messages" ("message_id", "template", "template_version", "recipient_hash", "status", "provider_id", "trace_id", "version") VALUES ($1, $2, $3, $4, $5, NULL, $6, 1) ON CONFLICT ("message_id") DO UPDATE SET "template" = EXCLUDED."template", "template_version" = EXCLUDED."template_version", "recipient_hash" = EXCLUDED."recipient_hash", "status" = EXCLUDED."status", "provider_id" = NULL, "trace_id" = EXCLUDED."trace_id", "version" = "email_messages"."version" + 1, "updated_at" = now() WHERE "email_messages"."status" = $7 OR ("email_messages"."status" = $5 AND "email_messages"."updated_at" < now() - make_interval(secs => $8::double precision / 1000)) RETURNING "message_id"`,
         [
           entry.messageId,
           entry.template,
@@ -44,7 +53,7 @@ export class TypeOrmEmailLedger extends EmailLedger {
           EmailStatus.Sending,
           entry.traceId ?? null,
           EmailStatus.Failed,
-          abandonedBefore,
+          abandonedAfterMs,
         ],
       ),
     );
@@ -53,7 +62,11 @@ export class TypeOrmEmailLedger extends EmailLedger {
     }
     const current = await this.find(entry.messageId);
     if (current === undefined) {
-      throw new Error('Email reservation lost its row');
+      throw new PersistenceError(
+        PersistenceErrorCode.Contention,
+        'email reservation lost its row',
+        { details: { messageId: entry.messageId } },
+      );
     }
     return { kind: EmailReservationKind.Taken, current };
   }

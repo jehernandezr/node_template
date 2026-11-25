@@ -32,7 +32,7 @@ class InMemoryLedger extends EmailLedger {
   readonly records = new Map<string, EmailRecord>();
   readonly suppressed = new Set<string>();
   readonly reservedAt = new Map<string, Date>();
-  failRecords = false;
+  recordFailures = 0;
 
   constructor(private readonly clock: FixedClock) {
     super();
@@ -44,14 +44,14 @@ class InMemoryLedger extends EmailLedger {
 
   async reserve(
     entry: Omit<EmailRecord, 'status' | 'providerId'>,
-    abandonedBefore: Date,
+    abandonedAfterMs: number,
   ): Promise<EmailReservation> {
     const current = this.records.get(entry.messageId);
     const reservedAt = this.reservedAt.get(entry.messageId);
     const abandoned =
       current?.status === EmailStatus.Sending &&
       reservedAt !== undefined &&
-      reservedAt < abandonedBefore;
+      this.clock.now().getTime() - reservedAt.getTime() > abandonedAfterMs;
     if (
       current !== undefined &&
       current.status !== EmailStatus.Failed &&
@@ -68,7 +68,8 @@ class InMemoryLedger extends EmailLedger {
   }
 
   async record(entry: EmailRecord) {
-    if (this.failRecords) {
+    if (this.recordFailures > 0) {
+      this.recordFailures -= 1;
       throw new Error('catalog down');
     }
     this.records.set(entry.messageId, entry);
@@ -141,7 +142,6 @@ const setup = (sender: EmailSender = new RecordingSender()) => {
     new LowercaseFingerprint(),
     new EmailTemplates(),
     new RequestContextStore(new Tracing(new Redactor())),
-    clock,
     new SilentLogger(),
     config,
   );
@@ -196,13 +196,34 @@ describe('SendEmail', () => {
 
   it('keeps a sent email sent when the ledger fails afterwards', async () => {
     const { send, ledger, sender } = setup();
-    ledger.failRecords = true;
+    ledger.recordFailures = Number.POSITIVE_INFINITY;
 
     await expect(send.send(request)).resolves.toBe('provider-1');
     await expect(send.send(request)).rejects.toMatchObject({
       code: NotificationsErrorCode.EmailInProgress,
     });
     expect((sender as RecordingSender).sent).toHaveLength(1);
+  });
+
+  it('records a sent email on a second try, so a retry after the abandonment window does not send it again', async () => {
+    const { send, ledger, sender, clock } = setup();
+    ledger.recordFailures = 1;
+    await send.send(request);
+    clock.advance(SendEmail.ABANDONED_AFTER_MS + 1);
+
+    await expect(send.send(request)).resolves.toBe('provider-1');
+    expect((sender as RecordingSender).sent).toHaveLength(1);
+  });
+
+  it('sends again after the abandonment window when the ledger never recorded the first send', async () => {
+    const { send, ledger, sender, clock } = setup();
+    ledger.recordFailures = Number.POSITIVE_INFINITY;
+    await send.send(request);
+    ledger.recordFailures = 0;
+    clock.advance(SendEmail.ABANDONED_AFTER_MS + 1);
+
+    await expect(send.send(request)).resolves.toBe('provider-2');
+    expect((sender as RecordingSender).sent).toHaveLength(2);
   });
 
   it('takes over a reservation abandoned by a process that crashed', async () => {
@@ -214,7 +235,7 @@ describe('SendEmail', () => {
         templateVersion: 1,
         recipientHash: 'fp:ana@example.com',
       },
-      clock.now(),
+      SendEmail.ABANDONED_AFTER_MS,
     );
     clock.advance(SendEmail.ABANDONED_AFTER_MS + 1);
 

@@ -34,22 +34,43 @@ export type EmailReservation =
 
 /** Registro de correos enviados y lista de supresión, en el catálogo. */
 export abstract class EmailLedger {
+  /**
+   * Lee el registro de un correo.
+   * @param messageId Id del mensaje.
+   * @returns El registro, o `undefined` si nunca se reservó.
+   */
   abstract find(messageId: string): Promise<EmailRecord | undefined>;
 
   /**
    * Reserva el `messageId` en `Sending` de forma atómica, antes de enviar. Lo toma si no existe, si el envío anterior
-   * falló o si quedó en `Sending` desde antes de `abandonedBefore` (el proceso que lo reservó cayó). Si no, devuelve el
-   * registro vigente.
+   * falló o si quedó en `Sending` más de `abandonedAfterMs` (el proceso que lo reservó cayó), medido con el reloj del
+   * registro.
+   * @param entry Correo a reservar.
+   * @param abandonedAfterMs Milisegundos tras los que una reserva en `Sending` se da por abandonada.
+   * @returns `Reserved` si este envío es el dueño, o `Taken` con el registro vigente.
    */
   abstract reserve(
     entry: Omit<EmailRecord, 'status' | 'providerId'>,
-    abandonedBefore: Date,
+    abandonedAfterMs: number,
   ): Promise<EmailReservation>;
 
-  /** Guarda o reemplaza el registro del correo. */
+  /**
+   * Guarda o reemplaza el registro del correo.
+   * @param entry Registro completo, con su estado y el id del proveedor si se envió.
+   */
   abstract record(entry: EmailRecord): Promise<void>;
 
+  /**
+   * Indica si el destinatario está en la lista de supresión.
+   * @param recipientHash Huella del destinatario.
+   * @returns `true` si no se le debe escribir.
+   */
   abstract isSuppressed(recipientHash: string): Promise<boolean>;
 
+  /**
+   * Agrega el destinatario a la lista de supresión; repetirlo no cambia nada.
+   * @param recipientHash Huella del destinatario.
+   * @param reason Motivo, como un rebote o una queja.
+   */
   abstract suppress(recipientHash: string, reason: string): Promise<void>;
 }
