@@ -7,8 +7,9 @@ import { PasskeysFacade } from '../../passkeys/index.js';
 import { MfaFactorRepository } from '../domain/mfa-factor-repository.js';
 
 /**
- * Qué segundos factores tiene un usuario. Con un dispositivo verificador el código va a su app y no se
- * ofrece el email; TOTP y códigos de recuperación, solo si están activos; la passkey, si tiene alguna.
+ * Which second factors a user has. With a verifier device the code goes to its app and email is not
+ * offered; TOTP and recovery codes only if active; the passkey if the user has one. A factor that already
+ * counted as the first one is never offered again.
  */
 @Injectable()
 export class MfaMethodCatalog {
@@ -29,7 +30,16 @@ export class MfaMethodCatalog {
     private readonly scopes: IdentityShardScopes,
   ) {}
 
-  async offered(user: UserRef): Promise<MfaFactor[]> {
+  /**
+   * Lists the second factors the user can use.
+   * @param user User who must present a second factor.
+   * @param satisfied Methods that already counted in this authentication; their factors are left out.
+   * @returns The offered factors.
+   */
+  async offered(
+    user: UserRef,
+    satisfied: readonly AuthMethodReference[] = [],
+  ): Promise<MfaFactor[]> {
     const verifiers = await this.devices.verifiers(user);
     const { totp, recoveryCodes } = await this.scopes.inUserShard(
       user,
@@ -38,14 +48,20 @@ export class MfaMethodCatalog {
         recoveryCodes: await this.factors.countRecoveryCodes(user.userId),
       }),
     );
-    return [
+    const factors = [
       verifiers.length > 0 ? MfaFactor.DeviceOtp : MfaFactor.EmailOtp,
       ...(totp?.confirmedAt === undefined ? [] : [MfaFactor.Totp]),
       ...(recoveryCodes > 0 ? [MfaFactor.RecoveryCode] : []),
       ...((await this.passkeys.hasPasskeys(user)) ? [MfaFactor.Passkey] : []),
     ];
+    return factors.filter((factor) => !satisfied.includes(this.amrOf(factor)));
   }
 
+  /**
+   * Maps a second factor to the `amr` value it adds to the session.
+   * @param method Verified factor.
+   * @returns Its authentication method reference.
+   */
   amrOf(method: MfaFactor): AuthMethodReference {
     return MfaMethodCatalog.AMR[method];
   }

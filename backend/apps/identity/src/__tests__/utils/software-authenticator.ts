@@ -7,7 +7,7 @@ import {
 } from 'node:crypto';
 import { CborWriter } from './cbor-writer.js';
 
-/** Las opciones que identity entrega en `optionsJson`. */
+/** The options identity delivers in `optionsJson`. */
 interface WebAuthnOptions {
   readonly challenge: string;
   readonly rp?: { readonly id: string };
@@ -15,25 +15,35 @@ interface WebAuthnOptions {
 }
 
 /**
- * Un autenticador de plataforma en software: crea una credencial ES256 y firma aserciones como lo haría el
- * navegador, con atestación `none`. Así las pruebas recorren WebAuthn sin un dispositivo real.
+ * A software platform authenticator: it creates an ES256 credential and signs assertions as the browser
+ * would, with `none` attestation, so tests go through WebAuthn without a real device. Built without user
+ * verification it behaves like a security key without a PIN: its assertions only prove presence.
  */
 export class SoftwareAuthenticator {
   private static readonly FLAGS_USER_PRESENT_VERIFIED = 0x05;
+  private static readonly FLAG_USER_PRESENT = 0x01;
   private static readonly FLAG_ATTESTED_DATA = 0x40;
   private readonly key: { privateKey: KeyObject; publicKey: KeyObject };
   private readonly credentialId = randomBytes(16);
   private counter = 0;
 
-  constructor(private readonly origin: string) {
+  constructor(
+    private readonly origin: string,
+    private readonly verifiesUser = true,
+  ) {
     this.key = generateKeyPairSync('ec', { namedCurve: 'P-256' });
   }
 
+  /** base64url id of the credential. */
   get id(): string {
     return this.credentialId.toString('base64url');
   }
 
-  /** La respuesta de `navigator.credentials.create` en base64url, el `credentialJson` del contrato. */
+  /**
+   * Answers `navigator.credentials.create`.
+   * @param optionsJson Creation options from identity.
+   * @returns The response in base64url, the `credentialJson` of the contract.
+   */
   create(optionsJson: string): string {
     const options = SoftwareAuthenticator.options(optionsJson);
     const rpId = options.rp?.id ?? '';
@@ -70,13 +80,19 @@ export class SoftwareAuthenticator {
     });
   }
 
-  /** La respuesta de `navigator.credentials.get` en base64url. */
+  /**
+   * Answers `navigator.credentials.get`, with user verification only if the authenticator does it.
+   * @param optionsJson Request options from identity.
+   * @returns The response in base64url.
+   */
   get(optionsJson: string): string {
     const options = SoftwareAuthenticator.options(optionsJson);
     const clientData = this.clientData('webauthn.get', options.challenge);
     const authData = this.authenticatorData(
       options.rpId ?? '',
-      SoftwareAuthenticator.FLAGS_USER_PRESENT_VERIFIED,
+      this.verifiesUser
+        ? SoftwareAuthenticator.FLAGS_USER_PRESENT_VERIFIED
+        : SoftwareAuthenticator.FLAG_USER_PRESENT,
     );
     const signature = sign(
       'sha256',
