@@ -44,7 +44,6 @@ export class EmailAlreadyRegisteredError extends DomainError {
 - Violación de índice único (`23505`) se traduce a la regla de negocio correspondiente. Conflicto de versión a `ConcurrencyConflictError` reintentable. Interbloqueo (`40P01`) y falla de serialización (`40001`) a reintentable.
 - Se clasifica con `FailureKind` y la clase `FailureClassifier` de `@platform/primitives` (`classify(error)`, `isTransient(error)`), a la que cada adaptador suma sus reglas: `Transient` se reintenta con backoff, `Permanent` no, `ProtocolViolation` nunca.
 - Se conserva la causa: `new XError(message, details, { cause })`. Nunca se pierde el stack original.
-- No se atrapa para callar. Un `catch` vacío o que solo loguea y sigue es un defecto.
 - Se lanza y se rechaza solo con `Error`. `return await` dentro de `try` para que el `catch` lo vea.
 
 ## Traducción a HTTP: Problem Details

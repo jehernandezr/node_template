@@ -90,7 +90,7 @@ export class CreateTenantHandler {
 - Una operación que modifica datos y puede reintentarse (pagos, altas, sagas) recibe una llave de idempotencia (`Idempotency-Key` en HTTP, `sagaId:paso:dirección` en la API interna).
 - El resultado se guarda con `IdempotencyGate`, que hace `claim`, `complete` y `release` sobre `ProcessedOperationStore`, y `UnitOfWorkRunner` confirma el manejador y el `complete` en una sola transacción. Una repetición con la misma llave y la misma entrada devuelve el resultado guardado. Con la misma llave y distinta entrada responde 409 o 422.
 - Excepción, servicios con `requireScope` (ADR 0023): el shard de la operación lo decide su handler con la entrada, así que la llave vive en el catálogo (`CatalogIdempotencyStore`) y el handler abre sus propias transacciones (`HandlerUnitOfWork.Handler`). El `complete` no se confirma con los efectos: si el proceso cae entre los dos, la reintentada vuelve a correr el handler. Por eso cada operación que modifica datos de ese servicio es idempotente por su entrada (la misma entrada con otra llave no duplica efectos ni eventos), y una prueba de integración por operación la invoca dos veces con llaves distintas y verifica sus efectos y su outbox.
-- Operaciones naturalmente idempotentes (`PUT` de un estado, borrar si existe) no necesitan llave, pero su caso de uso se escribe para que repetirlo sea inocuo.
+- Operaciones naturalmente idempotentes (`PUT` de un estado, borrar si existe) no necesitan llave.
 - Las llaves caducan (por ejemplo, 24 horas) y la limpieza es `ProcessedOperationRetentionJob`, un `ScheduledJob` que corre cada hora.
 
 ## Sagas

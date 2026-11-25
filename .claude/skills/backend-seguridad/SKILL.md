@@ -14,7 +14,7 @@ Contexto: ADR 0005 (autenticación), 0006 (MFA), 0010 (sharding por tenant), 001
 
 ## Entrada
 
-- Todo dato que cruza una frontera (HTTP, mensaje, job, variable de entorno) se valida con el esquema zod del contrato antes de usarse. Es `unknown` hasta entonces.
+- Todo dato que cruza una frontera (HTTP, mensaje, job, variable de entorno) se valida con el esquema zod del contrato antes de usarse.
 - Esquemas estrictos: `z.strictObject` para rechazar campos desconocidos, longitudes máximas en cadenas, límites en números y arreglos, `uuid` para ids.
 - Lista blanca en la entrada y en la salida. Un endpoint nunca devuelve una entidad completa: arma el DTO campo por campo, así un campo nuevo no se filtra por accidente.
 - Tamaño máximo de cuerpo y de carga por ruta. Subidas de archivos con tipo MIME y tamaño validados y almacenadas fuera del servidor de aplicación.

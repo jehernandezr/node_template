@@ -8,7 +8,7 @@ paths:
 
 # Pruebas del backend
 
-Se prueba comportamiento observable por capas, con el costo mínimo que da confianza. El patrón es un panal: mucho en componentes e integración, poco en unitarias de lógica real y muy poco e2e.
+Se prueba por capas, con el costo mínimo que da confianza. El patrón es un panal: mucho en componentes e integración, poco en unitarias de lógica real y muy poco e2e.
 
 ## Ubicación
 
@@ -46,7 +46,6 @@ Detalle y recetas en `references/capas-y-testcontainers.md`.
 
 - Una prueba verifica un comportamiento. El nombre dice unidad, escenario y resultado: `rejects a password shorter than 12 characters`. Dos niveles de `describe`: la unidad y el escenario.
 - Arrange, act, assert separados por una línea en blanco. Un `act` y pocas aserciones.
-- Se prueba la interfaz pública. Nunca métodos privados ni detalles internos: un refactor correcto no rompe pruebas.
 - Sin lógica en la prueba: ni bucles ni condicionales. Si se repite una verificación, es un matcher o un helper con nombre.
 - Los errores se verifican por `code`: `await expect(promise).rejects.toMatchObject({ code: ... })`. Nada de `try/catch`.
 - Valores generados (ids, fechas) se verifican por forma, no por valor exacto (`expect.any(String)`), o se fijan con `FixedClock` e `SequentialIdGenerator`.
@@ -80,10 +79,9 @@ describe('SignInUseCase', () => {
 ## Dobles
 
 - Son clases que implementan el puerto: `InMemoryUserRepository`, `FixedClock`, `FakeRateLimiter`, `InMemoryBus`. Se prefiere un fake con comportamiento a un mock.
-- Se verifica el resultado externo, no el número ni el orden de las llamadas internas. Si la cantidad es un requisito (la deduplicación de cargas de `PlacementLoader`), se usa un fake con comportamiento y un contador público, no `jest.fn` con `toHaveBeenCalledTimes`.
+- Si la cantidad de llamadas es un requisito (la deduplicación de cargas de `PlacementLoader`), se usa un fake con comportamiento y un contador público, no `jest.fn` con `toHaveBeenCalledTimes`.
 - Un fake en memoria debe cumplir la misma prueba de contrato que el adaptador real (`runUserRepositoryContract(factory)`), para que no diverjan.
 - Servicios externos HTTP: interceptor (`nock`, MSW) con respuestas lentas, 503 y timeouts.
-- No se mockea lo que no es tuyo cuando se puede levantar real (PostgreSQL, Valkey, LocalStack).
 - La aleatoriedad, los ids y el tiempo se controlan con dobles de `RandomSource`, `IdGenerator` (`SequentialIdGenerator`) y `Clock` (`FixedClock`). Nada de `Math.random` ni `Date.now` en el código bajo prueba.
 
 ## Dobles que se quedan en producción
@@ -140,7 +138,7 @@ En una prueba de componente se piensa en cinco resultados: la respuesta, el esta
 ## Cobertura
 
 - 80 % de líneas, sentencias y funciones, y 75 % de ramas por proyecto. El umbral vive en `backend/jest.preset.js`.
-- La cobertura no se sube con pruebas que no verifican nada. Los `catch` y los caminos de error cuentan.
+- Los `catch` y los caminos de error cuentan.
 - Una prueba de mutación (Stryker) sobre `domain/` y `application/` es la medida de que las pruebas verifican de verdad.
 
 ## Pruebas obligatorias por tipo de cambio
@@ -160,7 +158,8 @@ En una prueba de componente se piensa en cinco resultados: la respuesta, el esta
 
 Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
 
-- `principle-test-behavior-not-implementation`: se afirma lo observable (filas, respuestas HTTP, eventos, estado), nunca llamadas a dobles.
+- `principle-test-behavior-not-implementation`: se afirma lo observable (filas, respuestas HTTP, eventos, estado), nunca llamadas a dobles, métodos privados ni detalles internos.
+- La regla "Real tests" de `typescript-best-practices`: no se mockea lo que se puede levantar real; aquí, con Testcontainers.
 - Para un bug con un objetivo de prueba barato: `tdd`, con la prueba que falla escrita antes del arreglo. Si el arreglo se revierte, la prueba debe volver a fallar.
 - `principle-prove-it-works` antes de reportar verde: la corrida real con contenedores, no el reporte de otro agente.
 - Al revisar pruebas: `interrogate` busca las que pasan aunque el comportamiento esté roto.

@@ -67,7 +67,6 @@ export async function signIn(email: string, password: string) {
 ## Clean Code
 
 - Nombres que dicen qué es, sin abreviaturas ni sufijos vacíos (`Manager`, `Helper`, `Util`, `Data`). Ver `references/nombres.md`.
-- Métodos cortos, un nivel de abstracción por método. Retorno temprano antes que `else` anidado.
 - Sin parámetros booleanos que cambian el comportamiento: dos métodos o un enum.
 - Más de tres parámetros: un objeto con nombre. Las banderas de comportamiento nunca van en el objeto.
 - Enums para eventos, errores, permisos, colas, jobs y estados. Nunca literales de texto sueltos.
@@ -83,8 +82,7 @@ export async function signIn(email: string, password: string) {
 
 ## TypeScript
 
-- `strict` encendido. Sin `any`, sin casts dobles (`as unknown as T`), sin `!` no justificado, sin `eslint-disable` salvo con un porqué escrito.
-- Datos que cruzan una frontera (HTTP, cola, base) son `unknown` hasta validarlos con zod. No se asume su forma.
+- `strict` encendido. Sin `eslint-disable` salvo con un porqué escrito.
 - Estado inmutable: `readonly` en propiedades y `ReadonlyArray` en entradas y salidas públicas.
 - Estados que se excluyen se modelan como unión discriminada, no con dos opcionales: `type Contact = { kind: ContactKind.Email; email: Email } | { kind: ContactKind.Phone; phone: Phone }`.
 - Las importaciones relativas terminan en `.js` (ESM con `nodenext`). Importaciones de tipo con `import type`. Módulos nativos con `node:`.
@@ -102,7 +100,7 @@ Antes de integrar un cambio, propio o de un agente, repasa:
 - [ ] Enums, no literales, para eventos, errores, colas y permisos
 - [ ] Entradas externas validadas con zod en el borde
 - [ ] Errores de dominio con código y sin filtrar detalles al cliente
-- [ ] Pruebas en __tests__/ junto al código y que verifican comportamiento
+- [ ] Pruebas en __tests__/ junto al código
 - [ ] Migración generada con la CLI y revisada, si cambió una entidad
 - [ ] Sin secretos, sin datos personales en logs
 ```
@@ -113,7 +111,8 @@ Si no cumple, se corrige antes del commit.
 
 Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
 
-- Al escribir o tocar código: los principios `laziness-protocol` (el cambio más chico que resuelve), `minimize-reader-load` (sin envoltorios de un solo llamador), `type-system-discipline` y la skill `typescript-best-practices`, con las excepciones de esta skill (enums, puertos como clases abstractas).
+- Al escribir o tocar código: los principios `laziness-protocol` (el cambio más chico que resuelve), `minimize-reader-load` (sin envoltorios de un solo llamador, métodos fáciles de seguir), `type-system-discipline` y la skill `typescript-best-practices` (`unknown`, sin `as`, exhaustividad), con las excepciones de esta skill (enums, puertos como clases abstractas).
+- `principle-boundary-discipline`: lo que cruza una frontera (HTTP, cola, base) es `unknown` hasta parsearlo con zod.
 - Antes de codificar algo no trivial: `architect` para fijar tipos, puertos y módulos.
 - Al revisar un diff: `interrogate` (solo cuentan los hallazgos probados con una corrida), `blast-radius` para lo que rompe fuera del diff y `no-comments` para borrar los comentarios en línea. El JSDoc de los métodos se conserva y se ajusta a la regla de Clean Code.
 - Antes de dar algo por terminado: `principle-prove-it-works`. La verificación es la de "Revisión de un diff", corrida de verdad.
