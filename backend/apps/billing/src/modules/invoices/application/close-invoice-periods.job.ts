@@ -3,6 +3,7 @@ import {
   Clock,
   JobScheduleKind,
   ScheduledJob,
+  type JobContext,
   type JobSchedule,
 } from '@platform/kernel';
 import { LoggerPort } from '@platform/observability';
@@ -16,17 +17,20 @@ import { CollectInvoice } from './collect-invoice.use-case.js';
 import { IssueInvoice } from './issue-invoice.use-case.js';
 
 /**
- * Cada día cierra los periodos vencidos (la prueba que termina se activa sin factura) y después cobra toda
- * factura emitida sin cobrar, también las que una corrida anterior emitió y no alcanzó a cobrar. El cobro va
- * fuera de la transacción de la factura porque es una llamada externa. Un tenant que falla no detiene a los
+ * Cierra los periodos vencidos (la prueba que termina se activa sin factura) y después cobra cada factura a la que le
+ * toca cobro: las recién emitidas, las que una corrida anterior no alcanzó y los reintentos de las rechazadas. Corre a
+ * una hora fija de cada hora en UTC y no cada tanto desde el arranque: con despliegues seguidos un intervalo de un día
+ * no llegaría a cumplirse nunca. Cerrar y cobrar son idempotentes, así que repetirlo en el día no factura dos veces.
+ * El cobro va fuera de la transacción de la factura porque es una llamada externa. Entre factura y factura respeta la
+ * señal del job: pasado su plazo suelta el lock y otra réplica puede empezar. Un tenant que falla no detiene a los
  * demás: la siguiente corrida lo retoma.
  */
 @Injectable()
 export class CloseInvoicePeriodsJob extends ScheduledJob {
   readonly name = BillingJob.CloseInvoicePeriods;
   readonly schedule: JobSchedule = {
-    kind: JobScheduleKind.Interval,
-    everyMs: 24 * 60 * 60_000,
+    kind: JobScheduleKind.Cron,
+    expression: '5 * * * *',
   };
   override readonly exclusive = true;
   override readonly timeoutMs = 15 * 60_000;
@@ -42,14 +46,15 @@ export class CloseInvoicePeriodsJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
-    await this.closeDuePeriods();
-    await this.collectIssuedInvoices();
+  async run(context: JobContext): Promise<void> {
+    await this.closeDuePeriods(context.signal);
+    await this.collectDueInvoices(context.signal);
   }
 
-  private async closeDuePeriods(): Promise<void> {
+  private async closeDuePeriods(signal: AbortSignal): Promise<void> {
     const today = BillingPeriod.dateOf(this.clock.now());
     for (const tenantId of await this.subscriptions.dueForClosing(today)) {
+      signal.throwIfAborted();
       try {
         await this.issue.execute(tenantId, today);
       } catch (error) {
@@ -58,8 +63,10 @@ export class CloseInvoicePeriodsJob extends ScheduledJob {
     }
   }
 
-  private async collectIssuedInvoices(): Promise<void> {
-    for (const { tenantId, invoiceId } of await this.invoices.uncollected()) {
+  private async collectDueInvoices(signal: AbortSignal): Promise<void> {
+    const due = await this.invoices.dueForCollection(this.clock.now());
+    for (const { tenantId, invoiceId } of due) {
+      signal.throwIfAborted();
       try {
         await this.collect.execute(tenantId, invoiceId);
       } catch (error) {

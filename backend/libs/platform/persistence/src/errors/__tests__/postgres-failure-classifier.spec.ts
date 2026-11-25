@@ -1,5 +1,6 @@
 import { FailureKind } from '@platform/kernel';
 import { PostgresFailureClassifier } from '../postgres-failure-classifier.js';
+import { PostgresSqlState } from '../postgres-sql-state.enum.js';
 
 describe('PostgresFailureClassifier', () => {
   it.each([
@@ -35,5 +36,22 @@ describe('PostgresFailureClassifier', () => {
     ).toBeUndefined();
     expect(PostgresFailureClassifier.sqlStateOf(null)).toBeUndefined();
     expect(PostgresFailureClassifier.sqlStateOf('40001')).toBeUndefined();
+  });
+
+  it('tells a unique violation apart from other SQLSTATEs', () => {
+    const duplicate = Object.assign(new Error('x'), { code: '23505' });
+
+    expect(
+      PostgresFailureClassifier.hasSqlState(
+        duplicate,
+        PostgresSqlState.UniqueViolation,
+      ),
+    ).toBe(true);
+    expect(
+      PostgresFailureClassifier.hasSqlState(
+        duplicate,
+        PostgresSqlState.ForeignKeyViolation,
+      ),
+    ).toBe(false);
   });
 });

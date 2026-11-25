@@ -22,6 +22,11 @@ export abstract class SubscriptionsFacade {
   abstract dueForClosing(today: string): Promise<readonly string[]>;
   /** Un cobro falló: la suscripción activa pasa a morosa. */
   abstract markPastDue(tenantId: string): Promise<void>;
+  /**
+   * Toma la suscripción con `FOR UPDATE` dentro de la transacción de quien llama, para serializar los cobros del
+   * tenant. Va antes de leer sus facturas.
+   */
+  abstract lock(tenantId: string): Promise<void>;
   /** Un pago llegó: la suscripción morosa o suspendida vuelve a activa. */
   abstract settle(tenantId: string): Promise<void>;
 }

@@ -31,6 +31,11 @@ export const billingErrorCatalog = defineErrorCatalog(C, {
     false,
     'La factura no está en un estado que admita la operación pedida.',
   ),
+  [C.InvoiceAmountMismatch]: pub(
+    422,
+    false,
+    'Lo pagado no coincide con el total de la factura en su moneda. Los detalles traen expected y received.',
+  ),
   [C.QuotaExceeded]: pub(
     403,
     false,

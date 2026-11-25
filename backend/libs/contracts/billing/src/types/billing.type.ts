@@ -157,6 +157,8 @@ export interface MarkInvoicePaidInput {
   invoiceId: string;
   paidAt: string;
   reference: string;
+  /** Lo que cobró el proveedor: debe ser el total de la factura en su moneda. */
+  amount: MoneyAmount;
 }
 
 export interface MarkInvoiceFailedInput {

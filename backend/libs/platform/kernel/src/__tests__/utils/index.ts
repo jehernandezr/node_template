@@ -6,5 +6,6 @@ export { FixedClock } from './fixed-clock.js';
 export { FixedRandomSource } from './fixed-random-source.js';
 export { IntegrationMode } from './integration-mode.js';
 export { JestSuiteApi } from './jest-suite-api.js';
+export { JobContexts } from './job-contexts.js';
 export { SequentialIdGenerator } from './sequential-id-generator.js';
 export { SuiteApi } from './suite-api.js';

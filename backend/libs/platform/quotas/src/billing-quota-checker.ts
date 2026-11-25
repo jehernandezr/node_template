@@ -13,13 +13,16 @@ import { QuotaChecker } from './quota-checker.js';
 interface CachedUsage {
   readonly limit: number;
   readonly used: number;
+  /** Lo que billing respondió para una unidad: `false` también cuando la suscripción está suspendida o cancelada. */
+  readonly allowed: boolean;
   readonly expiresAt: number;
 }
 
 /**
  * Cuotas por la operación `billing.quotas.check.v1`. Guarda el límite y el uso de cada tenant y métrica
  * `ttlMs` en el proceso, así que el resultado puede ir hasta ese tiempo detrás de billing; lo pedido se
- * compara aquí contra lo guardado. Un tenant sin suscripción (los que siembra la plataforma) no tiene cuota.
+ * compara aquí contra lo guardado. Un `allowed: false` de billing con cupo de sobra es una suscripción bloqueada y se
+ * respeta. Un tenant sin suscripción (los que siembra la plataforma) no tiene cuota.
  * Lo guardado se acota a `maxEntries` descartando la entrada más antigua, para que un proceso que atiende
  * muchos tenants no crezca sin límite.
  */
@@ -53,7 +56,7 @@ export class BillingQuotaChecker extends QuotaChecker {
       metric,
       limit: usage.limit,
       used: usage.used,
-      allowed: usage.used + requested <= usage.limit,
+      allowed: usage.allowed && usage.used + requested <= usage.limit,
     };
   }
 
@@ -85,6 +88,7 @@ export class BillingQuotaChecker extends QuotaChecker {
     const fresh = {
       limit: outcome.value.limit,
       used: outcome.value.used,
+      allowed: outcome.value.allowed,
       expiresAt: now + this.ttlMs,
     };
     this.keep(key, fresh);

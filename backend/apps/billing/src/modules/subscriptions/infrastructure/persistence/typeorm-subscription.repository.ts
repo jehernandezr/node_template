@@ -23,6 +23,17 @@ export class TypeOrmSubscriptionRepository
     return row === null ? undefined : SubscriptionMapper.toDomain(row);
   }
 
+  async lock(): Promise<void> {
+    const tenantId = this.tenantId();
+    await this.write((manager) =>
+      manager
+        .createQueryBuilder(SubscriptionEntity, 'subscription')
+        .setLock('pessimistic_write')
+        .where('subscription.tenantId = :tenantId', { tenantId })
+        .getOne(),
+    );
+  }
+
   insert(subscription: Subscription): Promise<void> {
     return this.insertOwned(
       SubscriptionEntity,

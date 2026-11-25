@@ -13,6 +13,7 @@ import { notificationsService } from '@apps/notifications/test-utils';
 import { reportsService } from '@apps/reports/test-utils';
 import { tasksService } from '@apps/tasks/test-utils';
 import { HttpApplicationSetup } from '@platform/http/nest';
+import { JobContexts } from '@platform/kernel/test-utils';
 import { MessageDispatcher } from '@platform/messaging';
 import { InMemoryBus } from '@platform/messaging/test-utils';
 import { SchedulingMode } from '@platform/scheduling';
@@ -129,9 +130,11 @@ export class PlatformApp {
     }
   }
 
-  /** Cierra los periodos vencidos de billing, como lo hace su job diario. */
+  /** Cierra los periodos vencidos de billing, como lo hace su job de cada hora. */
   async closeInvoicePeriods(): Promise<void> {
-    await this.node(PlatformService.Billing).get(CloseInvoicePeriodsJob).run();
+    await this.node(PlatformService.Billing)
+      .get(CloseInvoicePeriodsJob)
+      .run(JobContexts.live());
   }
 
   private static async reservePorts(): Promise<

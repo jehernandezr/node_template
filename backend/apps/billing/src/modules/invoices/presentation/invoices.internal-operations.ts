@@ -13,7 +13,8 @@ import type { HandlerResult } from '@platform/internal-api';
 import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import { InvoiceQueries } from '../application/invoice-queries.js';
-import { SettleInvoice } from '../application/settle-invoice.use-case.js';
+import { RecordPaymentNotice } from '../application/record-payment-notice.use-case.js';
+import type { InvoiceState } from '../domain/invoice.js';
 
 /**
  * El resultado de un cobro que el proveedor informa después, como lo haría su webhook, y la historia de
@@ -22,7 +23,7 @@ import { SettleInvoice } from '../application/settle-invoice.use-case.js';
 @Injectable()
 export class InvoicesInternalOperations {
   constructor(
-    private readonly settle: SettleInvoice,
+    private readonly notices: RecordPaymentNotice,
     private readonly queries: InvoiceQueries,
   ) {}
 
@@ -39,28 +40,34 @@ export class InvoicesInternalOperations {
   async markPaid(
     input: MarkInvoicePaidInput,
   ): Promise<HandlerResult<InvoiceStateResult>> {
-    const invoice = await this.settle.paid(
-      input.tenantId,
-      input.invoiceId,
-      new Date(input.paidAt),
-    );
-    return {
-      outcome: CallOutcome.success({
-        invoiceId: invoice.id,
-        status: invoice.status,
+    return InvoicesInternalOperations.stateOf(
+      await this.notices.paid({
+        tenantId: input.tenantId,
+        invoiceId: input.invoiceId,
+        paidAt: new Date(input.paidAt),
+        reference: input.reference,
+        amount: input.amount,
       }),
-    };
+    );
   }
 
   @InternalHandler(MarkInvoiceFailedOperation)
   async markFailed(
     input: MarkInvoiceFailedInput,
   ): Promise<HandlerResult<InvoiceStateResult>> {
-    const invoice = await this.settle.failed(
-      input.tenantId,
-      input.invoiceId,
-      new Date(input.failedAt),
+    return InvoicesInternalOperations.stateOf(
+      await this.notices.failed({
+        tenantId: input.tenantId,
+        invoiceId: input.invoiceId,
+        failedAt: new Date(input.failedAt),
+        ...(input.reason === undefined ? {} : { reason: input.reason }),
+      }),
     );
+  }
+
+  private static stateOf(
+    invoice: InvoiceState,
+  ): HandlerResult<InvoiceStateResult> {
     return {
       outcome: CallOutcome.success({
         invoiceId: invoice.id,

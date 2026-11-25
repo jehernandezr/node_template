@@ -153,8 +153,26 @@ describe('billing limits in the schemas', () => {
         invoiceId: Ids.item,
         paidAt: '2026-11-13T12:00:00.000Z',
         reference: 'a'.repeat(BillingLimits.paymentReferenceMaxLength + 1),
+        amount: { amountMinor: 189_000, currency: 'COP' },
       }).ok,
     ).toBe(false);
+  });
+
+  it('requires the amount charged to mark an invoice paid', () => {
+    const paid = {
+      tenantId: Ids.tenant,
+      invoiceId: Ids.item,
+      paidAt: '2026-11-13T12:00:00.000Z',
+      reference: 'gateway-7781',
+    };
+
+    expect(validateContract(schemas.MarkInvoicePaidInput, paid).ok).toBe(false);
+    expect(
+      validateContract(schemas.MarkInvoicePaidInput, {
+        ...paid,
+        amount: { amountMinor: 189_000, currency: 'COP' },
+      }).ok,
+    ).toBe(true);
   });
 
   it('bounds the quantity of a quota check', () => {

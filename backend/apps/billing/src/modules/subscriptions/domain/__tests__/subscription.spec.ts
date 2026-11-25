@@ -275,9 +275,33 @@ describe('Subscription', () => {
     it('is active again after a payment and says where it came from', () => {
       const subscription = active(SubscriptionStatus.Suspended);
 
-      expect(subscription.settle()).toBe(SubscriptionStatus.Suspended);
+      expect(subscription.settle(START, '2026-12-03')).toBe(
+        SubscriptionStatus.Suspended,
+      );
       expect(subscription.snapshot().status).toBe(SubscriptionStatus.Active);
-      expect(subscription.settle()).toBeUndefined();
+      expect(subscription.settle(START, '2026-12-03')).toBeUndefined();
+    });
+
+    it('starts a new period on the day it comes back from a suspension of months, so the months suspended are not due', () => {
+      const subscription = active(SubscriptionStatus.Suspended);
+
+      subscription.settle(START, '2027-05-15');
+
+      expect(subscription.snapshot().period).toEqual(
+        BillingPeriod.of('2027-05-15', '2027-06-14'),
+      );
+      expect(subscription.isDueForClosing('2027-05-16')).toBe(false);
+      expect(subscription.isDueForClosing('2027-06-15')).toBe(true);
+    });
+
+    it('keeps the period of a past due subscription, which kept using the plan', () => {
+      const subscription = active(SubscriptionStatus.PastDue);
+
+      subscription.settle(START, '2026-11-20');
+
+      expect(subscription.snapshot().period).toEqual(
+        BillingPeriod.of('2026-11-01', '2026-11-30'),
+      );
     });
   });
 });

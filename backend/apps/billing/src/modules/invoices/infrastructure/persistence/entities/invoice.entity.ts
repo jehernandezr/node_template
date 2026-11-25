@@ -5,6 +5,7 @@ import { Column, Entity, Index } from 'typeorm';
 @Entity({ name: 'invoices' })
 @Index('invoices_tenant_number_key', ['tenantId', 'number'], { unique: true })
 @Index('invoices_tenant_status_idx', ['tenantId', 'status', 'id'])
+@Index('invoices_collection_idx', ['nextCollectionAt'])
 export class InvoiceEntity extends AuditedEntity {
   @Column({ type: 'varchar', length: 32, name: 'number', nullable: false })
   number!: string;
@@ -32,4 +33,7 @@ export class InvoiceEntity extends AuditedEntity {
 
   @Column({ type: 'integer', name: 'failed_attempts', nullable: false })
   failedAttempts!: number;
+
+  @Column({ type: 'timestamptz', name: 'next_collection_at', nullable: true })
+  nextCollectionAt!: Date | null;
 }

@@ -80,6 +80,10 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
     return this.standing.markPastDue(tenantId);
   }
 
+  lock(tenantId: string): Promise<void> {
+    return this.shard.run(tenantId, () => this.subscriptions.lock());
+  }
+
   settle(tenantId: string): Promise<void> {
     return this.standing.settle(tenantId);
   }

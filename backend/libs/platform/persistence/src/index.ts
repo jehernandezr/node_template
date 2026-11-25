@@ -4,6 +4,8 @@ export * from './errors/persistence-error.js';
 export * from './errors/persistence-error-options.js';
 export * from './errors/persistence-error-translator.js';
 export * from './errors/postgres-failure-classifier.js';
+export * from './errors/postgres-failure-rule.js';
+export * from './errors/postgres-sql-state.enum.js';
 export * from './errors/persistence-error-catalog.js';
 export * from './errors/persistence-error-code.enum.js';
 export * from './across-shards.js';

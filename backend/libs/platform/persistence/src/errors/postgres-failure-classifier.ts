@@ -1,5 +1,6 @@
 import { FailureKind } from '@platform/kernel';
 import { FailureClassifier } from '@platform/primitives';
+import type { PostgresSqlState } from './postgres-sql-state.enum.js';
 
 /**
  * Clasifica los errores del driver de Postgres. Los SQLSTATE los traduce esta
@@ -27,16 +28,25 @@ export class PostgresFailureClassifier {
   private static readonly FALLBACK = new FailureClassifier();
 
   static classify(error: unknown): FailureKind {
+    // `EPIPE` también tiene cinco caracteres: el resto lo decide el clasificador general.
+    return (
+      PostgresFailureClassifier.transientKindOf(error) ??
+      PostgresFailureClassifier.FALLBACK.classify(error)
+    );
+  }
+
+  /** `Transient` si el error trae un SQLSTATE pasajero; `undefined` si no dice nada de eso. */
+  static transientKindOf(error: unknown): FailureKind | undefined {
     const sqlState = PostgresFailureClassifier.sqlStateOf(error);
-    if (
-      sqlState !== undefined &&
+    return sqlState !== undefined &&
       (PostgresFailureClassifier.TRANSIENT_SQLSTATES.has(sqlState) ||
         PostgresFailureClassifier.CONNECTION_SQLSTATE.test(sqlState))
-    ) {
-      return FailureKind.Transient;
-    }
-    // `EPIPE` también tiene cinco caracteres: el resto lo decide el clasificador general.
-    return PostgresFailureClassifier.FALLBACK.classify(error);
+      ? FailureKind.Transient
+      : undefined;
+  }
+
+  static hasSqlState(error: unknown, state: PostgresSqlState): boolean {
+    return PostgresFailureClassifier.sqlStateOf(error) === state;
   }
 
   /** SQLSTATE de un error de `pg`, si lo trae. Los códigos de red de Node no tienen cinco caracteres. */

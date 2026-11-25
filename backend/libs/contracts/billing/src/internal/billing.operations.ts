@@ -91,9 +91,11 @@ export const MarkInvoicePaidOperation = defineOperation({
   errors: [
     BillingErrorCode.InvoiceNotFound,
     BillingErrorCode.InvoiceInvalidState,
+    BillingErrorCode.InvoiceAmountMismatch,
   ],
   timeoutMs: 5000,
-  description: 'Marca una factura como pagada con la referencia del proveedor.',
+  description:
+    'Marca una factura como pagada con la referencia del proveedor y el monto cobrado, que debe ser su total.',
 });
 
 /**

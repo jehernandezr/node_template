@@ -20,8 +20,10 @@ import {
   type UsageOverview,
 } from '@contracts/billing';
 import { IdentityEvent, MembershipChangeKind } from '@contracts/identity';
-import { ContainerRuntime } from '@platform/kernel/test-utils';
+import { JobScheduleKind, type CronJobSchedule } from '@platform/kernel';
+import { ContainerRuntime, JobContexts } from '@platform/kernel/test-utils';
 import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
+import { CronExpression } from '@platform/scheduling';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
 import { ProvisionedService } from '@platform/service/test-utils';
@@ -38,6 +40,10 @@ const TENANT_A = BillingTestApp.TENANT_A;
 const TENANT_B = BillingTestApp.TENANT_B;
 const TENANT_C = BillingTestApp.TENANT_C;
 const TENANT_D = BillingTestApp.TENANT_D;
+const TENANT_E = BillingTestApp.TENANT_E;
+const TENANT_F = BillingTestApp.TENANT_F;
+const TENANT_G = BillingTestApp.TENANT_G;
+const HOUR_MS = 60 * 60_000;
 const MISSING_PLAN = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f01';
 const TODAY_UTC = `(now() AT TIME ZONE 'UTC')::date`;
 
@@ -261,10 +267,10 @@ new ContainerRuntime(process.env).describeIfAvailable(
         `UPDATE subscriptions SET period_start = '2026-01-01', period_end = '2026-01-14'`,
       );
 
-      await closing.run();
+      await closing.run(JobContexts.live());
       const afterTrial = (await owner.get('/v1/billing/subscription'))
         .body as Subscription;
-      await closing.run();
+      await closing.run(JobContexts.live());
       const [summary] = (
         (await owner.get('/v1/billing/invoices')).body as InvoicePage
       ).items;
@@ -334,6 +340,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         invoiceId: invoice.id,
         paidAt: new Date().toISOString(),
         reference: 'gateway-7781',
+        amount: invoice.total,
       });
       const stillOwing = (await owner.get('/v1/billing/subscription'))
         .body as Subscription;
@@ -342,6 +349,10 @@ new ContainerRuntime(process.env).describeIfAvailable(
         invoiceId: String(next?.id),
         paidAt: new Date().toISOString(),
         reference: 'gateway-7782',
+        amount: {
+          amountMinor: Number(next?.totalMinor),
+          currency: String(next?.currency),
+        },
       });
       const reactivated = (await owner.get('/v1/billing/subscription'))
         .body as Subscription;
@@ -393,13 +404,13 @@ new ContainerRuntime(process.env).describeIfAvailable(
           TENANT_C,
           `UPDATE subscriptions SET period_start = ${TODAY_UTC} - 40, period_end = ${TODAY_UTC} - 30`,
         );
-        await app.get(CloseInvoicePeriodsJob).run();
+        await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
       });
 
       it('charges the starting plan for the period plus the rest of the period at the price difference of an upgrade', async () => {
         await changePlanMidPeriod('Pro');
 
-        await app.get(CloseInvoicePeriodsJob).run();
+        await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
 
         await expect(invoiceTotals()).resolves.toEqual([
           { total_minor: String(49_900 + 46_367) },
@@ -409,7 +420,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       it('charges the upgraded plan for the next period less the credit of a downgrade', async () => {
         await changePlanMidPeriod('Inicio');
 
-        await app.get(CloseInvoicePeriodsJob).run();
+        await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
 
         await expect(invoiceTotals()).resolves.toEqual([
           { total_minor: String(49_900 + 46_367) },
@@ -432,8 +443,8 @@ new ContainerRuntime(process.env).describeIfAvailable(
           );
         const attemptsBefore = await attemptsOf();
 
-        await app.get(CloseInvoicePeriodsJob).run();
-        await app.get(CloseInvoicePeriodsJob).run();
+        await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
+        await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
 
         expect(attemptsBefore).toEqual([{ count: '0' }]);
         await expect(attemptsOf()).resolves.toEqual([{ count: '1' }]);
@@ -443,6 +454,236 @@ new ContainerRuntime(process.env).describeIfAvailable(
             `SELECT invoice_id FROM payment_attempts WHERE tenant_id = '${TENANT_C}' GROUP BY invoice_id HAVING count(*) > 1`,
           ),
         ).resolves.toEqual([]);
+      });
+    });
+
+    describe('collecting without charging twice or charging what was not used', () => {
+      const today = () => new Date().toISOString().slice(0, 10);
+      const issueOverdue = (tenantId: string, daysAgo: number) =>
+        app.rowsOf(
+          tenantId,
+          `UPDATE subscriptions SET status = '${SubscriptionStatus.Active}', period_start = ${TODAY_UTC} - ${daysAgo}, period_end = ${TODAY_UTC} - ${daysAgo - 29}`,
+        );
+      const attemptsOf = (tenantId: string, invoiceId: string) =>
+        app.rowsOf<{
+          attempt: number;
+          status: string;
+          reference: string | null;
+          reason: string | null;
+        }>(
+          tenantId,
+          `SELECT attempt, status, reference, reason FROM payment_attempts WHERE invoice_id = '${invoiceId}' ORDER BY attempt`,
+        );
+      const statusOf = async (tenantId: string) =>
+        (
+          await app.rowsOf<{ status: string }>(
+            tenantId,
+            `SELECT status FROM subscriptions WHERE tenant_id = '${tenantId}'`,
+          )
+        )[0]?.status;
+
+      it('closes periods within the hour of a restart, whatever the time of the restart', () => {
+        const restart = new Date('2026-12-01T13:47:00.000Z');
+        const schedule = app.get(CloseInvoicePeriodsJob).schedule;
+
+        expect(schedule).toMatchObject({ kind: JobScheduleKind.Cron });
+        const next = CronExpression.parse(
+          (schedule as CronJobSchedule).expression,
+        ).nextAfter(restart);
+        expect(next.getTime() - restart.getTime()).toBeLessThanOrEqual(HOUR_MS);
+      });
+
+      it('stops collecting once its run is past the deadline, so another replica can take over', async () => {
+        await open(TENANT_F);
+        await issueOverdue(TENANT_F, 40);
+        const issued = await app.get(IssueInvoice).execute(TENANT_F, today());
+
+        await expect(
+          app.get(CloseInvoicePeriodsJob).run(JobContexts.aborted()),
+        ).rejects.toMatchObject({ name: 'AbortError' });
+
+        await expect(attemptsOf(TENANT_F, String(issued?.id))).resolves.toEqual(
+          [],
+        );
+      });
+
+      it('charges an invoice once when two replicas collect it at the same time', async () => {
+        const [invoice] = await app.rowsOf<{ id: string }>(
+          TENANT_F,
+          `SELECT id FROM invoices WHERE tenant_id = '${TENANT_F}' AND status = '${InvoiceStatus.Issued}'`,
+        );
+
+        await Promise.all([
+          app.get(CloseInvoicePeriodsJob).run(JobContexts.live('replica-a')),
+          app.get(CloseInvoicePeriodsJob).run(JobContexts.live('replica-b')),
+        ]);
+
+        await expect(
+          attemptsOf(TENANT_F, String(invoice?.id)),
+        ).resolves.toHaveLength(1);
+      });
+
+      it('keeps the reason of a decline and charges the invoice again when its retry is due', async () => {
+        const [invoice] = await app.rowsOf<{ id: string }>(
+          TENANT_F,
+          `SELECT id FROM invoices WHERE tenant_id = '${TENANT_F}' AND status = '${InvoiceStatus.Issued}'`,
+        );
+        await app.internal().invoke(MarkInvoiceFailedOperation, {
+          tenantId: TENANT_F,
+          invoiceId: String(invoice?.id),
+          failedAt: new Date().toISOString(),
+          reason: 'insufficient_funds',
+        });
+        await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
+        const beforeRetry = await attemptsOf(TENANT_F, String(invoice?.id));
+        await app.rowsOf(
+          TENANT_F,
+          `UPDATE invoices SET next_collection_at = now() - interval '1 minute' WHERE id = '${String(invoice?.id)}'`,
+        );
+
+        await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
+
+        expect(beforeRetry).toEqual([
+          {
+            attempt: 1,
+            status: 'declined',
+            reference: null,
+            reason: 'insufficient_funds',
+          },
+        ]);
+        await expect(
+          attemptsOf(TENANT_F, String(invoice?.id)),
+        ).resolves.toMatchObject([
+          { attempt: 1, status: 'declined' },
+          { attempt: 2, status: 'pending' },
+        ]);
+      });
+
+      it('refuses a payment for an amount other than the total and keeps the reference of the one that matches', async () => {
+        await open(TENANT_G);
+        await issueOverdue(TENANT_G, 40);
+        const issued = await app.get(IssueInvoice).execute(TENANT_G, today());
+        const paid = {
+          tenantId: TENANT_G,
+          invoiceId: String(issued?.id),
+          paidAt: new Date().toISOString(),
+          reference: 'gateway-9001',
+        };
+
+        const short = await app.internal().invoke(MarkInvoicePaidOperation, {
+          ...paid,
+          amount: {
+            amountMinor: Number(issued?.totalMinor) - 1,
+            currency: String(issued?.currency),
+          },
+        });
+        const exact = await app.internal().invoke(MarkInvoicePaidOperation, {
+          ...paid,
+          amount: {
+            amountMinor: Number(issued?.totalMinor),
+            currency: String(issued?.currency),
+          },
+        });
+
+        expect(short).toMatchObject({
+          kind: CallOutcomeKind.BusinessError,
+          code: BillingErrorCode.InvoiceAmountMismatch,
+        });
+        expect(exact).toMatchObject({ value: { status: InvoiceStatus.Paid } });
+        await expect(attemptsOf(TENANT_G, String(issued?.id))).resolves.toEqual(
+          [
+            {
+              attempt: 1,
+              status: 'approved',
+              reference: 'gateway-9001',
+              reason: null,
+            },
+          ],
+        );
+      });
+
+      it('reactivates a suspended tenant when its failed invoices are paid at the same time', async () => {
+        await open(TENANT_E);
+        await issueOverdue(TENANT_E, 100);
+        const issue = () => app.get(IssueInvoice).execute(TENANT_E, today());
+        const owed = [await issue(), await issue(), await issue()];
+        await Promise.all(
+          owed.map((invoice) =>
+            app.internal().invoke(MarkInvoiceFailedOperation, {
+              tenantId: TENANT_E,
+              invoiceId: String(invoice?.id),
+              failedAt: new Date().toISOString(),
+            }),
+          ),
+        );
+        await app.rowsOf(
+          TENANT_E,
+          `UPDATE subscriptions SET status = '${SubscriptionStatus.Suspended}'`,
+        );
+
+        await Promise.all(
+          owed.map((invoice) =>
+            app.internal().invoke(MarkInvoicePaidOperation, {
+              tenantId: TENANT_E,
+              invoiceId: String(invoice?.id),
+              paidAt: new Date().toISOString(),
+              reference: `gateway-${String(invoice?.number)}`,
+              amount: {
+                amountMinor: Number(invoice?.totalMinor),
+                currency: String(invoice?.currency),
+              },
+            }),
+          ),
+        );
+
+        await expect(statusOf(TENANT_E)).resolves.toBe(
+          SubscriptionStatus.Active,
+        );
+      });
+
+      it('starts a new period on the day a tenant pays its way out of months of suspension, so those months are never invoiced', async () => {
+        await issueOverdue(TENANT_G, 40);
+        const owed = await app.get(IssueInvoice).execute(TENANT_G, today());
+        await app.internal().invoke(MarkInvoiceFailedOperation, {
+          tenantId: TENANT_G,
+          invoiceId: String(owed?.id),
+          failedAt: new Date().toISOString(),
+        });
+        await app.rowsOf(
+          TENANT_G,
+          `UPDATE subscriptions SET status = '${SubscriptionStatus.Suspended}', period_start = ${TODAY_UTC} - 200, period_end = ${TODAY_UTC} - 170`,
+        );
+        const invoicesBefore = await app.rowsOf(
+          TENANT_G,
+          `SELECT id FROM invoices WHERE tenant_id = '${TENANT_G}'`,
+        );
+
+        await app.internal().invoke(MarkInvoicePaidOperation, {
+          tenantId: TENANT_G,
+          invoiceId: String(owed?.id),
+          paidAt: new Date().toISOString(),
+          reference: 'gateway-late',
+          amount: {
+            amountMinor: Number(owed?.totalMinor),
+            currency: String(owed?.currency),
+          },
+        });
+        await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
+
+        await expect(
+          app.rowsOf(
+            TENANT_G,
+            `SELECT status, period_start::text AS start FROM subscriptions WHERE tenant_id = '${TENANT_G}'`,
+          ),
+        ).resolves.toEqual([
+          { status: SubscriptionStatus.Active, start: today() },
+        ]);
+        await expect(
+          app.rowsOf(
+            TENANT_G,
+            `SELECT id FROM invoices WHERE tenant_id = '${TENANT_G}'`,
+          ),
+        ).resolves.toHaveLength(invoicesBefore.length);
       });
     });
 
