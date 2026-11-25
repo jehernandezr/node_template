@@ -125,12 +125,38 @@ export class InMemoryAccessFacade extends AccessFacade {
     this.projected.push({ tenantId, ref });
   }
 
-  async reserveDepartures(): Promise<void> {
-    return;
+  private readonly departures = new Set<string>();
+
+  /** Whether the user is leaving the tenant because a deletion of their account reserved it. */
+  isLeaving(userId: string, tenantId: string): boolean {
+    return this.departures.has(keyOf(userId, tenantId));
   }
 
-  async cancelDepartures(): Promise<void> {
-    return;
+  async reserveDepartures(ref: UserRef): Promise<readonly string[]> {
+    const reserved: string[] = [];
+    for (const { tenantId } of await this.tenantsOf(ref)) {
+      const key = keyOf(ref.userId, tenantId);
+      if (!this.departures.has(key)) {
+        this.departures.add(key);
+        reserved.push(tenantId);
+      }
+    }
+    return reserved;
+  }
+
+  async releaseDepartures(
+    ref: UserRef,
+    tenantIds: readonly string[],
+  ): Promise<void> {
+    for (const tenantId of tenantIds) {
+      this.departures.delete(keyOf(ref.userId, tenantId));
+    }
+  }
+
+  async cancelDepartures(ref: UserRef): Promise<void> {
+    for (const { tenantId } of await this.tenantsOf(ref)) {
+      this.departures.delete(keyOf(ref.userId, tenantId));
+    }
   }
 
   async removeFromAllTenants(ref: UserRef): Promise<void> {

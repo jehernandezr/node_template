@@ -123,6 +123,18 @@ describe('ManageMembers', () => {
       expect(await tenant.leavingSince(ANA.userId)).toEqual(tenant.clock.now());
     });
 
+    it('tells whether this call is the one that reserved the departure', async () => {
+      const tenant = await new TenantWithTwoOwners().build();
+
+      const first = await tenant.members.reserveDeparture(TENANT, ANA.userId);
+      const repeated = await tenant.members.reserveDeparture(
+        TENANT,
+        ANA.userId,
+      );
+
+      expect([first, repeated]).toEqual([true, false]);
+    });
+
     it('refuses the second owner once the first one is leaving', async () => {
       const tenant = await new TenantWithTwoOwners().build();
       await tenant.members.reserveDeparture(TENANT, ANA.userId);

@@ -121,15 +121,27 @@ export abstract class AccessFacade {
   /**
    * Reserves the departure of the user from every tenant before their account is deleted: each tenant checks
    * under its lock that another owner who is not leaving remains, and marks the user as leaving. If one tenant
-   * refuses, the departures already reserved are cancelled.
+   * refuses, the departures this call reserved are cancelled.
    * @param ref User.
+   * @returns The tenants whose departure this call reserved; a tenant the user was already leaving is not
+   *   among them.
    * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are the last owner of a tenant with other members.
    */
-  abstract reserveDepartures(ref: UserRef): Promise<void>;
+  abstract reserveDepartures(ref: UserRef): Promise<readonly string[]>;
 
   /**
-   * Cancels the departures reserved for the user: the deletion of their account did not go ahead. It is
-   * idempotent.
+   * Cancels the departures of the user from those tenants only, the ones a deletion that did not start
+   * reserved, so the departures of an earlier deletion still in flight stay. It is idempotent.
+   * @param ref User.
+   * @param tenantIds Tenants whose departure is cancelled.
+   */
+  abstract releaseDepartures(
+    ref: UserRef,
+    tenantIds: readonly string[],
+  ): Promise<void>;
+
+  /**
+   * Cancels every departure reserved for the user: their account is active again. It is idempotent.
    * @param ref User.
    */
   abstract cancelDepartures(ref: UserRef): Promise<void>;

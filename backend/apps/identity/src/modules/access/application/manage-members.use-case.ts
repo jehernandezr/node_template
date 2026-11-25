@@ -77,24 +77,28 @@ export class ManageMembers {
    * concurrent deletion of another owner sees this one already gone. Repeating it changes nothing.
    * @param tenantId Tenant.
    * @param userId User who leaves.
+   * @returns Whether this call marked the user as leaving; false if they were already leaving or are not a
+   *   member.
    * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are the last owner and others remain.
    */
-  async reserveDeparture(tenantId: string, userId: string): Promise<void> {
-    await this.underLock(tenantId, async () => {
+  async reserveDeparture(tenantId: string, userId: string): Promise<boolean> {
+    return this.underLock(tenantId, async () => {
       const membership = await this.tenantAccess.findMembership(userId);
       if (membership === undefined) {
-        return;
+        return false;
       }
       new TenantOwnership(await this.tenantAccess.listGroups()).assertCanLeave(
         membership,
         await this.tenantAccess.listMemberships(),
       );
-      if (membership.leavingSince === null) {
-        await this.tenantAccess.updateMembership({
-          ...membership,
-          leavingSince: this.clock.now(),
-        });
+      if (membership.leavingSince !== null) {
+        return false;
       }
+      await this.tenantAccess.updateMembership({
+        ...membership,
+        leavingSince: this.clock.now(),
+      });
+      return true;
     });
   }
 
