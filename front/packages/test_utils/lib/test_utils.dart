@@ -1,5 +1,6 @@
-/// Dobles y utilitarios de prueba compartidos por los paquetes del front.
-/// Solo se usa como dev_dependency: el código de producción nunca lo importa.
+/// Test doubles and utilities shared by the front-end packages.
+///
+/// Used only as a dev_dependency: production code never imports it.
 library;
 
 export 'src/a11y/expect_accessible.dart';
@@ -9,6 +10,7 @@ export 'src/auth/fake_device_key_port.dart';
 export 'src/auth/fake_token_store.dart';
 export 'src/clock/fake_clock.dart';
 export 'src/errors/fake_failure.dart';
+export 'src/http/fake_identity_server.dart';
 export 'src/http/scripted_transport.dart';
 export 'src/layout/pump_at_text_scale.dart';
 export 'src/layout/pump_at_widths.dart';

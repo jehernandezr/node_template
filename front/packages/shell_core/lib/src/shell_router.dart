@@ -23,10 +23,13 @@ import 'shell_runtime.dart';
 ///
 /// Every page of a manifest route (each `GoRoute.builder` built from
 /// `screens`) is wrapped in a [ShellAccessScope] and in a
-/// [KeyedSubtree] keyed by [ShellRuntime.identityEpoch]: when the user or
-/// tenant changes, the mounted pages are built again from scratch with the
-/// scope of the new identity, or replaced by an empty box when the new
-/// identity cannot reach the page (until the redirect removes them). A page is
+/// [KeyedSubtree] keyed by [ShellRuntime.identityEpoch], the route's
+/// `matchedLocation` and the query: when the user or tenant changes, or the
+/// page's own path or query parameters change, the mounted page is built
+/// again from scratch, so its controllers never keep the previous entity.
+/// Opening a child route leaves the parent page's key and state untouched. A
+/// page the new identity cannot reach is replaced by an empty box until the
+/// redirect removes it. A page is
 /// reachable when the identity can reach the microfrontend and every
 /// [ScreenRoute.access] rule of the page and its parent routes.
 /// Route-level redirects run with the shell's access environment, so
@@ -177,7 +180,7 @@ final class _PageWrapper {
       builder: builder == null
           ? null
           : (context, state) =>
-                _page(rules, (context) => builder(context, state)),
+                _page(rules, state, (context) => builder(context, state)),
       redirect: redirect == null ? null : _redirect(redirect),
       routes: [
         for (var i = 0; i < route.routes.length; i++)
@@ -191,6 +194,7 @@ final class _PageWrapper {
 
   Widget _page(
     List<AccessRule> rules,
+    GoRouterState state,
     Widget Function(BuildContext context) build,
   ) => ShellAccessScope(
     session: runtime.session,
@@ -209,7 +213,11 @@ final class _PageWrapper {
           return const SizedBox.shrink();
         }
         return KeyedSubtree(
-          key: ValueKey<int>(epoch),
+          key: ValueKey<(int, String, String)>((
+            epoch,
+            state.matchedLocation,
+            state.uri.query,
+          )),
           child: Builder(builder: build),
         );
       },

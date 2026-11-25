@@ -1,11 +1,11 @@
-/// Sesión del front: [SessionManager], el repositorio de identity sobre
-/// `ApiClient`, la conexión que reúne ambos con el acceso de la sesión, los
-/// flujos de login y paso adicional y los puertos.
+/// Front-end session: [SessionManager], the identity repository over
+/// `ApiClient`, the connection that joins both with the session access, the
+/// sign-in and step-up flows, and the ports.
 ///
-/// Los tipos y códigos son los generados del contrato `identity`
-/// (`package:contracts`). Los adaptadores de almacenamiento seguro y de claves
-/// de hardware (Keychain, Keystore, Secure Enclave o WebCrypto) viven fuera de
-/// este paquete. Los dobles de prueba están en el paquete `test_utils`.
+/// Types and codes are the ones generated from the `identity` contract
+/// (`package:contracts`). Secure storage and hardware key adapters (Keychain,
+/// Keystore, Secure Enclave or WebCrypto) live outside this package. Test
+/// doubles live in the `test_utils` package.
 library;
 
 export 'src/adapters/in_memory_token_store.dart';
@@ -17,3 +17,4 @@ export 'src/flows/mfa_state.dart';
 export 'src/identity_connection.dart';
 export 'src/ports.dart';
 export 'src/session_manager.dart';
+export 'src/session_transport.dart';
