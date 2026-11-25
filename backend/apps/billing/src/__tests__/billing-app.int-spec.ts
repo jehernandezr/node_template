@@ -20,9 +20,17 @@ import {
   type UsageOverview,
 } from '@contracts/billing';
 import { IdentityEvent, MembershipChangeKind } from '@contracts/identity';
-import { JobScheduleKind, type CronJobSchedule } from '@platform/kernel';
+import {
+  JobScheduleKind,
+  TransactionManager,
+  type CronJobSchedule,
+} from '@platform/kernel';
 import { ContainerRuntime, JobContexts } from '@platform/kernel/test-utils';
-import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
+import {
+  DispatchOutcome,
+  MessageBus,
+  MessageDispatcher,
+} from '@platform/messaging';
 import { CronExpression } from '@platform/scheduling';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
@@ -32,6 +40,11 @@ import { TenantDirectoryRehearsal } from '@platform/tenant-move/test-utils';
 import { TenantMoveErrorCode } from '@platform/tenant-move';
 import { CloseInvoicePeriodsJob } from '../modules/invoices/application/close-invoice-periods.job.js';
 import { IssueInvoice } from '../modules/invoices/application/issue-invoice.use-case.js';
+import { SettleInvoice } from '../modules/invoices/application/settle-invoice.use-case.js';
+import { RendezvousInvoiceRepository } from '../modules/invoices/__tests__/utils/index.js';
+import { InvoiceRepository } from '../modules/invoices/domain/invoice.repository.js';
+import { SubscriptionsFacade } from '../modules/subscriptions/index.js';
+import { TenantShard } from '../shared/utils/tenant-shard.js';
 import { AdvanceDunningJob } from '../modules/subscriptions/application/advance-dunning.job.js';
 import { BillingTestApp } from './utils/index.js';
 
@@ -633,6 +646,40 @@ new ContainerRuntime(process.env).describeIfAvailable(
                 currency: String(invoice?.currency),
               },
             }),
+          ),
+        );
+
+        await expect(statusOf(TENANT_E)).resolves.toBe(
+          SubscriptionStatus.Active,
+        );
+      });
+
+      it('reactivates a suspended tenant when two payments read its failed invoices at the same moment', async () => {
+        await issueOverdue(TENANT_E, 100);
+        const issue = () => app.get(IssueInvoice).execute(TENANT_E, today());
+        const owed = [await issue(), await issue()];
+        for (const invoice of owed) {
+          await app.internal().invoke(MarkInvoiceFailedOperation, {
+            tenantId: TENANT_E,
+            invoiceId: String(invoice?.id),
+            failedAt: new Date().toISOString(),
+          });
+        }
+        await app.rowsOf(
+          TENANT_E,
+          `UPDATE subscriptions SET status = '${SubscriptionStatus.Suspended}'`,
+        );
+        const settle = new SettleInvoice(
+          new RendezvousInvoiceRepository(app.get(InvoiceRepository), 2, 1_000),
+          app.get(SubscriptionsFacade),
+          app.get(MessageBus),
+          app.get(TenantShard),
+          app.get(TransactionManager),
+        );
+
+        await Promise.all(
+          owed.map((invoice) =>
+            settle.paid(TENANT_E, String(invoice?.id), new Date()),
           ),
         );
 
