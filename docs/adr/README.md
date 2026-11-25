@@ -56,3 +56,4 @@ Numbers are not reused. File names use kebab-case and are in Spanish.
 | 0033   | [Service and module generators, and OpenAPI from the contracts](0033-generadores-y-openapi.md)                             | Accepted               |
 | 0034   | [Live front repositories, SSE and region in the client](0034-repositorios-live-del-front-sse-y-region.md)                  | Accepted               |
 | 0035   | [End-to-end flow of the platform](0035-flujo-de-punta-a-punta-de-la-plataforma.md)                                         | Accepted               |
+| 0036   | [Identity security: factors, access and lifecycle](0036-seguridad-de-identity-factores-acceso-y-ciclo-de-vida.md)          | Accepted               |
