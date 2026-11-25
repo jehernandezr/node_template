@@ -1,4 +1,8 @@
-import { EmailTemplate, TemplateParameter } from '@contracts/notifications';
+import {
+  EmailTemplate,
+  NotificationsErrorCode,
+  TemplateParameter,
+} from '@contracts/notifications';
 import { EmailTemplates } from '../templates/email-templates.js';
 import { NotificationEmailKey } from '../templates/notification-email-key.enum.js';
 
@@ -16,6 +20,7 @@ describe('EmailTemplates', () => {
       new Map([
         [TemplateParameter.DisplayName, 'Ana'],
         [TemplateParameter.TenantName, 'Acme'],
+        [TemplateParameter.Code, 'inv-7781'],
         [TemplateParameter.Link, 'https://app.example.com/invitations/abc'],
       ]),
       'en-US',
@@ -44,7 +49,25 @@ describe('EmailTemplates', () => {
     expect(rendered?.text).toContain('<script>alert(1)</script>');
   });
 
-  it('leaves out a line whose data did not arrive', () => {
+  it.each([
+    [EmailTemplate.MfaCode, new Map<string, string>()],
+    [
+      EmailTemplate.Invitation,
+      new Map([[TemplateParameter.TenantName, 'Acme']]),
+    ],
+    [EmailTemplate.MfaRecovery, new Map([[TemplateParameter.Code, '482913']])],
+  ])(
+    'refuses to render %s without a required data instead of sending it incomplete',
+    (key, parameters) => {
+      expect(() => templates.find(key)?.render(parameters, 'es')).toThrow(
+        expect.objectContaining({
+          code: NotificationsErrorCode.EmailTemplateParameterMissing,
+        }),
+      );
+    },
+  );
+
+  it('leaves out the line of an optional data that did not arrive', () => {
     const rendered = templates
       .find(EmailTemplate.PasswordReset)
       ?.render(new Map([[TemplateParameter.Code, 'r3s3t']]), 'es');

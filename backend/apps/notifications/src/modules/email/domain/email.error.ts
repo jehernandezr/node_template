@@ -18,3 +18,21 @@ export class TemplateUnknownError extends DomainError {
     super('Unknown email template', { template });
   }
 }
+
+/** La plantilla nombra un dato obligatorio que no llegó: el correo no se envía incompleto. */
+export class TemplateParameterMissingError extends DomainError {
+  readonly code = NotificationsErrorCode.EmailTemplateParameterMissing;
+
+  constructor(template: string, parameter: string) {
+    super('A required template parameter is missing', { template, parameter });
+  }
+}
+
+/** Otro envío del mismo `messageId` está en curso: se reintenta más tarde y nunca se envía en paralelo. */
+export class EmailInProgressError extends DomainError {
+  readonly code = NotificationsErrorCode.EmailInProgress;
+
+  constructor() {
+    super('The same email is being sent', undefined, { retryable: true });
+  }
+}

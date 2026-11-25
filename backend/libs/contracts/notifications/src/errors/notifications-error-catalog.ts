@@ -26,6 +26,16 @@ export const notificationsErrorCatalog = defineErrorCatalog(C, {
     false,
     'La plantilla de correo pedida no existe.',
   ),
+  [C.EmailTemplateParameterMissing]: internal(
+    400,
+    false,
+    'Falta un dato obligatorio de la plantilla: el correo no se envía incompleto. Los detalles traen parameter.',
+  ),
+  [C.EmailInProgress]: internal(
+    409,
+    true,
+    'Otro envío del mismo correo está en curso; se reintenta sin volver a enviarlo.',
+  ),
   [C.RealtimeUnauthenticated]: pub(
     401,
     false,

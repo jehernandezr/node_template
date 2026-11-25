@@ -26,6 +26,7 @@ export const SendEmailOperation = defineOperation({
   errors: [
     NotificationsErrorCode.EmailRecipientSuppressed,
     NotificationsErrorCode.EmailTemplateUnknown,
+    NotificationsErrorCode.EmailTemplateParameterMissing,
   ],
   timeoutMs: 6_000,
   description:

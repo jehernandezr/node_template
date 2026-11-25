@@ -106,10 +106,11 @@ describe('notifications internal operations', () => {
     ).toBe(false);
   });
 
-  it('declares the two internal codes on the email send', () => {
+  it('declares the internal codes on the email send', () => {
     expect(SendEmailOperation.errors).toEqual([
       NotificationsErrorCode.EmailRecipientSuppressed,
       NotificationsErrorCode.EmailTemplateUnknown,
+      NotificationsErrorCode.EmailTemplateParameterMissing,
     ]);
   });
 
