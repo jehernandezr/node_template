@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import type { Permission, UserAccess } from '@contracts/identity';
+import type {
+  Permission,
+  PermissionsChangedPayload,
+  UserAccess,
+} from '@contracts/identity';
 import type { Actor } from '@platform/auth';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { UserTenant } from '../domain/user-tenant.js';
 import { AccessFacade } from './access.facade.js';
 import { RefreshTenantAccess } from './refresh-tenant-access.use-case.js';
 import { AccessResolver } from './access-resolver.js';
+import { AccessVersionPublisher } from './access-version-publisher.js';
 import { GrantCeiling } from './grant-ceiling.js';
 import { ManageMembers } from './manage-members.use-case.js';
 import { TenantAccessSetup } from './tenant-access-setup.js';
@@ -19,6 +24,7 @@ export class LocalAccessFacade extends AccessFacade {
     private readonly ceiling: GrantCeiling,
     private readonly refresh: RefreshTenantAccess,
     private readonly members: ManageMembers,
+    private readonly versions: AccessVersionPublisher,
   ) {
     super();
   }
@@ -94,6 +100,13 @@ export class LocalAccessFacade extends AccessFacade {
     return this.resolver.tenantsOf(ref);
   }
 
+  /** {@inheritDoc AccessFacade.assertCanLeaveAllTenants} */
+  async assertCanLeaveAllTenants(ref: UserRef): Promise<void> {
+    for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
+      await this.members.assertCanLeave(tenantId, ref.userId);
+    }
+  }
+
   /** {@inheritDoc AccessFacade.removeFromAllTenants} */
   async removeFromAllTenants(ref: UserRef): Promise<void> {
     for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
@@ -104,6 +117,11 @@ export class LocalAccessFacade extends AccessFacade {
   /** {@inheritDoc AccessFacade.discardTenant} */
   discardTenant(tenantId: string): Promise<void> {
     return this.setup.discard(tenantId);
+  }
+
+  /** {@inheritDoc AccessFacade.replayPermissionVersion} */
+  replayPermissionVersion(event: PermissionsChangedPayload): Promise<void> {
+    return this.versions.replay(event);
   }
 
   /** {@inheritDoc AccessFacade.refreshTenant} */

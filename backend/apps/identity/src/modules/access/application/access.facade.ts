@@ -1,4 +1,8 @@
-import type { Permission, UserAccess } from '@contracts/identity';
+import type {
+  Permission,
+  PermissionsChangedPayload,
+  UserAccess,
+} from '@contracts/identity';
 import type { Actor } from '@platform/auth';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { UserTenant } from '../domain/user-tenant.js';
@@ -113,6 +117,13 @@ export abstract class AccessFacade {
   abstract tenantsOf(ref: UserRef): Promise<readonly UserTenant[]>;
 
   /**
+   * Checks that the user can leave all their tenants before their account is deleted.
+   * @param ref User.
+   * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are the last owner of a tenant with other members.
+   */
+  abstract assertCanLeaveAllTenants(ref: UserRef): Promise<void>;
+
+  /**
    * Removes the user from every tenant for the deletion of their account. It is idempotent.
    * @param ref Erased user.
    */
@@ -123,6 +134,14 @@ export abstract class AccessFacade {
    * @param tenantId Discarded tenant.
    */
   abstract discardTenant(tenantId: string): Promise<void>;
+
+  /**
+   * Copies again into the shared auth state the version a published permission change carries.
+   * @param event Published permission change.
+   */
+  abstract replayPermissionVersion(
+    event: PermissionsChangedPayload,
+  ): Promise<void>;
 
   /**
    * Raises the permission version of the tenant: the access of every member is computed again.

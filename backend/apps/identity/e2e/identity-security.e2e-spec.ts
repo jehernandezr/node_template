@@ -2,22 +2,30 @@ import {
   ActivateTenantOperation,
   CreateTenantOperation,
   IdentityErrorCode,
+  IdentityEvent,
   IdentityRoute,
   MfaFactor,
   Permission,
   ReactivateTenantOperation,
+  RevocationReason,
+  RevocationScope,
   SignInStatus,
   SuspendTenantOperation,
   TenantKind,
   TenantRole,
 } from '@contracts/identity';
 import { BillingErrorCode, UsageMetric } from '@contracts/billing';
+import { AuthModuleRules } from '@platform/auth/nest';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
+import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
+import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import type { HttpTestClient } from '@platform/http/test-utils';
 import { IdentityEmailTemplate } from '../src/shared/enums/identity-email-template.enum.js';
 import { TenantAccessSetup } from '../src/modules/access/application/tenant-access-setup.js';
 import {
+  AccessTokenClaimsReader,
   DeviceKey,
+  Eventually,
   IdentityJourney,
   IdentityTestApp,
   SoftwareAuthenticator,
@@ -632,6 +640,116 @@ runtime.describeIfAvailable('identity security end to end', () => {
         expect.objectContaining({ code: BillingErrorCode.QuotaExceeded }),
       );
       expect(after).toBe(members + 2);
+    });
+  });
+
+  describe('replay of the shared auth state', () => {
+    const zoe = new IdentityJourney(app, 'zoe.replay@example.com');
+    let deviceId: string;
+
+    const deliver = (type: IdentityEvent, tenantId: string, data: object) =>
+      app.get(MessageDispatcher).dispatch(
+        EnvelopeBuilder.anEnvelope({
+          id: TestIds.next(),
+          type,
+          source: 'identity',
+          tenantid: tenantId,
+          data,
+        }),
+        { receiveCount: 1 },
+      );
+
+    const freshSession = async (): Promise<SessionTokensBody> =>
+      (
+        (await zoe.signInFromDevice(deviceId)).body as {
+          tokens: SessionTokensBody;
+        }
+      ).tokens;
+
+    beforeAll(async () => {
+      await zoe.register();
+      deviceId = IdentityJourney.deviceIdFrom(
+        (await zoe.signInWithEmailCode()).accessToken,
+      );
+    });
+
+    it('rejects the access token of a session whose revocation only reached the outbox', async () => {
+      const session = await freshSession();
+      const claims = AccessTokenClaimsReader.read(session.accessToken);
+      const delivered = await deliver(
+        IdentityEvent.SessionRevoked,
+        String(claims['htid']),
+        {
+          sessionId: String(claims['sid']),
+          userId: String(claims['sub']),
+          tenantId: String(claims['tid']),
+          reason: RevocationReason.Compromised,
+          revokedAt: new Date().toISOString(),
+        },
+      );
+
+      const access = await zoe.bearer(session.accessToken).get('/v1/me/access');
+
+      expect(delivered.outcome).toBe(DispatchOutcome.Processed);
+      expect(access.body).toMatchObject({
+        code: IdentityErrorCode.SessionRevoked,
+      });
+    });
+
+    it('rejects every older token of a user whose revocation only reached the outbox', async () => {
+      const yan = new IdentityJourney(app, 'yan.replay@example.com');
+      await yan.register();
+      const session = await yan.signInWithEmailCode();
+      const claims = AccessTokenClaimsReader.read(session.accessToken);
+      await deliver(IdentityEvent.TokensRevoked, String(claims['htid']), {
+        scope: RevocationScope.User,
+        subjectId: String(claims['sub']),
+        revokedBefore: new Date(Date.now() + 2_000).toISOString(),
+      });
+
+      const rejected = Eventually.until(
+        async () =>
+          (await yan.bearer(session.accessToken).get('/v1/me/access'))
+            .status === 401,
+        AuthModuleRules.DEFAULT_CACHE_TTL_MS + 2_000,
+      );
+
+      await expect(rejected).resolves.toBeUndefined();
+    });
+  });
+
+  describe('account deletion', () => {
+    it('is refused to the last owner of a tenant with other members', async () => {
+      const vera = new IdentityJourney(app, 'vera.owner@example.com');
+      const walt = new IdentityJourney(app, 'walt.member@example.com');
+      await vera.register();
+      const veraSession = await vera.signInWithEmailCode();
+      const organization = await organizationOf(vera, veraSession, 'herencia');
+      await walt.register();
+      const waltSession = await walt.signInWithEmailCode();
+      await organization.client.post('/v1/tenant/invitations', {
+        body: { email: walt.email, groupIds: [] },
+      });
+      IdentityJourney.expectStatus(
+        await walt
+          .bearer(waltSession.accessToken)
+          .post('/v1/invitations/accept', {
+            body: {
+              token: walt.mailTo(IdentityEmailTemplate.TenantInvitation)[
+                'token'
+              ],
+            },
+          }),
+        204,
+      );
+
+      const deletion = await vera
+        .bearer(veraSession.accessToken)
+        .post('/v1/me/deletion');
+
+      expect(deletion.body).toMatchObject({
+        code: IdentityErrorCode.AccessLastOwner,
+      });
     });
   });
 });

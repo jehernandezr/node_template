@@ -7,6 +7,7 @@ import {
   type MemberPage,
   type Permission,
 } from '@contracts/identity';
+import { Pagination, type PageQuery } from '@contracts/platform';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
@@ -41,14 +42,23 @@ export class ManageMembers {
   ) {}
 
   /**
-   * Lists the members of the tenant with their profile.
+   * Lists a page of members of the tenant with their profile, ordered by user id. The cursor is the last
+   * user id of the page: ids are UUIDv7 and fit the cursor alphabet.
    * @param tenantId Tenant.
-   * @returns The members.
+   * @param page Page size and the cursor after which the page starts.
+   * @returns The page of members.
    */
-  async list(tenantId: string): Promise<MemberPage> {
-    const memberships = await this.scopes.inTenantShard(tenantId, () =>
-      this.tenantAccess.listMemberships(),
-    );
+  async list(tenantId: string, page: PageQuery = {}): Promise<MemberPage> {
+    const limit = page.limit ?? Pagination.defaultLimit;
+    const after = page.after;
+    const remaining = (
+      await this.scopes.inTenantShard(tenantId, () =>
+        this.tenantAccess.listMemberships(),
+      )
+    )
+      .filter((membership) => after === undefined || membership.userId > after)
+      .sort((a, b) => (a.userId < b.userId ? -1 : 1));
+    const memberships = remaining.slice(0, limit);
     const items = await Promise.all(
       memberships.map(async (membership) => {
         const user = await this.users.getByRef({
@@ -64,7 +74,12 @@ export class ManageMembers {
         };
       }),
     );
-    return { items, nextCursor: null };
+    const last = memberships.at(-1);
+    return {
+      items,
+      nextCursor:
+        remaining.length > limit && last !== undefined ? last.userId : null,
+    };
   }
 
   /**
@@ -120,6 +135,28 @@ export class ManageMembers {
       }),
     );
     await this.setup.project(tenantId, ref);
+  }
+
+  /**
+   * Checks that a user can leave a tenant for good: the last owner of a tenant with other members must hand
+   * over ownership first, so the deletion of an account never leaves members without an owner.
+   * @param tenantId Tenant.
+   * @param userId User who leaves.
+   * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are the last owner and others remain.
+   */
+  async assertCanLeave(tenantId: string, userId: string): Promise<void> {
+    await this.scopes.inTenantShard(tenantId, async () => {
+      const membership = await this.tenantAccess.findMembership(userId);
+      const memberships = await this.tenantAccess.listMemberships();
+      if (membership !== undefined && memberships.length > 1) {
+        this.assertOwnerRemains(
+          membership,
+          [],
+          await this.tenantAccess.listGroups(),
+          memberships,
+        );
+      }
+    });
   }
 
   /**

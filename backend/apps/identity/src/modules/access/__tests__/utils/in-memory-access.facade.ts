@@ -1,4 +1,8 @@
-import type { Permission, UserAccess } from '@contracts/identity';
+import type {
+  Permission,
+  PermissionsChangedPayload,
+  UserAccess,
+} from '@contracts/identity';
 import { ActorGuards, type Actor } from '@platform/auth';
 import type { UserRef } from '../../../../shared/types/user-ref.type.js';
 import { AccessFacade } from '../../application/access.facade.js';
@@ -121,6 +125,10 @@ export class InMemoryAccessFacade extends AccessFacade {
     this.projected.push({ tenantId, ref });
   }
 
+  async assertCanLeaveAllTenants(): Promise<void> {
+    return;
+  }
+
   async removeFromAllTenants(ref: UserRef): Promise<void> {
     for (const key of [...this.memberships]) {
       if (key.startsWith(`${ref.userId}@`)) {
@@ -155,6 +163,14 @@ export class InMemoryAccessFacade extends AccessFacade {
     if (missing.length > 0) {
       throw IdentityError.forbidden(missing);
     }
+  }
+
+  readonly replayed: PermissionsChangedPayload[] = [];
+
+  async replayPermissionVersion(
+    event: PermissionsChangedPayload,
+  ): Promise<void> {
+    this.replayed.push(event);
   }
 
   readonly refreshed: string[] = [];
