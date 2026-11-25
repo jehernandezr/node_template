@@ -1,3 +1,4 @@
+import { QueueDefaults } from '@contracts/platform';
 import { FailureKind } from '@platform/kernel';
 import { FixedRandomSource } from '@platform/kernel/test-utils';
 import {
@@ -179,6 +180,52 @@ describe('DeliveryClassifier', () => {
       id: ID,
       delayMs: 5_000,
       error: 'busy',
+    });
+  });
+
+  describe('during a database failover of two minutes', () => {
+    const queuePolicy = new RetryPolicy(
+      QueueDefaults.retry.maxAttempts,
+      QueueDefaults.retry.baseMs,
+      QueueDefaults.retry.maxMs,
+      BackoffStrategy.FullJitter,
+    );
+
+    it('keeps retrying a delivery whose claim cannot reach the database, whatever its receive count', () => {
+      const deliveries = Array.from({ length: 40 }, (_, index) =>
+        classifierWith().failure(
+          ID,
+          transient('connection terminated'),
+          { receiveCount: index + 1, retryPolicy: queuePolicy },
+          true,
+        ),
+      );
+
+      expect(
+        deliveries.every(
+          (result) => result.outcome === DispatchOutcome.RetryLater,
+        ),
+      ).toBe(true);
+    });
+
+    it('retries a handler that fails on the database for longer than the failover before dead-lettering it', () => {
+      let waitedMs = 0;
+      let receiveCount = 1;
+      for (;;) {
+        const result = classifierWith().failure(
+          ID,
+          transient('terminating connection'),
+          { receiveCount, retryPolicy: queuePolicy },
+          false,
+        );
+        if (result.outcome !== DispatchOutcome.RetryLater) {
+          break;
+        }
+        waitedMs += result.delayMs;
+        receiveCount += 1;
+      }
+
+      expect(waitedMs).toBeGreaterThan(2 * 60_000);
     });
   });
 

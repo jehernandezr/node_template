@@ -5,6 +5,7 @@ import type { DataSource } from 'typeorm';
 import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import {
   LedgerManifest,
+  LedgerWithAttemptsManifest,
   LedgerWriter,
   TickingClock,
   TransferTestDatabases,
@@ -235,6 +236,49 @@ new ContainerRuntime(process.env).describeIfAvailable(
       expect(await snapshot(targetAdmin, tenantId)).toEqual(
         await snapshot(sourceAdmin, tenantId),
       );
+    });
+
+    it('catches up with a large table without updated_at whose full read does not fit in one call', async () => {
+      for (let i = 0; i < 30; i++) {
+        await source.transaction(async (manager) => {
+          await manager.query("SELECT set_config('app.tenant_id', $1, true)", [
+            tenantId,
+          ]);
+          await manager.query(
+            'INSERT INTO attempts (id, tenant_id, outcome) VALUES ($1, $2, $3)',
+            [newId(), tenantId, `outcome ${i}`],
+          );
+        });
+      }
+      const hurried = new BatchTenantDataTransfer(
+        new LedgerWithAttemptsManifest(),
+        new TickingClock(),
+        { ...OPTIONS, batchSize: 3, callBudgetMs: 6 },
+      );
+
+      let calls = 0;
+      let progress: Awaited<ReturnType<typeof hurried.sync>> | undefined;
+      while (progress?.caughtUp !== true && calls < 40) {
+        calls += 1;
+        try {
+          progress = await hurried.sync(move);
+        } catch (error) {
+          if (
+            (error as { code?: unknown }).code !==
+            TenantMoveErrorCode.RoundPending
+          ) {
+            throw error;
+          }
+        }
+      }
+
+      expect(progress?.caughtUp).toBe(true);
+      await expect(
+        targetAdmin.query(
+          'SELECT count(*)::int AS count FROM attempts WHERE tenant_id = $1',
+          [tenantId],
+        ),
+      ).resolves.toEqual([{ count: 30 }]);
     });
 
     it('verifies a table too large for one call over several calls, each one going on where the last stopped', async () => {

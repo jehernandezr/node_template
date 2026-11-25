@@ -23,6 +23,7 @@ const THIRD = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a05';
 class QuotaLedger extends OperationHandler<typeof CheckQuotaOperation> {
   used = 0;
   answered = 0;
+  suspended = false;
 
   async handle(
     input: CheckQuotaInput,
@@ -43,7 +44,7 @@ class QuotaLedger extends OperationHandler<typeof CheckQuotaOperation> {
         metric: input.metric,
         limit: 100,
         used: this.used,
-        allowed: this.used < 100,
+        allowed: !this.suspended && this.used < 100,
       }),
     };
   }
@@ -73,6 +74,16 @@ const setup = (maxEntries?: number) => {
 };
 
 describe('BillingQuotaChecker', () => {
+  it('refuses a suspended subscription even with room left in its limit', async () => {
+    const { billing, quotas } = setup();
+    billing.used = 10;
+    billing.suspended = true;
+
+    await expect(
+      quotas.check(TENANT, UsageMetric.ApiCalls),
+    ).resolves.toMatchObject({ allowed: false, used: 10, limit: 100 });
+  });
+
   it('allows what still fits in the limit of the plan', async () => {
     const { billing, quotas } = setup();
     billing.used = 98;

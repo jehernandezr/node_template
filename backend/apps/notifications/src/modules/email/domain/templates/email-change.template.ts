@@ -1,10 +1,16 @@
-import { EmailTemplate as EmailTemplateKey } from '@contracts/notifications';
+import {
+  EmailTemplate as EmailTemplateKey,
+  TemplateParameter,
+} from '@contracts/notifications';
 import type { EmailCopy } from './email-copy.js';
 import { EmailTemplate } from './email-template.js';
 
 export class EmailChangeTemplate extends EmailTemplate {
   readonly key = EmailTemplateKey.EmailChange;
   readonly version = 1;
+  protected override readonly optionalParameters: ReadonlySet<string> = new Set(
+    [TemplateParameter.DisplayName],
+  );
   protected readonly copies: Readonly<Record<string, EmailCopy>> = {
     es: {
       subject: 'Confirma tu nuevo correo',

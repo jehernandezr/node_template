@@ -81,6 +81,7 @@ describe('billing internal operations', () => {
       invoiceId: Ids.item,
       paidAt: Now,
       reference: 'pago-2026-11-13',
+      amount: { amountMinor: 189_000, currency: 'COP' },
     };
     expect(validateContract(input, valid).ok).toBe(true);
     expect(validateContract(input, { ...valid, reference: '' }).ok).toBe(false);

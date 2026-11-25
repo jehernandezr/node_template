@@ -48,7 +48,7 @@ export class Subscription {
 
   private constructor(private state: SubscriptionState) {}
 
-  /** Abre la cuenta en prueba por `trialDays`; sin días de prueba, ya activa con su primer periodo pagado. */
+  /** Abre la cuenta en prueba por `trialDays`; sin días de prueba, ya activa con su primer periodo, que se cobra al cerrar. */
   static open(input: {
     readonly id: string;
     readonly plan: SubscribedPlan;
@@ -193,8 +193,12 @@ export class Subscription {
     return true;
   }
 
-  /** Vuelve a activa tras un pago. Devuelve el estado del que salió, o `undefined` si ya estaba al día. */
-  settle(): SubscriptionStatus | undefined {
+  /**
+   * Vuelve a activa tras un pago. Devuelve el estado del que salió, o `undefined` si ya estaba al día. Una morosa
+   * conserva su periodo, porque siguió usando el plan. Una suspendida empieza hoy un periodo nuevo con el plan
+   * vigente: los meses de suspensión no se usaron y no se cobran, y el periodo que la suspensión dejó abierto tampoco.
+   */
+  settle(plan: SubscribedPlan, today: string): SubscriptionStatus | undefined {
     const previous = this.state.status;
     if (
       previous !== SubscriptionStatus.PastDue &&
@@ -202,13 +206,16 @@ export class Subscription {
     ) {
       return undefined;
     }
+    const restarts = previous === SubscriptionStatus.Suspended;
     this.state = {
       id: this.state.id,
       planId: this.state.planId,
-      periodPlanId: this.state.periodPlanId,
+      periodPlanId: restarts ? this.state.planId : this.state.periodPlanId,
       status: SubscriptionStatus.Active,
-      period: this.state.period,
-      prorationMinor: this.state.prorationMinor,
+      period: restarts
+        ? BillingPeriod.starting(today, plan.periodicity)
+        : this.state.period,
+      prorationMinor: restarts ? 0 : this.state.prorationMinor,
       ...(this.state.version === undefined
         ? {}
         : { version: this.state.version }),

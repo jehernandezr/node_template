@@ -62,6 +62,7 @@ import {
   InternalTransportKind,
 } from '@platform/internal-api/nest';
 import { ShardScope } from '@platform/persistence';
+import { FailureClassifier } from '@platform/primitives';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { RateLimitModule } from '@platform/rate-limit/nest';
 import { ResilienceModule } from '@platform/resilience/nest';
@@ -71,6 +72,7 @@ import { SchedulingModule } from '@platform/scheduling/nest';
 import { ShardKey, ShardRouter } from '@platform/sharding';
 import { ShardingModule } from '@platform/sharding/nest';
 import { InvalidServiceDefinitionError } from '../../errors/invalid-service-definition.error.js';
+import { PlatformFailureClassifier } from '../../failures/platform-failure-classifier.js';
 import {
   RegionsConfig,
   ServiceRegions,
@@ -208,12 +210,14 @@ export class PlatformRuntimeModule {
         HealthModule,
       ],
       providers: [
+        PlatformRuntimeModule.failureClassifierProvider(),
         PlatformRuntimeModule.useCaseRunnerProvider(),
         PlatformRuntimeModule.regionsProvider(),
         ...ownPublishers,
         ...deliveryProviders,
       ],
       exports: [
+        FailureClassifier,
         UseCaseRunner,
         ServiceRegions,
         ...ownPublishers,
@@ -434,6 +438,14 @@ export class PlatformRuntimeModule {
         inject: [ShardScope, RequestContextStore],
       },
     ];
+  }
+
+  /** El clasificador con las reglas de Postgres, AWS y Valkey, para la API interna, los consumidores y las sagas. */
+  private static failureClassifierProvider(): Provider {
+    return {
+      provide: FailureClassifier,
+      useFactory: () => new PlatformFailureClassifier(),
+    };
   }
 
   /** `UseCaseRunner` no lleva decoradores para que el núcleo no importe NestJS; por eso se arma con una fábrica. */

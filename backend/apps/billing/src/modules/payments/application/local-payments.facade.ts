@@ -1,33 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
-import { PaymentAttempts } from '../domain/payment-attempts.js';
 import type {
   ChargeRequest,
   PaymentResult,
 } from '../domain/payment-provider.js';
-import type { PaymentStatus } from '../domain/payment-status.enum.js';
 import { ChargeInvoice } from './charge-invoice.use-case.js';
-import { PaymentsFacade } from './payments.facade.js';
+import { PaymentsFacade, type PaymentNotice } from './payments.facade.js';
+import { RecordPaymentResult } from './record-payment-result.use-case.js';
 
-/** `PaymentsFacade` en el mismo proceso. */
+/** `PaymentsFacade` inside the billing process itself. */
 @Injectable()
 export class LocalPaymentsFacade extends PaymentsFacade {
   constructor(
     private readonly chargeInvoice: ChargeInvoice,
-    private readonly attempts: PaymentAttempts,
-    private readonly shard: TenantShard,
+    private readonly recordResult: RecordPaymentResult,
   ) {
     super();
   }
 
+  /**
+   * Charges the attempt with `ChargeInvoice`, which never charges the same one twice.
+   * @param request Invoice, attempt number and amount to charge.
+   * @returns The provider's answer, or `Requested` if another run has the attempt in flight.
+   */
   charge(request: ChargeRequest): Promise<PaymentResult> {
     return this.chargeInvoice.execute(request);
   }
 
-  lastStatus(
-    tenantId: string,
-    invoiceId: string,
-  ): Promise<PaymentStatus | undefined> {
-    return this.shard.run(tenantId, () => this.attempts.lastStatus(invoiceId));
+  /**
+   * Records the provider notice with `RecordPaymentResult`.
+   * @param notice Notice from the provider.
+   * @returns The number of the attempt the notice belongs to.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` if `attemptId` is not an attempt of the invoice, or
+   *   `BILLING.INVOICE.INVALID_STATE` if the notice contradicts the result already recorded for its attempt or the
+   *   attempt it would take is open on behalf of another charge.
+   */
+  record(notice: PaymentNotice): Promise<number> {
+    return this.recordResult.execute(notice);
   }
 }

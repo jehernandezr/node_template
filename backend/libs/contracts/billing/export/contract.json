@@ -74,6 +74,10 @@
           "name": "InvoiceInvalidState",
           "value": "BILLING.INVOICE.INVALID_STATE"
         },
+        {
+          "name": "InvoiceAmountMismatch",
+          "value": "BILLING.INVOICE.AMOUNT_MISMATCH"
+        },
         { "name": "QuotaExceeded", "value": "BILLING.QUOTA.EXCEEDED" }
       ]
     },
@@ -745,9 +749,15 @@
         "paidAt": {
           "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
         },
-        "reference": { "type": "string", "minLength": 1, "maxLength": 120 }
+        "reference": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "amount": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        },
+        "attemptId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
       },
-      "required": ["tenantId", "invoiceId", "paidAt", "reference"],
+      "required": ["tenantId", "invoiceId", "paidAt", "reference", "amount"],
       "additionalProperties": false,
       "description": "Marca una factura como pagada con la referencia del proveedor."
     },
@@ -763,7 +773,10 @@
         "failedAt": {
           "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
         },
-        "reason": { "type": "string", "minLength": 1, "maxLength": 200 }
+        "reason": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "attemptId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
       },
       "required": ["tenantId", "invoiceId", "failedAt"],
       "additionalProperties": false,
@@ -1072,9 +1085,13 @@
       "mutating": true,
       "compensatedBy": "none",
       "compensationReason": "El pago ocurrió fuera de billing; un error se corrige con una nota, no con una reversa.",
-      "errors": ["BILLING.INVOICE.NOT_FOUND", "BILLING.INVOICE.INVALID_STATE"],
+      "errors": [
+        "BILLING.INVOICE.NOT_FOUND",
+        "BILLING.INVOICE.INVALID_STATE",
+        "BILLING.INVOICE.AMOUNT_MISMATCH"
+      ],
       "timeoutMs": 5000,
-      "description": "Marca una factura como pagada con la referencia del proveedor."
+      "description": "Marca una factura como pagada con la referencia del proveedor y el monto cobrado, que debe ser su total."
     },
     {
       "name": "markInvoiceFailed",
@@ -1349,6 +1366,15 @@
         "audience": "public",
         "messageKey": "error_billing_invoice_invalid_state",
         "description": "La factura no está en un estado que admita la operación pedida."
+      },
+      {
+        "name": "InvoiceAmountMismatch",
+        "code": "BILLING.INVOICE.AMOUNT_MISMATCH",
+        "httpStatus": 422,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_billing_invoice_amount_mismatch",
+        "description": "Lo pagado no coincide con el total de la factura en su moneda. Los detalles traen expected y received."
       },
       {
         "name": "QuotaExceeded",

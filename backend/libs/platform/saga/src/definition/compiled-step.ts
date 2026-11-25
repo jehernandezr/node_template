@@ -13,6 +13,8 @@ export interface CompiledStep<TState> {
   readonly afterPivot: boolean;
   /** Contrato de la operación. Al arrancar se verifican contra él la idempotencia y los presupuestos de tiempo. */
   readonly definition: OperationDefinition;
+  /** Motivos de `transient-failure` que son avance del participante y no gastan suspensiones. */
+  readonly progressReasons: ReadonlySet<string>;
   input(state: TState): unknown;
   onSuccess(state: TState, output: unknown): void;
   compensationInput(state: TState, forward: ForwardEntry): unknown;

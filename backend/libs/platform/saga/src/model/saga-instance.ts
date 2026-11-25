@@ -309,6 +309,29 @@ export class SagaInstance {
     );
   }
 
+  /**
+   * Pausa corta tras una llamada en la que el participante avanzó: vuelve a intentar con la primera espera de
+   * `policy` y sin gastar suspensiones, que se cuentan de nuevo desde cero.
+   */
+  continueAfterProgress(
+    code: string,
+    detail: string | null,
+    now: Date,
+    policy: SuspendPolicy,
+  ): SagaInstance {
+    return this.next(
+      {
+        status: SagaStatus.Suspended,
+        attempts: 0,
+        suspendedSince: null,
+        nextAttemptAt: new Date(now.getTime() + policy.backoff(1)),
+        lastErrorCode: code,
+        lastErrorDetail: detail,
+      },
+      now,
+    );
+  }
+
   /** Detiene la saga hasta que decida una persona: `RequiresIntervention` o `CompensationFailed`. */
   finish(
     status: SagaStatus.RequiresIntervention | SagaStatus.CompensationFailed,

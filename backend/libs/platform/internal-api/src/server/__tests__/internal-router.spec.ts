@@ -128,7 +128,9 @@ describe('InternalRouter', () => {
       );
 
       expect(handler.inputs).toEqual([{ sku: 'A', qty: 2 }]);
-      expect(handler.contexts).toEqual([meta]);
+      expect(handler.contexts).toEqual([
+        { ...meta, signal: expect.any(AbortSignal) },
+      ]);
     });
 
     it('handle, handler outcome, returns the outcome of the dispatcher', async () => {

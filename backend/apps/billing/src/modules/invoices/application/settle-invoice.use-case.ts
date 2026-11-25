@@ -10,12 +10,15 @@ import { MessageBus } from '@platform/messaging';
 import { BillingError } from '../../../shared/errors/billing.error.js';
 import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { SubscriptionsFacade } from '../../subscriptions/index.js';
+import { CollectionRetrySchedule } from '../domain/collection-retry-schedule.js';
 import { InvoiceRepository } from '../domain/invoice.repository.js';
 import type { Invoice, InvoiceState } from '../domain/invoice.js';
 
 /**
- * Aplica el resultado de un cobro a la factura y a la suscripción: un pago la salda y reactiva a una morosa
- * que ya no debe otra factura fallida; un fallo deja morosa a la suscripción. Repetir el mismo resultado no publica de nuevo.
+ * Aplica el resultado de un cobro a la factura y a la suscripción: un pago la salda y reactiva a una morosa que ya no
+ * debe otra factura fallida; un rechazo programa el reintento y deja morosa a la suscripción. Cada cambio toma antes la
+ * suscripción con `FOR UPDATE`: dos pagos simultáneos de facturas distintas se ven uno al otro y el segundo reactiva.
+ * Repetir el mismo resultado no publica de nuevo.
  */
 @Injectable()
 export class SettleInvoice {
@@ -56,14 +59,18 @@ export class SettleInvoice {
     });
   }
 
-  /** @throws BillingError `BILLING.INVOICE.NOT_FOUND` o `BILLING.INVOICE.INVALID_STATE`. */
+  /**
+   * Anota el rechazo del intento `attempt`.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` o `BILLING.INVOICE.INVALID_STATE`.
+   */
   failed(
     tenantId: string,
     invoiceId: string,
     failedAt: Date,
+    attempt: number,
   ): Promise<InvoiceState> {
     return this.change(tenantId, invoiceId, async (invoice) => {
-      if (!invoice.fail()) {
+      if (!invoice.fail(failedAt, attempt, CollectionRetrySchedule.STANDARD)) {
         return;
       }
       await this.invoices.update(invoice);
@@ -91,6 +98,7 @@ export class SettleInvoice {
   ): Promise<InvoiceState> {
     return this.shard.run(tenantId, () =>
       this.transactions.runInTransaction(async () => {
+        await this.subscriptions.lock(tenantId);
         const invoice = await this.invoices.find(invoiceId);
         if (invoice === undefined) {
           throw new BillingError(BillingErrorCode.InvoiceNotFound);

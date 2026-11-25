@@ -31,6 +31,9 @@ export class InvoiceMapper {
           amountMinor: Number(line.amountMinor),
         })),
       ...(row.paidAt === null ? {} : { paidAt: row.paidAt }),
+      ...(row.nextCollectionAt === null
+        ? {}
+        : { nextCollectionAt: row.nextCollectionAt }),
       ...(row.version === undefined ? {} : { version: row.version }),
     });
   }
@@ -48,6 +51,7 @@ export class InvoiceMapper {
       issuedAt: state.issuedAt,
       paidAt: state.paidAt ?? null,
       failedAttempts: state.failedAttempts,
+      nextCollectionAt: state.nextCollectionAt ?? null,
       ...(state.version === undefined ? {} : { version: state.version }),
     });
   }

@@ -1,8 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IdentityErrorCode, IdentitySaga } from '@contracts/identity';
 import { Clock, IdGenerator } from '@platform/kernel';
 import { ServiceRegions } from '@platform/service';
-import { TenantMoveTargets } from '@platform/tenant-move';
+import {
+  TenantMoveConfig,
+  TenantMoveTargets,
+  type TenantMoveSettings,
+} from '@platform/tenant-move';
 import { IdentitySettings } from '../../../config/identity-settings.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentitySagas } from '../../sagas/index.js';
@@ -26,7 +30,7 @@ export interface TenantMoveLaunch {
 
 /**
  * Lanza el traslado de un tenant: valida el tenant y el destino, lo anota en `tenant_moves` y arranca `MoveTenant`.
- * La bitácora de la saga vive en el shard del tenant de plataforma, que nunca se traslada: la del tenant que se
+ * La saga arranca con el plazo `TENANT_MOVE_DEADLINE_MS`. La bitácora de la saga vive en el shard del tenant de plataforma, que nunca se traslada: la del tenant que se
  * mueve quedaría atrás de su propia barrera.
  */
 @Injectable()
@@ -40,6 +44,8 @@ export class StartTenantMove {
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly settings: IdentitySettings,
+    @Inject(TenantMoveConfig.token)
+    private readonly moveSettings: TenantMoveSettings,
   ) {}
 
   /**
@@ -77,6 +83,7 @@ export class StartTenantMove {
       sagaId: launch.sagaId,
       tenantId: platformTenantId,
       requestedBy: platformTenantId,
+      deadlineMs: this.moveSettings.TENANT_MOVE_DEADLINE_MS,
       state: {
         moveId: launch.moveId,
         tenantId: request.tenantId,

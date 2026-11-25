@@ -67,6 +67,14 @@
           "value": "NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN"
         },
         {
+          "name": "EmailTemplateParameterMissing",
+          "value": "NOTIFICATIONS.EMAIL.TEMPLATE_PARAMETER_MISSING"
+        },
+        {
+          "name": "EmailInProgress",
+          "value": "NOTIFICATIONS.EMAIL.IN_PROGRESS"
+        },
+        {
           "name": "RealtimeUnauthenticated",
           "value": "NOTIFICATIONS.REALTIME.UNAUTHENTICATED"
         }
@@ -594,7 +602,8 @@
       "compensationReason": "Un correo ya enviado no se puede retirar.",
       "errors": [
         "NOTIFICATIONS.EMAIL.RECIPIENT_SUPPRESSED",
-        "NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN"
+        "NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN",
+        "NOTIFICATIONS.EMAIL.TEMPLATE_PARAMETER_MISSING"
       ],
       "timeoutMs": 6000,
       "description": "Envía un correo transaccional. El código de un solo uso viaja por la API interna y nunca por el bus."
@@ -799,6 +808,24 @@
         "audience": "internal",
         "messageKey": "error_notifications_email_template_unknown",
         "description": "La plantilla de correo pedida no existe."
+      },
+      {
+        "name": "EmailTemplateParameterMissing",
+        "code": "NOTIFICATIONS.EMAIL.TEMPLATE_PARAMETER_MISSING",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_notifications_email_template_parameter_missing",
+        "description": "Falta un dato obligatorio de la plantilla: el correo no se envía incompleto. Los detalles traen parameter."
+      },
+      {
+        "name": "EmailInProgress",
+        "code": "NOTIFICATIONS.EMAIL.IN_PROGRESS",
+        "httpStatus": 409,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_notifications_email_in_progress",
+        "description": "Otro envío del mismo correo está en curso; se reintenta sin volver a enviarlo."
       },
       {
         "name": "RealtimeUnauthenticated",

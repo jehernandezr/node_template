@@ -69,9 +69,13 @@ export interface QueueSpec {
   readonly fifo?: boolean;
   /** Segundos que un mensaje queda invisible mientras se procesa. Por defecto 30. */
   readonly visibilityTimeoutSeconds?: number;
-  /** Por defecto 5 intentos, 1 s de base y 5 min de tope. */
+  /** Por defecto 10 intentos, 1 s de base y 5 min de tope: la ventana cubre varios minutos de una caída. */
   readonly retry?: QueueRetryPolicy;
-  /** Por defecto `maxReceiveCount` igual a los intentos y 14 días de retención. */
+  /**
+   * Por defecto `maxReceiveCount` diez veces los intentos (hasta 1 000) y 14 días de retención. SQS cuenta cada
+   * recepción, también las fallas de infraestructura y las reentregas de un mensaje en curso, que el consumidor no
+   * cuenta como intentos; el margen evita que la cola los mande a la DLQ por su cuenta.
+   */
   readonly deadLetter?: Partial<DeadLetterPolicy>;
   readonly commands?: readonly CommandDefinition[];
   readonly subscriptions?: readonly QueueSubscriptionSpec[];
@@ -91,7 +95,8 @@ export const DEAD_LETTER_SUFFIX = '-dlq';
 export const QueueDefaults = {
   visibilityTimeoutSeconds: 30,
   maxVisibilityTimeoutSeconds: 43_200,
-  retry: { maxAttempts: 5, baseMs: 1_000, maxMs: 300_000 },
+  retry: { maxAttempts: 10, baseMs: 1_000, maxMs: 300_000 },
+  receivesPerAttempt: 10,
   deadLetterRetentionDays: 14,
   maxDeadLetterRetentionDays: 14,
   maxReceiveCount: 1_000,
@@ -172,7 +177,12 @@ export function defineQueue(spec: QueueSpec): QueueDefinition {
     fail('retry exige maxAttempts entero positivo y 0 < baseMs <= maxMs');
   }
 
-  const maxReceiveCount = spec.deadLetter?.maxReceiveCount ?? retry.maxAttempts;
+  const maxReceiveCount =
+    spec.deadLetter?.maxReceiveCount ??
+    Math.min(
+      retry.maxAttempts * QueueDefaults.receivesPerAttempt,
+      QueueDefaults.maxReceiveCount,
+    );
   if (
     !isPositiveInt(maxReceiveCount) ||
     maxReceiveCount < retry.maxAttempts ||

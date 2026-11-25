@@ -80,6 +80,14 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
     return this.standing.markPastDue(tenantId);
   }
 
+  /**
+   * Toma la suscripción del tenant con `FOR UPDATE` en la transacción abierta, en su shard.
+   * @param tenantId Tenant de la suscripción.
+   */
+  lock(tenantId: string): Promise<void> {
+    return this.shard.run(tenantId, () => this.subscriptions.lock());
+  }
+
   settle(tenantId: string): Promise<void> {
     return this.standing.settle(tenantId);
   }

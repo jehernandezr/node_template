@@ -43,11 +43,11 @@
       "name": "billing-identity",
       "fifo": false,
       "visibilityTimeoutSeconds": 30,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "billing-identity-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [
@@ -64,11 +64,11 @@
       "name": "billing-usage",
       "fifo": true,
       "visibilityTimeoutSeconds": 30,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "billing-usage-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [],
@@ -80,11 +80,11 @@
       "name": "identity-access-projection",
       "fifo": false,
       "visibilityTimeoutSeconds": 30,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "identity-access-projection-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [
@@ -101,11 +101,11 @@
       "name": "identity-billing",
       "fifo": false,
       "visibilityTimeoutSeconds": 30,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "identity-billing-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [
@@ -126,11 +126,11 @@
       "name": "notifications-realtime-control",
       "fifo": false,
       "visibilityTimeoutSeconds": 30,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "notifications-realtime-control-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [
@@ -150,11 +150,11 @@
       "name": "notifications-triggers",
       "fifo": false,
       "visibilityTimeoutSeconds": 30,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "notifications-triggers-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [
@@ -183,11 +183,11 @@
       "name": "reports-finance-projections",
       "fifo": false,
       "visibilityTimeoutSeconds": 30,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "reports-finance-projections-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [
@@ -212,11 +212,11 @@
       "name": "reports-projections",
       "fifo": false,
       "visibilityTimeoutSeconds": 30,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "reports-projections-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [
@@ -237,11 +237,11 @@
       "name": "reports-runs",
       "fifo": false,
       "visibilityTimeoutSeconds": 300,
-      "maxAttempts": 5,
-      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
       "dlq": {
         "name": "reports-runs-dlq",
-        "maxReceiveCount": 5,
+        "maxReceiveCount": 100,
         "retentionSeconds": 1209600
       },
       "subscriptions": [],

@@ -5,7 +5,9 @@ import { SagaStatus } from '@platform/saga';
 import { TenantStatus } from '@platform/sharding';
 import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import {
+  ForeignKeyRaceTransfer,
   LedgerManifest,
+  ProbedAbortTransfer,
   RehearsalShard,
   TenantMoveRehearsal,
 } from '../../__tests__/utils/index.js';
@@ -204,6 +206,73 @@ runtime.describeIfAvailable('TenantMoves back and forth between shards', () => {
     await expect(ledgerIds(RehearsalShard.A, tenant)).resolves.toEqual(
       afterFirstCleanup,
     );
+    await expect(ledgerIds(RehearsalShard.B, tenant)).resolves.toEqual([]);
+  });
+
+  it('keeps the copy of a move back to the source when the cleanup of the first move runs between its finalize and its switch', async () => {
+    const tenant = newId();
+    await rehearsal.seed(tenant, RehearsalShard.A);
+    const away = await rehearsal.move(tenant, RehearsalShard.B);
+    const writtenAway = await write(tenant);
+    const moves = rehearsal.steps();
+    const back = rehearsal.refTo(tenant, RehearsalShard.A);
+    await untilDone(() => moves.sync(back));
+    await untilDone(() => moves.finalize(back));
+
+    await expect(moves.cleanup(away.ref)).rejects.toMatchObject({
+      code: TenantMoveErrorCode.MoveInProgress,
+      retryable: false,
+    });
+    await moves.switch(back);
+    await rehearsal.cleanup(away.ref);
+    await rehearsal.cleanup(back);
+
+    const rows = await ledgerIds(RehearsalShard.A, tenant);
+    expect(rows).toContain(writtenAway);
+    expect(rows).toHaveLength(3);
+    await expect(ledgerIds(RehearsalShard.B, tenant)).resolves.toEqual([]);
+  });
+
+  it('answers a round pending when a child reaches the target before its parent, and copies both on the next round', async () => {
+    const tenant = newId();
+    await rehearsal.seed(tenant, RehearsalShard.A);
+    const moves = rehearsal.stepsWith(
+      (transfer) => new ForeignKeyRaceTransfer(transfer),
+    );
+    const move = rehearsal.refTo(tenant, RehearsalShard.B);
+
+    await expect(moves.sync(move)).rejects.toMatchObject({
+      code: TenantMoveErrorCode.RoundPending,
+      retryable: true,
+    });
+    await untilDone(() => moves.sync(move));
+    const verification = await untilDone(() => moves.finalize(move));
+    await moves.switch(move);
+
+    expect(verification.verified).toBe(true);
+  });
+
+  it('lets the tenant write in the source again before it discards the copy of an aborted move', async () => {
+    const tenant = newId();
+    await rehearsal.seed(tenant, RehearsalShard.A);
+    const seen: { fence?: string; status?: TenantStatus } = {};
+    const moves = rehearsal.stepsWith(
+      (transfer) =>
+        new ProbedAbortTransfer(transfer, async () => {
+          seen.fence = await rehearsal.fence.raisedBy(
+            await rehearsal.shard(RehearsalShard.A),
+            tenant,
+          );
+          seen.status = (await rehearsal.placement(tenant)).status;
+        }),
+    );
+    const move = rehearsal.refTo(tenant, RehearsalShard.B);
+    await untilDone(() => moves.sync(move));
+    await untilDone(() => moves.finalize(move));
+
+    await moves.abort(move);
+
+    expect(seen).toEqual({ fence: undefined, status: TenantStatus.Active });
     await expect(ledgerIds(RehearsalShard.B, tenant)).resolves.toEqual([]);
   });
 });

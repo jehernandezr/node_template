@@ -10,8 +10,10 @@ import {
   SendEmailOperation,
   TemplateParameter,
 } from '@contracts/notifications';
+import { IdentityEvent, RevocationScope } from '@contracts/identity';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
-import { Eventually } from '@platform/messaging/test-utils';
+import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
+import { EnvelopeBuilder, Eventually } from '@platform/messaging/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
 import { ProvisionedService } from '@platform/service/test-utils';
 import { TenantStatus } from '@platform/sharding';
@@ -21,8 +23,10 @@ import { SseTestClient } from '@platform/realtime/test-utils';
 import { RetryDeliveriesJob } from '../modules/dispatch/application/retry-deliveries.job.js';
 import { DeliveryStatus } from '../modules/dispatch/domain/delivery.js';
 import { DeliveryRepository } from '../modules/dispatch/domain/delivery.repository.js';
+import { SendEmail } from '../modules/email/application/send-email.use-case.js';
 import {
   EmailLedger,
+  EmailReservationKind,
   EmailStatus,
 } from '../modules/email/domain/email-ledger.js';
 import { UserShard } from '../shared/utils/user-shard.js';
@@ -228,6 +232,33 @@ new ContainerRuntime(process.env).describeIfAvailable(
       ]);
     });
 
+    it('sends one email when the same message id arrives twice at once', async () => {
+      const input = {
+        messageId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9e52',
+        template: EmailTemplate.MfaCode,
+        to: 'doble@example.com',
+        locale: 'es',
+        parameters: [{ name: TemplateParameter.Code, value: '771204' }],
+      };
+
+      await Promise.allSettled([
+        app.internal().invoke(SendEmailOperation, input),
+        app.internal().invoke(SendEmailOperation, input),
+      ]);
+      await app.mailpit.waitForMailTo('doble@example.com', 10_000);
+      const retried = await app.internal().invoke(SendEmailOperation, input);
+
+      expect(retried).toEqual({
+        kind: CallOutcomeKind.Success,
+        value: { messageId: input.messageId },
+      });
+      expect(
+        (await app.mailpit.received()).filter(
+          (mail) => mail.to === 'doble@example.com',
+        ),
+      ).toHaveLength(1);
+    });
+
     it('retries in every shard the deliveries the provider refused, mails them, and purges old read notifications', async () => {
       const carl = {
         userId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9b03',
@@ -331,6 +362,34 @@ new ContainerRuntime(process.env).describeIfAvailable(
       ).resolves.toEqual([]);
     });
 
+    it('accepts through the dispatcher the revocation of every session of a user that comes with the tenant of origin', async () => {
+      const revocation = (id: string, tenantid?: string) =>
+        EnvelopeBuilder.anEnvelope({
+          id,
+          type: IdentityEvent.TokensRevoked,
+          source: 'identity',
+          ...(tenantid === undefined ? {} : { tenantid }),
+          data: {
+            scope: RevocationScope.User,
+            subjectId: ANA.userId,
+            revokedBefore: new Date().toISOString(),
+          },
+        });
+      const dispatcher = app.get(MessageDispatcher);
+
+      const withTenant = await dispatcher.dispatch(
+        revocation('0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f81', ANA.tenantId),
+        { receiveCount: 1 },
+      );
+      const withoutTenant = await dispatcher.dispatch(
+        revocation('0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f82'),
+        { receiveCount: 1 },
+      );
+
+      expect(withTenant.outcome).toBe(DispatchOutcome.Processed);
+      expect(withoutTenant.outcome).toBe(DispatchOutcome.DeadLetter);
+    });
+
     it('records the same email twice at once without a duplicate key and counts both writes', async () => {
       const ledger = app.get(EmailLedger);
       const messageId = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f71';
@@ -351,6 +410,40 @@ new ContainerRuntime(process.env).describeIfAvailable(
           `SELECT version FROM email_messages WHERE message_id = '${messageId}'`,
         );
       expect(rows).toEqual([{ version: 2 }]);
+    });
+
+    it('takes over a reservation that stayed in sending longer than the window, measured with the clock of the database', async () => {
+      const ledger = app.get(EmailLedger);
+      const entry = (messageId: string) => ({
+        messageId,
+        template: EmailTemplate.MfaCode,
+        templateVersion: 1,
+        recipientHash: 'b'.repeat(64),
+      });
+      const stale = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f81';
+      const fresh = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f82';
+      await ledger.reserve(entry(stale), SendEmail.ABANDONED_AFTER_MS);
+      await ledger.reserve(entry(fresh), SendEmail.ABANDONED_AFTER_MS);
+      await app.servers
+        .catalog()
+        .query(
+          `UPDATE email_messages SET updated_at = now() - interval '3 minutes' WHERE message_id = '${stale}'`,
+        );
+
+      const retaken = await ledger.reserve(
+        entry(stale),
+        SendEmail.ABANDONED_AFTER_MS,
+      );
+      const inFlight = await ledger.reserve(
+        entry(fresh),
+        SendEmail.ABANDONED_AFTER_MS,
+      );
+
+      expect(retaken).toEqual({ kind: EmailReservationKind.Reserved });
+      expect(inFlight).toMatchObject({
+        kind: EmailReservationKind.Taken,
+        current: { status: EmailStatus.Sending },
+      });
     });
 
     it('saves the same new delivery twice at once without a duplicate key and counts both writes', async () => {

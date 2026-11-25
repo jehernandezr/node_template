@@ -228,24 +228,27 @@ describe('OutboxRelay FIFO per groupId', () => {
     expect(ids()).toEqual(['b1', 'free', 'a1', 'a2']);
   });
 
-  it('lets a group continue after its head goes Dead', async () => {
+  it('holds a group behind its head while the transport is down and keeps its order when it comes back', async () => {
     const { store, publisher, relay, clock } = setup();
     store.add(envelope('a1'), { now: at(0), groupId: 'order-1' });
     store.add(envelope('a2'), { now: at(1), groupId: 'order-1' });
     publisher.failing.add('a1');
     clock.set(at(10));
-
-    expect(
-      await relay({
-        retryPolicy: new RetryPolicy(1, 1_000, 60_000, BackoffStrategy.None),
-      }).relayOnce(),
-    ).toMatchObject({
-      published: 1,
-      dead: 1,
-      deferred: 0,
+    const instance = relay({
+      retryPolicy: new RetryPolicy(1, 1_000, 60_000, BackoffStrategy.None),
     });
-    expect(publisher.published.map((p) => p.envelope.id)).toEqual(['a2']);
-    expect(store.get('a1')?.status).toBe(OutboxStatus.Dead);
+
+    expect(await instance.relayOnce()).toMatchObject({
+      published: 0,
+      failed: 1,
+      dead: 0,
+      deferred: 1,
+    });
+    publisher.failing.delete('a1');
+    clock.set(at(120_000));
+    await instance.relayOnce();
+
+    expect(publisher.published.map((p) => p.envelope.id)).toEqual(['a1', 'a2']);
   });
 
   it('blocks the group of a record whose mark was rejected', async () => {

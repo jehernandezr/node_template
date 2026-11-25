@@ -18,6 +18,7 @@ import type { CallMeta } from '../../transport/call-meta.js';
 import { OperationRoute } from '../operation-route.js';
 import { ScriptedHandler } from './utils/scripted-handler.js';
 import { RecordingProcessedOperationStore } from './utils/recording-processed-operation-store.js';
+import { RenewalSignalingStore } from './utils/renewal-signaling-store.js';
 import { ServerHarness } from './utils/server-harness.js';
 
 const Reserve = defineOperation({
@@ -337,5 +338,93 @@ describe('OperationDispatcher', () => {
       deadline: { atMs: meta.deadline },
       leaseMarginMs: 250,
     });
+  });
+
+  it('dispatch, handler slower than its lease, keeps the key so a retry answers in-progress instead of running it twice', async () => {
+    const clock = new FixedClock();
+    const store = new RenewalSignalingStore(clock, new SequentialIdGenerator());
+    const harness = new ServerHarness({
+      clock,
+      store,
+      keeper: { renewEveryMs: 5, renewedLeaseMs: 10_000 },
+    });
+    let finish!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const handler = new ScriptedHandler().thenReturn(
+      { outcome: success() },
+      gate,
+    );
+    const route = routeFor(harness, handler);
+
+    const first = harness.dispatcher.dispatch(route, input, harness.meta('k'));
+    await harness.settle();
+    clock.advance(12_000);
+    await store.nextRenewal();
+    const retry = await harness.dispatcher.dispatch(
+      route,
+      input,
+      harness.meta('k'),
+    );
+    finish();
+
+    expect(retry).toEqual(
+      CallOutcome.transientFailure(InternalApiReason.InProgress),
+    );
+    await expect(first).resolves.toEqual(success());
+    expect(handler.calls).toBe(1);
+  });
+
+  it('dispatch, a call, stops renewing the lease once the handler finished', async () => {
+    const clock = new FixedClock();
+    const store = new RenewalSignalingStore(clock, new SequentialIdGenerator());
+    const harness = new ServerHarness({
+      clock,
+      store,
+      keeper: { renewEveryMs: 1, renewedLeaseMs: 10_000 },
+    });
+    const handler = new ScriptedHandler().thenReturn({ outcome: success() });
+
+    await harness.dispatcher.dispatch(
+      routeFor(harness, handler),
+      input,
+      harness.meta('k'),
+    );
+    const renewalsAtEnd = store.renewals;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(store.renewals).toBe(renewalsAtEnd);
+  });
+
+  it('dispatch, a call, gives the handler a signal that aborts when the deadline of the attempt passes', async () => {
+    const harness = new ServerHarness();
+    let release!: () => void;
+    const handler = new ScriptedHandler().thenReturn(
+      { outcome: success() },
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+    const result = harness.dispatcher.dispatch(
+      routeFor(harness, handler),
+      input,
+      harness.meta('k', { deadline: harness.clock.now().getTime() + 20 }),
+    );
+    await harness.settle();
+    const signal = handler.contexts[0]?.signal;
+
+    await new Promise<void>((resolve) => {
+      if (signal === undefined || signal.aborted) {
+        resolve();
+        return;
+      }
+      signal.addEventListener('abort', () => resolve(), { once: true });
+    });
+    release();
+    await result;
+
+    expect(signal?.aborted).toBe(true);
+    expect(signal?.reason).toMatchObject({ name: 'DeadlineExceededError' });
   });
 });

@@ -6,6 +6,7 @@ export enum BillingErrorCode {
   PlanUsageExceedsLimit = 'BILLING.PLAN.USAGE_EXCEEDS_LIMIT',
   InvoiceNotFound = 'BILLING.INVOICE.NOT_FOUND',
   InvoiceInvalidState = 'BILLING.INVOICE.INVALID_STATE',
+  InvoiceAmountMismatch = 'BILLING.INVOICE.AMOUNT_MISMATCH',
   QuotaExceeded = 'BILLING.QUOTA.EXCEEDED',
 }
 

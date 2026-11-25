@@ -43,6 +43,7 @@ import { TasksModule } from './modules/tasks/presentation/tasks.module.js';
     }),
     TenantDirectoryModule.forFeature({
       service: tasksContract.service,
+      manifest: TasksTenantMoveManifest,
       operations: TasksTenantDirectoryOperations,
     }),
     // generated:modules

@@ -7,6 +7,7 @@ import { CloseInvoicePeriodsJob } from '../application/close-invoice-periods.job
 import { InvoiceQueries } from '../application/invoice-queries.js';
 import { InvoicesFacade } from '../application/invoices.facade.js';
 import { IssueInvoice } from '../application/issue-invoice.use-case.js';
+import { RecordPaymentNotice } from '../application/record-payment-notice.use-case.js';
 import { SettleInvoice } from '../application/settle-invoice.use-case.js';
 import { InvoiceMaintenance } from '../domain/invoice-maintenance.js';
 import { InvoiceNumbering } from '../domain/invoice-numbering.js';
@@ -37,6 +38,7 @@ import { InvoicesInternalOperations } from './invoices.internal-operations.js';
     { provide: InvoiceMaintenance, useClass: TypeOrmInvoiceMaintenance },
     IssueInvoice,
     SettleInvoice,
+    RecordPaymentNotice,
     CollectInvoice,
     CloseInvoicePeriodsJob,
     InvoiceQueries,

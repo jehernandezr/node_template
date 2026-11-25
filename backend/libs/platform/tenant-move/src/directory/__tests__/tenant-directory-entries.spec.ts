@@ -2,6 +2,7 @@ import {
   DirectoryWriteResult,
   ShardRouter,
   TenantStatus,
+  type TenantPlacement,
 } from '@platform/sharding';
 import {
   InMemoryDirectoryStore,
@@ -9,6 +10,7 @@ import {
 } from '@platform/sharding/test-utils';
 import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import { TenantMoveTargets } from '../../targets/tenant-move-targets.js';
+import { TenantDataPresence } from '../tenant-data-presence.js';
 import { TenantDirectoryEntries } from '../tenant-directory-entries.js';
 import { TenantShardGroups } from '../tenant-shard-groups.js';
 
@@ -26,7 +28,19 @@ class ContendedDirectoryStore extends InMemoryDirectoryStore {
   }
 }
 
-const entriesOver = (directory: InMemoryDirectoryStore) =>
+/** Datos del servicio por tenant, sin base: lo que diría la consulta a las tablas del manifiesto. */
+class KnownTenantData extends TenantDataPresence {
+  readonly withData = new Set<string>();
+
+  async holdsData(placement: TenantPlacement): Promise<boolean> {
+    return this.withData.has(placement.tenantId);
+  }
+}
+
+const entriesOver = (
+  directory: InMemoryDirectoryStore,
+  presence: TenantDataPresence = new KnownTenantData(),
+) =>
   new TenantDirectoryEntries(
     directory,
     directory,
@@ -37,6 +51,7 @@ const entriesOver = (directory: InMemoryDirectoryStore) =>
         'group-1': { region: 'eu', shard: 'tasks_shard_1' },
       }),
     ),
+    presence,
   );
 
 const directoryWithShards = (
@@ -132,6 +147,36 @@ describe('TenantDirectoryEntries', () => {
       tenantId: TENANT,
     });
     await expect(directory.getPlacement(TENANT)).resolves.toBeUndefined();
+  });
+
+  it('refuses to take out a tenant that already has data in the service and keeps its row', async () => {
+    const directory = directoryWithShards();
+    const presence = new KnownTenantData();
+    const entries = entriesOver(directory, presence);
+    await entries.place(entry);
+    presence.withData.add(TENANT);
+
+    await expect(entries.remove({ tenantId: TENANT })).rejects.toMatchObject({
+      code: TenantMoveErrorCode.TenantHasData,
+      retryable: false,
+    });
+    await expect(directory.getPlacement(TENANT)).resolves.toBeDefined();
+  });
+
+  it('refuses to take out a tenant in the middle of a move', async () => {
+    const directory = directoryWithShards();
+    directory.setPlacement(
+      PlacementBuilder.aPlacement()
+        .withTenantId(TENANT)
+        .withShardGroup('tasks_shard_1')
+        .withStatus(TenantStatus.Migrating)
+        .build(),
+    );
+
+    await expect(
+      entriesOver(directory).remove({ tenantId: TENANT }),
+    ).rejects.toMatchObject({ code: TenantMoveErrorCode.MoveInProgress });
+    await expect(directory.getPlacement(TENANT)).resolves.toBeDefined();
   });
 
   it('gives up when other writes keep winning', async () => {

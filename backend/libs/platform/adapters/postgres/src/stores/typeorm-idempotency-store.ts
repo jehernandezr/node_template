@@ -27,6 +27,15 @@ export class TypeOrmIdempotencyStore<
     return this.table.release(key, claimToken);
   }
 
+  /** Extiende el lease de un claim en curso del token; `false` si ya terminó o lo tomó otro intento. */
+  renew(
+    key: string,
+    claimToken: string,
+    leaseUntilMs: number,
+  ): Promise<boolean> {
+    return this.table.renew(key, claimToken, new Date(leaseUntilMs));
+  }
+
   /** Borra resultados completados antes de `before`. Para el job de retención. Devuelve cuántos borró. */
   purgeCompleted(before: Date): Promise<number> {
     return this.table.purgeCompleted(before);

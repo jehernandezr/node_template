@@ -34,6 +34,7 @@ export interface StepExecutorDeps {
  * - `success`: aplica la salida con `onSuccess` y avanza (`completeStep`).
  * - `business-error`: antes del pivote compensa desde el paso anterior; después, exige intervención.
  * - `transient-failure` y `uncertain`: suspende y reintenta con la misma llave y entrada hasta agotar la suspensión, y entonces exige intervención. Antes del pivote, un plazo de saga pasado compensa incluido el paso.
+ * - `transient-failure` con un motivo de avance del paso (`progressOn`): repite sin gastar suspensiones.
  * - `protocol-violation`: antes del pivote compensa incluido el paso; después, exige intervención. Emite `SagaEventKind.ProtocolViolation`.
  */
 export class StepExecutor {
@@ -246,17 +247,31 @@ export class StepExecutor {
     const { dispatched, instance } = attempt;
     const index = dispatched.stepIndex;
     const uncertain = caller.finish(dispatched, StepStatus.Uncertain, code);
-    const next =
-      index < compiled.pivotIndex && instance.deadlinePassed(now)
-        ? instance.startCompensation(
-            compiled,
-            steps.with(uncertain),
-            index,
-            SagaErrorCode.DeadlineExceeded,
-            detail,
-            now,
-          )
-        : instance.suspend(code, detail, now, settings.suspendPolicy());
+    if (index < compiled.pivotIndex && instance.deadlinePassed(now)) {
+      return caller.commit(
+        run,
+        instance.startCompensation(
+          compiled,
+          steps.with(uncertain),
+          index,
+          SagaErrorCode.DeadlineExceeded,
+          detail,
+          now,
+        ),
+        uncertain,
+      );
+    }
+    const progressed =
+      attempt.outcome.kind === CallOutcomeKind.TransientFailure &&
+      this.stepAt(compiled, index).progressReasons.has(detail);
+    const next = progressed
+      ? instance.continueAfterProgress(
+          code,
+          detail,
+          now,
+          settings.suspendPolicy(),
+        )
+      : instance.suspend(code, detail, now, settings.suspendPolicy());
     return caller.commit(run, next, uncertain);
   }
 

@@ -11,6 +11,7 @@ import {
   ProcessDied,
   SagaEngineKit,
 } from '@platform/saga/test-utils';
+import { TenantMoveErrorCode } from '@platform/tenant-move';
 import { RecordingParticipants } from '../../../../__tests__/utils/index.js';
 import { MoveTenantSaga, type MoveTenantState } from '../move-tenant.saga.js';
 
@@ -147,5 +148,28 @@ describe('MoveTenantSaga', () => {
     expect((await kit.store.get(SAGA_ID))?.status).toBe(SagaStatus.Completed);
     expect(participants.effectsOf(TasksOperation.TenantMoveFinalize)).toBe(1);
     expect(participants.effectsOf(BillingOperation.TenantMoveSwitch)).toBe(1);
+  });
+
+  it('keeps calling a finalize that answers that its round goes on past the suspension cap, without freezing the tenant for good', async () => {
+    const participants = new RecordingParticipants();
+    const rounds = 25;
+    for (let round = 0; round < rounds; round += 1) {
+      participants.answer(
+        BillingOperation.TenantMoveFinalize,
+        CallOutcome.transientFailure(TenantMoveErrorCode.RoundPending),
+      );
+    }
+    const kit = kitOf(participants);
+    let saga = await kit.sagas.start(MoveTenantSaga, MOVE, {
+      sagaId: SAGA_ID,
+    });
+
+    for (let round = 0; round < rounds; round += 1) {
+      expect(saga.status).toBe(SagaStatus.Suspended);
+      kit.clock.advance(LEASE_EXPIRED_MS);
+      saga = await kit.engineFor('node-b').resume(SAGA_ID);
+    }
+
+    expect(saga.status).toBe(SagaStatus.Completed);
   });
 });

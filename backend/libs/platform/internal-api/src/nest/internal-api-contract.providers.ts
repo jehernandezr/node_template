@@ -9,7 +9,11 @@ import type { InternalApiModuleOptions } from './internal-api-module-options.js'
 import { INTERNAL_API_OPTIONS } from './internal-api.module-definition.js';
 import { PublishedContracts } from './published-contracts.js';
 
-/** Proveedores de los catálogos de operaciones y de las piezas que comparten cliente y servidor. */
+/**
+ * Proveedores de los catálogos de operaciones y de las piezas que comparten cliente y servidor. El `CallOutcomeFactory`
+ * usa el `FailureClassifier` del servicio si lo hay, con las reglas de sus adaptadores: sin ellas un error pasajero de
+ * la base sería permanente y el servidor respondería `protocol-violation`.
+ */
 export class InternalApiContractProviders {
   static build(): Provider[] {
     return [
@@ -17,7 +21,9 @@ export class InternalApiContractProviders {
       { provide: JsonSafetyChecker, useFactory: () => new JsonSafetyChecker() },
       {
         provide: CallOutcomeFactory,
-        useFactory: () => new CallOutcomeFactory(new FailureClassifier()),
+        useFactory: (failures?: FailureClassifier) =>
+          new CallOutcomeFactory(failures ?? new FailureClassifier()),
+        inject: [{ token: FailureClassifier, optional: true }],
       },
       {
         provide: PayloadLimit,

@@ -41,6 +41,7 @@ import { RunsModule } from './modules/runs/presentation/runs.module.js';
     }),
     TenantDirectoryModule.forFeature({
       service: reportsContract.service,
+      manifest: ReportsTenantMoveManifest,
       operations: ReportsTenantDirectoryOperations,
     }),
     // generated:modules

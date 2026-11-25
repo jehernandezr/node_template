@@ -7,4 +7,5 @@ export interface StepDraft<TState> {
   input?: (state: TState) => unknown;
   onSuccess?: (state: TState, output: unknown) => void;
   compensationInput?: (state: TState, forward: ForwardEntry) => unknown;
+  progressReasons?: readonly string[];
 }

@@ -4,6 +4,8 @@ export enum NotificationsErrorCode {
   PreferencesInvalidQuietHours = 'NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS',
   EmailRecipientSuppressed = 'NOTIFICATIONS.EMAIL.RECIPIENT_SUPPRESSED',
   EmailTemplateUnknown = 'NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN',
+  EmailTemplateParameterMissing = 'NOTIFICATIONS.EMAIL.TEMPLATE_PARAMETER_MISSING',
+  EmailInProgress = 'NOTIFICATIONS.EMAIL.IN_PROGRESS',
   RealtimeUnauthenticated = 'NOTIFICATIONS.REALTIME.UNAUTHENTICATED',
 }
 

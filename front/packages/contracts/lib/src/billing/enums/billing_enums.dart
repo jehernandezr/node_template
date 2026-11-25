@@ -216,6 +216,14 @@ enum BillingErrorCode {
     messageKey: 'error_billing_invoice_invalid_state',
   ),
 
+  /// Lo pagado no coincide con el total de la factura en su moneda. Los detalles traen expected y received.
+  invoiceAmountMismatch(
+    'BILLING.INVOICE.AMOUNT_MISMATCH',
+    httpStatus: 422,
+    retryable: false,
+    messageKey: 'error_billing_invoice_amount_mismatch',
+  ),
+
   /// Se alcanzó la cuota del plan. Los detalles traen metric, limit y used.
   quotaExceeded(
     'BILLING.QUOTA.EXCEEDED',

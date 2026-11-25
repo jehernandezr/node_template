@@ -5,6 +5,7 @@ import { Clock, TransactionManager } from '@platform/kernel';
 import type { BillingConfig } from '../../../config/billing.config.js';
 import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { PlansFacade } from '../../plans/index.js';
+import { BillingPeriod } from '../domain/billing-period.js';
 import { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { Subscription } from '../domain/subscription.js';
 import { SubscriptionEvents } from './subscription-events.js';
@@ -49,17 +50,17 @@ export class SubscriptionStanding {
 
   settle(tenantId: string): Promise<void> {
     return this.change(tenantId, async (subscription) => {
-      const previous = subscription.settle();
+      const plan = await this.plans.require(subscription.snapshot().planId);
+      const previous = subscription.settle(
+        plan.snapshot(),
+        BillingPeriod.dateOf(this.clock.now()),
+      );
       if (previous === undefined) {
         return;
       }
       await this.subscriptions.update(subscription);
       if (previous === SubscriptionStatus.Suspended) {
-        await this.events.reactivated(
-          tenantId,
-          subscription,
-          await this.plans.require(subscription.snapshot().planId),
-        );
+        await this.events.reactivated(tenantId, subscription, plan);
       }
     });
   }

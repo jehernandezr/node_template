@@ -49,9 +49,13 @@ export class DeliveryClassifier {
 
   /**
    * Resultado `RetryLater` o `DeadLetter` de un fallo. Una falla de
-   * infraestructura (`infrastructureFailure`) siempre se reintenta. Va a la
-   * cola de errores cuando es permanente, cuando no hay política o cuando
-   * `receiveCount` alcanzó `maxAttempts`. La espera es `Backoff.delay(receiveCount)`.
+   * infraestructura (`infrastructureFailure`: el claim o su cierre no llegaron a
+   * la base) siempre se reintenta y no cuenta contra `maxAttempts`: una caída
+   * corta de la base no manda a la cola de errores mensajes válidos; solo el
+   * `maxReceiveCount` de la cola, holgado, acota esos reintentos. Una falla del
+   * manejador va a la cola de errores cuando es permanente, cuando no hay
+   * política o cuando `receiveCount` alcanzó `maxAttempts`. La espera es
+   * `Backoff.delay(receiveCount)`, con el intento acotado a lo que acepta `Backoff`.
    */
   failure(
     id: string,
@@ -68,7 +72,7 @@ export class DeliveryClassifier {
     if (
       disposition === ErrorDisposition.DeadLetter ||
       policy === undefined ||
-      options.receiveCount >= policy.maxAttempts
+      (!infrastructureFailure && options.receiveCount >= policy.maxAttempts)
     ) {
       return {
         outcome: DispatchOutcome.DeadLetter,
@@ -77,8 +81,6 @@ export class DeliveryClassifier {
         ...(code === undefined ? {} : { code }),
       };
     }
-    // Una entrega repetida muchas veces no debe lanzar desde el clasificador:
-    // el número de intento se acota al rango que acepta Backoff.
     const attempt = Math.min(
       Math.max(options.receiveCount, 1),
       Backoff.MAX_ATTEMPT,

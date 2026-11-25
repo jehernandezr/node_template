@@ -33,6 +33,7 @@ import { OperationRoute } from './operation-route.js';
  */
 export class InternalRouter {
   private readonly routes = new Map<string, OperationRoute>();
+  private readonly undone = new Map<string, string[]>();
 
   constructor(
     private readonly resolver: OperationResolver,
@@ -58,6 +59,13 @@ export class InternalRouter {
       );
     }
     this.routes.set(descriptor.id, OperationRoute.bind(descriptor, handler));
+    const compensation = descriptor.metadata.compensation();
+    if (compensation !== null) {
+      this.undone.set(compensation, [
+        ...(this.undone.get(compensation) ?? []),
+        descriptor.id,
+      ]);
+    }
   }
 
   /** @throws InternalApiError `MissingHandler` con todas las operaciones del registro que no tienen handler. */
@@ -77,7 +85,7 @@ export class InternalRouter {
   /**
    * Atiende una llamada. Operación desconocida: `protocol-violation` `unknown-operation`.
    * Si no, la corre `dispatcher.dispatch` dentro de un span de servidor con los
-   * atributos de `InternalApiSpanAttribute`.
+   * atributos de `InternalApiSpanAttribute`, con las operaciones registradas que esta compensa.
    */
   handle(
     operationId: string,
@@ -95,7 +103,12 @@ export class InternalRouter {
                   InternalApiReason.UnknownOperation,
                   InternalApiErrorCode.UnknownOperation,
                 )
-              : await this.dispatcher.dispatch(route, rawInput, meta);
+              : await this.dispatcher.dispatch(
+                  route,
+                  rawInput,
+                  meta,
+                  this.undone.get(operationId) ?? [],
+                );
           span.setAttribute(InternalApiSpanAttribute.Outcome, outcome.kind);
           return outcome;
         },

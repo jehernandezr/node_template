@@ -871,9 +871,15 @@
           "paidAt": {
             "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
           },
-          "reference": { "type": "string", "minLength": 1, "maxLength": 120 }
+          "reference": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "amount": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          },
+          "attemptId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
         },
-        "required": ["tenantId", "invoiceId", "paidAt", "reference"],
+        "required": ["tenantId", "invoiceId", "paidAt", "reference", "amount"],
         "additionalProperties": false,
         "description": "Marca una factura como pagada con la referencia del proveedor."
       },
@@ -889,7 +895,10 @@
           "failedAt": {
             "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
           },
-          "reason": { "type": "string", "minLength": 1, "maxLength": 200 }
+          "reason": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "attemptId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
         },
         "required": ["tenantId", "invoiceId", "failedAt"],
         "additionalProperties": false,

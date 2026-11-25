@@ -7,6 +7,7 @@ import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { ChargeInvoice } from '../application/charge-invoice.use-case.js';
 import { LocalPaymentsFacade } from '../application/local-payments.facade.js';
 import { PaymentsFacade } from '../application/payments.facade.js';
+import { RecordPaymentResult } from '../application/record-payment-result.use-case.js';
 import { PaymentAttempts } from '../domain/payment-attempts.js';
 import { PaymentProvider } from '../domain/payment-provider.js';
 import { FakePaymentProvider } from '../infrastructure/fake-payment-provider.js';
@@ -34,6 +35,7 @@ import { TypeOrmPaymentAttempts } from '../infrastructure/persistence/typeorm-pa
     },
     { provide: PaymentAttempts, useClass: TypeOrmPaymentAttempts },
     ChargeInvoice,
+    RecordPaymentResult,
     { provide: PaymentsFacade, useClass: LocalPaymentsFacade },
   ],
   exports: [PaymentsFacade],

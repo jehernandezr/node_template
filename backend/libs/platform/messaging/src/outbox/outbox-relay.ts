@@ -8,6 +8,7 @@ import {
   UuidV7IdGenerator,
 } from '@platform/kernel';
 import { Backoff, type RetryPolicy } from '@platform/primitives';
+import { ResilienceErrorCode } from '@platform/resilience';
 import { MessagingGuard } from '../errors/messaging-guard.js';
 import { EnvelopeValidator } from '../envelope/envelope-validator.js';
 import type { Topology } from '../topology/topology.js';
@@ -22,8 +23,9 @@ export interface OutboxRelayOptions {
   readonly publisher: EnvelopePublisher;
   readonly topology: Topology;
   /**
-   * Intentos antes de marcar un registro como Dead (`maxAttempts`) y la espera
-   * entre intentos fallidos.
+   * Espera entre intentos fallidos, con tope en `maxMs`. Una falla de transporte
+   * nunca agota los intentos: el registro se reintenta hasta que el destino
+   * vuelva.
    */
   readonly retryPolicy: RetryPolicy;
   /** Registros tomados con lease por pasada. Por defecto, 100. */
@@ -50,7 +52,7 @@ export interface RelayReport {
   readonly published: number;
   /** Intentos fallidos que se reprogramaron. */
   readonly failed: number;
-  /** Registros que se dieron por muertos en esta pasada. */
+  /** Registros que nunca se podrán entregar (sin ruta, demasiado grandes o fuera de contrato), dados por muertos. */
   readonly dead: number;
   /**
    * Registros que no se publicaron porque un registro anterior de su grupo
@@ -81,6 +83,14 @@ const DEFAULT_LEASE_MS = 30_000;
  * FIFO por `groupId`: cuando un registro de un grupo falla (o se pierde su
  * lease), los registros posteriores de ese grupo no se publican en esa pasada;
  * su lease se libera para que conserven su lugar detrás del fallido.
+ *
+ * `Dead` queda para lo que nunca se podrá entregar. Una falla de transporte se
+ * reintenta sin límite con la espera de `retryPolicy`, y el rechazo de un
+ * circuit breaker abierto ni siquiera cuenta como intento: el registro suelta su
+ * lease y espera a la pasada siguiente. Un registro `Dead` no bloquea a su
+ * grupo: no se va a entregar nunca y frenaría para siempre a los que siguen. Un
+ * registro cuyo lease venció no se publica, porque otro relay puede tenerlo y
+ * publicarlo desordenaría el grupo.
  */
 export class OutboxRelay {
   /** Dueño del lease de esta instancia del relay: `<etiqueta>:<id de instancia>`. */
@@ -127,7 +137,6 @@ export class OutboxRelay {
       lease,
       leaseMs: this.options.leaseMs ?? DEFAULT_LEASE_MS,
     });
-    const maxAttempts = this.options.retryPolicy.maxAttempts;
 
     const blockedGroups = new Set<string>();
     const block = (record: OutboxRecord): void => {
@@ -148,7 +157,6 @@ export class OutboxRelay {
 
       const target = this.targetFor(record);
       if (typeof target === 'string') {
-        // Un registro Dead no bloquea a su grupo.
         if (await store.markDead(record.id, lease, target)) dead++;
         else {
           stale++;
@@ -159,7 +167,6 @@ export class OutboxRelay {
 
       const expiresAt = record.leaseExpiresAt?.getTime();
       if (expiresAt !== undefined && current() >= expiresAt) {
-        // Otro relay puede tenerlo ahora: publicar podría desordenar el grupo.
         stale++;
         block(record);
         continue;
@@ -172,27 +179,25 @@ export class OutboxRelay {
           ...(delayMs > 0 ? { delayMs } : {}),
         });
       } catch (err) {
-        const message = ErrorDescriptor.describe(err).message;
-        if (record.attempts + 1 >= maxAttempts) {
-          if (await store.markDead(record.id, lease, message)) dead++;
-          else {
-            stale++;
-            block(record);
-          }
-        } else {
-          const delay = this.backoff.delay(
-            Math.min(record.attempts + 1, Backoff.MAX_ATTEMPT),
-          );
-          const marked = await store.markFailed(
-            record.id,
-            lease,
-            message,
-            new Date(passStart + delay),
-          );
-          if (marked) failed++;
+        if (ErrorDescriptor.codeOf(err) === ResilienceErrorCode.CircuitOpen) {
+          if (await store.releaseLease(record.id, lease)) deferred++;
           else stale++;
           block(record);
+          continue;
         }
+        const message = ErrorDescriptor.describe(err).message;
+        const delay = this.backoff.delay(
+          Math.min(record.attempts + 1, Backoff.MAX_ATTEMPT),
+        );
+        const marked = await store.markFailed(
+          record.id,
+          lease,
+          message,
+          new Date(passStart + delay),
+        );
+        if (marked) failed++;
+        else stale++;
+        block(record);
         continue;
       }
 

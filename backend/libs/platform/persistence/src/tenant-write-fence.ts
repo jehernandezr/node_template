@@ -134,6 +134,18 @@ export class TenantWriteFence {
     return rows[0]?.move_id;
   }
 
+  /** El traslado que levantó aquí una barrera y todavía no pivotó, o `undefined` si no hay ninguno en vuelo. */
+  async unswitchedBy(
+    dataSource: DataSource,
+    tenantId: string,
+  ): Promise<string | undefined> {
+    const rows: { move_id: string }[] = await dataSource.query(
+      'SELECT move_id FROM tenant_write_fences WHERE tenant_id = $1 AND switched_at IS NULL',
+      [tenantId],
+    );
+    return rows[0]?.move_id;
+  }
+
   /** Baja la barrera que levantó ese traslado, por ejemplo al cancelarlo o al limpiar el origen. Idempotente. */
   async lower(
     dataSource: DataSource,

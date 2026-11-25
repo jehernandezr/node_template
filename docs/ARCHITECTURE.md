@@ -1012,6 +1012,9 @@ const outcome = await client.call(RevokeUserSessionsOperation, input, {
 - `InternalClient` es el lado cliente: aplica reintentos, backoff y presupuesto de tiempo. Solo reintenta operaciones `idempotent: true`, y solo ante `transient-failure` o `uncertain`.
 - El resultado es siempre un `CallOutcome`: `success`, `business-error` (código declarado en el contrato), `transient-failure`, `uncertain` o `protocol-violation`. Quien llama decide qué hacer con cada caso.
 - La idempotencia del servidor tiene dos almacenes: `InMemoryProcessedOperationStore` para pruebas y `TypeOrmIdempotencyStore` de `@platform/adapters-postgres`. `InternalRouter` recibe el `TransactionManager` del servicio y guarda el resultado en la misma transacción que los efectos del handler.
+- Mientras corre el handler, `ClaimKeeper` renueva el lease de su llave cada 2 s: otro intento con la misma llave responde `in-progress` y solo la toma si el proceso dueño dejó de renovarla. El handler recibe en `CallMeta.signal` una señal que aborta al vencer el plazo del intento.
+- Antes de correr una compensación de saga, `CompensationTombstones` deja una lápida en la llave del paso que deshace (`ADR 0008`): un envío tardío del paso ya no aplica su efecto.
+- Un error lanzado por el handler se clasifica con el `FailureClassifier` del servicio (`PlatformFailureClassifier`, con las reglas de Postgres, AWS y Valkey): un failover de la base es `transient-failure` y el cliente reintenta.
 
 Hoy existe el transporte en proceso (`InProcessTransport`). El transporte HTTP, `POST /internal/operations/:operationId`, se suma a `@platform/internal-api` con `HttpTransport` e `InternalApiController` (paquete WP-08 del [plan del backend](plan/backend.md)), con firma HMAC en local y SigV4 en AWS con la fase F12.
 

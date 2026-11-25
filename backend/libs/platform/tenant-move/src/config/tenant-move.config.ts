@@ -26,8 +26,16 @@ const targetsSchema = z
 export const tenantMoveConfigSchema = z.object({
   /** Grupos de destino: la región y el shard lógico del servicio en ese grupo. El shard debe estar en el directorio. */
   TENANT_MOVE_TARGETS: targetsSchema,
-  /** Días que el origen conserva los datos de un tenant trasladado antes de que `cleanup` los borre. */
-  TENANT_MOVE_GRACE_DAYS: envNumber({ min: 0, max: 365 }).default(7),
+  /**
+   * Días que el origen conserva los datos de un tenant trasladado antes de que `cleanup` los borre y baje su barrera.
+   * Al menos uno: con cero la barrera bajaría mientras un proceso con el placement viejo en caché todavía escribe ahí.
+   */
+  TENANT_MOVE_GRACE_DAYS: envNumber({ min: 1, max: 365 }).default(7),
+  /**
+   * Plazo de la saga de traslado desde que arranca. Pasado antes del pivote, la saga compensa y el tenant vuelve a
+   * escribir en el origen en lugar de quedar congelado.
+   */
+  TENANT_MOVE_DEADLINE_MS: envNumber({ min: 60_000 }).default(21_600_000),
   TENANT_MOVE_STRATEGY: z
     .enum(TenantMoveStrategy)
     .default(TenantMoveStrategy.Batch),

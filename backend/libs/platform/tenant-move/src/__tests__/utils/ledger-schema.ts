@@ -17,6 +17,9 @@ export class LedgerSchema {
     `CREATE TABLE entries (
        id uuid PRIMARY KEY, ledger_id uuid NOT NULL, amount numeric(20, 4) NOT NULL,
        created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`,
+    `CREATE TABLE attempts (
+       id uuid PRIMARY KEY, tenant_id uuid NOT NULL, outcome text NOT NULL,
+       created_at timestamptz NOT NULL DEFAULT now())`,
     'ALTER TABLE ledgers ENABLE ROW LEVEL SECURITY',
     'ALTER TABLE ledgers FORCE ROW LEVEL SECURITY',
     `CREATE POLICY ledgers_tenant_isolation ON ledgers

@@ -9,7 +9,7 @@ import {
 import { Permission } from '@contracts/identity';
 import { PlatformErrorCode, type RouteDefinition } from '@contracts/platform';
 import type { HttpTestClient } from '@platform/http/test-utils';
-import { ContainerRuntime } from '@platform/kernel/test-utils';
+import { ContainerRuntime, JobContexts } from '@platform/kernel/test-utils';
 import { BillingTestApp } from '../src/__tests__/utils/index.js';
 import { CloseInvoicePeriodsJob } from '../src/modules/invoices/application/close-invoice-periods.job.js';
 
@@ -42,7 +42,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         TENANT,
         `UPDATE subscriptions SET status = 'active', period_start = '2026-01-01', period_end = '2026-01-31'`,
       );
-      await app.get(CloseInvoicePeriodsJob).run();
+      await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
       const plans = (await owner.get('/v1/billing/plans')).body as PlanCatalog;
       proPlanId = String(plans.items.find((plan) => plan.name === 'Pro')?.id);
       const invoices = (await owner.get('/v1/billing/invoices'))

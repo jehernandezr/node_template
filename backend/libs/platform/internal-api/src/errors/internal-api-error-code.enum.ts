@@ -10,6 +10,8 @@ export enum InternalApiErrorCode {
   InvalidOperation = 'PLATFORM.INTERNAL_API.INVALID_OPERATION',
   /** Llave de idempotencia o tenant ausente, vacío o demasiado largo. */
   InvalidIdempotencyKey = 'PLATFORM.INTERNAL_API.INVALID_IDEMPOTENCY_KEY',
+  /** La compensación del paso ya corrió: un envío tardío del paso no aplica su efecto. */
+  StepCompensated = 'PLATFORM.INTERNAL_API.STEP_COMPENSATED',
   /** La misma llave se reusó con otra entrada. */
   IdempotencyKeyReuse = 'PLATFORM.INTERNAL_API.IDEMPOTENCY_KEY_REUSE',
   /** La entrada o la salida serializada supera el límite. */

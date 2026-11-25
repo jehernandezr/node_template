@@ -29,11 +29,19 @@ export class BillingTestApp {
   static readonly TENANT_B = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a02';
   static readonly TENANT_C = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a03';
   static readonly TENANT_D = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a04';
+  static readonly TENANT_E = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a05';
+  static readonly TENANT_F = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a06';
+  static readonly TENANT_G = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a07';
+  static readonly TENANT_H = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a08';
   private static readonly SHARD_OF: Readonly<Record<string, 0 | 1>> = {
     [BillingTestApp.TENANT_A]: 0,
     [BillingTestApp.TENANT_B]: 1,
     [BillingTestApp.TENANT_C]: 0,
     [BillingTestApp.TENANT_D]: 1,
+    [BillingTestApp.TENANT_E]: 1,
+    [BillingTestApp.TENANT_F]: 0,
+    [BillingTestApp.TENANT_G]: 1,
+    [BillingTestApp.TENANT_H]: 0,
   };
   static readonly TRIAL_DAYS = 14;
   static readonly GRACE_DAYS = 7;

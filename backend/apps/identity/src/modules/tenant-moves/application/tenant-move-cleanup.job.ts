@@ -35,7 +35,8 @@ import { TenantMoveParticipants } from './tenant-move-participants.js';
  * llave nueva por intento y una pausa corta entre intentos para no cargar el shard sin respiro, hasta que el servicio
  * termina, se acaba su tramo de la corrida o llega al tope de intentos. Un servicio que falla no
  * impide intentar los demás, y un traslado que no termina queda para la corrida siguiente, que empieza por los que
- * llevan más tiempo sin intentarse.
+ * llevan más tiempo sin intentarse. Un tenant con otro traslado en curso espera: ese traslado puede volver al shard que
+ * se iba a limpiar y entre su `finalize` y su `switch` la copia buena vive ahí.
  */
 @Injectable()
 export class TenantMoveCleanupJob extends ScheduledJob {
@@ -78,6 +79,13 @@ export class TenantMoveCleanupJob extends ScheduledJob {
     for (const move of due) {
       if (this.nowMs() >= runEndsAt || context.signal.aborted) {
         return;
+      }
+      if ((await this.log.runningFor(move.tenantId)) !== undefined) {
+        this.logger.info('tenant move cleanup waits for a move in progress', {
+          moveId: move.moveId,
+          tenantId: move.tenantId,
+        });
+        continue;
       }
       await this.log.markCleanupAttempted(move.moveId, this.clock.now());
       const pending = await this.cleanUp(move, runEndsAt, context.signal);

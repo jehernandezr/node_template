@@ -2,6 +2,7 @@ import type { Provider } from '@nestjs/common';
 import { Clock, IdGenerator, RandomSource } from '@platform/kernel';
 import { ResilienceRegistry } from '@platform/resilience';
 import { ProcessedMessageStore } from '../dispatch/processed-message-store.js';
+import { LoggerPort, MetricsPort } from '@platform/observability';
 import { OutboxRelayJob } from '../jobs/outbox-relay-job.js';
 import { OutboxRetentionJob } from '../jobs/outbox-retention-job.js';
 import { ProcessedMessageRetentionJob } from '../jobs/processed-message-retention-job.js';
@@ -83,9 +84,18 @@ export class MessagingRelayProviders {
       ...providers,
       {
         provide: OutboxRelayJob,
-        useFactory: (relay: OutboxRelay, scopes: RelayScopes) =>
-          new OutboxRelayJob(relay, scopes),
-        inject: [OutboxRelay, RelayScopes],
+        useFactory: (
+          relay: OutboxRelay,
+          scopes: RelayScopes,
+          metrics?: MetricsPort,
+          logger?: LoggerPort,
+        ) => new OutboxRelayJob(relay, scopes, metrics, logger),
+        inject: [
+          OutboxRelay,
+          RelayScopes,
+          { token: MetricsPort, optional: true },
+          { token: LoggerPort, optional: true },
+        ],
       },
       {
         provide: OutboxRetentionJob,
