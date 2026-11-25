@@ -1,40 +1,40 @@
-# 0007. Mensajería con topología tipada, SNS/SQS y CloudEvents
+# 0007. Messaging with a typed topology, SNS/SQS and CloudEvents
 
-- Estado: Aceptada
-- Fecha: 2026-11-11
+- Status: Accepted
+- Date: 2026-11-11
 
-## Contexto
+## Context
 
-Los servicios necesitan publicar eventos y enviar comandos sin acoplarse a un broker. Hace falta reintentar con backoff real, aislar mensajes que fallan y que los mensajes sean entendibles por consumidores externos.
+Services need to publish events and send commands without coupling to a broker. They need retries with real backoff, isolation of failing messages, and messages that external consumers can understand.
 
-## Decisión
+## Decision
 
-`libs/platform/messaging` despacha eventos y comandos. La topología tipada, con `TopicDef`, `QueueDef` y `Route`, es la única fuente de verdad. De ella salen el despacho en ejecución, la infraestructura (Terraform), el entorno local, las pruebas y la documentación (AsyncAPI).
+`libs/platform/messaging` dispatches events and commands. The typed topology, with `TopicDef`, `QueueDef` and `Route`, is the single source of truth. From it come the runtime dispatch, the infrastructure (Terraform), the local environment, the tests and the documentation (AsyncAPI).
 
-- Adaptador AWS: SNS para tópicos y SQS para colas, con una cola por consumidor.
-- Formato: CloudEvents 1.0 con tipos como `tasks.task.updated.v1`, y atributos `traceparent`, `tenantid` y `actorid`.
-- Reintentos: el dispatcher calcula `base · 2^intento + jitter` y lo aplica con `ChangeMessageVisibility`. Los errores permanentes van directo a la DLQ. Una cola usa por defecto 10 intentos, que con 1 s de base y 5 min de tope cubren varios minutos de una caída. Una falla de infraestructura del consumidor (el claim o su cierre no llegan a la base) se reintenta siempre y no cuenta contra los intentos; `maxReceiveCount` es por defecto diez veces los intentos, porque SQS cuenta también esas recepciones y las reentregas de un mensaje en curso. Los errores del handler se clasifican con el `FailureClassifier` del servicio, que reconoce los SQLSTATE pasajeros de Postgres.
-- Outbox: el evento se guarda en la misma transacción del cambio y se publica después del commit. `Dead` queda para lo que nunca se podrá entregar (sin ruta, demasiado grande o fuera de contrato). Una falla de transporte se reintenta sin límite con la espera de la política, con tope en `maxMs`, y el rechazo de un circuit breaker abierto no cuenta como intento. Cada pasada publica su informe como contadores (`messaging.outbox.published`, `failed`, `dead`, `deferred` y `stale`) para alarmar, y un registro muerto se anota como error.
-- Consumidores con `@Subscribe`. Cada uno valida el esquema y revisa idempotencia en `processed_messages`.
+- AWS adapter: SNS for topics and SQS for queues, with one queue per consumer.
+- Format: CloudEvents 1.0 with types such as `tasks.task.updated.v1`, and the attributes `traceparent`, `tenantid` and `actorid`.
+- Retries: the dispatcher computes `base · 2^attempt + jitter` and applies it with `ChangeMessageVisibility`. Permanent errors go straight to the DLQ. A queue uses 10 attempts by default, which with a 1 s base and a 5 min cap cover several minutes of an outage. An infrastructure failure of the consumer (the claim or its close does not reach the database) is always retried and does not count against the attempts; `maxReceiveCount` defaults to ten times the attempts, because SQS also counts those receives and the redeliveries of a message in flight. Handler errors are classified with the service's `FailureClassifier`, which recognizes Postgres's transient SQLSTATEs.
+- Outbox: the event is stored in the same transaction as the change and published after the commit. `Dead` is reserved for what can never be delivered (no route, too large or outside the contract). A transport failure is retried without limit with the policy's wait, capped at `maxMs`, and the rejection of an open circuit breaker does not count as an attempt. Each pass publishes its report as counters (`messaging.outbox.published`, `failed`, `dead`, `deferred` and `stale`) for alarms, and a dead record is logged as an error.
+- Consumers with `@Subscribe`. Each one validates the schema and checks idempotency in `processed_messages`.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Cambiar de broker significa cambiar el adaptador, no el negocio.
-- Terraform y el entorno local salen de la misma declaración que el código.
-- El backoff exponencial queda en la plataforma, porque SQS solo reintenta con intervalo fijo.
+- Changing the broker means changing the adapter, not the business code.
+- Terraform and the local environment come from the same declaration as the code.
+- Exponential backoff lives in the platform, because SQS only retries at a fixed interval.
 
-Costos:
+Costs:
 
-- La topología es código que debe mantenerse sincronizado. Al arrancar se valida que cada ruta apunte a un tópico o cola declarado.
-- El outbox agrega una tabla y un barrido periódico.
-- Un registro `Dead` no bloquea a su grupo FIFO: no se va a entregar nunca y frenaría para siempre a los que siguen. No hay comando de reenvío, porque reenviar sin cambios un registro que no tiene ruta o rompe el contrato falla igual; se corrige a mano.
-- Las alarmas sobre los contadores del outbox se declaran con la infraestructura de observabilidad del despliegue.
-- Cada consumidor debe mantener su tabla de idempotencia.
+- The topology is code that must be kept in sync. At startup it is validated that each route points to a declared topic or queue.
+- The outbox adds a table and a periodic sweep.
+- A `Dead` record does not block its FIFO group: it will never be delivered and would hold back the ones behind it forever. There is no resend command, because resending unchanged a record that has no route or breaks the contract fails the same way; it is fixed by hand.
+- The alarms on the outbox counters are declared with the deployment's observability infrastructure.
+- Each consumer must maintain its idempotency table.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Tópicos en Google Pub/Sub o Kafka.
-- Colas en RabbitMQ, o en BullMQ sobre Valkey para desarrollo.
-- Consulta síncrona por API interna (`TasksOperation.GetTaskSummary`) cuando se necesita un dato inmediato que no conviene copiar.
+- Topics in Google Pub/Sub or Kafka.
+- Queues in RabbitMQ, or in BullMQ on Valkey for development.
+- Synchronous query through the internal API (`TasksOperation.GetTaskSummary`) when an immediate piece of data is needed that is not worth copying.

@@ -1,93 +1,93 @@
-# 0008. Sagas orquestadas con bitácora persistente
+# 0008. Orchestrated sagas with a persistent log
 
-- Estado: Aceptada
-- Fecha: 2026-11-11
-- Revisión: 2026-11-14 (la bitácora vive en las tablas `saga.instances` y `saga.step_log` del esquema `saga` del shard, con `TypeOrmSagaStore`, y el catálogo del servicio guarda un directorio de sagas; ver [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md). `OperationRef` se retiró: cada paso recibe el descriptor de `defineOperation`)
-- Actualizada: 2026-11-14 (store TypeORM, `SagaRecoveryJob` como `ScheduledJob` y transacción del kernel; ver [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) y [ADR 0026](0026-jobs-programados-scheduledjob-y-joblock.md))
-- Actualizada: 2026-11-24 (sagas construidas: `TenantOnboarding`, `DeleteAccount` y `MoveTenant`, todas orquestadas por identity; ver [ADR 0031](0031-reportes-facturacion-y-sagas-de-identity.md) y [ADR 0032](0032-traslado-de-tenants-y-regiones.md))
+- Status: Accepted
+- Date: 2026-11-11
+- Revised: 2026-11-14 (the log lives in the `saga.instances` and `saga.step_log` tables of the shard's `saga` schema, with `TypeOrmSagaStore`, and the service's catalog keeps a saga directory; see [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md). `OperationRef` was removed: each step receives the descriptor from `defineOperation`)
+- Updated: 2026-11-14 (TypeORM store, `SagaRecoveryJob` as a `ScheduledJob` and the kernel's transaction; see [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) and [ADR 0026](0026-jobs-programados-scheduledjob-y-joblock.md))
+- Updated: 2026-11-24 (sagas built: `TenantOnboarding`, `DeleteAccount` and `MoveTenant`, all orchestrated by identity; see [ADR 0031](0031-reportes-facturacion-y-sagas-de-identity.md) and [ADR 0032](0032-traslado-de-tenants-y-regiones.md))
 
-## Contexto
+## Context
 
-Algunas operaciones cruzan varios servicios: el alta de un tenant, el borrado de una cuenta en todos los servicios y el traslado de un tenant entre shards. Si el proceso se cae a mitad de camino, la operación no puede quedar a medias ni duplicar efectos.
+Some operations span several services: signing up a tenant, deleting an account in every service and moving a tenant between shards. If the process crashes halfway, the operation cannot be left half done nor duplicate effects.
 
-## Decisión
+## Decision
 
-`libs/platform/saga` coordina las operaciones con una bitácora persistente en el shard del servicio que orquesta, en las tablas `saga.instances` y `saga.step_log`. El store es `TypeOrmSagaStore` con las entidades `SagaInstanceEntity` y `SagaStepLogEntity`, en `@platform/adapters-postgres`; `InMemorySagaStore` vive en `@platform/saga/test-utils`.
+`libs/platform/saga` coordinates the operations with a persistent log in the shard of the orchestrating service, in the `saga.instances` and `saga.step_log` tables. The store is `TypeOrmSagaStore` with the entities `SagaInstanceEntity` and `SagaStepLogEntity`, in `@platform/adapters-postgres`; `InMemorySagaStore` lives in `@platform/saga/test-utils`.
 
-- Cada paso se registra como `Dispatched` con la llave `sagaId:paso:dirección` antes de llamar al servicio destino. Después se guarda el resultado en otra transacción.
-- Quien ejecuta una saga toma un lease de 30 segundos. `SagaRecoveryJob` es un `ScheduledJob` ([ADR 0026](0026-jobs-programados-scheduledjob-y-joblock.md)) que corre cada 5 segundos, con `FOR UPDATE SKIP LOCKED`, y retoma las sagas con lease vencido.
-- Los pasos antes de `pivot()` tienen compensación. Los pasos después son idempotentes y se reintentan hasta completar.
-- Las compensaciones salen del `compensatedBy` del contrato de cada operación. Renombrar una operación rompe la compilación.
-- Un `BusinessError` inicia la compensación. Un `TransientFailure` deja la saga en `Suspended` hasta que se resuelva.
-- El servicio destino guarda el resultado de cada llamada en la misma unidad de trabajo que sus efectos: en la API interna, `IdempotencyGate` hace `claim`, `complete` y `release` sobre `ProcessedOperationStore`, y `UnitOfWorkRunner` confirma el manejador y el `complete` en una sola transacción del `TransactionManager` de `@platform/kernel`. Si guardar el resultado falla, los efectos se deshacen y el reintento los aplica una vez.
+- Each step is recorded as `Dispatched` with the key `sagaId:step:direction` before calling the target service. The result is then stored in another transaction.
+- Whoever runs a saga takes a 30-second lease. `SagaRecoveryJob` is a `ScheduledJob` ([ADR 0026](0026-jobs-programados-scheduledjob-y-joblock.md)) that runs every 5 seconds, with `FOR UPDATE SKIP LOCKED`, and resumes the sagas whose lease expired.
+- The steps before `pivot()` have a compensation. The steps after it are idempotent and are retried until they complete.
+- Compensations come from the `compensatedBy` of each operation's contract. Renaming an operation breaks the build.
+- A `BusinessError` starts the compensation. A `TransientFailure` leaves the saga in `Suspended` until it is resolved.
+- The target service stores the result of each call in the same unit of work as its effects: in the internal API, `IdempotencyGate` does `claim`, `complete` and `release` on `ProcessedOperationStore`, and `UnitOfWorkRunner` commits the handler and the `complete` in a single transaction of the `TransactionManager` from `@platform/kernel`. If storing the result fails, the effects are rolled back and the retry applies them once.
 
-### Pasos desde los contratos
+### Steps from the contracts
 
-`flow.step()` recibe el `OperationDefinition` que el servicio publica con `defineOperation` en `backend/libs/contracts/<servicio>`. Los tipos de entrada y salida salen de sus esquemas zod y la compensación sale de su `compensatedBy`:
+`flow.step()` receives the `OperationDefinition` that the service publishes with `defineOperation` in `backend/libs/contracts/<service>`. The input and output types come from its zod schemas and the compensation comes from its `compensatedBy`:
 
-- Una operación con `Compensation.None` o de solo lectura (`mutating: false`) no tiene compensación.
-- Antes del pivote, un paso que modifica datos necesita compensación; con `Compensation.None` tiene que ir después del pivote. Un paso de solo lectura puede ir antes y se salta al compensar, porque no hay nada que deshacer.
-- Después del pivote, la operación tiene que ser `idempotent: true`.
+- An operation with `Compensation.None` or read-only (`mutating: false`) has no compensation.
+- Before the pivot, a step that modifies data needs a compensation; with `Compensation.None` it has to go after the pivot. A read-only step can go before it and is skipped when compensating, because there is nothing to undo.
+- After the pivot, the operation has to be `idempotent: true`.
 
-### Validación al arrancar
+### Validation at startup
 
-`SagaEngine` compila todas las definiciones en su constructor, no con la primera saga de cada tipo, y falla con `PLATFORM.SAGA.INVALID_DEFINITION` si encuentra un problema:
+`SagaEngine` compiles all the definitions in its constructor, not with the first saga of each type, and fails with `PLATFORM.SAGA.INVALID_DEFINITION` if it finds a problem:
 
-- La llave del registro de sagas es igual al `type` de la definición.
-- Con el catálogo de operaciones (`contracts`, o el del cliente cuando el invocador es `InternalClientInvoker`), cada operación y su reversa están registradas, la compensación de cada paso coincide con el `compensatedBy` del contrato, y los pasos después del pivote y las compensaciones son idempotentes.
-- El presupuesto por defecto de cada llamada (`defaultCallBudgetMs`: intentos, timeouts y esperas entre intentos) cabe en `maxStepDurationMs`. Si no cabe, el último intento quedaría siempre incierto.
+- The key in the saga registry equals the definition's `type`.
+- With the operation catalog (`contracts`, or the client's when the invoker is `InternalClientInvoker`), each operation and its reversal are registered, the compensation of each step matches the contract's `compensatedBy`, and the steps after the pivot and the compensations are idempotent.
+- The default budget of each call (`defaultCallBudgetMs`: attempts, timeouts and waits between attempts) fits in `maxStepDurationMs`. If it does not fit, the last attempt would always be uncertain.
 
-`engine.validate()` devuelve la lista de problemas (`SagaDefinitionIssue`) sin lanzar.
+`engine.validate()` returns the list of problems (`SagaDefinitionIssue`) without throwing.
 
-### Entrada inválida
+### Invalid input
 
-El cliente de la API interna y el servidor responden igual a una entrada que no cumple el contrato: `BusinessError` con `PLATFORM.VALIDATION.INVALID_INPUT` y `details.fieldErrors`. El cliente no llama al transporte. Para la saga el paso no se aplicó, así que compensa desde el paso anterior.
+The internal API client and the server answer the same way to input that does not meet the contract: `BusinessError` with `PLATFORM.VALIDATION.INVALID_INPUT` and `details.fieldErrors`. The client does not call the transport. For the saga the step was not applied, so it compensates from the previous step.
 
-### Traza
+### Trace
 
-La saga guarda el `traceparent` en su instancia. Si quien la inicia no lo pasa, toma el del span activo, así la saga continúa la traza de la petición que la creó. Cada intento de paso corre en un span `saga.step`, hijo de esa traza, y la bitácora guarda el `traceparent` del paso al registrarlo como `Dispatched`. Un reintento, también desde otro nodo después de una caída, restaura ese `traceparent`. El cliente de la API interna lo envía en `CallMeta.traceparent` y el servidor continúa esa traza, porque la llamada viene de otro servicio de la plataforma.
+The saga stores the `traceparent` in its instance. If whoever starts it does not pass one, it takes the one from the active span, so the saga continues the trace of the request that created it. Each step attempt runs in a `saga.step` span, a child of that trace, and the log stores the step's `traceparent` when recording it as `Dispatched`. A retry, including from another node after a crash, restores that `traceparent`. The internal API client sends it in `CallMeta.traceparent` and the server continues that trace, because the call comes from another platform service.
 
-### Resultado incierto
+### Uncertain outcome
 
-Un paso tiene resultado incierto cuando la llamada termina sin saber si el servicio destino aplicó el efecto. `SagaEngine` (`backend/libs/platform/saga`) da a cada llamada un plazo de `maxStepDurationMs` (25 segundos por defecto). Si el plazo se cumple, aborta la señal de la llamada y el resultado es `uncertain` (`CallOutcomeKind.Uncertain` de `@platform/primitives`). Lo mismo pasa cuando la llamada devuelve `uncertain` o lanza un error que `FailureClassifier` clasifica como `Timeout` o `Cancelled`.
+A step has an uncertain outcome when the call ends without knowing whether the target service applied the effect. `SagaEngine` (`backend/libs/platform/saga`) gives each call a deadline of `maxStepDurationMs` (25 seconds by default). If the deadline passes, it aborts the call's signal and the result is `uncertain` (`CallOutcomeKind.Uncertain` from `@platform/primitives`). The same happens when the call returns `uncertain` or throws an error that `FailureClassifier` classifies as `Timeout` or `Cancelled`.
 
-El motor registra el paso como `Uncertain` en la bitácora y deja la saga en `Suspended` con el código `PLATFORM.SAGA.UNCERTAIN_OUTCOME`. El catálogo de plataforma lo declara interno, reintentable y con estado 504.
+The engine records the step as `Uncertain` in the log and leaves the saga in `Suspended` with the code `PLATFORM.SAGA.UNCERTAIN_OUTCOME`. The platform catalog declares it internal, retryable and with status 504.
 
-La recuperación sigue estas reglas:
+Recovery follows these rules:
 
-- `SagaRecoveryJob` retoma la saga cuando se cumple `nextAttemptAt`. La espera crece de forma exponencial desde 1 segundo hasta 60 segundos.
-- El reintento usa la misma llave `sagaId:paso:dirección` y la entrada registrada en la bitácora, nunca una entrada reconstruida. El servicio destino reconoce la llave y el efecto ocurre una vez.
-- Antes del pivote, si ya pasó el plazo de la saga (`deadlineMs` al iniciarla), el motor no vuelve a llamar: compensa desde el paso incierto, incluido. La compensación tolera que el paso nunca se haya aplicado.
-- La compensación puede llegar al participante antes que el paso, que seguía en vuelo. Por eso las llaves de un paso y de su compensación comparten base (`<saga>:<paso>:forward` y `<saga>:<paso>:compensate`, la convención `CompensationKey` de `@platform/internal-api`), y el servidor de la API interna, antes de correr una compensación, deja una lápida en la llave del paso: si el paso no llegó, queda completado como compensado (`PLATFORM.INTERNAL_API.STEP_COMPENSATED`) y un envío tardío ya no aplica su efecto; si sigue en curso, la compensación responde `in-progress` y la saga la repite cuando el paso terminó.
-- Un paso puede declarar con `progressOn` motivos de `transient-failure` que son avance del participante, como una ronda de copia que no cupo en su plazo. Esas respuestas repiten el paso sin gastar suspensiones; antes del pivote las acota el plazo de la saga.
-- Una compensación con resultado incierto también queda en `Suspended` y se reintenta igual.
-- Cuando los intentos fallidos superan 20 o la suspensión llega a 24 horas (`maxSuspendAttempts` y `maxSuspendAgeMs`), la saga pasa a `RequiresIntervention` y una persona decide.
-- El lease (`leaseMs`) tiene que ser mayor que `maxStepDurationMs`; el motor rechaza la configuración si no lo es. Así ningún otro nodo retoma la saga mientras la llamada sigue dentro de su plazo.
+- `SagaRecoveryJob` resumes the saga when `nextAttemptAt` is reached. The wait grows exponentially from 1 second up to 60 seconds.
+- The retry uses the same key `sagaId:step:direction` and the input recorded in the log, never a rebuilt input. The target service recognizes the key and the effect happens once.
+- Before the pivot, if the saga's deadline (`deadlineMs` when it started) has already passed, the engine does not call again: it compensates from the uncertain step, inclusive. The compensation tolerates the step never having been applied.
+- The compensation can reach the participant before the step, which was still in flight. That is why the keys of a step and of its compensation share a base (`<saga>:<step>:forward` and `<saga>:<step>:compensate`, the `CompensationKey` convention from `@platform/internal-api`), and the internal API server, before running a compensation, leaves a tombstone on the step's key: if the step did not arrive, it is completed as compensated (`PLATFORM.INTERNAL_API.STEP_COMPENSATED`) and a late send no longer applies its effect; if it is still running, the compensation answers `in-progress` and the saga repeats it once the step has finished.
+- A step can declare with `progressOn` the `transient-failure` reasons that are progress of the participant, such as a copy round that did not fit in its deadline. Those answers repeat the step without spending suspensions; before the pivot they are bounded by the saga's deadline.
+- A compensation with an uncertain outcome also stays in `Suspended` and is retried the same way.
+- When the failed attempts exceed 20 or the suspension reaches 24 hours (`maxSuspendAttempts` and `maxSuspendAgeMs`), the saga moves to `RequiresIntervention` and a person decides.
+- The lease (`leaseMs`) has to be greater than `maxStepDurationMs`; the engine rejects the configuration if it is not. That way no other node resumes the saga while the call is still within its deadline.
 
-### Sagas de la plantilla
+### Template sagas
 
-| Saga               | Orquesta | Antes del pivote (con compensación)                                          | Después del pivote (idempotentes)                                         |
-| ------------------ | -------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `TenantOnboarding` | identity | crear el tenant en `Provisioning`, abrir la cuenta en billing                | activar el tenant, avisar al dueño por notifications                      |
-| `DeleteAccount`    | identity | suspender al usuario                                                         | borrar sus datos en tasks, notifications y reports, y después en identity |
-| `MoveTenant`       | identity | `sync` y después `finalize` en los cinco servicios (compensados con `abort`) | `switch` en los cinco servicios y `FinishMove`                            |
+| Saga               | Orchestrator | Before the pivot (with compensation)                                       | After the pivot (idempotent)                                                |
+| ------------------ | ------------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `TenantOnboarding` | identity     | create the tenant in `Provisioning`, open the account in billing           | activate the tenant, notify the owner through notifications                 |
+| `DeleteAccount`    | identity     | suspend the user                                                           | delete their data in tasks, notifications and reports, and then in identity |
+| `MoveTenant`       | identity     | `sync` and then `finalize` in the five services (compensated with `abort`) | `switch` in the five services and `FinishMove`                              |
 
-Cada una se prueba con `CrashingSagaStore`, que cae el proceso en cada paso, y la de traslado además con escrituras continuas entre grupos y regiones. La limpieza del origen de un traslado no es un paso: la hace `TenantMoveCleanupJob` pasada la gracia. La bitácora de `MoveTenant` vive en el shard del tenant de plataforma, no en el del tenant que se mueve.
+Each one is tested with `CrashingSagaStore`, which crashes the process at every step, and the move saga also with continuous writes across groups and regions. Cleaning up the source of a move is not a step: `TenantMoveCleanupJob` does it once the grace period has passed. The log of `MoveTenant` lives in the shard of the platform tenant, not in that of the tenant being moved.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Una saga retomada desde la bitácora termina en el mismo punto, incluidas las compensaciones a medio camino.
-- Cada efecto ocurre una vez, porque el servicio destino reconoce la llave de idempotencia.
+- A saga resumed from the log ends at the same point, including compensations left halfway.
+- Each effect happens once, because the target service recognizes the idempotency key.
 
-Costos:
+Costs:
 
-- Cada paso necesita una reversa declarada, y al arrancar se valida que exista y sea idempotente.
-- Una operación lenta (timeouts largos o muchos intentos) no cabe en una saga sin subir `maxStepDurationMs` y `leaseMs`.
-- `CompensationFailed` exige intervención manual desde el backoffice.
-- Mientras una saga corre, el recurso queda en un estado intermedio (por ejemplo, tenant `Provisioning`) que el dominio debe contemplar.
+- Each step needs a declared reversal, and at startup it is validated that it exists and is idempotent.
+- A slow operation (long timeouts or many attempts) does not fit in a saga without raising `maxStepDurationMs` and `leaseMs`.
+- `CompensationFailed` requires manual intervention from the backoffice.
+- While a saga runs, the resource stays in an intermediate state (for example, tenant `Provisioning`) that the domain must account for.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Coreografía por eventos: el documento la mantiene para los flujos simples que no necesitan deshacer nada.
+- Event choreography: the document keeps it for simple flows that do not need to undo anything.

@@ -52,7 +52,7 @@ node .claude/skills/backend-estructura/scripts/check-structure.mjs
 node .claude/skills/front-estructura/scripts/check-structure.mjs
 ```
 
-For a large piece of work, the `backend-guia` and `front-guia` agents split it into packages with disjoint files, and `backend-implementador` and `front-implementador` write each package. How they are organized into troops and waves is in the [plan](docs/plan/README.md#cómo-se-ejecuta-una-ola).
+For a large piece of work, the `backend-guia` and `front-guia` agents split it into packages with disjoint files, and `backend-implementador` and `front-implementador` write each package. How they are organized into troops and waves is in the [plan](docs/plan/README.md#how-a-wave-runs).
 
 ## Before opening a PR
 
