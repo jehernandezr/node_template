@@ -34,7 +34,7 @@ import { CreateTenantRoute } from '../http/tenant.routes.js';
 import { SignInRoute } from '../http/auth.routes.js';
 import { Ids, Now } from './utils/fixtures.js';
 
-/** Valor de prueba con la forma de un dispositivo, sin parecerse a una credencial. */
+/** Test value shaped like a device handle that does not look like a credential. */
 const PUSH_HANDLE = 'push-handle-0001';
 
 describe('identity lifecycle contract', () => {

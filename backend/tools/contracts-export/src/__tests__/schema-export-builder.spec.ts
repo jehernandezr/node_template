@@ -22,14 +22,14 @@ const REF_TARGET =
   /^(?:\.\.\/\.\.\/([a-z-]+)\/export\/contract\.json)?#\/schemas\/(\w+)$/;
 const PLATFORM_PREFIX = '../../platform/export/contract.json#/schemas/';
 
-/** Devuelve todos los valores de `$ref` que aparecen en el JSON. */
+/** Returns every `$ref` value that appears in the JSON. */
 function refsOf(value: unknown): string[] {
   return [...JSON.stringify(value).matchAll(REF_PATTERN)].map(
     (match) => match[1] ?? '',
   );
 }
 
-/** Indica si el `$ref` apunta a un esquema existente en el servicio que lo declara o en el indicado. */
+/** Tells whether the `$ref` points to an existing schema in the service that declares it or in the one it names. */
 function resolves(
   exported: Map<string, JsonObject>,
   ref: string,

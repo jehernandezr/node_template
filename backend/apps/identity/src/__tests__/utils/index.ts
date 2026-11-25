@@ -29,6 +29,7 @@ export {
   type RecordedMessage,
 } from './recording-message-bus.js';
 export { ErasureHold } from './erasure-hold.js';
+export { RuntimeTestValue } from './runtime-test-value.js';
 export { identityService } from '../../identity.service.js';
 export { MemoryIdentityMailer } from '../../modules/alerts/index.js';
 export { SeedRegionTenants } from '../../modules/tenants/index.js';

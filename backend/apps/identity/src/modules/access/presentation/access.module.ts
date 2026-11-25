@@ -32,7 +32,7 @@ import { TypeOrmUserAccessRepository } from '../infrastructure/persistence/typeo
 import { AccessController } from './access.controller.js';
 import { AccessInternalOperations } from './access.internal-operations.js';
 
-/** Membresías, grupos, roles, permisos efectivos y versión de permisos. Global solo para su fachada. */
+/** Memberships, groups, roles, effective permissions and permission versions. Global only for its facade. */
 @Global()
 @Module({
   imports: [

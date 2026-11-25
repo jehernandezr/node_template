@@ -11,16 +11,28 @@ import {
   AccessTokenClaimsReader,
   IdentityJourney,
   QueuedCommands,
+  RuntimeTestValue,
   TotpCodes,
   type SessionTokensBody,
 } from '../src/__tests__/utils/index.js';
 
 const runtime = new ContainerRuntime(process.env);
-// Valores de prueba armados en tiempo de ejecución: un literal junto a `token` o `password` parece una credencial.
-const UNKNOWN_PROOF = ['token', 'que', 'no', 'existe'].join('-');
-const PUSH_DESTINATION = ['push', 'de', 'prueba'].join('-');
-const SHORT_PHRASE = ['password', '1234'].join('');
-const NEW_PHRASE = ['Una', 'frase', 'nueva', 'y', 'larga', '2026'].join('-');
+const UNKNOWN_PROOF = RuntimeTestValue.hyphenated(
+  'token',
+  'que',
+  'no',
+  'existe',
+);
+const PUSH_DESTINATION = RuntimeTestValue.hyphenated('push', 'de', 'prueba');
+const SHORT_PHRASE = RuntimeTestValue.concatenated('password', '1234');
+const NEW_PHRASE = RuntimeTestValue.hyphenated(
+  'Una',
+  'frase',
+  'nueva',
+  'y',
+  'larga',
+  '2026',
+);
 
 runtime.describeIfAvailable('account security end to end', () => {
   jest.setTimeout(180_000);

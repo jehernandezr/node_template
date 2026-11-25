@@ -21,7 +21,7 @@ runtime.describeIfAvailable('login attempts in monthly partitions', () => {
     await app.stop();
   });
 
-  /** `login_attempts_AAAAMM` del mes de `at`, el nombre que le dan las funciones de la plataforma. */
+  /** `login_attempts_YYYYMM` of the month of `at`, the name the platform functions give the partition. */
   const partitionOf = (at: Date): string =>
     `login_attempts_${at.getUTCFullYear()}${String(at.getUTCMonth() + 1).padStart(2, '0')}`;
 

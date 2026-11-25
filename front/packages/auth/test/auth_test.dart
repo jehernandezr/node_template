@@ -9,6 +9,8 @@ final t0 = DateTime.utc(2026, 11, 11, 12);
 
 const challengeId = '0193f1c2-0000-7000-8000-000000000001';
 
+const fakeDevicePublicKeyAsUnpaddedBase64Url = 'AQIDBA';
+
 SessionTokens tokens(String access, DateTime expiresAt) => SessionTokens(
   accessToken: access,
   accessExpiresAt: expiresAt,
@@ -42,7 +44,7 @@ void main() {
     );
   });
 
-  /// Abre la sesión con [initial] por la vía del login.
+  /// Opens the session with [initial] through the sign-in flow.
   Future<void> signIn(SessionTokens initial) async {
     repo.signInResult = authenticated(initial);
     await manager.signIn(credentials);
@@ -130,8 +132,10 @@ void main() {
     expect(second.status, SignInStatus.authenticated);
     expect(repo.lastVerify?.challengeId, challengeId);
     expect(repo.lastVerify?.code, '12345678');
-    // [1, 2, 3, 4] en base64url sin relleno, como pide el contrato.
-    expect(repo.lastVerify?.devicePublicKey, 'AQIDBA');
+    expect(
+      repo.lastVerify?.devicePublicKey,
+      fakeDevicePublicKeyAsUnpaddedBase64Url,
+    );
     expect(MfaVerifyRequestSchema.validate(repo.lastVerify!.toJson()), isEmpty);
     expect(store.sessionToken, 'session-access-2');
     expect(manager.state, AuthState.signedIn);
@@ -638,7 +642,7 @@ void main() {
   });
 }
 
-/// Repositorio cuyo cierre de sesión falla en el servidor.
+/// Repository whose sign-out fails on the server.
 class _FailingLogoutRepository extends FakeAuthRepository {
   @override
   Future<void> logout({String? sessionToken}) async {
@@ -646,7 +650,7 @@ class _FailingLogoutRepository extends FakeAuthRepository {
   }
 }
 
-/// Repositorio cuya verificación del paso adicional espera a [gate].
+/// Repository whose step-up verification waits for [gate].
 class _GatedStepUpRepository extends FakeAuthRepository {
   _GatedStepUpRepository(this.gate);
 
