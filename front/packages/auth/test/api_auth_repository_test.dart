@@ -5,7 +5,7 @@ import 'package:auth/auth.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Transporte que guarda las peticiones y responde con [queue] en orden.
+/// Transport that records the requests and answers with [queue] in order.
 class _Transport implements HttpTransport {
   final List<TransportResponse> queue = [];
   final List<TransportRequest> requests = [];

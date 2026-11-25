@@ -10,31 +10,32 @@ import 'ports.dart';
 import 'session_manager.dart';
 import 'session_transport.dart';
 
-/// Lee el acceso de la sesión actual.
+/// Loads the access of the current session.
 typedef SessionAccessLoader = Future<SessionAccess> Function();
 
-/// Conexión real de un shell con identity.
+/// Real connection of a shell to identity.
 ///
-/// Reúne el [SessionManager], el [ApiClient] que firma con su access token y
-/// refresca la sesión ante un código de [refreshCodes], y el acceso de
-/// la sesión ([access], de `GET /v1/me/access`): permisos, roles de
-/// plataforma, features, flags y último MFA. El shell convierte [access] en
-/// su `UserSession`.
+/// Joins the [SessionManager], the [ApiClient] that signs with its access
+/// token and refreshes the session on a code in [refreshCodes], and the
+/// session access ([access], from `GET /v1/me/access`): permissions, platform
+/// roles, features, flags and last MFA. The shell turns [access] into its
+/// `UserSession`.
 ///
-/// [access] se recarga después de cada refresh (los permisos pudieron
-/// cambiar) y vuelve a null cuando la sesión se cierra, sea por un [signOut]
-/// o porque el servidor la invalidó: en el refresh o en cualquier ruta
-/// autenticada que responda un código de invalidación (sesión revocada,
-/// vencida o reutilizada, token revocado, usuario o tenant suspendido).
+/// [access] reloads after every refresh (permissions may have changed) and
+/// goes back to null when the session ends, either through [signOut] or
+/// because the server invalidated it: on refresh or on any authenticated
+/// route that answers with an invalidation code (session revoked, expired or
+/// reused, token revoked, user or tenant suspended).
 final class IdentityConnection {
-  /// Conexión sobre [transport] y [baseUri]. La conexión es dueña de
-  /// [transport] y lo cierra en [dispose].
+  /// Creates a connection over [transport] and [baseUri].
   ///
-  /// Las rutas del login, el refresh y el cierre de sesión usan un
-  /// [ApiClient] sin token y declaran el [SessionTransport] que corresponde a
-  /// [tokenStore] (cookie en web, bearer en la app nativa); el resto (también el paso adicional),
-  /// [apiClient], que toma el token de [sessionManager] y le avisa cuando la
-  /// API rechaza ese token con un código de invalidación.
+  /// The connection owns [transport] and closes it in [dispose].
+  ///
+  /// The sign-in, refresh and sign-out routes use an [ApiClient] without a
+  /// token and declare the [SessionTransport] that matches [tokenStore]
+  /// (cookie on the web, bearer in the native app); the rest, including the
+  /// step-up, use [apiClient], which takes the token from [sessionManager] and
+  /// notifies it when the API rejects that token with an invalidation code.
   factory IdentityConnection({
     required HttpTransport transport,
     required Uri baseUri,
@@ -42,7 +43,7 @@ final class IdentityConnection {
     DeviceKeyPort? deviceKeys,
     Map<String, String> defaultHeaders = const {},
   }) {
-    // El cliente con sesión y el SessionManager se necesitan entre sí.
+    // The session client and the SessionManager depend on each other.
     late final SessionManager sessionManager;
     final apiClient = ApiClient(
       transport: SessionInvalidationTransport(
@@ -82,7 +83,9 @@ final class IdentityConnection {
     );
   }
 
-  /// Conexión con sus piezas. Cierra [transport] en [dispose] cuando se da.
+  /// Creates a connection from its parts.
+  ///
+  /// Closes [transport] in [dispose] when given.
   IdentityConnection.withParts({
     required this.sessionManager,
     required this.apiClient,
@@ -93,21 +96,24 @@ final class IdentityConnection {
     _states = sessionManager.states.listen(_onState);
   }
 
-  /// Códigos con los que una ruta autenticada pide refrescar la sesión y
-  /// reintentar una vez. `IDENTITY.TOKEN.STALE_PERMISSIONS` llega con un token
-  /// válido cuyos permisos cambiaron. `PLATFORM.AUTH.TOKEN_EXPIRED` llega con
-  /// un access token vencido: el refresh cambia el token, pero no cierra la
-  /// sesión, así que no está en la lista de invalidación.
+  /// Codes with which an authenticated route asks to refresh the session and
+  /// retry once.
+  ///
+  /// `IDENTITY.TOKEN.STALE_PERMISSIONS` comes with a valid token whose
+  /// permissions changed. `PLATFORM.AUTH.TOKEN_EXPIRED` comes with an expired
+  /// access token: the refresh replaces the token but does not end the
+  /// session, so it is not in the invalidation list.
   static final Set<String> refreshCodes = {
     IdentityErrorCode.tokenStalePermissions.code,
     PlatformErrorCode.authTokenExpired.code,
   };
 
-  /// Sesión y tokens.
+  /// Session and tokens.
   final SessionManager sessionManager;
 
-  /// Cliente de la API con la sesión. Los shells lo pasan a los
-  /// microfrontends en `ShellServices`.
+  /// API client with the session.
+  ///
+  /// Shells pass it to the microfrontends in `ShellServices`.
   final ApiClient apiClient;
 
   final SessionAccessLoader _loadAccess;
@@ -117,28 +123,28 @@ final class IdentityConnection {
   late AuthState _lastState;
   Future<SessionAccess>? _inFlight;
 
-  /// Sube con cada cierre de sesión, para descartar cargas que terminen
-  /// después.
+  /// Generation counter that increments on every sign-out, to discard loads
+  /// that finish afterwards.
   int _generation = 0;
 
-  /// Acceso de la sesión abierta, o null sin sesión.
+  /// Access of the open session, or null without a session.
   ValueListenable<SessionAccess?> get access => _access;
   final ValueNotifier<SessionAccess?> _access = ValueNotifier(null);
 
-  /// Recupera la sesión guardada y carga su acceso. Devuelve si quedó abierta.
+  /// Restores the stored session and loads its access.
   ///
-  /// Lanza los errores que no son de autenticación, como un fallo de red.
+  /// Returns whether the session ended up open. Throws the errors that are not
+  /// authentication errors, such as a network failure.
   Future<bool> restore() async {
     if (!await sessionManager.restore()) return false;
     await reloadAccess();
     return true;
   }
 
-  /// Carga el acceso de la sesión y lo publica en [access].
+  /// Loads the session access and publishes it in [access].
   ///
-  /// Las llamadas que coinciden comparten la misma petición. Si la sesión se
-  /// cierra mientras tanto, el resultado se descarta. Lanza los errores de la
-  /// API.
+  /// Overlapping calls share the same request. If the session ends meanwhile,
+  /// the result is discarded. Throws the API errors.
   Future<SessionAccess> reloadAccess() {
     final inFlight = _inFlight;
     if (inFlight != null) return inFlight;
@@ -158,27 +164,29 @@ final class IdentityConnection {
     return future;
   }
 
-  /// Cierra la sesión en el servidor y localmente.
+  /// Signs out on the server and locally.
   Future<void> signOut() => sessionManager.logout();
 
-  /// Publica en [access] el `mfaVerifiedAt` de un paso adicional verificado
-  /// (el de `SessionManager.verifyStepUp`). Sin sesión no hace nada.
+  /// Publishes in [access] the `mfaVerifiedAt` of a verified step-up (the one
+  /// from `SessionManager.verifyStepUp`).
   ///
-  /// Va aparte de la verificación para que la página del paso adicional
-  /// decida cuándo cambia la sesión del shell: primero cierra la página y
-  /// después publica, porque el router se recalcula con ese cambio.
+  /// Does nothing without a session. It is separate from the verification so
+  /// the step-up page decides when the shell session changes: it first closes
+  /// the page and then publishes, because the router recomputes on that
+  /// change.
   void markMfaVerified(DateTime at) {
     final current = _access.value;
     if (current == null || sessionManager.state == AuthState.signedOut) return;
-    // Por JSON, para no perder un campo que el contrato agregue después.
+    // Through JSON, so a field the contract adds later is not lost.
     _access.value = SessionAccess.fromJson({
       ...current.toJson(),
       'mfaVerifiedAt': at.toUtc().toIso8601String(),
     });
   }
 
-  /// Suelta la sesión en memoria y cierra el transporte. Repetirlo no hace
-  /// nada.
+  /// Releases the in-memory session and closes the transport.
+  ///
+  /// Calling it again does nothing.
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
@@ -196,9 +204,9 @@ final class IdentityConnection {
       _access.value = null;
     } else if (state == AuthState.signedIn &&
         previous == AuthState.refreshing) {
-      // Un refresh pudo traer permisos nuevos. Si la carga falla por la red o
-      // la API se conserva el acceso anterior y el siguiente refresh lo
-      // intenta de nuevo; un error de programación sigue hasta la zona.
+      // A refresh may bring new permissions. If the load fails because of the
+      // network or the API, the previous access is kept and the next refresh
+      // tries again; a programming error propagates to the zone.
       unawaited(
         reloadAccess().then<void>(
           (_) {},
@@ -211,19 +219,19 @@ final class IdentityConnection {
   }
 }
 
-/// Avisa el rechazo de un access token.
+/// Handles the rejection of an access token.
 typedef RejectedTokenHandler = Future<bool> Function(
   String accessToken,
   String code,
 );
 
-/// [HttpTransport] que mira las respuestas de error de las peticiones con
-/// access token y avisa a [onRejected] con el token y el código del problema.
+/// [HttpTransport] that inspects the error responses of requests with an
+/// access token and notifies [onRejected] with the token and the problem code.
 ///
-/// Así `SessionManager.handleRejectedToken` cierra la sesión cuando
-/// cualquier ruta autenticada responde un código de invalidación, aunque la
-/// llamada la haga un microfrontend. La respuesta sigue igual hacia
-/// `ApiClient`, que la convierte en `ApiErrorException`.
+/// This way `SessionManager.handleRejectedToken` ends the session when any
+/// authenticated route answers with an invalidation code, even if a
+/// microfrontend makes the call. The response passes unchanged to
+/// `ApiClient`, which turns it into an `ApiErrorException`.
 final class SessionInvalidationTransport implements HttpTransport {
   SessionInvalidationTransport(this.inner, {required this.onRejected});
 
@@ -258,7 +266,7 @@ final class SessionInvalidationTransport implements HttpTransport {
         return decoded['code'] as String;
       }
     } on FormatException {
-      // No es un documento de problema: no hay código que mirar.
+      // Not a problem document: there is no code to inspect.
     }
     return null;
   }

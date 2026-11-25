@@ -1,5 +1,6 @@
-/// Dobles y utilitarios de prueba compartidos por los paquetes del front.
-/// Solo se usa como dev_dependency: el código de producción nunca lo importa.
+/// Test doubles and utilities shared by the front-end packages.
+///
+/// Used only as a dev_dependency: production code never imports it.
 library;
 
 export 'src/a11y/expect_accessible.dart';
