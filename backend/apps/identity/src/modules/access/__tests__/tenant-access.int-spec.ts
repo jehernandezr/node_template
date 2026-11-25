@@ -33,7 +33,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   jest.setTimeout(180_000);
 
   const app = new IdentityTestApp();
-  /** Cada organización con su dueño; los dueños viven en shards distintos. */
+  /** Each organization with its owner; the owners live in different shards. */
   const organizations: Array<{ tenantId: string; owner: UserRef }> = [];
 
   beforeAll(async () => {
@@ -47,7 +47,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
     }
   });
 
-  /** Una organización con dos dueñas y el grupo de dueños, en su shard. */
+  /** An organization with two owners and the owners group, in its shard. */
   const organizationWithTwoOwners = async (slug: string) => {
     const users = new ShardedUsers(app);
     const firstOwner = await users.register(`primera.${slug}@example.com`);
@@ -65,7 +65,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
     return { tenantId, shard, firstOwner, secondOwner };
   };
 
-  /** Crea y activa una organización con su dueño. */
+  /** Creates and activates an organization with its owner. */
   const createOrganization = async (
     slug: string,
     owner: UserRef,
@@ -116,7 +116,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   it('shows the service role only the rows of the tenant of the transaction', async () => {
     const [first, second] = organizations;
     if (first === undefined || second === undefined) {
-      throw new Error('Faltan organizaciones');
+      throw new Error('Organizations are missing');
     }
     const probe = app.shards();
     const source = new DataSource({
@@ -179,7 +179,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   it('rebuilds the user_tenants projection when the dispatcher delivers MembershipChanged, once', async () => {
     const [first] = organizations;
     if (first === undefined) {
-      throw new Error('Faltan organizaciones');
+      throw new Error('Organizations are missing');
     }
     const probe = app.shards();
     const userShard = await probe.shardOfUser(first.owner);
@@ -217,7 +217,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   it('sends a MembershipChanged of a tenant the directory does not know to the dead letter', async () => {
     const [first] = organizations;
     if (first === undefined) {
-      throw new Error('Faltan organizaciones');
+      throw new Error('Organizations are missing');
     }
     const [published] = await app
       .shards()
@@ -244,7 +244,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   it('shows no rows to a read outside a transaction without a tenant in the session', async () => {
     const [first] = organizations;
     if (first === undefined) {
-      throw new Error('Faltan organizaciones');
+      throw new Error('Organizations are missing');
     }
     const probe = app.shards();
     const shard = await probe.shardOfTenant(first.tenantId);
@@ -274,7 +274,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   it('lets a repository read outside a transaction only the rows of the tenant of its scope', async () => {
     const [first] = organizations;
     if (first === undefined) {
-      throw new Error('Faltan organizaciones');
+      throw new Error('Organizations are missing');
     }
 
     const memberships = await app
@@ -315,7 +315,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
         .shards()
         .rowsIn(
           shard,
-          `SELECT user_id FROM tenant_members WHERE tenant_id = '${tenantId}'`,
+          `SELECT user_id FROM tenant_members WHERE tenant_id = '${tenantId}' AND deleted_at IS NULL`,
         ),
     ).toHaveLength(1);
   });
@@ -375,7 +375,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
       expect(
         await probe.rowsIn(
           shard,
-          `SELECT user_id FROM tenant_members WHERE tenant_id = '${tenantId}'`,
+          `SELECT user_id FROM tenant_members WHERE tenant_id = '${tenantId}' AND deleted_at IS NULL`,
         ),
       ).toEqual([{ user_id: secondOwner.userId }]);
     } finally {
