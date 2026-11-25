@@ -27,6 +27,7 @@ import { __NAME___ERROR_CATALOGS } from './shared/constants/__name__-error-catal
     }),
     TenantDirectoryModule.forFeature({
       service: __nameCamel__Contract.service,
+      manifest: __Name__TenantMoveManifest,
       operations: __Name__TenantDirectoryOperations,
     }),
     // generated:modules

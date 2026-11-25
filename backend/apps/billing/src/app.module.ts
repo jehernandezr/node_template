@@ -49,6 +49,7 @@ import { UsageModule } from './modules/usage/presentation/usage.module.js';
     }),
     TenantDirectoryModule.forFeature({
       service: billingContract.service,
+      manifest: BillingTenantMoveManifest,
       operations: BillingTenantDirectoryOperations,
     }),
     // generated:modules

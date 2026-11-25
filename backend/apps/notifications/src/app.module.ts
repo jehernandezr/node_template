@@ -51,6 +51,7 @@ import { TriggersModule } from './modules/triggers/presentation/triggers.module.
     }),
     TenantDirectoryModule.forFeature({
       service: notificationsContract.service,
+      manifest: NotificationsTenantMoveManifest,
       operations: NotificationsTenantDirectoryOperations,
     }),
     // generated:modules

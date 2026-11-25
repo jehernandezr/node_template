@@ -11,16 +11,18 @@ import {
   type DirectoryStore,
   type DirectoryWriter,
   type ShardRouter,
+  type TenantPlacement,
 } from '@platform/sharding';
 import { TenantMoveErrorCode } from '../errors/tenant-move-error-code.enum.js';
 import { TenantMoveError } from '../errors/tenant-move.error.js';
+import type { TenantDataPresence } from './tenant-data-presence.js';
 import type { TenantShardGroups } from './tenant-shard-groups.js';
 
 /**
  * La fila de un tenant en el directorio de shards de un servicio que sigue la ubicación que eligió identity. `place`
  * la crea en los shards del servicio que corresponden a los grupos elegidos y, si ya existe, la deja como está: la
  * saga de alta la repite y un traslado posterior pudo cambiarla. `remove` es su reversa, antes de que el tenant tenga
- * datos.
+ * datos: se niega a retirar un tenant que ya tiene datos en el servicio o que está en medio de un traslado.
  */
 export class TenantDirectoryEntries {
   private static readonly MAX_ATTEMPTS = 3;
@@ -30,6 +32,7 @@ export class TenantDirectoryEntries {
     private readonly directory: DirectoryStore,
     private readonly router: ShardRouter,
     private readonly groups: TenantShardGroups,
+    private readonly presence: TenantDataPresence,
   ) {}
 
   /**
@@ -73,6 +76,10 @@ export class TenantDirectoryEntries {
     throw TenantDirectoryEntries.contended(entry.tenantId);
   }
 
+  /**
+   * @throws TenantMoveError `MoveInProgress` si el tenant tiene la compuerta cerrada por un traslado.
+   * @throws TenantMoveError `TenantHasData` si el tenant ya tiene filas en las tablas del servicio.
+   */
   async remove(ref: TenantDirectoryRef): Promise<TenantDirectoryAck> {
     for (
       let attempt = 1;
@@ -83,6 +90,7 @@ export class TenantDirectoryEntries {
       if (current === undefined) {
         return { tenantId: ref.tenantId };
       }
+      await this.assertRemovable(current);
       const result = await this.writer.deletePlacement(
         ref.tenantId,
         current.version,
@@ -93,6 +101,24 @@ export class TenantDirectoryEntries {
       }
     }
     throw TenantDirectoryEntries.contended(ref.tenantId);
+  }
+
+  /** @throws TenantMoveError `MoveInProgress` o `TenantHasData`. */
+  private async assertRemovable(placement: TenantPlacement): Promise<void> {
+    if (placement.status === TenantStatus.Migrating) {
+      throw new TenantMoveError(
+        TenantMoveErrorCode.MoveInProgress,
+        'The tenant is being moved',
+        { tenantId: placement.tenantId },
+      );
+    }
+    if (await this.presence.holdsData(placement)) {
+      throw new TenantMoveError(
+        TenantMoveErrorCode.TenantHasData,
+        'The tenant already has data in this service',
+        { tenantId: placement.tenantId },
+      );
+    }
   }
 
   private async shardsOf(entry: TenantDirectoryEntry): Promise<string[]> {

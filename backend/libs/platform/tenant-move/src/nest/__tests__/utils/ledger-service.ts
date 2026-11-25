@@ -127,6 +127,7 @@ export class LedgerCredits {
     TenantDirectoryModule.forFeature({
       service: ledgerContract.service,
       operations: LedgerTenantDirectoryOperations,
+      manifest: LedgerManifest,
     }),
   ],
   providers: [LedgerOpenings, LedgerCredits],

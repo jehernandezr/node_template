@@ -14,6 +14,8 @@ export enum TenantMoveErrorCode {
   NotSwitched = 'PLATFORM.TENANT_MOVE.NOT_SWITCHED',
   /** Otro traslado del tenant está entre `finalize` y `switch`: limpiar ahora podría borrar su copia. */
   MoveInProgress = 'PLATFORM.TENANT_MOVE.MOVE_IN_PROGRESS',
+  /** El tenant ya tiene datos en el servicio: retirarlo del directorio los dejaría huérfanos. */
+  TenantHasData = 'PLATFORM.TENANT_MOVE.TENANT_HAS_DATA',
   /** El grupo del tenant choca en el directorio del servicio con un tenant dedicado, o es dedicado y el shard está ocupado. */
   ShardTaken = 'PLATFORM.TENANT_MOVE.SHARD_TAKEN',
   /** El manifiesto nombra una tabla o columna inválida, o un padre que no lo precede. */

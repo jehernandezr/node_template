@@ -360,7 +360,7 @@ runtime.describeIfAvailable(
       });
     });
 
-    it('places a new tenant in the shard of its group once, lets it write and move there, and removes the row of an onboarding that is undone', async () => {
+    it('places a new tenant in the shard of its group once, lets it write and move there, and removes the row of an onboarding that is undone but never the one of a tenant with data', async () => {
       const ledger = new TwoRegionLedger(regionA, regionB, 'directory');
       deployment = ledger;
       const tenant = newId();
@@ -393,6 +393,7 @@ runtime.describeIfAvailable(
       for (let i = 0; i < 3; i++) {
         await writer.writeOnce();
       }
+      const refusedWithData = await call(remove, { tenantId: tenant });
       const moves = inA.get(TenantMoves);
       const move = refOf(tenant, LedgerGroup.B0, regionB);
       await untilDone(() => moves.sync(move));
@@ -408,6 +409,9 @@ runtime.describeIfAvailable(
       expect(unknown).toMatchObject({
         kind: CallOutcomeKind.ProtocolViolation,
         code: TenantMoveErrorCode.UnknownTarget,
+      });
+      expect(refusedWithData).toMatchObject({
+        code: TenantMoveErrorCode.TenantHasData,
       });
       await expect(
         ledger.rowsOf(regionB, ledger.shards.b0, tenant),
