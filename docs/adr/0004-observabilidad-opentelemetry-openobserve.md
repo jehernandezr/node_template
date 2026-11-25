@@ -1,33 +1,33 @@
-# 0004. Observabilidad con OpenTelemetry y OpenObserve
+# 0004. Observability with OpenTelemetry and OpenObserve
 
-- Estado: Aceptada
-- Fecha: 2026-11-11
+- Status: Accepted
+- Date: 2026-11-11
 
-## Contexto
+## Context
 
-Una petición pasa por HTTP, colas, sagas y jobs, y puede cruzar varios servicios. Hace falta ver logs, métricas y trazas enlazados por el mismo `traceId`, sin depender de un proveedor cerrado y con la misma herramienta en todos los entornos.
+A request goes through HTTP, queues, sagas and jobs, and can cross several services. Logs, metrics and traces need to be visible and linked by the same `traceId`, without depending on a closed vendor and with the same tool in every environment.
 
-## Decisión
+## Decision
 
-OpenTelemetry (OTel) produce logs, trazas y métricas. La instrumentación automática cubre HTTP, NestJS, `pg`, el cliente de Valkey, el SDK de AWS y `fetch`. Hay spans propios en casos de uso, pasos de saga, handlers de mensajes y jobs.
+OpenTelemetry (OTel) produces logs, traces and metrics. Automatic instrumentation covers HTTP, NestJS, `pg`, the Valkey client, the AWS SDK and `fetch`. There are custom spans in use cases, saga steps, message handlers and jobs.
 
-OpenObserve es la única herramienta de logs, métricas, trazas, dashboards y alertas en todos los entornos. Corre como un contenedor en local y como una tarea de Fargate con almacenamiento en S3 en AWS.
+OpenObserve is the only tool for logs, metrics, traces, dashboards and alerts in every environment. It runs as a container locally and as a Fargate task with S3 storage on AWS.
 
-Un OpenTelemetry Collector recibe y reenvía todo: como capa ADOT en Lambda, como sidecar en Fargate y dentro de `docker-compose` en local. El `LoggerPort` escribe JSON con `trace_id` y `span_id`, a un solo destino: OTLP con la telemetría encendida y stdout con ella apagada. La instrumentación de Valkey reaplica la de ioredis al módulo `iovalkey` y sus spans no llevan la llave. El ambiente de las trazas sale de `DEPLOY_ENVIRONMENT`. La retención es de 14 días en dev y 30 en prod.
+An OpenTelemetry Collector receives and forwards everything: as an ADOT layer in Lambda, as a sidecar in Fargate and inside `docker-compose` locally. The `LoggerPort` writes JSON with `trace_id` and `span_id` to a single destination: OTLP with telemetry on and stdout with it off. The Valkey instrumentation reapplies the ioredis one to the `iovalkey` module and its spans do not carry the key. The environment of the traces comes from `DEPLOY_ENVIRONMENT`. Retention is 14 days in dev and 30 in prod.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Cada log abre su traza completa.
-- Cambiar de backend significa cambiar la configuración del Collector.
+- Every log opens its complete trace.
+- Changing backends means changing the Collector configuration.
 
-Costos:
+Costs:
 
-- OpenObserve es un servicio que el equipo opera en local y en Fargate.
-- El muestreo de trazas y el volumen de logs hay que controlarlos con niveles, muestreo y contextos de debug.
+- OpenObserve is a service the team operates locally and on Fargate.
+- Trace sampling and log volume have to be controlled with levels, sampling and debug contexts.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- SigNoz: vistas de APM más completas, sobre Docker Compose y ClickHouse. El documento la indica como alternativa si se necesita análisis de trazas más profundo.
-- Cualquier backend compatible con OTel, cambiando la configuración del Collector.
+- SigNoz: more complete APM views, on Docker Compose and ClickHouse. The document lists it as an alternative if deeper trace analysis is needed.
+- Any OTel-compatible backend, by changing the Collector configuration.

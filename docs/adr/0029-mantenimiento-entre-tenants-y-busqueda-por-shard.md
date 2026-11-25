@@ -1,32 +1,32 @@
-# 0029. Mantenimiento entre tenants con RLS y búsqueda por shard
+# 0029. Cross-tenant maintenance with RLS and search per shard
 
-- Estado: Aceptada
-- Fecha: 2026-11-22
-- Relacionados: [ADR 0023](0023-enrutamiento-de-datos-de-identity.md), [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)
+- Status: Accepted
+- Date: 2026-11-22
+- Related: [ADR 0023](0023-enrutamiento-de-datos-de-identity.md), [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)
 
-## Contexto
+## Context
 
-Las tablas de tenant tienen RLS forzado por `app.tenant_id` y el rol del servicio no tiene `BYPASSRLS`. Algunos trabajos recorren todos los tenants de un shard: la purga de tareas borradas y el borrado de los datos de un usuario en todos los tenants donde escribió. Sin tenant en la sesión, el RLS no deja ver ninguna fila, y el directorio de shards no ofrece la lista de tenants de un shard. Además, la base de los repositorios de tablas de tenant vivía dentro de identity y `tasks` la necesitaba igual. Por otro lado, `@platform/search` necesita guardar el texto y el vector de cada documento.
+Tenant tables have RLS forced by `app.tenant_id` and the service role does not have `BYPASSRLS`. Some jobs walk every tenant in a shard: purging deleted tasks and deleting a user's data in every tenant where they wrote. Without a tenant in the session, RLS shows no rows, and the shard directory does not offer the list of tenants in a shard. In addition, the base for tenant table repositories lived inside identity and `tasks` needed it as well. Separately, `@platform/search` needs to store the text and the vector of each document.
 
-## Decisión
+## Decision
 
-- `TenantIsolatedRepository` y `TenantIsolationSql` pasan a `@platform/persistence`. Las lecturas fuera de una transacción van a la réplica dentro de una transacción de solo lectura con el tenant fijado; `readPrimary` queda para lo que debe ver lo recién confirmado.
-- Una tabla que lo necesita agrega `TenantIsolationSql.allowMaintenance`: una política que deja pasar la transacción marcada con `app.maintenance = on`. Solo `TenantMaintenanceSession` la marca, y solo vale dentro de esa transacción.
-- `@platform/search` guarda los documentos en `search_documents`, una tabla por shard con RLS por tenant, columna `tsvector` generada con el idioma configurado y un vector de pgvector. Los dos modos (`SEARCH_MODE`) usan la misma tabla, así que cambiar de modo no pide migración. La extensión `vector` la crea quien provisiona la base, porque el rol del servicio no puede crear extensiones.
+- `TenantIsolatedRepository` and `TenantIsolationSql` move to `@platform/persistence`. Reads outside a transaction go to the replica inside a read-only transaction with the tenant set; `readPrimary` is kept for what must see freshly committed data.
+- A table that needs it adds `TenantIsolationSql.allowMaintenance`: a policy that lets through the transaction marked with `app.maintenance = on`. Only `TenantMaintenanceSession` marks it, and it is only valid inside that transaction.
+- `@platform/search` stores the documents in `search_documents`, a table per shard with RLS per tenant, a `tsvector` column generated with the configured language and a pgvector vector. Both modes (`SEARCH_MODE`) use the same table, so switching modes requires no migration. The `vector` extension is created by whoever provisions the database, because the service role cannot create extensions.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Purgas y borrados de usuario corren con el rol del servicio, sin un rol privilegiado más.
-- El RLS sigue siendo la segunda barrera de toda consulta normal.
+- Purges and user deletions run with the service role, without one more privileged role.
+- RLS is still the second barrier of every normal query.
 
-Costos:
+Costs:
 
-- Una consulta dentro de una transacción de mantenimiento ve todos los tenants del shard: ese código vive solo en los adaptadores de mantenimiento y se prueba contra PostgreSQL real.
-- En modo híbrido el vector se calcula al indexar, dentro de la transacción de escritura; con un proveedor remoto de embeddings habrá que indexar después del commit.
+- A query inside a maintenance transaction sees every tenant in the shard: that code lives only in the maintenance adapters and is tested against real PostgreSQL.
+- In hybrid mode the vector is computed at indexing time, inside the write transaction; with a remote embeddings provider indexing will have to happen after the commit.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Un rol con `BYPASSRLS` para los jobs: otra credencial que rotar y repartir.
-- Recorrer los tenants de cada shard: el directorio no los lista por shard y la consulta crece con el número de tenants.
+- A role with `BYPASSRLS` for the jobs: another credential to rotate and distribute.
+- Walking the tenants of each shard: the directory does not list them per shard and the query grows with the number of tenants.

@@ -1,71 +1,71 @@
-# 0019. CI, seguridad y versiones de herramientas
+# 0019. CI, security and tool versions
 
-- Estado: aceptada
-- Fecha: 2026-11-12
+- Status: accepted
+- Date: 2026-11-12
 
-## Contexto
+## Context
 
-La auditoría del 12 de noviembre encontró que el CI solo cubría el workspace Nx: no había jobs de Flutter, Terraform, deriva de contratos ni verificación de microfrontends diferidos; las acciones se referenciaban por etiqueta móvil; no existía un check agregado y las versiones de Flutter y Terraform no estaban fijadas. Tras ADR 0015 el repositorio tiene dos aplicaciones (`backend/` y `front/`) y Nx en la raíz las orquesta en un solo grafo.
+The November 12 audit found that CI only covered the Nx workspace: there were no jobs for Flutter, Terraform, contract drift or deferred microfrontend verification; actions were referenced by a moving tag; there was no aggregate check and the Flutter and Terraform versions were not pinned. After ADR 0015 the repository has two applications (`backend/` and `front/`) and Nx at the root orchestrates them in a single graph.
 
-## Decisión
+## Decision
 
-### Jobs de `ci.yml`
+### `ci.yml` jobs
 
-Un job `changes` (`dorny/paths-filter`) decide qué corre. Cada job tiene `timeout-minutes` y permisos mínimos (`contents: read`).
+A `changes` job (`dorny/paths-filter`) decides what runs. Each job has `timeout-minutes` and minimal permissions (`contents: read`).
 
-| Job            | Corre cuando cambia                                                                               | Qué hace                                                                                                                                                                                                                                                                                                                                                             |
-| -------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nx`           | cualquier cambio (Nx decide los proyectos afectados)                                              | pnpm + Node de `.nvmrc`, comprobación de un solo `node_modules` en la raíz, `flutter pub get`, caché de `.nx/cache`, `nx affected -t lint typecheck build analyze format-check` (el `typecheck` revisa también las pruebas), pruebas del backend con cobertura mínima (80 % en líneas, sentencias y funciones; 75 % en ramas), pruebas del front y `nx format:check` |
-| `contracts`    | `backend/libs/contracts`, `backend/tsconfig.base.json`, `front/packages/contracts`, `front/tools` | `nx run contracts-export:check` y `dart run contracts_gen --check`: falla si el JSON/Dart generado difiere del TypeScript                                                                                                                                                                                                                                            |
-| `web-deferred` | `front/**`                                                                                        | `flutter build web --release --source-maps` y `front/tools/check_deferred_chunks.dart`                                                                                                                                                                                                                                                                               |
-| `terraform`    | `backend/infra/**`                                                                                | Terraform y tflint en las versiones de `.terraform-version` y `.tflint-version`, `terraform fmt -check -recursive`, `tf-validate.mjs` (init, validate y `terraform test` de cada stack y ejemplo), pruebas en Python de las Lambdas y scripts, shellcheck y tflint con el ruleset de AWS                                                                             |
-| `ci-ok`        | siempre                                                                                           | Agrega el resultado de todos los jobs                                                                                                                                                                                                                                                                                                                                |
+| Job            | Runs when this changes                                                                            | What it does                                                                                                                                                                                                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `nx`           | any change (Nx decides the affected projects)                                                     | pnpm + Node from `.nvmrc`, check for a single `node_modules` at the root, `flutter pub get`, `.nx/cache` cache, `nx affected -t lint typecheck build analyze format-check` (the `typecheck` also checks the tests), backend tests with minimum coverage (80 % on lines, statements and functions; 75 % on branches), front tests and `nx format:check` |
+| `contracts`    | `backend/libs/contracts`, `backend/tsconfig.base.json`, `front/packages/contracts`, `front/tools` | `nx run contracts-export:check` and `dart run contracts_gen --check`: fails if the generated JSON/Dart differs from the TypeScript                                                                                                                                                                                                                     |
+| `web-deferred` | `front/**`                                                                                        | `flutter build web --release --source-maps` and `front/tools/check_deferred_chunks.dart`                                                                                                                                                                                                                                                               |
+| `terraform`    | `backend/infra/**`                                                                                | Terraform and tflint at the versions in `.terraform-version` and `.tflint-version`, `terraform fmt -check -recursive`, `tf-validate.mjs` (init, validate and `terraform test` for each stack and example), Python tests for the Lambdas and scripts, shellcheck and tflint with the AWS ruleset                                                        |
+| `ci-ok`        | always                                                                                            | Aggregates the result of all jobs                                                                                                                                                                                                                                                                                                                      |
 
-`ci-ok` usa `if: always()` y falla si algún job necesario terminó en `failure` o `cancelled`; `skipped` es válido (el filtro de rutas lo omitió). **Es el único check requerido** en la protección de la rama `main` (nombre del check: `ci-ok`). `ci-ok` agrega solo los jobs de `ci.yml`; `security.yml` corre aparte, y la protección de `main` la configura el dueño del repositorio (ADR 0020). Así los jobs condicionales no bloquean los PR que no los tocan.
+`ci-ok` uses `if: always()` and fails if any required job ended in `failure` or `cancelled`; `skipped` is valid (the path filter skipped it). **It is the only required check** in the `main` branch protection (check name: `ci-ok`). `ci-ok` only aggregates the jobs in `ci.yml`; `security.yml` runs separately, and the `main` protection is configured by the repository owner (ADR 0020). That way the conditional jobs do not block PRs that do not touch them.
 
-### Verificación de chunks diferidos
+### Deferred chunk verification
 
-`front/tools/check_deferred_chunks.dart` es un script independiente (sin pubspec). Falla si:
+`front/tools/check_deferred_chunks.dart` is a standalone script (no pubspec). It fails if:
 
-1. `main.dart.js.map` lista fuentes de `microfrontends/*/lib/src/{data,screens,l10n}`; o
-2. algún texto ARB del backoffice (de 12 caracteres o más, para evitar coincidencias con palabras sueltas; los segmentos fuera de `{placeholders}`) aparece en `main.dart.js`, tanto literal como con los escapes `\xHH`/`\uHHHH` de dart2js.
+1. `main.dart.js.map` lists sources from `microfrontends/*/lib/src/{data,screens,l10n}`; or
+2. any backoffice ARB text (12 characters or more, to avoid matches with single words; the segments outside `{placeholders}`) appears in `main.dart.js`, either literally or with dart2js's `\xHH`/`\uHHHH` escapes.
 
-Al introducirse, falló porque las fuentes de `microfrontends/notifications/lib/src/data/*` viajaban en el bundle inicial (el hallazgo "el fake de notificaciones viaja en el bundle inicial" de la auditoría). La migración de `mf_notifications` al contrato del ADR 0018 lo corrigió y hoy la comprobación pasa.
+When it was introduced, it failed because the sources of `microfrontends/notifications/lib/src/data/*` traveled in the initial bundle (the audit finding "the notifications fake travels in the initial bundle"). The migration of `mf_notifications` to the ADR 0018 contract fixed it and today the check passes.
 
-### Versiones de herramientas
+### Tool versions
 
-- Node: `.nvmrc` de la raíz. pnpm: campo `packageManager` del `package.json` de la raíz.
-- Dependencias de npm: versión exacta en `package.json` y `backend/package.json`, los dos únicos `package.json` (ADR 0015). Renovate las mantiene exactas (`rangeStrategy: pin`).
-- Flutter: `front/.flutter-version` (3.50.0). El CI la lee y la pasa a `subosito/flutter-action`.
-- Terraform: `backend/infra/terraform/.terraform-version` (1.14.4; el código exige `>= 1.11`).
-- Renovate cubre `.flutter-version` con un gestor de expresiones regulares y `.terraform-version` y `.nvmrc` con sus gestores nativos.
+- Node: `.nvmrc` at the root. pnpm: the `packageManager` field of the root `package.json`.
+- npm dependencies: exact version in `package.json` and `backend/package.json`, the only two `package.json` files (ADR 0015). Renovate keeps them exact (`rangeStrategy: pin`).
+- Flutter: `front/.flutter-version` (3.50.0). CI reads it and passes it to `subosito/flutter-action`.
+- Terraform: `backend/infra/terraform/.terraform-version` (1.14.4; the code requires `>= 1.11`).
+- Renovate covers `.flutter-version` with a regular expression manager and `.terraform-version` and `.nvmrc` with their native managers.
 
-### Acciones fijadas por SHA
+### Actions pinned by SHA
 
-Toda acción de terceros se referencia por el SHA completo del commit con un comentario con la versión (`@<sha> # vX.Y.Z`). Renovate (`helpers:pinGitHubActionDigests`) mantiene los SHA al día. Las etiquetas anotadas se resuelven al commit, no al objeto de la etiqueta.
+Every third-party action is referenced by the full commit SHA with a comment carrying the version (`@<sha> # vX.Y.Z`). Renovate (`helpers:pinGitHubActionDigests`) keeps the SHAs up to date. Annotated tags are resolved to the commit, not to the tag object.
 
 ### `security.yml`
 
-Corre en PR, en `main` y cada lunes:
+Runs on PRs, on `main` and every Monday:
 
-- **gitleaks** con el CLI instalado desde la release fijada (8.30.1) y verificación SHA-256, sobre todo el historial. La versión y el checksum se actualizan a mano juntos (Renovate no los gestiona, para no abrir PR que fallen la verificación).
-- **dependency-review-action** en PR (severidad alta o crítica).
-- **OSV-Scanner** sobre `pnpm-lock.yaml` y `front/pubspec.lock`.
-- **Trivy (config)** sobre `backend/infra/terraform` (HIGH y CRITICAL). Se eligió Trivy sobre Checkov por ser un solo binario sin dependencias de Python.
-- **CodeQL** para `javascript-typescript`.
+- **gitleaks** with the CLI installed from the pinned release (8.30.1) and SHA-256 verification, over the whole history. The version and the checksum are updated by hand together (Renovate does not manage them, so it does not open PRs that fail the verification).
+- **dependency-review-action** on PRs (high or critical severity).
+- **OSV-Scanner** over `pnpm-lock.yaml` and `front/pubspec.lock`.
+- **Trivy (config)** over `backend/infra/terraform` (HIGH and CRITICAL). Trivy was chosen over Checkov because it is a single binary with no Python dependencies.
+- **CodeQL** for `javascript-typescript`.
 
-### Historial y `.env`
+### History and `.env`
 
-La auditoría anticipó que gitleaks marcaría el `.env` del commit `a076bb9`. Al ejecutar gitleaks 8.30.1 sobre el historial completo no se reportó ningún hallazgo (los valores son de desarrollo local y no coinciden con ninguna regla), y el usuario confirmó que nunca se usaron. `.gitleaksignore` solo lleva huellas concretas (`gitleaks git --report-format json`, campo `Fingerprint`), con un comentario que cite este ADR, y nunca se reescribe el historial. Hoy tiene dos, del mismo JWT de prueba de `redaction.spec.ts`: la del commit de `main` (`13f606f`) y la del commit `04a3914`, que sigue en una rama remota que gitleaks recorre con `--all`. La prueba ya arma ese JWT en tiempo de ejecución, así que no aparecerá en commits nuevos.
+The audit anticipated that gitleaks would flag the `.env` in commit `a076bb9`. Running gitleaks 8.30.1 over the full history reported no findings (the values are for local development and match no rule), and the user confirmed they were never used. `.gitleaksignore` only holds specific fingerprints (`gitleaks git --report-format json`, `Fingerprint` field), with a comment citing this ADR, and the history is never rewritten. Today it has two, from the same test JWT in `redaction.spec.ts`: the one from the `main` commit (`13f606f`) and the one from commit `04a3914`, which is still on a remote branch that gitleaks walks with `--all`. The test now builds that JWT at runtime, so it will not appear in new commits.
 
-### Configuración del repositorio requerida
+### Required repository configuration
 
-- Protección de `main`: exigir solo el check `ci-ok` y que la rama esté al día.
-- Habilitar el grafo de dependencias (necesario para dependency-review) y el escaneo de código (CodeQL sube SARIF).
-- Instalar la aplicación de Renovate.
+- `main` protection: require only the `ci-ok` check and that the branch is up to date.
+- Enable the dependency graph (needed for dependency-review) and code scanning (CodeQL uploads SARIF).
+- Install the Renovate app.
 
-## Consecuencias
+## Consequences
 
-- Un PR que solo toca documentación no ejecuta los jobs de código y aun así satisface `ci-ok`.
-- Cambiar `ci.yml` ejecuta todos los jobs (está incluido en cada filtro).
-- Actualizar una acción exige que Renovate (o una persona) resuelva el nuevo SHA; no hay etiquetas móviles.
+- A PR that only touches documentation does not run the code jobs and still satisfies `ci-ok`.
+- Changing `ci.yml` runs every job (it is included in every filter).
+- Updating an action requires Renovate (or a person) to resolve the new SHA; there are no moving tags.

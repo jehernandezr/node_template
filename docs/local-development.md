@@ -1,71 +1,71 @@
-# Desarrollo local
+# Local development
 
-Esta guía prepara el repositorio para trabajar desde la raíz con Nx y levanta la infraestructura local: PostgreSQL, Valkey, LocalStack, Mailpit, el OpenTelemetry Collector y OpenObserve.
+This guide prepares the repository to work from the root with Nx and starts the local infrastructure: PostgreSQL, Valkey, LocalStack, Mailpit, the OpenTelemetry Collector and OpenObserve.
 
-## Prerrequisitos
+## Prerequisites
 
-- Node 24, la versión de [`.nvmrc`](../.nvmrc).
-- pnpm mediante Corepack. Activa Corepack una vez con `corepack enable`; la versión sale del campo `packageManager` de [`package.json`](../package.json).
-- Flutter, la versión de [`front/.flutter-version`](../front/.flutter-version).
-- Docker con Docker Compose v2.
-- Terraform, la versión de [`backend/infra/terraform/.terraform-version`](../backend/infra/terraform/.terraform-version), solo para cambios de infraestructura.
+- Node 24, the version in [`.nvmrc`](../.nvmrc).
+- pnpm through Corepack. Enable Corepack once with `corepack enable`; the version comes from the `packageManager` field in [`package.json`](../package.json).
+- Flutter, the version in [`front/.flutter-version`](../front/.flutter-version).
+- Docker with Docker Compose v2.
+- Terraform, the version in [`backend/infra/terraform/.terraform-version`](../backend/infra/terraform/.terraform-version), only for infrastructure changes.
 
-## Preparar el repositorio
+## Prepare the repository
 
-Desde la raíz:
+From the root:
 
 ```bash
 corepack enable
-pnpm install                    # Nx, el backend y los hooks de git, en un solo node_modules
-cd front && flutter pub get     # el pub workspace del front
+pnpm install                    # Nx, the backend and the git hooks, in a single node_modules
+cd front && flutter pub get     # the front pub workspace
 cd ..
 ```
 
-Las tareas del front que corre Nx (`analyze`, `format-check` y `test`) usan `--no-pub`, así que necesitan el `flutter pub get` previo.
+The front tasks that Nx runs (`analyze`, `format-check` and `test`) use `--no-pub`, so they need the prior `flutter pub get`.
 
-`pnpm install` crea un único `node_modules` en la raíz (`nodeLinker: hoisted` en `pnpm-workspace.yaml`). Si aparece otro dentro de `backend/`, alguna dependencia quedó con dos versiones o una librería volvió a tener `package.json`; CI falla en ese caso. Para comprobarlo:
+`pnpm install` creates a single `node_modules` at the root (`nodeLinker: hoisted` in `pnpm-workspace.yaml`). If another one shows up inside `backend/`, some dependency ended up with two versions or a library got a `package.json` again; CI fails in that case. To check it:
 
 ```bash
-find . -path ./node_modules -prune -o -name node_modules -type d -print -prune   # no debe imprimir nada
+find . -path ./node_modules -prune -o -name node_modules -type d -print -prune   # must print nothing
 ```
 
-Las librerías del backend no se compilan. Jest, `tsc` y las herramientas leen su TypeScript por los alias de `backend/tsconfig.base.json`. Las herramientas de `backend/tools` corren con `tsx` a través de sus targets de Nx, por ejemplo `pnpm nx run contracts-export:check`.
+The backend libraries are not compiled. Jest, `tsc` and the tools read their TypeScript through the aliases in `backend/tsconfig.base.json`. The tools in `backend/tools` run with `tsx` through their Nx targets, for example `pnpm nx run contracts-export:check`.
 
-## Comandos de uso diario
+## Everyday commands
 
-Todos corren desde la raíz:
+All of them run from the root:
 
-| Comando                                                              | Qué hace                                                    |
-| -------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `pnpm nx affected -t lint test typecheck build analyze format-check` | Valida lo que cambió frente a `main`, igual que CI          |
-| `pnpm nx format:check`                                               | Revisa el formato con Prettier                              |
-| `pnpm nx test platform-saga`                                         | Prueba un proyecto del backend                              |
-| `pnpm nx typecheck platform-saga`                                    | Revisa los tipos del código y de las pruebas de un proyecto |
-| `pnpm nx build <app>`                                                | Empaqueta una app del backend en `backend/dist/<app>/`      |
-| `pnpm nx test front-shell_core`                                      | Prueba un paquete del front                                 |
-| `pnpm nx run contracts-export:export`                                | Exporta los contratos de `backend/libs/contracts` a JSON    |
-| `pnpm nx run contracts-export:check`                                 | Falla si el JSON exportado está desactualizado              |
-| `pnpm nx show projects`                                              | Lista los proyectos del backend y del front                 |
-| `pnpm nx graph`                                                      | Abre el grafo de proyectos                                  |
+| Command                                                              | What it does                                              |
+| -------------------------------------------------------------------- | --------------------------------------------------------- |
+| `pnpm nx affected -t lint test typecheck build analyze format-check` | Validates what changed against `main`, the same as CI     |
+| `pnpm nx format:check`                                               | Checks formatting with Prettier                           |
+| `pnpm nx test platform-saga`                                         | Tests a backend project                                   |
+| `pnpm nx typecheck platform-saga`                                    | Checks the types of a project's code and tests            |
+| `pnpm nx build <app>`                                                | Bundles a backend app into `backend/dist/<app>/`          |
+| `pnpm nx test front-shell_core`                                      | Tests a front package                                     |
+| `pnpm nx run contracts-export:export`                                | Exports the contracts in `backend/libs/contracts` to JSON |
+| `pnpm nx run contracts-export:check`                                 | Fails if the exported JSON is out of date                 |
+| `pnpm nx show projects`                                              | Lists the backend and front projects                      |
+| `pnpm nx graph`                                                      | Opens the project graph                                   |
 
-Las pruebas de integración (`*.int-spec.ts`) corren con el mismo target `test` contra PostgreSQL y Valkey reales, levantados con Testcontainers. Necesitan Docker en marcha. Por ejemplo, `pnpm nx test platform-persistence` y `pnpm nx test platform-adapters-valkey`.
+Integration tests (`*.int-spec.ts`) run with the same `test` target against real PostgreSQL and Valkey, started with Testcontainers. They need Docker running. For example, `pnpm nx test platform-persistence` and `pnpm nx test platform-adapters-valkey`.
 
-Los scripts de estructura de las skills revisan los archivos cambiados frente a `HEAD` (o todo el árbol con `--all`):
+The skills' structure scripts check the files changed against `HEAD` (or the whole tree with `--all`):
 
 ```bash
 node .claude/skills/backend-estructura/scripts/check-structure.mjs
 node .claude/skills/front-estructura/scripts/check-structure.mjs
 ```
 
-El Dart de los contratos se genera dentro de `front/`:
+The contracts' Dart is generated inside `front/`:
 
 ```bash
 cd front
-dart run contracts_gen           # regenera front/packages/contracts
-dart run contracts_gen --check   # falla si el Dart generado está desactualizado
+dart run contracts_gen           # regenerates front/packages/contracts
+dart run contracts_gen --check   # fails if the generated Dart is out of date
 ```
 
-Para verificar que los microfrontends siguen diferidos en la web, igual que el job `web-deferred` de CI:
+To verify that the microfrontends are still deferred on the web, the same as the CI `web-deferred` job:
 
 ```bash
 cd front/apps/web
@@ -73,50 +73,50 @@ flutter build web --release --source-maps
 dart run ../../tools/check_deferred_chunks.dart
 ```
 
-## Levantar la infraestructura
+## Start the infrastructure
 
-El stack local vive en `backend/`:
+The local stack lives in `backend/`:
 
-1. Entra a la carpeta con `cd backend`.
-2. Copia las variables de entorno de las apps con `cp .env.example .env`. El archivo `.env` no se confirma en git.
-3. Levanta los servicios con `docker compose up -d`, o desde la raíz con `backend/infra/scripts/local.sh up`, que espera a que todos queden sanos.
-4. Revisa el estado con `docker compose ps`. Todos los servicios deben aparecer como `healthy`.
+1. Enter the folder with `cd backend`.
+2. Copy the apps' environment variables with `cp .env.example .env`. The `.env` file is not committed to git.
+3. Start the services with `docker compose up -d`, or from the root with `backend/infra/scripts/local.sh up`, which waits until all of them are healthy.
+4. Check the status with `docker compose ps`. All services must show as `healthy`.
 
-Los puertos se publican solo en `127.0.0.1`: nada queda expuesto a la red local. Las imágenes están fijadas por tag y digest, y Renovate las actualiza.
+Ports are published only on `127.0.0.1`: nothing is exposed to the local network. Images are pinned by tag and digest, and Renovate updates them.
 
-## Servicios y URLs
+## Services and URLs
 
-| Servicio                | Puerto      | Acceso                                                                                                                                                                              |
-| ----------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL              | 5432        | Imagen con pgvector. Credenciales de desarrollo en `backend/docker-compose.yml`. Bases: `catalog`, `identity_shard_0`, `identity_shard_1`, `tasks_shard_0`                          |
-| Valkey                  | 6379        | `redis://localhost:6379`, con los módulos de Valkey (incluye los comandos `BF.*` de Bloom). No tiene interfaz web                                                                   |
-| LocalStack              | 4566        | http://localhost:4566. Estado: http://localhost:4566/_localstack/health. Servicios: SQS, SNS, S3, Scheduler, SES y Secrets Manager                                                  |
-| Mailpit                 | 1025 y 8025 | SMTP en `localhost:1025`. Interfaz de correos: http://localhost:8025                                                                                                                |
-| OpenObserve             | 5080        | http://localhost:5080. Usuario y contraseña de desarrollo en `backend/docker-compose.yml`                                                                                           |
-| OpenTelemetry Collector | 4317 y 4318 | OTLP gRPC y HTTP. Los servicios envían a `http://localhost:4318`. Guarda todas las trazas con error y `OTEL_SAMPLING_PERCENT` (10 % por defecto) del resto, y reenvía a OpenObserve |
+| Service                 | Port          | Access                                                                                                                                                                                  |
+| ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL              | 5432          | Image with pgvector. Development credentials in `backend/docker-compose.yml`. Databases: `catalog`, `identity_shard_0`, `identity_shard_1`, `tasks_shard_0`                             |
+| Valkey                  | 6379          | `redis://localhost:6379`, with the Valkey modules (includes the Bloom `BF.*` commands). It has no web interface                                                                         |
+| LocalStack              | 4566          | http://localhost:4566. Status: http://localhost:4566/_localstack/health. Services: SQS, SNS, S3, Scheduler, SES and Secrets Manager                                                     |
+| Mailpit                 | 1025 and 8025 | SMTP on `localhost:1025`. Mail interface: http://localhost:8025                                                                                                                         |
+| OpenObserve             | 5080          | http://localhost:5080. Development user and password in `backend/docker-compose.yml`                                                                                                    |
+| OpenTelemetry Collector | 4317 and 4318 | OTLP gRPC and HTTP. Services send to `http://localhost:4318`. It keeps every trace with an error and `OTEL_SAMPLING_PERCENT` (10 % by default) of the rest, and forwards to OpenObserve |
 
-Las dos bases `identity_shard_0` e `identity_shard_1` son intencionales. Sirven para probar el enrutamiento por shard en local. Con la persistencia sobre TypeORM, la fase que sigue, las migraciones de cada servicio agregan el esquema `saga` de la bitácora de sagas a cada base de shard y la tabla `saga_directory` al catálogo ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)).
+The two databases `identity_shard_0` and `identity_shard_1` are intentional. They are used to test shard routing locally. With persistence on TypeORM, the next phase, each service's migrations add the `saga` schema of the saga log to each shard database and the `saga_directory` table to the catalog ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)).
 
-Al arrancar, LocalStack corre `backend/infra/local/localstack/init-aws.sh`, que crea el bucket `platform-files-local` y la topología de mensajería desde `backend/infra/terraform/topology.json` (tópicos, colas, DLQ y suscripciones con filtro), con el prefijo `local` de `MESSAGING_NAME_PREFIX`.
+On startup, LocalStack runs `backend/infra/local/localstack/init-aws.sh`, which creates the `platform-files-local` bucket and the messaging topology from `backend/infra/terraform/topology.json` (topics, queues, DLQs and filtered subscriptions), with the `local` prefix from `MESSAGING_NAME_PREFIX`.
 
-LocalStack se fija en una versión que corre sin token. Las versiones con fecha (2026.x) pueden exigir `LOCALSTACK_AUTH_TOKEN`; antes de subir de versión, valida que el plan vigente cubra SQS, SNS, S3, S3 Control, KMS, Scheduler, SES, Secrets Manager, STS, IAM, CloudWatch y Logs.
+LocalStack is pinned to a version that runs without a token. Dated versions (2026.x) may require `LOCALSTACK_AUTH_TOKEN`; before upgrading, validate that the current plan covers SQS, SNS, S3, S3 Control, KMS, Scheduler, SES, Secrets Manager, STS, IAM, CloudWatch and Logs.
 
-## Correr identity
+## Run identity
 
-Con la infraestructura arriba y `backend/.env` copiado de `backend/.env.example` (con claves y pimientas propias en lugar de los valores `CAMBIAR_...`):
+With the infrastructure up and `backend/.env` copied from `backend/.env.example` (with your own keys and peppers instead of the `CAMBIAR_...` values):
 
 ```sh
-pnpm nx run identity:migrate --args="--target=all"   # el catálogo y luego los shards que lista su directorio
-pnpm nx run identity:seed      # tenants fijos de la región: el de la plataforma y el compartido de clientes
-pnpm nx run identity:serve     # API en http://localhost:3000
-pnpm nx run identity:worker    # relay del outbox, consumidores y jobs
+pnpm nx run identity:migrate --args="--target=all"   # the catalog and then the shards its directory lists
+pnpm nx run identity:seed      # the region's fixed tenants: the platform one and the shared customer one
+pnpm nx run identity:serve     # API at http://localhost:3000
+pnpm nx run identity:worker    # outbox relay, consumers and jobs
 ```
 
-`IDENTITY_MAILER=console` escribe en el log los correos con códigos y enlaces; con `memory` quedan solo en el proceso, como en las pruebas. Las pruebas de extremo a extremo de identity (`backend/apps/identity/e2e`) levantan su propio PostgreSQL y Valkey con Testcontainers y no usan esta infraestructura.
+`IDENTITY_MAILER=console` writes emails with codes and links to the log; with `memory` they stay only in the process, as in the tests. The identity end-to-end tests (`backend/apps/identity/e2e`) start their own PostgreSQL and Valkey with Testcontainers and do not use this infrastructure.
 
-## Terraform contra el entorno local
+## Terraform against the local environment
 
-El ambiente `local` de Terraform apunta a LocalStack. Desde la raíz:
+The Terraform `local` environment points to LocalStack. From the root:
 
 ```bash
 backend/infra/scripts/local.sh tf plan
@@ -124,20 +124,20 @@ backend/infra/scripts/local.sh tf apply
 backend/infra/scripts/local.sh tf destroy
 ```
 
-`local.sh down` detiene los servicios y `local.sh reset` borra también sus volúmenes. La estructura de stacks y ambientes está en el [ADR 0020](adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
+`local.sh down` stops the services and `local.sh reset` also deletes their volumes. The structure of stacks and environments is in [ADR 0020](adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
 
-## Reiniciar los volúmenes
+## Reset the volumes
 
-Los scripts de inicialización solo corren cuando el volumen de PostgreSQL está vacío. Para recrear todo desde cero, dentro de `backend/`:
+The initialization scripts only run when the PostgreSQL volume is empty. To recreate everything from scratch, inside `backend/`:
 
 ```bash
 docker compose down -v
 docker compose up -d
 ```
 
-`down -v` borra los datos de todos los servicios.
+`down -v` deletes the data of all services.
 
-Para reiniciar solo PostgreSQL:
+To reset only PostgreSQL:
 
 ```bash
 docker compose stop postgres
@@ -146,4 +146,4 @@ docker volume rm node-template-local_postgres-data
 docker compose up -d postgres
 ```
 
-El proyecto de Compose se llama `node-template-local`, así que sus volúmenes empiezan con ese prefijo. `docker volume ls` los lista.
+The Compose project is called `node-template-local`, so its volumes start with that prefix. `docker volume ls` lists them.

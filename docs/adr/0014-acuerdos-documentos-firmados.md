@@ -1,41 +1,41 @@
-# 0014. Acuerdos y documentos firmados
+# 0014. Agreements and signed documents
 
-- Estado: Aceptada, sin construir
-- Actualizada: 2026-11-24 (estado de lo construido)
-- Fecha: 2026-11-11
+- Status: Accepted, not built
+- Updated: 2026-11-24 (status of what is built)
+- Date: 2026-11-11
 
-## Contexto
+## Context
 
-La plataforma debe registrar que un usuario o un tenant aceptó términos, dio consentimientos o firmó un documento, con evidencia suficiente. Cada producto que reimplementa esto por su cuenta repite trabajo y arriesga la validez legal.
+The platform must record that a user or a tenant accepted terms, gave consents or signed a document, with sufficient evidence. Each product that reimplements this on its own repeats work and puts legal validity at risk.
 
-## Decisión
+## Decision
 
-`apps/agreements` es un servicio genérico para cualquier documento que haya que aceptar o firmar.
+`apps/agreements` is a generic service for any document that has to be accepted or signed.
 
-- Tipos de acuerdo en el enum `AgreementType`: `TermsOfService`, `PrivacyPolicy`, `DataProcessingConsent`, `MarketingConsent`, `FeatureTerms` y `Contract`, ampliable.
-- Cada versión de documento es inmutable, con su hash SHA-256 y su vigencia. Un cambio mayor exige aceptar de nuevo; uno menor solo se notifica.
-- La audiencia puede ser todos, un tenant, un plan, un rol, un grupo, una feature o un país.
-- Un endpoint declara sus acuerdos. Si falta alguno, responde `LEGAL.AGREEMENT.ACCEPTANCE_REQUIRED`.
-- Aceptar publica `AgreementsEvent.Accepted`, que puede habilitar permisos. Revocar publica `AgreementsEvent.Revoked`.
-- Cada aceptación genera un paquete PDF de evidencia guardado con S3 Object Lock.
+- Agreement types in the `AgreementType` enum: `TermsOfService`, `PrivacyPolicy`, `DataProcessingConsent`, `MarketingConsent`, `FeatureTerms` and `Contract`, extensible.
+- Each document version is immutable, with its SHA-256 hash and its validity period. A major change requires accepting again; a minor one is only notified.
+- The audience can be everyone, a tenant, a plan, a role, a group, a feature or a country.
+- An endpoint declares its agreements. If one is missing, it responds with `LEGAL.AGREEMENT.ACCEPTANCE_REQUIRED`.
+- Accepting publishes `AgreementsEvent.Accepted`, which can enable permissions. Revoking publishes `AgreementsEvent.Revoked`.
+- Each acceptance generates a PDF evidence package stored with S3 Object Lock.
 
-### Estado
+### Status
 
-`apps/agreements` todavía no existe y `EndpointOptions` no declara `agreements`. Lo construido es la sección de acuerdos del microfrontend `account`, que en modo live no se ofrece (`AccountCapability.agreements` falta en el repositorio de la API) porque no hay contrato que la respalde.
+`apps/agreements` does not exist yet and `EndpointOptions` does not declare `agreements`. What is built is the agreements section of the `account` microfrontend, which is not offered in live mode (`AccountCapability.agreements` is missing from the API repository) because there is no contract behind it.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Un solo lugar guarda consentimientos, versiones y evidencia.
-- Los permisos dependen de lo que el usuario aceptó.
+- A single place stores consents, versions and evidence.
+- Permissions depend on what the user accepted.
 
-Costos:
+Costs:
 
-- Los textos y el nivel de firma de cada acuerdo deben validarse con asesoría legal.
-- La firma digital certificada depende de un proveedor externo conectado por el puerto `DigitalSignatureProvider`.
+- The texts and the signature level of each agreement must be validated with legal counsel.
+- Certified digital signature depends on an external provider connected through the `DigitalSignatureProvider` port.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Solo clic en "Acepto": es el método de menor evidencia. No basta cuando el acuerdo exige más.
-- Clic con código de verificación, o firma con la clave del dispositivo registrado: son niveles intermedios de evidencia.
+- Only a click on "Acepto": it is the method with the least evidence. It is not enough when the agreement requires more.
+- A click with a verification code, or a signature with the registered device's key: these are intermediate levels of evidence.

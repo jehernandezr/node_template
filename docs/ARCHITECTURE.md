@@ -374,7 +374,7 @@ Los errores de campo usan los códigos `PLATFORM.VALIDATION.*` y rutas con punto
 
 ## Endpoints
 
-Un solo decorador, `@Endpoint`, toma la ruta del contrato y reúne autenticación, autorización, MFA, rate limit, versión y deprecación. El método, el path, los esquemas, los códigos de error y el acceso salen del `RouteDefinition` de `@contracts/<servicio>`, así el servidor no puede divergir del contrato que consume el front (decisión 3 del [diseño de F4](design/f4-identity.md#11-decisiones-que-requieren-al-usuario)).
+Un solo decorador, `@Endpoint`, toma la ruta del contrato y reúne autenticación, autorización, MFA, rate limit, versión y deprecación. El método, el path, los esquemas, los códigos de error y el acceso salen del `RouteDefinition` de `@contracts/<servicio>`, así el servidor no puede divergir del contrato que consume el front (decisión 3 del [diseño de F4](design/f4-identity.md#11-decisions-that-require-the-user)).
 
 ```ts
 @Resource(IdentityResource.Sessions)
@@ -853,7 +853,7 @@ El MFA protege dos momentos: el registro de cada dispositivo nuevo, obligatorio 
 
 **Recuperación sin dispositivo.** Por email, con alerta inmediata a todos los canales del usuario. La espera crece de forma exponencial con cada recuperación en los últimos 90 días: 24 h, 48 h, 96 h y así sucesivamente (`MFA_RECOVERY_BASE_HOURS = 24`).
 
-**Paso adicional (step-up).** Una operación sensible (cambiar email o clave, desactivar MFA, crear API keys) lo declara en la ruta de su contrato con `Access.authenticated({ mfaMaxAgeMinutes: 10 })`, y `@Endpoint` lo toma de ahí como el resto del acceso. El guard lo evalúa con `evaluateAccess` ([diseño de F4, 3.2.4](design/f4-identity.md#324-autorización)): si el último MFA es antiguo, responde `IDENTITY.MFA.STEP_UP_REQUIRED` y el dispositivo registrado lo resuelve con su código automático.
+**Paso adicional (step-up).** Una operación sensible (cambiar email o clave, desactivar MFA, crear API keys) lo declara en la ruta de su contrato con `Access.authenticated({ mfaMaxAgeMinutes: 10 })`, y `@Endpoint` lo toma de ahí como el resto del acceso. El guard lo evalúa con `evaluateAccess` ([diseño de F4, 3.2.4](design/f4-identity.md#324-authorization)): si el último MFA es antiguo, responde `IDENTITY.MFA.STEP_UP_REQUIRED` y el dispositivo registrado lo resuelve con su código automático.
 
 **Alertas de seguridad** (siempre por email y push): login desde dispositivo nuevo, registro de verificador, recuperación de clave o de verificador, cambio de email, MFA desactivado, uso de código de recuperación, API key creada o revocada.
 

@@ -1,47 +1,47 @@
-# 0016. Salida a Internet con NAT solo para las subredes de aplicación
+# 0016. Internet egress with NAT only for the application subnets
 
-- Estado: Aceptada
-- Fecha: 2026-11-12
+- Status: Accepted
+- Date: 2026-11-12
 
-## Contexto
+## Context
 
-La primera versión de la red no tenía NAT: los servicios llegaban a AWS por endpoints de VPC y nada más. Eso bloquea llamadas que la plataforma necesita: la API de Claude (ADR 0013), APNs, FCM y los proveedores de pago. A la vez, la base de datos y la caché no deben tener nunca una ruta a Internet.
+The first version of the network had no NAT: the services reached AWS through VPC endpoints and nothing else. That blocks calls the platform needs: the Claude API (ADR 0013), APNs, FCM and the payment providers. At the same time, the database and the cache must never have a route to the Internet.
 
-## Decisión
+## Decision
 
-La VPC tiene tres niveles de subred en dos zonas de disponibilidad: públicas, privadas (aplicación) y de datos. La variable `egress` del módulo `network` fija la salida de las privadas:
+The VPC has three subnet tiers in two availability zones: public, private (application) and data. The `egress` variable of the `network` module sets the egress of the private ones:
 
-| Valor        | NAT gateways          | Uso                            |
-| ------------ | --------------------- | ------------------------------ |
-| `none`       | Ninguno               | Entornos sin llamadas externas |
-| `single_nat` | Uno, en la primera AZ | dev                            |
-| `per_az_nat` | Uno por AZ            | prod                           |
+| Value        | NAT gateways         | Use                                 |
+| ------------ | -------------------- | ----------------------------------- |
+| `none`       | None                 | Environments without external calls |
+| `single_nat` | One, in the first AZ | dev                                 |
+| `per_az_nat` | One per AZ           | prod                                |
 
-- Las subredes privadas tienen una tabla de rutas por AZ con ruta `0.0.0.0/0` al NAT. Con `single_nat` ambas usan el mismo.
-- Las subredes de datos (RDS, RDS Proxy, Valkey y las lambdas de administración de la base) no tienen ruta por defecto. Solo llegan a AWS por endpoints.
-- Se mantienen los endpoints de VPC: gateway para S3 y DynamoDB; interfaz para SQS, SNS, Secrets Manager, KMS, ECR (api y dkr), Logs, STS y CloudWatch. El tráfico a AWS no pasa por el NAT.
-- El security group `clients` solo abre HTTPS (443) hacia Internet cuando `egress` no es `none`. Los servicios no reciben otros puertos de salida.
-- La salida usa IPs elásticas fijas, publicadas en la salida `nat_public_ips` para las listas de permitidos de los proveedores.
-- Los flow logs de la VPC van a CloudWatch Logs con una clave KMS propia y retención configurable, para auditar lo que cruza el NAT y lo que se rechaza.
+- The private subnets have one route table per AZ with a `0.0.0.0/0` route to the NAT. With `single_nat` both use the same one.
+- The data subnets (RDS, RDS Proxy, Valkey and the database administration lambdas) have no default route. They reach AWS only through endpoints.
+- The VPC endpoints are kept: gateway for S3 and DynamoDB; interface for SQS, SNS, Secrets Manager, KMS, ECR (api and dkr), Logs, STS and CloudWatch. Traffic to AWS does not go through the NAT.
+- The `clients` security group opens only HTTPS (443) to the Internet when `egress` is not `none`. The services get no other outbound ports.
+- Egress uses fixed Elastic IPs, published in the `nat_public_ips` output for the providers' allowlists.
+- The VPC flow logs go to CloudWatch Logs with a dedicated KMS key and configurable retention, to audit what crosses the NAT and what is rejected.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Los servicios llaman a Claude, APNs, FCM y pagos sin cambiar de red.
-- Un compromiso de la base de datos o la caché no abre una vía de exfiltración directa a Internet.
-- Con `per_az_nat`, la caída de una AZ no corta la salida de la otra.
+- The services call Claude, APNs, FCM and payments without changing networks.
+- A compromise of the database or the cache does not open a direct exfiltration path to the Internet.
+- With `per_az_nat`, the failure of one AZ does not cut the egress of the other.
 
-Costos (precios de referencia en us-east-1, revísalos antes de decidir):
+Costs (reference prices in us-east-1, check them before deciding):
 
-- Cada NAT gateway cuesta cerca de 33 USD al mes más 0,045 USD por GB procesado. Prod con dos paga unos 65 USD fijos; dev con uno, unos 33 USD.
-- Los endpoints de interfaz cuestan cerca de 7 USD al mes por AZ y endpoint, y compensan el NAT para el tráfico hacia AWS.
-- Los flow logs con tráfico `ALL` suman costo de ingestión; dev usa `REJECT`.
-- `per_az_nat` evita además el tráfico entre zonas hacia un único NAT.
+- Each NAT gateway costs about 33 USD per month plus 0.045 USD per GB processed. Prod with two pays about 65 USD fixed; dev with one, about 33 USD.
+- Interface endpoints cost about 7 USD per month per AZ and endpoint, and offset the NAT for traffic to AWS.
+- Flow logs with `ALL` traffic add ingestion cost; dev uses `REJECT`.
+- `per_az_nat` also avoids cross-zone traffic to a single NAT.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Sin NAT y con un proxy de salida propio: más piezas que operar y sin ventaja clara.
-- Salida directa con IP pública en las subredes de aplicación: expone los servicios y no da IP fija de salida.
-- NAT instance: más barata, pero sin alta disponibilidad administrada y con mantenimiento propio.
-- Un solo NAT en prod: ahorra 33 USD al mes pero deja la salida atada a una AZ.
+- No NAT and an in-house egress proxy: more pieces to operate and no clear advantage.
+- Direct egress with a public IP in the application subnets: it exposes the services and does not give a fixed egress IP.
+- NAT instance: cheaper, but without managed high availability and with its own maintenance.
+- A single NAT in prod: saves 33 USD per month but leaves egress tied to one AZ.
