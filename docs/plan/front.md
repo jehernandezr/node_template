@@ -53,7 +53,7 @@ U1, U2, U3, U5, U7, T1, I1, I2, I3, I4, SC1, SC2, SC3, SH1, SH2, A1, TU1, TU2, T
 
 ### 2.1 Troop rules
 
-A troop's way of working is the one in the [plan](README.md#cómo-se-ejecuta-una-ola). In the front, also:
+A troop's way of working is the one in the [plan](README.md#how-a-wave-runs). In the front, also:
 
 - Barrel files (`lib/<package>.dart`) and `pubspec.yaml` files are edited only by the lead. The Haikus ask the lead in writing for the export line they need.
 - Skeletons carry this plan's signatures with `throw UnimplementedError()` bodies. The lead reviews the full diff and runs the acceptance commands before handing over.
@@ -1178,7 +1178,7 @@ Since those rules would flag code that has not migrated yet, a baseline is added
 
 ### 4.1 Dependencies between waves
 
-The map of waves and troops is in the [plan](README.md#orden-de-ejecución-por-olas).
+The map of waves and troops is in the [plan](README.md#execution-order-by-waves).
 
 Dependencies between waves: wave 1 needs wave 0 (the `utils` `Clock`). Waves 2 and 3 need wave 1 complete (`ui`, `shell_core`, `test_utils`). The microfrontends do not depend on P2.1, which is why they go in waves 2 and 3 with no order among them. P4.1 needs P2.1 and P1.3. P4.2 needs waves 2 and 3 to have migrated everything. P4.3 needs wave 1 (API) and wave 3 (a reference microfrontend).
 
@@ -1204,7 +1204,7 @@ It is short: three S packages that prepare the ground and are not touched again.
 
 **P0.3 Front ADR.** Effort S.
 
-- Folders: `docs/adr/<number>-*.md` and `docs/adr/README.md`. The number is the next free one; 0024 is already the persistence one (see the open decisions in the [plan](README.md#registro-de-decisiones)).
+- Folders: `docs/adr/<number>-*.md` and `docs/adr/README.md`. The number is the next free one; 0024 is already the persistence one (see the open decisions in the [plan](README.md#decision-log)).
 - Closes: nothing directly. It records decisions 3.1 to 3.17 as an ADR in "Proposed" status, as `CLAUDE.md` requires for an architecture decision. It moves to "Accepted" in P4.3.
 - Acceptance: it follows `docs/adr/0000-plantilla.md`; it links ADR 0012, 0015 and 0018; the index lists the new ADR.
 - Haiku 1: context, decision and consequences. Haiku 2: alternatives considered (those in section 1.2) and the index.
@@ -1358,7 +1358,7 @@ The three packages are additive (except `AccessRule`, see 2.2) and have disjoint
 
 ## 5. Order and troops
 
-There are at most three front troops per wave. The composition of each troop and the rule for advancing between waves are in the [plan](README.md#cómo-se-ejecuta-una-ola).
+There are at most three front troops per wave. The composition of each troop and the rule for advancing between waves are in the [plan](README.md#how-a-wave-runs).
 
 | Wave | Troops               | Critical path          | Total effort |
 | ---- | -------------------- | ---------------------- | ------------ |

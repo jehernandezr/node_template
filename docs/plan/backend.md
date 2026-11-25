@@ -19,7 +19,7 @@ The plan closes the findings in five waves of three packages, one squad per pack
 | 3    | TypeORM stores, adapters with a module, persistent sagas                          |
 | 4    | Clean catalog, platform smoke test, F4 starts                                     |
 
-The packages of each wave are in the [plan](README.md#orden-de-ejecución-por-olas) and their sheet in section 3.
+The packages of each wave are in the [plan](README.md#execution-order-by-waves) and their sheet in section 3.
 
 Everything that calls the libraries today is tests: `backend/apps` does not exist yet. That is why API-breaking changes are cheap now and expensive after F4. That is the reason for the order.
 
@@ -751,7 +751,7 @@ Summary of what does not need its own signature, with its owner:
 
 ### 3.1 Common rules
 
-**How a squad works.** As the [plan](README.md#cómo-se-ejecuta-una-ola) says. In the backend, the skeletons are abstract classes and signatures with a `throw new NotImplementedError()` body.
+**How a squad works.** As the [plan](README.md#how-a-wave-runs) says. In the backend, the skeletons are abstract classes and signatures with a `throw new NotImplementedError()` body.
 
 **Shared files.** `backend/tsconfig.base.json`, `backend/package.json` (with `pnpm-lock.yaml`) and the `@contracts/platform` error catalog are touched by a single squad per wave:
 
@@ -810,7 +810,7 @@ Nx project names: `platform-<lib>` (`platform-kernel`, `platform-primitives`, `p
 - **Exclusive folders:** `.claude/skills/backend-*/**`, `docs/adr/**`, `docs/ARCHITECTURE.md`, `CLAUDE.md`, `backend/eslint.config.mjs`.
 - **Closes:** MSG-6 (the skill is adjusted to the code), T8 (language rule), the D3 lint rule and the `check-structure.mjs` exceptions.
 - **Produces:**
-  - ADR 0024 on persistence with TypeORM, which supersedes 0009 (0009 is marked as superseded and 0008 is updated). It was already recorded in `b182447`, after the squad set off; see the open decisions in the [plan](README.md#registro-de-decisiones).
+  - ADR 0024 on persistence with TypeORM, which supersedes 0009 (0009 is marked as superseded and 0008 is updated). It was already recorded in `b182447`, after the squad set off; see the open decisions in the [plan](README.md#decision-log).
   - ADR 0025 on the NestJS layer through the `@platform/<lib>/nest` sub-entry and ports as abstract classes.
   - ADR 0026 on `ScheduledJob`, `JobLock` and `@platform/scheduling`.
   - The `backend-mensajeria-idempotencia` skill moves from `OutboxWriter.add` and `processed.tryRegister` to `append` and `claim`, `complete` and `release`; the composition skill documents modules, `Type<Port>` and shutdown; the testing skill documents `test-utils` and `ContainerRuntime`.
@@ -999,7 +999,7 @@ The three squads start from the integrated wave 0 and do not share folders. Each
 
 ### 4.1 Why this order
 
-The table of waves and squads is in the [plan](README.md#orden-de-ejecución-por-olas).
+The table of waves and squads is in the [plan](README.md#execution-order-by-waves).
 
 - Wave 0 goes first because everything else imports `RandomSource`, `Guard`, `Deadline` and the aliases. WP-02 and WP-03 do not depend on WP-01 and do not share files with it.
 - Wave 1 groups what only depends on the foundations. Observability goes with config because of the `LogLevel` change; scheduling goes with sharding because neither blocks the other and messaging needs the runner in wave 2.

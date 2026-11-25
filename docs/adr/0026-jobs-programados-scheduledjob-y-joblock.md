@@ -1,17 +1,17 @@
-# 0026. Jobs programados: ScheduledJob, JobLock y @platform/scheduling
+# 0026. Scheduled jobs: ScheduledJob, JobLock and @platform/scheduling
 
-- Estado: Aceptada
-- Fecha: 2026-11-14
+- Status: Accepted
+- Date: 2026-11-14
 
-## Contexto
+## Context
 
-Hay piezas con `runOnce` o `purge` que no tienen quien las programe: el relay del outbox, la purga de idempotencia y del outbox, `SagaRecoveryJob` y la reconstrucción de los filtros Bloom. El diseño de F4 proponía un `IntervalJob` provisional y un `OutboxRelayWorker`. Con esa propuesta, cada librería terminaría con sus propios temporizadores, cada uno con su manera de parar al apagar y de evitar corridas duplicadas.
+There are pieces with `runOnce` or `purge` that nothing schedules: the outbox relay, the idempotency and outbox purge, `SagaRecoveryJob` and the rebuild of the Bloom filters. The F4 design proposed a provisional `IntervalJob` and an `OutboxRelayWorker`. With that proposal, each library would end up with its own timers, each with its own way of stopping at shutdown and of avoiding duplicate runs.
 
-## Decisión
+## Decision
 
-### Contrato en el kernel
+### Contract in the kernel
 
-El contrato vive en `kernel/src/ports/scheduling/`, para que cada librería declare sus jobs sin depender del runner ni de NestJS.
+The contract lives in `kernel/src/ports/scheduling/`, so that each library declares its jobs without depending on the runner or on NestJS.
 
 ```ts
 export enum JobScheduleKind {
@@ -24,7 +24,7 @@ export type JobSchedule =
       readonly everyMs: number;
       readonly jitterRatio?: number;
     }
-  | { readonly kind: JobScheduleKind.Cron; readonly expression: string }; // UTC, 5 o 6 campos
+  | { readonly kind: JobScheduleKind.Cron; readonly expression: string }; // UTC, 5 or 6 fields
 
 export interface JobContext {
   readonly signal: AbortSignal;
@@ -33,10 +33,10 @@ export interface JobContext {
 }
 
 export abstract class ScheduledJob {
-  /** Valor de un enum de la librería dueña, por ejemplo `MessagingJob.OutboxRelay`. */
+  /** Value of an enum of the owning library, for example `MessagingJob.OutboxRelay`. */
   abstract readonly name: string;
   abstract readonly schedule: JobSchedule;
-  /** true: un solo proceso del clúster la corre a la vez, con `JobLock`. */
+  /** true: a single process in the cluster runs it at a time, with `JobLock`. */
   readonly exclusive: boolean = false;
   readonly timeoutMs: number = 60_000;
   abstract run(context: JobContext): Promise<void>;
@@ -57,7 +57,7 @@ export interface JobLease {
 
 ### Runner
 
-El runner vive en la librería nueva `@platform/scheduling`, de tipo `platform`, que depende de kernel, primitives y observability.
+The runner lives in the new `@platform/scheduling` library, of type `platform`, which depends on kernel, primitives and observability.
 
 ```ts
 export class JobRunner {
@@ -70,11 +70,11 @@ export class JobRunner {
   );
   register(job: ScheduledJob): void;
   start(): void;
-  /** Espera los jobs en curso hasta `graceMs` y aborta su `signal`. */
+  /** Waits for the running jobs up to `graceMs` and aborts their `signal`. */
   stop(graceMs: number): Promise<void>;
-  /** Corre ya una vez. Lo usan las pruebas, los despertares y la invocación externa. */
+  /** Runs once right away. Used by tests, wake-ups and external invocation. */
   runNow(name: string): Promise<void>;
-  /** Pide una corrida pronto, sin duplicar una en curso. */
+  /** Requests a run soon, without duplicating one in progress. */
   trigger(name: string): void;
 }
 
@@ -83,69 +83,69 @@ export class CronExpression {
   nextAfter(from: Date): Date;
 }
 
-export class InProcessJobLock extends JobLock {} // modo local y pruebas
+export class InProcessJobLock extends JobLock {} // local mode and tests
 export enum SchedulingMode {
   InProcess = 'in-process',
-  External = 'external', // sin temporizadores: EventBridge o un cron llama a runNow
+  External = 'external', // no timers: EventBridge or a cron calls runNow
 }
 ```
 
-`CronExpression` se escribe en casa, en unas 120 líneas, con expresiones UTC de 5 o 6 campos. No añade dependencia ni `@nestjs/schedule`. `InProcessJobLock` sirve al modo local y a las pruebas. `ValkeyJobLock` (SET NX PX con token) vive en `@platform/adapters-valkey`. Con `SchedulingMode.External` el runner no arma temporizadores, y EventBridge o un cron llaman a `runNow`.
+`CronExpression` is written in house, in about 120 lines, with UTC expressions of 5 or 6 fields. It adds no dependency and no `@nestjs/schedule`. `InProcessJobLock` serves local mode and tests. `ValkeyJobLock` (SET NX PX with a token) lives in `@platform/adapters-valkey`. With `SchedulingMode.External` the runner sets up no timers, and EventBridge or a cron calls `runNow`.
 
-### Descubrimiento
+### Discovery
 
-`SchedulingModule` en `@platform/scheduling/nest` descubre con `DiscoveryService` los providers que son `instanceof ScheduledJob`. Una librería solo declara la clase en sus `providers` y no importa el módulo de scheduling.
+`SchedulingModule` in `@platform/scheduling/nest` uses `DiscoveryService` to discover the providers that are `instanceof ScheduledJob`. A library only declares the class in its `providers` and does not import the scheduling module.
 
-### Reparto
+### Assignment
 
-| Job                              | Dueño        | Calendario               | Exclusivo |
-| -------------------------------- | ------------ | ------------------------ | --------- |
-| `OutboxRelayJob`                 | messaging    | cada 1 s con jitter      | no        |
-| `OutboxRetentionJob`             | messaging    | cada hora                | no        |
-| `ProcessedMessageRetentionJob`   | messaging    | cada hora                | no        |
-| `ProcessedOperationRetentionJob` | internal-api | cada hora                | no        |
-| `SagaRecoveryJob`                | saga         | cada 5 s                 | no        |
-| `SagaRetentionJob`               | saga         | cada hora                | no        |
-| `BloomRebuildJob`                | bloom        | `rebuildCron` del filtro | sí        |
+| Job                              | Owner        | Schedule                   | Exclusive |
+| -------------------------------- | ------------ | -------------------------- | --------- |
+| `OutboxRelayJob`                 | messaging    | every 1 s with jitter      | no        |
+| `OutboxRetentionJob`             | messaging    | every hour                 | no        |
+| `ProcessedMessageRetentionJob`   | messaging    | every hour                 | no        |
+| `ProcessedOperationRetentionJob` | internal-api | every hour                 | no        |
+| `SagaRecoveryJob`                | saga         | every 5 s                  | no        |
+| `SagaRetentionJob`               | saga         | every hour                 | no        |
+| `BloomRebuildJob`                | bloom        | the filter's `rebuildCron` | yes       |
 
-`OutboxMessageBus` llama a `runner.trigger` al escribir, para publicar sin esperar al intervalo. El relay recorre las particiones con `RelayScopes`: `SingleRelayScope` es el valor por defecto y usa una sola base, y `ShardedRelayScopes` en `@platform/adapters-postgres` usa `AcrossShards` y `ShardScope`. Así messaging no conoce TypeORM.
+`OutboxMessageBus` calls `runner.trigger` when writing, to publish without waiting for the interval. The relay walks the partitions with `RelayScopes`: `SingleRelayScope` is the default and uses a single database, and `ShardedRelayScopes` in `@platform/adapters-postgres` uses `AcrossShards` and `ShardScope`. That way messaging does not know about TypeORM.
 
 ```ts
 // @platform/messaging
 export abstract class RelayScopes {
-  /** Corre `body` una vez por cada partición de la que hay que publicar. */
+  /** Runs `body` once for each partition that has to be published from. */
   abstract forEach(body: () => Promise<void>): Promise<void>;
 }
-export class SingleRelayScope extends RelayScopes {} // por defecto, una sola base
-// @platform/adapters-postgres: ShardedRelayScopes usa AcrossShards y ShardScope de persistence.
+export class SingleRelayScope extends RelayScopes {} // default, a single database
+// @platform/adapters-postgres: ShardedRelayScopes uses AcrossShards and ShardScope from persistence.
 ```
 
-### Lo que garantiza `exclusive`
+### What `exclusive` guarantees
 
-`exclusive` garantiza exclusión mutua mientras dura el lease, no una corrida por ocurrencia del calendario. El lease vence a los `timeoutMs`: si la corrida sigue, otra réplica puede tomar el lock y empezar otra. Dos ocurrencias seguidas pueden correr en procesos distintos y una ocurrencia perdida en un reinicio no se recupera. Por eso todo job, exclusivo o no, es idempotente por su entrada y respeta `context.signal` entre unidades de trabajo: al abortarse deja de tomar trabajo nuevo, así la siguiente réplica no se solapa con lo que la primera tiene en vuelo. Lo que no se puede repetir (un cobro, un correo) se reserva por unidad en la base, no se confía al lock.
+`exclusive` guarantees mutual exclusion while the lease lasts, not one run per occurrence of the schedule. The lease expires after `timeoutMs`: if the run is still going, another replica can take the lock and start another one. Two consecutive occurrences can run in different processes, and an occurrence lost during a restart is not recovered. That is why every job, exclusive or not, is idempotent on its input and honours `context.signal` between units of work: when aborted it stops taking new work, so the next replica does not overlap with what the first one has in flight. What cannot be repeated (a charge, an email) is reserved per unit in the database, not left to the lock.
 
-Un job diario usa `JobScheduleKind.Cron` anclado en UTC y no un intervalo de 24 h: el intervalo cuenta desde el arranque y, con despliegues seguidos, no se cumple nunca. Si una ocurrencia perdida no es aceptable, el job corre cada hora y decide por sus datos qué le toca, como el cierre de facturas.
+A daily job uses `JobScheduleKind.Cron` anchored in UTC and not a 24 h interval: the interval counts from startup and, with back-to-back deployments, never elapses. If a lost occurrence is not acceptable, the job runs every hour and decides from its data what is due, like the invoice closing.
 
-### Apagado
+### Shutdown
 
-`JobRunner.stop(graceMs)` corre en `BeforeApplicationShutdown`. Espera los jobs en curso hasta `graceMs` y aborta su `signal`.
+`JobRunner.stop(graceMs)` runs in `BeforeApplicationShutdown`. It waits for the running jobs up to `graceMs` and aborts their `signal`.
 
-## Consecuencias
+## Consequences
 
-### Positivas
+### Positive
 
-- Una sola mecánica para todos los jobs, sin temporizadores propios en cada librería.
-- Los jobs se prueban llamando a `run()` directamente.
-- El mismo job puede correr en el proceso o ser invocado desde fuera.
+- A single mechanism for all jobs, without each library having its own timers.
+- Jobs are tested by calling `run()` directly.
+- The same job can run in the process or be invoked from outside.
 
-### Costos
+### Costs
 
-- Una librería nueva que mantener.
-- El cron propio cubre solo el subconjunto de expresiones que se necesita.
-- Un job exclusivo depende de un `JobLock` compartido (Valkey) para serlo entre procesos.
+- A new library to maintain.
+- The in-house cron covers only the subset of expressions that is needed.
+- An exclusive job depends on a shared `JobLock` (Valkey) to be exclusive across processes.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- `@nestjs/schedule`: es una dependencia externa para un calendario que se resuelve en casa, y acoplaría las librerías a NestJS.
-- El `IntervalJob` provisional y el `OutboxRelayWorker` del diseño de F4: cada librería programaría lo suyo.
-- Delegar todo a un programador externo como EventBridge: se soporta con `SchedulingMode.External`, pero no sirve para el modo local.
+- `@nestjs/schedule`: it is an external dependency for a schedule that is solved in house, and it would couple the libraries to NestJS.
+- The provisional `IntervalJob` and the `OutboxRelayWorker` from the F4 design: each library would schedule its own work.
+- Delegating everything to an external scheduler such as EventBridge: it is supported with `SchedulingMode.External`, but it does not work for local mode.

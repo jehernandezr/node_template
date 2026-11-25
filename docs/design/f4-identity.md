@@ -22,7 +22,7 @@ Where the plan and an ADR disagree, the ADR wins. That is why sign-in is called 
 
 Four platform pieces are missing (HTTP entry, token verification, rate limits and service bootstrap), plus one adjustment to persistence (`ShardScope`) and the complete service.
 
-The persistence in this table is the layer over `pg`. Before F4 starts it is replaced by TypeORM according to the [persistence and sagas design](persistencia-typeorm-y-sagas.md). The adjustments that this and the backend plan bring to sections 3.3 to 3.6 are in [section 4.3 of the backend plan](../plan/backend.md#43-adjustments-this-plan-forces-on-the-f4-design), and the order of the F4 packages alongside the others is in the [plan](../plan/README.md#orden-de-ejecución-por-olas).
+The persistence in this table is the layer over `pg`. Before F4 starts it is replaced by TypeORM according to the [persistence and sagas design](persistencia-typeorm-y-sagas.md). The adjustments that this and the backend plan bring to sections 3.3 to 3.6 are in [section 4.3 of the backend plan](../plan/backend.md#43-adjustments-this-plan-forces-on-the-f4-design), and the order of the F4 packages alongside the others is in the [plan](../plan/README.md#execution-order-by-waves).
 
 ## 2. Key decisions
 

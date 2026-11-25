@@ -2,7 +2,7 @@
 
 An ADR documents a relevant technical decision: the context that motivated it, what was chosen, its consequences and the discarded alternatives. It helps to understand why the system is the way it is without reconstructing it from the code.
 
-The [plan's decision log](../plan/README.md#registro-de-decisiones) lists every decision with its date and links to the ADR that develops each one.
+The [plan's decision log](../plan/README.md#decision-log) lists every decision with its date and links to the ADR that develops each one.
 
 The designs of a phase or of a large piece live in [`docs/design/`](../design/) and link to the ADRs that set their decisions.
 

@@ -1190,7 +1190,7 @@ Si el proceso muere entre el paso 1 y el 3, el registro queda en `Dispatched`. A
 
 Las compensaciones son idempotentes y toleran el caso en que la operación original nunca se aplicó (responden éxito sin hacer nada). Por eso un paso con resultado incierto se compensa con seguridad.
 
-Un paso tiene resultado incierto cuando la llamada supera `maxStepDurationMs` o termina por tiempo agotado o cancelación. Si la suspensión se agota (por defecto, más de 20 intentos o 24 horas), la saga pasa a `RequiresIntervention`. El detalle está en el [ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md#resultado-incierto).
+Un paso tiene resultado incierto cuando la llamada supera `maxStepDurationMs` o termina por tiempo agotado o cancelación. Si la suspensión se agota (por defecto, más de 20 intentos o 24 horas), la saga pasa a `RequiresIntervention`. El detalle está en el [ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md#uncertain-outcome).
 
 **Aislamiento.** Mientras la saga corre, los recursos involucrados quedan en un estado intermedio del dominio (por ejemplo, tenant `Provisioning`) para que nadie los use a medias.
 
@@ -1204,7 +1204,7 @@ Un paso tiene resultado incierto cuando la llamada supera `maxStepDurationMs` o 
 
 Los flujos simples, sin necesidad de deshacer, siguen como coreografía por eventos.
 
-**Código actual.** Hoy `@platform/saga` trae el protocolo completo (write-ahead, lease, pivote, resultado incierto, recuperación) sobre el puerto `SagaStore`, con `InMemorySagaStore` y el doble `CrashingSagaStore` de sus pruebas. El motor rediseñado está en la [sección 5 del diseño de persistencia](design/persistencia-typeorm-y-sagas.md#5-sagas), y cuándo se construye, en el [plan](plan/README.md#orden-de-ejecución-por-olas).
+**Código actual.** Hoy `@platform/saga` trae el protocolo completo (write-ahead, lease, pivote, resultado incierto, recuperación) sobre el puerto `SagaStore`, con `InMemorySagaStore` y el doble `CrashingSagaStore` de sus pruebas. El motor rediseñado está en la [sección 5 del diseño de persistencia](design/persistencia-typeorm-y-sagas.md#5-sagas), y cuándo se construye, en el [plan](plan/README.md#execution-order-by-waves).
 
 ## Capacidades compartidas
 
@@ -1373,7 +1373,7 @@ El job `terraform` de `ci.yml` corre cuando cambia `backend/infra/**`: `terrafor
 
 **Pipeline de despliegue**
 
-El pipeline de despliegue corre en GitHub Actions con OIDC hacia AWS, sobre `deploy-aws.sh`. Se construye en F12 ([plan](plan/README.md#fases)):
+El pipeline de despliegue corre en GitHub Actions con OIDC hacia AWS, sobre `deploy-aws.sh`. Se construye en F12 ([plan](plan/README.md#phases)):
 
 1. `terraform plan` de los stacks y servicios afectados como comentario en el PR.
 2. Al hacer merge, migraciones de cada servicio afectado en todos sus shards, como tarea única en Fargate.
