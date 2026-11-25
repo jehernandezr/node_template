@@ -11,6 +11,8 @@ import { TenantMoveSelectorKind } from '../../manifest/tenant-move-selector-kind
 import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
 import { SqlIdentifier } from '../batch/sql-identifier.js';
 import { TenantDataTransfer } from '../tenant-data-transfer.js';
+import type { ShardLocation } from '@platform/persistence';
+import type { ShardConnections } from '../shard-connections.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 import { TransferBudget } from '../transfer-budget.js';
 import type { LogicalReplicationOptions } from './logical-replication-options.js';
@@ -68,6 +70,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   constructor(
     manifest: TenantMoveManifest,
     private readonly batch: TenantDataTransfer,
+    private readonly connections: ShardConnections,
     private readonly clock: Clock,
     private readonly options: LogicalReplicationOptions,
   ) {
@@ -85,7 +88,8 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     });
   }
 
-  async sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
+  async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
+    const transfer = await this.connections.connect(move);
     const name = ReplicationNames.of(transfer.moveId);
     await this.publish(transfer.source, transfer.tenantId, name);
     await this.subscribe(transfer.target, transfer.source, name);
@@ -102,7 +106,8 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   }
 
   /** Waits for the subscription to receive all the WAL of the frozen source, drops it and verifies like the batch copy. */
-  async verify(transfer: TenantTransfer): Promise<TenantMoveVerification> {
+  async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
+    const transfer = await this.connections.connect(move);
     const name = ReplicationNames.of(transfer.moveId);
     const budget = transfer.budget ?? this.newBudget();
     if (await this.isSubscribed(transfer.target, name)) {
@@ -113,10 +118,11 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
       }
     }
     await this.unsubscribe(transfer.target, transfer.source, name, budget);
-    return this.batch.verify({ ...transfer, budget });
+    return this.batch.verify({ ...move, budget });
   }
 
-  async abort(transfer: TenantTransfer): Promise<void> {
+  async abort(move: TenantTransfer): Promise<void> {
+    const transfer = await this.connections.connect(move);
     const budget = transfer.budget ?? this.newBudget();
     await this.unsubscribe(
       transfer.target,
@@ -124,12 +130,12 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
       ReplicationNames.of(transfer.moveId),
       budget,
     );
-    await this.batch.abort({ ...transfer, budget });
+    await this.batch.abort({ ...move, budget });
   }
 
   async cleanup(
     tenantId: string,
-    source: DataSource,
+    source: ShardLocation,
     budget?: TransferBudget,
   ): Promise<void> {
     await this.batch.cleanup(tenantId, source, budget);
@@ -137,7 +143,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
 
   async assignRegion(
     tenantId: string,
-    target: DataSource,
+    target: ShardLocation,
     region: string,
   ): Promise<void> {
     await this.batch.assignRegion(tenantId, target, region);

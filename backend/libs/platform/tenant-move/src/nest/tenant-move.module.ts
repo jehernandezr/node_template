@@ -14,7 +14,11 @@ import {
 } from '@platform/sharding';
 import { OpenSagaActivity } from '../activity/open-saga-activity.js';
 import { TenantMoveActivity } from '../application/tenant-move-activity.js';
+import { TenantMoveFence } from '../application/tenant-move-fence.js';
 import { TenantMoveListener } from '../application/tenant-move-listener.js';
+import { ShardTenantMoveFence } from '../fence/shard-tenant-move-fence.js';
+import { PooledShardConnections } from '../transfer/pooled-shard-connections.js';
+import { ShardConnections } from '../transfer/shard-connections.js';
 import { TenantMoveShards } from '../application/tenant-move-shards.js';
 import { TenantMoves } from '../application/tenant-moves.js';
 import {
@@ -45,38 +49,59 @@ export class TenantMoveModule {
       ],
       providers: [
         { provide: TenantMoveManifest, useClass: options.manifest },
-        { provide: TenantMoveActivity, useClass: OpenSagaActivity },
+        {
+          provide: ShardConnections,
+          useFactory: (sources: ShardDataSources) =>
+            new PooledShardConnections(sources),
+          inject: [ShardDataSources],
+        },
+        {
+          provide: TenantMoveActivity,
+          useFactory: (connections: ShardConnections) =>
+            new OpenSagaActivity(connections),
+          inject: [ShardConnections],
+        },
+        {
+          provide: TenantMoveFence,
+          useFactory: (
+            fence: TenantWriteFence,
+            connections: ShardConnections,
+          ) => new ShardTenantMoveFence(fence, connections),
+          inject: [TenantWriteFence, ShardConnections],
+        },
         ...TenantMoveModule.listenerProviders(options),
         {
           provide: TenantDataTransfer,
           useFactory: (
             settings: TenantMoveSettings,
             manifest: TenantMoveManifest,
+            connections: ShardConnections,
             clock: Clock,
           ) =>
-            new TenantDataTransferSelector().select(settings, manifest, clock),
-          inject: [TenantMoveConfig.token, TenantMoveManifest, Clock],
+            new TenantDataTransferSelector(connections, clock).select(
+              settings,
+              manifest,
+            ),
+          inject: [
+            TenantMoveConfig.token,
+            TenantMoveManifest,
+            ShardConnections,
+            Clock,
+          ],
         },
         {
           provide: TenantMoveShards,
           useFactory: (
             router: ShardRouter,
             directory: DirectoryStore,
-            sources: ShardDataSources,
             settings: TenantMoveSettings,
           ) =>
             new TenantMoveShards(
               router,
               directory,
-              sources,
               new TenantMoveTargets(settings.TENANT_MOVE_TARGETS),
             ),
-          inject: [
-            ShardRouter,
-            DirectoryStore,
-            ShardDataSources,
-            TenantMoveConfig.token,
-          ],
+          inject: [ShardRouter, DirectoryStore, TenantMoveConfig.token],
         },
         {
           provide: TenantMoves,
@@ -84,10 +109,9 @@ export class TenantMoveModule {
             shards: TenantMoveShards,
             transfer: TenantDataTransfer,
             gate: TenantWriteGate,
-            fence: TenantWriteFence,
+            fence: TenantMoveFence,
             transition: PlacementTransition,
             lister: ShardLister,
-            sources: ShardDataSources,
             activity: TenantMoveActivity,
             listener: TenantMoveListener | undefined,
           ) =>
@@ -98,7 +122,6 @@ export class TenantMoveModule {
               fence,
               transition,
               lister,
-              sources,
               activity,
               listener,
             ),
@@ -106,10 +129,9 @@ export class TenantMoveModule {
             TenantMoveShards,
             TenantDataTransfer,
             TenantWriteGate,
-            TenantWriteFence,
+            TenantMoveFence,
             PlacementTransition,
             ShardLister,
-            ShardDataSources,
             TenantMoveActivity,
             { token: TenantMoveListener, optional: true },
           ],

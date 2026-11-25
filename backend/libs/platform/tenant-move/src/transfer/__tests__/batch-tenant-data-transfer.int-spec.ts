@@ -1,3 +1,4 @@
+import { AssignedShardConnections } from '../../__tests__/utils/assigned-shard-connections.js';
 import {
   SystemClock,
   UuidV7IdGenerator,
@@ -89,8 +90,10 @@ new ContainerRuntime(process.env).describeIfAvailable(
   () => {
     jest.setTimeout(180_000);
     const databases = new TransferTestDatabases();
+    const connections = new AssignedShardConnections();
     const transfer = new BatchTenantDataTransfer(
       new LedgerManifest(),
+      connections,
       new SystemClock(),
       OPTIONS,
     );
@@ -112,7 +115,12 @@ new ContainerRuntime(process.env).describeIfAvailable(
     beforeEach(async () => {
       ({ source, target, sourceAdmin, targetAdmin } = await databases.pair());
       tenantId = newId();
-      move = { moveId: newId(), tenantId, source, target };
+      move = {
+        moveId: newId(),
+        tenantId,
+        source: connections.locationOf(source),
+        target: connections.locationOf(target),
+      };
     });
 
     it('copies every row of the tenant with its exact values and nothing of other tenants', async () => {
@@ -207,7 +215,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       await transfer.sync(move);
 
       await transfer.abort(move);
-      await transfer.cleanup(tenantId, source);
+      await transfer.cleanup(tenantId, connections.locationOf(source));
 
       for (const admin of [sourceAdmin, targetAdmin]) {
         await expect(snapshot(admin, tenantId)).resolves.toEqual({
@@ -223,6 +231,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       }
       const hurried = new BatchTenantDataTransfer(
         new LedgerManifest(),
+        connections,
         new SystemClock(),
         { ...OPTIONS, batchSize: 1, callBudgetMs: 1 },
       );
@@ -256,6 +265,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       }
       const hurried = new BatchTenantDataTransfer(
         new LedgerWithAttemptsManifest(),
+        connections,
         new TickingClock(),
         { ...OPTIONS, batchSize: 3, callBudgetMs: 6 },
       );
@@ -308,6 +318,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       );
       const hurried = new BatchTenantDataTransfer(
         new LedgerManifest(),
+        connections,
         new TickingClock(),
         { ...OPTIONS, batchSize: 3, callBudgetMs: 12, deltaMarginMs: 0 },
       );

@@ -1,5 +1,6 @@
 import { SagaStatus } from '@platform/saga';
-import type { DataSource } from 'typeorm';
+import type { ShardLocation } from '@platform/persistence';
+import type { ShardConnections } from '../transfer/shard-connections.js';
 import { TenantMoveActivity } from '../application/tenant-move-activity.js';
 
 /**
@@ -13,8 +14,14 @@ export class OpenSagaActivity extends TenantMoveActivity {
     SagaStatus.Compensating,
   ];
 
-  async openWork(shard: DataSource, tenantId: string): Promise<number> {
-    const rows: { open: string }[] = await shard.query(
+  constructor(private readonly connections: ShardConnections) {
+    super();
+  }
+
+  /** How many sagas of the tenant are running, suspended or compensating on the shard. */
+  async openWork(shard: ShardLocation, tenantId: string): Promise<number> {
+    const dataSource = await this.connections.get(shard);
+    const rows: { open: string }[] = await dataSource.query(
       'SELECT count(*)::text AS open FROM "saga"."instances" WHERE "tenant_id"::text = $1 AND "status" = ANY($2::text[])',
       [tenantId, [...OpenSagaActivity.OPEN]],
     );

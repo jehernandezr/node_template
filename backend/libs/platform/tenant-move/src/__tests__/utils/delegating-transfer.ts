@@ -2,7 +2,8 @@ import type {
   TenantMoveProgress,
   TenantMoveVerification,
 } from '@contracts/platform';
-import { QueryFailedError, type DataSource } from 'typeorm';
+import type { ShardLocation } from '@platform/persistence';
+import { QueryFailedError } from 'typeorm';
 import { TenantDataTransfer } from '../../transfer/tenant-data-transfer.js';
 import type { TenantTransfer } from '../../transfer/tenant-transfer.js';
 import type { TransferBudget } from '../../transfer/transfer-budget.js';
@@ -31,7 +32,7 @@ export class DelegatingTransfer extends TenantDataTransfer {
   /** Delegates to the real copy. */
   cleanup(
     tenantId: string,
-    source: DataSource,
+    source: ShardLocation,
     budget?: TransferBudget,
   ): Promise<void> {
     return this.inner.cleanup(tenantId, source, budget);
@@ -40,7 +41,7 @@ export class DelegatingTransfer extends TenantDataTransfer {
   /** Delegates to the real copy. */
   assignRegion(
     tenantId: string,
-    target: DataSource,
+    target: ShardLocation,
     region: string,
   ): Promise<void> {
     return this.inner.assignRegion(tenantId, target, region);

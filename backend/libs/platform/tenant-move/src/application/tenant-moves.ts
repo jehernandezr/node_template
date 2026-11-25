@@ -7,29 +7,22 @@ import type {
 import {
   PostgresFailureClassifier,
   PostgresSqlState,
-  type ShardDataSources,
   type ShardLister,
-  type TenantWriteFence,
+  type ShardLocation,
 } from '@platform/persistence';
 import {
   TenantStatus,
   type PlacementTransition,
   type TenantWriteGate,
 } from '@platform/sharding';
-import type { DataSource } from 'typeorm';
 import { TenantMoveErrorCode } from '../errors/tenant-move-error-code.enum.js';
 import { TenantMoveError } from '../errors/tenant-move.error.js';
 import type { TenantDataTransfer } from '../transfer/tenant-data-transfer.js';
 import type { TenantTransfer } from '../transfer/tenant-transfer.js';
 import type { TenantMoveActivity } from './tenant-move-activity.js';
+import type { TenantMoveFence } from './tenant-move-fence.js';
 import type { TenantMoveListener } from './tenant-move-listener.js';
 import type { TenantMoveShards } from './tenant-move-shards.js';
-
-/** A shard where the tenant fence is the move's fence. */
-interface FencedShard {
-  readonly logicalShard: string;
-  readonly dataSource: DataSource;
-}
 
 /**
  * The steps of a move in a service, in the order the `MoveTenant` saga calls them:
@@ -49,10 +42,9 @@ export class TenantMoves {
     private readonly shards: TenantMoveShards,
     private readonly transfer: TenantDataTransfer,
     private readonly gate: TenantWriteGate,
-    private readonly fence: TenantWriteFence,
+    private readonly fence: TenantMoveFence,
     private readonly transition: PlacementTransition,
     private readonly lister: ShardLister,
-    private readonly dataSources: ShardDataSources,
     private readonly activity: TenantMoveActivity,
     private readonly listener?: TenantMoveListener,
   ) {}
@@ -131,8 +123,8 @@ export class TenantMoves {
       target.region,
     );
     await this.fence.lowerAny(targetSource, move.tenantId);
-    for (const { dataSource } of await this.fencedSources(move)) {
-      await this.fence.markSwitched(dataSource, move.tenantId, move.moveId);
+    for (const shard of await this.fencedSources(move)) {
+      await this.fence.markSwitched(shard, move.tenantId, move.moveId);
     }
     await this.transition.apply(move.tenantId, (current) => {
       const there =
@@ -179,9 +171,9 @@ export class TenantMoves {
       );
     }
     await this.assertNoMoveInFlight(move);
-    for (const { dataSource } of fenced) {
-      await this.transfer.cleanup(move.tenantId, dataSource);
-      await this.fence.lower(dataSource, move.tenantId, move.moveId);
+    for (const shard of fenced) {
+      await this.transfer.cleanup(move.tenantId, shard);
+      await this.fence.lower(shard, move.tenantId, move.moveId);
     }
     return { moveId: move.moveId };
   }
@@ -189,8 +181,7 @@ export class TenantMoves {
   /** @throws TenantMoveError `MoveInProgress` if on any shard another move of the tenant has its fence unpivoted. */
   private async assertNoMoveInFlight(move: TenantMoveRef): Promise<void> {
     for (const location of await this.lister.list()) {
-      const dataSource = await this.dataSources.get(location);
-      const inFlight = await this.fence.unswitchedBy(dataSource, move.tenantId);
+      const inFlight = await this.fence.unswitchedBy(location, move.tenantId);
       if (inFlight !== undefined && inFlight !== move.moveId) {
         throw new TenantMoveError(
           TenantMoveErrorCode.MoveInProgress,
@@ -202,18 +193,17 @@ export class TenantMoves {
   }
 
   /** The shards, except the target, where the tenant fence is this move's fence. */
-  private async fencedSources(move: TenantMoveRef): Promise<FencedShard[]> {
+  private async fencedSources(move: TenantMoveRef): Promise<ShardLocation[]> {
     const target = this.shards.targetOf(move);
-    const fenced: FencedShard[] = [];
+    const fenced: ShardLocation[] = [];
     for (const location of await this.lister.list()) {
       if (location.logicalShard === target.shard) {
         continue;
       }
-      const dataSource = await this.dataSources.get(location);
       if (
-        (await this.fence.raisedBy(dataSource, move.tenantId)) === move.moveId
+        (await this.fence.raisedBy(location, move.tenantId)) === move.moveId
       ) {
-        fenced.push({ logicalShard: location.logicalShard, dataSource });
+        fenced.push(location);
       }
     }
     return fenced;

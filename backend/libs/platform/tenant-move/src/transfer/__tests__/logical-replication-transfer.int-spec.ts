@@ -1,3 +1,4 @@
+import { AssignedShardConnections } from '../../__tests__/utils/assigned-shard-connections.js';
 import {
   SystemClock,
   UuidV7IdGenerator,
@@ -20,7 +21,8 @@ const ids = new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource());
 const newId = (): string => ids.next().toString();
 const clock = new SystemClock();
 const manifest = new LedgersOnlyManifest();
-const batch = new BatchTenantDataTransfer(manifest, clock, {
+const connections = new AssignedShardConnections();
+const batch = new BatchTenantDataTransfer(manifest, connections, clock, {
   batchSize: 100,
   callBudgetMs: 4_000,
   deltaMarginMs: 60_000,
@@ -63,13 +65,19 @@ new ContainerRuntime(process.env).describeIfAvailable(
   () => {
     jest.setTimeout(180_000);
     const databases = new TransferTestDatabases();
-    const replication = new LogicalReplicationTransfer(manifest, batch, clock, {
-      callBudgetMs: 4_000,
-      caughtUpBytes: 1_048_576,
-      lockTimeoutMs: 2_000,
-      sourceHost: 'localhost',
-      sourcePort: 5432,
-    });
+    const replication = new LogicalReplicationTransfer(
+      manifest,
+      batch,
+      connections,
+      clock,
+      {
+        callBudgetMs: 4_000,
+        caughtUpBytes: 1_048_576,
+        lockTimeoutMs: 2_000,
+        sourceHost: 'localhost',
+        sourcePort: 5432,
+      },
+    );
 
     beforeAll(async () => {
       await databases.start();
@@ -82,11 +90,17 @@ new ContainerRuntime(process.env).describeIfAvailable(
     it('refuses a manifest with tables reached through their parent', () => {
       expect(
         () =>
-          new LogicalReplicationTransfer(new LedgerManifest(), batch, clock, {
-            callBudgetMs: 1_000,
-            caughtUpBytes: 0,
-            lockTimeoutMs: 1_000,
-          }),
+          new LogicalReplicationTransfer(
+            new LedgerManifest(),
+            batch,
+            connections,
+            clock,
+            {
+              callBudgetMs: 1_000,
+              caughtUpBytes: 0,
+              lockTimeoutMs: 1_000,
+            },
+          ),
       ).toThrow(
         expect.objectContaining({ code: TenantMoveErrorCode.InvalidManifest }),
       );
@@ -99,8 +113,8 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const move: TenantTransfer = {
         moveId: newId(),
         tenantId,
-        source: sourceAdmin,
-        target: targetAdmin,
+        source: connections.locationOf(sourceAdmin),
+        target: connections.locationOf(targetAdmin),
       };
       await insertLedger(sourceAdmin, tenantId, 1);
       const deleted = await insertLedger(sourceAdmin, tenantId, 2);
@@ -146,8 +160,8 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const move: TenantTransfer = {
         moveId: newId(),
         tenantId,
-        source: sourceAdmin,
-        target: targetAdmin,
+        source: connections.locationOf(sourceAdmin),
+        target: connections.locationOf(targetAdmin),
       };
       await insertLedger(sourceAdmin, tenantId, 1);
       await replication.sync(move);
@@ -174,14 +188,20 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const move: TenantTransfer = {
         moveId: newId(),
         tenantId,
-        source: sourceAdmin,
-        target: targetAdmin,
+        source: connections.locationOf(sourceAdmin),
+        target: connections.locationOf(targetAdmin),
       };
-      const impatient = new LogicalReplicationTransfer(manifest, batch, clock, {
-        callBudgetMs: 4_000,
-        caughtUpBytes: 0,
-        lockTimeoutMs: 100,
-      });
+      const impatient = new LogicalReplicationTransfer(
+        manifest,
+        batch,
+        connections,
+        clock,
+        {
+          callBudgetMs: 4_000,
+          caughtUpBytes: 0,
+          lockTimeoutMs: 100,
+        },
+      );
       const holder = sourceAdmin.createQueryRunner();
       await holder.connect();
       try {
@@ -214,14 +234,14 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const leavingMove: TenantTransfer = {
         moveId: newId(),
         tenantId: leaving,
-        source,
-        target: first.targetAdmin,
+        source: connections.locationOf(source),
+        target: connections.locationOf(first.targetAdmin),
       };
       const stayingMove: TenantTransfer = {
         moveId: newId(),
         tenantId: staying,
-        source,
-        target: second.targetAdmin,
+        source: connections.locationOf(source),
+        target: connections.locationOf(second.targetAdmin),
       };
       await insertLedger(source, leaving, 1);
       await insertLedger(source, staying, 2);
