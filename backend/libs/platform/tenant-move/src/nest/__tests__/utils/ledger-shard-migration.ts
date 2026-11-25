@@ -12,6 +12,7 @@ export class LedgerShardMigration1900000000030 implements MigrationInterface {
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query('DROP TABLE attempts');
     await queryRunner.query('DROP TABLE entries');
     await queryRunner.query('DROP TABLE ledgers');
   }

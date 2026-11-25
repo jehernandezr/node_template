@@ -26,7 +26,8 @@ import { TransferCheckpoints } from './transfer-checkpoints.js';
  * del destino menos un margen. Las escrituras son `INSERT ... ON CONFLICT` por llave primaria, así que repetir un
  * lote no duplica nada.
  *
- * Los borrados físicos y las transacciones que confirman más tarde que el margen no los ven las rondas delta: los
+ * Una tabla sin `updated_at` solo copia sus filas nuevas en las rondas de `sync`. Sus cambios, los borrados físicos y
+ * las transacciones que confirman más tarde que el margen no los ven las rondas delta: los
  * corrige `verify`, que con el tenant congelado compara conteo y suma de cada tabla y, si difieren, la reconcilia por
  * tramos de `batchSize` filas: compara cada tramo y solo reescribe los que difieren. El avance queda en
  * `tenant_move_checkpoints` del destino, así una tabla que no cabe en el plazo de una llamada sigue en la siguiente.
@@ -175,7 +176,11 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     return check;
   }
 
-  /** Copia inicial y una ronda delta de una tabla. Devuelve cuántas filas insertó o cambió en el destino. */
+  /**
+   * Copia inicial y una ronda delta de una tabla. Devuelve cuántas filas insertó o cambió en el destino. Una tabla sin
+   * `updated_at` (una bitácora como `login_attempts`) solo recibe sus filas nuevas: releerla completa en cada llamada
+   * agotaría el plazo siempre en ella. Lo que cambió o se borró ahí lo corrige `verify` por tramos.
+   */
   private async copy(
     transfer: TenantTransfer,
     table: string,
@@ -183,6 +188,9 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     budget: TransferBudget,
   ): Promise<number> {
     const initial = await this.copyNewRows(transfer, table, copier, budget);
+    if (!copier.tracksUpdates()) {
+      return initial;
+    }
     const delta = await this.copyChangedRows(transfer, table, copier, budget);
     return initial + delta;
   }

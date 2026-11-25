@@ -40,3 +40,25 @@ export class LedgersOnlyManifest extends TenantMoveManifest {
     ];
   }
 }
+
+/** `ledgers` y `attempts`, una bitácora sin `updated_at` como `login_attempts`: solo se inserta. */
+export class LedgerWithAttemptsManifest extends TenantMoveManifest {
+  tables(): readonly TenantMoveTable[] {
+    return [
+      {
+        table: 'ledgers',
+        selector: {
+          kind: TenantMoveSelectorKind.TenantColumn,
+          column: 'tenant_id',
+        },
+      },
+      {
+        table: 'attempts',
+        selector: {
+          kind: TenantMoveSelectorKind.TenantColumn,
+          column: 'tenant_id',
+        },
+      },
+    ];
+  }
+}
