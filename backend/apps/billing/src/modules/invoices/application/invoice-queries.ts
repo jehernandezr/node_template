@@ -1,3 +1,4 @@
+import { IdCursor } from '@platform/criteria';
 import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
@@ -10,7 +11,6 @@ import {
 } from '@contracts/billing';
 import { BillingDefaults } from '../../../shared/constants/billing-defaults.constants.js';
 import { BillingError } from '../../../shared/errors/billing.error.js';
-import { IdCursors } from '../../../shared/utils/id-cursors.js';
 import { InvoiceRepository } from '../domain/invoice.repository.js';
 import type { InvoiceState } from '../domain/invoice.js';
 import { InvoicesFacade } from './invoices.facade.js';
@@ -22,11 +22,10 @@ import { InvoiceViews } from './invoice-views.js';
  */
 @Injectable()
 export class InvoiceQueries extends InvoicesFacade {
-  private readonly cursors = new IdCursors();
-
   constructor(
     private readonly invoices: InvoiceRepository,
     private readonly shard: ShardScopes,
+    private readonly cursors: IdCursor,
   ) {
     super();
   }

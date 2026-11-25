@@ -1,3 +1,4 @@
+import { CursorCodec, IdCursor } from '@platform/criteria';
 import type { UserRef } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
@@ -11,6 +12,7 @@ import { GetTask } from '../../application/get-task.query.js';
 import { ListTaskChanges } from '../../application/list-task-changes.query.js';
 import { ListTasks } from '../../application/list-tasks.query.js';
 import { UpdateTask } from '../../application/update-task.use-case.js';
+import { TaskCursors } from '../../application/task-cursors.js';
 import { InMemoryTaskRepository } from './in-memory-task.repository.js';
 import { InMemoryTaskSearch } from './in-memory-task-search.js';
 
@@ -63,8 +65,18 @@ export class TasksHarness {
     this.clock,
   );
   readonly get = new GetTask(this.tasks, this.shard);
-  readonly list = new ListTasks(this.tasks, this.search, this.shard);
-  readonly changes = new ListTaskChanges(this.tasks, this.shard);
+  private readonly codec = new CursorCodec();
+  private readonly cursors = new TaskCursors(
+    new IdCursor(this.codec),
+    this.codec,
+  );
+  readonly list = new ListTasks(
+    this.tasks,
+    this.search,
+    this.shard,
+    this.cursors,
+  );
+  readonly changes = new ListTaskChanges(this.tasks, this.shard, this.cursors);
 
   /** Creates a task by Ana in the main tenant. */
   aTask(title = 'Prepare the meeting', description = 'With the client') {

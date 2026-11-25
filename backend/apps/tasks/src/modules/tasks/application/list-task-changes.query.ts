@@ -9,11 +9,10 @@ import { TaskViews } from './task-view.js';
 /** A tenant's tasks changed since an instant, deleted ones included, for whoever builds projections. */
 @Injectable()
 export class ListTaskChanges {
-  private readonly cursors = new TaskCursors();
-
   constructor(
     private readonly tasks: TaskRepository,
     private readonly shard: ShardScopes,
+    private readonly cursors: TaskCursors,
   ) {}
 
   execute(query: ListTaskChangesInput): Promise<TaskChangePage> {

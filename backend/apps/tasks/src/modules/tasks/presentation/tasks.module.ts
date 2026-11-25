@@ -8,6 +8,7 @@ import { DeleteTask } from '../application/delete-task.use-case.js';
 import { GetTask } from '../application/get-task.query.js';
 import { ListTaskChanges } from '../application/list-task-changes.query.js';
 import { ListTasks } from '../application/list-tasks.query.js';
+import { TaskCursors } from '../application/task-cursors.js';
 import { LocalTasksFacade } from '../application/local-tasks.facade.js';
 import { PurgeDeletedTasksJob } from '../application/purge-deleted-tasks.job.js';
 import { TasksFacade } from '../application/tasks.facade.js';
@@ -41,6 +42,7 @@ import { TasksController } from './tasks.controller.js';
       inject: [SearchIndexFactory, RepositoryKit],
     },
     { provide: TaskSearch, useClass: PlatformTaskSearch },
+    TaskCursors,
     ListTasks,
     GetTask,
     CreateTask,

@@ -5,7 +5,7 @@ import type {
   NotificationPage,
 } from '@contracts/notifications';
 import type { PageQuery, UserRef } from '@contracts/platform';
-import { CursorCodec } from '@platform/criteria';
+import { IdCursor } from '@platform/criteria';
 import { Clock } from '@platform/kernel';
 import { NotificationsDefaults } from '../../../shared/constants/notifications-defaults.constants.js';
 import { RealtimeFacade } from '../../realtime/index.js';
@@ -23,13 +23,12 @@ import { InboxFacade } from './inbox.facade.js';
  */
 @Injectable()
 export class ManageInbox extends InboxFacade {
-  private readonly cursors = new CursorCodec();
-
   constructor(
     private readonly inbox: InboxRepository,
     private readonly realtime: RealtimeFacade,
     private readonly shard: ShardScopes,
     private readonly clock: Clock,
+    private readonly cursors: IdCursor,
   ) {
     super();
   }
@@ -46,10 +45,7 @@ export class ManageInbox extends InboxFacade {
 
   list(user: UserRef, query: PageQuery): Promise<NotificationPage> {
     const limit = query.limit ?? NotificationsDefaults.pageSize;
-    const beforeId =
-      query.after === undefined
-        ? undefined
-        : this.cursors.decode(query.after).id;
+    const beforeId = this.cursors.idOf(query.after);
     return this.shard.inUserShard(user, async () => {
       const page = await this.inbox.page(user.userId, beforeId, limit + 1);
       const items = page.slice(0, limit);
@@ -58,7 +54,7 @@ export class ManageInbox extends InboxFacade {
         items: items.map((state) => NotificationViews.of(state)),
         nextCursor:
           page.length > limit && last !== undefined
-            ? this.cursors.encode({ id: last.id, values: [] })
+            ? this.cursors.after(last.id)
             : null,
       };
     });

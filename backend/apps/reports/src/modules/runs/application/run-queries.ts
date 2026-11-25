@@ -1,3 +1,4 @@
+import { IdCursor } from '@platform/criteria';
 import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
@@ -11,7 +12,6 @@ import {
 import { Clock } from '@platform/kernel';
 import { ReportsDefaults } from '../../../shared/constants/reports-defaults.constants.js';
 import { ReportsError } from '../../../shared/errors/reports.error.js';
-import { IdCursors } from '../../../shared/utils/id-cursors.js';
 import { ReportResultStore } from '../domain/report-result-store.js';
 import { ReportRunRepository } from '../domain/report-run.repository.js';
 import type { ReportRun } from '../domain/report-run.js';
@@ -21,13 +21,12 @@ import { RunViews } from './run-views.js';
 /** Reads of a tenant's runs: the list, the detail with its result and the download. */
 @Injectable()
 export class RunQueries {
-  private readonly cursors = new IdCursors();
-
   constructor(
     private readonly runs: ReportRunRepository,
     private readonly results: ReportResultStore,
     private readonly shard: ShardScopes,
     private readonly clock: Clock,
+    private readonly cursors: IdCursor,
   ) {}
 
   list(

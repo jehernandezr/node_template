@@ -16,12 +16,11 @@ import { TaskViews } from './task-view.js';
 /** Lists the tenant's tasks, from newest to oldest, or searches them by text if `q` is present. */
 @Injectable()
 export class ListTasks {
-  private readonly cursors = new TaskCursors();
-
   constructor(
     private readonly tasks: TaskRepository,
     private readonly search: TaskSearch,
     private readonly shard: ShardScopes,
+    private readonly cursors: TaskCursors,
   ) {}
 
   /** @throws TasksError `TASKS.SEARCH.QUERY_TOO_SHORT` if `q` does not reach the minimum. */

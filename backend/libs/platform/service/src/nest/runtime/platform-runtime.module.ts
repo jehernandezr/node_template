@@ -42,6 +42,7 @@ import { AppConfig, type ConfigEnv } from '@platform/config';
 import { ConfigModule } from '@platform/config/nest';
 import { BloomModule } from '@platform/bloom/nest';
 import { CacheModule } from '@platform/cache/nest';
+import { CriteriaModule } from '@platform/criteria/nest';
 import { Clock, TransactionManager } from '@platform/kernel';
 import {
   LoggerPort,
@@ -149,6 +150,7 @@ export class PlatformRuntimeModule {
       global: true,
       imports: [
         PlatformKernelModule,
+        CriteriaModule,
         ConfigModule.forRoot({
           schema: definition.configSchema,
           env: options.env,
