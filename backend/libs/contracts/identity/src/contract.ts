@@ -230,6 +230,7 @@ export const identityContract = defineServiceContract({
     ApiKeyEnvironment: schemas.ApiKeyEnvironmentSchema,
     ApiKeyStatus: schemas.ApiKeyStatusSchema,
     ServiceAccountStatus: schemas.ServiceAccountStatusSchema,
+    DeviceSignatureFields: schemas.DeviceSignatureSchema,
     SignInRequest: schemas.SignInRequestSchema,
     SessionTokens: schemas.SessionTokensSchema,
     PendingMfa: schemas.PendingMfaSchema,

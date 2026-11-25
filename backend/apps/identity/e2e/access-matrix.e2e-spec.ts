@@ -29,7 +29,7 @@ const ROUTES: readonly RouteDefinition[] = Object.values(
 const AUTHENTICATED = ROUTES.filter(
   (route) => route.access.kind === AccessKind.Authenticated,
 );
-/** Las rutas que piden algún permiso que un miembro del tenant compartido no tiene. */
+/** Routes that ask for a permission a member of the shared tenant does not have. */
 const BEYOND_MEMBER = AUTHENTICATED.filter((route) =>
   (route.access.permissions ?? []).some(
     (permission) =>
@@ -44,7 +44,7 @@ const WITH_STEP_UP = AUTHENTICATED.filter(
     (route.access.permissions ?? []).length === 0,
 );
 
-/** Las que además piden permisos, todos al alcance del dueño de un tenant. */
+/** Those that also ask for permissions, all within reach of the owner of a tenant. */
 const WITH_STEP_UP_AND_PERMISSION = AUTHENTICATED.filter(
   (route) =>
     route.access.mfaMaxAgeMinutes !== undefined &&
@@ -56,7 +56,7 @@ const WITH_STEP_UP_AND_PERMISSION = AUTHENTICATED.filter(
     ),
 );
 
-/** La ruta con sus parámetros reemplazados por ids válidos que no existen. */
+/** The route with its parameters replaced by valid ids that do not exist. */
 function pathOf(route: RouteDefinition): string {
   return route.path.replace(/\{[^}]+\}/g, () => TestIds.next());
 }
@@ -75,23 +75,17 @@ runtime.describeIfAvailable('identity access matrix', () => {
   const member = new IdentityJourney(app, 'mario.miembro@example.com');
   let withMfa: SessionTokensBody;
   let withoutMfa: SessionTokensBody;
-  /** Dueño de una organización con una sesión sin segundo factor reciente. */
+  /** Owner of an organization with a session without a recent second factor. */
   let ownerWithoutMfa: string;
 
   beforeAll(async () => {
     await app.start();
     await member.register();
     withMfa = await member.signInWithEmailCode();
-    const recognized = await member.native().post('/v1/auth/sign-in', {
-      body: {
-        email: member.email,
-        password: IdentityJourney.PASSWORD,
-        deviceId: IdentityJourney.deviceIdFrom(withMfa.accessToken),
-      },
-    });
+    const recognized = await member.signInFromDevice(
+      IdentityJourney.deviceIdFrom(withMfa.accessToken),
+    );
     withoutMfa = (recognized.body as { tokens: SessionTokensBody }).tokens;
-    // Su tenant predeterminado es el compartido, donde no administra nada: entra sin segundo factor y
-    // después cambia a la organización de la que es dueño.
     const tenantId = TestIds.next();
     await app.internal().invoke(CreateTenantOperation, {
       tenantId,

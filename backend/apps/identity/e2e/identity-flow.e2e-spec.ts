@@ -11,7 +11,7 @@ import {
 
 const runtime = new ContainerRuntime(process.env);
 
-/** La gracia de la generación anterior es de 5 s: la prueba espera un poco más para presentarla fuera de ella. */
+/** The grace of the previous generation is 5 s: the test waits a little longer to present it outside of it. */
 const PAST_REFRESH_GRACE_MS = 5_500;
 
 runtime.describeIfAvailable('identity end to end', () => {
@@ -113,9 +113,7 @@ runtime.describeIfAvailable('identity end to end', () => {
   });
 
   it('asks for step-up to change the password and then revokes the other sessions', async () => {
-    const recognized = await ana.native().post('/v1/auth/sign-in', {
-      body: { email: ana.email, password: IdentityJourney.PASSWORD, deviceId },
-    });
+    const recognized = await ana.signInFromDevice(deviceId);
     const session = (recognized.body as { tokens: SessionTokensBody }).tokens;
     const newPassword = ['Otra', 'frase', 'larga', 'distinta', '2026'].join(
       '-',

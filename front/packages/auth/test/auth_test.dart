@@ -54,15 +54,20 @@ void main() {
     );
 
     final result = await manager.signIn(
-      const SignInRequest(
+      SignInRequest(
         email: 'ana@example.com',
         password: 'secret',
-        deviceId: 'device-1',
+        device: DeviceSignatureFields(
+          deviceId: 'device-1',
+          timestamp: t0,
+          nonce: 'nonce-of-sixteen-chars',
+          signature: 'c2lnbmF0dXJl',
+        ),
       ),
     );
 
     expect(result.status, SignInStatus.authenticated);
-    expect(repo.lastSignIn?.deviceId, 'device-1');
+    expect(repo.lastSignIn?.device?.deviceId, 'device-1');
     expect(store.sessionToken, 'session-access-1');
     expect(manager.state, AuthState.signedIn);
     expect(await manager.accessToken(), 'access-1');

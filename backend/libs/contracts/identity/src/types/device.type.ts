@@ -1,44 +1,44 @@
 import type { ClientPlatform } from '../enums/auth.enum.js';
 
 /**
- * Firma que el dispositivo registrado copia en cada petición sin sesión. El
- * servidor la verifica con la clave pública guardada, así que no reemplaza al
- * access token: prueba que la petición viene del dispositivo.
+ * Signature that the registered device copies into each request without a
+ * session. The server checks it with the stored public key, so it does not
+ * replace the access token: it proves that the request comes from the device.
  */
 export interface DeviceSignatureFields {
   deviceId: string;
-  /** Instante ISO 8601 en que el dispositivo firmó la petición. */
+  /** ISO 8601 instant at which the device signed the request. */
   timestamp: string;
-  /** Valor aleatorio que impide reusar una firma. */
+  /** Random value that prevents reusing a signature. */
   nonce: string;
-  /** Firma en base64url del contenido firmado. */
+  /** base64url signature of the signed content. */
   signature: string;
 }
 
-/** Quitar un dispositivo de la cuenta. */
+/** Remove a device from the account. */
 export interface RemoveDeviceRequest {
   deviceId: string;
 }
 
-/** Quitar la confianza de un dispositivo sin borrar su registro. */
+/** Remove the trust of a device without deleting its record. */
 export interface UntrustDeviceRequest {
   deviceId: string;
 }
 
-/** Token de notificaciones push del dispositivo actual. */
+/** Push notification token of the current device. */
 export interface PushTokenRequest {
   pushToken: string;
 }
 
-/** Pedido de las aprobaciones pendientes para el dispositivo que firma. */
+/** Request for the pending approvals of the signing device. */
 export type PullDeviceApprovalsRequest = DeviceSignatureFields;
 
-/** Rechazo de una aprobación pendiente, firmado por el dispositivo. */
+/** Denial of a pending approval, signed by the device. */
 export interface DenyDeviceApprovalRequest extends DeviceSignatureFields {
   challengeId: string;
 }
 
-/** Contexto de la solicitud que el usuario ve antes de aprobarla. */
+/** Context of the request that the user sees before approving it. */
 export interface ApprovalContext {
   browser?: string;
   os?: string;
@@ -46,33 +46,33 @@ export interface ApprovalContext {
   city?: string;
 }
 
-/** Aprobación pendiente: un código que el usuario confirma en su dispositivo. */
+/** Pending approval: a code that the user confirms on their device. */
 export interface DeviceApproval {
   challengeId: string;
   code: string;
-  /** Instante ISO 8601 en que se pidió la aprobación. */
+  /** ISO 8601 instant at which the approval was requested. */
   requestedAt: string;
-  /** Instante ISO 8601 en que deja de ser válida. */
+  /** ISO 8601 instant at which it stops being valid. */
   expiresAt: string;
   context: ApprovalContext;
 }
 
-/** Aprobaciones pendientes de un dispositivo. */
+/** Pending approvals of a device. */
 export interface DeviceApprovals {
   approvals: DeviceApproval[];
 }
 
-/** Payload de `identity.device.registered.v1`. */
+/** Payload of `identity.device.registered.v1`. */
 export interface DeviceRegisteredPayload {
   userId: string;
   deviceId: string;
   platform: ClientPlatform;
-  /** Verdadero si el dispositivo queda como verificador de acciones sensibles. */
+  /** True if the device becomes the verifier of sensitive actions. */
   verifier: boolean;
   registeredAt: string;
 }
 
-/** Payload de `identity.device.removed.v1`. */
+/** Payload of `identity.device.removed.v1`. */
 export interface DeviceRemovedPayload {
   userId: string;
   deviceId: string;

@@ -3386,12 +3386,12 @@
       "MfaFactor": {
         "type": "string",
         "enum": ["device_otp", "email_otp", "totp", "recovery_code", "passkey"],
-        "description": "Método de segundo factor."
+        "description": "Second factor method."
       },
       "SignInStatus": {
         "type": "string",
         "enum": ["authenticated", "mfa_required"],
-        "description": "Resultado de un inicio de sesión."
+        "description": "Result of a sign-in."
       },
       "ClientPlatform": {
         "type": "string",
@@ -3424,7 +3424,7 @@
           "totp",
           "recovery_code"
         ],
-        "description": "Método con el que se autenticó la sesión (amr)."
+        "description": "Method with which the session was authenticated (amr)."
       },
       "TokenAudience": {
         "type": "string",
@@ -3581,6 +3581,30 @@
         "enum": ["active", "disabled"],
         "description": "Estado de una service account."
       },
+      "DeviceSignatureFields": {
+        "type": "object",
+        "properties": {
+          "deviceId": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "timestamp": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "nonce": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "signature": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          }
+        },
+        "required": ["deviceId", "timestamp", "nonce", "signature"],
+        "additionalProperties": false,
+        "description": "Proof that a request comes from a registered device, signed with its key."
+      },
       "SignInRequest": {
         "type": "object",
         "properties": {
@@ -3591,11 +3615,11 @@
             "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
           },
           "password": { "type": "string", "minLength": 1, "maxLength": 128 },
-          "deviceId": { "type": "string", "minLength": 1, "maxLength": 512 }
+          "device": { "$ref": "#/components/schemas/DeviceSignatureFields" }
         },
         "required": ["email", "password"],
         "additionalProperties": false,
-        "description": "Inicio de sesión con email y contraseña."
+        "description": "Sign-in with email and password."
       },
       "SessionTokens": {
         "type": "object",
@@ -3615,7 +3639,7 @@
           }
         },
         "required": ["accessToken", "accessExpiresAt"],
-        "description": "Tokens de una sesión."
+        "description": "Tokens of a session."
       },
       "PendingMfa": {
         "type": "object",
@@ -3628,7 +3652,7 @@
           }
         },
         "required": ["mfaToken", "methods"],
-        "description": "Desafío MFA pendiente."
+        "description": "Pending MFA challenge."
       },
       "SignInResponse": {
         "type": "object",
@@ -3645,7 +3669,7 @@
           }
         },
         "required": ["status"],
-        "description": "Resultado de un login o de una verificación MFA."
+        "description": "Result of a sign-in or of an MFA verification."
       },
       "MfaChallengeRequest": {
         "type": "object",
@@ -3655,7 +3679,7 @@
         },
         "required": ["mfaToken", "method"],
         "additionalProperties": false,
-        "description": "Pedido de un desafío MFA."
+        "description": "Request for an MFA challenge."
       },
       "MfaChallenge": {
         "type": "object",
@@ -3670,7 +3694,7 @@
           "codeLength": { "type": "integer", "minimum": 6, "maximum": 64 }
         },
         "required": ["challengeId", "method", "expiresAt"],
-        "description": "Desafío MFA creado."
+        "description": "MFA challenge created."
       },
       "MfaVerifyRequest": {
         "type": "object",
@@ -3694,7 +3718,7 @@
         },
         "required": ["mfaToken", "challengeId", "code"],
         "additionalProperties": false,
-        "description": "Verificación de un desafío MFA."
+        "description": "Verification of an MFA challenge."
       },
       "SessionTokenRequest": {
         "type": "object",
@@ -3706,7 +3730,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Session token a rotar o cerrar. En web se omite y viaja en la cookie httpOnly."
+        "description": "Session token to rotate or close. On the web it is omitted and travels in the httpOnly cookie."
       },
       "StepUpVerifyRequest": {
         "type": "object",
@@ -3724,7 +3748,7 @@
         },
         "required": ["mfaToken", "challengeId", "code"],
         "additionalProperties": false,
-        "description": "Verificación del paso adicional de una sesión abierta."
+        "description": "Verification of the step-up of an open session."
       },
       "StepUpResult": {
         "type": "object",
@@ -3735,7 +3759,7 @@
           }
         },
         "required": ["tokens", "mfaVerifiedAt"],
-        "description": "Paso adicional verificado: access token nuevo y último MFA de la sesión."
+        "description": "Verified step-up: new access token and last MFA of the session."
       },
       "SessionSummary": {
         "type": "object",
@@ -4227,7 +4251,7 @@
         },
         "required": ["deviceId"],
         "additionalProperties": false,
-        "description": "Dispositivo a quitar de la cuenta."
+        "description": "Device to remove from the account."
       },
       "UntrustDeviceRequest": {
         "type": "object",
@@ -4238,7 +4262,7 @@
         },
         "required": ["deviceId"],
         "additionalProperties": false,
-        "description": "Dispositivo al que se le quita la confianza."
+        "description": "Device whose trust is removed."
       },
       "PushTokenRequest": {
         "type": "object",
@@ -4247,7 +4271,7 @@
         },
         "required": ["pushToken"],
         "additionalProperties": false,
-        "description": "Token de notificaciones push del dispositivo actual."
+        "description": "Push notification token of the current device."
       },
       "PullDeviceApprovalsRequest": {
         "type": "object",
@@ -4271,7 +4295,7 @@
         },
         "required": ["deviceId", "timestamp", "nonce", "signature"],
         "additionalProperties": false,
-        "description": "Pedido de aprobaciones pendientes firmado por el dispositivo."
+        "description": "Request for pending approvals signed by the device."
       },
       "DenyDeviceApprovalRequest": {
         "type": "object",
@@ -4304,7 +4328,7 @@
           "signature"
         ],
         "additionalProperties": false,
-        "description": "Rechazo de una aprobación pendiente firmado por el dispositivo."
+        "description": "Denial of a pending approval signed by the device."
       },
       "ApprovalContext": {
         "type": "object",
@@ -4314,7 +4338,7 @@
           "ip": { "type": "string", "minLength": 1, "maxLength": 120 },
           "city": { "type": "string", "minLength": 1, "maxLength": 120 }
         },
-        "description": "Contexto de la solicitud de aprobación que el usuario revisa."
+        "description": "Context of the approval request that the user reviews."
       },
       "DeviceApproval": {
         "type": "object",
@@ -4338,7 +4362,7 @@
           "expiresAt",
           "context"
         ],
-        "description": "Aprobación pendiente de un dispositivo."
+        "description": "Pending approval of a device."
       },
       "DeviceApprovals": {
         "type": "object",
@@ -4350,7 +4374,7 @@
           }
         },
         "required": ["approvals"],
-        "description": "Aprobaciones pendientes de un dispositivo."
+        "description": "Pending approvals of a device."
       },
       "TotpEnrollment": {
         "type": "object",
@@ -4436,7 +4460,7 @@
           }
         },
         "required": ["challengeId", "optionsJson"],
-        "description": "Opciones de WebAuthn y el desafío que las identifica."
+        "description": "WebAuthn options and the challenge that identifies them."
       },
       "PasskeySignInVerifyRequest": {
         "type": "object",
@@ -4450,11 +4474,11 @@
             "maxLength": 16384,
             "pattern": "^[A-Za-z0-9_-]+$"
           },
-          "deviceId": { "type": "string", "minLength": 1, "maxLength": 512 }
+          "device": { "$ref": "#/components/schemas/DeviceSignatureFields" }
         },
         "required": ["challengeId", "credentialJson"],
         "additionalProperties": false,
-        "description": "Verificación de un inicio de sesión con passkey."
+        "description": "Verification of a passkey sign-in."
       },
       "PasskeyMfaOptionsRequest": {
         "type": "object",
@@ -4463,7 +4487,7 @@
         },
         "required": ["mfaToken"],
         "additionalProperties": false,
-        "description": "Opciones de passkey como segundo factor de un login pendiente."
+        "description": "Passkey options as the second factor of a pending sign-in."
       },
       "PasskeyMfaVerifyRequest": {
         "type": "object",
@@ -4487,7 +4511,7 @@
         },
         "required": ["mfaToken", "challengeId", "credentialJson"],
         "additionalProperties": false,
-        "description": "Verificación de passkey como segundo factor de un login pendiente."
+        "description": "Passkey verification as the second factor of a pending sign-in."
       },
       "PasskeyStepUpOptionsRequest": {
         "type": "object",
@@ -4496,7 +4520,7 @@
         },
         "required": ["mfaToken"],
         "additionalProperties": false,
-        "description": "Opciones de passkey para el paso adicional de una sesión abierta."
+        "description": "Passkey options for the step-up of an open session."
       },
       "PasskeyStepUpVerifyRequest": {
         "type": "object",
@@ -4514,7 +4538,7 @@
         },
         "required": ["mfaToken", "challengeId", "credentialJson"],
         "additionalProperties": false,
-        "description": "Verificación de passkey para el paso adicional de una sesión abierta."
+        "description": "Passkey verification for the step-up of an open session."
       },
       "PasskeySummary": {
         "type": "object",
@@ -4537,7 +4561,7 @@
           "backedUp": { "type": "boolean" }
         },
         "required": ["id", "name", "createdAt", "lastUsedAt", "backedUp"],
-        "description": "Passkey registrada del usuario."
+        "description": "Registered passkey of the user."
       },
       "PasskeyPage": {
         "type": "object",
@@ -4557,7 +4581,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de passkeys."
+        "description": "Page of passkeys."
       },
       "RegisterPasskeyRequest": {
         "type": "object",
@@ -4575,7 +4599,7 @@
         },
         "required": ["challengeId", "credentialJson", "name"],
         "additionalProperties": false,
-        "description": "Registro de una passkey con la respuesta del autenticador."
+        "description": "Registration of a passkey with the authenticator response."
       },
       "RemovePasskeyRequest": {
         "type": "object",
@@ -4586,7 +4610,7 @@
         },
         "required": ["passkeyId"],
         "additionalProperties": false,
-        "description": "Passkey a quitar."
+        "description": "Passkey to remove."
       },
       "TenantSlug": {
         "type": "string",

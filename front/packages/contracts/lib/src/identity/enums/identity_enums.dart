@@ -106,7 +106,7 @@ enum FeatureFlag {
   }
 }
 
-/// Método de segundo factor.
+/// Second factor method.
 ///
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.
@@ -131,7 +131,7 @@ enum MfaFactor {
   }
 }
 
-/// Resultado de un inicio de sesión.
+/// Result of a sign-in.
 ///
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.
@@ -227,7 +227,7 @@ enum RevocationScope {
   }
 }
 
-/// Método con el que se autenticó la sesión (amr).
+/// Method with which the session was authenticated (amr).
 ///
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.

@@ -1,4 +1,4 @@
-import { IdentityErrorCode } from '@contracts/identity';
+import { IdentityErrorCode, IdentityRoute } from '@contracts/identity';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import type { HttpTestClient } from '@platform/http/test-utils';
 import { IdentityTestApp } from '../src/__tests__/utils/index.js';
@@ -63,7 +63,6 @@ runtime.describeIfAvailable('passkeys end to end', () => {
     expect(listed.body).toMatchObject({
       items: [expect.objectContaining({ name: 'Portátil' })],
     });
-    // La passkey queda en el shard del usuario y su credencial en el catálogo, que lleva a ese shard.
     const claims = AccessTokenClaimsReader.read(session.accessToken);
     const user = {
       userId: String(claims['sub']),
@@ -93,7 +92,11 @@ runtime.describeIfAvailable('passkeys end to end', () => {
       body: {
         challengeId,
         credentialJson: authenticator.get(optionsJson),
-        deviceId: IdentityJourney.deviceIdFrom(session.accessToken),
+        device: sara.device.signed(
+          IdentityRoute.PasskeySignInVerify,
+          IdentityJourney.deviceIdFrom(session.accessToken),
+          [challengeId],
+        ),
       },
     });
     const tokens = (verified.body as { tokens: SessionTokensBody }).tokens;

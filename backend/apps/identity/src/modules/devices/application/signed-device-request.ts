@@ -11,17 +11,18 @@ import { DeviceApprovalStore } from '../domain/device-approval-store.js';
 import { DeviceRepository } from '../domain/device.repository.js';
 import { DeviceRoute } from '../domain/device-route.js';
 import { DeviceSignatureVerifier } from '../domain/device-signature-verifier.js';
+import { DeviceSignedMessage } from '../domain/device-signed-message.js';
 import type { Device } from '../domain/device.js';
 
-/** El dispositivo que firmó una petición sin sesión, ya verificado. */
+/** The device that signed a request without a session, already verified. */
 export interface SignedDevice {
   readonly route: DeviceRoute;
   readonly device: Device;
 }
 
 /**
- * Verifica una petición firmada por un dispositivo: la firma ES256 de
- * `<acción>\n<deviceId>\n<timestamp>\n<nonce>[\n<extra>]`, la hora dentro de un minuto y un nonce sin usar.
+ * Verifies a request signed by a device: the ES256 signature of `DeviceSignedMessage`, a timestamp within
+ * the allowed skew and a nonce that was never used.
  */
 @Injectable()
 export class SignedDeviceRequest {
@@ -33,12 +34,38 @@ export class SignedDeviceRequest {
     private readonly clock: Clock,
   ) {}
 
-  /** @throws IdentityError `IDENTITY.DEVICE.SIGNATURE_INVALID` si algo no cuadra; nunca dice qué. */
+  /**
+   * Verifies the signed request and spends its nonce.
+   * @param action Route the device calls.
+   * @param fields Signature fields of the request.
+   * @param bound Request values the signature covers after the nonce.
+   * @returns The trusted device that signed it.
+   * @throws IdentityError `IDENTITY.DEVICE.SIGNATURE_INVALID` if anything does not match; it never says what.
+   */
   async verify(
     action: string,
     fields: DeviceSignatureFields,
-    extra: readonly string[] = [],
+    bound: readonly string[] = [],
   ): Promise<SignedDevice> {
+    const signed = await this.check(action, fields, bound);
+    if (signed === undefined) {
+      throw new IdentityError(IdentityErrorCode.DeviceSignatureInvalid);
+    }
+    return signed;
+  }
+
+  /**
+   * Same checks as `verify`, without throwing.
+   * @param action Route the device calls.
+   * @param fields Signature fields of the request.
+   * @param bound Request values the signature covers after the nonce.
+   * @returns The trusted device that signed it, or `undefined` if the proof does not hold.
+   */
+  async check(
+    action: string,
+    fields: DeviceSignatureFields,
+    bound: readonly string[] = [],
+  ): Promise<SignedDevice | undefined> {
     const route = DeviceRoute.parse(fields.deviceId);
     const skew = Math.abs(
       this.clock.now().getTime() - Date.parse(fields.timestamp),
@@ -47,36 +74,25 @@ export class SignedDeviceRequest {
       route === undefined ||
       !(skew <= IdentityDefaults.deviceSignatureSkewMs)
     ) {
-      throw SignedDeviceRequest.invalid();
+      return undefined;
     }
     const device = await this.scopes.inUserShard(route.user, () =>
       this.devices.find(route.user.userId, route.deviceId),
     );
-    const message = [
-      action,
-      fields.deviceId,
-      fields.timestamp,
-      fields.nonce,
-      ...extra,
-    ].join('\n');
     if (
       device === undefined ||
       !device.isTrusted(this.clock.now()) ||
       !this.signatures.verify(
         device.snapshot().publicKey,
-        message,
+        DeviceSignedMessage.of(action, fields, bound),
         fields.signature,
       )
     ) {
-      throw SignedDeviceRequest.invalid();
+      return undefined;
     }
     if (!(await this.approvals.useNonce(route.deviceId, fields.nonce))) {
-      throw SignedDeviceRequest.invalid();
+      return undefined;
     }
     return { route, device };
-  }
-
-  private static invalid(): IdentityError {
-    return new IdentityError(IdentityErrorCode.DeviceSignatureInvalid);
   }
 }

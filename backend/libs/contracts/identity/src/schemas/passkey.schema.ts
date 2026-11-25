@@ -14,11 +14,14 @@ import type {
   RemovePasskeyRequest,
 } from '../types/passkey.type.js';
 import { MfaTokenFieldSchema } from './auth.schema.js';
-import { DevicePublicKeyFieldSchema } from './device.schema.js';
+import {
+  DevicePublicKeyFieldSchema,
+  DeviceSignatureSchema,
+} from './device.schema.js';
 
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 
-/** Respuesta de WebAuthn en base64url, tal como la entrega el sistema. */
+/** WebAuthn response in base64url, as the system delivers it. */
 const PasskeyCredentialFieldSchema = z
   .string()
   .min(1)
@@ -40,27 +43,23 @@ export const PasskeyOptionsSchema = z
       .regex(BASE64URL),
   })
   .describe(
-    'Opciones de WebAuthn y el desafío que las identifica.',
+    'WebAuthn options and the challenge that identifies them.',
   ) satisfies z.ZodType<PasskeyOptions>;
 
 export const PasskeySignInVerifyRequestSchema = z
   .strictObject({
     challengeId: IdSchema,
     credentialJson: PasskeyCredentialFieldSchema,
-    deviceId: z
-      .string()
-      .min(1)
-      .max(IdentityLimits.deviceIdMaxLength)
-      .optional(),
+    device: DeviceSignatureSchema.optional(),
   })
   .describe(
-    'Verificación de un inicio de sesión con passkey.',
+    'Verification of a passkey sign-in.',
   ) satisfies z.ZodType<PasskeySignInVerifyRequest>;
 
 export const PasskeyMfaOptionsRequestSchema = z
   .strictObject({ mfaToken: MfaTokenFieldSchema })
   .describe(
-    'Opciones de passkey como segundo factor de un login pendiente.',
+    'Passkey options as the second factor of a pending sign-in.',
   ) satisfies z.ZodType<PasskeyMfaOptionsRequest>;
 
 export const PasskeyMfaVerifyRequestSchema = z
@@ -71,13 +70,13 @@ export const PasskeyMfaVerifyRequestSchema = z
     devicePublicKey: DevicePublicKeyFieldSchema.optional(),
   })
   .describe(
-    'Verificación de passkey como segundo factor de un login pendiente.',
+    'Passkey verification as the second factor of a pending sign-in.',
   ) satisfies z.ZodType<PasskeyMfaVerifyRequest>;
 
 export const PasskeyStepUpOptionsRequestSchema = z
   .strictObject({ mfaToken: MfaTokenFieldSchema })
   .describe(
-    'Opciones de passkey para el paso adicional de una sesión abierta.',
+    'Passkey options for the step-up of an open session.',
   ) satisfies z.ZodType<PasskeyStepUpOptionsRequest>;
 
 export const PasskeyStepUpVerifyRequestSchema = z
@@ -87,7 +86,7 @@ export const PasskeyStepUpVerifyRequestSchema = z
     credentialJson: PasskeyCredentialFieldSchema,
   })
   .describe(
-    'Verificación de passkey para el paso adicional de una sesión abierta.',
+    'Passkey verification for the step-up of an open session.',
   ) satisfies z.ZodType<PasskeyStepUpVerifyRequest>;
 
 export const PasskeySummarySchema = z
@@ -99,12 +98,12 @@ export const PasskeySummarySchema = z
     backedUp: z.boolean(),
   })
   .describe(
-    'Passkey registrada del usuario.',
+    'Registered passkey of the user.',
   ) satisfies z.ZodType<PasskeySummary>;
 
 export const PasskeyPageSchema = pageOf(
   PasskeySummarySchema,
-  'Página de passkeys.',
+  'Page of passkeys.',
 ) satisfies z.ZodType<PasskeyPage>;
 
 export const RegisterPasskeyRequestSchema = z
@@ -114,9 +113,9 @@ export const RegisterPasskeyRequestSchema = z
     name: PasskeyNameFieldSchema,
   })
   .describe(
-    'Registro de una passkey con la respuesta del autenticador.',
+    'Registration of a passkey with the authenticator response.',
   ) satisfies z.ZodType<RegisterPasskeyRequest>;
 
 export const RemovePasskeyRequestSchema = z
   .strictObject({ passkeyId: IdSchema })
-  .describe('Passkey a quitar.') satisfies z.ZodType<RemovePasskeyRequest>;
+  .describe('Passkey to remove.') satisfies z.ZodType<RemovePasskeyRequest>;

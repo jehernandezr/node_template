@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   AuthMethodReference,
   IdentityErrorCode,
+  IdentityRoute,
   SecurityAlertType,
   UserStatus,
   type SignInRequest,
@@ -18,7 +19,7 @@ import type { ClientInfo } from '../../../shared/types/client-info.type.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { AccessFacade } from '../../access/index.js';
 import { SecurityAlerts } from '../../alerts/index.js';
-import { DevicesFacade } from '../../devices/index.js';
+import { DevicesFacade, type DeviceProof } from '../../devices/index.js';
 import { MfaFacade } from '../../mfa/index.js';
 import { PasswordsFacade } from '../../passwords/index.js';
 import { SessionsFacade } from '../../sessions/index.js';
@@ -32,16 +33,17 @@ import {
 } from '../domain/login-attempt.js';
 import { LoginAttemptRepository } from '../domain/login-attempt.repository.js';
 
-/** Inicio de sesión con email y contraseña desde un cliente. */
+/** Sign-in with email and password from a client. */
 export interface SignInCommand {
   readonly request: SignInRequest;
   readonly client: ClientInfo;
 }
 
 /**
- * Inicio de sesión con contraseña: revisa los bloqueos, verifica la contraseña (también sin usuario, con el
- * mismo costo), reconoce el dispositivo y decide si hace falta segundo factor. Un fallo cuenta para el
- * origen, la cuenta y la IP; un email inexistente cuenta igual, sin dejar rastro en un shard.
+ * Password sign-in: checks the lockouts, verifies the password (also without a user, at the same cost),
+ * recognizes the device by its signature and decides whether a second factor is needed. A failure counts
+ * for the origin, the account and the IP; an unknown email counts the same, without leaving a trace in a
+ * shard.
  */
 @Injectable()
 export class SignInWithPassword {
@@ -65,6 +67,13 @@ export class SignInWithPassword {
     private readonly deployment: DeploymentRegion,
   ) {}
 
+  /**
+   * Signs a user in with their password.
+   * @param command The request and the client that sends it.
+   * @returns The open session, or the pending second factor.
+   * @throws IdentityError `IDENTITY.AUTH.INVALID_CREDENTIALS`, with `Retry-After` while locked.
+   * @throws IdentityError `IDENTITY.USER.SUSPENDED` or `IDENTITY.AUTH.EMAIL_NOT_VERIFIED` for those accounts.
+   */
   async execute(command: SignInCommand): Promise<SignInResponse> {
     const { request, client } = command;
     const account = this.keys.account(request.email);
@@ -86,16 +95,21 @@ export class SignInWithPassword {
     await this.assertCanSignIn(user, ref, client, account);
     await this.lockout.clear(account, client.ip);
     await this.record(ref, client, LoginAttemptResult.Succeeded);
-    return this.continueWith(ref, request.deviceId, client, account);
+    return this.continueWith(
+      ref,
+      SignInWithPassword.proofOf(request),
+      client,
+      account,
+    );
   }
 
   private async continueWith(
     ref: UserRef,
-    deviceIdToken: string | undefined,
+    proof: DeviceProof | undefined,
     client: ClientInfo,
     account: string,
   ): Promise<SignInResponse> {
-    const recognition = await this.devices.recognize(ref, deviceIdToken);
+    const recognition = await this.devices.recognize(ref, proof);
     const tenantId = await this.access.defaultTenant(ref);
     const needsMfa = this.mfaPolicy.requiresSecondFactor({
       deviceRecognized: recognition.recognized,
@@ -131,7 +145,6 @@ export class SignInWithPassword {
     account: string,
   ): Promise<void> {
     if (user.status === UserStatus.Deleted) {
-      // Una cuenta borrada responde como un email que no existe: no revela que existió.
       await this.fail(undefined, account, client);
     }
     if (user.status === UserStatus.Suspended) {
@@ -154,7 +167,6 @@ export class SignInWithPassword {
     }
   }
 
-  /** Cuenta el fallo y responde `INVALID_CREDENTIALS`, con `Retry-After` si este fallo bloqueó el origen. */
   private async fail(
     ref: UserRef | undefined,
     account: string,
@@ -207,6 +219,16 @@ export class SignInWithPassword {
         attemptedAt: this.clock.now(),
       }),
     );
+  }
+
+  private static proofOf(request: SignInRequest): DeviceProof | undefined {
+    return request.device === undefined
+      ? undefined
+      : {
+          action: IdentityRoute.SignIn,
+          signature: request.device,
+          bound: [request.email],
+        };
   }
 
   private static refOf(user: UserSnapshot): UserRef {

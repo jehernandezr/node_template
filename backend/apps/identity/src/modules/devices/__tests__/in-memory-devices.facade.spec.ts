@@ -1,5 +1,12 @@
-import { ClientPlatform, type DeviceApproval } from '@contracts/identity';
+import {
+  ClientPlatform,
+  IdentityRoute,
+  type DeviceApproval,
+} from '@contracts/identity';
+import { DeviceKey } from '../../../__tests__/utils/device-key.js';
 import { InMemoryDevicesFacade } from './utils/index.js';
+
+const EMAIL = 'ana@example.com';
 
 const ANA = {
   userId: '018f0000-0000-7000-8000-000000000001',
@@ -24,37 +31,51 @@ describe('InMemoryDevicesFacade', () => {
     ).resolves.toBe(`dv1_${ANA.userId}_${ANA.homeTenantId}_d-1`);
   });
 
-  it('recognizes the device id of a user with a device', async () => {
+  it('recognizes a sign-in signed by the key of a device of the user', async () => {
     const facade = new InMemoryDevicesFacade();
+    const key = new DeviceKey();
     const device = await facade.register(ANA, {
-      publicKey: 'clave',
+      publicKey: key.publicKey,
       platform: ClientPlatform.Ios,
       ip: '203.0.113.5',
     });
+    const deviceId = await facade.issueDeviceId(ANA, device.id);
 
     await expect(
-      facade.recognize(ANA, await facade.issueDeviceId(ANA, device.id)),
-    ).resolves.toEqual({
-      recognized: true,
-      device,
-    });
+      facade.recognize(ANA, {
+        action: IdentityRoute.SignIn,
+        signature: key.signed(IdentityRoute.SignIn, deviceId, [EMAIL]),
+        bound: [EMAIL],
+      }),
+    ).resolves.toEqual({ recognized: true, device });
   });
 
-  it('does not recognize a wrong token or a user without devices', async () => {
+  it('does not recognize the public device id signed by another key', async () => {
     const facade = new InMemoryDevicesFacade();
-    await facade.register(ANA, {
-      publicKey: 'clave',
+    const device = await facade.register(ANA, {
+      publicKey: new DeviceKey().publicKey,
       platform: ClientPlatform.Web,
       ip: '203.0.113.5',
     });
+    const deviceId = await facade.issueDeviceId(ANA, device.id);
 
-    await expect(facade.recognize(ANA, 'dv1_otro')).resolves.toEqual({
+    await expect(
+      facade.recognize(ANA, {
+        action: IdentityRoute.SignIn,
+        signature: new DeviceKey().signed(IdentityRoute.SignIn, deviceId, [
+          EMAIL,
+        ]),
+        bound: [EMAIL],
+      }),
+    ).resolves.toEqual({ recognized: false });
+  });
+
+  it('does not recognize a sign-in without a device proof', async () => {
+    const facade = new InMemoryDevicesFacade();
+
+    await expect(facade.recognize(ANA)).resolves.toEqual({
       recognized: false,
     });
-    await expect(
-      facade.recognize(OTHER, `dv1_${OTHER.userId}`),
-    ).resolves.toEqual({ recognized: false });
-    await expect(facade.recognize(ANA)).resolves.toEqual({ recognized: false });
   });
 
   it('registers the first device as verifier and names it after the platform by default', async () => {
