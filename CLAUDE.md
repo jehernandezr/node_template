@@ -2,6 +2,13 @@
 
 Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) antes de tocar la arquitectura.
 
+## Método de trabajo: pstack
+
+- Todo trabajo de código usa el plugin pstack: el método sale de pstack y las reglas, de `.claude/skills`. Cuando no coinciden, manda el repositorio.
+- Antes de empezar, lee la skill `pstack-en-node-template`. Explica cómo cargar las skills de pstack en Claude Code: con `Read` de su `SKILL.md`, porque la herramienta `Skill` las rechaza.
+- El orden es el playbook de `poteto-mode`, `architect`, unidades con `tdd` y su commit, verificación con `principle-prove-it-works`, revisión con `interrogate`, `no-comments` y `blast-radius`, y `unslop` en docs, commits y PR.
+- Para trabajo en paralelo usa `swarm`, y para comparar enfoques, `arena`. En la Raspberry Pi corre solo un comando pesado a la vez.
+
 ## Estructura
 
 - La raíz solo tiene `backend/`, `front/` (pub workspace de Flutter), Nx como orquestador y herramientas del repositorio (CI/CD, hooks, docs). Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
@@ -10,13 +17,12 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 ## Comandos
 
 - Nx corre desde la raíz y cubre backend y front. Prepara con `pnpm install` en la raíz y `flutter pub get` en `front/`. Ejemplos: `pnpm nx affected -t lint test typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
-- Crea librerías del backend siguiendo la skill `backend-estructura` (proyecto de Nx sin `package.json`). Los generadores de servicios y módulos llegan en la fase F11; mientras tanto, un servicio nuevo sigue la estructura del [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+- Un servicio nuevo sale de `pnpm nx run generators:service -- --name=<n>` y un módulo de `pnpm nx run generators:module -- --service=<n> --name=<m>` ([ADR 0033](docs/adr/0033-generadores-y-openapi.md)); un microfrontend, de `front/tools/new_microfrontend.dart` (skill `front-nuevo-microfrontend`). Las librerías del backend siguen la skill `backend-estructura` (proyecto de Nx sin `package.json`).
 - Las configuraciones de Jest son `jest.config.cjs`.
 
 ## Código
 
 - El código se explica solo: sin comentarios en línea. Cada método público lleva su JSDoc (o `///` en Dart) completo y conciso. Ver `backend-codigo-enterprise` y `front-analisis`.
-- El método de trabajo es el de pstack y las reglas son las de `.claude/skills`. Para trabajo de código, sigue "Cómo se trabaja" de `pstack-en-node-template`: playbook de `poteto-mode`, `architect`, `tdd`, verificación, `interrogate` y `no-comments`.
 - Antes de escribir, revisar o integrar código, carga las skills de `.claude/skills`. Se cargan solas según la carpeta que toques (`paths`); la puerta de entrada es `backend-codigo-enterprise` en el backend y `front-codigo` en el front, y cada una enlaza a las demás.
 - Clases, composición e inyección de dependencias por constructor. Las únicas funciones exportadas son utilidades puras sin estado y las de la lista declarada en `check-structure.mjs` (fábricas `define*` de contracts, esquemas de `env.ts` y `secret()`, `main()` de las herramientas). Nada de módulos de funciones sueltas tipo script.
 - Persistencia con TypeORM ([ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)): entidades y migraciones generadas y aplicadas con su CLI. `synchronize` siempre apagado.
