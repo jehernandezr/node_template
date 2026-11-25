@@ -10,7 +10,7 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 ## Comandos
 
 - Nx corre desde la raíz y cubre backend y front. Prepara con `pnpm install` en la raíz y `flutter pub get` en `front/`. Ejemplos: `pnpm nx affected -t lint test typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
-- Crea librerías del backend siguiendo la skill `backend-estructura` (proyecto de Nx sin `package.json`). Los generadores de servicios y módulos llegan en la fase F11; mientras tanto, un servicio nuevo sigue la estructura del [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+- Un servicio nuevo sale de `pnpm nx run generators:service -- --name=<n>` y un módulo de `pnpm nx run generators:module -- --service=<n> --name=<m>` ([ADR 0033](docs/adr/0033-generadores-y-openapi.md)); un microfrontend, de `front/tools/new_microfrontend.dart` (skill `front-nuevo-microfrontend`). Las librerías del backend siguen la skill `backend-estructura` (proyecto de Nx sin `package.json`).
 - Las configuraciones de Jest son `jest.config.cjs`.
 
 ## Código
