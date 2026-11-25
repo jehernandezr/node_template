@@ -67,7 +67,7 @@ class ValidSaga extends SagaDefinition<State> {
 describe('SagaDefinition.build', () => {
   const resolver = new OperationResolver();
 
-  it('compila la saga con su tipo, el pivote y las compensaciones', () => {
+  it('compiles the saga with its type, the pivot and the compensations', () => {
     const compiled = new ValidSaga().build(resolver);
 
     expect(compiled.type).toBe('valid');
@@ -85,7 +85,7 @@ describe('SagaDefinition.build', () => {
     expect(compiled.steps[2]?.afterPivot).toBe(true);
   });
 
-  it('calcula la entrada de compensación con la que el paso declara', () => {
+  it('computes the compensation input the step declares', () => {
     const compiled = new ValidSaga().build(resolver);
 
     expect(
@@ -101,7 +101,7 @@ describe('SagaDefinition.build', () => {
     ).toEqual({ id: 'a-1' });
   });
 
-  it('construye una compilación nueva en cada llamada', () => {
+  it('builds a new compilation on each call', () => {
     const first = new ValidSaga().build(resolver);
     const second = new ValidSaga().build(resolver);
 
@@ -109,7 +109,7 @@ describe('SagaDefinition.build', () => {
     expect(second).not.toBe(first);
   });
 
-  it('rechaza una saga sin pasos con InvalidDefinition', () => {
+  it('rejects a saga with no steps with InvalidDefinition', () => {
     class Empty extends SagaDefinition<State> {
       readonly type = 'empty';
 
@@ -124,7 +124,7 @@ describe('SagaDefinition.build', () => {
     );
   });
 
-  it('rechaza un paso anterior al pivote sin compensación con MissingCompensation', () => {
+  it('rejects a step before the pivot without compensation with MissingCompensation', () => {
     const UNDOABLE = defineOperation({
       id: 'a.item.create-final.v1',
       input: z.unknown(),

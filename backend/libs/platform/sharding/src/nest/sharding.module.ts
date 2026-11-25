@@ -73,7 +73,7 @@ export class ShardingModule
     if (extras.directory === undefined) {
       throw new ShardingError(
         ShardingErrorCode.InvalidConfiguration,
-        'ShardingModule necesita el tipo del directorio en `directory`',
+        'ShardingModule needs the directory type in `directory`',
         { details: { option: 'directory' } },
       );
     }

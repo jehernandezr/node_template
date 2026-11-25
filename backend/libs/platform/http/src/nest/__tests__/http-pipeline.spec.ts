@@ -55,11 +55,11 @@ describe('HTTP pipeline', () => {
   describe('contract input and output', () => {
     it('creates an item from a valid body with 201', async () => {
       const response = await app.client.post('/v1/items', {
-        body: { name: 'Lapiz' },
+        body: { name: 'Pencil' },
       });
 
       expect(response.status).toBe(201);
-      expect(response.body).toEqual({ id: expect.any(String), name: 'Lapiz' });
+      expect(response.body).toEqual({ id: expect.any(String), name: 'Pencil' });
     });
 
     it('rejects an invalid body with the field errors', async () => {
@@ -311,7 +311,7 @@ describe('HTTP pipeline', () => {
     it('answers 415 for a body that is not JSON', async () => {
       const response = await app.client.post('/v1/items', {
         headers: { 'content-type': 'text/plain' },
-        rawBody: 'hola',
+        rawBody: 'hello',
       });
 
       expect(response.status).toBe(415);
@@ -541,13 +541,13 @@ describe('HTTP pipeline startup', () => {
     method: HttpMethod.Get,
     path: '/v1/missing',
     access: Access.public(),
-    description: 'Ruta sin handler.',
+    description: 'Route without a handler.',
   });
 
   it('refuses to start when a contract route has no handler', async () => {
     const contract = defineServiceContract({
       service: 'demo',
-      description: 'Contrato con una ruta sin handler.',
+      description: 'Contract with a route that has no handler.',
       routes: { ...demoContract.routes, missing: extraRoute },
       errors: demoContract.errors,
       enums: demoContract.enums,
@@ -587,11 +587,11 @@ describe('HTTP pipeline startup', () => {
       path: '/v1/uncovered',
       errors: ['DEMO.OTHER.CODE'],
       access: Access.public(),
-      description: 'Ruta con un código sin catálogo.',
+      description: 'Route with a code missing from the catalog.',
     });
     const contract = defineServiceContract({
       service: 'demo',
-      description: 'Contrato con un código sin catálogo.',
+      description: 'Contract with a code missing from the catalog.',
       routes: { uncovered },
     });
     @Resource(DemoResource.Errors)

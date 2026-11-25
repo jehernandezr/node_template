@@ -51,7 +51,7 @@ export class PlatformEnvironment {
       case PlatformService.Notifications:
         return {
           ...shared,
-          NOTIFICATIONS_FROM_ADDRESS: 'avisos@example.com',
+          NOTIFICATIONS_FROM_ADDRESS: 'alerts@example.com',
           NOTIFICATIONS_EMAIL_PEPPER: randomBytes(32).toString('base64url'),
         };
       case PlatformService.Billing:

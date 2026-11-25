@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-# Despliega un servicio por etapas. Sin etapas corre publish, migrate, plan y apply, en ese orden:
-# el artefacto sale antes porque el apply necesita TF_VAR_image o TF_VAR_lambda_package.
-# Uso: deploy-service.sh <ambiente> <servicio> [publish|migrate|plan|apply]...
-# plan y apply cargan .artifacts/<servicio>.env (lo escribe publish). En DRY_RUN no se exige el
-# archivo: se registra "+ source .artifacts/<servicio>.env".
-# Variables: las de publish-service.sh, DRY_RUN=1 para imprimir todo sin ejecutar.
-# Código de salida 2 para una etapa desconocida.
+# Deploys a service by stages. Without stages it runs publish, migrate, plan and apply, in that order:
+# the artifact goes out first because apply needs TF_VAR_image or TF_VAR_lambda_package.
+# Usage: deploy-service.sh <environment> <service> [publish|migrate|plan|apply]...
+# plan and apply load .artifacts/<service>.env (publish writes it). In DRY_RUN the file is not
+# required: "+ source .artifacts/<service>.env" is logged.
+# Variables: those of publish-service.sh, DRY_RUN=1 to print everything without running it.
+# Exit code 2 for an unknown stage.
 set -euo pipefail
 
 # shellcheck source=pipeline-common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pipeline-common.sh"
 
-ENVIRONMENT="${1:?uso: deploy-service.sh <ambiente> <servicio> [etapa...]}"
-SERVICE="${2:?uso: deploy-service.sh <ambiente> <servicio> [etapa...]}"
+ENVIRONMENT="${1:?usage: deploy-service.sh <environment> <service> [stage...]}"
+SERVICE="${2:?usage: deploy-service.sh <environment> <service> [stage...]}"
 shift 2
-require_identifier "ambiente" "$ENVIRONMENT"
-require_identifier "servicio" "$SERVICE"
+require_identifier "environment" "$ENVIRONMENT"
+require_identifier "service" "$SERVICE"
 export DRY_RUN="${DRY_RUN:-0}"
 
 usage() {
-  log "uso: deploy-service.sh <ambiente> <servicio> [publish|migrate|plan|apply]..."
+  log "usage: deploy-service.sh <environment> <service> [publish|migrate|plan|apply]..."
 }
 
 if [[ $# -eq 0 ]]; then
@@ -29,7 +29,7 @@ for stage in "$@"; do
   case "$stage" in
     publish | migrate | plan | apply) ;;
     *)
-      log "Etapa desconocida: $stage"
+      log "Unknown stage: $stage"
       usage
       exit 2
       ;;
@@ -50,7 +50,7 @@ load_artifacts() {
     return 0
   fi
   if [[ ! -f "$env_file" ]]; then
-    log "No existe $env_file: corre antes la etapa publish de $SERVICE en $ENVIRONMENT"
+    log "$env_file does not exist: run the publish stage of $SERVICE in $ENVIRONMENT first"
     exit 1
   fi
   set -a

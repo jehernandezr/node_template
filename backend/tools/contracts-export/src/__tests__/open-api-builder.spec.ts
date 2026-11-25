@@ -32,7 +32,7 @@ const contract: JsonObject = {
       successStatus: 200,
       errors: ['PLATFORM.VALIDATION.INVALID_INPUT'],
       access: { kind: 'authenticated', permissions: ['tasks:read'] },
-      description: 'Lista.',
+      description: 'Lists.',
     },
     {
       id: 'tasks.task.delete',
@@ -46,7 +46,7 @@ const contract: JsonObject = {
       successStatus: 204,
       errors: ['TASKS.TASK.NOT_FOUND'],
       access: { kind: 'public' },
-      description: 'Borra.',
+      description: 'Deletes.',
     },
   ],
 };

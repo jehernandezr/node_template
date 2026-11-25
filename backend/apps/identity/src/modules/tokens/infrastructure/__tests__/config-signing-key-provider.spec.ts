@@ -54,6 +54,6 @@ describe('ConfigSigningKeyProvider', () => {
     );
 
     await expect(source.keyFor('k-1')).resolves.toBeDefined();
-    await expect(source.keyFor('otra')).resolves.toBeUndefined();
+    await expect(source.keyFor('other')).resolves.toBeUndefined();
   });
 });

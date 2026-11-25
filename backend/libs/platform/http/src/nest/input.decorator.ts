@@ -25,7 +25,7 @@ export class RawEndpointInputFactory {
       EndpointMetadata | undefined
     >(HttpMetadataKey.Endpoint, context.getHandler());
     if (metadata === undefined) {
-      throw new Error('@Input() solo se usa en un método con @Endpoint');
+      throw new Error('@Input() is only used on a method with @Endpoint');
     }
     return {
       route: metadata.route,

@@ -103,7 +103,7 @@ describe('InternalApiController', () => {
 
   it('rejects a body that is a text with a bad request', async () => {
     const { controller, signedHeaders } = setup();
-    const body = 'texto';
+    const body = 'text';
 
     await expect(
       controller.handle(OPERATION_ID, body, await signedHeaders(body)),

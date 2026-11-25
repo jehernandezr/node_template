@@ -15,18 +15,18 @@ class ListedDevices extends DeviceRepository {
     return Promise.resolve(this.devices.filter((device) => device.isActive()));
   }
   insert(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   find(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   update(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
 }
 
 /** Test push target, built so it does not look like a credential. */
-const destination = (name: string): string => ['destino', name].join('-');
+const destination = (name: string): string => ['destination', name].join('-');
 
 describe('ListPushTargets', () => {
   const ids = new SequentialIdGenerator();
@@ -39,9 +39,9 @@ describe('ListPushTargets', () => {
     Device.register({
       id: ids.next().toString(),
       userId: ref.userId,
-      name: 'Teléfono',
+      name: 'Phone',
       platform: ClientPlatform.Ios,
-      publicKey: ['clave', 'publica'].join('-'),
+      publicKey: ['key', 'public'].join('-'),
       firstSeenAt: now,
       lastSeenAt: now,
       lastIp: '198.51.100.7',
@@ -59,10 +59,10 @@ describe('ListPushTargets', () => {
     const phone = device({ pushToken: destination('ios') });
     const laptop = device({ platform: ClientPlatform.Web });
     const lapsed = device({
-      pushToken: destination('vencido'),
+      pushToken: destination('expired'),
       trustedUntil: new Date(now.getTime() - 1),
     });
-    const removed = device({ pushToken: destination('quitado') });
+    const removed = device({ pushToken: destination('removed') });
     removed.remove(now);
 
     const result = await useCase([phone, laptop, lapsed, removed]).execute(ref);

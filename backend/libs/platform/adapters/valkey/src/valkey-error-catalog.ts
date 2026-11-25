@@ -6,11 +6,11 @@ export const valkeyErrorCatalog = defineErrorCatalog(ValkeyErrorCode, {
   [ValkeyErrorCode.CommandFailed]: ErrorSpecs.internal(
     503,
     true,
-    'Falló un comando de Valkey.',
+    'A Valkey command failed.',
   ),
   [ValkeyErrorCode.UnexpectedReply]: ErrorSpecs.internal(
     500,
     false,
-    'Valkey respondió con una forma inesperada.',
+    'Valkey replied with an unexpected shape.',
   ),
 });

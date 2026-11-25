@@ -29,7 +29,7 @@ export class CronExpression {
     if (fields.length !== 5 && fields.length !== 6) {
       throw new InvalidCronExpressionError(
         expression,
-        'se esperaban 5 o 6 campos',
+        'expected 5 or 6 fields',
       );
     }
     // Without seconds, the expression fires at the start of the minute.
@@ -39,12 +39,12 @@ export class CronExpression {
       CronField.parse(text, min, max, name, expression);
     return new CronExpression(
       expression,
-      field(secondsText, 0, 59, 'segundos'),
-      field(rest[0], 0, 59, 'minutos'),
-      field(rest[1], 0, 23, 'hora'),
-      field(rest[2], 1, 31, 'día del mes'),
-      field(rest[3], 1, 12, 'mes'),
-      field(rest[4], 0, 7, 'día de la semana'),
+      field(secondsText, 0, 59, 'seconds'),
+      field(rest[0], 0, 59, 'minutes'),
+      field(rest[1], 0, 23, 'hour'),
+      field(rest[2], 1, 31, 'day of month'),
+      field(rest[3], 1, 12, 'month'),
+      field(rest[4], 0, 7, 'day of week'),
     );
   }
 
@@ -72,10 +72,7 @@ export class CronExpression {
       }
       candidate = next;
     }
-    throw new InvalidCronExpressionError(
-      this.source,
-      'no tiene ninguna fecha futura',
-    );
+    throw new InvalidCronExpressionError(this.source, 'has no future date');
   }
 
   /** `undefined` if `at` matches; otherwise, the next instant that can match. */

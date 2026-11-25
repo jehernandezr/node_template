@@ -29,7 +29,7 @@ const getItem = defineRoute({
   path: '/v1/items/{itemId}',
   request: Item,
   access: Access.public(),
-  description: 'Lee un ítem.',
+  description: 'Reads an item.',
 });
 
 const fetchItem = defineRoute({
@@ -38,31 +38,31 @@ const fetchItem = defineRoute({
   path: '/v1/items/{itemId}',
   request: Item,
   access: Access.public(),
-  description: 'Lee un ítem otra vez.',
+  description: 'Reads an item again.',
 });
 
 const created = defineEvent({
   type: 'demo.item.created.v1',
   payload: Item,
-  description: 'Se creó un ítem.',
+  description: 'An item was created.',
 });
 
 const generate = defineCommand({
   type: 'demo.report.generate.v1',
   payload: Item,
-  description: 'Genera un reporte.',
+  description: 'Generates a report.',
 });
 
 const topic = defineTopic({
   name: 'demo-events',
   events: [created],
-  description: 'Eventos del servicio.',
+  description: 'Service events.',
 });
 
 const queue = defineQueue({
   name: 'demo-commands',
   commands: [generate],
-  description: 'Comandos del servicio.',
+  description: 'Service commands.',
 });
 
 const errorCatalog = defineErrorCatalog(DemoError, {
@@ -70,7 +70,7 @@ const errorCatalog = defineErrorCatalog(DemoError, {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'Bloqueado.',
+    description: 'Blocked.',
   },
 });
 
@@ -79,7 +79,7 @@ const otherCatalog = defineErrorCatalog(OtherError, {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'Bloqueado.',
+    description: 'Blocked.',
   },
 });
 
@@ -123,7 +123,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
           path: '/v1/items/{itemId}',
           request: Item,
           access: Access.public(),
-          description: 'Lee un ítem.',
+          description: 'Reads an item.',
         }),
       },
     },
@@ -145,7 +145,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
           output: Item,
           idempotent: true,
           mutating: false,
-          description: 'Lee.',
+          description: 'Reads.',
         }),
         fetch: defineOperation({
           id: 'demo.items.get.v1',
@@ -153,7 +153,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
           output: Item,
           idempotent: true,
           mutating: false,
-          description: 'Lee.',
+          description: 'Reads.',
         }),
       },
     },
@@ -170,7 +170,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
           path: '/v1/legacy/{itemId}',
           request: Item,
           access: Access.public(),
-          description: 'Ruta vieja.',
+          description: 'Old route.',
           deprecated: {
             since: '2026-11-01',
             sunset: '2027-05-01',
@@ -192,7 +192,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
           output: Item,
           idempotent: true,
           compensatedBy: 'demo.items.remove.v1',
-          description: 'Crea.',
+          description: 'Creates.',
         }),
       },
     },
@@ -209,7 +209,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
           output: Item,
           idempotent: true,
           compensatedBy: 'demo.items.remove.v1',
-          description: 'Crea.',
+          description: 'Creates.',
         }),
         remove: defineOperation({
           id: 'demo.items.remove.v1',
@@ -217,7 +217,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
           output: Item,
           idempotent: true,
           mutating: false,
-          description: 'Borra.',
+          description: 'Deletes.',
         }),
       },
     },
@@ -234,7 +234,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
           output: Item,
           idempotent: true,
           compensatedBy: 'demo.items.remove.v1',
-          description: 'Crea.',
+          description: 'Creates.',
         }),
         remove: defineOperation({
           id: 'demo.items.remove.v1',
@@ -242,8 +242,8 @@ const invalidContracts: [string, ServiceContract, string][] = [
           output: Item,
           idempotent: false,
           compensatedBy: Compensation.None,
-          compensationReason: 'Es la reversa.',
-          description: 'Borra.',
+          compensationReason: 'It is the reverse.',
+          description: 'Deletes.',
         }),
       },
     },
@@ -265,7 +265,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
         more: defineTopic({
           name: 'demo-more',
           events: [created],
-          description: 'Más eventos.',
+          description: 'More events.',
         }),
       },
     },

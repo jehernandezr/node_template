@@ -21,7 +21,7 @@ describe('QueryParamsCodec', () => {
         name: z.string().optional(),
       }),
       access: Access.public(),
-      description: 'Busca.',
+      description: 'Searches.',
     });
 
     it('converts the query text to the contract types', () => {

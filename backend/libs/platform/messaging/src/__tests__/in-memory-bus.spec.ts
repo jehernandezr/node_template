@@ -16,25 +16,25 @@ import { InMemoryProcessedMessageStore } from './utils/in-memory-processed-messa
 const TaskCreated = defineEvent({
   type: 'tasks.task.created.v1',
   payload: z.object({ id: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
   payload: z.object({ id: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const GenerateReport = defineCommand({
   type: 'reports.report.generate.v1',
   payload: z.object({ reportId: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const Blob = defineCommand({
   type: 'blobs.blob.store.v1',
   payload: z.object({ body: z.string() }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const tasksEvents = new TopicDef('tasks-events');
@@ -136,7 +136,7 @@ describe('InMemoryBus', () => {
     const Unrouted = defineEvent({
       type: 'nobody.listens.here.v1',
       payload: z.object({ x: z.number() }),
-      description: 'Mensaje de prueba.',
+      description: 'Test message.',
     });
     await expect(bus.publish(Unrouted, { x: 1 })).rejects.toMatchObject({
       code: MessagingErrorCode.UnknownRoute,

@@ -74,8 +74,8 @@ function setup(store?: InMemorySagaStore) {
 }
 
 describe('SagaEngine', () => {
-  describe('camino feliz y compensación', () => {
-    it('ejecuta cada paso en orden, completa y normaliza las salidas', async () => {
+  describe('happy path and compensation', () => {
+    it('runs each step in order, completes and normalizes the outputs', async () => {
       const { kit, participant, events, store } = setup();
 
       const result = await kit.sagas.start(ThreeStepSaga, {}, { sagaId: 's1' });
@@ -102,7 +102,7 @@ describe('SagaEngine', () => {
       expect(events).toEqual([SagaEventKind.Completed]);
     });
 
-    it('compensa los pasos completados en orden inverso tras un error de negocio', async () => {
+    it('compensates the completed steps in reverse order after a business error', async () => {
       const { kit, participant, events } = setup();
       participant.script('c.create.v1', CallOutcome.businessError('SOLD_OUT'));
 
@@ -115,7 +115,7 @@ describe('SagaEngine', () => {
       expect(events).toEqual([SagaEventKind.Compensated]);
     });
 
-    it('pasa a CompensationFailed cuando una compensación devuelve un error de negocio', async () => {
+    it('moves to CompensationFailed when a compensation returns a business error', async () => {
       const { kit, participant } = setup();
       participant.script('c.create.v1', CallOutcome.businessError('SOLD_OUT'));
       participant.script('b.remove.v1', CallOutcome.businessError('LOCKED'));
@@ -128,7 +128,7 @@ describe('SagaEngine', () => {
       expect(participant.liveResources).toBe(2);
     });
 
-    it('se suspende ante un fallo transitorio de compensación y termina al reintentar', async () => {
+    it('suspends on a transient compensation failure and finishes on retry', async () => {
       const { kit, participant } = setup();
       participant.script('c.create.v1', CallOutcome.businessError('SOLD_OUT'));
       participant.script(
@@ -157,8 +157,8 @@ describe('SagaEngine', () => {
     });
   });
 
-  describe('caída y recuperación', () => {
-    it('reenvía un paso despachado con la misma llave tras una caída y produce un solo efecto', async () => {
+  describe('crash and recovery', () => {
+    it('resends a dispatched step with the same key after a crash and produces a single effect', async () => {
       const store = new CrashingSagaStore();
       const { kit, participant } = setup(store);
       store.crashAfterDispatch(1);
@@ -176,7 +176,7 @@ describe('SagaEngine', () => {
       expect(participant.effects.get('b.create.v1')).toBe(1);
     });
 
-    it('repite una llamada cuyo efecto ocurrió antes de la caída y devuelve el resultado guardado', async () => {
+    it('repeats a call whose effect happened before the crash and returns the stored result', async () => {
       const store = new CrashingSagaStore();
       const { kit, participant } = setup(store);
       store.crashBeforeOutcome(1);
@@ -199,7 +199,7 @@ describe('SagaEngine', () => {
       );
     });
 
-    it('no reanuda una saga cuyo lease tiene otra corrida hasta que el lease vence', async () => {
+    it('does not resume a saga whose lease is held by another run until the lease expires', async () => {
       const store = new CrashingSagaStore();
       const { kit } = setup(store);
       store.crashAfterDispatch();
@@ -219,7 +219,7 @@ describe('SagaEngine', () => {
       );
     });
 
-    it('deja que solo una de dos reanudaciones concurrentes ejecute el paso', async () => {
+    it('lets only one of two concurrent resumptions run the step', async () => {
       const store = new CrashingSagaStore();
       const { kit, participant } = setup(store);
       store.crashAfterDispatch(1);
@@ -247,7 +247,7 @@ describe('SagaEngine', () => {
       expect(participant.effects.get('b.create.v1')).toBe(1);
     });
 
-    it('rechaza la escritura de una corrida vieja que perdió el lease y deja el registro a la nueva', async () => {
+    it('rejects the write of a stale run that lost the lease and leaves the record to the new one', async () => {
       const store = new InMemorySagaStore();
       const holder: { kit?: SagaEngineKit } = {};
       const stale = new StaleRunInvoker(async () => {
@@ -275,7 +275,7 @@ describe('SagaEngine', () => {
     });
   });
 
-  describe('aceptación: una caída a mitad de la compensación no cambia el resultado', () => {
+  describe('acceptance: a crash halfway through compensation does not change the result', () => {
     /** Runs the three-step saga that fails on the third, with or without a crash in the compensation. */
     async function runFailingSaga(crash: boolean) {
       const store = crash ? new CrashOnCompensation() : new CrashingSagaStore();
@@ -310,7 +310,7 @@ describe('SagaEngine', () => {
       };
     }
 
-    it('compensa los dos primeros con la entrada y la salida guardadas, con las mismas llaves', async () => {
+    it('compensates the first two with the stored input and output, with the same keys', async () => {
       const control = await runFailingSaga(false);
       const crashed = await runFailingSaga(true);
 

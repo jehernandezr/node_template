@@ -33,7 +33,7 @@ export class SignedInternalHttp {
     const missing = this.callees.filter((callee) => !(callee in baseUrls));
     if (missing.length > 0) {
       throw new Error(
-        `INTERNAL_API_BASE_URLS no tiene la URL de ${missing.join(', ')}`,
+        `INTERNAL_API_BASE_URLS does not have the URL of ${missing.join(', ')}`,
       );
     }
     if (values.INTERNAL_API_SIGNER === InternalApiSignerKind.Hmac) {
@@ -41,7 +41,7 @@ export class SignedInternalHttp {
     }
     if (context.aws === undefined) {
       throw new Error(
-        'INTERNAL_API_SIGNER=sigv4 necesita el adaptador de AWS para firmar con el rol del servicio',
+        'INTERNAL_API_SIGNER=sigv4 needs the AWS adapter to sign with the service role',
       );
     }
     return {

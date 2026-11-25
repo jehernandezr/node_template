@@ -30,7 +30,7 @@ void main() {
     await repoFirst.applySagaAction(
       sagaId: 's-102',
       action: SagaManualAction.markResolved,
-      reason: 'Resuelto por soporte',
+      reason: 'Resolved by support',
     );
 
     expect((await repoFirst.saga('s-102'))?.status, SagaStatus.completed);

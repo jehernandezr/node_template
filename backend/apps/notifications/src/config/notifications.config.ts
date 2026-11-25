@@ -43,14 +43,14 @@ export const notificationsConfigSchema = serviceConfigSchema
         code: 'custom',
         path: ['NOTIFICATIONS_EMAIL_SENDER'],
         message:
-          'smtp solo se permite en desarrollo y en pruebas: no autentica ni cifra',
+          'smtp is only allowed in development and tests: it neither authenticates nor encrypts',
       });
     }
     if (config.SMTP_URL === undefined) {
       ctx.addIssue({
         code: 'custom',
         path: ['SMTP_URL'],
-        message: 'NOTIFICATIONS_EMAIL_SENDER=smtp necesita SMTP_URL',
+        message: 'NOTIFICATIONS_EMAIL_SENDER=smtp requires SMTP_URL',
       });
     }
   });

@@ -6,51 +6,51 @@ export const tenantMoveErrorCatalog = defineErrorCatalog(TenantMoveErrorCode, {
   [TenantMoveErrorCode.UnknownTarget]: ErrorSpecs.internal(
     400,
     false,
-    'El grupo de destino no está configurado o su shard no está en el directorio.',
+    'The target group is not configured or its shard is not in the directory.',
   ),
   [TenantMoveErrorCode.NotMovable]: ErrorSpecs.internal(
     409,
     false,
-    'El tenant reparte sus datos en varios shards o ya vive en el destino.',
+    'The tenant spreads its data across several shards or already lives in the target.',
   ),
   [TenantMoveErrorCode.RoundPending]: ErrorSpecs.internal(
     503,
     true,
-    'La ronda de copia sigue en curso; la saga repite la llamada.',
+    'The copy round is still in progress; the saga repeats the call.',
   ),
   [TenantMoveErrorCode.VerificationFailed]: ErrorSpecs.internal(
     409,
     false,
-    'El destino no quedó igual al origen con el tenant congelado.',
+    'The target did not end up equal to the source with the tenant frozen.',
   ),
   [TenantMoveErrorCode.TenantBusy]: ErrorSpecs.internal(
     409,
     false,
-    'El tenant tiene sagas a medias en el origen; el traslado se cancela y se lanza de nuevo cuando terminen.',
+    'The tenant has unfinished sagas in the source; the move is cancelled and launched again when they finish.',
   ),
   [TenantMoveErrorCode.NotSwitched]: ErrorSpecs.internal(
     409,
     false,
-    'El servicio todavía enruta al tenant al shard de origen: la limpieza no borra datos vivos.',
+    'The service still routes the tenant to the source shard: cleanup does not delete live data.',
   ),
   [TenantMoveErrorCode.MoveInProgress]: ErrorSpecs.internal(
     409,
     false,
-    'Otro traslado del tenant todavía no pivota: la limpieza espera a que termine para no borrar su copia.',
+    'Another move of the tenant has not pivoted yet: cleanup waits for it to finish so it does not delete its copy.',
   ),
   [TenantMoveErrorCode.TenantHasData]: ErrorSpecs.internal(
     409,
     false,
-    'El tenant ya tiene datos en el servicio: no se retira del directorio.',
+    'The tenant already has data in the service: it is not removed from the directory.',
   ),
   [TenantMoveErrorCode.ShardTaken]: ErrorSpecs.internal(
     409,
     false,
-    'El grupo de shards del tenant choca en el directorio del servicio con un tenant dedicado.',
+    'The tenant shard group collides in the service directory with a dedicated tenant.',
   ),
   [TenantMoveErrorCode.InvalidManifest]: ErrorSpecs.internal(
     500,
     false,
-    'El manifiesto de traslado del servicio no es válido.',
+    'The service move manifest is not valid.',
   ),
 });

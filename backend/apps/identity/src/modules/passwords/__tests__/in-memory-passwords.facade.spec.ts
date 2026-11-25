@@ -8,27 +8,25 @@ const ANA = {
 describe('InMemoryPasswordsFacade', () => {
   it('verifies the password stored for the user', async () => {
     const facade = new InMemoryPasswordsFacade();
-    await facade.setInitial(ANA, 'contraseña-larga-123');
+    await facade.setInitial(ANA, 'long-password-123');
 
-    await expect(facade.verify(ANA, 'contraseña-larga-123')).resolves.toBe(
-      true,
-    );
-    await expect(facade.verify(ANA, 'otra-contraseña-456')).resolves.toBe(
+    await expect(facade.verify(ANA, 'long-password-123')).resolves.toBe(true);
+    await expect(facade.verify(ANA, 'another-password-456')).resolves.toBe(
       false,
     );
   });
 
   it('returns false for a user without a stored password', async () => {
     await expect(
-      new InMemoryPasswordsFacade().verify(ANA, 'contraseña-larga-123'),
+      new InMemoryPasswordsFacade().verify(ANA, 'long-password-123'),
     ).resolves.toBe(false);
   });
 
   it('counts the checks made without a user and answers false', async () => {
     const facade = new InMemoryPasswordsFacade();
 
-    await expect(facade.verify(undefined, 'cualquiera')).resolves.toBe(false);
-    await expect(facade.verify(undefined, 'otra')).resolves.toBe(false);
+    await expect(facade.verify(undefined, 'anything')).resolves.toBe(false);
+    await expect(facade.verify(undefined, 'other')).resolves.toBe(false);
 
     expect(facade.unknownUserChecks).toBe(2);
   });

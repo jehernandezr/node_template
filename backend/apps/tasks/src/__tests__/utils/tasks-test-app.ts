@@ -119,7 +119,7 @@ export class TasksTestApp {
 
   private service(): RunningService {
     if (this.running === undefined) {
-      throw new Error('TasksTestApp no está iniciada');
+      throw new Error('TasksTestApp is not started');
     }
     return this.running;
   }

@@ -35,7 +35,7 @@ describe('ServiceCatalog', () => {
     rmSync(workRoot, { recursive: true, force: true });
   });
 
-  it('descubre exactamente los tres servicios del fixture, ordenados', () => {
+  it('discovers exactly the three fixture services, sorted', () => {
     const services = catalog().discover('dev');
     assert.deepEqual(
       services.map((service) => service.name),
@@ -43,7 +43,7 @@ describe('ServiceCatalog', () => {
     );
   });
 
-  it('calcula runtime, imagen, paquete y partes de cada servicio', () => {
+  it('computes runtime, image, package and parts of each service', () => {
     const [fargate, lambda, mixed] = catalog().discover('dev');
     assert.deepEqual(fargate, {
       name: 'fixture-fargate',
@@ -70,13 +70,13 @@ describe('ServiceCatalog', () => {
     assert.equal(mixed.hasConsumers, true);
   });
 
-  it('ignora una carpeta sin backend.tfvars', () => {
+  it('ignores a folder without backend.tfvars', () => {
     const root = join(workRoot, 'partial');
     cpSync(ScriptRunner.fixtureTerraformRoot, root, { recursive: true });
     const services = join(root, 'environments', 'dev', 'services');
-    mkdirSync(join(services, 'fixture-sin-backend'));
+    mkdirSync(join(services, 'fixture-no-backend'));
     writeFileSync(
-      join(services, 'fixture-sin-backend', 'terraform.tfvars'),
+      join(services, 'fixture-no-backend', 'terraform.tfvars'),
       'region = "us-east-1"\n',
     );
     const names = new ServiceCatalog(root)
@@ -89,7 +89,7 @@ describe('ServiceCatalog', () => {
     ]);
   });
 
-  it('lanza si service_name no coincide con la carpeta', () => {
+  it('throws if service_name does not match the folder', () => {
     const root = join(workRoot, 'mismatch');
     cpSync(ScriptRunner.fixtureTerraformRoot, root, { recursive: true });
     const file = join(
@@ -102,37 +102,37 @@ describe('ServiceCatalog', () => {
     );
     writeFileSync(
       file,
-      readFileSync(file, 'utf8').replace('"fixture-lambda"', '"fixture-otro"'),
+      readFileSync(file, 'utf8').replace('"fixture-lambda"', '"fixture-other"'),
     );
     assert.throws(
       () => new ServiceCatalog(root).discover('dev'),
       new Error(
-        'service_name fixture-otro no coincide con la carpeta fixture-lambda',
+        'service_name fixture-other does not match the folder fixture-lambda',
       ),
     );
   });
 
-  it('lanza con un ambiente inexistente', () => {
+  it('throws with a nonexistent environment', () => {
     assert.throws(
       () => catalog().discover('nope'),
-      new Error('No existe el ambiente nope'),
+      new Error('Environment nope does not exist'),
     );
   });
 
-  it('devuelve [] si el ambiente no tiene servicios', () => {
+  it('returns [] if the environment has no services', () => {
     const root = join(workRoot, 'empty');
     mkdirSync(join(root, 'environments', 'dev'), { recursive: true });
     assert.deepEqual(new ServiceCatalog(root).discover('dev'), []);
   });
 
-  it('find lanza con un servicio inexistente', () => {
+  it('find throws with a nonexistent service', () => {
     assert.throws(
-      () => catalog().find('dev', 'fixture-nada'),
-      new Error('El servicio fixture-nada no está en dev'),
+      () => catalog().find('dev', 'fixture-none'),
+      new Error('Service fixture-none is not in dev'),
     );
   });
 
-  it('el CLI matrix imprime JSON válido con tres elementos', () => {
+  it('the matrix CLI prints valid JSON with three elements', () => {
     const result = spawnSync(process.execPath, [CLI, 'matrix', 'dev'], {
       encoding: 'utf8',
       env: {
@@ -145,20 +145,20 @@ describe('ServiceCatalog', () => {
     assert.equal(parsed.include.length, 3);
   });
 
-  it('el CLI sale con 1 y uso ante un comando inválido', () => {
+  it('the CLI exits with 1 and usage on an invalid command', () => {
     const result = spawnSync(process.execPath, [CLI], { encoding: 'utf8' });
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /Uso:/);
+    assert.match(result.stderr, /Usage:/);
   });
 
-  it('el código de catálogo no contiene nombres de servicios', () => {
+  it('the catalog code contains no service names', () => {
     for (const file of ['service-catalog.mjs', 'service-catalog-cli.mjs']) {
       const source = readFileSync(join(ScriptRunner.scriptsDir, file), 'utf8');
       for (const name of FORBIDDEN_NAMES) {
         assert.doesNotMatch(
           source,
           new RegExp(name),
-          `${file} contiene ${name}`,
+          `${file} contains ${name}`,
         );
       }
     }

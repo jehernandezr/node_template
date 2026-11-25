@@ -28,7 +28,7 @@ const events = new TopicDef('user-events');
 const UserRegistered = defineEvent({
   type: 'tests.user.registered.v1',
   payload: z.object({ userId: z.string().min(1) }),
-  description: 'Se registró un usuario.',
+  description: 'A user was registered.',
 });
 
 function setup() {

@@ -7,7 +7,7 @@ export class StaticAppConfig extends AppConfig {
   }
 
   get<T>(): T {
-    throw new Error('StaticAppConfig solo expone la raíz');
+    throw new Error('StaticAppConfig only exposes the root');
   }
 
   root<T = unknown>(): T {

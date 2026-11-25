@@ -13,7 +13,7 @@ describe('StepLog', () => {
     status: StepStatus.Dispatched,
   });
 
-  it('find localiza la entrada por paso y dirección', () => {
+  it('find locates the entry by step and direction', () => {
     const log = StepLog.of([forward0, forward1]);
 
     expect(log.find(1, StepDirection.Forward)).toEqual(forward1);
@@ -21,7 +21,7 @@ describe('StepLog', () => {
     expect(log.find(5, StepDirection.Forward)).toBeUndefined();
   });
 
-  it('with reemplaza la entrada existente del mismo paso y dirección', () => {
+  it('with replaces the existing entry of the same step and direction', () => {
     const log = StepLog.of([forward0, forward1]);
     const done = {
       ...forward1,
@@ -35,7 +35,7 @@ describe('StepLog', () => {
     expect(log.entries()).toEqual([forward0, forward1]);
   });
 
-  it('with agrega una entrada nueva al final', () => {
+  it('with appends a new entry at the end', () => {
     const log = StepLog.of([forward0]);
     const compensation = SagaInstanceBuilder.aStep(SAGA_ID, 0, {
       direction: StepDirection.Compensate,
@@ -44,7 +44,7 @@ describe('StepLog', () => {
     expect(log.with(compensation).entries()).toEqual([forward0, compensation]);
   });
 
-  it('forwardEntryOf expone solo la vista que reciben las compensaciones', () => {
+  it('forwardEntryOf exposes only the view that compensations receive', () => {
     expect(StepLog.forwardEntryOf(forward0)).toEqual({
       input: forward0.input,
       output: forward0.output,

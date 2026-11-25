@@ -22,7 +22,7 @@ describe('InMemoryUsersFacade', () => {
 
   it('returns undefined when no user has the email', async () => {
     await expect(
-      new InMemoryUsersFacade().findByEmail('nadie@example.com'),
+      new InMemoryUsersFacade().findByEmail('nobody@example.com'),
     ).resolves.toBeUndefined();
   });
 
@@ -48,7 +48,7 @@ describe('InMemoryUsersFacade', () => {
 
     const ref = await facade.register({
       email: ' Ana@Example.COM ',
-      password: 'contraseña-larga-123',
+      password: 'long-password-123',
       displayName: 'Ana',
       locale: 'es-MX',
       homeTenantId: TENANT,
@@ -70,8 +70,8 @@ describe('InMemoryUsersFacade', () => {
     await expect(
       facade.register({
         email: 'ANA@example.com',
-        password: 'contraseña-larga-123',
-        displayName: 'Otra',
+        password: 'long-password-123',
+        displayName: 'Another',
         locale: 'es-MX',
         homeTenantId: TENANT,
       }),

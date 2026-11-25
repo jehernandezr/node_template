@@ -6,21 +6,21 @@ export const primitivesErrorCatalog = defineErrorCatalog(PrimitivesErrorCode, {
   [PrimitivesErrorCode.InvalidArgument]: ErrorSpecs.internal(
     500,
     false,
-    'Argumento inválido en una primitiva de plataforma.',
+    'Invalid argument in a platform primitive.',
   ),
   [PrimitivesErrorCode.NonJsonValue]: ErrorSpecs.internal(
     500,
     false,
-    'Un valor no se puede serializar como JSON canónico.',
+    'A value cannot be serialized as canonical JSON.',
   ),
   [PrimitivesErrorCode.DeadlineExceeded]: ErrorSpecs.internal(
     504,
     false,
-    'Se agotó el plazo de la operación.',
+    'The operation deadline expired.',
   ),
   [PrimitivesErrorCode.StaleClaim]: ErrorSpecs.internal(
     409,
     false,
-    'El claim de idempotencia ya pertenece a otro dueño.',
+    'The idempotency claim already belongs to another owner.',
   ),
 });

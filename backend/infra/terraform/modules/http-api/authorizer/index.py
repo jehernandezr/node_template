@@ -1,19 +1,19 @@
-"""Autorizador de API Gateway: solo deja pasar lo que llega por CloudFront.
+"""API Gateway authorizer: only lets through what arrives through CloudFront.
 
-CloudFront agrega X-Origin-Verify con un secreto. API Gateway responde 401 sin invocar
-esta función cuando falta el encabezado y guarda en caché la respuesta por valor.
+CloudFront adds X-Origin-Verify with a secret. API Gateway answers 401 without invoking
+this function when the header is missing and caches the answer by value.
 
-Al rotar, platform guarda un valor nuevo (AWSCURRENT) y el anterior pasa a AWSPREVIOUS,
-pero CloudFront sigue enviando el anterior hasta que se aplica edge. Por eso se aceptan los
-dos y el secreto se recarga cada pocos minutos: un contenedor caliente no se queda con un
-valor que ya no envía nadie.
+On rotation, platform stores a new value (AWSCURRENT) and the previous one moves to AWSPREVIOUS,
+but CloudFront keeps sending the previous one until edge is applied. That is why both are
+accepted and the secret is reloaded every few minutes: a warm container does not keep a
+value that nobody sends any more.
 """
 
 import hmac
 import os
 import time
 
-# Debe ser menor que la espera entre aplicar platform y edge al rotar.
+# Must be shorter than the wait between applying platform and edge on rotation.
 RELOAD_SECONDS = int(os.environ.get("ORIGIN_VERIFY_RELOAD_SECONDS", "300"))
 STAGES = ("AWSCURRENT", "AWSPREVIOUS")
 
@@ -24,7 +24,7 @@ _cache = {"values": (), "loaded_at": None}
 def _secrets_client():
     global _client
     if _client is None:
-        import boto3  # Viene en el runtime de Lambda.
+        import boto3  # Ships with the Lambda runtime.
 
         _client = boto3.client("secretsmanager")
     return _client
@@ -39,7 +39,7 @@ def _load():
                 SecretId=os.environ["ORIGIN_VERIFY_SECRET_ARN"], VersionStage=stage
             )
         except client.exceptions.ResourceNotFoundException:
-            # Antes de la primera rotación no existe AWSPREVIOUS.
+            # Before the first rotation AWSPREVIOUS does not exist.
             continue
         values.append(response["SecretString"])
     return tuple(values)
@@ -51,7 +51,7 @@ def _expected_values(now):
         try:
             _cache["values"] = _load()
         except Exception:
-            # Un fallo de Secrets Manager no corta la API mientras haya valores conocidos.
+            # A Secrets Manager failure does not cut off the API while there are known values.
             if not _cache["values"]:
                 raise
         _cache["loaded_at"] = now
@@ -61,6 +61,6 @@ def _expected_values(now):
 def handler(event, _context, now=None):
     received = (event.get("headers") or {}).get("x-origin-verify", "")
     expected = _expected_values(time.monotonic() if now is None else now)
-    # Compara contra todos sin cortar en el primero que coincide.
+    # Compares against all of them without stopping at the first match.
     matches = [hmac.compare_digest(received, value) for value in expected]
     return {"isAuthorized": any(matches)}

@@ -25,7 +25,7 @@ const events = new TopicDef('tasks-events');
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
   payload: z.object({ id: z.string() }),
-  description: 'Evento de prueba.',
+  description: 'Test event.',
 });
 
 function testTopology(): Topology {

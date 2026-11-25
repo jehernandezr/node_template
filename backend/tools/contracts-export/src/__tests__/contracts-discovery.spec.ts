@@ -34,7 +34,7 @@ describe('ContractsDiscovery', () => {
       const billingIndex = paths.contractIndexOf('billing');
       const billingContract = defineServiceContract({
         service: 'billing',
-        description: 'Facturación.',
+        description: 'Billing.',
       });
       const fileSystem = new InMemoryFileSystem({
         [platformIndex]: '',

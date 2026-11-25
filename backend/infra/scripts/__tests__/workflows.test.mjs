@@ -52,8 +52,8 @@ function runBlocks(text) {
   return blocks;
 }
 
-describe('workflows de despliegue', () => {
-  it('toda acción usa un SHA completo con comentario de versión', () => {
+describe('deployment workflows', () => {
+  it('every action uses a full SHA with a version comment', () => {
     for (const file of WORKFLOW_FILES) {
       for (const line of read(file)
         .split('\n')
@@ -63,7 +63,7 @@ describe('workflows de despliegue', () => {
     }
   });
 
-  it('cada archivo declara id-token: write y ninguno usa claves de larga vida', () => {
+  it('every file declares id-token: write and none uses long-lived keys', () => {
     for (const file of WORKFLOW_FILES) {
       const text = read(file);
       assert.match(text, /id-token: write/, file);
@@ -75,7 +75,7 @@ describe('workflows de despliegue', () => {
     }
   });
 
-  it('deploy.yml descubre los servicios con el CLI y fromJSON, sin lista fija', () => {
+  it('deploy.yml discovers the services with the CLI and fromJSON, without a fixed list', () => {
     const text = read('deploy.yml');
     assert.match(text, /service-catalog-cli\.mjs/);
     assert.match(text, /fromJSON/);
@@ -83,22 +83,22 @@ describe('workflows de despliegue', () => {
       assert.doesNotMatch(
         text,
         new RegExp(name),
-        `deploy.yml contiene ${name}`,
+        `deploy.yml contains ${name}`,
       );
     }
   });
 
-  it('deploy.yml referencia los roles de despliegue y de publicación', () => {
+  it('deploy.yml references the deploy and publish roles', () => {
     const text = read('deploy.yml');
     assert.match(text, /vars\.AWS_DEPLOY_ROLE_ARN/);
     assert.match(text, /vars\.AWS_PUBLISH_ROLE_ARN/);
   });
 
-  it('publish-web.yml referencia el rol de la web', () => {
+  it('publish-web.yml references the web role', () => {
     assert.match(read('publish-web.yml'), /vars\.AWS_WEB_ROLE_ARN/);
   });
 
-  it('ningún bloque run interpola ${{ }}: los valores pasan por env', () => {
+  it('no run block interpolates ${{ }}: values go through env', () => {
     for (const file of WORKFLOW_FILES) {
       for (const block of runBlocks(read(file))) {
         assert.doesNotMatch(block, /\$\{\{/, `${file}: ${block}`);
@@ -106,7 +106,7 @@ describe('workflows de despliegue', () => {
     }
   });
 
-  it('deploy.yml ejecuta las etapas publish, migrate, plan y apply en ese orden', () => {
+  it('deploy.yml runs the publish, migrate, plan and apply stages in that order', () => {
     const text = read('deploy.yml');
     const indexes = ['publish', 'migrate', 'plan', 'apply'].map((stage) =>
       text.indexOf(`"$SERVICE" ${stage}`),

@@ -10,23 +10,23 @@ const CREDENTIAL_JSON = Buffer.from('{"id":"abc"}').toString('base64url');
 export const ValidRequests = {
   SignUpRequest: {
     email: 'ana@example.com',
-    password: 'una-clave-larga-2026',
+    password: 'a-long-password-2026',
     displayName: 'Ana',
     locale: 'es-CO',
   },
   EmailVerificationRequest: { email: 'ana@example.com' },
-  EmailVerificationConfirmRequest: { token: 'token-verificacion' },
+  EmailVerificationConfirmRequest: { token: 'verification-token' },
   UpdateProfileRequest: { displayName: 'Ana Pérez', locale: 'es' },
-  EmailChangeRequest: { newEmail: 'nueva@example.com' },
-  EmailChangeConfirmRequest: { token: 'token-cambio' },
+  EmailChangeRequest: { newEmail: 'new@example.com' },
+  EmailChangeConfirmRequest: { token: 'change-token' },
   ChangePasswordRequest: {
-    currentPassword: 'actual-clave',
-    newPassword: 'nueva-clave-segura',
+    currentPassword: 'current-password',
+    newPassword: 'new-secure-password',
   },
   PasswordResetRequest: { email: 'ana@example.com' },
   PasswordResetConfirmRequest: {
     token: 'token-reset',
-    newPassword: 'nueva-clave-segura',
+    newPassword: 'new-secure-password',
   },
   RemoveDeviceRequest: { deviceId: Ids.device },
   UntrustDeviceRequest: { deviceId: Ids.device },
@@ -55,7 +55,7 @@ export const ValidRequests = {
   RegisterPasskeyRequest: {
     challengeId: Ids.challenge,
     credentialJson: CREDENTIAL_JSON,
-    name: 'Llave del portátil',
+    name: 'Laptop key',
   },
   RemovePasskeyRequest: { passkeyId: Ids.passkey },
   CreateTenantRequest: { slug: 'acme-co', name: 'Acme' },
@@ -63,8 +63,8 @@ export const ValidRequests = {
   SwitchTenantRequest: { tenantId: Ids.tenant },
   RemoveMemberRequest: { userId: Ids.user },
   SetMemberGroupsRequest: { userId: Ids.user, groupIds: [Ids.group] },
-  CreateGroupRequest: { name: 'Finanzas' },
-  UpdateGroupRequest: { groupId: Ids.group, name: 'Finanzas y compras' },
+  CreateGroupRequest: { name: 'Finance' },
+  UpdateGroupRequest: { groupId: Ids.group, name: 'Finance and purchasing' },
   DeleteGroupRequest: { groupId: Ids.group },
   SetGroupRolesRequest: { groupId: Ids.group, roleIds: [Ids.role] },
   CreateRoleRequest: {
@@ -73,11 +73,11 @@ export const ValidRequests = {
   },
   UpdateRoleRequest: { roleId: Ids.role, name: 'Auditor senior' },
   DeleteRoleRequest: { roleId: Ids.role },
-  InviteUserRequest: { email: 'invitada@example.com', groupIds: [Ids.group] },
+  InviteUserRequest: { email: 'invited@example.com', groupIds: [Ids.group] },
   RevokeInvitationRequest: { invitationId: Ids.invitation },
-  AcceptInvitationRequest: { token: 'token-invitacion' },
+  AcceptInvitationRequest: { token: 'invitation-token' },
   CreateServiceAccountRequest: {
-    name: 'Integración ERP',
+    name: 'ERP integration',
     permissions: ['identity:api-keys:manage'],
   },
   UpdateServiceAccountRequest: {
@@ -93,7 +93,7 @@ export const ValidRequests = {
   },
   RotateApiKeyRequest: { apiKeyId: Ids.apiKey },
   RevokeApiKeyRequest: { apiKeyId: Ids.apiKey },
-  AuthenticateApiKeyInput: { apiKey: 'sk_live_ejemplo', clientIp: '10.1.2.3' },
+  AuthenticateApiKeyInput: { apiKey: 'sk_live_example', clientIp: '10.1.2.3' },
   SuspendUserInput: { userId: Ids.user, reason: 'Actividad sospechosa' },
   ReactivateUserInput: { userId: Ids.user },
   GetUserProfileInput: { userId: Ids.user },
@@ -106,7 +106,7 @@ export const ValidRequests = {
     ownerUserId: Ids.owner,
   },
   TenantRefInput: { tenantId: Ids.tenant },
-  SuspendTenantInput: { tenantId: Ids.tenant, reason: 'Pago vencido' },
+  SuspendTenantInput: { tenantId: Ids.tenant, reason: 'Payment overdue' },
 } as const;
 
 /** One valid example per event payload, with the same ids as the requests. */

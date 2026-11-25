@@ -91,14 +91,14 @@ export class PlatformApp {
       await attempt(() => this.servers.stop());
     }
     if (failures.length > 0) {
-      throw new AggregateError(failures, 'El cierre de la plataforma falló');
+      throw new AggregateError(failures, 'The platform shutdown failed');
     }
   }
 
   node(service: PlatformService): PlatformNode {
     const node = this.nodes.get(service);
     if (node === undefined) {
-      throw new Error(`${service} no está en marcha`);
+      throw new Error(`${service} is not running`);
     }
     return node;
   }
@@ -125,7 +125,7 @@ export class PlatformApp {
     const lost = this.platformBus.deadLetters();
     if (lost.length > 0) {
       throw new Error(
-        `Mensajes en la cola de errores: ${lost.map((entry) => `${entry.envelope.type} del tenant ${String(entry.envelope.tenantid)} (${entry.error})`).join(', ')}`,
+        `Messages in the dead-letter queue: ${lost.map((entry) => `${entry.envelope.type} del tenant ${String(entry.envelope.tenantid)} (${entry.error})`).join(', ')}`,
       );
     }
   }

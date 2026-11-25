@@ -128,7 +128,7 @@ export class PersistenceModule extends PersistenceModuleClass {
     if (extras.shardLister === undefined) {
       throw new PersistenceError(
         PersistenceErrorCode.InvalidConfig,
-        'PersistenceModule necesita el tipo que lista los shards en `shardLister`',
+        'PersistenceModule needs the type that lists the shards in `shardLister`',
         { details: { option: 'shardLister' } },
       );
     }

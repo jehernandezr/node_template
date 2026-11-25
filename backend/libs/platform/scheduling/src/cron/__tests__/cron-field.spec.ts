@@ -2,7 +2,7 @@ import { SchedulingErrorCode } from '../../errors/scheduling-error-code.enum.js'
 import { CronField } from '../cron-field.js';
 
 const parse = (text: string, min: number, max: number): CronField =>
-  CronField.parse(text, min, max, 'prueba', text);
+  CronField.parse(text, min, max, 'test', text);
 
 describe('CronField', () => {
   describe('when the text is valid', () => {

@@ -72,7 +72,7 @@ describe('task reads', () => {
 
     it('never shows the tasks of another tenant', async () => {
       const harness = new TasksHarness();
-      await harness.aTask('Del tenant principal');
+      await harness.aTask('From the main tenant');
 
       const page = await harness.list.execute(TasksHarness.OTHER_TENANT, {});
 
@@ -83,9 +83,9 @@ describe('task reads', () => {
   describe('ListTaskChanges', () => {
     it('includes deleted tasks in the order they changed, page by page', async () => {
       const harness = new TasksHarness();
-      const kept = await harness.aTask('Se queda');
+      const kept = await harness.aTask('Stays');
       harness.clock.advance(1000);
-      const gone = await harness.aTask('Se va');
+      const gone = await harness.aTask('Goes');
       harness.clock.advance(1000);
       await harness.remove.execute({
         tenantId: TasksHarness.TENANT,

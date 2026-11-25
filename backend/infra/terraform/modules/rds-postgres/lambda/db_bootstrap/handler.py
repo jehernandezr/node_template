@@ -1,9 +1,9 @@
-"""Crea los roles y las bases de PostgreSQL de la plataforma.
+"""Creates the PostgreSQL roles and databases of the platform.
 
-Idempotente: un rol que ya existe conserva su contraseña (la rotación es dueña de ella) y
-una base que ya existe no se toca salvo su dueño, sus permisos y sus extensiones. Nunca
-borra roles ni bases. Se conecta con el usuario maestro administrado por RDS, solo desde
-dentro de la VPC.
+Idempotent: a role that already exists keeps its password (rotation owns it) and a
+database that already exists is not touched except for its owner, its grants and its
+extensions. It never drops roles or databases. It connects with the master user managed
+by RDS, only from inside the VPC.
 """
 
 import json
@@ -11,15 +11,15 @@ import os
 import ssl
 import sys
 
-# Lambda solo agrega /var/task a sys.path: las dependencias empaquetadas viven en vendor/.
+# Lambda only adds /var/task to sys.path: the packaged dependencies live in vendor/.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "vendor"))
 
 import pg8000.native as pg  # noqa: E402
 
 MAINTENANCE_DB = "postgres"
 
-# Bundle público de las CA de RDS. El runtime de Lambda no lo trae;
-# backend/infra/scripts/fetch-rds-ca-bundle.sh lo deja junto al handler.
+# Public bundle of the RDS CAs. The Lambda runtime does not ship it;
+# backend/infra/scripts/fetch-rds-ca-bundle.sh leaves it next to the handler.
 CA_BUNDLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rds-ca-bundle.pem")
 
 _secrets_client = None
@@ -28,19 +28,19 @@ _secrets_client = None
 def _secret(arn):
     global _secrets_client
     if _secrets_client is None:
-        import boto3  # Viene en el runtime de Lambda.
+        import boto3  # Ships with the Lambda runtime.
 
         _secrets_client = boto3.client("secretsmanager")
     return json.loads(_secrets_client.get_secret_value(SecretId=arn)["SecretString"])
 
 
 def _ssl_context():
-    # Por esta conexión viajan la contraseña del usuario maestro y las de los roles nuevos:
-    # se verifican la cadena y el nombre del servidor aunque la red sea interna.
+    # The master user password and those of the new roles travel over this connection:
+    # the chain and the server name are verified even though the network is internal.
     if not os.path.isfile(CA_BUNDLE):
         raise RuntimeError(
-            "Falta rds-ca-bundle.pem junto al handler: corre "
-            "backend/infra/scripts/fetch-rds-ca-bundle.sh antes de empaquetar."
+            "rds-ca-bundle.pem is missing next to the handler: run "
+            "backend/infra/scripts/fetch-rds-ca-bundle.sh before packaging."
         )
     return ssl.create_default_context(cafile=CA_BUNDLE)
 
@@ -69,7 +69,7 @@ def _database_exists(conn, name):
 
 
 def bootstrap(event, master_username, connect, password_of):
-    """Aplica roles, membresías, bases, extensiones y permisos. Devuelve un resumen."""
+    """Applies roles, memberships, databases, extensions and grants. Returns a summary."""
     admin = pg.identifier(master_username)
     users = event.get("users", [])
     groups = event.get("group_roles", [])
@@ -93,7 +93,7 @@ def bootstrap(event, master_username, connect, password_of):
                     f"NOBYPASSRLS PASSWORD {pg.literal(password_of(user))}"
                 )
                 summary["created_roles"].append(name)
-            # El maestro debe poder asumir el rol para crear bases a su nombre (PG16+).
+            # The master must be able to assume the role to create databases on its behalf (PG16+).
             conn.run(f"GRANT {ident} TO {admin}")
             if user.get("rds_replication"):
                 conn.run(f"GRANT rds_replication TO {ident}")
@@ -117,7 +117,7 @@ def bootstrap(event, master_username, connect, password_of):
             if _database_exists(conn, name):
                 conn.run(f"ALTER DATABASE {ident} OWNER TO {owner}")
             else:
-                # CREATE DATABASE no admite transacción: la API nativa de pg8000 es autocommit.
+                # CREATE DATABASE does not allow a transaction: the native pg8000 API is autocommit.
                 conn.run(f"CREATE DATABASE {ident} OWNER {owner}")
                 summary["created_databases"].append(name)
             conn.run(f"REVOKE ALL ON DATABASE {ident} FROM PUBLIC")

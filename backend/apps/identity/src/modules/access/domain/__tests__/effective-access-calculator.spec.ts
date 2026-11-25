@@ -41,21 +41,21 @@ describe('EffectiveAccessCalculator', () => {
         {
           id: 'r-1',
           tenantId: 't',
-          name: 'Lectura',
+          name: 'Read',
           systemRole: null,
           permissions: [Permission.TasksRead],
         },
         {
           id: 'r-2',
           tenantId: 't',
-          name: 'Escritura',
+          name: 'Write',
           systemRole: null,
           permissions: [Permission.TasksRead, Permission.TasksWrite],
         },
         {
           id: 'r-3',
           tenantId: 't',
-          name: 'Ajeno',
+          name: 'Foreign',
           systemRole: null,
           permissions: [Permission.BillingRead],
         },
@@ -64,7 +64,7 @@ describe('EffectiveAccessCalculator', () => {
 
     expect(access).toEqual({
       permissions: [Permission.TasksRead, Permission.TasksWrite],
-      roles: ['Escritura', 'Lectura'],
+      roles: ['Read', 'Write'],
     });
   });
 });

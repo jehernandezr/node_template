@@ -16,12 +16,12 @@ export default [
         {
           selector: 'Literal[value=/^PLATFORM\\./]',
           message:
-            'Usa el enum de códigos de la librería en lugar del código como texto.',
+            'Use the library error code enum instead of the code as text.',
         },
         {
           selector: 'TemplateElement[value.raw=/^PLATFORM\\./]',
           message:
-            'Usa el enum de códigos de la librería en lugar del código como texto.',
+            'Use the library error code enum instead of the code as text.',
         },
       ],
     },

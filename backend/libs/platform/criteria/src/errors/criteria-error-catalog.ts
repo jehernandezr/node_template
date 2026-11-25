@@ -9,16 +9,16 @@ export const criteriaErrorCatalog = defineErrorCatalog(CriteriaErrorCode, {
   [CriteriaErrorCode.UnknownField]: ErrorSpecs.pub(
     400,
     false,
-    'La consulta filtra u ordena por un campo que no existe.',
+    'The query filters or sorts by a field that does not exist.',
   ),
   [CriteriaErrorCode.InvalidValue]: ErrorSpecs.pub(
     400,
     false,
-    'La consulta tiene un valor o un cursor inválido.',
+    'The query has an invalid value or cursor.',
   ),
   [CriteriaErrorCode.InvalidLimit]: ErrorSpecs.pub(
     400,
     false,
-    'El tamaño de página está fuera del rango permitido.',
+    'The page size is outside the allowed range.',
   ),
 });

@@ -6,7 +6,7 @@ export class DuplicateJobError extends PlatformError {
   override readonly code = SchedulingErrorCode.DuplicateJob;
 
   constructor(jobName: string) {
-    super(`Ya hay un job registrado con el nombre ${jobName}`, {
+    super(`A job is already registered with the name ${jobName}`, {
       details: { jobName },
     });
   }

@@ -13,7 +13,7 @@ import { RateLimiterAttemptCounters } from '../../infrastructure/rate-limiter-at
  */
 export class TestLoginLockout {
   readonly keys = new LockoutKeys(
-    new HmacSecretHasher(['pimienta', 'prueba'].join('-')),
+    new HmacSecretHasher(['test', 'pepper'].join('-')),
   );
   readonly store: EphemeralLockoutStore;
   readonly lockout: LoginLockout;

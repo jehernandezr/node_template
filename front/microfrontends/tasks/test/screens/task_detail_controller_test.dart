@@ -20,7 +20,7 @@ const _taskA = Task(
 const _taskB = Task(
   id: 'a',
   title: 'Tarea B',
-  description: 'Más reciente',
+  description: 'Newer',
   status: TaskStatus.done,
 );
 

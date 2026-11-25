@@ -5,7 +5,7 @@ describe('ApiGatewayResponseMapper', () => {
 
   it('returns text as UTF-8 without base64', async () => {
     const mapped = await mapper.fromResponse(
-      new Response('hola', {
+      new Response('hello', {
         headers: { 'content-type': 'text/plain; charset=utf-8' },
       }),
     );
@@ -16,7 +16,7 @@ describe('ApiGatewayResponseMapper', () => {
         'content-type': 'text/plain; charset=utf-8',
       }),
       cookies: [],
-      body: 'hola',
+      body: 'hello',
       isBase64Encoded: false,
     });
   });

@@ -18,29 +18,29 @@ export function runEphemeralStoreContract(
     it('reads what it stores and forgets what it deletes', async () => {
       const { store, key } = await create();
 
-      await store.set(key('a'), 'uno', 60_000);
+      await store.set(key('a'), 'one', 60_000);
       const read = await store.get(key('a'));
       await store.delete(key('a'));
 
-      expect(read).toBe('uno');
+      expect(read).toBe('one');
       await expect(store.get(key('a'))).resolves.toBeUndefined();
     });
 
     it('stores only the first of two writers with setIfAbsent', async () => {
       const { store, key } = await create();
 
-      await expect(
-        store.setIfAbsent(key('b'), 'primero', 60_000),
-      ).resolves.toBe(true);
-      await expect(
-        store.setIfAbsent(key('b'), 'segundo', 60_000),
-      ).resolves.toBe(false);
-      await expect(store.get(key('b'))).resolves.toBe('primero');
+      await expect(store.setIfAbsent(key('b'), 'first', 60_000)).resolves.toBe(
+        true,
+      );
+      await expect(store.setIfAbsent(key('b'), 'second', 60_000)).resolves.toBe(
+        false,
+      );
+      await expect(store.get(key('b'))).resolves.toBe('first');
     });
 
     it('takes a value once', async () => {
       const { store, key } = await create();
-      await store.set(key('c'), 'una vez', 60_000);
+      await store.set(key('c'), 'once', 60_000);
 
       const [first, second] = await Promise.all([
         store.take(key('c')),
@@ -48,7 +48,7 @@ export function runEphemeralStoreContract(
       ]);
 
       expect([first, second].filter((value) => value !== undefined)).toEqual([
-        'una vez',
+        'once',
       ]);
     });
 
@@ -65,35 +65,35 @@ export function runEphemeralStoreContract(
       ]);
       expect(remaining).toBeGreaterThan(0);
       expect(remaining).toBeLessThanOrEqual(60_000);
-      await expect(store.remainingMs(key('nada'))).resolves.toBeUndefined();
+      await expect(store.remainingMs(key('nothing'))).resolves.toBeUndefined();
     });
 
     it('extends the life of an existing key but never shortens it nor creates one', async () => {
       const { store, key } = await create();
-      await store.set(key('f'), 'valor', 1_000);
-      await store.set(key('g'), 'valor', 120_000);
+      await store.set(key('f'), 'value', 1_000);
+      await store.set(key('g'), 'value', 120_000);
 
       await store.extend(key('f'), 60_000);
       await store.extend(key('g'), 60_000);
-      await store.extend(key('nada'), 60_000);
+      await store.extend(key('nothing'), 60_000);
 
       expect(await store.remainingMs(key('f'))).toBeGreaterThan(1_000);
       expect(await store.remainingMs(key('g'))).toBeGreaterThan(60_000);
-      await expect(store.get(key('nada'))).resolves.toBeUndefined();
+      await expect(store.get(key('nothing'))).resolves.toBeUndefined();
     });
 
     it('keeps the last value of each field and hands the map over once', async () => {
       const { store, key } = await create();
-      await store.putField(key('e'), 'k-1', 'uno', 60_000);
-      await store.putField(key('e'), 'k-2', 'dos', 60_000);
-      await store.putField(key('e'), 'k-1', 'tres', 60_000);
+      await store.putField(key('e'), 'k-1', 'one', 60_000);
+      await store.putField(key('e'), 'k-2', 'two', 60_000);
+      await store.putField(key('e'), 'k-1', 'three', 60_000);
 
       const taken = await store.takeFields(key('e'));
       const again = await store.takeFields(key('e'));
 
       expect(Object.fromEntries(taken)).toEqual({
-        'k-1': 'tres',
-        'k-2': 'dos',
+        'k-1': 'three',
+        'k-2': 'two',
       });
       expect(again.size).toBe(0);
     });

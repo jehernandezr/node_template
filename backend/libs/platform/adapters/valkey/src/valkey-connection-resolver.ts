@@ -31,7 +31,7 @@ export class ValkeyConnectionResolver {
       issues.push(
         this.issue(
           'VALKEY_URL',
-          'defina exactamente una de VALKEY_URL y VALKEY_HOST',
+          'define exactly one of VALKEY_URL and VALKEY_HOST',
         ),
       );
     }
@@ -58,36 +58,30 @@ export class ValkeyConnectionResolver {
   ): ValkeyTokenAuth | undefined {
     if (settings.VALKEY_HOST === undefined) {
       issues.push(
-        this.issue('VALKEY_HOST', 'la autenticación IAM necesita VALKEY_HOST'),
+        this.issue('VALKEY_HOST', 'IAM authentication needs VALKEY_HOST'),
       );
     }
     if (settings.VALKEY_USER === undefined) {
       issues.push(
-        this.issue(
-          'VALKEY_USER',
-          'la autenticación IAM necesita el id de usuario',
-        ),
+        this.issue('VALKEY_USER', 'IAM authentication needs the user id'),
       );
     }
     if (settings.VALKEY_CACHE_NAME === undefined) {
       issues.push(
         this.issue(
           'VALKEY_CACHE_NAME',
-          'la autenticación IAM necesita el nombre de la caché',
+          'IAM authentication needs the cache name',
         ),
       );
     }
     if (!settings.VALKEY_TLS) {
       issues.push(
-        this.issue('VALKEY_TLS', 'la autenticación IAM solo funciona con TLS'),
+        this.issue('VALKEY_TLS', 'IAM authentication only works with TLS'),
       );
     }
     if (authToken === undefined) {
       issues.push(
-        this.issue(
-          'VALKEY_AUTH',
-          'la autenticación IAM necesita un proveedor de token',
-        ),
+        this.issue('VALKEY_AUTH', 'IAM authentication needs a token provider'),
       );
     }
     const userId = settings.VALKEY_USER;

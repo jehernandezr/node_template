@@ -47,7 +47,7 @@ export class ContractOutputInterceptor implements NestInterceptor {
         const result = validateContract(schema, value);
         if (!result.ok) {
           const problems = result.errors
-            .map((error) => `${error.field ?? '(raíz)'}:${error.code}`)
+            .map((error) => `${error.field ?? '(root)'}:${error.code}`)
             .join(', ');
           throw new Error(
             `Response of ${route.id} does not match its contract: ${problems}`,

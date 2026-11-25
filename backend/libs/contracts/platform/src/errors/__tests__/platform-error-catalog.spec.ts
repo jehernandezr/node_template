@@ -17,7 +17,7 @@ describe('platformErrorCatalog', () => {
     expect(new Set(values).size).toBe(values.length);
   });
 
-  it.each(values)('uses the SERVICIO.SUBMODULO.ERROR format in %s', (value) => {
+  it.each(values)('uses the SERVICE.SUBMODULE.ERROR format in %s', (value) => {
     expect(value).toMatch(ERROR_CODE_PATTERN);
   });
 

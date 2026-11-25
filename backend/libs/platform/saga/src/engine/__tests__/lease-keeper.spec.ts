@@ -47,7 +47,7 @@ async function codeOf(action: Promise<unknown>): Promise<unknown> {
 }
 
 describe('LeaseKeeper', () => {
-  it('crea una corrida con el owner y un token que sale del IdGenerator', () => {
+  it('creates a run with the owner and a token from the IdGenerator', () => {
     const { keeper } = keeperFor(new InMemorySagaStore());
 
     const run = keeper.newRun('s1');
@@ -56,7 +56,7 @@ describe('LeaseKeeper', () => {
     expect(run.token).toMatch(/^node-a:[0-9a-f-]{36}$/);
   });
 
-  it('rechaza tomar el lease de una saga que no existe con NotFound', async () => {
+  it('rejects taking the lease of a saga that does not exist with NotFound', async () => {
     const { keeper } = keeperFor(new InMemorySagaStore());
 
     expect(await codeOf(keeper.acquire(keeper.newRun('missing')))).toBe(
@@ -64,7 +64,7 @@ describe('LeaseKeeper', () => {
     );
   });
 
-  it('rechaza tomar un lease que tiene otra corrida con LeaseNotAcquired', async () => {
+  it('rejects taking a lease held by another run with LeaseNotAcquired', async () => {
     const store = new InMemorySagaStore();
     const { keeper, clock } = keeperFor(store);
     await store.create(SagaInstanceBuilder.aSaga().build());
@@ -82,7 +82,7 @@ describe('LeaseKeeper', () => {
     ).toBe(SagaErrorCode.LeaseNotAcquired);
   });
 
-  it('lanza LeaseLost cuando la renovación del lease se pierde', async () => {
+  it('throws LeaseLost when the lease renewal is lost', async () => {
     const store = new InMemorySagaStore();
     const { keeper, clock } = keeperFor(store);
     const run = keeper.newRun('s1');
@@ -92,7 +92,7 @@ describe('LeaseKeeper', () => {
     ).toBe(SagaErrorCode.LeaseLost);
   });
 
-  it('no lanza al soltar el lease fallido y lo registra', async () => {
+  it('does not throw when releasing the failed lease and logs it', async () => {
     const logger = new RecordingLogger();
     const { keeper } = keeperFor(new BrokenReleaseStore(), logger);
 

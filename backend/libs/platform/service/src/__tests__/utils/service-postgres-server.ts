@@ -56,7 +56,7 @@ export class ServicePostgresServer {
 
   private started(): StartedPostgreSqlContainer {
     if (this.container === undefined) {
-      throw new Error('ServicePostgresServer no está iniciado');
+      throw new Error('ServicePostgresServer is not started');
     }
     return this.container;
   }

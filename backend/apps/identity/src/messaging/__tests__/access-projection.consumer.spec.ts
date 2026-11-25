@@ -20,7 +20,7 @@ describe('AccessProjectionConsumer', () => {
       password: 'x',
       displayName: 'Ana',
       locale: 'es-MX',
-      homeTenantId: 'tenant-casa',
+      homeTenantId: 'tenant-home',
     });
 
     await new AccessProjectionConsumer(users, access).onMembershipChanged(
@@ -36,7 +36,7 @@ describe('AccessProjectionConsumer', () => {
     await new AccessProjectionConsumer(
       new InMemoryUsersFacade(),
       access,
-    ).onMembershipChanged(change('user-borrado'));
+    ).onMembershipChanged(change('user-deleted'));
 
     expect(access.projected).toEqual([]);
   });

@@ -11,7 +11,7 @@ const INSERT_ROW = `INSERT INTO "saga"."instances" ("id", "tenant_id", "type", "
   VALUES ('0193f1c2-0000-7000-8000-0000000000e1', '${ShardedTestDatabase.TENANT_A}', 'test', $1, 0, 'forward', 0, 0, 'digest', now(), now())`;
 
 new ContainerRuntime(process.env).describeIfAvailable(
-  'esquema de sagas en el shard',
+  'saga schema in the shard',
   () => {
     const saga = new SagaTestDatabase();
     const location = {
@@ -33,7 +33,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       return saga.db.sources.get(location);
     }
 
-    it('(a) las entidades coinciden con el esquema migrado: no hay sentencias pendientes', async () => {
+    it('(a) the entities match the migrated schema: no pending statements', async () => {
       const source = await shardA();
       const dataSource = new DataSource({
         ...source.options,
@@ -51,7 +51,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       }
     });
 
-    it('(b) existen los tres índices parciales con su predicado', async () => {
+    it('(b) the three partial indexes exist with their predicate', async () => {
       const source = await shardA();
       const rows: { indexname: string; indexdef: string }[] =
         await source.query(
@@ -70,15 +70,15 @@ new ContainerRuntime(process.env).describeIfAvailable(
       );
     });
 
-    it('(c) el CHECK de estado rechaza un status inválido', async () => {
+    it('(c) the status CHECK rejects an invalid status', async () => {
       const source = await shardA();
 
-      await expect(source.query(INSERT_ROW, ['no-existe'])).rejects.toThrow(
-        /saga_instances_status_check/,
-      );
+      await expect(
+        source.query(INSERT_ROW, ['does-not-exist']),
+      ).rejects.toThrow(/saga_instances_status_check/);
     });
 
-    it('(d) bajar y volver a subir la migración deja el esquema igual', async () => {
+    it('(d) reverting and reapplying the migration leaves the schema unchanged', async () => {
       const source = await shardA();
       const migration = new CreateSagaSchema1795000000001();
       const queryRunner = source.createQueryRunner();

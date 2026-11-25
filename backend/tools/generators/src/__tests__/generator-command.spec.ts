@@ -66,7 +66,7 @@ describe('GeneratorCommand', () => {
 
     expect(code).toBe(GeneratorExitCode.Failure);
     expect(output.errors).toEqual([
-      'La plantilla de servicio no reproduce apps/tasks/project.json',
+      'The service template does not reproduce apps/tasks/project.json',
     ]);
   });
 
@@ -84,14 +84,14 @@ describe('GeneratorCommand', () => {
     [['service']],
     [['module', '--name=x']],
     [['deploy']],
-    [['service', '--nombre=x']],
+    [['service', '--label=x']],
   ])('answers with the usage to %p', async (args) => {
     const output = new RecordingOutput();
 
     const code = await commandIn(new GeneratorWorkspace(), output).run(args);
 
     expect(code).toBe(GeneratorExitCode.Usage);
-    expect(output.errors.join('\n')).toContain('Uso:');
+    expect(output.errors.join('\n')).toContain('Usage:');
   });
 
   it('reports a generator refusal as a failure', async () => {
@@ -121,8 +121,10 @@ describe('GeneratorCommand', () => {
     const failure = await commandIn(failing, failed).run(['smoke']);
 
     expect(success).toBe(GeneratorExitCode.Success);
-    expect(passed.infos.join('\n')).toContain('lint, test, typecheck y build');
+    expect(passed.infos.join('\n')).toContain(
+      'lint, test, typecheck and build',
+    );
     expect(failure).toBe(GeneratorExitCode.Failure);
-    expect(failed.errors.join('\n')).toContain('salida 1');
+    expect(failed.errors.join('\n')).toContain('exit 1');
   });
 });

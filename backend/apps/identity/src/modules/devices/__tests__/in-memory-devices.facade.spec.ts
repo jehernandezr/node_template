@@ -82,23 +82,23 @@ describe('InMemoryDevicesFacade', () => {
     const facade = new InMemoryDevicesFacade();
 
     const first = await facade.register(ANA, {
-      publicKey: 'clave-1',
+      publicKey: 'key-1',
       platform: ClientPlatform.Android,
       ip: '203.0.113.5',
     });
     const second = await facade.register(ANA, {
-      publicKey: 'clave-2',
+      publicKey: 'key-2',
       platform: ClientPlatform.Macos,
-      name: 'MacBook de Ana',
+      name: 'Ana MacBook',
       ip: '203.0.113.5',
     });
 
     expect(first).toMatchObject({
       name: 'android',
       verifier: true,
-      publicKey: 'clave-1',
+      publicKey: 'key-1',
     });
-    expect(second).toMatchObject({ name: 'MacBook de Ana', verifier: false });
+    expect(second).toMatchObject({ name: 'Ana MacBook', verifier: false });
   });
 
   it('lists only the verifiers of the user', async () => {
@@ -141,7 +141,7 @@ describe('InMemoryDevicesFacade', () => {
       userId: ANA.userId,
       name: 'iPhone',
       platform: ClientPlatform.Ios,
-      publicKey: 'clave',
+      publicKey: 'key',
       verifier: true,
     });
 

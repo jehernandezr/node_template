@@ -35,12 +35,12 @@ describe('platform schemas', () => {
   });
 
   it('builds pages of any item', () => {
-    const Page = pageOf(z.string(), 'Página de textos.');
+    const Page = pageOf(z.string(), 'Page of texts.');
     expect(Page.parse({ items: ['a'], nextCursor: null })).toEqual({
       items: ['a'],
       nextCursor: null,
     });
-    expect(Page.description).toBe('Página de textos.');
+    expect(Page.description).toBe('Page of texts.');
   });
 
   it('accepts money only in integer minor units with an ISO currency', () => {

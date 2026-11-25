@@ -9,7 +9,7 @@ describe('defineTopicReference', () => {
   const topic = defineTopicReference({
     name: 'other-events',
     events: ['other.thing.created.v1', 'other.thing.deleted.v1'],
-    description: 'Eventos de otro servicio.',
+    description: 'Events from another service.',
   });
 
   it('builds a topic that names the events by type', () => {
@@ -26,7 +26,7 @@ describe('defineTopicReference', () => {
     const queue = defineQueue({
       name: 'mine-other-events',
       subscriptions: [{ topic }],
-      description: 'Eventos de otro servicio.',
+      description: 'Events from another service.',
     });
     expect(queue.subscriptions[0].topic).toBe(topic);
   });
@@ -37,7 +37,7 @@ describe('defineTopicReference', () => {
         name: 'other-fifo',
         fifo: true,
         events: ['other.thing.created.v1'],
-        description: 'Tópico FIFO.',
+        description: 'FIFO topic.',
       }).fifo,
     ).toBe(true);
   });
@@ -47,7 +47,7 @@ describe('defineCommandReference', () => {
   it('builds a command that names the type', () => {
     const command = defineCommandReference({
       type: 'other.thing.record.v1',
-      description: 'Registra algo.',
+      description: 'Records something.',
     });
     expect(command.type).toBe('other.thing.record.v1');
     expect(command.kind).toBe(MessageKind.Command);

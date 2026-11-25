@@ -17,8 +17,8 @@ enum _ExitCode {
 }
 
 const String _usageLine =
-    'Uso: dart run front/tools/new_microfrontend.dart ID --menu "Etiqueta" '
-    '[--menu-en "Label"] [--no-install]';
+    'Usage: dart run front/tools/new_microfrontend.dart ID --menu "Spanish label" '
+    '[--menu-en "English label"] [--no-install]';
 
 /// Command line of the scaffolder.
 ///
@@ -58,7 +58,7 @@ final class ScaffoldCli {
       final arg = args[i];
       if (arg == '--menu' || arg == '--menu-en') {
         if (i + 1 >= args.length) {
-          return _usageError('Falta el valor de $arg.');
+          return _usageError('Missing value for $arg.');
         }
         final value = args[++i];
         if (arg == '--menu') {
@@ -69,15 +69,15 @@ final class ScaffoldCli {
       } else if (arg == '--no-install') {
         install = false;
       } else if (arg.startsWith('-')) {
-        return _usageError('Opción desconocida: $arg.');
+        return _usageError('Unknown option: $arg.');
       } else if (id == null) {
         id = arg;
       } else {
-        return _usageError('Sobra un argumento: $arg.');
+        return _usageError('Unexpected extra argument: $arg.');
       }
     }
-    if (id == null) return _usageError('Falta el ID del microfrontend.');
-    if (menuEs == null) return _usageError('Falta --menu "Etiqueta".');
+    if (id == null) return _usageError('Missing the microfrontend ID.');
+    if (menuEs == null) return _usageError('Missing --menu "Spanish label".');
 
     final ScaffoldResult result;
     try {
@@ -117,33 +117,33 @@ final class ScaffoldCli {
         );
         if (code != 0) {
           err.writeln(
-            'Falló `${step.executable} ${step.arguments.join(' ')}` en '
-            '${step.directory.path} (código $code).',
+            'Failed `${step.executable} ${step.arguments.join(' ')}` in '
+            '${step.directory.path} (code $code).',
           );
           return _ExitCode.failure.code;
         }
       }
     } else {
       out.writeln(
-        'Falta correr: flutter pub get (en front/), flutter gen-l10n y dart '
-        'format lib test (en microfrontends/$id).',
+        'Still to run: flutter pub get (in front/), flutter gen-l10n and dart '
+        'format lib test (in microfrontends/$id).',
       );
     }
 
-    out.writeln('Archivos creados:');
+    out.writeln('Created files:');
     for (final file in result.files) {
       out.writeln(file);
     }
     out.writeln('Shell web (apps/web/lib/src/web_shell.dart):');
     out.writeln(result.appImport);
-    out.writeln('En webManifests:');
+    out.writeln('In webManifests:');
     out.writeln(result.appRegistration);
-    out.writeln('Shell móvil (apps/mobile/lib/src/mobile_shell.dart):');
+    out.writeln('Mobile shell (apps/mobile/lib/src/mobile_shell.dart):');
     out.writeln(result.appImport);
-    out.writeln('En mobileManifests:');
+    out.writeln('In mobileManifests:');
     out.writeln(result.appRegistration);
     out.writeln(
-      'En apps/web/pubspec.yaml y apps/mobile/pubspec.yaml, bajo dependencies:',
+      'In apps/web/pubspec.yaml and apps/mobile/pubspec.yaml, under dependencies:',
     );
     out.writeln(result.appDependency);
     return _ExitCode.ok.code;

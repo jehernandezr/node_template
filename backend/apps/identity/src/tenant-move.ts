@@ -18,7 +18,7 @@ const { values } = parseArgs({
 
 if (values.tenant === undefined || values.target === undefined) {
   console.error(
-    'Uso: tenant-move --tenant=<id del tenant> --target=<grupo de destino>',
+    'Usage: tenant-move --tenant=<tenant id> --target=<target group>',
   );
   process.exitCode = 2;
 } else {

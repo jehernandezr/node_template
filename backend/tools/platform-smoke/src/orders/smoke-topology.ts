@@ -10,13 +10,13 @@ import { SmokeQueue } from './smoke-queue.enum.js';
 const ordersTopic = defineTopic({
   name: 'smoke-orders-events',
   events: [SmokeOrderCreated],
-  description: 'Eventos de pedidos de la prueba de humo.',
+  description: 'Order events of the smoke test.',
 });
 
 /** Contract of the test service: a topic with the event and the queue that subscribes to it. */
 export const smokeContract = defineServiceContract({
   service: 'smoke',
-  description: 'Prueba de humo de la plataforma.',
+  description: 'Platform smoke test.',
   events: { orderCreated: SmokeOrderCreated },
   topics: { orders: ordersTopic },
   queues: {
@@ -25,7 +25,7 @@ export const smokeContract = defineServiceContract({
       visibilityTimeoutSeconds: 30,
       retry: { maxAttempts: 3, baseMs: 100, maxMs: 1_000 },
       subscriptions: [{ topic: ordersTopic, events: [SmokeOrderCreated] }],
-      description: 'Pedidos que consume la prueba de humo.',
+      description: 'Orders consumed by the smoke test.',
     }),
   },
 });

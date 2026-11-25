@@ -122,7 +122,7 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
 
     const created = await bea
       .bearer(beaSession.accessToken)
-      .post('/v1/tenants', { body: { slug: 'rechazado', name: 'Rechazado' } });
+      .post('/v1/tenants', { body: { slug: 'rejected', name: 'Rejected' } });
     const { tenantId, sagaId } = created.body as TenantCreation;
     const saga = await bea
       .bearer(beaSession.accessToken)
@@ -141,7 +141,7 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
     await expect(
       app
         .shards()
-        .catalogRows(`SELECT 1 FROM tenant_lookup WHERE slug = 'rechazado'`),
+        .catalogRows(`SELECT 1 FROM tenant_lookup WHERE slug = 'rejected'`),
     ).resolves.toEqual([]);
     await expect(
       app
@@ -293,14 +293,14 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
 
   it('keeps an owner when a second owner asks to delete their account while the deletion of the first is in flight', async () => {
     const users = new ShardedUsers(app);
-    const first = await users.register('primera.bajas@example.com');
-    const second = await users.register('segunda.bajas@example.com');
-    const member = await users.register('miembro.bajas@example.com');
+    const first = await users.register('first.removals@example.com');
+    const second = await users.register('second.removals@example.com');
+    const member = await users.register('member.removals@example.com');
     const tenantId = TestIds.next();
     await app.internal().invoke(CreateTenantOperation, {
       tenantId,
-      slug: 'dos-bajas',
-      name: 'dos-bajas',
+      slug: 'two-removals',
+      name: 'two-removals',
       region: 'eu',
       kind: TenantKind.Organization,
       ownerUserId: first.userId,

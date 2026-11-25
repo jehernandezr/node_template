@@ -1,18 +1,18 @@
-// Plugin de Nx que registra cada miembro del pub workspace de front/ como proyecto.
+// Nx plugin that registers each member of the front/ pub workspace as a project.
 //
-// - Lee la lista `workspace:` de front/pubspec.yaml; solo esos paquetes son proyectos.
-// - Cada proyecto se llama `front-<nombre del pubspec>` y tiene las tareas
-//   `analyze`, `format-check` y, si tiene carpeta test/, `test`. Todas usan caché.
-// - En los microfrontends, `analyze` también corre
-//   `tools/check_microfrontend_boundaries.dart`: falla si el microfrontend
-//   declara o importa otro `mf_*`, si su manifiesto carga sin `deferred` algo
-//   que no sea constante, enum o ciclo de vida, o si sus carpetas `shared`
-//   no siguen el orden enums, constants, types, utils.
-// - Las dependencias entre paquetes salen de `dependencies` y `dev_dependencies`.
-// - `front-contracts` depende de los paquetes de contratos del backend
-//   (backend/libs/contracts/*), porque su Dart se genera desde ellos.
+// - Reads the `workspace:` list of front/pubspec.yaml; only those packages are projects.
+// - Each project is called `front-<pubspec name>` and has the tasks
+//   `analyze`, `format-check` and, if it has a test/ folder, `test`. All of them use the cache.
+// - In the microfrontends, `analyze` also runs
+//   `tools/check_microfrontend_boundaries.dart`: it fails if the microfrontend
+//   declares or imports another `mf_*`, if its manifest loads without `deferred` anything
+//   that is not a constant, enum or lifecycle, or if its `shared` folders
+//   do not follow the order enums, constants, types, utils.
+// - The dependencies between packages come from `dependencies` and `dev_dependencies`.
+// - `front-contracts` depends on the contract packages of the backend
+//   (backend/libs/contracts/*), because its Dart is generated from them.
 //
-// Requiere `flutter pub get` en front/ antes de correr las tareas.
+// Requires `flutter pub get` in front/ before running the tasks.
 'use strict';
 
 const { existsSync, readFileSync } = require('node:fs');
@@ -25,7 +25,7 @@ const BACKEND_CONTRACTS_ROOT = 'backend/libs/contracts/';
 const MICROFRONTENDS_KIND = 'microfrontends';
 const BOUNDARIES_SCRIPT = 'front/tools/check_microfrontend_boundaries.dart';
 
-/** Lee los campos de pubspec.yaml que usa el plugin, sin dependencias externas. */
+/** Reads the pubspec.yaml fields the plugin uses, without external dependencies. */
 function parsePubspec(text) {
   const result = { name: undefined, workspace: [], deps: [] };
   let section;
@@ -53,7 +53,7 @@ function readPubspec(workspaceRoot, relativePath) {
   return parsePubspec(readFileSync(join(workspaceRoot, relativePath), 'utf8'));
 }
 
-/** Rutas (relativas a la raíz) de los pubspec.yaml miembros del workspace. */
+/** Paths (relative to the root) of the pubspec.yaml files of the workspace members. */
 function memberPubspecs(workspaceRoot) {
   const rootPubspec = join(FRONT_ROOT, 'pubspec.yaml');
   if (!existsSync(join(workspaceRoot, rootPubspec))) return new Set();
@@ -71,7 +71,7 @@ const sharedInputs = [
 function targetsFor(workspaceRoot, projectRoot, kind) {
   const inputs = ['default', '^default', ...sharedInputs];
   const isMicrofrontend = kind === MICROFRONTENDS_KIND;
-  // Ruta del script relativa a la carpeta del proyecto (front/microfrontends/<mf>).
+  // Path of the script relative to the project folder (front/microfrontends/<mf>).
   const boundaries = relative(join(workspaceRoot, projectRoot), join(workspaceRoot, BOUNDARIES_SCRIPT));
   const targets = {
     analyze: {
@@ -110,7 +110,7 @@ const createNodes = [
       const { name } = readPubspec(context.workspaceRoot, file);
       if (!name) continue;
       const root = dirname(file);
-      const kind = root.split('/')[1]; // apps, microfrontends, packages o tools
+      const kind = root.split('/')[1]; // apps, microfrontends, packages or tools
       results.push([
         file,
         {

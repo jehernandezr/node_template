@@ -6,6 +6,6 @@ export const configErrorCatalog = defineErrorCatalog(ConfigErrorCode, {
   [ConfigErrorCode.Invalid]: ErrorSpecs.internal(
     500,
     false,
-    'La configuración del entorno no cumple el esquema.',
+    'The environment configuration does not match the schema.',
   ),
 });

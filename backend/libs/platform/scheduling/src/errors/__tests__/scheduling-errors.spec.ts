@@ -9,14 +9,14 @@ describe('Scheduling errors', () => {
   describe('when an error is created', () => {
     it.each([
       [
-        new InvalidJobScheduleError('job', 'motivo'),
+        new InvalidJobScheduleError('job', 'reason'),
         SchedulingErrorCode.InvalidSchedule,
-        { jobName: 'job', reason: 'motivo' },
+        { jobName: 'job', reason: 'reason' },
       ],
       [
-        new InvalidCronExpressionError('* *', 'motivo'),
+        new InvalidCronExpressionError('* *', 'reason'),
         SchedulingErrorCode.InvalidCronExpression,
-        { expression: '* *', reason: 'motivo' },
+        { expression: '* *', reason: 'reason' },
       ],
       [
         new DuplicateJobError('job'),

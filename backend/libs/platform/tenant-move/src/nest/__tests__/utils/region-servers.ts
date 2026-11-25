@@ -87,7 +87,7 @@ export class RegionServers {
 
   private started(): StartedPostgreSqlContainer {
     if (this.postgres === undefined) {
-      throw new Error('RegionServers no está iniciado');
+      throw new Error('RegionServers is not started');
     }
     return this.postgres;
   }

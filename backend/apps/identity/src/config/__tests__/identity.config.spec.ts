@@ -70,7 +70,7 @@ describe('identityConfigSchema', () => {
     expect(
       parseIssues(
         IdentityTestEnvironment.build({
-          AUTH_ISSUER: 'https://otro.identity.test',
+          AUTH_ISSUER: 'https://other.identity.test',
         }),
       ),
     ).toContain('AUTH_ISSUER');
@@ -81,7 +81,7 @@ describe('identityConfigSchema', () => {
 
     expect(
       parseIssues(
-        IdentityTestEnvironment.build({ SERVICE_REGION: 'otra-region' }),
+        IdentityTestEnvironment.build({ SERVICE_REGION: 'other-region' }),
       ),
     ).toContain('IDENTITY_REGION');
     expect(

@@ -25,20 +25,20 @@ const EXPECTED_CODES: Record<SagaErrorCode, string> = {
 };
 
 describe('sagaErrorCatalog', () => {
-  it('tiene una entrada por cada código de SagaErrorCode', () => {
+  it('has one entry per SagaErrorCode code', () => {
     const codes = sagaErrorCatalog.map((entry) => entry.code);
 
     expect(codes.sort()).toEqual(Object.values(SagaErrorCode).sort());
   });
 
   it.each(Object.values(SagaErrorCode))(
-    'mantiene el texto estable de %s',
+    'keeps the stable text of %s',
     (code) => {
       expect(code).toBe(EXPECTED_CODES[code]);
     },
   );
 
-  it('NotFound responde 404 y los códigos de contención son reintentables', () => {
+  it('NotFound responds 404 and the contention codes are retryable', () => {
     const byCode = new Map(
       sagaErrorCatalog.map((entry) => [entry.code, entry]),
     );

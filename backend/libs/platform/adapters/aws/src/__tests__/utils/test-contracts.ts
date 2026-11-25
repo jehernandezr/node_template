@@ -11,33 +11,33 @@ import { z } from 'zod';
 export const TaskClosed = defineEvent({
   type: 'tasks.task.closed.v1',
   payload: z.object({ taskId: z.string() }),
-  description: 'Se cerró una tarea.',
+  description: 'A task was closed.',
 });
 export const TaskReopened = defineEvent({
   type: 'tasks.task.reopened.v1',
   payload: z.object({ taskId: z.string() }),
-  description: 'Se reabrió una tarea.',
+  description: 'A task was reopened.',
 });
 export const TasksEvents = defineTopic({
   name: 'tasks-events',
   events: [TaskClosed, TaskReopened],
-  description: 'Eventos de tasks.',
+  description: 'Tasks events.',
 });
 export const LedgerPosted = defineEvent({
   type: 'ledger.entry.posted.v1',
   payload: z.object({ accountId: z.string(), amount: z.number() }),
-  description: 'Asiento registrado.',
+  description: 'Entry recorded.',
 });
 export const LedgerEvents = defineTopic({
   name: 'ledger-events',
   fifo: true,
   events: [LedgerPosted],
-  description: 'Asientos en orden por cuenta.',
+  description: 'Entries in order per account.',
 });
 export const GenerateReport = defineCommand({
   type: 'reports.report.generate.v1',
   payload: z.object({ reportId: z.string() }),
-  description: 'Genera un reporte.',
+  description: 'Generates a report.',
 });
 
 export const tasksContract = defineServiceContract({
@@ -58,14 +58,14 @@ export const reportsContract = defineServiceContract({
       retry: { maxAttempts: 3, baseMs: 2_000, maxMs: 2_000 },
       commands: [GenerateReport],
       subscriptions: [{ topic: TasksEvents, events: [TaskClosed] }],
-      description: 'Trabajo de reportes.',
+      description: 'Report jobs.',
     }),
   },
 });
 
 export const ledgerContract = defineServiceContract({
   service: 'ledger',
-  description: 'Libro mayor.',
+  description: 'Ledger.',
   events: { ledgerPosted: LedgerPosted },
   topics: { ledgerEvents: LedgerEvents },
   queues: {
@@ -74,7 +74,7 @@ export const ledgerContract = defineServiceContract({
       fifo: true,
       retry: { maxAttempts: 3, baseMs: 1_000, maxMs: 1_000 },
       subscriptions: [{ topic: LedgerEvents }],
-      description: 'Proyección ordenada.',
+      description: 'Ordered projection.',
     }),
   },
 });

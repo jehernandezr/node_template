@@ -53,11 +53,11 @@ final class MicrofrontendScaffolder {
     );
     final target = Directory('${_frontRoot.path}/microfrontends/$_id');
     if (target.existsSync()) {
-      throw ScaffoldException('Ya existe la carpeta ${target.path}.');
+      throw ScaffoldException('The folder ${target.path} already exists.');
     }
     final pubspec = File('${_frontRoot.path}/pubspec.yaml');
     if (!pubspec.existsSync()) {
-      throw ScaffoldException('No existe ${pubspec.path}.');
+      throw ScaffoldException('${pubspec.path} does not exist.');
     }
     final workspace = _workspace.addMember(
       pubspec.readAsStringSync(),

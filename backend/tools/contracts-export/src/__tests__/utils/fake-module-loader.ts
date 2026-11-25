@@ -14,6 +14,6 @@ export class FakeModuleLoader extends ModuleLoader {
     const found = this.modules[path];
     return found
       ? Promise.resolve(found)
-      : Promise.reject(new Error(`Módulo no preparado: ${path}`));
+      : Promise.reject(new Error(`Module not prepared: ${path}`));
   }
 }

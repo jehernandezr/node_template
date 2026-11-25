@@ -2,7 +2,7 @@ import { awsConfigSchema } from '../aws.config.js';
 import { AWS_TEST_SETTINGS } from './utils/aws-test-settings.js';
 
 describe('awsConfigSchema', () => {
-  it('acepta una configuración válida, con o sin endpoint de LocalStack', () => {
+  it('accepts a valid configuration, with or without a LocalStack endpoint', () => {
     expect(awsConfigSchema.parse(AWS_TEST_SETTINGS)).toEqual(AWS_TEST_SETTINGS);
     expect(
       awsConfigSchema.safeParse({
@@ -16,7 +16,7 @@ describe('awsConfigSchema', () => {
     ['AWS_REGION', 'nowhere'],
     ['AWS_ACCOUNT_ID', '1234'],
     ['MESSAGING_NAME_PREFIX', 'Platform_Local'],
-  ])('rechaza un %s inválido', (key, value) => {
+  ])('rejects an invalid %s', (key, value) => {
     expect(
       awsConfigSchema.safeParse({ ...AWS_TEST_SETTINGS, [key]: value }).success,
     ).toBe(false);

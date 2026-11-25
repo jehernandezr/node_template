@@ -287,12 +287,12 @@ describe('Redactor', () => {
 
     it('uses the custom rules of the constructor', () => {
       const custom = new Redactor(
-        RedactionRules.defaults().extend(['pasaporte']),
+        RedactionRules.defaults().extend(['passport']),
       );
       const standard = new Redactor();
 
-      expect(custom.redact({ pasaporte: 'X1' })).toEqual({ pasaporte: R });
-      expect(standard.redact({ pasaporte: 'X1' })).toEqual({ pasaporte: 'X1' });
+      expect(custom.redact({ passport: 'X1' })).toEqual({ passport: R });
+      expect(standard.redact({ passport: 'X1' })).toEqual({ passport: 'X1' });
     });
   });
 

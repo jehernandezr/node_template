@@ -59,7 +59,7 @@ Json _platform() => {
         'retryable': true,
         'audience': 'internal',
         'messageKey': 'error_platform_saga_lease_lost',
-        'description': 'Interno.',
+        'description': 'Internal.',
       },
     ],
   },

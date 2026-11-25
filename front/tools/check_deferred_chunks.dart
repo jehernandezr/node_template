@@ -37,8 +37,8 @@ void main(List<String> args) {
   final frontRoot = options.frontRoot ?? _findFrontRoot();
   if (frontRoot == null) {
     _fatal(
-      'No se encontró la raíz de front/ (directorio con microfrontends/). '
-      'Pásala con --front-root=<ruta>.',
+      'front/ root not found (directory with microfrontends/). '
+      'Pass it with --front-root=<path>.',
     );
   }
 
@@ -48,7 +48,7 @@ void main(List<String> args) {
   for (final f in [mainJs, mainMap]) {
     if (!f.existsSync()) {
       _fatal(
-        'Falta ${f.path}. Compila antes con '
+        'Missing ${f.path}. Build first with '
         '`flutter build web --release --source-maps`.',
       );
     }
@@ -67,30 +67,30 @@ void main(List<String> args) {
   );
 
   if (sourceViolations.isEmpty && textViolations.isEmpty) {
-    stdout.writeln('OK: el bundle inicial no contiene código diferido.');
+    stdout.writeln('OK: the initial bundle contains no deferred code.');
     return;
   }
 
   if (sourceViolations.isNotEmpty) {
     stderr.writeln(
-      'FALLO 1: main.dart.js.map incluye ${sourceViolations.length} fuentes '
-      'de microfrontends/*/lib/src/ fuera de '
-      '{${_eagerSourceDirs.join(',')}} en el bundle inicial:',
+      'FAILURE 1: main.dart.js.map includes ${sourceViolations.length} sources '
+      'from microfrontends/*/lib/src/ outside '
+      '{${_eagerSourceDirs.join(',')}} in the initial bundle:',
     );
     for (final s in sourceViolations) {
       stderr.writeln('  - $s');
     }
     stderr.writeln(
-      '  Causa probable: un import no diferido (sin `deferred as`) hacia '
-      'esos archivos, directo o transitivo desde apps/web/lib/main.dart. '
-      'Si el manifiesto los necesita, van en shared/constants o shared/enums.',
+      '  Likely cause: a non-deferred import (without `deferred as`) of '
+      'those files, direct or transitive from apps/web/lib/main.dart. '
+      'If the manifest needs them, they go in shared/constants or shared/enums.',
     );
     stderr.writeln('');
   }
   if (textViolations.isNotEmpty) {
     stderr.writeln(
-      'FALLO 2: main.dart.js contiene ${textViolations.length} textos ARB '
-      'que deben viajar solo en chunks diferidos:',
+      'FAILURE 2: main.dart.js contains ${textViolations.length} ARB texts '
+      'that must ship only in deferred chunks:',
     );
     for (final v in textViolations) {
       stderr.writeln('  - [${v.mf}/${v.file}] ${v.key}: "${v.text}"');
@@ -110,8 +110,8 @@ List<String> _checkSourceMap(File mapFile) {
       if (isForbiddenEagerSource(s)) s,
   ]..sort();
   stdout.writeln(
-    'Mapa de fuentes: ${sources.length} fuentes, '
-    '${found.length} prohibidas.',
+    'Source map: ${sources.length} sources, '
+    '${found.length} forbidden.',
   );
   return found;
 }
@@ -151,7 +151,7 @@ List<_ArbText> _checkArbStrings({
   for (final mf in microfrontends) {
     final l10nDir = Directory('$frontRoot/microfrontends/$mf/lib/src/l10n');
     if (!l10nDir.existsSync()) {
-      _fatal('No existe ${l10nDir.path}.');
+      _fatal('${l10nDir.path} does not exist.');
     }
     final arbs =
         l10nDir
@@ -161,7 +161,7 @@ List<_ArbText> _checkArbStrings({
             .toList()
           ..sort((a, b) => a.path.compareTo(b.path));
     if (arbs.isEmpty) {
-      _fatal('No hay archivos .arb en ${l10nDir.path}.');
+      _fatal('No .arb files in ${l10nDir.path}.');
     }
     for (final arb in arbs) {
       final data = jsonDecode(arb.readAsStringSync()) as Map<String, dynamic>;
@@ -182,12 +182,12 @@ List<_ArbText> _checkArbStrings({
   }
 
   stdout.writeln(
-    'Textos ARB (${microfrontends.join(', ')}): $checked comprobados, '
-    '${found.length} presentes en main.dart.js.',
+    'ARB texts (${microfrontends.join(', ')}): $checked checked, '
+    '${found.length} present in main.dart.js.',
   );
   stdout.writeln('');
   if (checked == 0) {
-    _fatal('No se comprobó ningún texto ARB; revisa --min-length y las rutas.');
+    _fatal('No ARB text was checked; review --min-length and the paths.');
   }
   return found;
 }
@@ -272,9 +272,9 @@ class _Options {
         case '--arb-mf':
           mfs.add(value);
         case '--min-length':
-          minLength = int.tryParse(value) ?? _fatal('--min-length inválido');
+          minLength = int.tryParse(value) ?? _fatal('invalid --min-length');
         default:
-          _fatal('Opción desconocida: $arg');
+          _fatal('Unknown option: $arg');
       }
     }
     return _Options(

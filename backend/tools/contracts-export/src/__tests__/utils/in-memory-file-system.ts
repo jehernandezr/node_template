@@ -18,7 +18,7 @@ export class InMemoryFileSystem extends FileSystem {
   read(path: string): Promise<string> {
     const content = this.files.get(path);
     return content === undefined
-      ? Promise.reject(new Error(`No existe ${path}`))
+      ? Promise.reject(new Error(`${path} does not exist`))
       : Promise.resolve(content);
   }
 

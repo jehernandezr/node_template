@@ -1,10 +1,10 @@
-"""Crea en LocalStack los tópicos, colas, DLQ y suscripciones de topology.json.
+"""Creates in LocalStack the topics, queues, DLQs and subscriptions of topology.json.
 
-Lee el mismo archivo que el stack messaging de Terraform (Topology.toJSON(), confirmado en
-backend/infra/terraform/topology.json) y aplica los mismos nombres y filtros, sin cifrado.
-Es idempotente: crear un tópico, una cola o una suscripción que ya existe no cambia nada.
+Reads the same file as the Terraform messaging stack (Topology.toJSON(), committed in
+backend/infra/terraform/topology.json) and applies the same names and filters, without encryption.
+It is idempotent: creating a topic, a queue or a subscription that already exists changes nothing.
 
-Uso: python topology.py <topology.json> <prefijo> [endpoint]
+Usage: python topology.py <topology.json> <prefix> [endpoint]
 """
 
 import json
@@ -23,7 +23,7 @@ def apply(topology, prefix, sns, sqs):
             attrs = {"FifoTopic": "true", "ContentBasedDeduplication": "true"}
         name = f"{prefix}-{topic['name']}{fifo_suffix(topic['fifo'])}"
         topic_arns[topic["name"]] = sns.create_topic(Name=name, Attributes=attrs)["TopicArn"]
-        print(f"[topology] tópico {name}")
+        print(f"[topology] topic {name}")
 
     for queue in topology.get("queues", []):
         fifo = queue["fifo"]
@@ -52,13 +52,13 @@ def apply(topology, prefix, sns, sqs):
         arn = sqs.get_queue_attributes(QueueUrl=url, AttributeNames=["QueueArn"])["Attributes"][
             "QueueArn"
         ]
-        print(f"[topology] cola {name} con DLQ {dlq_name}")
+        print(f"[topology] queue {name} with DLQ {dlq_name}")
 
         for subscription in queue.get("subscriptions", []):
             attributes = {"RawMessageDelivery": "true"}
             filter_types = subscription.get("filterTypes") or []
             if filter_types:
-                # Igual que en AWS: el filtro lee el campo type del cuerpo CloudEvents.
+                # Same as in AWS: the filter reads the type field of the CloudEvents body.
                 attributes["FilterPolicyScope"] = "MessageBody"
                 attributes["FilterPolicy"] = json.dumps({"type": filter_types})
             sns.subscribe(
@@ -68,13 +68,13 @@ def apply(topology, prefix, sns, sqs):
                 Attributes=attributes,
                 ReturnSubscriptionArn=True,
             )
-            print(f"[topology] {name} suscrita a {subscription['topic']}")
+            print(f"[topology] {name} subscribed to {subscription['topic']}")
 
 
 def main():
     path, prefix = sys.argv[1], sys.argv[2]
     endpoint = sys.argv[3] if len(sys.argv) > 3 else "http://localhost:4566"
-    import boto3  # Viene en el intérprete de LocalStack.
+    import boto3  # Ships with the LocalStack interpreter.
 
     with open(path, encoding="utf-8") as handle:
         topology = json.load(handle)

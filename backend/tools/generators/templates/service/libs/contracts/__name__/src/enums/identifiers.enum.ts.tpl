@@ -1,4 +1,4 @@
-/** Identificadores de las operaciones internas de __name__. */
+/** Identifiers of the internal operations of __name__. */
 export enum __Name__Operation {
   TenantMoveSync = '__name__.tenant-move.sync.v1',
   TenantMoveFinalize = '__name__.tenant-move.finalize.v1',

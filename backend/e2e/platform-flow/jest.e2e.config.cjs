@@ -5,8 +5,8 @@ const swcJestConfig = JSON.parse(
 );
 swcJestConfig.swcrc = false;
 
-// No se llama jest.config.cjs para que Nx no la sume al target `test`: corre aparte con `platform-flow:e2e`,
-// en serie, porque arranca los cinco servicios en un proceso.
+// It is not called jest.config.cjs so Nx does not add it to the `test` target: it runs separately with `platform-flow:e2e`,
+// serially, because it starts the five services in one process.
 module.exports = {
   displayName: 'platform-flow',
   preset: '../../jest.preset.js',
@@ -16,10 +16,10 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   testMatch: ['<rootDir>/src/**/__tests__/**/*.e2e-spec.ts'],
-  // @nestjs/*, uid y load-esm se publican solo como ESM: Jest tiene que transformarlos para cargarlos.
+  // @nestjs/*, uid and load-esm are published only as ESM: Jest has to transform them to load them.
   transformIgnorePatterns: [
     '/node_modules/(?!(\\.pnpm/)?(@nestjs\\+|@nestjs/|uid@|uid/|load-esm@|load-esm/))',
   ],
-  // El proyecto no tiene código propio fuera de __tests__: no hay cobertura que medir.
+  // The project has no code of its own outside __tests__: there is no coverage to measure.
   coverageThreshold: {},
 };

@@ -11,10 +11,10 @@ describe('task writes', () => {
     it('saves an open task, indexes it and publishes its creation in the same transaction', async () => {
       const harness = new TasksHarness();
 
-      const task = await harness.aTask('Enviar la factura', 'De marzo');
+      const task = await harness.aTask('Send the invoice', 'For March');
 
       expect(task).toMatchObject({
-        title: 'Enviar la factura',
+        title: 'Send the invoice',
         status: TaskStatus.Open,
         version: 1,
         createdBy: TasksHarness.ANA,
@@ -86,7 +86,7 @@ describe('task writes', () => {
           tenantId: TasksHarness.TENANT,
           actor: TasksHarness.ANA,
           taskId: task.id,
-          changes: { title: 'Otro' },
+          changes: { title: 'Other' },
           expectedVersion: 7,
         }),
       ).rejects.toMatchObject({ code: TasksErrorCode.TaskVersionConflict });
@@ -101,7 +101,7 @@ describe('task writes', () => {
           tenantId: TasksHarness.OTHER_TENANT,
           actor: TasksHarness.ANA,
           taskId: task.id,
-          changes: { title: 'Otro' },
+          changes: { title: 'Other' },
         }),
       ).rejects.toMatchObject({ code: TasksErrorCode.TaskNotFound });
     });

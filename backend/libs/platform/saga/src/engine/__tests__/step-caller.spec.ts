@@ -92,7 +92,7 @@ class BrokenInvoker extends OperationInvoker {
 }
 
 describe('StepCaller', () => {
-  it('pierde el lease sin escribir cuando la renovación falla antes de la llamada', async () => {
+  it('loses the lease without writing when the renewal fails before the call', async () => {
     const store = new FlakyRenewalStore(2);
     const participant = new FakeParticipant();
     const kit = new SagaEngineKit({
@@ -115,7 +115,7 @@ describe('StepCaller', () => {
     ).toBe(StepStatus.Dispatched);
   });
 
-  it('reinvoca una entrada Dispatched tal cual, sin volver a despacharla', async () => {
+  it('reinvokes a Dispatched entry as is, without dispatching it again', async () => {
     const store = new CrashingSagaStore();
     const participant = new FakeParticipant();
     const kit = new SagaEngineKit({
@@ -145,7 +145,7 @@ describe('StepCaller', () => {
     ]);
   });
 
-  it('aborta la llamada al vencer su plazo, la deja incierta y reintenta después', async () => {
+  it('aborts the call when its deadline expires, leaves it uncertain and retries later', async () => {
     const invoker = new HangingInvoker();
     const kit = new SagaEngineKit({
       invoker,
@@ -167,7 +167,7 @@ describe('StepCaller', () => {
     expect(logged?.status).toBe(StepStatus.Uncertain);
   });
 
-  it('renueva el lease más allá del plazo del paso y pasa el plazo a la llamada', async () => {
+  it('renews the lease beyond the step deadline and passes the deadline to the call', async () => {
     const store = new RenewalRecordingStore();
     const invoker = new RecordingInvoker();
     const kit = new SagaEngineKit({
@@ -183,7 +183,7 @@ describe('StepCaller', () => {
     expect(invoker.deadlines[0]?.atMs).toBe(start + 25_000);
   });
 
-  it('clasifica un resultado de forma desconocida como violación de protocolo', async () => {
+  it('classifies a result of unknown shape as a protocol violation', async () => {
     const kit = new SagaEngineKit({
       invoker: new BrokenInvoker(),
       definitions: [new ThreeStepSaga()],
@@ -196,7 +196,7 @@ describe('StepCaller', () => {
     expect(result.lastErrorDetail).toBe('invalid-invoker-result');
   });
 
-  it('manda el contexto guardado en cada paso y lo conserva tras una recuperación', async () => {
+  it('sends the stored context on each step and keeps it after a recovery', async () => {
     const participant = new FakeParticipant();
     const kit = new SagaEngineKit({
       invoker: participant,
@@ -217,7 +217,7 @@ describe('StepCaller', () => {
     ]);
   });
 
-  it('envía un contexto vacío cuando no se da ninguno', async () => {
+  it('sends an empty context when none is given', async () => {
     const participant = new FakeParticipant();
     const kit = new SagaEngineKit({
       invoker: participant,

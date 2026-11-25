@@ -101,7 +101,7 @@ function expiredSaga(id: string): SagaInstance {
 }
 
 describe('SagaRecoveryJob', () => {
-  it('un fallo en una saga se registra y el lote sigue con las demás', async () => {
+  it('a failure in one saga is recorded and the batch continues with the others', async () => {
     const store = new InMemorySagaStore();
     await store.create(expiredSaga('good'));
     await store.create(expiredSaga('ghost'));
@@ -130,7 +130,7 @@ describe('SagaRecoveryJob', () => {
     ]);
   });
 
-  it('un error inesperado da PLATFORM.INTERNAL.UNEXPECTED y lo registra', async () => {
+  it('an unexpected error yields PLATFORM.INTERNAL.UNEXPECTED and is logged', async () => {
     const store = new InMemorySagaStore();
     await store.create(expiredSaga('s1'));
     const engine = new ScriptedEngine();
@@ -165,7 +165,7 @@ describe('SagaRecoveryJob', () => {
     ]);
   });
 
-  it('un PlatformError conserva su código en el fallo', async () => {
+  it('a PlatformError keeps its code in the failure', async () => {
     const store = new InMemorySagaStore();
     await store.create(expiredSaga('s1'));
     const engine = new ScriptedEngine();
@@ -189,7 +189,7 @@ describe('SagaRecoveryJob', () => {
     );
   });
 
-  it('se salta la contención sin registrar fallo ni error', async () => {
+  it('skips contention without recording a failure or an error', async () => {
     const store = new InMemorySagaStore();
     await store.create(expiredSaga('busy'));
     const engine = new ScriptedEngine();
@@ -213,7 +213,7 @@ describe('SagaRecoveryJob', () => {
     expect(logger.errors).toEqual([]);
   });
 
-  it('run usa settings.recoveryBatchSize como límite', async () => {
+  it('run uses settings.recoveryBatchSize as the limit', async () => {
     const store = new RecordingStore();
     const job = new SagaRecoveryJob({
       engine: new ScriptedEngine(),
@@ -228,7 +228,7 @@ describe('SagaRecoveryJob', () => {
     expect(store.limits).toEqual([7]);
   });
 
-  it('el ámbito recibe cada instancia recuperada antes de reanudarla', async () => {
+  it('the scope receives each recovered instance before resuming it', async () => {
     const store = new InMemorySagaStore();
     await store.create(expiredSaga('a'));
     await store.create(expiredSaga('b'));
@@ -249,7 +249,7 @@ describe('SagaRecoveryJob', () => {
     expect(report.resumed).toEqual(['a', 'b']);
   });
 
-  it('se programa cada 5 segundos con el nombre de su enum', () => {
+  it('is scheduled every 5 seconds with its enum name', () => {
     const job = new SagaRecoveryJob({
       engine: new ScriptedEngine(),
       store: new InMemorySagaStore(),

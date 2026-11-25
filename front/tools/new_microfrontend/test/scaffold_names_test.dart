@@ -31,7 +31,7 @@ void main() {
   });
 
   test('refuses blank labels, braces and control characters', () {
-    for (final label in ['', '   ', 'a{b', 'a}b', 'línea\nnueva']) {
+    for (final label in ['', '   ', 'a{b', 'a}b', 'line\nbreak']) {
       expect(
         () => _names(es: label),
         throwsA(isA<ScaffoldException>()),

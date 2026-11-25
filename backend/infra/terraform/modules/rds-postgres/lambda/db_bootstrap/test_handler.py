@@ -1,6 +1,6 @@
-"""Pruebas de la Lambda de bootstrap. No necesitan AWS ni PostgreSQL.
+"""Tests of the bootstrap Lambda. They need neither AWS nor PostgreSQL.
 
-Se ejecutan con el sys.path que tendría Lambda (solo la carpeta del handler):
+They run with the sys.path Lambda would have (only the handler folder):
 python3 -I -m unittest discover -s backend/infra/terraform/modules/rds-postgres/lambda/db_bootstrap
 """
 
@@ -122,16 +122,16 @@ class BootstrapTest(unittest.TestCase):
 
 class TlsTest(unittest.TestCase):
     def test_refuses_to_connect_without_the_rds_bundle(self):
-        with unittest.mock.patch.object(handler, "CA_BUNDLE", "/no/existe/rds-ca-bundle.pem"):
+        with unittest.mock.patch.object(handler, "CA_BUNDLE", "/does/not/exist/rds-ca-bundle.pem"):
             with self.assertRaises(RuntimeError):
                 handler._ssl_context()
 
     def test_verifies_chain_and_hostname(self):
-        # Cualquier bundle PEM del sistema sirve para comprobar la configuración del contexto.
+        # Any PEM bundle of the system works to check the context configuration.
         candidates = ["/etc/ssl/cert.pem", "/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt"]
         bundle = next((p for p in candidates if os.path.isfile(p)), None)
         if bundle is None:
-            self.skipTest("no hay un bundle PEM en el sistema")
+            self.skipTest("there is no PEM bundle in the system")
         with unittest.mock.patch.object(handler, "CA_BUNDLE", bundle):
             ctx = handler._ssl_context()
         self.assertTrue(ctx.check_hostname)

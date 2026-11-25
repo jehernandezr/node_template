@@ -15,7 +15,7 @@ describe('SkeletonVerifier', () => {
     const main = `${GeneratorWorkspace.BACKEND}/apps/tasks/src/main.ts`;
     await workspace.backend.write(
       main,
-      `${await workspace.backend.read(main)}// otro arranque\n`,
+      `${await workspace.backend.read(main)}// another startup\n`,
     );
 
     await expect(workspace.verifier.differences()).resolves.toEqual([

@@ -91,7 +91,7 @@ export class MessagingModule extends MessagingModuleClass {
     if (missing.length > 0) {
       throw new MessagingError(
         MessagingErrorCode.InvalidOptions,
-        `MessagingModule necesita el tipo del adaptador en: ${missing.join(', ')}`,
+        `MessagingModule needs the adapter type in: ${missing.join(', ')}`,
         { details: { options: missing } },
       );
     }

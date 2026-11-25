@@ -17,17 +17,17 @@ import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
 const TaskCreated = defineEvent({
   type: 'tasks.task.created.v1',
   payload: z.object({ taskId: z.string() }),
-  description: 'Se creó una tarea.',
+  description: 'A task was created.',
 });
 const TaskClosed = defineEvent({
   type: 'tasks.task.closed.v1',
   payload: z.object({ taskId: z.string() }),
-  description: 'Se cerró una tarea.',
+  description: 'A task was closed.',
 });
 const TasksEvents = defineTopic({
   name: 'tasks-events',
   events: [TaskCreated, TaskClosed],
-  description: 'Eventos de tasks.',
+  description: 'Tasks events.',
 });
 const tasks = defineServiceContract({
   service: 'tasks',
@@ -39,7 +39,7 @@ const tasks = defineServiceContract({
 const GenerateReport = defineCommand({
   type: 'reports.report.generate.v1',
   payload: z.object({ reportId: z.string() }),
-  description: 'Genera un reporte.',
+  description: 'Generates a report.',
 });
 const reports = defineServiceContract({
   service: 'reports',
@@ -53,7 +53,7 @@ const reports = defineServiceContract({
       deadLetter: { maxReceiveCount: 4, retentionDays: 7 },
       commands: [GenerateReport],
       subscriptions: [{ topic: TasksEvents, events: [TaskClosed] }],
-      description: 'Trabajo de reportes.',
+      description: 'Report jobs.',
     }),
   },
   sends: [GenerateReport],
@@ -61,12 +61,12 @@ const reports = defineServiceContract({
 
 const notifications = defineServiceContract({
   service: 'notifications',
-  description: 'Avisos.',
+  description: 'Alerts.',
   queues: {
     notificationsInbox: defineQueue({
       name: 'notifications-inbox',
       subscriptions: [{ topic: TasksEvents }],
-      description: 'Eventos que generan avisos.',
+      description: 'Events that produce notices.',
     }),
   },
   sends: [GenerateReport],
@@ -141,11 +141,11 @@ describe('topologyFromContracts', () => {
   it('accepts a sent command declared as a reference to the command of another contract', () => {
     const GenerateReportReference = defineCommandReference({
       type: GenerateReport.type,
-      description: 'Pide un reporte.',
+      description: 'Requests a report.',
     });
     const billing = defineServiceContract({
       service: 'billing',
-      description: 'Cobros.',
+      description: 'Charges.',
       sends: [GenerateReportReference],
     });
 
@@ -159,16 +159,16 @@ describe('topologyFromContracts', () => {
     const TasksEventsReference = defineTopicReference({
       name: TasksEvents.name,
       events: [TaskCreated.type],
-      description: 'Eventos de tareas.',
+      description: 'Task events.',
     });
     const audit = defineServiceContract({
       service: 'audit',
-      description: 'Auditoría.',
+      description: 'Audit.',
       queues: {
         auditTasks: defineQueue({
           name: 'audit-tasks',
           subscriptions: [{ topic: TasksEventsReference }],
-          description: 'Eventos de tareas para auditar.',
+          description: 'Task events to audit.',
         }),
       },
     });

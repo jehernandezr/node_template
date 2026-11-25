@@ -19,7 +19,7 @@ import {
 const Unrouted = defineCommand({
   type: 'unrouted.report.unrouted.v1',
   payload: z.object({}),
-  description: 'Comando sin ruta en la topología.',
+  description: 'Command with no route in the topology.',
 });
 
 function setup() {

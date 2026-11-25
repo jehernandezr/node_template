@@ -25,8 +25,8 @@ function crashingKit(participant: FakeParticipant, store: CrashingSagaStore) {
   });
 }
 
-describe('SagaRecoveryJob tras la caída del proceso', () => {
-  it('retoma una saga que murió tras despachar el paso, con la misma llave y un solo efecto', async () => {
+describe('SagaRecoveryJob after the process crashes', () => {
+  it('resumes a saga that died after dispatching the step, with the same key and a single effect', async () => {
     const participant = new FakeParticipant();
     const store = new CrashingSagaStore();
     const kit = crashingKit(participant, store);
@@ -59,7 +59,7 @@ describe('SagaRecoveryJob tras la caída del proceso', () => {
     expect(participant.liveResources).toBe(3);
   });
 
-  it('retoma una saga que murió antes de guardar el resultado del paso y la deja Completed', async () => {
+  it('resumes a saga that died before saving the step result and leaves it Completed', async () => {
     const participant = new FakeParticipant();
     const store = new CrashingSagaStore();
     const kit = crashingKit(participant, store);
@@ -84,7 +84,7 @@ describe('SagaRecoveryJob tras la caída del proceso', () => {
     expect(participant.effects.get('b.create.v1')).toBe(1);
   });
 
-  it('una saga de tres pasos que falla en el tercero compensa igual tras la caída', async () => {
+  it('a three-step saga that fails on the third still compensates after the crash', async () => {
     const participant = new FakeParticipant();
     participant.script('c.create.v1', CallOutcome.businessError('SOLD_OUT'));
     const store = new CrashingSagaStore();

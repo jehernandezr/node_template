@@ -16,9 +16,9 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // uuid y NestJS 12 se publican solo como ESM: hay que transformarlos para que Jest los cargue.
+  // uuid and NestJS 12 are published only as ESM: they have to be transformed for Jest to load them.
   transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?(uuid|@nestjs)[@/])'],
-  // El punto de entrada de la CLI solo arma objetos y corre: su lógica se prueba en MigrationGenerateCommand.
+  // The CLI entry point only builds objects and runs: its logic is tested in MigrationGenerateCommand.
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

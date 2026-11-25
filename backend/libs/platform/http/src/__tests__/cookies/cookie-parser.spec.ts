@@ -25,9 +25,9 @@ describe('CookieParser', () => {
   });
 
   it('decodes the value and keeps it raw when decoding fails', () => {
-    const cookies = CookieParser.parse('a=hola%20mundo; b=%E0%A4%A');
+    const cookies = CookieParser.parse('a=hello%20world; b=%E0%A4%A');
 
-    expect(cookies.get('a')).toBe('hola mundo');
+    expect(cookies.get('a')).toBe('hello world');
     expect(cookies.get('b')).toBe('%E0%A4%A');
   });
 });

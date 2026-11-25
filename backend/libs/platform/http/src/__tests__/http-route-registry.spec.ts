@@ -14,14 +14,14 @@ const listRoute = defineRoute({
   method: HttpMethod.Get,
   path: '/v1/items',
   access: Access.authenticated(),
-  description: 'Lista.',
+  description: 'Lists.',
 });
 const openRoute = defineRoute({
   id: 'demo.open.get',
   method: HttpMethod.Get,
   path: '/v1/open',
   access: Access.public(),
-  description: 'Pública.',
+  description: 'Public.',
 });
 
 function entry(
@@ -40,7 +40,7 @@ function entry(
 function contractOf(routes: Record<string, RouteDefinition>) {
   return defineServiceContract({
     service: 'demo',
-    description: 'Prueba.',
+    description: 'Test.',
     routes,
   });
 }
@@ -68,7 +68,7 @@ describe('HttpRouteRegistry', () => {
     const registry = new HttpRouteRegistry();
 
     expect(() => registry.register(entry(openRoute, [AuthMethod.Jwt]))).toThrow(
-      'no puede declarar auth',
+      'cannot declare auth',
     );
   });
 
@@ -88,7 +88,7 @@ describe('HttpRouteRegistry', () => {
     expect(() =>
       registry.assertComplete(contractOf({ open: openRoute })),
     ).toThrow(
-      'sin handler: demo.open.get; fuera del contrato: demo.items.list',
+      'no handler: demo.open.get; outside the contract: demo.items.list',
     );
   });
 
@@ -97,7 +97,7 @@ describe('HttpRouteRegistry', () => {
 
     expect(() =>
       registry.assertComplete(contractOf({ list: listRoute })),
-    ).toThrow('sin handler: demo.items.list');
+    ).toThrow('no handler: demo.items.list');
   });
 
   it('lists only the extra handlers when every contract route has one', () => {
@@ -107,6 +107,6 @@ describe('HttpRouteRegistry', () => {
 
     expect(() =>
       registry.assertComplete(contractOf({ list: listRoute })),
-    ).toThrow('fuera del contrato: demo.open.get');
+    ).toThrow('outside the contract: demo.open.get');
   });
 });

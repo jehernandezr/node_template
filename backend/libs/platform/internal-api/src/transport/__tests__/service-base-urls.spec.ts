@@ -37,7 +37,7 @@ describe('ServiceBaseUrls', () => {
 
   describe('construction', () => {
     it.each([
-      ['a value that is not a URL', 'no es url'],
+      ['a value that is not a URL', 'not a url'],
       ['a URL with a scheme other than http or https', 'ftp://billing'],
     ])('rejects %s', (_label, raw) => {
       expect(() => new ServiceBaseUrls({ billing: raw })).toThrow(

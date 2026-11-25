@@ -6,26 +6,26 @@ export const cacheErrorCatalog = defineErrorCatalog(CacheErrorCode, {
   [CacheErrorCode.InvalidArgument]: ErrorSpecs.internal(
     500,
     false,
-    'Argumento inválido al usar la caché.',
+    'Invalid argument when using the cache.',
   ),
   [CacheErrorCode.KeyTooLong]: ErrorSpecs.internal(
     500,
     false,
-    'La llave de caché supera la longitud máxima.',
+    'The cache key exceeds the maximum length.',
   ),
   [CacheErrorCode.ValueTooLarge]: ErrorSpecs.internal(
     500,
     false,
-    'El valor supera el tamaño máximo que se guarda en caché.',
+    'The value exceeds the maximum size stored in the cache.',
   ),
   [CacheErrorCode.Timeout]: ErrorSpecs.internal(
     504,
     true,
-    'La caché no respondió dentro del plazo.',
+    'The cache did not respond in time.',
   ),
   [CacheErrorCode.CorruptEntry]: ErrorSpecs.internal(
     500,
     false,
-    'Una entrada de caché tiene un formato inválido.',
+    'A cache entry has an invalid format.',
   ),
 });

@@ -8,42 +8,42 @@ export const persistenceErrorCatalog = defineErrorCatalog(
     [PersistenceErrorCode.QueryFailed]: ErrorSpecs.internal(
       500,
       false,
-      'Falló una sentencia en la base de datos.',
+      'A database statement failed.',
     ),
     [PersistenceErrorCode.InvalidConfig]: ErrorSpecs.internal(
       500,
       false,
-      'La configuración de persistencia no es válida.',
+      'The persistence configuration is not valid.',
     ),
     [PersistenceErrorCode.TransactionRequired]: ErrorSpecs.internal(
       500,
       false,
-      'La operación exige una transacción abierta.',
+      'The operation requires an open transaction.',
     ),
     [PersistenceErrorCode.TenantRequired]: ErrorSpecs.internal(
       400,
       false,
-      'La operación exige un tenant en el contexto.',
+      'The operation requires a tenant in the context.',
     ),
     [PersistenceErrorCode.TenantMismatch]: ErrorSpecs.internal(
       403,
       false,
-      'La fila pertenece a otro tenant.',
+      'The row belongs to another tenant.',
     ),
     [PersistenceErrorCode.CorruptRow]: ErrorSpecs.internal(
       500,
       false,
-      'Una fila leída no tiene el formato esperado.',
+      'A row read does not have the expected format.',
     ),
     [PersistenceErrorCode.Contention]: ErrorSpecs.internal(
       503,
       true,
-      'Hay contención sobre el mismo registro; reintentar.',
+      'There is contention on the same record; retry.',
     ),
     [PersistenceErrorCode.ShuttingDown]: ErrorSpecs.internal(
       503,
       true,
-      'El proceso se está apagando y ya cerró sus conexiones a los shards; otro proceso puede atender.',
+      'The process is shutting down and already closed its shard connections; another process can serve.',
     ),
   },
 );

@@ -1,4 +1,4 @@
 import type { MigrationClass } from '@platform/persistence';
 
-/** Migraciones de los shards del módulo __name__, en su bloque de `MigrationRange.__Name__`. */
+/** Shard migrations of the __name__ module, in its `MigrationRange.__Name__` block. */
 export const __nameCamel__ModuleShardMigrations: readonly MigrationClass[] = [];

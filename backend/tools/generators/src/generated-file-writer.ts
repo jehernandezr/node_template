@@ -23,7 +23,7 @@ export class GeneratedFileWriter {
       if (await this.files.exists(this.absolute(file.path))) {
         throw new GeneratorError(
           GeneratorErrorReason.AlreadyExists,
-          `${file.path} ya existe`,
+          `${file.path} already exists`,
         );
       }
     }

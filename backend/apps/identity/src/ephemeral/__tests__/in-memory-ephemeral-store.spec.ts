@@ -17,7 +17,7 @@ describe('InMemoryEphemeralStore', () => {
   it('lets keys expire with the clock', async () => {
     const clock = new FixedClock(new Date('2026-11-16T10:00:00.000Z'));
     const store = new InMemoryEphemeralStore(clock);
-    await store.set('a', 'uno', 1_000);
+    await store.set('a', 'one', 1_000);
 
     clock.advance(1_000);
 

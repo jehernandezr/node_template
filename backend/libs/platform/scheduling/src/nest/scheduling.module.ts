@@ -49,7 +49,7 @@ export class SchedulingModule extends SchedulingModuleClass {
     if (extras.logger === undefined) {
       throw new InvalidArgumentError(
         'logger',
-        'la implementación de LoggerPort que usa el JobRunner',
+        'the LoggerPort implementation used by the JobRunner',
       );
     }
     return {

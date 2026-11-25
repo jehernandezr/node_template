@@ -8,9 +8,7 @@ import 'package:ui/ui.dart';
 import '../utils/test_app.dart';
 
 void main() {
-  testWidgets('muestra cargando y luego pendientes y aceptados', (
-    tester,
-  ) async {
+  testWidgets('shows loading and then pending and accepted', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(AgreementsScreen(repository: FakeAccountRepository())),
@@ -23,7 +21,7 @@ void main() {
     expect(find.text(es.reviewAndAccept), findsNWidgets(2));
   });
 
-  testWidgets('muestra estado vacío sin pendientes', (tester) async {
+  testWidgets('shows empty state with no pending items', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -37,7 +35,7 @@ void main() {
     expect(find.text(es.reviewAndAccept), findsNothing);
   });
 
-  testWidgets('aceptar un acuerdo lo mueve al historial', (tester) async {
+  testWidgets('accepting an agreement moves it to the history', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(AgreementsScreen(repository: FakeAccountRepository())),

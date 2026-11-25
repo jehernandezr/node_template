@@ -188,7 +188,7 @@ describe('TopologyBuilder', () => {
     const ledger = (events: readonly string[], sends = true): ServiceContract =>
       defineServiceContract({
         service: 'ledger',
-        description: 'Libro.',
+        description: 'Ledger.',
         queues: {
           orders: defineQueue({
             name: 'ledger-orders',
@@ -199,18 +199,18 @@ describe('TopologyBuilder', () => {
                   name: 'orders-events',
                   fifo: true,
                   events,
-                  description: 'Pedidos.',
+                  description: 'Orders.',
                 }),
               },
             ],
-            description: 'Pedidos que se asientan.',
+            description: 'Orders that are settled.',
           }),
         },
         sends: sends
           ? [
               defineCommandReference({
                 type: 'payments.payment.charge.v1',
-                description: 'Cobro.',
+                description: 'Charge.',
               }),
             ]
           : [],

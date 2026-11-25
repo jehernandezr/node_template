@@ -20,7 +20,7 @@ export class HttpApplicationSetup {
 
   configure(app: INestApplication): void {
     if (!HttpApplicationSetup.isExpress(app)) {
-      throw new Error('HttpApplicationSetup solo soporta el adaptador Express');
+      throw new Error('HttpApplicationSetup only supports the Express adapter');
     }
     const settings = app.get(AppConfig).get(HttpConfig);
     app.set(

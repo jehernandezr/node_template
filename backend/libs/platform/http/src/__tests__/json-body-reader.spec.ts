@@ -13,9 +13,9 @@ describe('JsonBodyReader', () => {
     const reader = new JsonBodyReader();
 
     await expect(
-      reader.read(chunksOf('{"name":', new TextEncoder().encode('"Lapiz"}'))),
+      reader.read(chunksOf('{"name":', new TextEncoder().encode('"Pencil"}'))),
     ).resolves.toEqual({
-      name: 'Lapiz',
+      name: 'Pencil',
     });
   });
 

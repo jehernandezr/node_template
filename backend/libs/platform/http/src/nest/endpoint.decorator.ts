@@ -40,7 +40,7 @@ export class EndpointDecorator {
   ): MethodDecorator {
     if (route.access.kind === AccessKind.Public && options.auth !== undefined) {
       throw new Error(
-        `La ruta pública ${route.id} no puede declarar auth en @Endpoint`,
+        `Public route ${route.id} cannot declare auth in @Endpoint`,
       );
     }
     const metadata: EndpointMetadata = { route, options };

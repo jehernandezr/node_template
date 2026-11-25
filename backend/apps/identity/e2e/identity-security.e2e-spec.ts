@@ -260,7 +260,7 @@ runtime.describeIfAvailable('identity security end to end', () => {
       const organization = await organizationOf(
         owen,
         await owen.signInWithEmailCode(),
-        'llaves',
+        'keys',
       );
       owner = organization.client;
       const role = await owner.post('/v1/tenant/roles', {
@@ -354,7 +354,7 @@ runtime.describeIfAvailable('identity security end to end', () => {
       const organization = await organizationOf(
         ona,
         await ona.signInWithEmailCode(),
-        'regreso',
+        'comeback',
       );
       owner = organization.client;
       tenantId = organization.tenantId;
@@ -406,7 +406,7 @@ runtime.describeIfAvailable('identity security end to end', () => {
     it('keeps the session token usable when the refresh is refused before rotating', async () => {
       const signedIn = await rosa.signInFromDevice(deviceId);
       const session = (signedIn.body as { tokens: SessionTokensBody }).tokens;
-      const { tenantId } = await organizationOf(rosa, session, 'refresco');
+      const { tenantId } = await organizationOf(rosa, session, 'refresh');
       await app.internal().invoke(SuspendTenantOperation, { tenantId });
       const refused = await refresh(session.sessionToken);
       await app.internal().invoke(ReactivateTenantOperation, { tenantId });
@@ -551,7 +551,7 @@ runtime.describeIfAvailable('identity security end to end', () => {
       const organization = await organizationOf(
         iris,
         await iris.signInWithEmailCode(),
-        'invita',
+        'invites',
       );
       owner = organization.client;
       tenantId = organization.tenantId;
@@ -724,7 +724,11 @@ runtime.describeIfAvailable('identity security end to end', () => {
       const walt = new IdentityJourney(app, 'walt.member@example.com');
       await vera.register();
       const veraSession = await vera.signInWithEmailCode();
-      const organization = await organizationOf(vera, veraSession, 'herencia');
+      const organization = await organizationOf(
+        vera,
+        veraSession,
+        'inheritance',
+      );
       await walt.register();
       const waltSession = await walt.signInWithEmailCode();
       await organization.client.post('/v1/tenant/invitations', {

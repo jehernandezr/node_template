@@ -50,7 +50,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
   jest.setTimeout(180_000);
 
   const app = new IdentityTestApp();
-  const olga = new IdentityJourney(app, 'olga.duena@example.com');
+  const olga = new IdentityJourney(app, 'olga.owner@example.com');
   const tenantId = TestIds.next();
   let ownerId: string;
   let ownerSession: SessionTokensBody;
@@ -80,7 +80,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     const taken = await app.internal().invoke(CreateTenantOperation, {
       tenantId: TestIds.next(),
       slug: 'acme',
-      name: 'Otra Acme',
+      name: 'Another Acme',
       region: 'eu',
       kind: TenantKind.Organization,
       ownerUserId: ownerId,
@@ -122,20 +122,20 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     const roles = await owner.get('/v1/tenant/roles');
     const created = await owner.post('/v1/tenant/roles', {
       body: {
-        name: 'Auditores',
+        name: 'Auditors',
         permissions: [Permission.IdentityMembersRead],
       },
     });
     const roleId = (created.body as Named).id;
     const renamedRole = await owner.patch(`/v1/tenant/roles/${roleId}`, {
-      body: { name: 'Auditoría' },
+      body: { name: 'Audit' },
     });
     const group = await owner.post('/v1/tenant/groups', {
-      body: { name: 'Auditoría' },
+      body: { name: 'Audit' },
     });
     auditGroupId = (group.body as Named).id;
     const duplicated = await owner.post('/v1/tenant/groups', {
-      body: { name: 'Auditoría' },
+      body: { name: 'Audit' },
     });
     const setRoles = await owner.put(
       `/v1/tenant/groups/${auditGroupId}/roles`,
@@ -146,7 +146,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     const renamedGroup = await owner.patch(
       `/v1/tenant/groups/${auditGroupId}`,
       {
-        body: { name: 'Auditores' },
+        body: { name: 'Auditors' },
       },
     );
     const groups = await owner.get('/v1/tenant/groups');
@@ -160,7 +160,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     const editSystem = await owner.patch(
       `/v1/tenant/roles/${systemRole?.id ?? ''}`,
       {
-        body: { name: 'Otro' },
+        body: { name: 'Other' },
       },
     );
     const ungrantable = await owner.post('/v1/tenant/roles', {
@@ -175,13 +175,13 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
 
     expect((roles.body as { items: unknown[] }).items).toHaveLength(4);
     expect(created.status).toBe(201);
-    expect(renamedRole.body).toMatchObject({ name: 'Auditoría' });
+    expect(renamedRole.body).toMatchObject({ name: 'Audit' });
     expect(duplicated.body).toMatchObject({
       code: IdentityErrorCode.AccessNameTaken,
     });
     expect(setRoles.status).toBe(204);
     expect(renamedGroup.body).toMatchObject({
-      name: 'Auditores',
+      name: 'Auditors',
       roleIds: [roleId],
     });
     expect(deleteSystem.body).toMatchObject({
@@ -242,13 +242,13 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     );
     const ownerInvitation = await admin.post('/v1/tenant/invitations', {
       body: {
-        email: 'otro.dueno@example.com',
+        email: 'other.owner@example.com',
         groupIds: [systemGroup(TenantRole.Owner)],
       },
     });
     const memberInvitation = await admin.post('/v1/tenant/invitations', {
       body: {
-        email: 'otro.miembro@example.com',
+        email: 'other.member@example.com',
         groupIds: [systemGroup(TenantRole.Member)],
       },
     });
@@ -268,7 +268,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
   });
 
   it('invites a new person who signs up into the tenant with the invitation', async () => {
-    const pia = new IdentityJourney(app, 'pia.invitada@example.com');
+    const pia = new IdentityJourney(app, 'pia.invited@example.com');
     const invited = await owner.post('/v1/tenant/invitations', {
       body: { email: pia.email, groupIds: [auditGroupId] },
     });
@@ -293,7 +293,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
   });
 
   it('lets an existing user accept an invitation with her session', async () => {
-    const quique = new IdentityJourney(app, 'quique.existente@example.com');
+    const quique = new IdentityJourney(app, 'quique.existing@example.com');
     await quique.register();
     const session = await quique.signInWithEmailCode();
     await owner.post('/v1/tenant/invitations', {
@@ -303,7 +303,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
       'token'
     ];
     const revokable = await owner.post('/v1/tenant/invitations', {
-      body: { email: 'nadie.mas@example.com', groupIds: [] },
+      body: { email: 'nobody.else@example.com', groupIds: [] },
     });
 
     const accepted = await quique
@@ -335,7 +335,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
   });
 
   it('refuses to add a member when the plan of the tenant has no room for another user', async () => {
-    const rita = new IdentityJourney(app, 'rita.sin.cupo@example.com');
+    const rita = new IdentityJourney(app, 'rita.no.seat@example.com');
     await rita.register();
     const session = await rita.signInWithEmailCode();
     await owner.post('/v1/tenant/invitations', {
@@ -361,7 +361,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
   });
 
   it('does not create the account of an invited person when the plan has no room for her', async () => {
-    const tere = new IdentityJourney(app, 'tere.sin.cupo@example.com');
+    const tere = new IdentityJourney(app, 'tere.no.seat@example.com');
     await owner.post('/v1/tenant/invitations', {
       body: { email: tere.email, groupIds: [] },
     });
@@ -387,7 +387,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
   });
 
   it('lets the invited person retry her sign up and join when another member took the last seat in between', async () => {
-    const uma = new IdentityJourney(app, 'uma.reintento@example.com');
+    const uma = new IdentityJourney(app, 'uma.retry@example.com');
     await owner.post('/v1/tenant/invitations', {
       body: { email: uma.email, groupIds: [] },
     });
@@ -428,7 +428,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
   });
 
   it('answers that the email is taken when a member signs up again with a later invitation to her email', async () => {
-    const vera = new IdentityJourney(app, 'vera.repetida@example.com');
+    const vera = new IdentityJourney(app, 'vera.repeated@example.com');
     app.peers.limit(tenantId, UsageMetric.Users, { limit: 50, used: 3 });
     await owner.post('/v1/tenant/invitations', {
       body: { email: vera.email, groupIds: [] },
@@ -455,18 +455,21 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
   it('creates service accounts and API keys that authenticate, rotate and revoke', async () => {
     const account = await owner.post('/v1/tenant/service-accounts', {
       body: {
-        name: 'Integración',
+        name: 'Integration',
         permissions: [Permission.IdentityMembersRead],
       },
     });
     const accountId = (account.body as Named).id;
     const ungrantable = await owner.post('/v1/tenant/service-accounts', {
-      body: { name: 'Demasiado', permissions: [Permission.BackofficeAccess] },
+      body: {
+        name: 'Overreaching',
+        permissions: [Permission.BackofficeAccess],
+      },
     });
     const updated = await owner.patch(
       `/v1/tenant/service-accounts/${accountId}`,
       {
-        body: { name: 'Integración ERP' },
+        body: { name: 'ERP integration' },
       },
     );
     const created = await owner.post(
@@ -519,7 +522,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     expect(ungrantable.body).toMatchObject({
       code: IdentityErrorCode.ApiKeyPermissionNotGrantable,
     });
-    expect(updated.body).toMatchObject({ name: 'Integración ERP' });
+    expect(updated.body).toMatchObject({ name: 'ERP integration' });
     expect(created.status).toBe(201);
     expect(secret).toMatch(/^sk_live_[A-Z2-7]{12}_[A-Za-z0-9]{48}$/);
     expect(authenticated).toMatchObject({
@@ -574,7 +577,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
       .invoke(ReactivateTenantOperation, { tenantId });
     const user = await app.internal().invoke(SuspendUserOperation, {
       userId: ownerId,
-      reason: 'revisión',
+      reason: 'review',
     });
     const signIn = await olga.signIn();
     const back = await app
@@ -587,8 +590,8 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     const spare = TestIds.next();
     await app.internal().invoke(CreateTenantOperation, {
       tenantId: spare,
-      slug: 'repuesto',
-      name: 'Repuesto',
+      slug: 'spare',
+      name: 'Spare',
       region: 'eu',
       kind: TenantKind.Organization,
       ownerUserId: ownerId,

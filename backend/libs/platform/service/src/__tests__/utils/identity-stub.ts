@@ -178,7 +178,7 @@ export class IdentityStub {
       id: member.userId,
       email: member.email ?? `${member.userId.slice(-6)}@example.com`,
       emailVerifiedAt: null,
-      displayName: 'Ana Prueba',
+      displayName: 'Ana Test',
       locale: member.locale ?? 'es',
       status: UserStatus.Active,
       homeTenantId: IdentityStub.homeOf(member),
@@ -203,7 +203,7 @@ export class IdentityStub {
 
   private started(): ValkeyAuthStateWriter {
     if (this.writer === undefined) {
-      throw new Error('IdentityStub no está iniciado');
+      throw new Error('IdentityStub is not started');
     }
     return this.writer;
   }

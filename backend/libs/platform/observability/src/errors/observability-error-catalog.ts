@@ -8,12 +8,12 @@ export const observabilityErrorCatalog = defineErrorCatalog(
     [ObservabilityErrorCode.InvalidTraceContext]: ErrorSpecs.internal(
       500,
       false,
-      'Un identificador de traza no cumple el formato W3C.',
+      'A trace identifier does not match the W3C format.',
     ),
     [ObservabilityErrorCode.DuplicateHealthCheck]: ErrorSpecs.internal(
       500,
       false,
-      'Se registró dos veces una dependencia con el mismo nombre en la salud.',
+      'A dependency with the same name was registered twice in health.',
     ),
   },
 );

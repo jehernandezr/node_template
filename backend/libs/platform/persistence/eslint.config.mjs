@@ -11,12 +11,12 @@ export default [
         {
           selector: 'Literal[value=/^PLATFORM\\./]',
           message:
-            'Usa PersistenceErrorCode, o PlatformErrorCode para los códigos públicos, en lugar del código como texto.',
+            'Use PersistenceErrorCode, or PlatformErrorCode for public codes, instead of the code as text.',
         },
         {
           selector: 'TemplateElement[value.raw=/^PLATFORM\\./]',
           message:
-            'Usa PersistenceErrorCode, o PlatformErrorCode para los códigos públicos, en lugar del código como texto.',
+            'Use PersistenceErrorCode, or PlatformErrorCode for public codes, instead of the code as text.',
         },
       ],
     },
@@ -34,11 +34,11 @@ export default [
             {
               group: ['@aws-sdk/*'],
               message:
-                '@aws-sdk/* solo se importa dentro de backend/libs/platform/adapters/aws (ADR 0002).',
+                '@aws-sdk/* is only imported inside backend/libs/platform/adapters/aws (ADR 0002).',
             },
             {
               group: ['pg', 'pg/*'],
-              message: 'El driver pg no se importa directamente; usa TypeORM.',
+              message: 'Do not import the pg driver directly; use TypeORM.',
             },
           ],
         },

@@ -46,7 +46,7 @@ describe('SignedInternalHttp', () => {
         }),
         {},
       ),
-    ).toThrow('INTERNAL_API_BASE_URLS no tiene la URL de billing');
+    ).toThrow('INTERNAL_API_BASE_URLS does not have the URL of billing');
   });
 
   it('refuses SigV4 signing without AWS credentials', () => {

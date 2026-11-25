@@ -116,7 +116,7 @@ export class IdentityTestApp implements IdentityEntry {
 
   service(): RunningService {
     if (this.running === undefined) {
-      throw new Error('IdentityTestApp no está iniciada');
+      throw new Error('IdentityTestApp is not started');
     }
     return this.running;
   }

@@ -1,4 +1,4 @@
-"""Pruebas de topology.py con clientes falsos. No necesitan LocalStack ni boto3.
+"""Tests of topology.py with fake clients. They need neither LocalStack nor boto3.
 
 python3 -I -m unittest discover -s backend/infra/local/localstack
 """

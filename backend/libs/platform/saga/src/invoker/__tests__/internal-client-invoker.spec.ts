@@ -111,8 +111,8 @@ function wire() {
   return { kit, store, created, notified };
 }
 
-describe('InternalClientInvoker con SagaEngine', () => {
-  it('lleva la saga de punta a punta por la API interna', async () => {
+describe('InternalClientInvoker with SagaEngine', () => {
+  it('runs the saga end to end through the internal API', async () => {
     const { kit, created, notified } = wire();
 
     const result = await kit.sagas.start(
@@ -127,7 +127,7 @@ describe('InternalClientInvoker con SagaEngine', () => {
     expect(notified.calls).toBe(1);
   });
 
-  it('reenvía tras una caída la misma llave y el manejador no repite el efecto', async () => {
+  it('resends the same key after a crash and the handler does not repeat the effect', async () => {
     const { kit, store, created } = wire();
     store.crashBeforeOutcome(0);
 

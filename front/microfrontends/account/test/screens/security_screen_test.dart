@@ -7,7 +7,7 @@ import 'package:ui/ui.dart';
 import '../utils/test_app.dart';
 
 void main() {
-  testWidgets('muestra cargando y luego MFA y passkeys', (tester) async {
+  testWidgets('shows loading and then MFA and passkeys', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -24,7 +24,7 @@ void main() {
     expect(find.text(es.passkeyAdd), findsOneWidget);
   });
 
-  testWidgets('muestra estado vacío de passkeys', (tester) async {
+  testWidgets('shows empty state for passkeys', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
@@ -38,7 +38,7 @@ void main() {
     expect(find.text(es.passkeysEmpty), findsOneWidget);
   });
 
-  testWidgets('agregar passkey pide MFA y la muestra en la lista', (
+  testWidgets('adding a passkey requests MFA and shows it in the list', (
     tester,
   ) async {
     final es = await loadEs();
@@ -56,7 +56,7 @@ void main() {
     expect(find.text('Nueva passkey 2'), findsOneWidget);
   });
 
-  testWidgets('regenerar códigos pide MFA y muestra los nuevos', (
+  testWidgets('regenerating codes requests MFA and shows the new ones', (
     tester,
   ) async {
     final es = await loadEs();

@@ -11,14 +11,14 @@ function aKey(kid: string, state: SigningKeyState): SigningKey {
 describe('SigningKeyRing', () => {
   it('signs with the active key and publishes the active and verifying ones', () => {
     const ring = new SigningKeyRing([
-      aKey('nueva', SigningKeyState.Verifying),
-      aKey('actual', SigningKeyState.Active),
-      aKey('vieja', SigningKeyState.Retired),
+      aKey('new', SigningKeyState.Verifying),
+      aKey('current', SigningKeyState.Active),
+      aKey('old', SigningKeyState.Retired),
     ]);
 
-    expect(ring.active().kid).toBe('actual');
-    expect(ring.published().map((key) => key.kid)).toEqual(['nueva', 'actual']);
-    expect(ring.find('vieja')).toBeUndefined();
+    expect(ring.active().kid).toBe('current');
+    expect(ring.published().map((key) => key.kid)).toEqual(['new', 'current']);
+    expect(ring.find('old')).toBeUndefined();
   });
 
   it('needs exactly one active key and unique kids', () => {

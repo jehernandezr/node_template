@@ -18,7 +18,7 @@ enum CliEnv {
 }
 
 const USAGE =
-  'Uso: migration-generate --name=<Nombre> --definition=<modulo con export default DatabaseSetDefinition> --out=<carpeta> (conexion en MIGRATION_DB_HOST, MIGRATION_DB_PORT, MIGRATION_DB_USER, MIGRATION_DB_PASSWORD)';
+  'Usage: migration-generate --name=<Name> --definition=<module with export default DatabaseSetDefinition> --out=<folder> (connection in MIGRATION_DB_HOST, MIGRATION_DB_PORT, MIGRATION_DB_USER, MIGRATION_DB_PASSWORD)';
 
 const EXIT_OK = 0;
 const EXIT_ERROR = 1;
@@ -53,7 +53,7 @@ export class MigrationGenerateCommand {
       const definition = await this.loadDefinition(options.definition);
       if (definition === undefined) {
         this.write(
-          'La definicion no exporta por defecto un DatabaseSetDefinition',
+          'The definition does not default-export a DatabaseSetDefinition',
         );
         return EXIT_USAGE;
       }
@@ -69,10 +69,10 @@ export class MigrationGenerateCommand {
         password,
       });
       if (path === null) {
-        this.write('Sin cambios: las entidades coinciden con las migraciones');
+        this.write('No changes: the entities match the migrations');
         return EXIT_OK;
       }
-      this.write(`Migracion generada: ${path}`);
+      this.write(`Migration generated: ${path}`);
       return EXIT_OK;
     } catch (error) {
       this.write(

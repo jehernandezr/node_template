@@ -101,7 +101,7 @@ describe('ServiceBootstrap', () => {
     it('rejects an invalid definition without creating the application', async () => {
       const create = jest.spyOn(NestFactory, 'create');
       const invalid = ServiceDefinitionBuilder.aDefinition('identity')
-        .with({ name: 'otro' })
+        .with({ name: 'other' })
         .build();
 
       await expect(ServiceBootstrap.http(invalid)).rejects.toThrow(

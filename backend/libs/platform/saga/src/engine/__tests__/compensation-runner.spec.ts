@@ -23,7 +23,7 @@ function setup(definitions: SagaDefinition<unknown>[] = [new ThreeStepSaga()]) {
 }
 
 describe('CompensationRunner', () => {
-  it('salta los pasos de solo lectura al deshacer', async () => {
+  it('skips read-only steps when undoing', async () => {
     const { kit, participant } = setup([new LookupSaga()]);
     participant.script('c.create.v1', CallOutcome.businessError('SOLD_OUT'));
 
@@ -38,7 +38,7 @@ describe('CompensationRunner', () => {
     ]);
   });
 
-  it('exige intervención si no se puede construir la entrada de compensación', async () => {
+  it('requires intervention if the compensation input cannot be built', async () => {
     const { kit, participant } = setup([new CompensationInputSaga()]);
     participant.script('c.create.v1', CallOutcome.businessError('SOLD_OUT'));
 
@@ -54,7 +54,7 @@ describe('CompensationRunner', () => {
     expect(participant.removes()).toEqual([]);
   });
 
-  it('pasa a CompensationFailed ante una violación de protocolo y emite la alerta', async () => {
+  it('moves to CompensationFailed on a protocol violation and emits the alert', async () => {
     const { kit, participant, events } = setup();
     participant.script('c.create.v1', CallOutcome.businessError('SOLD_OUT'));
     participant.script('b.remove.v1', CallOutcome.protocolViolation('broken'));
@@ -68,7 +68,7 @@ describe('CompensationRunner', () => {
     expect(participant.removes()).toEqual(['b.remove.v1']);
   });
 
-  it('reintenta la compensación con la entrada guardada y sin reconstruirla', async () => {
+  it('retries the compensation with the stored input without rebuilding it', async () => {
     const saga = new VolatileSaga();
     const { kit, participant } = setup([saga]);
     participant.script('c.create.v1', CallOutcome.businessError('SOLD_OUT'));

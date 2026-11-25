@@ -16,16 +16,16 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // Además de las pruebas de `src/**/__tests__`, las de extremo a extremo de la app completa.
+  // Besides the tests of `src/**/__tests__`, the end-to-end tests of the whole app.
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.?(int-|contract-)spec.ts',
     '<rootDir>/e2e/**/*.e2e-spec.ts',
   ],
-  // @nestjs/*, uid y load-esm se publican solo como ESM: Jest tiene que transformarlos para cargarlos.
+  // @nestjs/*, uid and load-esm are published only as ESM: Jest has to transform them to load them.
   transformIgnorePatterns: [
     '/node_modules/(?!(\\.pnpm/)?(@nestjs\\+|@nestjs/|uid@|uid/|load-esm@|load-esm/))',
   ],
-  // Los puntos de entrada arrancan el proceso real: sus pruebas solo leen su texto.
+  // The entry points start the real process: their tests only read their text.
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',
@@ -37,7 +37,7 @@ module.exports = {
     'src/lambda.ts',
     'src/instrumentation.ts',
   ],
-  // SWC emite una rama `typeof X === 'undefined'` por cada tipo de parámetro decorado que Istanbul cuenta como no cubierta; V8 mide solo el código que se ejecuta.
+  // SWC emits a `typeof X === 'undefined'` branch for each decorated parameter type that Istanbul counts as uncovered; V8 measures only the code that runs.
   coverageProvider: 'v8',
   coverageDirectory: 'test-output/jest/coverage',
 };

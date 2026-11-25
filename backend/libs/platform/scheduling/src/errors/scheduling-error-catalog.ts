@@ -6,21 +6,21 @@ export const schedulingErrorCatalog = defineErrorCatalog(SchedulingErrorCode, {
   [SchedulingErrorCode.InvalidSchedule]: ErrorSpecs.internal(
     500,
     false,
-    'El calendario de un job no es válido.',
+    'The schedule of a job is not valid.',
   ),
   [SchedulingErrorCode.InvalidCronExpression]: ErrorSpecs.internal(
     500,
     false,
-    'La expresión cron de un job no es válida.',
+    'The cron expression of a job is not valid.',
   ),
   [SchedulingErrorCode.DuplicateJob]: ErrorSpecs.internal(
     500,
     false,
-    'Dos jobs se registraron con el mismo nombre.',
+    'Two jobs were registered with the same name.',
   ),
   [SchedulingErrorCode.UnknownJob]: ErrorSpecs.internal(
     404,
     false,
-    'El job pedido no está registrado.',
+    'The requested job is not registered.',
   ),
 });

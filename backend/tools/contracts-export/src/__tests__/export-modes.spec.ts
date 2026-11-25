@@ -22,22 +22,22 @@ describe('export modes', () => {
 
   describe('CheckMode', () => {
     it('reports the files as up to date when they match the disk', async () => {
-      const fileSystem = new InMemoryFileSystem({ '/x/a.json': 'igual' });
+      const fileSystem = new InMemoryFileSystem({ '/x/a.json': 'same' });
       const mode = new CheckMode(fileSystem);
 
-      await mode.apply('/x/a.json', 'igual');
+      await mode.apply('/x/a.json', 'same');
 
       expect(mode.report()).toEqual({ ok: true, lines: [UP_TO_DATE] });
     });
 
     it.each<[string, Record<string, string>]>([
-      ['different', { '/x/a.json': 'otro' }],
+      ['different', { '/x/a.json': 'other' }],
       ['missing', {}],
     ])('reports drift when the file is %s', async (_label, files) => {
       const fileSystem = new InMemoryFileSystem(files);
       const mode = new CheckMode(fileSystem);
 
-      await mode.apply('/x/a.json', 'igual');
+      await mode.apply('/x/a.json', 'same');
 
       const report = mode.report();
       expect(report.ok).toBe(false);

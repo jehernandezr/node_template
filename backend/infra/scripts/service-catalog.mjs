@@ -24,7 +24,7 @@ export class ServiceCatalog {
       environment,
     );
     if (!existsSync(environmentDir)) {
-      throw new Error(`No existe el ambiente ${environment}`);
+      throw new Error(`Environment ${environment} does not exist`);
     }
     const servicesDir = join(environmentDir, 'services');
     if (!existsSync(servicesDir)) return [];
@@ -41,7 +41,7 @@ export class ServiceCatalog {
       (entry) => entry.name === service,
     );
     if (found === undefined) {
-      throw new Error(`El servicio ${service} no está en ${environment}`);
+      throw new Error(`Service ${service} is not in ${environment}`);
     }
     return found;
   }
@@ -61,7 +61,7 @@ function describeService(name, serviceDir) {
   const declaredName = reader.topLevelString('service_name');
   if (declaredName !== undefined && declaredName !== name) {
     throw new Error(
-      `service_name ${declaredName} no coincide con la carpeta ${name}`,
+      `service_name ${declaredName} does not match the folder ${name}`,
     );
   }
 

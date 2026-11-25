@@ -70,15 +70,14 @@ export const identityConfigSchema = serviceConfigSchema
       ctx.addIssue({
         code: 'custom',
         path: ['AUTH_ISSUER'],
-        message: 'AUTH_ISSUER debe ser igual a IDENTITY_ISSUER',
+        message: 'AUTH_ISSUER must equal IDENTITY_ISSUER',
       });
     }
     if (config.REGIONS.length > 0 && config.SERVICE_REGION === undefined) {
       ctx.addIssue({
         code: 'custom',
         path: ['SERVICE_REGION'],
-        message:
-          'SERVICE_REGION es obligatoria cuando REGIONS declara regiones',
+        message: 'SERVICE_REGION is required when REGIONS declares regions',
       });
     }
     if (
@@ -88,14 +87,14 @@ export const identityConfigSchema = serviceConfigSchema
       ctx.addIssue({
         code: 'custom',
         path: ['IDENTITY_REGION'],
-        message: 'IDENTITY_REGION debe ser igual a SERVICE_REGION',
+        message: 'IDENTITY_REGION must equal SERVICE_REGION',
       });
     }
     if (config.SESSION_ABSOLUTE_TTL < config.SESSION_IDLE_TTL) {
       ctx.addIssue({
         code: 'custom',
         path: ['SESSION_ABSOLUTE_TTL'],
-        message: 'SESSION_ABSOLUTE_TTL no puede ser menor que SESSION_IDLE_TTL',
+        message: 'SESSION_ABSOLUTE_TTL cannot be less than SESSION_IDLE_TTL',
       });
     }
     if (
@@ -106,7 +105,7 @@ export const identityConfigSchema = serviceConfigSchema
         code: 'custom',
         path: ['IDENTITY_MAILER'],
         message:
-          'IDENTITY_MAILER=console solo se permite con NODE_ENV=development',
+          'IDENTITY_MAILER=console is only allowed with NODE_ENV=development',
       });
     }
   });

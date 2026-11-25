@@ -6,7 +6,7 @@ export class UnknownJobError extends PlatformError {
   override readonly code = SchedulingErrorCode.UnknownJob;
 
   constructor(jobName: string) {
-    super(`No hay un job registrado con el nombre ${jobName}`, {
+    super(`No job is registered with the name ${jobName}`, {
       details: { jobName },
     });
   }

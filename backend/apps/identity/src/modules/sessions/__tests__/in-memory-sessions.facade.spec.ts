@@ -47,7 +47,7 @@ describe('InMemorySessionsFacade', () => {
     ).resolves.toBe(3);
     await expect(
       facade.revokeUserSessions(ANA, RevocationReason.UserAction, {
-        except: 'sesion-actual',
+        except: 'session-current',
       }),
     ).resolves.toBe(3);
 
@@ -56,7 +56,7 @@ describe('InMemorySessionsFacade', () => {
       {
         ref: ANA,
         reason: RevocationReason.UserAction,
-        except: 'sesion-actual',
+        except: 'session-current',
       },
     ]);
   });
@@ -76,7 +76,7 @@ describe('InMemorySessionsFacade', () => {
   it('raises the token expiry from the time of the MFA verification', async () => {
     const facade = new InMemorySessionsFacade();
     const session = {
-      sessionId: 'sesion-1',
+      sessionId: 'session-1',
       userId: ANA.userId,
       homeTenantId: ANA.homeTenantId,
     };
@@ -87,7 +87,7 @@ describe('InMemorySessionsFacade', () => {
     ]);
 
     expect(tokens).toEqual({
-      accessToken: 'access-sesion-1-mfa',
+      accessToken: 'access-session-1-mfa',
       accessExpiresAt: new Date(at.getTime() + TEN_MINUTES).toISOString(),
     });
     expect(facade.verified[0]?.amr).toEqual([AuthMethodReference.EmailOtp]);

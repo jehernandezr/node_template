@@ -15,12 +15,12 @@ void main() {
     const renderer = TemplateRenderer({'id': 'reports'});
 
     expect(
-      () => renderer.render('ruta {{nope}}'),
+      () => renderer.render('path {{nope}}'),
       throwsA(
         isA<ScaffoldException>().having(
           (error) => error.message,
           'message',
-          'Marcador desconocido: {{nope}}',
+          'Unknown placeholder: {{nope}}',
         ),
       ),
     );

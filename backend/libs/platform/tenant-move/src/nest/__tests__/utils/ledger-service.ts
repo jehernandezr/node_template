@@ -36,9 +36,9 @@ export const OpenLedgerOperation = defineOperation({
   output: z.object({ id: IdSchema }),
   idempotent: true,
   compensatedBy: Compensation.None,
-  compensationReason: 'Operación del servicio de prueba, fuera de toda saga.',
+  compensationReason: 'Test service operation, outside any saga.',
   timeoutMs: 3_000,
-  description: 'Abre un ledger del tenant de la llamada.',
+  description: 'Opens a ledger for the calling tenant.',
 });
 
 /** Adds to a ledger total: processing it twice would leave the total doubled. */
@@ -48,12 +48,12 @@ export const LedgerCredited = defineEvent({
     ledgerId: IdSchema,
     amount: z.number().int().positive(),
   }),
-  description: 'Se abonó un monto a un ledger.',
+  description: 'An amount was credited to a ledger.',
 });
 
 export const ledgerContract = defineServiceContract({
   service: 'ledger',
-  description: 'Servicio de prueba con datos de tenant que se trasladan.',
+  description: 'Test service with tenant data that is moved.',
   operations: {
     ...LedgerTenantMoveOperations,
     ...LedgerTenantDirectoryOperations,

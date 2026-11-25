@@ -17,7 +17,7 @@ final _es = lookupBackofficeLocalizations(const Locale('es'));
 final _en = lookupBackofficeLocalizations(const Locale('en'));
 final _sharedEs = lookupAppLocalizations(const Locale('es'));
 
-const _reason = 'Cliente confirmó por correo';
+const _reason = 'Customer confirmed by email';
 
 FilledButton _confirmButton(WidgetTester tester) =>
     tester.widget<FilledButton>(find.byKey(const Key('saga-reason-confirm')));

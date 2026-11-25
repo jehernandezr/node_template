@@ -11,7 +11,7 @@ const BaseUrlsSchema = z
     } catch {
       ctx.addIssue({
         code: 'custom',
-        message: 'INTERNAL_API_BASE_URLS no es JSON',
+        message: 'INTERNAL_API_BASE_URLS is not JSON',
       });
       return z.NEVER;
     }

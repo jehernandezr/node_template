@@ -16,7 +16,7 @@ final class TemplateRenderer {
     final name = match.group(1)!;
     final value = values[name];
     if (value == null) {
-      throw ScaffoldException('Marcador desconocido: {{$name}}');
+      throw ScaffoldException('Unknown placeholder: {{$name}}');
     }
     return value;
   });

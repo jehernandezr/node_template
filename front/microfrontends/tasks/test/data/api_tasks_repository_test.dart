@@ -147,18 +147,18 @@ void main() {
   });
 
   test('updates every field of the draft on the path of the task', () async {
-    transport.json(200, _task(title: 'Otra', status: 'in_progress'));
+    transport.json(200, _task(title: 'Another', status: 'in_progress'));
 
     final task = await repository.update(
       _taskId,
-      const TaskDraft(title: 'Otra', status: TaskStatus.inProgress),
+      const TaskDraft(title: 'Another', status: TaskStatus.inProgress),
     );
 
     expect(task.status, TaskStatus.inProgress);
     final request = transport.requests.single;
     expect(request.uri.path, '/v1/tasks/$_taskId');
     expect(transport.bodyOf(0), {
-      'title': 'Otra',
+      'title': 'Another',
       'description': '',
       'status': 'in_progress',
     });

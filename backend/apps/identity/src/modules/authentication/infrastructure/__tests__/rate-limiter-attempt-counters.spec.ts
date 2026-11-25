@@ -13,11 +13,11 @@ class CountersHarness {
 describe('RateLimiterAttemptCounters', () => {
   it('counts each dimension on its own', async () => {
     const { counters } = new CountersHarness();
-    await counters.recordFailure('cuenta:1:ip-a', 'cuenta', 'ip-a');
+    await counters.recordFailure('account:1:ip-a', 'account', 'ip-a');
 
     const counts = await counters.recordFailure(
-      'cuenta:1:ip-b',
-      'cuenta',
+      'account:1:ip-b',
+      'account',
       'ip-a',
     );
 
@@ -32,15 +32,15 @@ describe('RateLimiterAttemptCounters', () => {
       attempt += 1
     ) {
       await counters.recordFailure(
-        'cuenta:1:ip-a',
-        `cuenta-${attempt}`,
+        'account:1:ip-a',
+        `account-${attempt}`,
         `ip-${attempt}`,
       );
     }
 
     const counts = await counters.recordFailure(
-      'cuenta:1:ip-a',
-      'otra',
+      'account:1:ip-a',
+      'other',
       'ip-z',
     );
 
@@ -49,13 +49,13 @@ describe('RateLimiterAttemptCounters', () => {
 
   it('forgets an origin or an account when asked', async () => {
     const { counters } = new CountersHarness();
-    await counters.recordFailure('cuenta:1:ip-a', 'cuenta', 'ip-a');
+    await counters.recordFailure('account:1:ip-a', 'account', 'ip-a');
 
-    await counters.clearOrigin('cuenta:1:ip-a');
-    await counters.clearAccount('cuenta');
+    await counters.clearOrigin('account:1:ip-a');
+    await counters.clearAccount('account');
     const counts = await counters.recordFailure(
-      'cuenta:1:ip-a',
-      'cuenta',
+      'account:1:ip-a',
+      'account',
       'ip-a',
     );
 
@@ -64,12 +64,12 @@ describe('RateLimiterAttemptCounters', () => {
 
   it('lets the failures of an origin expire with its window', async () => {
     const { clock, counters } = new CountersHarness();
-    await counters.recordFailure('cuenta:1:ip-a', 'cuenta', 'ip-a');
+    await counters.recordFailure('account:1:ip-a', 'account', 'ip-a');
     clock.advance(2 * LockoutRules.origin.windowMs);
 
     const counts = await counters.recordFailure(
-      'cuenta:1:ip-a',
-      'cuenta',
+      'account:1:ip-a',
+      'account',
       'ip-a',
     );
 

@@ -6,7 +6,7 @@ export class InvalidServiceDefinitionError extends PlatformError {
   override readonly code = ServiceErrorCode.InvalidDefinition;
 
   constructor(serviceName: string, reason: string) {
-    super(`Definición de servicio inválida (${serviceName}): ${reason}`, {
+    super(`Invalid service definition (${serviceName}): ${reason}`, {
       details: { serviceName, reason },
     });
   }

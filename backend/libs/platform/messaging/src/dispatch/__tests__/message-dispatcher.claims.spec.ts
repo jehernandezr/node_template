@@ -24,7 +24,7 @@ import {
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
   payload: z.object({ id: z.string().min(1) }),
-  description: 'Mensaje de prueba.',
+  description: 'Test message.',
 });
 
 const policy = new RetryPolicy(5, 100, 10_000, BackoffStrategy.None);

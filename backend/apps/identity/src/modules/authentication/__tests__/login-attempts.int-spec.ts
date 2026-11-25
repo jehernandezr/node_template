@@ -42,11 +42,11 @@ runtime.describeIfAvailable('login attempts in monthly partitions', () => {
 
   it('records a failed attempt in the partition of the month, in the shard of the user', async () => {
     const probe = app.shards();
-    const placed = await new ShardedUsers(app).oneInEachShard('intento');
+    const placed = await new ShardedUsers(app).oneInEachShard('attempt');
 
     for (const [shard, { ref, email }] of placed) {
       const failed = await app.client('192.0.2.77').post('/v1/auth/sign-in', {
-        body: { email, password: 'una-clave-que-no-es-la-suya' },
+        body: { email, password: 'a-password-that-is-not-theirs' },
       });
 
       expect(failed.body).toMatchObject({
@@ -68,7 +68,7 @@ runtime.describeIfAvailable('login attempts in monthly partitions', () => {
 
   it('records a failed attempt with an email without an account as it records one with an account', async () => {
     const [user] = [
-      ...(await new ShardedUsers(app).oneInEachShard('sin-cuenta')).values(),
+      ...(await new ShardedUsers(app).oneInEachShard('no-account')).values(),
     ];
     const totalAttempts = async (): Promise<number> => {
       const probe = app.shards();
@@ -89,7 +89,7 @@ runtime.describeIfAvailable('login attempts in monthly partitions', () => {
     const attemptWith = async (email: string) => {
       const before = await totalAttempts();
       const failed = await app.client('192.0.2.78').post('/v1/auth/sign-in', {
-        body: { email, password: 'una-clave-que-no-es-la-suya' },
+        body: { email, password: 'a-password-that-is-not-theirs' },
       });
       return {
         status: failed.status,
@@ -99,7 +99,7 @@ runtime.describeIfAvailable('login attempts in monthly partitions', () => {
     };
 
     const known = await attemptWith(String(user?.email));
-    const unknown = await attemptWith('nadie.intento@example.com');
+    const unknown = await attemptWith('nobody.attempt@example.com');
 
     expect(unknown).toEqual(known);
     expect(known).toMatchObject({

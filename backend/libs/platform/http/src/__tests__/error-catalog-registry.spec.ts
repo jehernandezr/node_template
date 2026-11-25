@@ -16,7 +16,7 @@ enum ServiceCode {
 }
 
 const serviceCatalog = defineErrorCatalog(ServiceCode, {
-  [ServiceCode.Taken]: ErrorSpecs.pub(409, false, 'Ya existe.'),
+  [ServiceCode.Taken]: ErrorSpecs.pub(409, false, 'Already exists.'),
 });
 
 function routeWithErrors(
@@ -30,7 +30,7 @@ function routeWithErrors(
     path,
     errors,
     access: Access.public(),
-    description: 'Ruta de prueba.',
+    description: 'Test route.',
   });
 }
 
@@ -62,7 +62,7 @@ describe('ErrorCatalogRegistry', () => {
   it('rejects a service code defined twice with different definitions', () => {
     const conflicting = defineErrorCatalog(
       { Taken: ServiceCode.Taken } as const,
-      { [ServiceCode.Taken]: ErrorSpecs.pub(500, false, 'Otro.') },
+      { [ServiceCode.Taken]: ErrorSpecs.pub(500, false, 'Other.') },
     );
 
     expect(
@@ -74,7 +74,7 @@ describe('ErrorCatalogRegistry', () => {
     const registry = new ErrorCatalogRegistry([serviceCatalog]);
     const contract = defineServiceContract({
       service: 'demo',
-      description: 'Prueba.',
+      description: 'Test.',
       routes: {
         get: routeWithErrors('demo.items.get', '/v1/items', [
           ServiceCode.Taken,
@@ -89,7 +89,7 @@ describe('ErrorCatalogRegistry', () => {
     const registry = new ErrorCatalogRegistry([]);
     const contract = defineServiceContract({
       service: 'demo',
-      description: 'Prueba.',
+      description: 'Test.',
       routes: {
         first: routeWithErrors('demo.items.first', '/v1/first', [
           'DEMO.Z.LATE',
@@ -102,7 +102,7 @@ describe('ErrorCatalogRegistry', () => {
     });
 
     expect(() => registry.assertCovers(contract)).toThrow(
-      'Códigos de error sin entrada en el catálogo: DEMO.A.EARLY, DEMO.Z.LATE',
+      'Error codes with no catalog entry: DEMO.A.EARLY, DEMO.Z.LATE',
     );
   });
 });

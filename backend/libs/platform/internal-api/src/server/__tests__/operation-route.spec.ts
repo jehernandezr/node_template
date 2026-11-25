@@ -12,7 +12,7 @@ const Reserve = defineOperation({
   output: z.object({ reservationId: z.string() }),
   idempotent: true,
   compensatedBy: Compensation.None,
-  compensationReason: 'Reserva sin efectos externos que deshacer',
+  compensationReason: 'Reservation with no external effects to undo',
   errors: [ServerHarness.OUT_OF_STOCK],
   description: 'Reserves stock.',
 });

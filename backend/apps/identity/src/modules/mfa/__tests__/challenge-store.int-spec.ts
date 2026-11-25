@@ -32,7 +32,7 @@ runtime.describeIfAvailable('MFA challenges on Valkey', () => {
       id,
       pendingId: TestIds.next(),
       method: MfaFactor.EmailOtp,
-      codeHash: 'huella',
+      codeHash: 'fingerprint',
       expiresAt: new Date(Date.now() + 60_000),
     });
     return id;

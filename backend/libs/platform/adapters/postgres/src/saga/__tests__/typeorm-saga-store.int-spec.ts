@@ -27,7 +27,7 @@ const ID_C = '0193f1c2-0000-7000-8000-0000000000f3';
 const ID_D = '0193f1c2-0000-7000-8000-0000000000f4';
 
 new ContainerRuntime(process.env).describeIfAvailable(
-  'TypeOrmSagaStore sobre Postgres en dos shards',
+  'TypeOrmSagaStore on Postgres across two shards',
   () => {
     const saga = new SagaTestDatabase();
     const db = saga.db;
@@ -70,14 +70,14 @@ new ContainerRuntime(process.env).describeIfAvailable(
       },
     }));
 
-    describe('criterios del almacén real', () => {
+    describe('real store criteria', () => {
       beforeEach(async () => {
         await db.acrossShards.run(({ dataSource }) =>
           dataSource.query('TRUNCATE "saga"."step_log", "saga"."instances"'),
         );
       });
 
-      it('(a) dos commitStep con la misma versión: uno gana y el otro recibe ConcurrentModification o LeaseLost', async () => {
+      it('(a) two commitStep calls with the same version: one wins and the other gets ConcurrentModification or LeaseLost', async () => {
         await inA(async () => {
           await store.create(
             SagaInstanceBuilder.aSaga().with({ id: ID_A }).build(),
@@ -110,7 +110,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         expect((await inA(() => store.get(ID_A)))?.version).toBe(1);
       });
 
-      it('(b) un paso que viola el CHECK deja la instancia intacta: sin versión ni estado nuevos', async () => {
+      it('(b) a step that violates the CHECK leaves the instance intact: no new version or status', async () => {
         await inA(async () => {
           await store.create(
             SagaInstanceBuilder.aSaga().with({ id: ID_B }).build(),
@@ -143,7 +143,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         expect(await inA(() => store.steps(ID_B))).toEqual([]);
       });
 
-      it('(c) findRecoverable omite la fila bloqueada por otra conexión (SKIP LOCKED) y la devuelve tras el commit', async () => {
+      it('(c) findRecoverable skips the row locked by another connection (SKIP LOCKED) and returns it after the commit', async () => {
         await inA(() =>
           store.create(SagaInstanceBuilder.aSaga().with({ id: ID_C }).build()),
         );
@@ -173,7 +173,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         expect(afterCommit.map((i) => i.id)).toContain(ID_C);
       });
 
-      it('(d) una saga de TENANT_A no se ve con TENANT_B y vive solo en el shard de A', async () => {
+      it('(d) a TENANT_A saga is not visible with TENANT_B and lives only in the A shard', async () => {
         await inA(() =>
           store.create(SagaInstanceBuilder.aSaga().with({ id: ID_A }).build()),
         );
@@ -183,7 +183,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         expect(await rowsOn(ShardedTestDatabase.SHARD_B, ID_A)).toBe(0);
       });
 
-      it('(e) findRecoverable y purge recorren los dos shards', async () => {
+      it('(e) findRecoverable and purge walk both shards', async () => {
         await inA(() =>
           store.create(
             SagaInstanceBuilder.aSaga()
@@ -230,7 +230,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         expect(await rowsOn(ShardedTestDatabase.SHARD_B, ID_D)).toBe(0);
       });
 
-      it('(f) ShardedSagaScopes encuentra una saga de B sin runAs', async () => {
+      it('(f) ShardedSagaScopes finds a B saga without runAs', async () => {
         await inB(() =>
           store.create(SagaInstanceBuilder.aSaga().with({ id: ID_B }).build()),
         );
@@ -248,7 +248,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         expect(found?.id).toBe(ID_B);
       });
 
-      it('(g) create con una instancia de TENANT_B dentro de TENANT_A lanza PersistenceTenantMismatch', async () => {
+      it('(g) create with a TENANT_B instance inside TENANT_A throws PersistenceTenantMismatch', async () => {
         const foreign = SagaInstanceBuilder.aSaga()
           .with({
             id: ID_C,
@@ -266,7 +266,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         );
       });
 
-      it('(h) una saga de TENANT_B sin contexto aparece como recuperable con su tenant y se lee con ShardedSagaScopes', async () => {
+      it('(h) a TENANT_B saga without context shows up as recoverable with its tenant and is read with ShardedSagaScopes', async () => {
         await inB(() =>
           store.create(
             SagaInstanceBuilder.aSaga()
@@ -281,7 +281,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
 
         expect(candidate?.tenantId).toBe(ShardedTestDatabase.TENANT_B);
         if (candidate === undefined) {
-          throw new Error('la saga de B no es recuperable');
+          throw new Error('the B saga is not recoverable');
         }
         const found = await new ShardedSagaScopes(db.scope).run(candidate, () =>
           store.get(ID_B),
@@ -290,7 +290,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         expect(found?.context).toBeNull();
       });
 
-      it('la bitácora devuelve hacia delante antes que compensar en la misma posición', async () => {
+      it('the log returns forward before compensate at the same position', async () => {
         await inA(async () => {
           await store.create(
             SagaInstanceBuilder.aSaga().with({ id: ID_A }).build(),

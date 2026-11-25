@@ -21,7 +21,7 @@ export class MarkedFile {
     if (found === undefined) {
       throw new GeneratorError(
         GeneratorErrorReason.MissingMarker,
-        `${this.path} no tiene el marcador "${tag}"`,
+        `${this.path} does not have the marker "${tag}"`,
       );
     }
     const indent = found.slice(0, found.length - found.trimStart().length);

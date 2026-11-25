@@ -172,7 +172,7 @@ export class AuthProviders {
         {
           path: `AuthModule.${name}`,
           code: 'custom',
-          message: 'es obligatorio',
+          message: 'is required',
         },
       ]);
     }
@@ -194,7 +194,7 @@ export class AuthProviders {
                 path: 'AUTH_JWKS_URL',
                 code: 'custom',
                 message:
-                  'se necesita cuando el módulo no recibe su propia JwksKeySource',
+                  'required when the module does not receive its own JwksKeySource',
               },
             ]);
           }

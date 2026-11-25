@@ -39,7 +39,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
 
   beforeAll(async () => {
     await app.start();
-    const owners = await new ShardedUsers(app).oneInEachShard('dueno');
+    const owners = await new ShardedUsers(app).oneInEachShard('owner');
     for (const [index, { ref }] of [...owners.values()].entries()) {
       organizations.push({
         tenantId: await createOrganization(`org-${index}`, ref),
@@ -51,8 +51,8 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   /** An organization with two owners and the owners group, in its shard. */
   const organizationWithTwoOwners = async (slug: string) => {
     const users = new ShardedUsers(app);
-    const firstOwner = await users.register(`primera.${slug}@example.com`);
-    const secondOwner = await users.register(`segunda.${slug}@example.com`);
+    const firstOwner = await users.register(`first.${slug}@example.com`);
+    const secondOwner = await users.register(`second.${slug}@example.com`);
     const tenantId = await createOrganization(slug, firstOwner);
     const probe = app.shards();
     const shard = await probe.shardOfTenant(tenantId);
@@ -291,7 +291,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
 
   it('reads a page of members after a user id, in ascending user id', async () => {
     const { tenantId, firstOwner, secondOwner } =
-      await organizationWithTwoOwners('paginas');
+      await organizationWithTwoOwners('pages');
     const [lower, higher] = [firstOwner.userId, secondOwner.userId].sort();
     const page = (after: string | undefined) =>
       app
@@ -308,7 +308,8 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   });
 
   it('deletes on erasure the tombstone an earlier removal left in a tenant the user no longer belongs to', async () => {
-    const { tenantId, firstOwner } = await organizationWithTwoOwners('lapida');
+    const { tenantId, firstOwner } =
+      await organizationWithTwoOwners('tombstone');
     await app
       .get(ManageMembers)
       .remove(
@@ -330,7 +331,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
 
   it('keeps one owner when two owners are removed at the same time', async () => {
     const { tenantId, shard, firstOwner, secondOwner } =
-      await organizationWithTwoOwners('dos-duenas');
+      await organizationWithTwoOwners('two-owners');
     const members = app.get(ManageMembers);
     const granted = SystemRolePermissions[TenantRole.Owner];
 
@@ -362,7 +363,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
 
   it('waits for a change of the same tenant in flight before checking the last owner', async () => {
     const { tenantId, shard, firstOwner, secondOwner } =
-      await organizationWithTwoOwners('cambio-en-curso');
+      await organizationWithTwoOwners('change-in-progress');
     const probe = app.shards();
     const source = new DataSource({
       type: 'postgres',

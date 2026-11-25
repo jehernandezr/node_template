@@ -14,14 +14,14 @@ const sample = (code: string): ErrorCatalogEntry => ({
   retryable: false,
   audience: ErrorAudience.Public,
   messageKey: messageKeyFor(code),
-  description: 'Ejemplo.',
+  description: 'Example.',
 });
 
 const spec = {
   httpStatus: 400,
   retryable: false,
   audience: ErrorAudience.Public,
-  description: 'Ejemplo.',
+  description: 'Example.',
 };
 
 describe('messageKeyFor', () => {
@@ -96,11 +96,11 @@ describe('ErrorCatalog', () => {
     catalog.register([sample('PLATFORM.TEST.ONE')]);
     expect(() =>
       catalog.register([
-        { ...sample('PLATFORM.TEST.ONE'), description: 'Otra.' },
+        { ...sample('PLATFORM.TEST.ONE'), description: 'Other.' },
       ]),
     ).not.toThrow();
     expect(catalog.all()).toHaveLength(1);
-    expect(catalog.get('PLATFORM.TEST.ONE')?.description).toBe('Ejemplo.');
+    expect(catalog.get('PLATFORM.TEST.ONE')?.description).toBe('Example.');
   });
 
   it('ignores an equivalent entry repeated inside the same batch', () => {

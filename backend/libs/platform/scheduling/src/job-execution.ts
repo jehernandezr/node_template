@@ -42,7 +42,10 @@ export class JobExecution {
       if (job.exclusive) {
         lease = await this.lock.tryAcquire(job.name, job.timeoutMs);
         if (lease === undefined) {
-          this.logger.debug('Job omitido: otro proceso tiene el lock', fields);
+          this.logger.debug(
+            'Job skipped: another process holds the lock',
+            fields,
+          );
           return this.finish(job, JobRunResult.Skipped, startedAt);
         }
       }
@@ -52,7 +55,7 @@ export class JobExecution {
       );
       return this.finish(job, JobRunResult.Succeeded, startedAt);
     } catch (error) {
-      this.logger.error('Falló la corrida del job', {
+      this.logger.error('Job run failed', {
         ...fields,
         error: ErrorDescriptor.describe(error),
       });
@@ -91,7 +94,7 @@ export class JobExecution {
     try {
       await this.lock.release(lease);
     } catch (error) {
-      this.logger.warn('No se pudo liberar el lock del job', {
+      this.logger.warn('Could not release the job lock', {
         ...fields,
         error: ErrorDescriptor.describe(error),
       });

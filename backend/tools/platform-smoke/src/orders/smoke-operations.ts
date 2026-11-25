@@ -12,7 +12,7 @@ export class SmokeOperations {
     output: z.object({ reserved: z.boolean() }),
     idempotent: true,
     compensatedBy: 'smoke.stock.release.v1',
-    description: 'Reserva stock para un pedido.',
+    description: 'Reserves stock for an order.',
     timeoutMs: 10_000,
     retry: { maxAttempts: 2, baseMs: 10, maxMs: 50 },
   });
@@ -24,8 +24,8 @@ export class SmokeOperations {
     idempotent: true,
     compensatedBy: Compensation.None,
     compensationReason:
-      'Liberar una reserva ya liberada no tiene nada que deshacer.',
-    description: 'Libera la reserva de un pedido.',
+      'Releasing an already released reservation has nothing to undo.',
+    description: 'Releases the reservation of an order.',
     timeoutMs: 10_000,
     retry: { maxAttempts: 2, baseMs: 10, maxMs: 50 },
   });
@@ -37,8 +37,7 @@ export class SmokeOperations {
     idempotent: true,
     mutating: false,
     errors: [PAYMENT_DECLINED],
-    description:
-      'Verifica el pago del pedido; puede fallar a propósito en la prueba.',
+    description: 'Verifies the order payment; may fail on purpose in the test.',
     timeoutMs: 10_000,
     retry: { maxAttempts: 1, baseMs: 10, maxMs: 10 },
   });

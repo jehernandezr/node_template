@@ -20,7 +20,7 @@ const hiddenCatalog = defineErrorCatalog(SpecErrorCode, {
   [SpecErrorCode.Hidden]: ErrorSpecs.internal(
     500,
     false,
-    'Error interno de prueba.',
+    'Test internal error.',
   ),
 });
 
@@ -33,12 +33,12 @@ describe('ProblemDetailsFactory', () => {
 
       const problem = factory.create({
         entry: validationEntry,
-        title: 'Falta un dato',
+        title: 'A field is missing',
       });
 
       expect(problem).toEqual({
         type: 'https://docs.example.com/errors/PLATFORM.VALIDATION.REQUIRED',
-        title: 'Falta un dato',
+        title: 'A field is missing',
         status: 400,
         code: 'PLATFORM.VALIDATION.REQUIRED',
       });
@@ -52,8 +52,8 @@ describe('ProblemDetailsFactory', () => {
 
       const problem = factory.create({
         entry: validationEntry,
-        title: 'Falta un dato',
-        detail: 'Indica el código.',
+        title: 'A field is missing',
+        detail: 'Provide the code.',
         instance: '/v1/mfa/verify',
         traceId: '0193f1c2-abcd',
         errors: [{ field: 'code', code: PlatformErrorCode.ValidationRequired }],
@@ -61,10 +61,10 @@ describe('ProblemDetailsFactory', () => {
 
       expect(problem).toEqual({
         type: 'https://docs.example.com/errors/PLATFORM.VALIDATION.REQUIRED',
-        title: 'Falta un dato',
+        title: 'A field is missing',
         status: 400,
         code: 'PLATFORM.VALIDATION.REQUIRED',
-        detail: 'Indica el código.',
+        detail: 'Provide the code.',
         instance: '/v1/mfa/verify',
         traceId: '0193f1c2-abcd',
         errors: [{ field: 'code', code: 'PLATFORM.VALIDATION.REQUIRED' }],
@@ -100,7 +100,7 @@ describe('ProblemDetailsFactory', () => {
         ...internalEntry,
         code: 'DEMO.INTERNAL.CRASH',
         httpStatus: 503,
-        description: 'Servicio caído',
+        description: 'Service down',
       };
       const factory = new ProblemDetailsFactory(typeBaseUrl, unexpected);
 
@@ -112,7 +112,7 @@ describe('ProblemDetailsFactory', () => {
 
       expect(problem).toEqual({
         type: 'https://docs.example.com/errors/DEMO.INTERNAL.CRASH',
-        title: 'Servicio caído',
+        title: 'Service down',
         status: 503,
         code: 'DEMO.INTERNAL.CRASH',
         traceId: '0193f1c2-abcd',
@@ -128,14 +128,14 @@ describe('ProblemDetailsFactory', () => {
 
       const problem = factory.create({
         entry: publicEntry,
-        title: 'Falta un dato',
-        detail: 'Indica el código.',
+        title: 'A field is missing',
+        detail: 'Provide the code.',
       });
 
       expect(problem).toMatchObject({
         code: 'PLATFORM.VALIDATION.REQUIRED',
         status: 400,
-        detail: 'Indica el código.',
+        detail: 'Provide the code.',
       });
     });
 
@@ -169,7 +169,7 @@ describe('ProblemDetailsFactory', () => {
 
       const problem = factory.create({
         entry: validationEntry,
-        title: 'Falta un dato',
+        title: 'A field is missing',
         details: { apiBaseUrl: 'https://sa.example.com' },
       });
 

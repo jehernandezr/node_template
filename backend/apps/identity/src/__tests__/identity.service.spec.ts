@@ -15,7 +15,7 @@ import { IdentityTestEnvironment, StaticAppConfig } from './utils/index.js';
 class FixedCredentials extends AwsCredentialsProvider {
   async resolve(): Promise<AwsCredentials> {
     return {
-      accessKeyId: ['AKID', 'PRUEBA'].join(''),
+      accessKeyId: ['AKID', 'TEST'].join(''),
       secretAccessKey: ['s', 'k'].join(''),
     };
   }
@@ -63,7 +63,7 @@ describe('identityService', () => {
 
     expect(() =>
       identityService.internalApi?.http?.(new StaticAppConfig(config), {}),
-    ).toThrow('INTERNAL_API_BASE_URLS no tiene la URL de billing');
+    ).toThrow('INTERNAL_API_BASE_URLS does not have the URL of billing');
   });
 
   it('signs with SigV4 and the role of the service when INTERNAL_API_SIGNER asks for it', () => {

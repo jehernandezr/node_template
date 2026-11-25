@@ -3,7 +3,7 @@ import nx from '@nx/eslint-plugin';
 const awsSdkPattern = {
   group: ['@aws-sdk/*'],
   message:
-    '@aws-sdk/* solo se importa dentro de backend/libs/platform/adapters/aws (ADR 0002).',
+    '@aws-sdk/* is only imported inside backend/libs/platform/adapters/aws (ADR 0002).',
 };
 
 // No infrastructure or framework enters the domain.
@@ -11,7 +11,7 @@ const domainPatterns = [
   awsSdkPattern,
   {
     group: ['typeorm', 'typeorm/*', '@nestjs/*', 'pg', 'pg/*'],
-    message: 'El dominio no depende de infraestructura ni de frameworks.',
+    message: 'The domain does not depend on infrastructure or frameworks.',
   },
 ];
 
@@ -43,7 +43,7 @@ const nestBoundaryRule = {
     schema: [],
     messages: {
       nestOutsideFolder:
-        'Fuera de src/nest/ no se importa @nestjs/* ni una sub-entrada @platform/<lib>/nest.',
+        'Outside src/nest/, @nestjs/* and @platform/<lib>/nest sub-entries are not imported.',
     },
   },
   create: (context) => {
@@ -70,19 +70,19 @@ const layoutPlugin = {
     // Jest only runs tests in __tests__ folders (jest.preset.js): a
     // test outside them would never run.
     'tests-in-tests-folder': fileRule(
-      'Las pruebas van en la carpeta __tests__ de la carpeta del código que prueban.',
+      'Tests go in the __tests__ folder of the folder holding the code they test.',
       (file) =>
         /\.(int-)?spec\.ts$/.test(file) && !file.includes('/__tests__/'),
     ),
     // What tests share (fakes, builders, containers) lives in __tests__/utils.
     'test-utils-in-tests-folder': fileRule(
-      'Los utilitarios de prueba van en __tests__/utils, no en una carpeta testing aparte.',
+      'Test utilities go in __tests__/utils, not in a separate testing folder.',
       (file) =>
         /\/src\/(.+\/)?(testing|test|support)\//.test(file) &&
         !file.includes('/__tests__/'),
     ),
     'no-src-lib': fileRule(
-      'El código va directo en src/, sin src/lib/.',
+      'Code goes directly in src/, without src/lib/.',
       (file) => file.includes('/src/lib/'),
     ),
   },

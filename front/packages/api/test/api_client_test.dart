@@ -155,7 +155,7 @@ void main() {
     test('error answers become ApiErrorException with the problem', () async {
       transport.next = _json(400, {
         'type': 'https://docs.example.com/errors/IDENTITY.MFA.CODE_EXPIRED',
-        'title': 'El código expiró',
+        'title': 'The code expired',
         'status': 400,
         'code': 'IDENTITY.MFA.CODE_EXPIRED',
         'traceId': 'trace-1',

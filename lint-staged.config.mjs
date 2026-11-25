@@ -1,11 +1,11 @@
-// Cada archivo pasa por un solo grupo de comandos: lint-staged corre en paralelo los grupos
-// distintos, así que dos globs que coinciden en un archivo podrían reescribirlo a la vez.
+// Each file goes through a single group of commands: lint-staged runs the different groups
+// in parallel, so two globs that match one file could rewrite it at the same time.
 const quote = (files) => files.map((file) => `"${file}"`).join(' ');
 const isBackendTs = (file) => /[\\/]backend[\\/].*\.ts$/.test(file);
 
 export default {
-  // TypeScript del backend: primero ESLint (configuración de backend/) y luego Prettier, en orden.
-  // El resto: Prettier con la configuración de la raíz.
+  // Backend TypeScript: first ESLint (backend/ configuration) and then Prettier, in order.
+  // The rest: Prettier with the root configuration.
   '*.{js,mjs,cjs,ts,json,md,yml,yaml}': (files) => {
     const backendTs = files.filter(isBackendTs);
     return [
@@ -15,6 +15,6 @@ export default {
       `prettier --write ${quote(files)}`,
     ];
   },
-  // El front se formatea con las herramientas de Dart.
+  // The front is formatted with the Dart tools.
   'front/**/*.dart': 'dart format',
 };

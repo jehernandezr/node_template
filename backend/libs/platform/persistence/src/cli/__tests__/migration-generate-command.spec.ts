@@ -66,7 +66,7 @@ describe('MigrationGenerateCommand', () => {
 
       expect(code).toBe(2);
       expect(lines).toEqual([
-        expect.stringContaining('Uso: migration-generate'),
+        expect.stringContaining('Usage: migration-generate'),
       ]);
       expect(generator.requests).toEqual([]);
     });
@@ -104,7 +104,7 @@ describe('MigrationGenerateCommand', () => {
 
       expect(code).toBe(2);
       expect(lines).toEqual([
-        'La definicion no exporta por defecto un DatabaseSetDefinition',
+        'The definition does not default-export a DatabaseSetDefinition',
       ]);
     });
   });
@@ -124,7 +124,7 @@ describe('MigrationGenerateCommand', () => {
 
       expect(code).toBe(0);
       expect(lines).toEqual([
-        'Migracion generada: /tmp/migrations/1794700000001-CreateProbes.ts',
+        'Migration generated: /tmp/migrations/1794700000001-CreateProbes.ts',
       ]);
       expect(generator.requests[0]).toMatchObject({
         name: 'CreateProbes',
@@ -144,9 +144,7 @@ describe('MigrationGenerateCommand', () => {
       const code = await command.run(argsFor(PROBE_DEFINITION));
 
       expect(code).toBe(0);
-      expect(lines).toEqual([
-        'Sin cambios: las entidades coinciden con las migraciones',
-      ]);
+      expect(lines).toEqual(['No changes: the entities match the migrations']);
     });
   });
 

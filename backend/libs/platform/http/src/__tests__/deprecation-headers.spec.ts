@@ -6,7 +6,7 @@ const plain = defineRoute({
   method: HttpMethod.Get,
   path: '/v1/plain',
   access: Access.public(),
-  description: 'Sin deprecar.',
+  description: 'Not deprecated.',
 });
 const deprecated = defineRoute({
   id: 'demo.old.get',
@@ -18,7 +18,7 @@ const deprecated = defineRoute({
     sunset: '2026-06-01',
     replacement: 'demo.new.get',
   },
-  description: 'Deprecada.',
+  description: 'Deprecated.',
 });
 
 describe('DeprecationHeaders', () => {

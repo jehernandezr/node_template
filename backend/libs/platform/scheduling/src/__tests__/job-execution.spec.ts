@@ -168,9 +168,9 @@ describe('JobExecution', () => {
       });
       const outcome = expect(
         execution.execute(job, shutdown.signal),
-      ).rejects.toThrow('apagado');
+      ).rejects.toThrow('shut down');
       await Eventually.until(() => job.runs === 1);
-      shutdown.abort(new Error('apagado'));
+      shutdown.abort(new Error('shut down'));
       await outcome;
       expect(job.abortedRuns).toBe(1);
     });

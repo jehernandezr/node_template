@@ -6,6 +6,6 @@ export const rateLimitErrorCatalog = defineErrorCatalog(RateLimitErrorCode, {
   [RateLimitErrorCode.Exceeded]: ErrorSpecs.pub(
     429,
     true,
-    'Se superó el límite de solicitudes. Intenta de nuevo más tarde.',
+    'The request limit was exceeded. Try again later.',
   ),
 });

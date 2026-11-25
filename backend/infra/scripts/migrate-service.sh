@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Aplica las migraciones de un servicio contra la base de datos de su ambiente.
-# Uso: migrate-service.sh <ambiente> <servicio>
+# Applies the migrations of a service against the database of its environment.
+# Usage: migrate-service.sh <environment> <service>
 #
-# El runner que ejecuta este script debe alcanzar la base (RDS Proxy dentro de la VPC), por eso
-# deploy.yml usa vars.DEPLOY_RUNNER: un runner propio dentro de la VPC, no uno hospedado por GitHub.
+# The runner that executes this script must reach the database (RDS Proxy inside the VPC), which is why
+# deploy.yml uses vars.DEPLOY_RUNNER: a self-hosted runner inside the VPC, not one hosted by GitHub.
 #
-# Lee las salidas db, service_databases y db_service_secret_arns del stack data, obtiene las
-# credenciales del servicio de Secrets Manager, las enmascara en los logs y exporta DB_PROXY_HOST,
-# DB_PORT, DB_DATABASES y DB_CREDENTIALS para pnpm nx run <servicio>:migrate.
-# DRY_RUN=1 lee con capture, no exporta valores reales y ejecuta el migrate solo como comando impreso.
+# Reads the db, service_databases and db_service_secret_arns outputs of the data stack, gets the
+# credentials of the service from Secrets Manager, masks them in the logs and exports DB_PROXY_HOST,
+# DB_PORT, DB_DATABASES and DB_CREDENTIALS for pnpm nx run <service>:migrate.
+# DRY_RUN=1 reads with capture, exports no real values and runs migrate only as a printed command.
 set -euo pipefail
 
 # shellcheck source=pipeline-common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pipeline-common.sh"
 
-ENVIRONMENT="${1:?uso: migrate-service.sh <ambiente> <servicio>}"
-SERVICE="${2:?uso: migrate-service.sh <ambiente> <servicio>}"
-require_identifier "ambiente" "$ENVIRONMENT"
-require_identifier "servicio" "$SERVICE"
+ENVIRONMENT="${1:?usage: migrate-service.sh <environment> <service>}"
+SERVICE="${2:?usage: migrate-service.sh <environment> <service>}"
+require_identifier "environment" "$ENVIRONMENT"
+require_identifier "service" "$SERVICE"
 cd "$REPO_ROOT"
 
 data_stack="$TF_ROOT/stacks/data"
@@ -36,14 +36,14 @@ if is_dry; then
   secret_arn='<dry-run>'
   credentials="$(capture aws secretsmanager get-secret-value --secret-id "$secret_arn" \
     --query SecretString --output text)"
-  dry_text 'echo "::add-mask::<credenciales de la base>"'
+  dry_text 'echo "::add-mask::<database credentials>"'
 else
   proxy_host="$(json_get "$db_json" 'o.proxy_endpoint')"
   port="$(json_get "$db_json" 'o.port')"
   databases="$(json_get "$databases_json" "o['$SERVICE']")"
   secret_arn="$(json_get "$secrets_json" "o['$SERVICE']")"
   if [[ -z "$databases" || -z "$secret_arn" ]]; then
-    log "El servicio $SERVICE no está en service_databases de $ENVIRONMENT: agrégalo al stack data"
+    log "The service $SERVICE is not in service_databases of $ENVIRONMENT: add it to the data stack"
     exit 1
   fi
   credentials="$(aws secretsmanager get-secret-value --secret-id "$secret_arn" \

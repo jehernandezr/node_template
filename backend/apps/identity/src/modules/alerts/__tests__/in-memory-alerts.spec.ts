@@ -37,7 +37,7 @@ describe('InMemoryIdentityMailer', () => {
     await mailer.send({
       template: IdentityEmailTemplate.EmailVerification,
       to: 'ana@example.com',
-      variables: { code: 'enlace-de-prueba' },
+      variables: { code: 'test-link' },
     });
     await mailer.send({
       template: IdentityEmailTemplate.MfaCode,

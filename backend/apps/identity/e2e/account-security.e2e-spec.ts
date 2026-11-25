@@ -19,18 +19,19 @@ import {
 const runtime = new ContainerRuntime(process.env);
 const UNKNOWN_PROOF = RuntimeTestValue.hyphenated(
   'token',
-  'que',
-  'no',
-  'existe',
+  'that',
+  'does',
+  'not',
+  'exist',
 );
-const PUSH_DESTINATION = RuntimeTestValue.hyphenated('push', 'de', 'prueba');
+const PUSH_DESTINATION = RuntimeTestValue.hyphenated('test', 'push');
 const SHORT_PHRASE = RuntimeTestValue.concatenated('password', '1234');
 const NEW_PHRASE = RuntimeTestValue.hyphenated(
-  'Una',
-  'frase',
-  'nueva',
-  'y',
-  'larga',
+  'A',
+  'new',
+  'and',
+  'long',
+  'phrase',
   '2026',
 );
 
@@ -39,7 +40,7 @@ runtime.describeIfAvailable('account security end to end', () => {
 
   const app = new IdentityTestApp();
   const totp = new TotpCodes();
-  const rita = new IdentityJourney(app, 'rita.cuenta@example.com');
+  const rita = new IdentityJourney(app, 'rita.account@example.com');
   let session: SessionTokensBody;
   let me: HttpTestClient;
   let deviceId: string;
@@ -86,7 +87,7 @@ runtime.describeIfAvailable('account security end to end', () => {
   });
 
   it('changes the email with the token sent to the new address', async () => {
-    const newEmail = 'rita.nueva@example.com';
+    const newEmail = 'rita.new@example.com';
     const requested = await me.post('/v1/me/email-changes', {
       body: { newEmail },
     });

@@ -34,7 +34,7 @@ describe('AppBundler', () => {
     write(
       workspace,
       'backend/libs/probe/src/index.ts',
-      "export class Greeter { greet(): string { return 'hola'; } }\n",
+      "export class Greeter { greet(): string { return 'hello'; } }\n",
     );
     write(
       workspace,
@@ -76,7 +76,7 @@ describe('AppBundler', () => {
 
     expect(outdir).toBe(join(workspace, 'backend', 'dist', 'probe'));
     const main = readFileSync(join(outdir, 'main.mjs'), 'utf8');
-    expect(main).toContain('hola');
+    expect(main).toContain('hello');
     expect(main).toContain('toUpperCase');
     expect(main).not.toContain('@probe/lib');
     expect(readFileSync(join(outdir, 'worker.mjs'), 'utf8')).toContain(

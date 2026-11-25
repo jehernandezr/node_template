@@ -71,7 +71,7 @@ class FakeAuthRepository implements AuthRepository {
     if (error != null) throw error;
     final tokens = refreshResult;
     if (tokens == null) {
-      throw StateError('FakeAuthRepository.refreshResult no configurado');
+      throw StateError('FakeAuthRepository.refreshResult not configured');
     }
     return tokens;
   }

@@ -21,14 +21,14 @@ function scopeOf(): ShardScope {
 }
 
 describe('ShardedSagaScopes', () => {
-  it('rechaza una instancia sin tenant con PersistenceTenantRequired', async () => {
+  it('rejects an instance without a tenant with PersistenceTenantRequired', async () => {
     const scopes = new ShardedSagaScopes(scopeOf());
     const instance = SagaInstanceBuilder.aSaga()
       .with({ context: null })
       .build();
 
     const error = await scopes
-      .run(instance, async () => 'nunca')
+      .run(instance, async () => 'never')
       .catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(PersistenceError);
@@ -37,7 +37,7 @@ describe('ShardedSagaScopes', () => {
     );
   });
 
-  it('corre body con el tenant de la instancia fijado en el ámbito', async () => {
+  it('runs body with the instance tenant set in the scope', async () => {
     const scope = scopeOf();
     const scopes = new ShardedSagaScopes(scope);
     const instance = SagaInstanceBuilder.aSaga()
@@ -55,7 +55,7 @@ describe('ShardedSagaScopes', () => {
     });
   });
 
-  it('devuelve lo que devuelve body', async () => {
+  it('returns what body returns', async () => {
     const scopes = new ShardedSagaScopes(scopeOf());
     const instance = SagaInstanceBuilder.aSaga()
       .with({ context: { tenantId: ShardedTestDatabase.TENANT_A } })

@@ -20,7 +20,7 @@ export class JobSchedulePlanner {
     if (!Number.isFinite(job.timeoutMs) || job.timeoutMs <= 0) {
       throw new InvalidJobScheduleError(
         job.name,
-        'timeoutMs debe ser un número finito positivo',
+        'timeoutMs must be a positive finite number',
       );
     }
     const { schedule } = job;
@@ -31,14 +31,14 @@ export class JobSchedulePlanner {
     if (!Number.isInteger(schedule.everyMs) || schedule.everyMs <= 0) {
       throw new InvalidJobScheduleError(
         job.name,
-        'everyMs debe ser un entero positivo',
+        'everyMs must be a positive integer',
       );
     }
     const jitter = schedule.jitterRatio ?? 0;
     if (!(jitter >= 0 && jitter <= 1)) {
       throw new InvalidJobScheduleError(
         job.name,
-        'jitterRatio debe estar entre 0 y 1',
+        'jitterRatio must be between 0 and 1',
       );
     }
   }

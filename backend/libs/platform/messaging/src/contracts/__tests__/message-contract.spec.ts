@@ -9,13 +9,13 @@ import { MessageKind } from '../message-contract.js';
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
   payload: z.object({ id: z.string() }),
-  description: 'Una tarea cambió.',
+  description: 'A task changed.',
 });
 
 const GenerateReport = defineCommand({
   type: 'reports.report.generate.v1',
   payload: z.object({ reportId: z.string() }),
-  description: 'Genera un reporte.',
+  description: 'Generates a report.',
 });
 
 describe('message contracts', () => {

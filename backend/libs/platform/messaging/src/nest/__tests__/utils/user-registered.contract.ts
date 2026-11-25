@@ -5,5 +5,5 @@ import { z } from 'zod';
 export const UserRegisteredV1 = defineEvent({
   type: 'tests.user.registered.v1',
   payload: z.object({ userId: z.string().min(1) }),
-  description: 'Se registró un usuario.',
+  description: 'A user was registered.',
 });

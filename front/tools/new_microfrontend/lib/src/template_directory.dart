@@ -30,9 +30,7 @@ final class TemplateDirectory {
   /// does not exist or holds no file.
   List<TemplateFile> read() {
     if (!root.existsSync()) {
-      throw ScaffoldException(
-        'No existe la carpeta de plantillas: ${root.path}',
-      );
+      throw ScaffoldException('Templates folder does not exist: ${root.path}');
     }
     final base = root.absolute.uri.path;
     final prefix = base.endsWith('/') ? base : '$base/';
@@ -53,7 +51,7 @@ final class TemplateDirectory {
     }
     if (files.isEmpty) {
       throw ScaffoldException(
-        'La carpeta de plantillas no tiene archivos .tmpl: ${root.path}',
+        'Templates folder has no .tmpl files: ${root.path}',
       );
     }
     files.sort((a, b) => a.relativePath.compareTo(b.relativePath));

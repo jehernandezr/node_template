@@ -133,7 +133,7 @@ describe('SagaModule', () => {
     moduleRef = undefined;
   });
 
-  it('un caso de uso inyecta Sagas y su saga termina Completed; la clave repetida devuelve la misma', async () => {
+  it('a use case injects Sagas and its saga ends Completed; the repeated key returns the same one', async () => {
     moduleRef = await compile([
       SagaModule.forRoot(rootOptions()),
       SagaModule.forFeature([ThreeStepSaga]),
@@ -148,7 +148,7 @@ describe('SagaModule', () => {
     expect(again.id).toBe(first.id);
   });
 
-  it('forRoot sin store lanza SagaError InvalidConfiguration', () => {
+  it('forRoot without a store throws SagaError InvalidConfiguration', () => {
     const attempt = () => SagaModule.forRoot({ invoker: FakeParticipant });
 
     expect(attempt).toThrow(SagaError);
@@ -161,7 +161,7 @@ describe('SagaModule', () => {
     }
   });
 
-  it('una definición inválida registrada con forFeature tumba el arranque', async () => {
+  it('an invalid definition registered with forFeature breaks startup', async () => {
     moduleRef = await compile([
       SagaModule.forRoot(rootOptions()),
       SagaModule.forFeature([BrokenSaga]),
@@ -170,7 +170,7 @@ describe('SagaModule', () => {
     await expect(moduleRef.init()).rejects.toBeInstanceOf(SagaError);
   });
 
-  it('Sagas, SagaEngine, SagaRecoveryJob y SagaRetentionJob se pueden resolver', async () => {
+  it('Sagas, SagaEngine, SagaRecoveryJob and SagaRetentionJob can be resolved', async () => {
     moduleRef = await compile([SagaModule.forRoot(rootOptions())]);
     await moduleRef.init();
 
@@ -180,7 +180,7 @@ describe('SagaModule', () => {
     expect(moduleRef.get(SagaRetentionJob)).toBeInstanceOf(SagaRetentionJob);
   });
 
-  it('owner, leaseMs y maxStepDurationMs llegan a SagaSettings con sus valores', async () => {
+  it('owner, leaseMs and maxStepDurationMs reach SagaSettings with their values', async () => {
     moduleRef = await compile([
       SagaModule.forRoot(rootOptions({ owner: 'node-z' })),
     ]);
@@ -193,7 +193,7 @@ describe('SagaModule', () => {
     expect(settings.maxStepDurationMs).toBe(100);
   });
 
-  it('sin owner, leaseMs ni maxStepDurationMs usa los valores por defecto', async () => {
+  it('without owner, leaseMs or maxStepDurationMs it uses the default values', async () => {
     moduleRef = await compile([
       SagaModule.forRoot({
         store: InMemorySagaStore,
@@ -209,7 +209,7 @@ describe('SagaModule', () => {
     expect(settings.maxStepDurationMs).toBe(SagaSettings.DEFAULT_MAX_STEP_MS);
   });
 
-  it('la opción random se usa como fuente de aleatoriedad cuando se pasa', async () => {
+  it('the random option is used as the randomness source when passed', async () => {
     moduleRef = await compile([
       SagaModule.forRoot(rootOptions({ random: FixedRandom })),
     ]);
@@ -218,7 +218,7 @@ describe('SagaModule', () => {
     expect(moduleRef.get(RandomSource)).toBeInstanceOf(FixedRandom);
   });
 
-  it('sin random, la aleatoriedad es SystemRandomSource', async () => {
+  it('without random, the randomness source is SystemRandomSource', async () => {
     moduleRef = await compile([SagaModule.forRoot(rootOptions())]);
     await moduleRef.init();
 

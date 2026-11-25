@@ -44,7 +44,7 @@ export class ErrorCatalogRegistry {
     }
     if (missing.size > 0) {
       const codes = [...missing].sort().join(', ');
-      throw new Error(`Códigos de error sin entrada en el catálogo: ${codes}`);
+      throw new Error(`Error codes with no catalog entry: ${codes}`);
     }
   }
 }

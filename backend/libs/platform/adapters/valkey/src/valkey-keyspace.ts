@@ -24,7 +24,7 @@ export class ValkeyKeyspace {
         {
           path: source,
           code: 'custom',
-          message: 'se esperan de 1 a 64 caracteres en [A-Za-z0-9_-]',
+          message: 'expected 1 to 64 characters in [A-Za-z0-9_-]',
         },
       ]);
     }

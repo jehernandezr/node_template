@@ -6,16 +6,16 @@ export const authErrorCatalog = defineErrorCatalog(AuthErrorCode, {
   [AuthErrorCode.TokenExpired]: ErrorSpecs.pub(
     401,
     true,
-    'El access token venció. Refresca la sesión y reintenta.',
+    'The access token expired. Refresh the session and retry.',
   ),
   [AuthErrorCode.InvalidKey]: ErrorSpecs.internal(
     500,
     false,
-    'La clave pública del token no es una clave EC P-256 válida.',
+    'The token public key is not a valid EC P-256 key.',
   ),
   [AuthErrorCode.JwksUnavailable]: ErrorSpecs.internal(
     503,
     true,
-    'No se pudo obtener el conjunto de claves públicas del emisor.',
+    'Could not fetch the issuer public key set.',
   ),
 });
