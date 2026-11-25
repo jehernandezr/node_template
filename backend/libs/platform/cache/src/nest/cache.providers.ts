@@ -1,10 +1,5 @@
 import type { Abstract, Provider, Type } from '@nestjs/common';
-import {
-  Clock,
-  RandomSource,
-  SystemClock,
-  SystemRandomSource,
-} from '@platform/kernel';
+import { Clock, RandomSource } from '@platform/kernel';
 import type { MetricsPort } from '@platform/observability';
 import { CachePort } from '../cache-port.js';
 import { CallerWait } from '../caller-wait.js';
@@ -22,8 +17,6 @@ import type {
 export class CacheProviders {
   static build(extras: CacheModuleExtras): Provider[] {
     return [
-      { provide: Clock, useClass: SystemClock },
-      { provide: RandomSource, useClass: SystemRandomSource },
       {
         provide: InMemoryCache,
         useFactory: (clock: Clock) => new InMemoryCache({ clock }),

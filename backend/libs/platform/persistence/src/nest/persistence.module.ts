@@ -1,6 +1,6 @@
 import { Module, type DynamicModule, type Provider } from '@nestjs/common';
 import { ConfigModule } from '@platform/config/nest';
-import { Clock, SystemClock, TransactionManager } from '@platform/kernel';
+import { Clock, TransactionManager } from '@platform/kernel';
 import { LoggerPort, RequestContextStore } from '@platform/observability';
 import { ShardKey, ShardRouter, TenantWriteWaiter } from '@platform/sharding';
 import { AcrossShards } from '../across-shards.js';
@@ -206,16 +206,16 @@ export class PersistenceModule extends PersistenceModuleClass {
           factory: DataSourceFactory,
           endpoints: InstanceEndpointResolver,
           options: PersistenceModuleOptions,
-          clock: Clock | undefined,
+          clock: Clock,
         ) =>
-          new ShardDataSources(factory, endpoints, clock ?? new SystemClock(), {
+          new ShardDataSources(factory, endpoints, clock, {
             idleTtlMs: options.idleTtlMs ?? DEFAULT_IDLE_TTL_MS,
           }),
         inject: [
           DataSourceFactory,
           InstanceEndpointResolver,
           PERSISTENCE_OPTIONS,
-          { token: Clock, optional: true },
+          Clock,
         ],
       },
       {
@@ -309,20 +309,9 @@ export class PersistenceModule extends PersistenceModuleClass {
           lister: ShardLister,
           sources: ShardDataSources,
           transactions: TransactionManager,
-          clock: Clock | undefined,
-        ) =>
-          new AcrossShards(
-            lister,
-            sources,
-            transactions,
-            clock ?? new SystemClock(),
-          ),
-        inject: [
-          ShardLister,
-          ShardDataSources,
-          TransactionManager,
-          { token: Clock, optional: true },
-        ],
+          clock: Clock,
+        ) => new AcrossShards(lister, sources, transactions, clock),
+        inject: [ShardLister, ShardDataSources, TransactionManager, Clock],
       },
       {
         provide: ShardedMigrationRunner,

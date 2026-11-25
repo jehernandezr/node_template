@@ -3,10 +3,7 @@ import {
   Clock,
   IdGenerator,
   RandomSource,
-  SystemClock,
-  SystemRandomSource,
   TransactionManager,
-  UuidV7IdGenerator,
 } from '@platform/kernel';
 import { TraceContextRestorer, Tracing } from '@platform/observability';
 import { FailureClassifier } from '@platform/primitives';
@@ -35,14 +32,6 @@ export class MessagingProviders {
       Pick<MessagingModuleExtras, 'outboxStore' | 'processedStore'>
     >;
     return [
-      { provide: Clock, useFactory: () => new SystemClock() },
-      { provide: RandomSource, useFactory: () => new SystemRandomSource() },
-      {
-        provide: IdGenerator,
-        useFactory: (clock: Clock, random: RandomSource) =>
-          new UuidV7IdGenerator(clock, random),
-        inject: [Clock, RandomSource],
-      },
       { provide: OutboxStore, useExisting: outboxStore },
       { provide: OutboxWriter, useExisting: outboxStore },
       { provide: ProcessedMessageStore, useExisting: processedStore },

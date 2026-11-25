@@ -4,10 +4,7 @@ import {
   Clock,
   IdGenerator,
   RandomSource,
-  SystemClock,
-  SystemRandomSource,
   TransactionManager,
-  UuidV7IdGenerator,
 } from '@platform/kernel';
 import {
   LoggerPort,
@@ -47,14 +44,7 @@ export class SagaProviders {
     // `SagaModule` already checked that the store exists.
     const { store } = extras as Required<Pick<SagaModuleExtras, 'store'>>;
     return [
-      { provide: Clock, useFactory: () => new SystemClock() },
-      SagaProviders.random(extras),
-      {
-        provide: IdGenerator,
-        useFactory: (clock: Clock, random: RandomSource) =>
-          new UuidV7IdGenerator(clock, random),
-        inject: [Clock, RandomSource],
-      },
+      ...SagaProviders.random(extras),
       SagaProviders.settings(),
       { provide: SagaStore, useExisting: store },
       ...SagaProviders.scopes(extras),
@@ -83,10 +73,10 @@ export class SagaProviders {
     ];
   }
 
-  private static random(extras: SagaModuleExtras): Provider {
+  private static random(extras: SagaModuleExtras): Provider[] {
     return extras.random === undefined
-      ? { provide: RandomSource, useFactory: () => new SystemRandomSource() }
-      : { provide: RandomSource, useExisting: extras.random };
+      ? []
+      : [{ provide: RandomSource, useExisting: extras.random }];
   }
 
   /** Default owner: a new id. The rest takes the values of `SagaSettings`. */

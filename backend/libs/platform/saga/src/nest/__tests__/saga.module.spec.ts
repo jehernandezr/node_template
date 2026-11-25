@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Compensation, defineOperation } from '@contracts/platform';
 import { Global, Injectable, Module, type DynamicModule } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -120,7 +121,7 @@ function rootOptions(
 /** Test module with the given `SagaModule` and the use case. */
 async function compile(imports: DynamicModule[]): Promise<TestingModule> {
   return Test.createTestingModule({
-    imports: [SagaTestEnvironment, ...imports],
+    imports: [KernelModule, SagaTestEnvironment, ...imports],
     providers: [CreateOnboarding],
   }).compile();
 }

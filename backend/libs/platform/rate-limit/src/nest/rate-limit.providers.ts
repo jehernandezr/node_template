@@ -1,5 +1,5 @@
 import type { Provider } from '@nestjs/common';
-import { Clock, SystemClock } from '@platform/kernel';
+import { Clock } from '@platform/kernel';
 import type { LoggerPort, MetricsPort } from '@platform/observability';
 import { DegradingRateLimiter } from '../degrading-rate-limiter.js';
 import { InMemoryRateLimiter } from '../in-memory-rate-limiter.js';
@@ -23,7 +23,6 @@ import { RateLimitGuard } from './rate-limit.guard.js';
 export class RateLimitProviders {
   static build(extras: RateLimitModuleExtras): Provider[] {
     const providers: Provider[] = [
-      { provide: Clock, useClass: SystemClock },
       {
         provide: InMemoryRateLimiter,
         useFactory: (clock: Clock) => new InMemoryRateLimiter({ clock }),

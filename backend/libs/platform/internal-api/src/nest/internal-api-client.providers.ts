@@ -1,5 +1,5 @@
 import type { Provider } from '@nestjs/common';
-import { SystemClock, type Clock } from '@platform/kernel';
+import { Clock } from '@platform/kernel';
 import { TraceContextRestorer } from '@platform/observability';
 import { CallOutcomeFactory, RetryAfterParser } from '@platform/primitives';
 import { ResilienceRegistry } from '@platform/resilience';
@@ -25,7 +25,6 @@ import type {
   InternalApiHttpOptions,
   InternalApiModuleOptions,
 } from './internal-api-module-options.js';
-import { InternalApiOptionalDependency } from './internal-api-optional-dependency.js';
 import { INTERNAL_API_OPTIONS } from './internal-api.module-definition.js';
 import { InternalTransportKind } from './internal-transport-kind.enum.js';
 
@@ -70,7 +69,7 @@ export class InternalApiClientProviders {
           translator: CallErrorTranslator,
           checker: ClientOutcomeChecker,
           restorer: TraceContextRestorer,
-          clock: Clock | undefined,
+          clock: Clock,
           payload: PayloadLimit,
           registry: ContractRegistry,
         ) =>
@@ -82,7 +81,7 @@ export class InternalApiClientProviders {
             translator,
             checker,
             restorer,
-            clock: clock ?? new SystemClock(),
+            clock: clock,
             payload,
             registry,
           }),
@@ -94,7 +93,7 @@ export class InternalApiClientProviders {
           CallErrorTranslator,
           ClientOutcomeChecker,
           TraceContextRestorer,
-          InternalApiOptionalDependency.CLOCK,
+          Clock,
           PayloadLimit,
           ContractRegistry,
         ],
@@ -125,39 +124,30 @@ export class InternalApiClientProviders {
     return [
       {
         provide: InternalRequestSigner,
-        useFactory: (
-          options: InternalApiModuleOptions,
-          clock: Clock | undefined,
-        ) =>
+        useFactory: (options: InternalApiModuleOptions, clock: Clock) =>
           InternalApiClientProviders.httpOptions(options).signer ??
           new HmacSigner(
             InternalApiClientProviders.httpOptions(options).secret,
-            clock ?? new SystemClock(),
+            clock,
           ),
-        inject: [INTERNAL_API_OPTIONS, InternalApiOptionalDependency.CLOCK],
+        inject: [INTERNAL_API_OPTIONS, Clock],
       },
       {
         provide: HttpTransport,
         useFactory: (
           options: InternalApiModuleOptions,
           signer: InternalRequestSigner,
-          clock: Clock | undefined,
+          clock: Clock,
         ) =>
           new HttpTransport(
             new ServiceBaseUrls(
               InternalApiClientProviders.httpOptions(options).baseUrls,
             ),
             signer,
-            new HttpOutcomeReader(
-              new RetryAfterParser(clock ?? new SystemClock()),
-            ),
+            new HttpOutcomeReader(new RetryAfterParser(clock)),
             globalThis.fetch,
           ),
-        inject: [
-          INTERNAL_API_OPTIONS,
-          InternalRequestSigner,
-          InternalApiOptionalDependency.CLOCK,
-        ],
+        inject: [INTERNAL_API_OPTIONS, InternalRequestSigner, Clock],
       },
       InternalApiClientProviders.local(),
       {

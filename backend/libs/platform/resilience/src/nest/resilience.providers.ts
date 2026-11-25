@@ -1,10 +1,5 @@
 import type { Provider } from '@nestjs/common';
-import {
-  Clock,
-  RandomSource,
-  SystemClock,
-  SystemRandomSource,
-} from '@platform/kernel';
+import { Clock, RandomSource } from '@platform/kernel';
 import { FailureClassifier } from '@platform/primitives';
 import { ResilienceMetricsListener } from '../events/resilience-metrics-listener.js';
 import type { MetricsPort } from '@platform/observability';
@@ -19,8 +14,6 @@ import type {
 export class ResilienceProviders {
   static build(extras: ResilienceModuleExtras): Provider[] {
     const providers: Provider[] = [
-      { provide: Clock, useClass: SystemClock },
-      { provide: RandomSource, useClass: SystemRandomSource },
       { provide: FailureClassifier, useFactory: () => new FailureClassifier() },
       {
         provide: ResilienceRegistry,

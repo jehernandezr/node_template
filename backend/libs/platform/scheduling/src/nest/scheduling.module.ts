@@ -1,12 +1,6 @@
 import { Module, type DynamicModule, type Provider } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
-import {
-  Clock,
-  JobLock,
-  RandomSource,
-  SystemClock,
-  SystemRandomSource,
-} from '@platform/kernel';
+import { Clock, JobLock, RandomSource } from '@platform/kernel';
 import type { LoggerPort, MetricsPort } from '@platform/observability';
 import { NoopMetrics } from '@platform/observability';
 import { InvalidArgumentError } from '@platform/primitives';
@@ -72,15 +66,9 @@ export class SchedulingModule extends SchedulingModuleClass {
     }
     return {
       provide: JobLock,
-      useFactory: (clock?: Clock, random?: RandomSource) =>
-        new InProcessJobLock(
-          clock ?? new SystemClock(),
-          random ?? new SystemRandomSource(),
-        ),
-      inject: [
-        { token: Clock, optional: true },
-        { token: RandomSource, optional: true },
-      ],
+      useFactory: (clock: Clock, random: RandomSource) =>
+        new InProcessJobLock(clock, random),
+      inject: [Clock, RandomSource],
     };
   }
 
@@ -92,26 +80,20 @@ export class SchedulingModule extends SchedulingModuleClass {
     return {
       provide: JobRunner,
       useFactory: (
-        clock: Clock | undefined,
-        random: RandomSource | undefined,
+        clock: Clock,
+        random: RandomSource,
         lock: JobLock,
         logger: LoggerPort,
         metrics?: MetricsPort,
       ) =>
         new JobRunner(
-          clock ?? new SystemClock(),
-          random ?? new SystemRandomSource(),
+          clock,
+          random,
           lock,
           logger,
           metrics ?? new NoopMetrics(),
         ),
-      inject: [
-        { token: Clock, optional: true },
-        { token: RandomSource, optional: true },
-        JobLock,
-        loggerToken,
-        ...optionalMetrics,
-      ],
+      inject: [Clock, RandomSource, JobLock, loggerToken, ...optionalMetrics],
     };
   }
 }

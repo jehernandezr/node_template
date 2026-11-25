@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import type { DynamicModule } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { BloomFilterFactory } from '@platform/bloom';
@@ -56,7 +57,11 @@ describe('ValkeyModule', () => {
     overrides: { subscribers?: ValkeySubscriberSource } = {},
   ): Promise<TestingModule> {
     const builder = Test.createTestingModule({
-      imports: [ValkeyTestPlatformModule.with(logger, env), valkey],
+      imports: [
+        KernelModule,
+        ValkeyTestPlatformModule.with(logger, env),
+        valkey,
+      ],
     })
       .overrideProvider(VALKEY_CLIENT)
       .useValue(client);
@@ -197,7 +202,11 @@ describe('ValkeyModule', () => {
       env?: Record<string, string>,
     ) {
       const app = await Test.createTestingModule({
-        imports: [ValkeyTestPlatformModule.with(logger, env), module],
+        imports: [
+          KernelModule,
+          ValkeyTestPlatformModule.with(logger, env),
+          module,
+        ],
       }).compile();
       apps.push(app);
       await app.init();

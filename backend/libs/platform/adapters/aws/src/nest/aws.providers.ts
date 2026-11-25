@@ -1,14 +1,7 @@
 import type { Abstract, Provider, Type } from '@nestjs/common';
 import type { SNSClient } from '@aws-sdk/client-sns';
 import type { SQSClient } from '@aws-sdk/client-sqs';
-import {
-  Clock,
-  IdGenerator,
-  RandomSource,
-  SystemClock,
-  SystemRandomSource,
-  UuidV7IdGenerator,
-} from '@platform/kernel';
+import { Clock, IdGenerator } from '@platform/kernel';
 import { TraceContextRestorer } from '@platform/observability';
 import { AwsClientFactory } from '../aws-client-factory.js';
 import { AwsErrorTranslator } from '../aws-error-translator.js';
@@ -30,14 +23,6 @@ import { SNS_CLIENT, SQS_CLIENT } from './aws.tokens.js';
 export class AwsProviders {
   static build(options: AwsModuleOptions): Provider[] {
     const providers: Provider[] = [
-      { provide: Clock, useFactory: () => new SystemClock() },
-      { provide: RandomSource, useFactory: () => new SystemRandomSource() },
-      {
-        provide: IdGenerator,
-        useFactory: (clock: Clock, random: RandomSource) =>
-          new UuidV7IdGenerator(clock, random),
-        inject: [Clock, RandomSource],
-      },
       { provide: AwsClientFactory, useFactory: () => new AwsClientFactory() },
       {
         provide: AwsErrorTranslator,

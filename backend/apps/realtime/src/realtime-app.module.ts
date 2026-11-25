@@ -14,7 +14,8 @@ import type { ConfigEnv } from '@platform/config';
 import { ConfigModule } from '@platform/config/nest';
 import { ObservabilityModule } from '@platform/observability/nest';
 import { RealtimeModule } from '@platform/realtime/nest';
-import { HealthEndpoints, PlatformKernelModule } from '@platform/service/nest';
+import { KernelModule } from '@platform/kernel/nest';
+import { HealthEndpoints } from '@platform/service/nest';
 import { SharedStateAccessGrantSource } from './auth/shared-state-access-grant-source.js';
 import { realtimeAppConfigSchema } from './config/realtime-app.config.js';
 
@@ -32,7 +33,7 @@ export class RealtimeAppModule {
     return {
       module: RealtimeAppModule,
       imports: [
-        PlatformKernelModule,
+        KernelModule,
         ConfigModule.forRoot({ schema: realtimeAppConfigSchema, env }),
         ObservabilityModule.forRoot({}),
         ValkeyModule.forRoot({ connectionName: 'realtime' }),

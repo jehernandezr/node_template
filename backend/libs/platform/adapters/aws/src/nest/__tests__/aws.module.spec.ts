@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { PublishCommand } from '@aws-sdk/client-sns';
 import { GetQueueUrlCommand } from '@aws-sdk/client-sqs';
 import type { DynamicModule } from '@nestjs/common';
@@ -47,7 +48,7 @@ describe('AwsModule and SqsConsumerModule', () => {
 
   async function appWith(imports: DynamicModule[]) {
     const moduleRef = await Test.createTestingModule({
-      imports: [AwsTestPlatformModule, ...imports],
+      imports: [KernelModule, AwsTestPlatformModule, ...imports],
     })
       .overrideProvider(SNS_CLIENT)
       .useValue(fakeSns)
@@ -140,6 +141,7 @@ describe('AwsModule and SqsConsumerModule', () => {
       Promise.resolve().then(() =>
         Test.createTestingModule({
           imports: [
+            KernelModule,
             AwsTestPlatformModule,
             AwsModule.forRoot(),
             SqsConsumerModule.forRoot({ topology, queue: 'missing' }),
@@ -154,6 +156,7 @@ describe('AwsModule and SqsConsumerModule', () => {
       Promise.resolve().then(() =>
         Test.createTestingModule({
           imports: [
+            KernelModule,
             AwsTestPlatformModule,
             AwsModule.forRoot(),
             SqsConsumerModule.forRoot({

@@ -1,7 +1,6 @@
 import type { Provider, Type } from '@nestjs/common';
 import {
-  SystemClock,
-  type Clock,
+  Clock,
   type PurgeableStore,
   type TransactionManager,
 } from '@platform/kernel';
@@ -104,7 +103,7 @@ export class InternalApiServerProviders {
           payload: PayloadLimit,
           gate: IdempotencyGate,
           runner: UnitOfWorkRunner,
-          clock: Clock | undefined,
+          clock: Clock,
           outcomes: CallOutcomeFactory,
           store: ProcessedOperationStore,
           logger: LoggerPort | undefined,
@@ -113,16 +112,16 @@ export class InternalApiServerProviders {
             payload,
             gate,
             runner,
-            clock ?? new SystemClock(),
+            clock,
             outcomes,
-            new ClaimKeeper(store, clock ?? new SystemClock(), {}, logger),
+            new ClaimKeeper(store, clock, {}, logger),
             new CompensationTombstones(store),
           ),
         inject: [
           PayloadLimit,
           IdempotencyGate,
           UnitOfWorkRunner,
-          InternalApiOptionalDependency.CLOCK,
+          Clock,
           CallOutcomeFactory,
           ProcessedOperationStore,
           InternalApiOptionalDependency.LOGGER,
@@ -153,18 +152,15 @@ export class InternalApiServerProviders {
       { provide: CallMetaReader, useFactory: () => new CallMetaReader() },
       {
         provide: InternalCallAuthenticator,
-        useFactory: (
-          options: InternalApiModuleOptions,
-          clock: Clock | undefined,
-        ) =>
+        useFactory: (options: InternalApiModuleOptions, clock: Clock) =>
           options.http === undefined
             ? new DenyAllInternalCallAuthenticator()
             : new HmacInternalCallAuthenticator(
                 options.http.secret,
-                clock ?? new SystemClock(),
+                clock,
                 options.http.signatureWindowMs,
               ),
-        inject: [INTERNAL_API_OPTIONS, InternalApiOptionalDependency.CLOCK],
+        inject: [INTERNAL_API_OPTIONS, Clock],
       },
     ];
   }
@@ -180,19 +176,15 @@ export class InternalApiServerProviders {
         provide: ProcessedOperationRetentionJob,
         useFactory: (
           purgeable: PurgeableStore,
-          clock: Clock | undefined,
+          clock: Clock,
           options: InternalApiModuleOptions,
         ) =>
           new ProcessedOperationRetentionJob(
             purgeable,
-            clock ?? new SystemClock(),
+            clock,
             options.retentionMs,
           ),
-        inject: [
-          store,
-          InternalApiOptionalDependency.CLOCK,
-          INTERNAL_API_OPTIONS,
-        ],
+        inject: [store, Clock, INTERNAL_API_OPTIONS],
       },
     ];
   }

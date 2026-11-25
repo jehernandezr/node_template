@@ -1,7 +1,7 @@
 import type { Abstract, Provider, Type } from '@nestjs/common';
 import { BloomFilter, InMemoryAsyncBloomFilter } from '@platform/bloom';
 import { ConfigValidationError } from '@platform/config';
-import { Clock, SystemClock } from '@platform/kernel';
+import { Clock } from '@platform/kernel';
 import { AccessEvaluator } from '../access/access-evaluator.js';
 import { AccessGrantSource } from '../access/access-grant-source.js';
 import { AccessResolver } from '../access/access-resolver.js';
@@ -46,7 +46,6 @@ export class AuthProviders {
       'accessGrants',
     );
     return [
-      { provide: Clock, useClass: SystemClock },
       { provide: AUTH_STATE_SOURCE, useExisting: source },
       { provide: AuthRevocationFeed, useExisting: feed },
       { provide: AccessGrantSource, useExisting: accessGrants },

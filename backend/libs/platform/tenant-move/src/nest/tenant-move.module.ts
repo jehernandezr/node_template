@@ -1,6 +1,6 @@
 import { Module, type DynamicModule, type Provider } from '@nestjs/common';
 import { ConfigModule } from '@platform/config/nest';
-import { Clock, SystemClock } from '@platform/kernel';
+import { Clock } from '@platform/kernel';
 import {
   ShardDataSources,
   ShardLister,
@@ -49,18 +49,10 @@ export class TenantMoveModule {
           useFactory: (
             settings: TenantMoveSettings,
             manifest: TenantMoveManifest,
-            clock: Clock | undefined,
+            clock: Clock,
           ) =>
-            new TenantDataTransferSelector().select(
-              settings,
-              manifest,
-              clock ?? new SystemClock(),
-            ),
-          inject: [
-            TenantMoveConfig.token,
-            TenantMoveManifest,
-            { token: Clock, optional: true },
-          ],
+            new TenantDataTransferSelector().select(settings, manifest, clock),
+          inject: [TenantMoveConfig.token, TenantMoveManifest, Clock],
         },
         {
           provide: TenantMoveShards,

@@ -12,11 +12,11 @@ import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardingModule } from '@platform/sharding/nest';
 import type { ServiceDefinition } from '../../service-definition.js';
 import { ServiceDatabaseSets } from '../../service-database-sets.js';
-import { PlatformKernelModule } from '../runtime/platform-kernel.module.js';
+import { KernelModule } from '@platform/kernel/nest';
 
 /**
  * Root module of the migrator. It only sets up the databases: there is no Valkey, AWS, messaging or jobs, because
- * migrating must not depend on anything other than PostgreSQL. `PlatformKernelModule` is required
+ * migrating must not depend on anything other than PostgreSQL. `KernelModule` is required
  * because `PostgresPlatformModule` injects `Clock` and `IdGenerator`.
  */
 @Module({})
@@ -29,7 +29,7 @@ export class MigrationHostModule {
     return {
       module: MigrationHostModule,
       imports: [
-        PlatformKernelModule,
+        KernelModule,
         ConfigModule.forRoot({ schema: definition.configSchema, env }),
         ObservabilityModule.forRoot({ telemetry }),
         PersistenceModule.forRoot({

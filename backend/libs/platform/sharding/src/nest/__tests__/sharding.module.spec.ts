@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Global, Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { InProcessDirectoryChannel } from '../../in-process-directory-channel.js';
@@ -64,6 +65,7 @@ describe('ShardingModule', () => {
     it('resolves a tenant to its instance without a shared cache', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestDirectoryModule,
           ShardingModule.forRoot({ directory: CountingDirectoryStore }),
         ],
@@ -76,6 +78,7 @@ describe('ShardingModule', () => {
     it('provides the router to a module that does not import ShardingModule', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestDirectoryModule,
           ShardingModule.forRoot({ directory: CountingDirectoryStore }),
           ConsumerModule,
@@ -89,6 +92,7 @@ describe('ShardingModule', () => {
     it('subscribes the channel on init and not before', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestDirectoryModule,
           ShardingModule.forRoot({ directory: CountingDirectoryStore }),
         ],
@@ -104,6 +108,7 @@ describe('ShardingModule', () => {
     it('invalidates the cached placement', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestDirectoryModule,
           ShardingModule.forRoot({ directory: CountingDirectoryStore }),
         ],
@@ -129,6 +134,7 @@ describe('ShardingModule', () => {
     it('closes the channel subscription', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestDirectoryModule,
           ShardingModule.forRoot({ directory: CountingDirectoryStore }),
         ],
@@ -145,6 +151,7 @@ describe('ShardingModule', () => {
     it('writes the resolved placement into it', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestDirectoryModule,
           ShardingModule.forRoot({
             directory: CountingDirectoryStore,
@@ -166,6 +173,7 @@ describe('ShardingModule', () => {
     it('applies the router tuning and opens the subscription', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestDirectoryModule,
           ShardingModule.forRootAsync({
             useFactory: () => ({ router: { currentRegion: 'us' } }),

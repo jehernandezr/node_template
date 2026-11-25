@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Module, type DynamicModule, type Type } from '@nestjs/common';
 import { AuthModule } from '@platform/auth/nest';
 import {
@@ -28,6 +29,7 @@ export class HttpTestRootModule {
     return {
       module: HttpTestRootModule,
       imports: [
+        KernelModule,
         ConfigModule.forRoot({
           env: {
             SERVICE_NAME: 'demo',

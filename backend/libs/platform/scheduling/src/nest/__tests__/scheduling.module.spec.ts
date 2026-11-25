@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import {
   Global,
   Module,
@@ -97,6 +98,7 @@ describe('SchedulingModule', () => {
 
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
@@ -124,6 +126,7 @@ describe('SchedulingModule', () => {
       });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
@@ -147,6 +150,7 @@ describe('SchedulingModule', () => {
       });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({ logger: FakeLogger }),
         ],
@@ -166,6 +170,7 @@ describe('SchedulingModule', () => {
       });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             logger: FakeLogger,
@@ -192,6 +197,7 @@ describe('SchedulingModule', () => {
       const resource = new ClosingResource(job);
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           ResourceModule.global(resource),
           SchedulingModule.forRoot({ logger: FakeLogger, shutdownGraceMs: 5 }),
@@ -217,6 +223,7 @@ describe('SchedulingModule', () => {
       });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestLockModule,
           TestObservabilityModule,
           SchedulingModule.forRootAsync({
@@ -250,6 +257,7 @@ describe('SchedulingModule', () => {
     it('provides InProcessJobLock by default', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
@@ -263,6 +271,7 @@ describe('SchedulingModule', () => {
     it('provides the configured lock class', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestLockModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
@@ -281,6 +290,7 @@ describe('SchedulingModule', () => {
       const job = new RecordingJob({ name: 'job-a' });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,

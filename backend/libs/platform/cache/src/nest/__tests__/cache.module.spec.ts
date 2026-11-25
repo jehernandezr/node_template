@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import { CountingLoader } from '../../__tests__/utils/counting-loader.js';
@@ -18,7 +19,7 @@ const TENANT_ORDERS = ['t1', 'orders'];
 describe('CacheModule', () => {
   it('provides an InMemoryCache as CachePort by default', async () => {
     const ref = await Test.createTestingModule({
-      imports: [CacheModule.forRoot()],
+      imports: [KernelModule, CacheModule.forRoot()],
     }).compile();
 
     expect(ref.get(CachePort)).toBeInstanceOf(InMemoryCache);
@@ -26,7 +27,11 @@ describe('CacheModule', () => {
 
   it('provides the store given in forRoot as CachePort', async () => {
     const ref = await Test.createTestingModule({
-      imports: [CacheTestModule, CacheModule.forRoot({ store: FakeCachePort })],
+      imports: [
+        KernelModule,
+        CacheTestModule,
+        CacheModule.forRoot({ store: FakeCachePort }),
+      ],
     }).compile();
 
     expect(ref.get(CachePort)).toBe(ref.get(FakeCachePort));
@@ -35,6 +40,7 @@ describe('CacheModule', () => {
   it('gives a CacheAside per namespace that loads once and serves the next read from the cache', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ResilienceTestModule,
         CacheModule.forRoot(),
         CacheModule.forFeature({ namespace: 'orders' }),
@@ -63,6 +69,7 @@ describe('CacheModule', () => {
   it('keeps the keys of two namespaces apart for the same params', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ResilienceTestModule,
         CacheModule.forRoot(),
         CacheModule.forFeature({ namespace: 'orders' }),
@@ -92,6 +99,7 @@ describe('CacheModule', () => {
   it('counts absorbed cache failures per cache name when metrics are given', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ResilienceTestModule,
         CacheTestModule,
         CacheModule.forRoot({
@@ -123,6 +131,7 @@ describe('CacheModule', () => {
   it('accepts an async configuration and applies the single flight key limit', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         CacheModule.forRootAsync({
           useFactory: () => ({ singleFlightMaxKeyLength: 2_048 }),
         }),

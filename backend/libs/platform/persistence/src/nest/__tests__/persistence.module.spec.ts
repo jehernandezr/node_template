@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Global, Injectable, Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -177,6 +178,7 @@ describe('PersistenceModule', () => {
     it('resolves the persistence services and the transaction port', async () => {
       const moduleRef: TestingModule = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRoot(rootOptions()),
@@ -227,6 +229,7 @@ describe('PersistenceModule', () => {
     it('builds the options with the factory and uses the endpoint resolver it receives', async () => {
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRootAsync({
@@ -260,6 +263,7 @@ describe('PersistenceModule', () => {
     it('routes a transaction without a module by the declared default key', async () => {
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           SpecClockModule,
           CONFIG,
@@ -316,6 +320,7 @@ describe('PersistenceModule', () => {
 
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRoot(rootOptions()),
@@ -365,6 +370,7 @@ describe('PersistenceModule', () => {
 
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRoot(rootOptions()),
@@ -391,6 +397,7 @@ describe('PersistenceModule', () => {
       const catalog = new ClosableCatalogDataSource();
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRoot(rootOptions()),

@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Module, type DynamicModule } from '@nestjs/common';
 import {
   ValkeyCache,
@@ -56,7 +57,6 @@ import { SmokeOrderEntity } from './orders/smoke-order.entity.js';
 import { CreateSmokeOrdersMigration } from './orders/create-smoke-orders.migration.js';
 import { SmokeService } from './smoke-service.enum.js';
 import { SmokeTenancyModule } from './smoke-tenancy.module.js';
-import { SmokeKernelModule } from './smoke-kernel.module.js';
 import type { SmokeEnvironment } from './smoke-environment.js';
 
 /**
@@ -70,7 +70,7 @@ export class SmokeAppModule {
       module: SmokeAppModule,
       imports: [
         ConfigModule.forRoot({ env: environment.env }),
-        SmokeKernelModule,
+        KernelModule,
         ObservabilityModule.forRoot({ telemetry: environment.telemetry }),
         ResilienceModule.forRoot(),
         SchedulingModule.forRoot({

@@ -1,12 +1,6 @@
 import { Module, type DynamicModule } from '@nestjs/common';
 import { ResilienceRegistry } from '@platform/resilience';
-import {
-  TransactionManager,
-  Clock,
-  SystemClock,
-  IdGenerator,
-  UuidV7IdGenerator,
-} from '@platform/kernel';
+import { TransactionManager, IdGenerator } from '@platform/kernel';
 import { CachePort } from '../cache-port.js';
 import { CallerWait } from '../caller-wait.js';
 import { CacheAside } from '../cache-aside.js';
@@ -43,12 +37,6 @@ export class CacheModule extends CacheConfigurableModule {
       module: CacheFeatureModule,
       imports: feature.imports ?? [],
       providers: [
-        { provide: Clock, useClass: SystemClock },
-        {
-          provide: IdGenerator,
-          useFactory: (clock: Clock) => new UuidV7IdGenerator(clock),
-          inject: [Clock],
-        },
         {
           provide: cacheAsideToken(namespace),
           useFactory: (

@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import 'reflect-metadata';
 import { Injectable } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -36,7 +37,7 @@ describe('ResilienceModule', () => {
 
   it('provides a registry that runs under the built-in cache policy', async () => {
     const ref = await Test.createTestingModule({
-      imports: [ResilienceModule.forRoot()],
+      imports: [KernelModule, ResilienceModule.forRoot()],
     }).compile();
     const registry = ref.get(ResilienceRegistry);
     await expect(
@@ -47,6 +48,7 @@ describe('ResilienceModule', () => {
   it('runs a service policy registered with forFeature and retries its transient failures', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ResilienceModule.forRoot(),
         ResilienceModule.forFeature({
           name: PAYMENTS,
@@ -70,6 +72,7 @@ describe('ResilienceModule', () => {
     jest.useFakeTimers();
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ResilienceModule.forRootAsync({
           useFactory: () => ({ policies: { cache: { timeoutMs: 1234 } } }),
         }),
@@ -97,6 +100,7 @@ describe('ResilienceModule', () => {
   it('counts the retries in the metrics port when it is provided', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         RecordingMetricsModule,
         ResilienceModule.forRoot({ metrics: RecordingMetricsPort }),
         ResilienceModule.forFeature({
@@ -127,6 +131,7 @@ describe('ResilienceModule', () => {
     await expect(
       Test.createTestingModule({
         imports: [
+          KernelModule,
           ResilienceModule.forRoot(),
           ResilienceModule.forFeature({
             name: PAYMENTS,
