@@ -1,3 +1,4 @@
+import { RateLimitTier } from '@platform/http';
 import { Endpoint, CurrentActor, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
 import {
@@ -33,6 +34,7 @@ import { UpdateMyProfile } from '../application/update-my-profile.use-case.js';
 import { UserProfileView } from '../application/user-profile-view.js';
 import { UserReader } from '../application/user-reader.js';
 
+/** HTTP edge of accounts: sign-up, email verification, profile, email change and account deletion. */
 @Resource(IdentityResource.Users)
 export class UsersController {
   constructor(
@@ -46,11 +48,19 @@ export class UsersController {
     private readonly accountDeletion: StartAccountDeletion,
   ) {}
 
+  /**
+   * Signs up a person; the answer is the same whether the email is taken or not.
+   * @param input Email, password, name, locale and an optional invitation.
+   */
   @Endpoint(SignUpRoute)
   async signUp(@Input() input: SignUpRequest): Promise<void> {
     await this.register.execute(input);
   }
 
+  /**
+   * Resends the verification email to a pending account.
+   * @param input Email.
+   */
   @Endpoint(ResendEmailVerificationRoute)
   async resendEmailVerification(
     @Input() input: EmailVerificationRequest,
@@ -58,6 +68,10 @@ export class UsersController {
     await this.resend.execute(input.email);
   }
 
+  /**
+   * Confirms the email with the emailed token.
+   * @param input Emailed token.
+   */
   @Endpoint(ConfirmEmailVerificationRoute)
   async confirmEmailVerification(
     @Input() input: EmailVerificationConfirmRequest,
@@ -65,6 +79,11 @@ export class UsersController {
     await this.confirm.execute(input.token);
   }
 
+  /**
+   * Reads the caller's profile.
+   * @param actor Caller.
+   * @returns The profile.
+   */
   @Endpoint(GetProfileRoute)
   async getProfile(
     @CurrentActor() actor: Actor | undefined,
@@ -73,6 +92,12 @@ export class UsersController {
     return UserProfileView.of(await this.reader.getByRef(userRefOf(user)));
   }
 
+  /**
+   * Updates the caller's profile.
+   * @param input Fields to change.
+   * @param actor Caller.
+   * @returns The profile.
+   */
   @Endpoint(UpdateProfileRoute)
   updateProfile(
     @Input() input: UpdateProfileRequest,
@@ -81,7 +106,12 @@ export class UsersController {
     return this.update.execute(userRefOf(requireUserActor(actor)), input);
   }
 
-  @Endpoint(RequestEmailChangeRoute)
+  /**
+   * Sends a confirmation to the new email of the caller.
+   * @param input New email.
+   * @param actor Caller.
+   */
+  @Endpoint(RequestEmailChangeRoute, { rateLimit: RateLimitTier.Sensitive })
   async requestEmailChange(
     @Input() input: EmailChangeRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -92,7 +122,12 @@ export class UsersController {
     );
   }
 
-  @Endpoint(ConfirmEmailChangeRoute)
+  /**
+   * Confirms the email change with the emailed token.
+   * @param input Emailed token.
+   * @param actor Caller.
+   */
+  @Endpoint(ConfirmEmailChangeRoute, { rateLimit: RateLimitTier.Sensitive })
   async confirmEmailChange(
     @Input() input: EmailChangeConfirmRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -103,6 +138,11 @@ export class UsersController {
     );
   }
 
+  /**
+   * Starts the deletion of the caller's account.
+   * @param actor Caller.
+   * @returns The saga that deletes it.
+   */
   @Endpoint(StartAccountDeletionRoute)
   startAccountDeletion(
     @CurrentActor() actor: Actor | undefined,

@@ -1,3 +1,4 @@
+import { RateLimitTier } from '@platform/http';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
 import {
@@ -21,6 +22,7 @@ import { AcceptInvitation } from '../application/accept-invitation.use-case.js';
 import { InviteUser } from '../application/invite-user.use-case.js';
 import { ManageInvitations } from '../application/manage-invitations.use-case.js';
 
+/** HTTP edge of the invitations of the active tenant. */
 @Resource(IdentityResource.Invitations)
 export class InvitationsController {
   constructor(
@@ -29,7 +31,13 @@ export class InvitationsController {
     private readonly accept: AcceptInvitation,
   ) {}
 
-  @Endpoint(InviteUserRoute)
+  /**
+   * Invites a person into the active tenant with groups the caller can grant.
+   * @param input Email and groups.
+   * @param actor Caller.
+   * @returns The invitation.
+   */
+  @Endpoint(InviteUserRoute, { rateLimit: RateLimitTier.Sensitive })
   inviteUser(
     @Input() input: InviteUserRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -37,6 +45,11 @@ export class InvitationsController {
     return this.invite.execute(tenantOfActor(actor), actor, input);
   }
 
+  /**
+   * Lists the invitations of the active tenant.
+   * @param actor Caller.
+   * @returns The invitations.
+   */
   @Endpoint(ListInvitationsRoute)
   listInvitations(
     @CurrentActor() actor: Actor | undefined,
@@ -44,6 +57,11 @@ export class InvitationsController {
     return this.manage.list(tenantOfActor(actor));
   }
 
+  /**
+   * Revokes a pending invitation.
+   * @param input Invitation to revoke.
+   * @param actor Caller.
+   */
   @Endpoint(RevokeInvitationRoute)
   async revokeInvitation(
     @Input() input: RevokeInvitationRequest,
@@ -52,6 +70,11 @@ export class InvitationsController {
     await this.manage.revoke(tenantOfActor(actor), input.invitationId);
   }
 
+  /**
+   * Accepts an invitation with the caller's session.
+   * @param input Emailed token.
+   * @param actor Caller.
+   */
   @Endpoint(AcceptInvitationRoute)
   async acceptInvitation(
     @Input() input: AcceptInvitationRequest,

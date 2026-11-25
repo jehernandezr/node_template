@@ -5,7 +5,11 @@ import {
   Input,
   Resource,
 } from '@platform/http/nest';
-import { SessionCookieMode, type HttpExchange } from '@platform/http';
+import {
+  RateLimitTier,
+  SessionCookieMode,
+  type HttpExchange,
+} from '@platform/http';
 import type { Actor } from '@platform/auth';
 import {
   PasskeySignInOptionsRoute,
@@ -112,7 +116,7 @@ export class PasskeysController {
    * @param actor Caller.
    * @returns The WebAuthn options.
    */
-  @Endpoint(PasskeyStepUpOptionsRoute)
+  @Endpoint(PasskeyStepUpOptionsRoute, { rateLimit: RateLimitTier.Sensitive })
   passkeyStepUpOptions(
     @Input() input: PasskeyStepUpOptionsRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -129,7 +133,7 @@ export class PasskeysController {
    * @param actor Caller.
    * @returns The new access token and the last MFA.
    */
-  @Endpoint(PasskeyStepUpVerifyRoute)
+  @Endpoint(PasskeyStepUpVerifyRoute, { rateLimit: RateLimitTier.Sensitive })
   passkeyStepUpVerify(
     @Input() input: PasskeyStepUpVerifyRequest,
     @CurrentActor() actor: Actor | undefined,
