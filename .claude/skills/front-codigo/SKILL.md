@@ -62,8 +62,17 @@ Detalle en [references/dart3.md](references/dart3.md). Resumen:
 - Métodos cortos. Un `build` que supera unas 60 líneas se parte en widgets (clases `StatelessWidget`), no en métodos `_buildX` que reconstruyen todo en cada cambio.
 - Enums generados para permisos, errores, planes y flags. Nunca literales de texto sueltos.
 - Los textos de la interfaz salen de los ARB (ver `front-i18n`); nunca se muestra el texto que manda el servidor.
-- Comentarios solo para el porqué, sin referencias al proceso. Los `///` de API pública siguen `front-analisis`.
+- El código se explica solo: sin comentarios en línea (`//`). Si un bloque necesita uno, se renombra o se extrae a un método o widget con nombre. La documentación es el `///` de cada método y miembro público, que sigue `front-analisis`.
 
 ## Antes de integrar el trabajo de un agente
 
 Revisa que el diff cumpla esta skill, `front-estructura` y `front-pruebas`, y la que aplique al cambio (accesibilidad, layout, i18n, navegación, rendimiento, seguridad). Si no cumple, se corrige antes del commit.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-model-the-domain` y `principle-type-system-discipline`: estados de pantalla como clases selladas con `switch` exhaustivo, sin banderas sueltas.
+- `principle-laziness-protocol` y `principle-minimize-reader-load`: sin capas ni envoltorios de un solo uso entre widget, controlador y repositorio.
+- Antes de una pantalla o un flujo no trivial: `architect` para fijar el puerto del repositorio, el controlador y sus estados.
+- Al revisar un diff del front: `interrogate`, y `blast-radius` si toca `shell_core`, `auth` o `api`.

@@ -254,3 +254,11 @@ Un módulo se comunica con otro por su fachada (`UsersFacade`) o por eventos. La
 - [ ] enableShutdownHooks activo
 - [ ] La app arranca con NEST_DEBUG=true sin dependencias sin resolver
 ```
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-boundary-discipline`: controllers, consumidores y handlers son una capa delgada que valida en el borde y llama a un caso de uso.
+- `principle-minimize-reader-load` y `principle-laziness-protocol`: sin módulos, fachadas ni providers de un solo uso que no aporten.
+- Elegir un adaptador: una clase selectora probada, no un `switch` dentro de `useFactory`. Si se repite, `principle-encode-lessons-in-structure`.

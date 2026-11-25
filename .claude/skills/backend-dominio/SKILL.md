@@ -126,3 +126,12 @@ Las lecturas que no pasan por reglas (listados, reportes) no necesitan agregados
 ## Pruebas
 
 El dominio se prueba sin dobles ni NestJS: crear, ejecutar el método, verificar estado y `pullDomainEvents()`. Ver `backend-pruebas`.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-model-the-domain` y `principle-foundational-thinking` al elegir agregados, objetos de valor y estados.
+- `principle-type-system-discipline`: estados ilegales imposibles de construir y uniones exhaustivas. Los identificadores siguen siendo los tipos del kernel.
+- `principle-boundary-discipline` pide la lógica de negocio en funciones puras. Aquí vive en las clases del dominio sin dependencias de framework, que cumplen la misma intención.
+- Para un agregado nuevo o un cambio de invariantes: `architect` antes de escribir el código.

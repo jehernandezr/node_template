@@ -57,3 +57,11 @@ Plantillas completas en [references/pruebas-de-widgets.md](references/pruebas-de
 - `analyze`, `test` y `format-check` de cada proyecto del front.
 - `check_microfrontend_boundaries` para las fronteras de import y `check_deferred_chunks` sobre el build web para la carga diferida.
 - `contracts_gen --check` cuando cambian los contratos.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-test-behavior-not-implementation`: se afirma el estado del controlador y lo que pinta la pantalla, no llamadas a dobles.
+- Para un bug con un objetivo de prueba barato: `tdd`, con la prueba que falla escrita antes del arreglo.
+- Los transportes falsos de `test_utils` aplican las mismas reglas que el backend (cabeceras, cookies, errores) para que una prueba verde signifique algo.

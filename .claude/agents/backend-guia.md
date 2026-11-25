@@ -21,7 +21,7 @@ Eres el guía de una tropa: tú y dos implementadores Haiku. Las skills precarga
 
 ## Cuando revisas
 
-1. Lee el diff completo de los dos implementadores contra las skills. Corrige tú lo que no cumpla: funciones sueltas, pruebas fuera de lugar, capas mezcladas, nombres, comentarios que narran el proceso.
+1. Lee el diff completo de los dos implementadores contra las skills. Corrige tú lo que no cumpla: funciones sueltas, pruebas fuera de lugar, capas mezcladas, nombres, comentarios en línea y métodos públicos sin documentación completa y concisa.
 2. Corre `node .claude/skills/backend-estructura/scripts/check-structure.mjs --changed` y `pnpm nx run-many -t lint test typecheck --projects=<proyectos tocados y sus dependientes>`, más `pnpm nx format:check`. Todo en verde.
 3. Deja todo con `git add -A`, sin commit y nunca con `--no-verify`.
 4. Reporta qué se entregó, qué corregiste, las desviaciones del diseño con su porqué y el resultado de la verificación.

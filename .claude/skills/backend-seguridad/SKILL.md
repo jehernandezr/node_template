@@ -75,3 +75,11 @@ Contexto: ADR 0005 (autenticación), 0006 (MFA), 0010 (sharding por tenant), 001
 - [ ] Límite de tasa en rutas de credenciales o costosas
 - [ ] Evento de auditoría en acciones sensibles
 ```
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- Todo cambio en autenticación, sesiones, tokens, permisos, aislamiento entre tenants o secretos pasa por `interrogate` y `blast-radius` antes de integrarse.
+- `principle-boundary-discipline`: la entrada se parsea con zod en el borde a tipos de dominio. `principle-type-system-discipline` para que un id de un tenant no pase por el de otro.
+- En una revisión de seguridad, un hallazgo sin una corrida que lo demuestre queda como hipótesis, no como bloqueante. Así lo exige `interrogate`.

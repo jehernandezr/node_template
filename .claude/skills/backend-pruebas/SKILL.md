@@ -155,3 +155,12 @@ En una prueba de componente se piensa en cinco resultados: la respuesta, el esta
 - [ ] Puerto nuevo: prueba de contrato run<Puerto>Contract contra el doble y contra el adaptador real
 - [ ] Job nuevo: una prueba que llama a run() directamente
 ```
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-test-behavior-not-implementation`: se afirma lo observable (filas, respuestas HTTP, eventos, estado), nunca llamadas a dobles.
+- Para un bug con un objetivo de prueba barato: `tdd`, con la prueba que falla escrita antes del arreglo. Si el arreglo se revierte, la prueba debe volver a fallar.
+- `principle-prove-it-works` antes de reportar verde: la corrida real con contenedores, no el reporte de otro agente.
+- Al revisar pruebas: `interrogate` busca las que pasan aunque el comportamiento esté roto.

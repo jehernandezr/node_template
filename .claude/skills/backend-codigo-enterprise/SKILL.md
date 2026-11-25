@@ -72,8 +72,11 @@ export async function signIn(email: string, password: string) {
 - Más de tres parámetros: un objeto con nombre. Las banderas de comportamiento nunca van en el objeto.
 - Enums para eventos, errores, permisos, colas, jobs y estados. Nunca literales de texto sueltos.
 - Una constante numérica con significado tiene nombre y un porqué (`MAX_SIGN_IN_ATTEMPTS`), nunca un número mágico.
-- Comentarios solo para el porqué. Nada que narre el código ni referencias al proceso (planes, olas, auditorías, IDs de tareas).
-- Los comentarios del backend van en español, como las skills. Un archivo con comentarios en inglés se pasa a español cuando se toca. Los identificadores (clases, métodos, enums) siguen en inglés.
+- El código se explica solo. Si un bloque necesita un comentario para entenderse, se renombra o se extrae a un método con nombre. No hay comentarios en línea (`//` ni `/* */` dentro del código).
+- La documentación es el JSDoc de cada método público y de cada método de un puerto, completo y conciso: una frase de resumen; `@param` por parámetro, `@returns` si devuelve algo y `@throws` por cada error que lanza, con su código, cada uno en una frase corta. Una clase pública lleva una línea de JSDoc con su rol. Los métodos privados no llevan JSDoc: su nombre basta.
+- El JSDoc no narra la implementación ni el proceso (planes, olas, auditorías, IDs de tareas) ni repite el nombre del método. Dice lo que la firma no dice: efectos, condiciones y errores.
+- Excepciones: las directivas de herramientas (`// eslint-disable-next-line <regla> -- <motivo>`, `// @ts-expect-error <motivo>`) y el código generado (migraciones de TypeORM, `export/`).
+- El JSDoc del backend va en español, como las skills. Uno en inglés se pasa a español cuando se toca el archivo. Los identificadores (clases, métodos, enums) siguen en inglés.
 - Cada archivo lleva sufijo de rol y contiene una sola clase pública. Nada de `util.ts`, `types.ts`, `limits.ts` ni `model.ts`.
 - Las clases de error terminan en `Error` (`InvalidParametersError`, no `InvalidParameters`).
 - No se atrapa un error para callarlo. Se atrapa para traducirlo, compensar o reintentar (ver `backend-errores`).
@@ -105,3 +108,12 @@ Antes de integrar un cambio, propio o de un agente, repasa:
 ```
 
 Si no cumple, se corrige antes del commit.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- Al escribir o tocar código: los principios `laziness-protocol` (el cambio más chico que resuelve), `minimize-reader-load` (sin envoltorios de un solo llamador), `type-system-discipline` y la skill `typescript-best-practices`, con las excepciones de esta skill (enums, puertos como clases abstractas).
+- Antes de codificar algo no trivial: `architect` para fijar tipos, puertos y módulos.
+- Al revisar un diff: `interrogate` (solo cuentan los hallazgos probados con una corrida), `blast-radius` para lo que rompe fuera del diff y `no-comments` para borrar los comentarios en línea. El JSDoc de los métodos se conserva y se ajusta a la regla de Clean Code.
+- Antes de dar algo por terminado: `principle-prove-it-works`. La verificación es la de "Revisión de un diff", corrida de verdad.

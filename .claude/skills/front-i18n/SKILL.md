@@ -59,3 +59,10 @@ Si no hay un `DeferredLocalizations` arriba, el helper lanza un `FlutterError` q
 ## Probar
 
 Las pruebas buscan texto por la localización o por el literal en español, con `TestApp` de `test_utils` (`TestApp(delegates: const [TasksLocalizations.delegate])`), que instala los delegados compartidos y los del microfrontend. Una prueba de cada idioma soportado comprueba que cada clave se resuelve (`supportedLocales` de `i18n`).
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- Los textos visibles, en es y en, pasan por `unslop`: sin relleno ni frases de IA, con el registro del producto.
+- De `technical-writing` se toma la claridad de una idea por frase. Sus reglas de inglés global no se imponen al español.

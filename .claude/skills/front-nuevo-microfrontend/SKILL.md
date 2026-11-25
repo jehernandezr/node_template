@@ -149,3 +149,11 @@ Las plantillas viven en `front/tools/new_microfrontend/templates/` como archivos
 3. Borrar `front/microfrontends/reports` y su línea en `front/pubspec.yaml`, y correr `flutter pub get` en `front/`. El de prueba no se versiona.
 
 Las reglas de código de cada pieza están en [front-codigo](../front-codigo/SKILL.md), las de pruebas en [front-pruebas](../front-pruebas/SKILL.md), y los textos en [front-i18n](../front-i18n/SKILL.md).
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- Se crea con el generador: es la palanca de `principle-build-the-lever`. Lo que se haga a mano y se repita se agrega al generador.
+- Antes de escribir el dominio: `architect` para el puerto del repositorio, los controladores y los estados.
+- El trabajo completo sigue el playbook `feature` de `poteto-mode`, con las pruebas de `front-pruebas`.

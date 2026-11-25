@@ -91,3 +91,11 @@ export class TypeOrmUserRepository
 La persistencia es TypeORM con `@platform/persistence` ([ADR 0024](../../../docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)), que reemplaza la capa propia sobre `pg` del ADR 0009. El ruteo al shard, la transacción de un solo shard (`ShardScope`, error `CROSS_SHARD_TX`), la lectura de réplica y las migraciones por shard y catálogo las pone la plataforma; el servicio escribe entidades, mappers, repositorios que extienden `ShardedRepository` y migraciones. Las tablas de la plataforma (outbox, mensajes procesados, idempotencia, directorio de shards y bitácora de sagas) viven en `@platform/adapters-postgres`.
 
 Las pruebas de integración de repositorios usan Testcontainers con `ContainerRuntime` y `INTEGRATION_TESTS=require` en CI (ver `backend-pruebas`).
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-separate-before-serializing-shared-state` al elegir entre `FOR UPDATE`, `SKIP LOCKED`, versión optimista o candados consultivos.
+- `principle-make-operations-idempotent` para escrituras que se reintentan (`ON CONFLICT`, llaves naturales) y migraciones que se pueden reaplicar.
+- Antes de una migración que cambia un esquema en uso: `blast-radius`. Al reemplazar un repositorio o una base: `principle-migrate-callers-then-delete-legacy-apis`.

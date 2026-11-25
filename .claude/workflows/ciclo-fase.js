@@ -67,7 +67,7 @@ Nunca edites archivos fuera de ${t.path}. Los hooks del repositorio no se activa
 Tu paquete: ${t.package} del plan ${t.path}/${t.plan}. Léelo completo junto con las decisiones de diseño que cita (y las secciones de reglas y oleadas del plan). Respeta sus carpetas exclusivas: no toques nada fuera de ellas salvo lo que el paquete declare.
 ${t.notes ?? ''}
 
-Reglas que mandan (léelas en ${t.path}/.claude/skills y ${t.path}/CLAUDE.md): las skills ${t.area === 'front' ? 'front-*' : t.area === 'full' ? 'backend-* y front-*' : 'backend-*'}. Innegociable: clases, composición e inyección por constructor (nada de funciones sueltas exportadas, salvo utilidades puras y las excepciones que el plan declara); pruebas en __tests__/ (backend) o en test/ (front) con utilitarios en __tests__/utils, test/utils o el paquete test_utils, nunca carpetas testing/support; código directo en src/ sin src/lib/; enums en vez de literales; comentarios solo del porqué, sin mencionar WP, olas, tropas, auditorías ni el plan. Español sin guiones largos en docs.
+Reglas que mandan (léelas en ${t.path}/.claude/skills y ${t.path}/CLAUDE.md): las skills ${t.area === 'front' ? 'front-*' : t.area === 'full' ? 'backend-* y front-*' : 'backend-*'}. Innegociable: clases, composición e inyección por constructor (nada de funciones sueltas exportadas, salvo utilidades puras y las excepciones que el plan declara); pruebas en __tests__/ (backend) o en test/ (front) con utilitarios en __tests__/utils, test/utils o el paquete test_utils, nunca carpetas testing/support; código directo en src/ sin src/lib/; enums en vez de literales; el código se explica solo, sin comentarios en línea; cada método público lleva su JSDoc (o /// en Dart) completo y conciso, sin mencionar WP, olas, tropas, auditorías ni el plan. Español sin guiones largos en docs.
 
 Verificación (todo en verde antes de terminar):
 ${VERIFY[t.area]}
@@ -183,7 +183,7 @@ ${JSON.stringify(report, null, 2)}
 
 Qué haces:
 1. Lee el diff completo de la rama contra main (git -C ${t.path} log --oneline main..HEAD, git -C ${t.path} diff main...HEAD y status por si quedó algo sin commit) contra el paquete del plan, las decisiones que cita y las skills.
-2. Busca: lo que el paquete pide y no está; errores de lógica y de concurrencia; pruebas débiles o que no prueban lo que dicen; violaciones de las reglas (funciones sueltas, puertos que no son clases abstractas, literales donde van enums, imports de infraestructura en domain, NestJS fuera de src/nest); alternativas de la tabla 2.1 del diseño de F5 a F11 que faltan; secretos o literales con forma de credencial en fixtures; comentarios que narran el proceso.
+2. Busca: lo que el paquete pide y no está; errores de lógica y de concurrencia; pruebas débiles o que no prueban lo que dicen; violaciones de las reglas (funciones sueltas, puertos que no son clases abstractas, literales donde van enums, imports de infraestructura en domain, NestJS fuera de src/nest); alternativas de la tabla 2.1 del diseño de F5 a F11 que faltan; secretos o literales con forma de credencial en fixtures; comentarios en línea, métodos públicos sin JSDoc completo y conciso, o JSDoc que narra el proceso.
 3. Corre tú la verificación completa para confirmar que está en verde.
 No edites archivos. approved es true solo si no queda ningún hallazgo bloqueante. Devuelve la revisión con el schema.`,
     {

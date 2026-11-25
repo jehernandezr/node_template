@@ -71,3 +71,11 @@ await pumpAtWidths(
   check: (width) async => expect(tester.takeException(), isNull),
 );
 ```
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-experience-first` en las decisiones de diseño y alcance de una pantalla.
+- `principle-prove-it-works`: el layout se demuestra con `pumpAtWidths` en cada breakpoint, en modo claro y oscuro.
+- Equivalencia exacta entre dos implementaciones de una pantalla: el playbook `visual-parity` de `poteto-mode`.

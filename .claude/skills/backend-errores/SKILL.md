@@ -99,3 +99,11 @@ export class ProblemDetailsFilter implements ExceptionFilter {
 ## Pruebas
 
 Verifica el `code`, no el mensaje: `await expect(promise).rejects.toMatchObject({ code: IdentityErrorCode.EmailAlreadyRegistered })`. Sin `try/catch` en la prueba.
+
+## Con pstack
+
+Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
+
+- `principle-boundary-discipline`: se valida y se traduce donde los datos cruzan un borde (HTTP, mensajes, API interna, configuración), y adentro se confía en los tipos.
+- `principle-fix-root-causes`: un `catch` o una guarda solo es arreglo si el estado que maneja es legítimo. Si no, se corrige donde nace el error.
+- Para clasificar fallas transitorias y permanentes en reintentos, sagas o consumidores: `principle-make-operations-idempotent`.
