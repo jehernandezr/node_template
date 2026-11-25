@@ -25,6 +25,7 @@ export abstract class SubscriptionsFacade {
   /**
    * Toma la suscripción con `FOR UPDATE` dentro de la transacción de quien llama, para serializar los cobros del
    * tenant. Va antes de leer sus facturas.
+   * @param tenantId Tenant de la suscripción.
    */
   abstract lock(tenantId: string): Promise<void>;
   /** Un pago llegó: la suscripción morosa o suspendida vuelve a activa. */

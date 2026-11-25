@@ -8,6 +8,11 @@ import { PostgresFailureClassifier } from './postgres-failure-classifier.js';
  * manda a la cola de errores lo que se podía reintentar.
  */
 export class PostgresFailureRule extends FailureRule {
+  /**
+   * Clasifica un error del driver por su SQLSTATE.
+   * @param error Error a clasificar.
+   * @returns El tipo de falla pasajera, o `undefined` para que decidan las demás reglas.
+   */
   classify(error: object): FailureKind | undefined {
     return PostgresFailureClassifier.transientKindOf(error);
   }

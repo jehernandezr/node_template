@@ -1,4 +1,4 @@
-import type { PaymentStatus } from './payment-status.enum.js';
+import { PaymentStatus } from './payment-status.enum.js';
 
 /** Un intento de cobro de una factura, anotado antes de pedirlo al proveedor. */
 export interface PaymentAttempt {
@@ -13,3 +13,9 @@ export interface PaymentAttempt {
   /** Motivo del rechazo, con un cobro rechazado. */
   readonly reason?: string;
 }
+
+/** Estados de un intento que todavía espera la respuesta final del proveedor. */
+export const OPEN_PAYMENT_STATUSES: ReadonlySet<PaymentStatus> = new Set([
+  PaymentStatus.Requested,
+  PaymentStatus.Pending,
+]);

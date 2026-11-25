@@ -56,8 +56,10 @@ const TENANT_D = BillingTestApp.TENANT_D;
 const TENANT_E = BillingTestApp.TENANT_E;
 const TENANT_F = BillingTestApp.TENANT_F;
 const TENANT_G = BillingTestApp.TENANT_G;
+const TENANT_H = BillingTestApp.TENANT_H;
 const HOUR_MS = 60 * 60_000;
 const MISSING_PLAN = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f01';
+const UNKNOWN_ATTEMPT = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f02';
 const TODAY_UTC = `(now() AT TIME ZONE 'UTC')::date`;
 
 new ContainerRuntime(process.env).describeIfAvailable(
@@ -731,6 +733,154 @@ new ContainerRuntime(process.env).describeIfAvailable(
             `SELECT id FROM invoices WHERE tenant_id = '${TENANT_G}'`,
           ),
         ).resolves.toHaveLength(invoicesBefore.length);
+      });
+
+      describe('a notice of the provider about an attempt it already reported', () => {
+        const issueToH = async () => {
+          await issueOverdue(TENANT_H, 40);
+          return app.get(IssueInvoice).execute(TENANT_H, today());
+        };
+        const failuresOf = (invoiceId: string) =>
+          app.rowsOf<{ failed_attempts: number }>(
+            TENANT_H,
+            `SELECT failed_attempts FROM invoices WHERE id = '${invoiceId}'`,
+          );
+        const attemptIdOf = async (invoiceId: string, attempt: number) =>
+          String(
+            (
+              await app.rowsOf<{ id: string }>(
+                TENANT_H,
+                `SELECT id FROM payment_attempts WHERE invoice_id = '${invoiceId}' AND attempt = ${String(attempt)}`,
+              )
+            )[0]?.id,
+          );
+
+        beforeAll(async () => {
+          await open(TENANT_H);
+        });
+
+        it('counts a decline the provider reports twice once, so it does not use up a retry', async () => {
+          const invoice = await issueToH();
+          const notice = {
+            tenantId: TENANT_H,
+            invoiceId: String(invoice?.id),
+            failedAt: new Date().toISOString(),
+            reason: 'insufficient_funds',
+          };
+
+          await app.internal().invoke(MarkInvoiceFailedOperation, notice);
+          await app.internal().invoke(MarkInvoiceFailedOperation, notice);
+
+          await expect(failuresOf(String(invoice?.id))).resolves.toEqual([
+            { failed_attempts: 1 },
+          ]);
+          await expect(
+            attemptsOf(TENANT_H, String(invoice?.id)),
+          ).resolves.toEqual([
+            {
+              attempt: 1,
+              status: 'declined',
+              reference: null,
+              reason: 'insufficient_funds',
+            },
+          ]);
+        });
+
+        it('counts a decline the job already recorded once when the webhook reports it later', async () => {
+          const invoice = await issueToH();
+          const invoiceId = String(invoice?.id);
+          await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
+          await app.rowsOf(
+            TENANT_H,
+            `UPDATE payment_attempts SET status = 'declined', reason = 'card_declined' WHERE invoice_id = '${invoiceId}'`,
+          );
+          await app
+            .get(SettleInvoice)
+            .failed(TENANT_H, invoiceId, new Date(), 1);
+
+          await app.internal().invoke(MarkInvoiceFailedOperation, {
+            tenantId: TENANT_H,
+            invoiceId,
+            failedAt: new Date().toISOString(),
+            reason: 'card_declined',
+          });
+
+          await expect(failuresOf(invoiceId)).resolves.toEqual([
+            { failed_attempts: 1 },
+          ]);
+          await expect(attemptsOf(TENANT_H, invoiceId)).resolves.toMatchObject([
+            { attempt: 1, status: 'declined' },
+          ]);
+        });
+
+        it('applies a late notice to the attempt it names and leaves the retry in flight to its own notice', async () => {
+          const invoice = await issueToH();
+          const invoiceId = String(invoice?.id);
+          await app.internal().invoke(MarkInvoiceFailedOperation, {
+            tenantId: TENANT_H,
+            invoiceId,
+            failedAt: new Date().toISOString(),
+          });
+          await app.rowsOf(
+            TENANT_H,
+            `UPDATE invoices SET next_collection_at = now() - interval '1 minute' WHERE id = '${invoiceId}'`,
+          );
+          await app.get(CloseInvoicePeriodsJob).run(JobContexts.live());
+
+          const late = await app.internal().invoke(MarkInvoiceFailedOperation, {
+            tenantId: TENANT_H,
+            invoiceId,
+            failedAt: new Date().toISOString(),
+            attemptId: await attemptIdOf(invoiceId, 1),
+          });
+          const failuresAfterLate = await failuresOf(invoiceId);
+          const paid = await app.internal().invoke(MarkInvoicePaidOperation, {
+            tenantId: TENANT_H,
+            invoiceId,
+            attemptId: await attemptIdOf(invoiceId, 2),
+            paidAt: new Date().toISOString(),
+            reference: 'gateway-retry',
+            amount: {
+              amountMinor: Number(invoice?.totalMinor),
+              currency: String(invoice?.currency),
+            },
+          });
+
+          expect(late).toMatchObject({
+            value: { status: InvoiceStatus.Failed },
+          });
+          expect(failuresAfterLate).toEqual([{ failed_attempts: 1 }]);
+          expect(paid).toMatchObject({ value: { status: InvoiceStatus.Paid } });
+          await expect(attemptsOf(TENANT_H, invoiceId)).resolves.toEqual([
+            { attempt: 1, status: 'declined', reference: null, reason: null },
+            {
+              attempt: 2,
+              status: 'approved',
+              reference: 'gateway-retry',
+              reason: null,
+            },
+          ]);
+        });
+
+        it('refuses a notice about an attempt that is not one of the invoice', async () => {
+          const invoice = await issueToH();
+
+          const refused = await app
+            .internal()
+            .invoke(MarkInvoiceFailedOperation, {
+              tenantId: TENANT_H,
+              invoiceId: String(invoice?.id),
+              failedAt: new Date().toISOString(),
+              attemptId: UNKNOWN_ATTEMPT,
+            });
+
+          expect(refused).toMatchObject({
+            code: BillingErrorCode.InvoiceNotFound,
+          });
+          await expect(
+            attemptsOf(TENANT_H, String(invoice?.id)),
+          ).resolves.toEqual([]);
+        });
       });
     });
 

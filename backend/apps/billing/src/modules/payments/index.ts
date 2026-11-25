@@ -1,4 +1,7 @@
-export { PaymentsFacade } from './application/payments.facade.js';
+export {
+  PaymentsFacade,
+  type PaymentNotice,
+} from './application/payments.facade.js';
 export type {
   ChargeRequest,
   PaymentResult,

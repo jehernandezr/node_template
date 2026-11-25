@@ -1,15 +1,12 @@
-import type { PaymentAttempt } from '../../domain/payment-attempt.js';
+import {
+  OPEN_PAYMENT_STATUSES,
+  type PaymentAttempt,
+} from '../../domain/payment-attempt.js';
 import { PaymentAttempts } from '../../domain/payment-attempts.js';
 import type { PaymentResult } from '../../domain/payment-provider.js';
-import { PaymentStatus } from '../../domain/payment-status.enum.js';
 
 /** `PaymentAttempts` en memoria con la misma llave única por factura y número de intento que la tabla. */
 export class InMemoryPaymentAttempts extends PaymentAttempts {
-  private static readonly OPEN: ReadonlySet<PaymentStatus> = new Set([
-    PaymentStatus.Requested,
-    PaymentStatus.Pending,
-  ]);
-
   protected readonly rows = new Map<string, PaymentAttempt>();
 
   async reserve(attempt: PaymentAttempt): Promise<boolean> {
@@ -31,9 +28,28 @@ export class InMemoryPaymentAttempts extends PaymentAttempts {
     return this.rows.get(InMemoryPaymentAttempts.keyOf(invoiceId, attempt));
   }
 
+  async findById(
+    invoiceId: string,
+    id: string,
+  ): Promise<PaymentAttempt | undefined> {
+    return this.all().find(
+      (row) => row.id === id && row.invoiceId === invoiceId,
+    );
+  }
+
+  async latest(invoiceId: string): Promise<PaymentAttempt | undefined> {
+    return this.all()
+      .filter((row) => row.invoiceId === invoiceId)
+      .reduce<PaymentAttempt | undefined>(
+        (last, row) =>
+          last === undefined || row.attempt > last.attempt ? row : last,
+        undefined,
+      );
+  }
+
   async resolve(id: string, result: PaymentResult): Promise<void> {
     for (const [key, row] of this.rows) {
-      if (row.id === id && InMemoryPaymentAttempts.OPEN.has(row.status)) {
+      if (row.id === id && OPEN_PAYMENT_STATUSES.has(row.status)) {
         this.rows.set(key, { ...row, ...result });
       }
     }

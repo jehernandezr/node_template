@@ -40,6 +40,11 @@ export interface InvoiceState {
 export class Invoice {
   private constructor(private state: InvoiceState) {}
 
+  /**
+   * Emite una factura con el total de sus líneas, lista para cobrarse en el acto.
+   * @param input Id, número, periodo, moneda, líneas y momento de emisión.
+   * @returns La factura emitida, sin rechazos.
+   */
   static issue(input: {
     readonly id: string;
     readonly number: string;
@@ -64,19 +69,36 @@ export class Invoice {
     });
   }
 
+  /**
+   * Reconstruye una factura guardada sin validar de nuevo.
+   * @param state Estado leído de la persistencia.
+   * @returns La factura.
+   */
   static rehydrate(state: InvoiceState): Invoice {
     return new Invoice(state);
   }
 
+  /**
+   * Estado actual, para guardarlo o mostrarlo.
+   * @returns El estado, de solo lectura.
+   */
   snapshot(): InvoiceState {
     return this.state;
   }
 
-  /** Número del intento de cobro que toca: cada rechazo abre el siguiente. */
+  /**
+   * Número del intento de cobro que toca: cada rechazo abre el siguiente.
+   * @returns `failedAttempts + 1`.
+   */
   collectionAttempt(): number {
     return this.state.failedAttempts + 1;
   }
 
+  /**
+   * Indica si toca cobrarla: sin pagar y con su próximo cobro vencido.
+   * @param now Momento de referencia.
+   * @returns `true` si está emitida o fallida y `nextCollectionAt` ya pasó.
+   */
   isDueForCollection(now: Date): boolean {
     const next = this.state.nextCollectionAt;
     return (
@@ -87,7 +109,11 @@ export class Invoice {
     );
   }
 
-  /** @throws BillingError `BILLING.INVOICE.AMOUNT_MISMATCH` si lo pagado no es el total en su moneda. */
+  /**
+   * Comprueba que lo pagado sea el total de la factura en su moneda.
+   * @param amount Monto que informa el proveedor.
+   * @throws BillingError `BILLING.INVOICE.AMOUNT_MISMATCH` si no coincide.
+   */
   assertTotal(amount: { amountMinor: number; currency: string }): void {
     if (
       amount.amountMinor !== this.state.totalMinor ||
@@ -104,7 +130,9 @@ export class Invoice {
   }
 
   /**
-   * Devuelve `false` si ya estaba pagada.
+   * Salda la factura, aunque un cobro anterior se haya rechazado.
+   * @param at Momento del pago.
+   * @returns `false` si ya estaba pagada.
    * @throws BillingError `BILLING.INVOICE.INVALID_STATE` si está anulada o en borrador.
    */
   pay(at: Date): boolean {
@@ -122,8 +150,11 @@ export class Invoice {
   }
 
   /**
-   * Anota el rechazo del intento `attempt` y programa el siguiente según `retries`. Devuelve `false` si ese rechazo
-   * ya estaba anotado: el job y el webhook pueden informar el mismo.
+   * Anota el rechazo del intento `attempt` y programa el siguiente según `retries`.
+   * @param at Momento del rechazo.
+   * @param attempt Número del intento rechazado.
+   * @param retries Calendario de reintentos.
+   * @returns `false` si ese rechazo ya estaba anotado: el job y el webhook pueden informar el mismo.
    * @throws BillingError `BILLING.INVOICE.INVALID_STATE` si está pagada, anulada o en borrador.
    */
   fail(at: Date, attempt: number, retries: CollectionRetrySchedule): boolean {

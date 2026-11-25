@@ -29,7 +29,13 @@ export class ChargeInvoice {
     private readonly clock: Clock,
   ) {}
 
-  /** `Requested` si otra corrida tiene el intento en vuelo: su resultado lo aplica ella. */
+  /**
+   * Cobra el intento si nadie lo anotó, devuelve la respuesta si ya está resuelto o retoma uno abandonado preguntando
+   * al proveedor por su llave antes de pedirlo otra vez.
+   * @param request Factura, número de intento y monto a cobrar.
+   * @returns La respuesta del proveedor, o `Requested` si otra corrida tiene el intento en vuelo: su resultado lo
+   *   aplica ella.
+   */
   async execute(request: ChargeRequest): Promise<PaymentResult> {
     const existing = await this.shard.run(request.tenantId, () =>
       this.attempts.find(request.invoiceId, request.attempt),

@@ -46,6 +46,11 @@ export class CloseInvoicePeriodsJob extends ScheduledJob {
     super();
   }
 
+  /**
+   * Cierra los periodos vencidos y cobra las facturas a las que les toca, revisando la señal entre tenant y tenant.
+   * @param context Contexto de la corrida, con su señal de aborto.
+   * @throws AbortError si la señal se dispara a mitad de la corrida.
+   */
   async run(context: JobContext): Promise<void> {
     await this.closeDuePeriods(context.signal);
     await this.collectDueInvoices(context.signal);

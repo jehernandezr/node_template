@@ -6,6 +6,10 @@ export interface TenantInvoice {
 
 /** Consultas sobre las facturas de todos los tenants, en todos los shards, para los jobs. */
 export abstract class InvoiceMaintenance {
-  /** Facturas sin pagar cuyo cobro ya toca en `now`: recién emitidas o con un reintento vencido. */
+  /**
+   * Facturas sin pagar cuyo cobro ya toca: recién emitidas o con un reintento vencido.
+   * @param now Momento de referencia.
+   * @returns Las facturas de todos los shards, sin los tenants ya trasladados.
+   */
   abstract dueForCollection(now: Date): Promise<readonly TenantInvoice[]>;
 }

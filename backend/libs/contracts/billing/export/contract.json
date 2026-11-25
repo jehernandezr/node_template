@@ -752,6 +752,9 @@
         "reference": { "type": "string", "minLength": 1, "maxLength": 120 },
         "amount": {
           "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        },
+        "attemptId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
         }
       },
       "required": ["tenantId", "invoiceId", "paidAt", "reference", "amount"],
@@ -770,7 +773,10 @@
         "failedAt": {
           "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
         },
-        "reason": { "type": "string", "minLength": 1, "maxLength": 200 }
+        "reason": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "attemptId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
       },
       "required": ["tenantId", "invoiceId", "failedAt"],
       "additionalProperties": false,

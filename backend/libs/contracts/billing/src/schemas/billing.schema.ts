@@ -278,6 +278,7 @@ export const MarkInvoicePaidInputSchema = z
     paidAt: TimestampSchema,
     reference: z.string().min(1).max(BillingLimits.paymentReferenceMaxLength),
     amount: MoneyAmountSchema,
+    attemptId: IdSchema.optional(),
   })
   .describe(
     'Marca una factura como pagada con la referencia del proveedor.',
@@ -293,6 +294,7 @@ export const MarkInvoiceFailedInputSchema = z
       .min(1)
       .max(BillingLimits.failureReasonMaxLength)
       .optional(),
+    attemptId: IdSchema.optional(),
   })
   .describe(
     'Marca una factura como fallida después de un cobro rechazado.',

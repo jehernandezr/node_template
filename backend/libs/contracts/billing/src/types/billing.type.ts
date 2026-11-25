@@ -159,6 +159,8 @@ export interface MarkInvoicePaidInput {
   reference: string;
   /** Lo que cobró el proveedor: debe ser el total de la factura en su moneda. */
   amount: MoneyAmount;
+  /** Id del intento que billing le pasó al proveedor como llave de idempotencia; sin él, el pago no salió de billing. */
+  attemptId?: string;
 }
 
 export interface MarkInvoiceFailedInput {
@@ -166,6 +168,8 @@ export interface MarkInvoiceFailedInput {
   invoiceId: string;
   failedAt: string;
   reason?: string;
+  /** Id del intento que billing le pasó al proveedor como llave de idempotencia; sin él, el cobro no salió de billing. */
+  attemptId?: string;
 }
 
 /** Estado de una factura después de marcarla como pagada o fallida. */

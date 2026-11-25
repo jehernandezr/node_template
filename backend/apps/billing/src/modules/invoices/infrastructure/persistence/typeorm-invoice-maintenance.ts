@@ -21,6 +21,11 @@ export class TypeOrmInvoiceMaintenance extends InvoiceMaintenance {
     super();
   }
 
+  /**
+   * Busca en cada shard las facturas `Issued` o `Failed` con `next_collection_at` vencido, sin los tenants cercados.
+   * @param now Momento de referencia.
+   * @returns Las facturas de todos los shards, ordenadas por id dentro de cada uno.
+   */
   async dueForCollection(now: Date): Promise<readonly TenantInvoice[]> {
     const outcome = await this.shards.run((connection) =>
       TenantMaintenanceSession.run(connection.dataSource.manager, (manager) =>

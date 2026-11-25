@@ -175,6 +175,27 @@ describe('billing limits in the schemas', () => {
     ).toBe(true);
   });
 
+  it('takes the id of the attempt a payment notice refers to only as an id', () => {
+    const failed = {
+      tenantId: Ids.tenant,
+      invoiceId: Ids.item,
+      failedAt: '2026-11-13T12:00:00.000Z',
+    };
+
+    expect(
+      validateContract(schemas.MarkInvoiceFailedInput, {
+        ...failed,
+        attemptId: Ids.item,
+      }).ok,
+    ).toBe(true);
+    expect(
+      validateContract(schemas.MarkInvoiceFailedInput, {
+        ...failed,
+        attemptId: 'attempt-1',
+      }).ok,
+    ).toBe(false);
+  });
+
   it('bounds the quantity of a quota check', () => {
     const check = {
       tenantId: Ids.tenant,
