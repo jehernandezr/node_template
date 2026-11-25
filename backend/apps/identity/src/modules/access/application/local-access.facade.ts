@@ -102,10 +102,26 @@ export class LocalAccessFacade extends AccessFacade {
     return this.resolver.tenantsOf(ref);
   }
 
-  /** {@inheritDoc AccessFacade.assertCanLeaveAllTenants} */
-  async assertCanLeaveAllTenants(ref: UserRef): Promise<void> {
+  /** {@inheritDoc AccessFacade.reserveDepartures} */
+  async reserveDepartures(ref: UserRef): Promise<void> {
+    const reserved: string[] = [];
+    try {
+      for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
+        await this.members.reserveDeparture(tenantId, ref.userId);
+        reserved.push(tenantId);
+      }
+    } catch (error) {
+      for (const tenantId of reserved) {
+        await this.members.cancelDeparture(tenantId, ref.userId);
+      }
+      throw error;
+    }
+  }
+
+  /** {@inheritDoc AccessFacade.cancelDepartures} */
+  async cancelDepartures(ref: UserRef): Promise<void> {
     for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
-      await this.members.assertCanLeave(tenantId, ref.userId);
+      await this.members.cancelDeparture(tenantId, ref.userId);
     }
   }
 

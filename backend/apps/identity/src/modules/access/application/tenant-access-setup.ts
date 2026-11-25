@@ -202,6 +202,7 @@ export class TenantAccessSetup {
       groupIds,
       permissionVersion: (removedVersion ?? 0) + 1,
       joinedAt: this.clock.now(),
+      leavingSince: null,
     };
     await this.tenantAccess.insertMembership(membership);
     await this.bus.publish(

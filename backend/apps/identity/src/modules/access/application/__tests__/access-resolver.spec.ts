@@ -42,6 +42,7 @@ describe('AccessResolver', () => {
       groupIds: [],
       permissionVersion: 1,
       joinedAt: new Date('2026-01-01T00:00:00.000Z'),
+      leavingSince: null,
     });
   });
 

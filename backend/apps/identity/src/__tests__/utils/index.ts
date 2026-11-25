@@ -23,6 +23,11 @@ export { SoftwareAuthenticator } from './software-authenticator.js';
 export { Eventually } from './eventually.js';
 export { RecordingParticipants } from './recording-participants.js';
 export { PeerServicesStub } from './peer-services-stub.js';
+export {
+  RecordingMessageBus,
+  type RecordedMessage,
+} from './recording-message-bus.js';
+export { ErasureHold } from './erasure-hold.js';
 export { identityService } from '../../identity.service.js';
 export { MemoryIdentityMailer } from '../../modules/alerts/index.js';
 export { SeedRegionTenants } from '../../modules/tenants/index.js';

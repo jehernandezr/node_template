@@ -12,6 +12,7 @@ describe('EffectiveAccessCalculator', () => {
         groupIds: ['g-1', 'g-2'],
         permissionVersion: 1,
         joinedAt: new Date(0),
+        leavingSince: null,
       },
       [
         {

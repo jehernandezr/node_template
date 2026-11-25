@@ -151,6 +151,7 @@ describe('GrantCeiling', () => {
         groupIds: [groupOf(role)],
         permissionVersion: 1,
         joinedAt: clock.now(),
+        leavingSince: null,
       });
     }
   });

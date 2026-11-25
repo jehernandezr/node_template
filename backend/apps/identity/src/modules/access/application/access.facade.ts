@@ -117,15 +117,27 @@ export abstract class AccessFacade {
   abstract tenantsOf(ref: UserRef): Promise<readonly UserTenant[]>;
 
   /**
-   * Checks that the user can leave all their tenants before their account is deleted.
+   * Reserves the departure of the user from every tenant before their account is deleted: each tenant checks
+   * under its lock that another owner who is not leaving remains, and marks the user as leaving. If one tenant
+   * refuses, the departures already reserved are cancelled.
    * @param ref User.
    * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are the last owner of a tenant with other members.
    */
-  abstract assertCanLeaveAllTenants(ref: UserRef): Promise<void>;
+  abstract reserveDepartures(ref: UserRef): Promise<void>;
 
   /**
-   * Removes the user from every tenant for the deletion of their account. It is idempotent.
+   * Cancels the departures reserved for the user: the deletion of their account did not go ahead. It is
+   * idempotent.
+   * @param ref User.
+   */
+  abstract cancelDepartures(ref: UserRef): Promise<void>;
+
+  /**
+   * Removes the user from every tenant for the deletion of their account and deletes the tombstones of their
+   * earlier removals. It is idempotent.
    * @param ref Erased user.
+   * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are still the last owner of a tenant with other
+   *   members.
    */
   abstract removeFromAllTenants(ref: UserRef): Promise<void>;
 

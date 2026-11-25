@@ -12,13 +12,15 @@ import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
+import { AccessFacade } from '../../access/index.js';
 import { SessionsFacade } from '../../sessions/index.js';
 import { UserRepository } from '../domain/user.repository.js';
 import { UserReader } from './user-reader.js';
 
 /**
- * Suspende y reactiva usuarios. Cada operación es idempotente y la compensación de la otra. La época
- * `auth:epoch:user:{id}` con `suspended` hace que los demás servicios rechacen sus tokens al instante.
+ * Suspends and reactivates users. Each operation is idempotent and the compensation of the other. The epoch
+ * `auth:epoch:user:{id}` with `suspended` makes the other services reject their tokens at once. Reactivating a
+ * user also cancels the tenant departures a deletion of their account had reserved.
  */
 @Injectable()
 export class ChangeUserStatus {
@@ -28,6 +30,7 @@ export class ChangeUserStatus {
     private readonly reader: UserReader,
     private readonly users: UserRepository,
     private readonly sessions: SessionsFacade,
+    private readonly access: AccessFacade,
     private readonly state: AuthStateWriter,
     private readonly scopes: IdentityShardScopes,
     private readonly transactions: TransactionManager,
@@ -35,6 +38,13 @@ export class ChangeUserStatus {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Suspends a user, revokes every session and marks their epoch as suspended.
+   * @param userId User.
+   * @param reason Why they are suspended.
+   * @returns The user and their status.
+   * @throws IdentityError `IDENTITY.USER.NOT_FOUND` if the user does not exist.
+   */
   async suspend(userId: string, reason?: string): Promise<UserOperationResult> {
     const ref = await this.reader.requireRef(userId);
     const now = this.clock.now();
@@ -61,6 +71,13 @@ export class ChangeUserStatus {
     return result;
   }
 
+  /**
+   * Reactivates a user, clears the suspension of their epoch and cancels the tenant departures a deletion of
+   * their account had reserved.
+   * @param userId User.
+   * @returns The user and their status.
+   * @throws IdentityError `IDENTITY.USER.NOT_FOUND` if the user does not exist.
+   */
   async reactivate(userId: string): Promise<UserOperationResult> {
     const ref = await this.reader.requireRef(userId);
     const now = this.clock.now();
@@ -79,6 +96,7 @@ export class ChangeUserStatus {
       revokedBefore: this.seconds(now),
       suspended: false,
     });
+    await this.access.cancelDepartures(ref);
     return result;
   }
 

@@ -125,7 +125,11 @@ export class InMemoryAccessFacade extends AccessFacade {
     this.projected.push({ tenantId, ref });
   }
 
-  async assertCanLeaveAllTenants(): Promise<void> {
+  async reserveDepartures(): Promise<void> {
+    return;
+  }
+
+  async cancelDepartures(): Promise<void> {
     return;
   }
 

@@ -258,6 +258,7 @@ export class TypeOrmTenantAccessRepository
       groupIds: row.groupIds,
       permissionVersion: row.permissionVersion,
       joinedAt: row.joinedAt,
+      leavingSince: row.leavingSince,
       ...(row.version === undefined ? {} : { version: row.version }),
     };
   }
@@ -270,6 +271,7 @@ export class TypeOrmTenantAccessRepository
     row.groupIds = [...membership.groupIds];
     row.permissionVersion = membership.permissionVersion;
     row.joinedAt = membership.joinedAt;
+    row.leavingSince = membership.leavingSince;
     if (membership.version !== undefined) {
       row.version = membership.version;
     }

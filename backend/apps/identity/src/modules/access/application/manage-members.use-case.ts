@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
-  IdentityErrorCode,
   MembershipChangeKind,
   MembershipChangedEvent,
-  TenantRole,
   type Permission,
 } from '@contracts/identity';
 import { Clock, TransactionManager } from '@platform/kernel';
@@ -15,14 +13,16 @@ import { TenantAccessRepository } from '../domain/access-store.js';
 import type { Group } from '../domain/group.js';
 import type { Membership } from '../domain/membership.js';
 import type { Role } from '../domain/role.js';
+import { TenantOwnership } from '../domain/tenant-ownership.js';
 import { AccessVersionPublisher } from './access-version-publisher.js';
 import { GrantCeiling } from './grant-ceiling.js';
 import { TenantAccessSetup } from './tenant-access-setup.js';
 
 /**
- * Members of the tenant: remove them and change their groups. A tenant never ends without an owner, and
- * the editor neither touches a member with permissions the editor lacks nor grants groups that give more
- * than the editor's own. A removal keeps the last permission version, so a later return starts above it.
+ * Members of the tenant: remove them, change their groups and let them leave when their account is deleted. A
+ * tenant with members never ends without an owner, and an owner who is leaving no longer counts as one. The
+ * editor neither touches a member with permissions the editor lacks nor grants groups that give more than the
+ * editor's own. A removal keeps the last permission version, so a later return starts above it.
  */
 @Injectable()
 export class ManageMembers {
@@ -56,10 +56,9 @@ export class ManageMembers {
       userId,
       async (membership, groups, roles) => {
         this.ceiling.assertGroups(membership.groupIds, groups, roles, granted);
-        this.assertOwnerRemains(
+        new TenantOwnership(groups).assertOwnerRemains(
           membership,
           [],
-          groups,
           await this.tenantAccess.listMemberships(),
         );
         await this.deleteMembership(tenantId, membership);
@@ -73,45 +72,72 @@ export class ManageMembers {
   }
 
   /**
-   * Deletes for good the membership of a user whose account is being erased, without the editor rules and
-   * without a tombstone. Repeating it changes nothing.
-   * @param tenantId Tenant.
-   * @param ref Erased user.
-   */
-  async removeErased(tenantId: string, ref: UserRef): Promise<void> {
-    await this.scopes.inTenantShard(tenantId, () =>
-      this.transactions.runInTransaction(async () => {
-        await this.tenantAccess.lockForChanges();
-        const membership = await this.tenantAccess.findMembership(ref.userId);
-        await this.tenantAccess.purgeMembership(ref.userId);
-        if (membership !== undefined) {
-          await this.announceRemoval(tenantId, membership);
-        }
-      }),
-    );
-    await this.setup.project(tenantId, ref);
-  }
-
-  /**
-   * Checks that a user can leave a tenant for good: the last owner of a tenant with other members must hand
-   * over ownership first, so the deletion of an account never leaves members without an owner.
+   * Reserves the departure of a user whose account is about to be deleted. Under the lock of the tenant it
+   * checks that an owner who is not leaving remains for the other members and marks the user as leaving, so a
+   * concurrent deletion of another owner sees this one already gone. Repeating it changes nothing.
    * @param tenantId Tenant.
    * @param userId User who leaves.
    * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are the last owner and others remain.
    */
-  async assertCanLeave(tenantId: string, userId: string): Promise<void> {
-    await this.scopes.inTenantShard(tenantId, async () => {
+  async reserveDeparture(tenantId: string, userId: string): Promise<void> {
+    await this.underLock(tenantId, async () => {
       const membership = await this.tenantAccess.findMembership(userId);
-      const memberships = await this.tenantAccess.listMemberships();
-      if (membership !== undefined && memberships.length > 1) {
-        this.assertOwnerRemains(
-          membership,
-          [],
-          await this.tenantAccess.listGroups(),
-          memberships,
-        );
+      if (membership === undefined) {
+        return;
+      }
+      new TenantOwnership(await this.tenantAccess.listGroups()).assertCanLeave(
+        membership,
+        await this.tenantAccess.listMemberships(),
+      );
+      if (membership.leavingSince === null) {
+        await this.tenantAccess.updateMembership({
+          ...membership,
+          leavingSince: this.clock.now(),
+        });
       }
     });
+  }
+
+  /**
+   * Cancels a reserved departure: the deletion of the account did not go ahead and the user stays. Repeating
+   * it changes nothing.
+   * @param tenantId Tenant.
+   * @param userId User who stays.
+   */
+  async cancelDeparture(tenantId: string, userId: string): Promise<void> {
+    await this.underLock(tenantId, async () => {
+      const membership = await this.tenantAccess.findMembership(userId);
+      if (membership !== undefined && membership.leavingSince !== null) {
+        await this.tenantAccess.updateMembership({
+          ...membership,
+          leavingSince: null,
+        });
+      }
+    });
+  }
+
+  /**
+   * Deletes for good the membership of a user whose account is being erased, without the editor rules and
+   * without a tombstone. Under the lock of the tenant it refuses to remove the last owner while other members
+   * remain, so the erasure stops instead of leaving them without an owner. Repeating it changes nothing.
+   * @param tenantId Tenant.
+   * @param ref Erased user.
+   * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are the last owner and others remain.
+   */
+  async removeErased(tenantId: string, ref: UserRef): Promise<void> {
+    await this.underLock(tenantId, async () => {
+      const membership = await this.tenantAccess.findMembership(ref.userId);
+      if (membership !== undefined) {
+        new TenantOwnership(
+          await this.tenantAccess.listGroups(),
+        ).assertCanLeave(membership, await this.tenantAccess.listMemberships());
+      }
+      await this.tenantAccess.purgeMembership(ref.userId);
+      if (membership !== undefined) {
+        await this.announceRemoval(tenantId, membership);
+      }
+    });
+    await this.setup.project(tenantId, ref);
   }
 
   /**
@@ -133,10 +159,9 @@ export class ManageMembers {
     await this.change(tenantId, userId, async (membership, groups, roles) => {
       this.ceiling.assertGroups(membership.groupIds, groups, roles, granted);
       this.ceiling.assertGroups(groupIds, groups, roles, granted);
-      this.assertOwnerRemains(
+      new TenantOwnership(groups).assertOwnerRemains(
         membership,
         groupIds,
-        groups,
         await this.tenantAccess.listMemberships(),
       );
       const next = {
@@ -170,43 +195,26 @@ export class ManageMembers {
       roles: readonly Role[],
     ) => Promise<T>,
   ): Promise<T> {
+    return this.underLock(tenantId, async () => {
+      const membership = await this.tenantAccess.findMembership(userId);
+      if (membership === undefined) {
+        throw IdentityError.notFound();
+      }
+      return apply(
+        membership,
+        await this.tenantAccess.listGroups(),
+        await this.tenantAccess.listRoles(),
+      );
+    });
+  }
+
+  private underLock<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
     return this.scopes.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         await this.tenantAccess.lockForChanges();
-        const membership = await this.tenantAccess.findMembership(userId);
-        if (membership === undefined) {
-          throw IdentityError.notFound();
-        }
-        return apply(
-          membership,
-          await this.tenantAccess.listGroups(),
-          await this.tenantAccess.listRoles(),
-        );
+        return fn();
       }),
     );
-  }
-
-  private assertOwnerRemains(
-    changed: Membership,
-    nextGroupIds: readonly string[],
-    groups: readonly Group[],
-    memberships: readonly Membership[],
-  ): void {
-    const owners = new Set(
-      groups
-        .filter((group) => group.systemRole === TenantRole.Owner)
-        .map((group) => group.id),
-    );
-    const isOwner = (ids: readonly string[]): boolean =>
-      ids.some((id) => owners.has(id));
-    const remaining = memberships.filter((membership) =>
-      membership.userId === changed.userId
-        ? isOwner(nextGroupIds)
-        : isOwner(membership.groupIds),
-    );
-    if (isOwner(changed.groupIds) && remaining.length === 0) {
-      throw new IdentityError(IdentityErrorCode.AccessLastOwner);
-    }
   }
 
   private async deleteMembership(

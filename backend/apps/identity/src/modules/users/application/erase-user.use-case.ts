@@ -21,11 +21,12 @@ import { UserRepository } from '../domain/user.repository.js';
 import { UserReader } from './user-reader.js';
 
 /**
- * Last step of `DeleteAccount`: it erases the personal data of the user, revokes and deletes their sessions
- * (with their IPs and user agents), deletes their sign-in history, their password, their second factors,
- * their passkeys and their devices, removes them from their tenants (each tenant publishes the removal, and
- * billing stops counting them), publishes `identity.user.erased.v1` and finally removes their row from
- * `identity_lookup`, which is what finds them. If they are no longer in the directory, the erasure finished
+ * Last step of `DeleteAccount`: it first removes the user from their tenants (each tenant publishes the
+ * removal, and billing stops counting them), so a tenant that would be left without an owner stops the erasure
+ * before anything else of identity is gone. Then it erases the personal data of the user, revokes and deletes
+ * their sessions (with their IPs and user agents), deletes their sign-in history, their password, their second
+ * factors, their passkeys and their devices, publishes `identity.user.erased.v1` and finally removes their row
+ * from `identity_lookup`, which is what finds them. If they are no longer in the directory, the erasure finished
  * earlier: repeating it answers the same without touching anything.
  */
 @Injectable()
@@ -52,11 +53,14 @@ export class EraseUser {
    * @param userId User.
    * @returns The user and the instant of the erasure.
    * @throws IdentityError `IDENTITY.USER.NOT_FOUND` if the directory points to a user that does not exist.
+   * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if the user is still the last owner of a tenant with other
+   *   members.
    */
   async execute(userId: string): Promise<EraseUserResult> {
     const now = this.clock.now();
     const ref = await this.reader.refOf(userId);
     if (ref !== undefined) {
+      await this.access.removeFromAllTenants(ref);
       await this.erase(ref, now);
       await this.sessions.forget(ref);
       await this.attempts.forget(ref);
@@ -64,7 +68,6 @@ export class EraseUser {
       await this.passwords.forget(ref);
       await this.passkeys.forget(ref);
       await this.devices.forget(ref);
-      await this.access.removeFromAllTenants(ref);
       await this.directory.forget(userId);
     }
     return { userId, erasedAt: now.toISOString() };

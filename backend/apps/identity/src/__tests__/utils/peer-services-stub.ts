@@ -23,8 +23,9 @@ import { EraseTasksUserDataOperation } from '@contracts/tasks';
 import { InternalApiRoute } from '@platform/internal-api';
 import { CallOutcome } from '@platform/primitives';
 import { TenantDirectoryFollowers } from '../../modules/tenants/index.js';
+import { ErasureHold } from './erasure-hold.js';
 
-/** Lo que el plan de un tenant permite de una métrica y lo que ya usó. */
+/** What the plan of a tenant allows of a metric and what it already used. */
 export interface StubQuota {
   readonly limit: number;
   readonly used: number;
@@ -38,15 +39,16 @@ type Input = Record<string, unknown> & {
 };
 
 /**
- * Billing, notifications, tasks y reports de mentira para identity: responden los pasos de las sagas, las
- * ubicaciones en sus directorios y las consultas de cuota, y anotan cada operación que reciben. Un tenant sin cuota
- * fijada no tiene suscripción.
+ * Fake billing, notifications, tasks and reports for identity: they answer the saga steps, the placements in their
+ * directories and the quota checks, and record every operation they receive. A tenant without a set quota has no
+ * subscription.
  */
 export class PeerServicesStub {
   readonly received: string[] = [];
-  /** Los tenants que cada directorio tiene anotados, por id de la operación que los ubica. */
+  /** The tenants each directory has recorded, by the id of the operation that places them. */
   readonly placed = new Map<string, Set<string>>();
   private readonly refused = new Set<string>();
+  private readonly holds = new Map<string, ErasureHold>();
   private readonly quotas = new Map<string, StubQuota>();
   private readonly unlimitedChecks = new Map<string, number>();
   private readonly server: Server = createServer((request, response) => {
@@ -58,38 +60,67 @@ export class PeerServicesStub {
     });
   });
 
+  /** Starts listening on a free local port. */
   async start(): Promise<void> {
     await new Promise<void>((resolve) =>
       this.server.listen(0, '127.0.0.1', resolve),
     );
   }
 
+  /** Closes every connection and stops listening. */
   async stop(): Promise<void> {
     this.server.closeAllConnections();
     await new Promise<void>((resolve) => this.server.close(() => resolve()));
   }
 
-  /** Las URLs de los cuatro servicios, todas hacia este stub. */
+  /**
+   * The URLs of the four services, all pointing at this stub.
+   * @returns The base URL of each service.
+   */
   baseUrls(): Record<string, string> {
     const { port } = this.server.address() as AddressInfo;
     const url = `http://127.0.0.1:${port}`;
     return { billing: url, notifications: url, tasks: url, reports: url };
   }
 
-  /** Billing rechaza la cuenta de los tenants que cree este usuario. */
+  /**
+   * Billing refuses the account of the tenants this user creates.
+   * @param ownerUserId Owner whose tenants are refused.
+   */
   refuseAccountsOf(ownerUserId: string): void {
     this.refused.add(ownerUserId);
   }
 
-  /** Fija la cuota de una métrica del tenant, como si tuviera una suscripción con ese plan. */
+  /**
+   * Holds the answer to the tasks erasure step of a user until the returned hold is released, so a test can act
+   * while the deletion of that account is in flight.
+   * @param userId User whose erasure is held.
+   * @returns The hold.
+   */
+  holdErasureOf(userId: string): ErasureHold {
+    const hold = new ErasureHold();
+    this.holds.set(userId, hold);
+    return hold;
+  }
+
+  /**
+   * Sets the quota of a metric of the tenant, as if it had a subscription with that plan.
+   * @param tenantId Tenant.
+   * @param metric Metric.
+   * @param quota Limit and usage.
+   */
   limit(tenantId: string, metric: UsageMetric, quota: StubQuota): void {
     this.quotas.set(`${tenantId}:${metric}`, quota);
   }
 
   /**
-   * Las primeras `checks` consultas de la métrica responden que el tenant no tiene suscripción, sin límite, y las
-   * siguientes con `quota`: así otro miembro toma el último cupo entre dos revisiones. Una respuesta sin
-   * suscripción no queda en el caché de cuotas del servicio, así que la segunda revisión llega aquí.
+   * The first `checks` checks of the metric answer that the tenant has no subscription, without a limit, and the
+   * next ones answer with `quota`: so another member takes the last seat between two checks. An answer without a
+   * subscription is not kept in the quota cache of the service, so the second check reaches this stub.
+   * @param tenantId Tenant.
+   * @param metric Metric.
+   * @param quota Limit and usage after the first checks.
+   * @param checks How many checks answer without a subscription.
    */
   fillAfter(
     tenantId: string,
@@ -116,6 +147,7 @@ export class PeerServicesStub {
       (request.url ?? '').split('/').at(-1) ?? '',
     );
     this.received.push(operationId);
+    await this.heldErasure(operationId, input)?.arrive();
     response
       .writeHead(200, { 'content-type': 'application/json' })
       .end(
@@ -159,7 +191,19 @@ export class PeerServicesStub {
     }
   }
 
-  /** La operación de ubicación del directorio al que va una llamada de ubicación o de retiro. */
+  private heldErasure(
+    operationId: string,
+    input: Input,
+  ): ErasureHold | undefined {
+    if (operationId !== EraseTasksUserDataOperation.id) {
+      return undefined;
+    }
+    const hold = this.holds.get(String(input.user?.userId));
+    this.holds.delete(String(input.user?.userId));
+    return hold;
+  }
+
+  /** The placement operation of the directory a placement or removal call goes to. */
   private directoryOf(path: string): string | undefined {
     return TenantDirectoryFollowers.ALL.find((follower) =>
       [follower.tenantDirectoryPlace, follower.tenantDirectoryRemove].some(
