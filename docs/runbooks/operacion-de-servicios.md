@@ -1,69 +1,69 @@
-# Operación de los servicios
+# Operating the services
 
-Los cinco servicios de la plantilla (identity, tasks, notifications, reports y billing) comparten el runtime de `@platform/service`, así que se operan igual. Este runbook dice qué mirar y qué hacer en cada caso.
+The five services in the template (identity, tasks, notifications, reports and billing) share the `@platform/service` runtime, so they are operated the same way. This runbook says what to check and what to do in each case.
 
-## Procesos
+## Processes
 
-Cada servicio tiene tres entradas, construidas en `backend/dist/<servicio>`:
+Each service has three entry points, built in `backend/dist/<service>`:
 
-| Entrada       | Qué corre                                                                         | Comando local                    |
-| ------------- | --------------------------------------------------------------------------------- | -------------------------------- |
-| `main.mjs`    | La API pública y la interna                                                       | `pnpm nx run <servicio>:serve`   |
-| `worker.mjs`  | Los consumidores de SQS, el relay del outbox, la recuperación de sagas y los jobs | `pnpm nx run <servicio>:worker`  |
-| `migrate.mjs` | Las migraciones del catálogo y de cada shard (`catalog`, `shards` o `all`)        | `pnpm nx run <servicio>:migrate` |
+| Entry point   | What it runs                                                        | Local command                   |
+| ------------- | ------------------------------------------------------------------- | ------------------------------- |
+| `main.mjs`    | The public and internal APIs                                        | `pnpm nx run <service>:serve`   |
+| `worker.mjs`  | The SQS consumers, the outbox relay, saga recovery and the jobs     | `pnpm nx run <service>:worker`  |
+| `migrate.mjs` | The catalog and per-shard migrations (`catalog`, `shards` or `all`) | `pnpm nx run <service>:migrate` |
 
-En AWS las migraciones corren como tarea antes de desplegar la versión nueva; una migración que falla detiene el despliegue.
+In AWS, migrations run as a task before deploying the new version; a failing migration stops the deployment.
 
-La siembra de identity (`pnpm nx run identity:seed`) crea los tenants fijos de la región y los anota en el directorio de tasks, notifications, reports y billing, así que corre después de desplegarlos. Es idempotente: si falla porque un servicio no responde, se repite cuando responda. Un tenant que exista desde antes de que los servicios ubicaran tenants se anota llamando `<servicio>.tenant-directory.place.v1` con su región y sus grupos de shards.
+The identity seed (`pnpm nx run identity:seed`) creates the region's fixed tenants and registers them in the directory of tasks, notifications, reports and billing, so it runs after those are deployed. It is idempotent: if it fails because a service does not respond, run it again once it responds. A tenant that existed before the services placed tenants is registered by calling `<service>.tenant-directory.place.v1` with its region and its shard groups.
 
-## Salud
+## Health
 
-- `GET /health/live`: el proceso responde. Si falla, el orquestador reinicia la tarea.
-- `GET /health/ready`: el catálogo y cada shard responden. Una tarea que no está lista sale del balanceador sin reiniciarse.
+- `GET /health/live`: the process responds. If it fails, the orchestrator restarts the task.
+- `GET /health/ready`: the catalog and every shard respond. A task that is not ready leaves the load balancer without being restarted.
 
-Si `ready` falla en todas las tareas, revisa primero el RDS Proxy y las credenciales (`DB_CREDENTIALS`), después Valkey.
+If `ready` fails on every task, check RDS Proxy and the credentials (`DB_CREDENTIALS`) first, then Valkey.
 
 ## Jobs
 
-Los jobs son `ScheduledJob` y los corre `@platform/scheduling` con candado en Valkey, así que cada uno corre en una sola tarea a la vez.
+Jobs are `ScheduledJob` instances run by `@platform/scheduling` with a lock in Valkey, so each one runs on a single task at a time.
 
-| Servicio      | Job                                                                                                                                | Qué hace                                                      |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| identity      | `identity.clean-up-tenant-moves`                                                                                                   | Borra el origen de los traslados pasada la gracia             |
-| identity      | `identity.rotate-login-attempt-partitions`                                                                                         | Crea y borra particiones de intentos de login                 |
-| identity      | `identity.expire-invitations`, `identity.purge-password-resets`, `identity.sweep-reserved-lookups`, `identity.flush-api-key-usage` | Mantenimiento de identity                                     |
-| tasks         | `tasks.purge-deleted`                                                                                                              | Borra las tareas eliminadas pasada su retención               |
-| notifications | `notifications.retry-deliveries`                                                                                                   | Reintenta las entregas de correo y push que fallaron          |
-| notifications | `notifications.purge-read`                                                                                                         | Borra las notificaciones leídas viejas                        |
-| reports       | `reports.expire-runs`                                                                                                              | Vence los resultados de las ejecuciones                       |
-| reports       | `reports.backfill-projections`                                                                                                     | Rellena las proyecciones desde los cambios de tasks y billing |
-| billing       | `billing.close-invoice-periods`                                                                                                    | Cierra los periodos y emite las facturas                      |
-| billing       | `billing.advance-dunning`                                                                                                          | Avanza la morosidad de las facturas fallidas                  |
+| Service       | Job                                                                                                                                | What it does                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| identity      | `identity.clean-up-tenant-moves`                                                                                                   | Deletes the source of moves once the grace period has passed |
+| identity      | `identity.rotate-login-attempt-partitions`                                                                                         | Creates and drops login attempt partitions                   |
+| identity      | `identity.expire-invitations`, `identity.purge-password-resets`, `identity.sweep-reserved-lookups`, `identity.flush-api-key-usage` | Identity maintenance                                         |
+| tasks         | `tasks.purge-deleted`                                                                                                              | Deletes removed tasks once their retention has passed        |
+| notifications | `notifications.retry-deliveries`                                                                                                   | Retries failed email and push deliveries                     |
+| notifications | `notifications.purge-read`                                                                                                         | Deletes old read notifications                               |
+| reports       | `reports.expire-runs`                                                                                                              | Expires run results                                          |
+| reports       | `reports.backfill-projections`                                                                                                     | Backfills projections from tasks and billing changes         |
+| billing       | `billing.close-invoice-periods`                                                                                                    | Closes periods and issues invoices                           |
+| billing       | `billing.advance-dunning`                                                                                                          | Advances dunning for failed invoices                         |
 
-Todos los servicios corren además el relay del outbox, la retención del outbox y de `processed_messages`, y `SagaRecoveryJob` si orquestan sagas. Un job que no corre suele ser un candado retenido en Valkey por una tarea muerta: el candado vence solo con su lease; no lo borres a mano salvo que la tarea dueña ya no exista.
+Every service also runs the outbox relay, the retention of the outbox and of `processed_messages`, and `SagaRecoveryJob` if it orchestrates sagas. A job that does not run is usually a lock held in Valkey by a dead task: the lock expires on its own with its lease; do not delete it by hand unless the owning task no longer exists.
 
-## Colas y DLQ
+## Queues and DLQs
 
-Cada cola de `topology.json` tiene su DLQ. Un mensaje llega a la DLQ cuando su manejador falló con un error no reintentable o agotó los intentos.
+Every queue in `topology.json` has its DLQ. A message reaches the DLQ when its handler failed with a non-retryable error or ran out of attempts.
 
-1. Lee el mensaje de la DLQ y busca su `traceid` en OpenObserve: el log del consumidor dice el código del error.
-2. Si el error era transitorio (una dependencia caída), redirige la DLQ a su cola con la consola de SQS o `aws sqs start-message-move-task`. El consumidor lo procesa una sola vez: `processed_messages` reconoce un mensaje ya completado.
-3. Si el error era de contenido (`PLATFORM.MESSAGING.INVALID_ENVELOPE`, `IDEMPOTENCY_CONFLICT`), no lo redirijas: corrige el productor y descarta el mensaje.
+1. Read the message from the DLQ and look up its `traceid` in OpenObserve: the consumer log gives the error code.
+2. If the error was transient (a dependency was down), redrive the DLQ to its queue with the SQS console or `aws sqs start-message-move-task`. The consumer processes it only once: `processed_messages` recognizes an already completed message.
+3. If the error was in the content (`PLATFORM.MESSAGING.INVALID_ENVELOPE`, `IDEMPOTENCY_CONFLICT`), do not redrive it: fix the producer and discard the message.
 
 ## Sagas
 
-Una saga en `Suspended` se retoma sola. Una en `RequiresIntervention` necesita a una persona: revisa en la bitácora (`saga.instances` y `saga.step_log` del shard del tenant) el paso que falló y su código, corrige la causa y reanúdala o compénsala desde el backoffice.
+A saga in `Suspended` resumes on its own. One in `RequiresIntervention` needs a person: check the log (`saga.instances` and `saga.step_log` on the tenant's shard) for the failed step and its code, fix the cause, and resume or compensate it from the backoffice.
 
-## Errores frecuentes
+## Common errors
 
-| Código                               | Qué significa                                                 | Qué hacer                                                                            |
-| ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `PLATFORM.SHARDING.TENANT_MIGRATING` | El tenant está en un traslado; la escritura esperó y no entró | Nada: el cliente reintenta con `Retry-After`. Si dura, revisa el traslado            |
-| `PLATFORM.SHARDING.WRONG_REGION`     | El tenant vive en otra región                                 | El front reintenta solo contra `details.apiBaseUrl`; revisa `REGIONS` si no trae URL |
-| `PLATFORM.SHARDING.UNKNOWN_TENANT`   | El directorio del servicio no tiene al tenant                 | Revisa que la siembra de identity haya corrido y que el alta del tenant terminó      |
-| `PLATFORM.SHARDING.KEY_MISSING`      | Una consulta corrió sin tenant ni llave de shard              | Es un error de programación: corrige el caso de uso                                  |
-| `BILLING.QUOTA.EXCEEDED`             | El tenant llegó al límite de su plan                          | El tenant cambia de plan; soporte puede revisar el uso en billing                    |
+| Code                                 | What it means                                                  | What to do                                                                                 |
+| ------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `PLATFORM.SHARDING.TENANT_MIGRATING` | The tenant is being moved; the write waited and did not get in | Nothing: the client retries with `Retry-After`. If it lasts, check the move                |
+| `PLATFORM.SHARDING.WRONG_REGION`     | The tenant lives in another region                             | The front retries on its own against `details.apiBaseUrl`; check `REGIONS` if no URL comes |
+| `PLATFORM.SHARDING.UNKNOWN_TENANT`   | The service directory does not have the tenant                 | Check that the identity seed ran and that the tenant signup finished                       |
+| `PLATFORM.SHARDING.KEY_MISSING`      | A query ran without a tenant or a shard key                    | It is a programming error: fix the use case                                                |
+| `BILLING.QUOTA.EXCEEDED`             | The tenant reached its plan's limit                            | The tenant changes plan; support can check usage in billing                                |
 
-## Configuración
+## Configuration
 
-Cada servicio valida su configuración al arrancar y no arranca con un valor inválido; el log dice la variable. Las variables comunes están en `backend/.env.example`. Las de los traslados (`TENANT_MOVE_*`, `TENANT_WRITE_GATE`) y las regiones (`REGIONS`, `SERVICE_REGION`) se describen en el [traslado de un tenant](traslado-de-tenant.md).
+Each service validates its configuration at startup and does not start with an invalid value; the log names the variable. The common variables are in `backend/.env.example`. The tenant move variables (`TENANT_MOVE_*`, `TENANT_WRITE_GATE`) and the region variables (`REGIONS`, `SERVICE_REGION`) are described in [moving a tenant](traslado-de-tenant.md).

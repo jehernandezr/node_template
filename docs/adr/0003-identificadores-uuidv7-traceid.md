@@ -1,33 +1,33 @@
-# 0003. Identificadores UUIDv7 y traceId
+# 0003. UUIDv7 identifiers and traceId
 
-- Estado: Aceptada
-- Fecha: 2026-11-11
+- Status: Accepted
+- Date: 2026-11-11
 
-## Contexto
+## Context
 
-Los servicios generan eventos, sagas, jobs y registros de auditoría que deben identificarse sin depender de la base de datos. Además, las consultas paginadas y los índices se benefician de identificadores que crezcan en el tiempo, y la trazabilidad necesita un identificador compatible con OpenTelemetry y X-Ray.
+The services generate events, sagas, jobs and audit records that must be identified without depending on the database. In addition, paginated queries and indexes benefit from identifiers that grow over time, and tracing needs an identifier compatible with OpenTelemetry and X-Ray.
 
-## Decisión
+## Decision
 
-Todo identificador es un UUIDv7: usuarios, tenants, sesiones, dispositivos, eventos, sagas, jobs, archivos, facturas y el `traceId`.
+Every identifier is a UUIDv7: users, tenants, sessions, devices, events, sagas, jobs, files, invoices and the `traceId`.
 
-- La aplicación genera el ID con `UuidV7IdGenerator` (sobre `node:crypto`, puerto `IdGenerator`) antes de persistir la entidad. La columna es `uuid` y es la llave primaria.
-- El `traceId` es un UUIDv7 generado al entrar al sistema. Sus 128 bits sin guiones forman un trace-id W3C válido dentro de `traceparent`.
-- La paginación usa el ID como cursor (`?after=<id>`).
-- Los secretos (refresh tokens, `mfaToken`, OTP, tokens de reset y API keys) no usan UUIDv7. Usan 256 bits aleatorios de `crypto.randomBytes`.
+- The application generates the ID with `UuidV7IdGenerator` (on `node:crypto`, port `IdGenerator`) before persisting the entity. The column is `uuid` and it is the primary key.
+- The `traceId` is a UUIDv7 generated on entry to the system. Its 128 bits without hyphens form a valid W3C trace-id inside `traceparent`.
+- Pagination uses the ID as the cursor (`?after=<id>`).
+- Secrets (refresh tokens, `mfaToken`, OTP, reset tokens and API keys) do not use UUIDv7. They use 256 random bits from `crypto.randomBytes`.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- La entidad tiene identidad antes de guardarse, lo que simplifica eventos y sagas.
-- Los índices de PostgreSQL crecen en orden y el ID sirve como cursor.
-- El `traceId` se puede usar tal cual en `traceparent` y en X-Ray.
+- The entity has an identity before it is saved, which simplifies events and sagas.
+- PostgreSQL indexes grow in order and the ID works as a cursor.
+- The `traceId` can be used as is in `traceparent` and in X-Ray.
 
-Costos:
+Costs:
 
-- Un UUIDv7 revela su fecha de creación al milisegundo. En IDs públicos donde esa fecha sea sensible hay que tenerlo en cuenta.
+- A UUIDv7 reveals its creation time to the millisecond. This has to be taken into account for public IDs where that time is sensitive.
 
-## Alternativas consideradas
+## Alternatives considered
 
-El documento no registra alternativas evaluadas para el formato de los identificadores.
+The document does not record alternatives evaluated for the identifier format.

@@ -1,41 +1,41 @@
-# Traslado de un tenant
+# Moving a tenant
 
-Mueve un tenant a otro grupo de shards, en la misma región o en otra, sin perder ni repetir escrituras. El diseño está en el [ADR 0032](../adr/0032-traslado-de-tenants-y-regiones.md).
+Moves a tenant to another shard group, in the same region or in another one, without losing or repeating writes. The design is in [ADR 0032](../adr/0032-traslado-de-tenants-y-regiones.md).
 
-## Antes
+## Before
 
-1. El grupo de destino está en `TENANT_MOVE_TARGETS` de los cinco servicios, con la región y el shard lógico de cada uno, y ese shard está registrado en el directorio del servicio (`shard_instances`).
-2. Si el destino es otra región: `REGIONS` lista las dos regiones en todos los servicios, cada proceso declara su `SERVICE_REGION` y su `AUTH_ISSUER` es el `issuer` de su región. Identity no arranca si `REGIONS` declara regiones y falta `SERVICE_REGION`.
-3. Las migraciones están aplicadas en los shards de destino (`pnpm nx run <servicio>:migrate -- shards`).
-4. El tenant no tiene sagas a medias: `sync` espera a que terminen y `finalize` falla con `PLATFORM.TENANT_MOVE.TENANT_BUSY` si aparece una.
-5. Con `TENANT_MOVE_STRATEGY=logical`, el origen tiene `wal_level=logical`, el rol del servicio puede crear suscripciones en el destino y el destino llega al origen por la red (`TENANT_MOVE_REPLICATION_HOST` y `_PORT` si no es la misma dirección).
+1. The target group is in `TENANT_MOVE_TARGETS` of the five services, with the region and logical shard of each one, and that shard is registered in the service's directory (`shard_instances`).
+2. If the target is another region: `REGIONS` lists both regions in every service, each process declares its `SERVICE_REGION`, and its `AUTH_ISSUER` is the `issuer` of its region. Identity does not start if `REGIONS` declares regions and `SERVICE_REGION` is missing.
+3. Migrations are applied on the target shards (`pnpm nx run <service>:migrate -- shards`).
+4. The tenant has no sagas in progress: `sync` waits for them to finish and `finalize` fails with `PLATFORM.TENANT_MOVE.TENANT_BUSY` if one shows up.
+5. With `TENANT_MOVE_STRATEGY=logical`, the source has `wal_level=logical`, the service role can create subscriptions on the target, and the target can reach the source over the network (`TENANT_MOVE_REPLICATION_HOST` and `_PORT` if it is not the same address).
 
-## Lanzar
+## Launch
 
 ```bash
-pnpm nx run identity:tenant-move -- --tenant=<id del tenant> --target=<grupo de destino>
+pnpm nx run identity:tenant-move -- --tenant=<tenant id> --target=<target group>
 ```
 
-El comando lanza la saga `MoveTenant` y la corre hasta terminar o pausarse; si se pausa, la retoma el worker de identity. Imprime el id del traslado.
+The command launches the `MoveTenant` saga and runs it until it finishes or pauses; if it pauses, the identity worker resumes it. It prints the move id.
 
-## Seguir
+## Follow
 
-- `tenant_moves` en el catálogo de identity: `Running`, `Switched`, `CleanedUp` o `Aborted`.
-- La bitácora de la saga en el shard del tenant de plataforma (`saga.instances` y `saga.step_log`).
-- Mientras dura la última ronda, las escrituras del tenant esperan hasta `TENANT_MOVE_MAX_WAIT_MS` y después responden `PLATFORM.SHARDING.TENANT_MIGRATING` con `Retry-After`.
+- `tenant_moves` in the identity catalog: `Running`, `Switched`, `CleanedUp` or `Aborted`.
+- The saga log on the platform tenant's shard (`saga.instances` and `saga.step_log`).
+- During the last round, the tenant's writes wait up to `TENANT_MOVE_MAX_WAIT_MS` and then respond `PLATFORM.SHARDING.TENANT_MIGRATING` with `Retry-After`.
 
-Una ronda que no alcanza al origen responde `PLATFORM.TENANT_MOVE.ROUND_PENDING` y la saga la repite. Si un tenant escribe más rápido de lo que copia una ronda, sube `TENANT_MOVE_CAUGHT_UP_ROWS` o `TENANT_MOVE_CALL_BUDGET_MS` (cada llamada, con sus dos partes de copia, cabe en ese plazo).
+A round that does not catch up with the source responds `PLATFORM.TENANT_MOVE.ROUND_PENDING` and the saga repeats it. If a tenant writes faster than a round copies, raise `TENANT_MOVE_CAUGHT_UP_ROWS` or `TENANT_MOVE_CALL_BUDGET_MS` (each call, with its two copy parts, fits within that budget).
 
-## Si falla
+## If it fails
 
-- Antes del pivote, la saga compensa con `abort` en cada servicio: descarta la copia, baja la barrera del origen y abre la compuerta. El tenant sigue donde estaba y se puede lanzar otra vez.
-- `PLATFORM.TENANT_MOVE.VERIFICATION_FAILED`: el destino no quedó igual al origen congelado. La saga compensa; revisa en el log las tablas que difirieron antes de repetir.
-- Después del pivote, la saga repite `switch` hasta completarlo. Si queda en `RequiresIntervention`, revisa el servicio cuyo `switch` falla: mientras tanto su origen sigue vivo y su barrera frena las escrituras viejas.
+- Before the pivot, the saga compensates with `abort` on each service: it discards the copy, lowers the source barrier and opens the gate. The tenant stays where it was and the move can be launched again.
+- `PLATFORM.TENANT_MOVE.VERIFICATION_FAILED`: the target did not end up equal to the frozen source. The saga compensates; check the log for the tables that differed before repeating.
+- After the pivot, the saga repeats `switch` until it completes. If it ends up in `RequiresIntervention`, check the service whose `switch` fails: meanwhile its source stays alive and its barrier stops old writes.
 
-## Limpieza
+## Cleanup
 
-Pasados `TENANT_MOVE_GRACE_DAYS` (7 por defecto), `identity.clean-up-tenant-moves` pide a cada servicio que borre el origen. Repite cada servicio con una pausa de `TENANT_MOVE_CLEANUP_PAUSE_MS` mientras responda que su ronda sigue, hasta `TENANT_MOVE_CLEANUP_MAX_ATTEMPTS` intentos por corrida; lo que falte queda para la corrida siguiente. El traslado pasa a `CleanedUp` cuando los cinco terminan. `PLATFORM.TENANT_MOVE.NOT_SWITCHED` significa que el directorio de ese servicio todavía lleva al tenant al origen: no borres a mano, termina primero el `switch`.
+After `TENANT_MOVE_GRACE_DAYS` (7 by default), `identity.clean-up-tenant-moves` asks each service to delete the source. It repeats each service with a pause of `TENANT_MOVE_CLEANUP_PAUSE_MS` while it answers that its round is still going, up to `TENANT_MOVE_CLEANUP_MAX_ATTEMPTS` attempts per run; whatever remains is left for the next run. The move becomes `CleanedUp` when all five finish. `PLATFORM.TENANT_MOVE.NOT_SWITCHED` means that service's directory still routes the tenant to the source: do not delete by hand, finish the `switch` first.
 
-## Qué no viaja
+## What does not move
 
-`outbox` y `audit_log` se quedan en el origen. Las llaves de idempotencia y los mensajes procesados anteriores a sus migraciones de `tenant_id` cubren solo hasta su TTL. El detalle está en el ADR 0032.
+`outbox` and `audit_log` stay on the source. Idempotency keys and processed messages older than their `tenant_id` migrations are covered only up to their TTL. The details are in ADR 0032.

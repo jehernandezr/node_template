@@ -1,26 +1,26 @@
-# NNNN. Título corto de la decisión
+# NNNN. Short title of the decision
 
-- Estado: Propuesta | Aceptada | Reemplazada por ADR NNNN
-- Fecha: AAAA-MM-DD
+- Status: Proposed | Accepted | Superseded by ADR NNNN
+- Date: YYYY-MM-DD
 
-## Contexto
+## Context
 
-Qué problema existe, qué restricciones aplican y por qué hace falta decidir ahora.
+What problem exists, what constraints apply and why a decision is needed now.
 
-## Decisión
+## Decision
 
-Qué se eligió, con el detalle concreto: componentes, reglas, valores y nombres de código.
+What was chosen, with the concrete detail: components, rules, values and code names.
 
-## Consecuencias
+## Consequences
 
-### Positivas
+### Positive
 
-- Qué mejora y qué se vuelve más simple.
+- What improves and what becomes simpler.
 
-### Costos
+### Costs
 
-- Qué se paga, qué hay que mantener y qué riesgo queda abierto.
+- What is paid, what has to be maintained and what risk remains open.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Alternativa: por qué no se eligió. Solo las que consta en la arquitectura o en la discusión de la decisión.
+- Alternative: why it was not chosen. Only those recorded in the architecture or in the discussion of the decision.

@@ -1,50 +1,50 @@
-# 0021. Valkey como adaptador de caché, ruteo, Bloom e invalidación
+# 0021. Valkey as the adapter for cache, routing, Bloom and invalidation
 
-- Estado: Aceptada
-- Fecha: 2026-11-13
-- Revisión: 2026-11-14 (`ValkeyRateLimiter` implementa el puerto de `@platform/rate-limit`; el espacio compartido `auth:*` del [ADR 0022](0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) amplía la regla del prefijo por servicio)
+- Status: Accepted
+- Date: 2026-11-13
+- Revision: 2026-11-14 (`ValkeyRateLimiter` implements the `@platform/rate-limit` port; the shared `auth:*` space from [ADR 0022](0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) extends the per-service prefix rule)
 
-## Contexto
+## Context
 
-El plan elige Valkey para la caché, los datos de vida corta, los filtros de Bloom y la caché de ruteo del sharding. Hasta la auditoría del 13 de noviembre (hallazgo PLAT-07) esos puertos solo tenían versión en memoria, así que las operaciones atómicas de las que depende la corrección del sharding (`setIfNewer` y el tombstone) no se probaban contra un servidor real. Además, cuando un proceso movía un tenant de shard, los demás procesos seguían escribiendo en el shard anterior hasta que vencía su caché local (PLAT-13).
+The plan chooses Valkey for the cache, short-lived data, Bloom filters and the sharding routing cache. Until the November 13 audit (finding PLAT-07) those ports only had an in-memory version, so the atomic operations that sharding correctness depends on (`setIfNewer` and the tombstone) were not tested against a real server. In addition, when one process moved a tenant to another shard, the other processes kept writing to the previous shard until their local cache expired (PLAT-13).
 
-## Decisión
+## Decision
 
-`backend/libs/platform/adapters/valkey` (`@platform/adapters-valkey`) implementa los puertos de `@platform/cache`, `@platform/bloom` y `@platform/sharding` con el cliente `iovalkey`:
+`backend/libs/platform/adapters/valkey` (`@platform/adapters-valkey`) implements the ports of `@platform/cache`, `@platform/bloom` and `@platform/sharding` with the `iovalkey` client:
 
-- `ValkeyCache` implementa `CachePort` con `GET`, `SET PX`, `SET NX`, `DEL` e `INCR`.
-- `ValkeyRoutingCache` implementa la caché de ruteo. `setIfNewer` es un script Lua atómico sobre un hash con valor y versión: solo escribe una versión estrictamente mayor.
-- `ValkeyBloomFilter` usa los comandos `BF.*` del módulo de Bloom. Terraform fija Valkey 8 en AWS y en local corre `valkey-bundle`, que traen el módulo, así que no hay respaldo con bitmaps.
-- Los filtros se reconstruyen en una llave temporal y se cambian con `RENAME` en Lua, sin ventana en la que el filtro esté vacío. Por encima de 2^32 bits (por ejemplo la lista de contraseñas filtradas de HIBP), `PartitionedBloomFilter` reparte los elementos en varios filtros.
-- Las llaves de cada filtro llevan hash tag (`{nombre}`), así funcionan también en Valkey en clúster.
-- `ValkeyShardDirectoryChannel` publica y escucha `ShardDirectoryChanged` por pub/sub. Al recibirlo, cada proceso limpia solo lo que tiene en memoria para ese tenant.
+- `ValkeyCache` implements `CachePort` with `GET`, `SET PX`, `SET NX`, `DEL` and `INCR`.
+- `ValkeyRoutingCache` implements the routing cache. `setIfNewer` is an atomic Lua script over a hash with value and version: it only writes a strictly greater version.
+- `ValkeyBloomFilter` uses the `BF.*` commands of the Bloom module. Terraform pins Valkey 8 in AWS and locally `valkey-bundle` runs, both of which ship the module, so there is no bitmap fallback.
+- Filters are rebuilt in a temporary key and swapped with `RENAME` in Lua, with no window in which the filter is empty. Above 2^32 bits (for example the HIBP leaked password list), `PartitionedBloomFilter` spreads the elements across several filters.
+- Each filter's keys carry a hash tag (`{name}`), so they also work on clustered Valkey.
+- `ValkeyShardDirectoryChannel` publishes and listens to `ShardDirectoryChanged` over pub/sub. On receiving it, each process clears only what it holds in memory for that tenant.
 
-Reglas:
+Rules:
 
-- Los scripts Lua se llaman con `EVALSHA` y se reenvían con `EVAL` ante `NOSCRIPT`.
-- `ValkeyCommandError` lleva su `FailureKind`: transitorio con el servidor caído o en failover, permanente con `WRONGTYPE` o un comando inválido, y timeout cuando vence `commandTimeout`. Sus códigos son `PLATFORM.VALKEY.COMMAND_FAILED` y `PLATFORM.VALKEY.UNEXPECTED_REPLY`.
-- El timeout de la caché vive solo en la política `Cache` de `@platform/resilience` (100 ms, con circuit breaker). `CacheAside` pasa cada llamada por esa política.
-- En AWS cada servicio usa un usuario de Valkey con autenticación IAM (`VALKEY_AUTH=iam-serverless`) cuya ACL limita sus llaves y canales al prefijo del servicio (ADR 0020). El cliente firma el token con SigV4 propio (`node:crypto`) y pide uno nuevo en cada reconexión.
-- Todos los adaptadores exigen un `ValkeyKeyspace` con el prefijo `VALKEY_KEY_PREFIX` (el nombre del servicio, sin `:`). Las llaves quedan como `<p>:…`, `<p>:routing:…` y `<p>:bloom:{nombre}`, y el canal como `<p>:sharding:directory-changed`.
-- En local, `backend/docker-compose.yml` usa la imagen `valkey/valkey-bundle`, que trae el módulo de Bloom.
+- Lua scripts are called with `EVALSHA` and resent with `EVAL` on `NOSCRIPT`.
+- `ValkeyCommandError` carries its `FailureKind`: transient when the server is down or in failover, permanent with `WRONGTYPE` or an invalid command, and timeout when `commandTimeout` expires. Its codes are `PLATFORM.VALKEY.COMMAND_FAILED` and `PLATFORM.VALKEY.UNEXPECTED_REPLY`.
+- The cache timeout lives only in the `Cache` policy of `@platform/resilience` (100 ms, with a circuit breaker). `CacheAside` passes every call through that policy.
+- In AWS each service uses a Valkey user with IAM authentication (`VALKEY_AUTH=iam-serverless`) whose ACL limits its keys and channels to the service prefix (ADR 0020). The client signs the token with its own SigV4 (`node:crypto`) and requests a new one on every reconnection.
+- Every adapter requires a `ValkeyKeyspace` with the `VALKEY_KEY_PREFIX` prefix (the service name, without `:`). Keys end up as `<p>:…`, `<p>:routing:…` and `<p>:bloom:{name}`, and the channel as `<p>:sharding:directory-changed`.
+- Locally, `backend/docker-compose.yml` uses the `valkey/valkey-bundle` image, which ships the Bloom module.
 
-La idempotencia no va en Valkey: el plan la ubica en PostgreSQL, en la misma transacción que los efectos (`@platform/persistence`).
+Idempotency does not go in Valkey: the plan places it in PostgreSQL, in the same transaction as the effects (`@platform/persistence`).
 
-## Consecuencias
+## Consequences
 
-### Positivas
+### Positive
 
-- Las operaciones atómicas del sharding se prueban contra Valkey real (pruebas de integración con Testcontainers, que se saltan sin Docker).
-- Un cambio de directorio llega a todos los procesos en cuanto se publica, sin esperar el vencimiento de la caché local.
-- Una llave fuera del prefijo del servicio falla con `NOPERM`, y la prueba de integración lo comprueba con la misma ACL de Terraform.
+- The sharding atomic operations are tested against real Valkey (integration tests with Testcontainers, which are skipped without Docker).
+- A directory change reaches every process as soon as it is published, without waiting for the local cache to expire.
+- A key outside the service prefix fails with `NOPERM`, and the integration test checks it with the same ACL as Terraform.
 
-### Costos
+### Costs
 
-- Pub/sub entrega como máximo una vez: un proceso desconectado durante el aviso no lo recibe. Lo cubren el tombstone del directorio y el TTL de la caché local.
-- Escuchar `ShardDirectoryChanged` exige una conexión dedicada por proceso.
-- Los scripts Lua son código que hay que mantener junto con sus pruebas.
+- Pub/sub delivers at most once: a process disconnected during the notice does not receive it. The directory tombstone and the local cache TTL cover it.
+- Listening to `ShardDirectoryChanged` requires a dedicated connection per process.
+- The Lua scripts are code that has to be maintained along with their tests.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Invalidar por el bus de mensajería (SNS/SQS): una cola por servicio reparte cada mensaje a un solo consumidor, y la invalidación tiene que llegar a todos los procesos.
-- Respaldo con bitmaps (`BITFIELD`) para servidores sin el módulo de Bloom: se quitó porque todos los entornos fijan una versión que lo trae.
+- Invalidating through the messaging bus (SNS/SQS): a queue per service delivers each message to a single consumer, and the invalidation has to reach every process.
+- Bitmap fallback (`BITFIELD`) for servers without the Bloom module: it was removed because every environment pins a version that ships it.

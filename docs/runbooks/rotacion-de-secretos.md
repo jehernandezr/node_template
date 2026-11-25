@@ -1,21 +1,21 @@
-# Rotación de secretos de servicio
+# Rotating service secrets
 
-Los secretos de cada servicio salen de Secrets Manager por el bloque `secrets` del stack del servicio y llegan como variables de entorno. Ninguno se escribe en el repositorio. Las claves de firma de identity tienen su propio runbook: [rotación de las claves de identity](rotacion-claves-identity.md).
+Each service's secrets come from Secrets Manager through the `secrets` block of the service's stack and arrive as environment variables. None of them is written to the repository. The identity signing keys have their own runbook: [rotating the identity keys](rotacion-claves-identity.md).
 
-## Secreto de la API interna
+## Internal API secret
 
-`INTERNAL_API_SHARED_SECRET` firma con HMAC las llamadas internas cuando `INTERNAL_API_SIGNER=hmac` (local y pruebas). En AWS las llamadas se firman con SigV4 y el rol de cada servicio, así que no hay secreto que rotar.
+`INTERNAL_API_SHARED_SECRET` signs internal calls with HMAC when `INTERNAL_API_SIGNER=hmac` (local and tests). In AWS, calls are signed with SigV4 and each service's role, so there is no secret to rotate.
 
-Con HMAC el secreto es uno solo para todos los servicios: rotarlo es un corte. Hazlo en una ventana sin sagas corriendo:
+With HMAC there is a single secret for all services: rotating it is a cutover. Do it in a window with no sagas running:
 
-1. Genera el valor nuevo (`openssl rand -base64 32`) y guárdalo en el secreto.
-2. Despliega los cinco servicios a la vez. Mientras conviven versiones, una llamada firmada con el secreto viejo responde 401 y la saga la reintenta después.
-3. Revisa que ninguna saga quedó en `RequiresIntervention` por llamadas rechazadas.
+1. Generate the new value (`openssl rand -base64 32`) and store it in the secret.
+2. Deploy the five services at the same time. While versions coexist, a call signed with the old secret gets a 401 and the saga retries it later.
+3. Check that no saga ended up in `RequiresIntervention` because of rejected calls.
 
-## Pimientas y claves de datos de identity
+## Identity peppers and data keys
 
-`IDENTITY_EMAIL_PEPPER`, `IDENTITY_TOKEN_PEPPER`, `IDENTITY_API_KEY_PEPPER`, `IDENTITY_DEVICE_ID_KEY` e `IDENTITY_DATA_KEY` protegen datos guardados: cambiarlas deja ilegibles los hashes o el cifrado existentes. No se rotan en el lugar. Si una se compromete, trátalo como un incidente: invalida las sesiones y las API keys, y planea una migración que vuelva a calcular cada valor con la nueva.
+`IDENTITY_EMAIL_PEPPER`, `IDENTITY_TOKEN_PEPPER`, `IDENTITY_API_KEY_PEPPER`, `IDENTITY_DEVICE_ID_KEY` and `IDENTITY_DATA_KEY` protect stored data: changing them makes the existing hashes or encryption unreadable. They are not rotated in place. If one is compromised, treat it as an incident: invalidate sessions and API keys, and plan a migration that recomputes every value with the new one.
 
-## Credenciales de base
+## Database credentials
 
-`DB_CREDENTIALS` llega del secreto que RDS rota. El RDS Proxy toma la credencial nueva sin cortar conexiones; los servicios la leen al arrancar. Tras una rotación, reinicia las tareas de forma escalonada y revisa `GET /health/ready`.
+`DB_CREDENTIALS` comes from the secret that RDS rotates. RDS Proxy picks up the new credential without dropping connections; the services read it at startup. After a rotation, restart the tasks in a staggered way and check `GET /health/ready`.

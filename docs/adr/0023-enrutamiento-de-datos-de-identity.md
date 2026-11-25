@@ -1,42 +1,42 @@
-# 0023. Enrutamiento de los datos de identity entre shards
+# 0023. Routing identity data across shards
 
-- Estado: Aceptada
-- Fecha: 2026-11-13
+- Status: Accepted
+- Date: 2026-11-13
 
-## Contexto
+## Context
 
-El ADR 0010 estrena el sharding en identity con `ShardKey.User`: el router ubica el grupo de shards del tenant y elige el shard con hash sobre el usuario. Pero un usuario puede pertenecer a varios tenants, el inicio de sesión llega sin tenant ni usuario, y `ShardedDatabaseResolver` toma el usuario del actor, que en identity casi nunca es el usuario consultado. Además una transacción no puede tocar dos shards.
+ADR 0010 introduces sharding in identity with `ShardKey.User`: the router locates the tenant's shard group and chooses the shard with a hash over the user. But a user can belong to several tenants, sign-in arrives without a tenant or a user, and `ShardedDatabaseResolver` takes the user from the actor, which in identity is almost never the user being queried. In addition, a transaction cannot touch two shards.
 
-## Decisión
+## Decision
 
-- **Tenant de origen.** Cada usuario tiene un `homeTenantId` fijo: el tenant compartido de clientes de su región o el tenant que lo invitó. Sus datos (usuario, credenciales, sesiones, dispositivos, MFA, passkeys, intentos) se enrutan con `ShardKey.User` dentro del grupo de ese tenant. El access token lleva `htid`.
-- **Datos de tenant.** Tenants, membresías, grupos, roles, invitaciones, service accounts y API keys se enrutan con `ShardKey.Tenant`.
-- **`ShardScope`.** `@platform/persistence` agrega `ShardScope.run({ tenantId, keyKind, keyValue }, fn)`, que el resolver usa antes que el contexto. Con `requireScope`, una consulta sin scope responde `PLATFORM.SHARDING.KEY_MISSING`. Identity lo activa.
-- **Índices en el catálogo**, solo con datos de enrutamiento: `identity_lookup` (HMAC del email), `passkey_lookup` (hash de la credencial), `api_key_lookup` (prefijo) y `tenant_lookup` (slug).
-- **Tokens opacos con ruta.** Session token, reset, verificación de email, `mfaToken`, `deviceId` firmado e invitación llevan los ids que ubican su shard. El secreto se guarda como HMAC.
-- **Membresías.** La fuente de verdad está en el shard del tenant. `user_tenants`, en el shard del usuario, es una proyección. El caso de uso que cambia la membresía la proyecta después del commit, para que "mis tenants" vea el cambio enseguida, y el consumidor de `identity.membership.changed.v1` (cola `identity-access-projection`, publicado por el outbox en la misma transacción) la repara si el proceso cayó entre el commit y esa escritura. Proyectar es idempotente: lee la membresía vigente del shard del tenant.
-- **RLS en las tablas de tenant.** Tenants, membresías, grupos, roles, versiones de permisos, invitaciones, service accounts y API keys tienen una política por `tenant_id` con `FORCE ROW LEVEL SECURITY`. `inTenantShard` pone el tenant del bloque en el contexto de la petición, así la persistencia lo fija en `app.tenant_id` al abrir la transacción aunque la sesión sea de otro tenant (aceptar una invitación, cambiar de tenant, las operaciones internas). Sin tenant en la sesión la política no filtra: las lecturas fuera de transacción y el mantenimiento entre shards ya filtran por su cuenta.
-- **Registro.** Primero se reserva el email en `identity_lookup`, luego se crea el usuario en su shard y al final se activa la reserva. Un job borra reservas huérfanas.
-- **API interna con `requireScope`.** El shard de una operación interna lo elige su handler con la entrada (el usuario y su tenant de origen, o el tenant), así que no se conoce antes de llamarlo. Para un servicio con `requireScope`, `PlatformRuntimeModule` guarda las llaves de idempotencia de la API interna en `idempotency_keys` del catálogo (`CatalogIdempotencyStore`) y corre el handler con `HandlerUnitOfWork.Handler`: el handler abre sus transacciones dentro de su `ShardScope` y el resultado se guarda aparte.
+- **Home tenant.** Each user has a fixed `homeTenantId`: the shared customer tenant of their region or the tenant that invited them. Their data (user, credentials, sessions, devices, MFA, passkeys, attempts) is routed with `ShardKey.User` within that tenant's group. The access token carries `htid`.
+- **Tenant data.** Tenants, memberships, groups, roles, invitations, service accounts and API keys are routed with `ShardKey.Tenant`.
+- **`ShardScope`.** `@platform/persistence` adds `ShardScope.run({ tenantId, keyKind, keyValue }, fn)`, which the resolver uses before the context. With `requireScope`, a query without a scope answers `PLATFORM.SHARDING.KEY_MISSING`. Identity turns it on.
+- **Indexes in the catalog**, with routing data only: `identity_lookup` (HMAC of the email), `passkey_lookup` (hash of the credential), `api_key_lookup` (prefix) and `tenant_lookup` (slug).
+- **Opaque tokens with a route.** Session token, reset, email verification, `mfaToken`, signed `deviceId` and invitation carry the ids that locate their shard. The secret is stored as an HMAC.
+- **Memberships.** The source of truth is in the tenant's shard. `user_tenants`, in the user's shard, is a projection. The use case that changes the membership projects it after the commit, so that "my tenants" sees the change right away, and the consumer of `identity.membership.changed.v1` (queue `identity-access-projection`, published by the outbox in the same transaction) repairs it if the process crashed between the commit and that write. Projecting is idempotent: it reads the current membership from the tenant's shard.
+- **RLS on tenant tables.** Tenants, memberships, groups, roles, permission versions, invitations, service accounts and API keys have a policy by `tenant_id` with `FORCE ROW LEVEL SECURITY`. `inTenantShard` puts the block's tenant in the request context, so persistence sets it in `app.tenant_id` when opening the transaction even if the session belongs to another tenant (accepting an invitation, switching tenants, internal operations). Without a tenant in the session the policy does not filter: reads outside a transaction and cross-shard maintenance already filter on their own.
+- **Sign-up.** First the email is reserved in `identity_lookup`, then the user is created in their shard and finally the reservation is activated. A job deletes orphaned reservations.
+- **Internal API with `requireScope`.** The shard of an internal operation is chosen by its handler from the input (the user and their home tenant, or the tenant), so it is not known before calling it. For a service with `requireScope`, `PlatformRuntimeModule` stores the internal API's idempotency keys in the catalog's `idempotency_keys` (`CatalogIdempotencyStore`) and runs the handler with `HandlerUnitOfWork.Handler`: the handler opens its transactions inside its `ShardScope` and the result is stored separately.
 
-## Consecuencias
+## Consequences
 
-### Positivas
+### Positive
 
-- Ninguna transacción toca dos shards ni el catálogo y un shard a la vez.
-- Un tenant compartido con muchos clientes reparte sus usuarios en varios shards, como pide el plan.
-- El refresh y los demás flujos con token llegan al shard sin leer el catálogo.
+- No transaction touches two shards, or the catalog and a shard at the same time.
+- A shared tenant with many customers spreads its users across several shards, as the plan requires.
+- Refresh and the other token flows reach the shard without reading the catalog.
 
-### Costos
+### Costs
 
-- El tenant de origen no cambia; mover un usuario a otro tenant de origen es un traslado de datos.
-- La proyección se escribe dos veces por cambio (en línea y por el consumidor); las dos escriben lo mismo.
-- Mientras el runtime no entregue eventos con tenant a un servicio con `requireScope` (le falta un `TenantVerifier` y abrir el `ShardScope` del sobre), el consumidor solo corre donde se lo invoca; la proyección en línea cubre el caso normal.
-- Los intentos con emails inexistentes no tienen shard: quedan en Valkey y en los logs.
-- El resultado de una operación interna y sus efectos no se confirman en la misma transacción: si el proceso cae entre los dos, la llamada se repite al vencer la reserva de la llave. Por eso cada handler de identity es idempotente por su entrada (por ejemplo, crear un tenant por `tenantId`).
+- The home tenant does not change; moving a user to another home tenant is a data move.
+- The projection is written twice per change (inline and by the consumer); both write the same thing.
+- Until the runtime delivers events with a tenant to a service with `requireScope` (it lacks a `TenantVerifier` and opening the envelope's `ShardScope`), the consumer only runs where it is invoked; the inline projection covers the normal case.
+- Attempts with nonexistent emails have no shard: they stay in Valkey and in the logs.
+- The result of an internal operation and its effects are not committed in the same transaction: if the process crashes between the two, the call is repeated when the key's reservation expires. That is why every identity handler is idempotent by its input (for example, creating a tenant by `tenantId`).
 
-## Alternativas consideradas
+## Alternatives considered
 
-- Un tenant ficticio por región para todos los usuarios: más simple, pero no reparte un tenant grande en su propio grupo.
-- Membresías solo en el shard del usuario: listar los miembros de un tenant obligaría a consultar todos los shards.
-- Buscar el tenant de origen en el catálogo en cada petición: una lectura global más por petición.
+- A fictitious tenant per region for all users: simpler, but it does not spread a large tenant into its own group.
+- Memberships only in the user's shard: listing a tenant's members would require querying every shard.
+- Looking up the home tenant in the catalog on every request: one more global read per request.

@@ -1,46 +1,46 @@
-# Revisión de las librerías del backend de node_template
+# Review of the node_template backend libraries
 
-Revisión de solo lectura de `backend/libs` y `backend/tools` contra las skills `backend-*`, contra las tres exigencias del usuario (código enterprise, TypeORM, fácil de usar) y contra lo ya decidido (persistencia con TypeORM y sagas rediseñadas).
+Read-only review of `backend/libs` and `backend/tools` against the `backend-*` skills, against the user's three requirements (enterprise code, TypeORM, easy to use) and against what was already decided (persistence with TypeORM and redesigned sagas).
 
-Todas las rutas son relativas a `/Users/jonatan/Documents/projects/node_template/backend`. Esfuerzo: S (menos de medio día), M (uno a tres días), L (más de tres días).
+All paths are relative to `/Users/jonatan/Documents/projects/node_template/backend`. Effort: S (less than half a day), M (one to three days), L (more than three days).
 
-## 0. Lectura rápida
+## 0. Quick read
 
-El código es disciplinado en lo pequeño: el reloj y los ids se inyectan, no hay `any`, no hay `eslint-disable`, `process.env` solo se lee en `config`, y la mayoría de las piezas con estado ya son clases. Los problemas son de forma y de ensamblaje, no de cuidado.
+The code is disciplined in the small: the clock and ids are injected, there is no `any`, no `eslint-disable`, `process.env` is only read in `config`, and most stateful pieces are already classes. The problems are about shape and assembly, not care.
 
-Hay cinco problemas de fondo.
+There are five underlying problems.
 
-1. **No existe capa NestJS en ninguna librería.** No hay un solo `@Module`, `@Injectable`, token ni hook de ciclo de vida en `libs/`, y `@nestjs/*` ni siquiera está en `package.json`. Un servicio nuevo tiene que armar a mano `new JsonLogger(...)`, `new ResilienceRegistry(...)`, `new OutboxRelay(...)` y cerrar él mismo los clientes. Es la brecha más grande frente a "fácil de usar".
-2. **Las dependencias entre librerías van en sentido equivocado en tres puntos.** `kernel` importa `@contracts/platform`; `observability` importa `config` solo por un enum; `contracts/platform` contiene el catálogo de errores internos de todas las librerías.
-3. **Duplicación sistemática.** Hay dos enums de códigos de error por librería (el propio y `PlatformErrorCode`), cuatro implementaciones de espera con plazo, cuatro modelos de política de reintentos y cuatro copias de la detección de Docker.
-4. **Puertos completos pero sin quien los ponga a andar.** El relay del outbox, el job de recuperación de sagas, la reconstrucción de filtros bloom y la limpieza de idempotencia existen como métodos `runOnce` o `purge`, pero nadie los programa. El transporte de `internal-api` solo tiene la versión en proceso.
-5. **Dobles de prueba dentro del código de producción.** Ocho clases `InMemory*` salen por el `index.ts` público. Solo `rate-limit` sigue la regla de la skill (`@platform/rate-limit/test-utils`).
+1. **No library has a NestJS layer.** There is not a single `@Module`, `@Injectable`, token or lifecycle hook in `libs/`, and `@nestjs/*` is not even in `package.json`. A new service has to build `new JsonLogger(...)`, `new ResilienceRegistry(...)`, `new OutboxRelay(...)` by hand and close the clients itself. This is the biggest gap against "easy to use".
+2. **Dependencies between libraries point the wrong way in three places.** `kernel` imports `@contracts/platform`; `observability` imports `config` only for an enum; `contracts/platform` contains the internal error catalog of every library.
+3. **Systematic duplication.** There are two error code enums per library (its own and `PlatformErrorCode`), four implementations of waiting with a deadline, four retry policy models and four copies of Docker detection.
+4. **Complete ports with nobody running them.** The outbox relay, the saga recovery job, the bloom filter rebuild and the idempotency cleanup exist as `runOnce` or `purge` methods, but nobody schedules them. The `internal-api` transport only has the in-process version.
+5. **Test doubles inside production code.** Eight `InMemory*` classes ship through the public `index.ts`. Only `rate-limit` follows the skill's rule (`@platform/rate-limit/test-utils`).
 
-Archivos por encima de 400 líneas (sin contar pruebas): `saga/engine/saga-engine.ts` 1093, `sharding/shard-router.ts` 733, `persistence/repository/base-repository.ts` 678, `messaging/dispatch/message-dispatcher.ts` 601, `internal-api/router.ts` 537, `resilience/registry.ts` 532, `contracts/platform/errors/platform-error-catalog.ts` 521, `adapters/aws/sqs-delivery-runner.ts` 503, `persistence/database.ts` 417, `messaging/topology/topology.ts` 401. Las pruebas tienen cuatro archivos de más de 790 líneas.
+Files over 400 lines (excluding tests): `saga/engine/saga-engine.ts` 1093, `sharding/shard-router.ts` 733, `persistence/repository/base-repository.ts` 678, `messaging/dispatch/message-dispatcher.ts` 601, `internal-api/router.ts` 537, `resilience/registry.ts` 532, `contracts/platform/errors/platform-error-catalog.ts` 521, `adapters/aws/sqs-delivery-runner.ts` 503, `persistence/database.ts` 417, `messaging/topology/topology.ts` 401. The tests have four files over 790 lines.
 
 ---
 
-## 1. Hallazgos transversales
+## 1. Cross-cutting findings
 
-Se numeran con T. Cada sección por librería remite a ellos en vez de repetirlos.
+They are numbered with T. Each library section refers to them instead of repeating them.
 
-### T1. Falta la capa de composición de NestJS (impacto alto, esfuerzo L)
+### T1. The NestJS composition layer is missing (high impact, effort L)
 
-Ningún archivo de `libs/` usa NestJS. La skill `backend-nestjs-composicion` exige un módulo por pieza, tokens por puerto, `useFactory` con configuración y cierre ordenado. Hoy:
+No file in `libs/` uses NestJS. The `backend-nestjs-composicion` skill requires one module per piece, tokens per port, `useFactory` with configuration and ordered shutdown. Today:
 
-- Cada librería expone clases con un objeto `options` enorme y deja el armado al servicio.
-- Los puertos son a veces interfaces (`CachePort`, `LoggerPort`, `MetricsPort`, `IdempotencyStore`, `OutboxStore`) y a veces clases abstractas (`RateLimiter`). Sin interfaz más `Symbol` no se pueden inyectar. No hay un archivo de tokens en ninguna librería.
-- Ningún adaptador cierra sus recursos: `aws-clients.ts:29` pide llamar `destroyAwsMessagingClients` a mano, Valkey no tiene `quit`, `SqsDeliveryRunner.start/stop` y `SagaRecoveryJob.runOnce` no cuelgan de `onModuleInit/Destroy`.
-- No hay `HealthIndicator` ni método `check()` en cache, Valkey, Postgres ni SQS, y la skill de observabilidad exige `/health/ready`.
+- Each library exposes classes with a huge `options` object and leaves the assembly to the service.
+- Ports are sometimes interfaces (`CachePort`, `LoggerPort`, `MetricsPort`, `IdempotencyStore`, `OutboxStore`) and sometimes abstract classes (`RateLimiter`). Without an interface plus a `Symbol` they cannot be injected. No library has a tokens file.
+- No adapter closes its resources: `aws-clients.ts:29` asks you to call `destroyAwsMessagingClients` by hand, Valkey has no `quit`, `SqsDeliveryRunner.start/stop` and `SagaRecoveryJob.runOnce` do not hang off `onModuleInit/Destroy`.
+- There is no `HealthIndicator` or `check()` method in cache, Valkey, Postgres or SQS, and the observability skill requires `/health/ready`.
 
-Propuesta, común a todas las librerías:
+Proposal, common to all libraries:
 
-- Cada librería con wiring gana una carpeta `src/nest/` con `<Lib>Module`, expuesta como sub-entrada `@platform/<lib>/nest`. El núcleo de la librería sigue sin importar NestJS; solo el sub-entrada lo hace. Así `domain/` y `kernel` se mantienen limpios y los adaptadores pueden depender del núcleo de otra librería sin arrastrar NestJS.
-- Convención de módulo: `forRoot(options?)` para lo global de plataforma con valores por defecto sacados de `AppConfig`, `forRootAsync({ inject, useFactory })` para quien arma la opción con su configuración, y `forFeature(...)` cuando el servicio registra algo propio (un consumidor, una definición de saga, una política de resiliencia).
-- Un archivo `tokens.ts` por librería con los `Symbol` exportados junto al puerto. Regla: abstracta para puertos con una implementación activa por servicio (`RateLimiter`, `CachePort`), `Symbol` solo cuando conviven varias.
-- Cada recurso abierto implementa `OnModuleDestroy`; cada adaptador de red expone `HealthCheckable.check(): Promise<HealthStatus>` y un `HealthModule` de plataforma los agrega.
+- Each library with wiring gets a `src/nest/` folder with `<Lib>Module`, exposed as the sub-entry `@platform/<lib>/nest`. The library core still does not import NestJS; only the sub-entry does. That keeps `domain/` and `kernel` clean, and adapters can depend on another library's core without pulling in NestJS.
+- Module convention: `forRoot(options?)` for platform-wide setup with defaults taken from `AppConfig`, `forRootAsync({ inject, useFactory })` for whoever builds the options from their configuration, and `forFeature(...)` when the service registers something of its own (a consumer, a saga definition, a resilience policy).
+- One `tokens.ts` file per library with the `Symbol`s exported next to the port. Rule: abstract class for ports with one active implementation per service (`RateLimiter`, `CachePort`), `Symbol` only when several coexist.
+- Every open resource implements `OnModuleDestroy`; every network adapter exposes `HealthCheckable.check(): Promise<HealthStatus>` and a platform `HealthModule` aggregates them.
 
-Uso objetivo, que debe bastar para un servicio nuevo:
+Target usage, which must be enough for a new service:
 
 ```ts
 @Module({
@@ -56,463 +56,463 @@ Uso objetivo, que debe bastar para un servicio nuevo:
 export class AppModule {}
 ```
 
-### T2. Dos fuentes de verdad para los códigos de error (impacto alto, esfuerzo M)
+### T2. Two sources of truth for error codes (high impact, effort M)
 
-Seis librerías declaran su propio enum de códigos con los mismos valores que `PlatformErrorCode`: `CacheErrorCode` (`cache/src/errors.ts:5`), `BloomErrorCode` (`bloom/src/bloom-error.ts:4`), `ConfigErrorCode` (`config/src/errors.ts:5`), `ShardingErrorCode` (`sharding/src/errors.ts:5`), `ValkeyErrorCode` (`adapters/valkey/src/valkey-error.ts:5`), `CriteriaErrorCode` (`criteria/src/enums.ts:37`). Las demás (primitives, messaging, saga, internal-api, persistence, resilience) usan `PlatformErrorCode` directamente. Un código nuevo exige tocar dos sitios y nada impide que diverjan.
+Six libraries declare their own code enum with the same values as `PlatformErrorCode`: `CacheErrorCode` (`cache/src/errors.ts:5`), `BloomErrorCode` (`bloom/src/bloom-error.ts:4`), `ConfigErrorCode` (`config/src/errors.ts:5`), `ShardingErrorCode` (`sharding/src/errors.ts:5`), `ValkeyErrorCode` (`adapters/valkey/src/valkey-error.ts:5`), `CriteriaErrorCode` (`criteria/src/enums.ts:37`). The rest (primitives, messaging, saga, internal-api, persistence, resilience) use `PlatformErrorCode` directly. A new code requires touching two places and nothing stops them from diverging.
 
-Además `contracts/platform/src/errors/platform-error-catalog.ts` (521 líneas) lista las entradas de todas las librerías, más de 70 internas frente a 29 públicas. El contrato de plataforma queda conociendo `saga`, `bloom` o `valkey`, que es una dependencia al revés.
+In addition, `contracts/platform/src/errors/platform-error-catalog.ts` (521 lines) lists the entries of every library, more than 70 internal ones against 29 public ones. The platform contract ends up knowing about `saga`, `bloom` or `valkey`, which is a reversed dependency.
 
-Propuesta:
+Proposal:
 
-- Un único enum por librería, el local, con el formato `PLATFORM.<LIB>.<ERROR>`. `PlatformErrorCode` conserva solo los códigos transversales y públicos (validación, auth, rate limit, not found, conflicto, internal).
-- Cada librería declara su propio `ErrorCatalog` (clase de `@contracts/platform/kit`) con `httpStatus`, `retryable` y `audience`, y `defineServiceContract` los compone. El catálogo público que va al front sigue saliendo de contracts y no incluye lo interno.
-- Se borra la clase base repetida: `CacheError`, `BloomError`, `SagaError`, `MessagingError`, `PersistenceError`, `ShardingError`, `ConfigValidationError` y `InternalApiError` comparten el patrón `code + failureKind`. Una sola `PlatformError` con `failureKind` obligatorio en el kernel (ver KRN-2) elimina `abstract readonly failureKind` repetido en cada subclase.
+- A single enum per library, the local one, with the format `PLATFORM.<LIB>.<ERROR>`. `PlatformErrorCode` keeps only the cross-cutting, public codes (validation, auth, rate limit, not found, conflict, internal).
+- Each library declares its own `ErrorCatalog` (a class from `@contracts/platform/kit`) with `httpStatus`, `retryable` and `audience`, and `defineServiceContract` composes them. The public catalog that goes to the front still comes from contracts and does not include the internal entries.
+- The repeated base class goes away: `CacheError`, `BloomError`, `SagaError`, `MessagingError`, `PersistenceError`, `ShardingError`, `ConfigValidationError` and `InternalApiError` share the `code + failureKind` pattern. A single `PlatformError` with a mandatory `failureKind` in the kernel (see KRN-2) removes the `abstract readonly failureKind` repeated in each subclass.
 
-### T3. Cuatro implementaciones de "espera con plazo" y cuatro modelos de reintento (impacto medio, esfuerzo M)
+### T3. Four implementations of "wait with a deadline" and four retry models (medium impact, effort M)
 
-- Esperar una promesa con señal y plazo: `primitives/src/timers.ts:123` (`raceDeadline`), `cache/src/wait.ts:11-78` (`waitFor`, `cancellation`, `abortReason` copiado), `sharding/src/lookup-budget.ts:9` (`LookupBudget`, con `MAX_TIMER_MS` copiado) y `adapters/aws/src/sqs-delivery-runner.ts:130` (`sleep` propio). `abortReason` aparece en `timers.ts:19` y `wait.ts:15`.
-- Reintentos con backoff: `internal-api/src/client.ts:114` (bucle propio con `sleep` y `random` inyectables), `resilience/registry.ts:293`, `messaging/topology/retry-policy.ts:37` (`RetryPolicy` con `jitter`), `saga/engine/engine-setup.ts:22` (`defaultBackoff`). Hay cuatro formas de declarar la política: `RetryPolicy` de internal-api (`contract.ts:19`), `RetryPolicy` de messaging, `ResilienceRetryConfig` y `OperationRetryPolicy` de contracts. Dos exportan además `DEFAULT_RETRY_POLICY` con valores distintos (`internal-api/contract.ts:60` y `messaging/topology/queue-def.ts:37`).
-- La skill de observabilidad dice "se usa `@platform/resilience`, no bucles propios". El único consumidor real de `resilience` es `cache`; las políticas `Database`, `ExternalApi`, `Ai`, `AiStreaming`, `Email` y `Queue` no las usa nadie.
+- Waiting for a promise with a signal and a deadline: `primitives/src/timers.ts:123` (`raceDeadline`), `cache/src/wait.ts:11-78` (`waitFor`, `cancellation`, copied `abortReason`), `sharding/src/lookup-budget.ts:9` (`LookupBudget`, with copied `MAX_TIMER_MS`) and `adapters/aws/src/sqs-delivery-runner.ts:130` (its own `sleep`). `abortReason` appears in `timers.ts:19` and `wait.ts:15`.
+- Retries with backoff: `internal-api/src/client.ts:114` (its own loop with injectable `sleep` and `random`), `resilience/registry.ts:293`, `messaging/topology/retry-policy.ts:37` (`RetryPolicy` with `jitter`), `saga/engine/engine-setup.ts:22` (`defaultBackoff`). There are four ways to declare the policy: internal-api's `RetryPolicy` (`contract.ts:19`), messaging's `RetryPolicy`, `ResilienceRetryConfig` and contracts' `OperationRetryPolicy`. Two of them also export `DEFAULT_RETRY_POLICY` with different values (`internal-api/contract.ts:60` and `messaging/topology/queue-def.ts:37`).
+- The observability skill says "`@platform/resilience` is used, not hand-rolled loops". The only real consumer of `resilience` is `cache`; nobody uses the `Database`, `ExternalApi`, `Ai`, `AiStreaming`, `Email` and `Queue` policies.
 
-Propuesta: una clase `Deadline` con `race(work)` y `wait(promise)` en `primitives` sustituye a `wait.ts` y `LookupBudget`. `InternalClient` y `SqsDeliveryRunner` delegan los reintentos en `ResilienceRegistry` con políticas nombradas. Una sola `RetryPolicy` (`maxAttempts`, `baseMs`, `maxMs`, `strategy`) vive en `primitives` y las otras tres la reutilizan.
+Proposal: a `Deadline` class with `race(work)` and `wait(promise)` in `primitives` replaces `wait.ts` and `LookupBudget`. `InternalClient` and `SqsDeliveryRunner` delegate retries to `ResilienceRegistry` with named policies. A single `RetryPolicy` (`maxAttempts`, `baseMs`, `maxMs`, `strategy`) lives in `primitives` and the other three reuse it.
 
-### T4. Fuente de aleatoriedad sin puerto (impacto bajo, esfuerzo S)
+### T4. Randomness source without a port (low impact, effort S)
 
-Cinco clases reciben `random?: () => number` con `Math.random` por defecto: `primitives/backoff.ts:85`, `cache/cache-aside.ts:134`, `cache/jittered-ttl.ts:17`, `resilience/registry.ts:176`, `internal-api/client.ts:127`, `observability/sampling.ts:8`. Y tres usan `randomUUID` o `randomBytes` directo (`cache/versioned-keyspace.ts:67,73,78`, `observability/trace.ts:85`). Propuesta: `RandomSource` en el kernel (`next(): number`, `SystemRandomSource`) y `IdGenerator` para los tokens. Se eliminan siete opciones de constructor que nadie usa en producción.
+Five classes receive `random?: () => number` with `Math.random` as the default: `primitives/backoff.ts:85`, `cache/cache-aside.ts:134`, `cache/jittered-ttl.ts:17`, `resilience/registry.ts:176`, `internal-api/client.ts:127`, `observability/sampling.ts:8`. And three use `randomUUID` or `randomBytes` directly (`cache/versioned-keyspace.ts:67,73,78`, `observability/trace.ts:85`). Proposal: `RandomSource` in the kernel (`next(): number`, `SystemRandomSource`) and `IdGenerator` for tokens. This removes seven constructor options that nobody uses in production.
 
-### T5. Dobles de prueba en el índice público (impacto medio, esfuerzo M)
+### T5. Test doubles in the public index (medium impact, effort M)
 
-Salen por `index.ts`: `InMemoryBus` (228 líneas), `InMemoryOutboxStore` (193), `InMemorySagaStore` (205), `InMemoryIdempotencyStore` (123), `InMemoryProcessedMessageStore`, `InMemoryProcessedOperationStore`, `InMemoryDirectoryStore`, `InMemoryRoutingCache`, `InMemoryShardDirectoryChannel`, `InMemoryMetrics`, `NoopMetrics`. La skill de pruebas pide fakes como clases con la misma prueba de contrato, en `__tests__/utils/` y expuestos por `@platform/<lib>/test-utils`. Solo `kernel` y `rate-limit` lo hacen.
+Shipped through `index.ts`: `InMemoryBus` (228 lines), `InMemoryOutboxStore` (193), `InMemorySagaStore` (205), `InMemoryIdempotencyStore` (123), `InMemoryProcessedMessageStore`, `InMemoryProcessedOperationStore`, `InMemoryDirectoryStore`, `InMemoryRoutingCache`, `InMemoryShardDirectoryChannel`, `InMemoryMetrics`, `NoopMetrics`. The testing skill asks for fakes as classes with the same contract test, in `__tests__/utils/` and exposed through `@platform/<lib>/test-utils`. Only `kernel` and `rate-limit` do this.
 
-Excepciones legítimas que se quedan en producción porque sirven de degradación o de modo local: `InMemoryCache` (único modo sin Valkey), `InMemoryRateLimiter` (lo usa `DegradingRateLimiter`), `NoopMetrics`.
+Legitimate exceptions that stay in production because they serve as degradation or local mode: `InMemoryCache` (the only mode without Valkey), `InMemoryRateLimiter` (used by `DegradingRateLimiter`), `NoopMetrics`.
 
-Propuesta: mover el resto a `src/__tests__/utils/` y registrar alias `@platform/<lib>/test-utils` en `tsconfig.base.json`. Cada fake debe pasar el mismo `run<Port>Contract(factory)` que su adaptador real. Hoy `adapters/postgres/src/__tests__/utils/outbox-contract.ts` e `idempotency-contract.ts` ya existen y son el modelo.
+Proposal: move the rest to `src/__tests__/utils/` and register `@platform/<lib>/test-utils` aliases in `tsconfig.base.json`. Each fake must pass the same `run<Port>Contract(factory)` as its real adapter. Today `adapters/postgres/src/__tests__/utils/outbox-contract.ts` and `idempotency-contract.ts` already exist and are the model.
 
-### T6. Detección de Docker repetida cuatro veces (impacto bajo, esfuerzo S)
+### T6. Docker detection repeated four times (low impact, effort S)
 
-`adapters/postgres/src/__tests__/utils/docker.ts`, `persistence/src/__tests__/utils/docker.ts`, y dos copias inline en `adapters/valkey/src/__tests__/valkey.integration.spec.ts:38` y `adapters/aws/src/__tests__/sns-sqs.integration.spec.ts`. Cada una con su propia bandera (`POSTGRES_ADAPTER_INTEGRATION`, `PERSISTENCE_INTEGRATION`, `VALKEY_INTEGRATION`, otra en aws) y su propia política en CI. Propuesta: una clase `ContainerRuntime` en `kernel/src/__tests__/utils/` (alias existente `@platform/kernel/test-utils`) con `isAvailable()`, `describeIfAvailable` y una sola variable `INTEGRATION_TESTS=skip|require`. Las cuatro copias se borran.
+`adapters/postgres/src/__tests__/utils/docker.ts`, `persistence/src/__tests__/utils/docker.ts`, and two inline copies in `adapters/valkey/src/__tests__/valkey.integration.spec.ts:38` and `adapters/aws/src/__tests__/sns-sqs.integration.spec.ts`. Each with its own flag (`POSTGRES_ADAPTER_INTEGRATION`, `PERSISTENCE_INTEGRATION`, `VALKEY_INTEGRATION`, another in aws) and its own CI policy. Proposal: a `ContainerRuntime` class in `kernel/src/__tests__/utils/` (existing alias `@platform/kernel/test-utils`) with `isAvailable()`, `describeIfAvailable` and a single variable `INTEGRATION_TESTS=skip|require`. The four copies are deleted.
 
-### T7. Funciones de validación copiadas (impacto bajo, esfuerzo S)
+### T7. Copied validation functions (low impact, effort S)
 
-`assertNonNegativeFinite` en `primitives/backoff.ts:31` e `idempotency-store.ts:84`; `assertBudget` en `deadline.ts:5`; `assertCapacity` (`sharding/lru-map.ts`), `assertTtl` (`shard-router.ts:210`), `assertLease` (`message-dispatcher.ts:235`), `assertPositiveInteger` (`outbox-relay.ts:101`), `assertFinite` (`resilience/config.ts`), `assertIntegerInRange` (`bloom/limits.ts:21`), `assertIdentifier` (en `criteria/validation.ts` y `persistence/table-definition.ts`), `isPositiveInt` (`contracts/kit/define-messaging.ts:122`), `isPlainObject` (cache, primitives, kernel), `describeError` (`resilience/registry.ts:107` y `messaging/errors/describe-error.ts:2`), `codeOf` (`field-errors.ts` y `message-dispatcher.ts:230`). Cada una lanza un error distinto por librería.
+`assertNonNegativeFinite` in `primitives/backoff.ts:31` and `idempotency-store.ts:84`; `assertBudget` in `deadline.ts:5`; `assertCapacity` (`sharding/lru-map.ts`), `assertTtl` (`shard-router.ts:210`), `assertLease` (`message-dispatcher.ts:235`), `assertPositiveInteger` (`outbox-relay.ts:101`), `assertFinite` (`resilience/config.ts`), `assertIntegerInRange` (`bloom/limits.ts:21`), `assertIdentifier` (in `criteria/validation.ts` and `persistence/table-definition.ts`), `isPositiveInt` (`contracts/kit/define-messaging.ts:122`), `isPlainObject` (cache, primitives, kernel), `describeError` (`resilience/registry.ts:107` and `messaging/errors/describe-error.ts:2`), `codeOf` (`field-errors.ts` and `message-dispatcher.ts:230`). Each one throws a different error per library.
 
-Propuesta: una clase `Guard` en `primitives` (`Guard.positiveInteger(name, value)`, `Guard.finiteAtLeast(...)`, `Guard.inRange(...)`) y una `ErrorDescriptor` (`describe(error)`, `codeOf(error)`) que usan tanto messaging como resilience y metrics.
+Proposal: a `Guard` class in `primitives` (`Guard.positiveInteger(name, value)`, `Guard.finiteAtLeast(...)`, `Guard.inRange(...)`) and an `ErrorDescriptor` (`describe(error)`, `codeOf(error)`) used by messaging, resilience and metrics alike.
 
-### T8. Idioma, nombres y un archivo por clase (impacto bajo, esfuerzo M)
+### T8. Language, names and one file per class (low impact, effort M)
 
-- Comentarios en español en `kernel`, `config`, `observability`, `persistence`, `primitives`, `rate-limit`, `adapters/aws`, `adapters/postgres` y `contracts`; en inglés en `bloom`, `cache`, `criteria`, `internal-api`, `messaging`, `resilience`, `saga`, `sharding` y `adapters/valkey`. Las skills y el CLAUDE.md están en español. Se unifica en español al tocar cada archivo.
-- Archivos sin sufijo de rol, contra `backend-codigo-enterprise/references/nombres.md`: `shard-router.ts`, `cache-aside.ts`, `topology.ts`, `util.ts` (prohibido por la skill), `types.ts`, `limits.ts`, `model.ts`.
-- Varias clases públicas por archivo: `cache/errors.ts` (6), `resilience/errors.ts` (5), `primitives/errors.ts` (4), `bloom/bloom-error.ts` (4), `messaging/topology/route.ts` (4), `observability/telemetry.ts` y `metrics.ts` (3 cada uno).
-- Clases de error sin sufijo `Error` en bloom: `InvalidParameters`, `CorruptedData`, `IncompatibleFilters` (`bloom-error.ts:19,26,33`).
+- Comments in Spanish in `kernel`, `config`, `observability`, `persistence`, `primitives`, `rate-limit`, `adapters/aws`, `adapters/postgres` and `contracts`; in English in `bloom`, `cache`, `criteria`, `internal-api`, `messaging`, `resilience`, `saga`, `sharding` and `adapters/valkey`. The skills and CLAUDE.md are in Spanish. They are unified in Spanish when each file is touched.
+- Files without a role suffix, against `backend-codigo-enterprise/references/nombres.md`: `shard-router.ts`, `cache-aside.ts`, `topology.ts`, `util.ts` (forbidden by the skill), `types.ts`, `limits.ts`, `model.ts`.
+- Several public classes per file: `cache/errors.ts` (6), `resilience/errors.ts` (5), `primitives/errors.ts` (4), `bloom/bloom-error.ts` (4), `messaging/topology/route.ts` (4), `observability/telemetry.ts` and `metrics.ts` (3 each).
+- Error classes without the `Error` suffix in bloom: `InvalidParameters`, `CorruptedData`, `IncompatibleFilters` (`bloom-error.ts:19,26,33`).
 
-### T9. Estructura de pruebas
+### T9. Test structure
 
-- `kernel/src/__tests__/utils/__tests__` y `rate-limit/src/__tests__/utils/__tests__` rompen la regla "las pruebas de un utilitario van en el `__tests__` que lo contiene, no anidado dentro de `utils/`".
-- Las pruebas de integración de Valkey y AWS se llaman `*.integration.spec.ts`; Jest las toma como unitarias porque terminan en `.spec.ts`. La convención de `jest.preset.js` y de la skill es `.int-spec.ts`.
-- Hay solo dos suites `.int-spec.ts` (`persistence`, `adapters/postgres`); `valkey` y `aws` tienen integración con otro nombre. No hay integración de cache o rate-limit contra Valkey real fuera de esas.
+- `kernel/src/__tests__/utils/__tests__` and `rate-limit/src/__tests__/utils/__tests__` break the rule "tests of a utility go in the `__tests__` that contains it, not nested inside `utils/`".
+- The Valkey and AWS integration tests are named `*.integration.spec.ts`; Jest picks them up as unit tests because they end in `.spec.ts`. The convention in `jest.preset.js` and in the skill is `.int-spec.ts`.
+- There are only two `.int-spec.ts` suites (`persistence`, `adapters/postgres`); `valkey` and `aws` have integration tests under another name. There is no integration of cache or rate-limit against real Valkey outside those.
 
 ---
 
-## 2. Hallazgos por librería
+## 2. Findings per library
 
 ### 2.1 kernel
 
-Pequeña y limpia (369 líneas). Tres puntos.
+Small and clean (369 lines). Three points.
 
-**KRN-1. Dependencia al revés: `kernel` importa `@contracts/platform` (alto, S).**
-`kernel/src/invalid-id.error.ts:1` importa `PlatformErrorCode` solo para un código. La skill dice que el dominio depende solo de `@platform/kernel`, y `kernel` no debería depender de nada. Con T2 (cada librería tiene su enum) el kernel declara `KernelErrorCode.InvalidId` y la dependencia desaparece.
+**KRN-1. Reversed dependency: `kernel` imports `@contracts/platform` (high, S).**
+`kernel/src/invalid-id.error.ts:1` imports `PlatformErrorCode` just for one code. The skill says the domain depends only on `@platform/kernel`, and `kernel` should not depend on anything. With T2 (each library has its own enum) the kernel declares `KernelErrorCode.InvalidId` and the dependency disappears.
 
-**KRN-2. `failureKind` repetido y desigual (medio, S).**
-`DomainError` (`domain-error.ts:19`) calcula `failureKind` desde `retryable`; `PlatformError` (`platform-error.ts:32`) no lo declara, y cada subclase de librería lo declara a mano (`abstract readonly failureKind` en cache, resilience, saga, internal-api, etc.). Propuesta: `PlatformError` recibe `failureKind` en el constructor (valor por defecto `Permanent`, o `Transient` si `retryable`), y las subclases pasan la clase en `super`. Se borran decenas de líneas `readonly failureKind = ...`.
+**KRN-2. `failureKind` repeated and inconsistent (medium, S).**
+`DomainError` (`domain-error.ts:19`) computes `failureKind` from `retryable`; `PlatformError` (`platform-error.ts:32`) does not declare it, and each library subclass declares it by hand (`abstract readonly failureKind` in cache, resilience, saga, internal-api, etc.). Proposal: `PlatformError` receives `failureKind` in the constructor (default `Permanent`, or `Transient` if `retryable`), and subclasses pass the kind in `super`. Dozens of `readonly failureKind = ...` lines are deleted.
 
-**KRN-3. Código sin uso y funciones sueltas (bajo, S).**
+**KRN-3. Unused code and loose functions (low, S).**
 
-- `result.ts` (36 líneas, funciones `ok`, `err`, `isOk`, `isErr`) no lo importa ninguna otra librería. Compite con `CallOutcome` de primitives y con el `Result` de `internal-api/result.ts`. Se decide uno: `Result<T,E>` como clase con `map`/`unwrap` si lo van a usar los servicios, o se borra.
-- `platform-error.ts:8` `isErrorCode` y `:54` `isPlatformError` son funciones sueltas. Pasan a métodos estáticos `PlatformError.is(value)` y `ErrorCode.isValid(value)`. `ERROR_CODE_PATTERN` existe también en `contracts/kit/error-catalog.ts:7` con otra expresión (`^[A-Z]+(\.[A-Z_]+){2}$` frente a `^[A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*){2,}$`), así que un código puede pasar en un sitio y fallar en el otro. Una sola, la del kernel.
-- `id-generator.ts:22` recibe `nowMs: () => number = Date.now` en vez de un `Clock`, contra el resto del código. Debe recibir `Clock`.
-- `Id` envuelve un `ValueObject<{value}>`, pero el código de otras librerías pasa strings. Cuando llegue TypeORM conviene un `IdTransformer` en persistencia para columnas `uuid`.
+- `result.ts` (36 lines, functions `ok`, `err`, `isOk`, `isErr`) is not imported by any other library. It competes with primitives' `CallOutcome` and with the `Result` in `internal-api/result.ts`. Pick one: `Result<T,E>` as a class with `map`/`unwrap` if services are going to use it, or delete it.
+- `platform-error.ts:8` `isErrorCode` and `:54` `isPlatformError` are loose functions. They become static methods `PlatformError.is(value)` and `ErrorCode.isValid(value)`. `ERROR_CODE_PATTERN` also exists in `contracts/kit/error-catalog.ts:7` with a different expression (`^[A-Z]+(\.[A-Z_]+){2}$` versus `^[A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*){2,}$`), so a code can pass in one place and fail in the other. Keep one, the kernel's.
+- `id-generator.ts:22` receives `nowMs: () => number = Date.now` instead of a `Clock`, unlike the rest of the code. It must receive `Clock`.
+- `Id` wraps a `ValueObject<{value}>`, but code in other libraries passes strings. When TypeORM arrives, an `IdTransformer` in persistence for `uuid` columns is worthwhile.
 
-**KRN-4. Falta lo que los servicios van a necesitar (medio, M).** `UseCase` es una interfaz, no hay `Specification`, ni `DomainEvent` con tipo enum, ni `RandomSource` (T4), ni `HealthCheckable` (T1). Se agregan como interfaces mínimas al kernel.
+**KRN-4. Missing what services will need (medium, M).** `UseCase` is an interface, and there is no `Specification`, no `DomainEvent` with an enum type, no `RandomSource` (T4), no `HealthCheckable` (T1). They are added to the kernel as minimal interfaces.
 
 ### 2.2 primitives
 
-1.301 líneas. Mezcla utilidades puras con puertos de otras capas.
+1,301 lines. Mixes pure utilities with ports from other layers.
 
-**PRM-1. Puertos que no son primitivas (alto, M).** `transaction/transaction-manager.ts` (`TransactionManager`, `UnitOfWork`, `IsolationLevel`) e `idempotency/idempotency-store.ts` (`IdempotencyStore`, `ClaimState`) son puertos de aplicación. `persistence/src/enums.ts:15` redefine `IsolationLevel` con los mismos valores. Propuesta: mover los puertos a `kernel` (o a una nueva carpeta `ports/` del kernel) y dejar en `primitives` solo cálculo (backoff, hash, JSON canónico, deadline). Hay que borrar la copia de persistence al hacer la capa TypeORM.
+**PRM-1. Ports that are not primitives (high, M).** `transaction/transaction-manager.ts` (`TransactionManager`, `UnitOfWork`, `IsolationLevel`) and `idempotency/idempotency-store.ts` (`IdempotencyStore`, `ClaimState`) are application ports. `persistence/src/enums.ts:15` redefines `IsolationLevel` with the same values. Proposal: move the ports to `kernel` (or to a new `ports/` folder in the kernel) and leave only computation in `primitives` (backoff, hash, canonical JSON, deadline). The persistence copy must be deleted when building the TypeORM layer.
 
-**PRM-2. Funciones sueltas que deberían ser clases (medio, M).** El script lista `backoff.ts`, `call-outcome.ts`, `canonical-json.ts`, `failure.ts`, `hash.ts`, `idempotency-store.ts` y `timers.ts`. Propuesta concreta:
+**PRM-2. Loose functions that should be classes (medium, M).** The script lists `backoff.ts`, `call-outcome.ts`, `canonical-json.ts`, `failure.ts`, `hash.ts`, `idempotency-store.ts` and `timers.ts`. Concrete proposal:
 
-- `Backoff` (clase con `delay(attempt)`; el constructor valida una vez; `Backoff.fullJitter(...)`, `Backoff.equalJitter(...)`). Sustituye `backoffDelay`, `createBackoff`, `validateBackoffOptions` (`backoff.ts:38,66,100`) y a `defaultBackoff` de saga.
-- `FailureClassifier` (inyectable, con las tablas `TRANSIENT_NETWORK_CODES`, `TRANSIENT_STATUS` como constructor con valores por defecto y ampliables por adaptador) sustituye `classifyFailure` e `isTransientError` (`failure.ts:106,133`). Hoy cada adaptador traduce sus errores a `failureKind` por convención; con una clase puede registrar un `FailureRule`.
-- `RetryAfterParser` sustituye `retryAfterMs` (`failure.ts:153`, con `nowMs = Date.now()` como valor por defecto, lectura de reloj dentro de la función) y `retryAfterHintMs` de resilience (`transient.ts:61`), que lo envuelve.
-- `CanonicalJson` (`canonicalize`, `stringify`, `digest`) y `Hashes` en `hash.ts` (`fnv1a32`, `fnv1a32Hex`).
-- `Deadline` ya es clase; absorbe `raceDeadline`, `abortableSleep` y `armTimer` (`timers.ts:29,56,123`) como métodos (T3). `timers.ts:150` usa `Date.now()` en vez del `Clock` del `Deadline`.
-- `CallOutcome` (`call-outcome.ts:153`) es un objeto literal con funciones más tipos de unión. Está bien como unión discriminada, pero `fromError` (:123) debería ser un `CallOutcomeFactory` que recibe el `FailureClassifier`, no una función que llama a `classifyFailure` global.
+- `Backoff` (class with `delay(attempt)`; the constructor validates once; `Backoff.fullJitter(...)`, `Backoff.equalJitter(...)`). Replaces `backoffDelay`, `createBackoff`, `validateBackoffOptions` (`backoff.ts:38,66,100`) and saga's `defaultBackoff`.
+- `FailureClassifier` (injectable, with the `TRANSIENT_NETWORK_CODES` and `TRANSIENT_STATUS` tables as constructor arguments with defaults, extendable per adapter) replaces `classifyFailure` and `isTransientError` (`failure.ts:106,133`). Today each adapter translates its errors to `failureKind` by convention; with a class it can register a `FailureRule`.
+- `RetryAfterParser` replaces `retryAfterMs` (`failure.ts:153`, with `nowMs = Date.now()` as the default, a clock read inside the function) and resilience's `retryAfterHintMs` (`transient.ts:61`), which wraps it.
+- `CanonicalJson` (`canonicalize`, `stringify`, `digest`) and `Hashes` in `hash.ts` (`fnv1a32`, `fnv1a32Hex`).
+- `Deadline` is already a class; it absorbs `raceDeadline`, `abortableSleep` and `armTimer` (`timers.ts:29,56,123`) as methods (T3). `timers.ts:150` uses `Date.now()` instead of the `Deadline`'s `Clock`.
+- `CallOutcome` (`call-outcome.ts:153`) is an object literal with functions plus union types. It is fine as a discriminated union, but `fromError` (:123) should be a `CallOutcomeFactory` that receives the `FailureClassifier`, not a function that calls the global `classifyFailure`.
 
-**PRM-3. Tamaños y constantes con sentido pero sin dueño (bajo, S).** `MAX_TIMER_MS` también está en `sharding/lookup-budget.ts:4`; `MAX_CAUSE_DEPTH` y `DEFAULT_RETRY_AFTER_MAX_MS` se reexportan a resilience. `InMemoryIdempotencyStore` (T5) sale al `test-utils`.
+**PRM-3. Meaningful sizes and constants without an owner (low, S).** `MAX_TIMER_MS` is also in `sharding/lookup-budget.ts:4`; `MAX_CAUSE_DEPTH` and `DEFAULT_RETRY_AFTER_MAX_MS` are re-exported to resilience. `InMemoryIdempotencyStore` (T5) moves to `test-utils`.
 
 ### 2.3 criteria
 
-996 líneas. Afectada por la decisión de TypeORM.
+996 lines. Affected by the TypeORM decision.
 
-**CRI-1. Choca con lo decidido: genera SQL propio (alto, L, lo absorbe el equipo de persistencia).** `sql.ts` (283 líneas, `toSql` de unas 200) y `postgres.ts` producen cadenas con `$n`. Con TypeORM el traductor debe producir un `SelectQueryBuilder` o `FindOptionsWhere`. El AST (`ast.ts`) y la clase `Criteria` (`criteria.ts:186`, builder tipado con `WhereClause`) se conservan: son agnósticos del motor y están bien diseñados. Se reemplaza `toSql` por `TypeOrmCriteriaTranslator` (clase que recibe el `Repository` y una lista blanca de campos).
+**CRI-1. Clashes with what was decided: it generates its own SQL (high, L, absorbed by the persistence team).** `sql.ts` (283 lines, `toSql` of about 200) and `postgres.ts` produce strings with `$n`. With TypeORM the translator must produce a `SelectQueryBuilder` or `FindOptionsWhere`. The AST (`ast.ts`) and the `Criteria` class (`criteria.ts:186`, a typed builder with `WhereClause`) are kept: they are engine-agnostic and well designed. `toSql` is replaced by `TypeOrmCriteriaTranslator` (a class that receives the `Repository` and an allowlist of fields).
 
-**CRI-2. Cursor con funciones y el secreto como parámetro (medio, S).** `cursor.ts:66,101` (`encodeCursor`, `decodeCursor`) reciben `CursorOptions` con el secreto en cada llamada; `takePage` (`page.ts:12`) lo reenvía. Propuesta: `CursorCodec` inyectable que se construye con el secreto firmado una vez (desde `AppConfig`), y `PageBuilder` que lo recibe por constructor. El servicio pide `CursorCodec` en lugar de pasar el secreto por cuatro capas.
+**CRI-2. Cursor with functions and the secret as a parameter (medium, S).** `cursor.ts:66,101` (`encodeCursor`, `decodeCursor`) receive `CursorOptions` with the secret on every call; `takePage` (`page.ts:12`) forwards it. Proposal: an injectable `CursorCodec` built once with the signing secret (from `AppConfig`), and a `PageBuilder` that receives it through the constructor. The service asks for `CursorCodec` instead of passing the secret through four layers.
 
-**CRI-3. Validación con funciones sueltas y error propio (bajo, S).** `validation.ts` agrupa seis `assert*`. Pasan a una clase `CriteriaValidator` o se absorben en `Guard` (T7). `CriteriaError` es el único error de la librería y su enum local duplica `PlatformErrorCode` (T2).
+**CRI-3. Validation with loose functions and its own error (low, S).** `validation.ts` groups six `assert*`. They become a `CriteriaValidator` class or are absorbed into `Guard` (T7). `CriteriaError` is the library's only error and its local enum duplicates `PlatformErrorCode` (T2).
 
-**CRI-4. Dependencia de `@contracts/platform` para `Pagination` (bajo, S).** `validation.ts:1` y `page.ts:1` importan constantes de contrato. Aceptable, pero `Page` debería venir del kernel o definirse aquí y reexportarse a contracts, no al revés.
+**CRI-4. Dependency on `@contracts/platform` for `Pagination` (low, S).** `validation.ts:1` and `page.ts:1` import contract constants. Acceptable, but `Page` should come from the kernel or be defined here and re-exported to contracts, not the other way around.
 
 ### 2.4 config
 
-312 líneas. Pequeña, pero hace tres cosas que no le tocan.
+312 lines. Small, but it does three things that are not its job.
 
-**CFG-1. `base-config.ts` mezcla temas ajenos y obliga a todos (alto, S).** `baseConfigSchema` (`base-config.ts:30-59`) mete `DB_LOG_QUERIES`, `DB_SLOW_QUERY_MS`, `OTEL_SDK_DISABLED`, `OTEL_METRIC_EXPORT_INTERVAL` y `LOG_*` en el esquema que extiende todo servicio. Un servicio sin base de datos recibe variables de base de datos. La skill pide config agrupada por tema. Propuesta: esquemas por tema (`serviceConfigSchema`, `loggingConfigSchema`, `telemetryConfigSchema`, `databaseConfigSchema`) que cada módulo aporta con `forRoot()`. El módulo de config los compone y el servicio no escribe `.extend(...)`.
+**CFG-1. `base-config.ts` mixes unrelated concerns and forces them on everyone (high, S).** `baseConfigSchema` (`base-config.ts:30-59`) puts `DB_LOG_QUERIES`, `DB_SLOW_QUERY_MS`, `OTEL_SDK_DISABLED`, `OTEL_METRIC_EXPORT_INTERVAL` and `LOG_*` in the schema every service extends. A service without a database receives database variables. The skill asks for config grouped by topic. Proposal: schemas per topic (`serviceConfigSchema`, `loggingConfigSchema`, `telemetryConfigSchema`, `databaseConfigSchema`) that each module contributes with `forRoot()`. The config module composes them and the service does not write `.extend(...)`.
 
-**CFG-2. `LogLevel` vive en config y observability depende de config (medio, S).** `config/src/log-level.ts` y `observability/src/logger.ts:8,13`. Propuesta: el enum va en `observability`; `config` no lo conoce y `loggingConfigSchema` se define en `observability/src/nest/`. Elimina la dependencia `observability -> config`.
+**CFG-2. `LogLevel` lives in config and observability depends on config (medium, S).** `config/src/log-level.ts` and `observability/src/logger.ts:8,13`. Proposal: the enum goes into `observability`; `config` does not know it and `loggingConfigSchema` is defined in `observability/src/nest/`. This removes the `observability -> config` dependency.
 
-**CFG-3. `defineConfig` devuelve un objeto literal y lee `process.env` por defecto (medio, S).** `define-config.ts:20` (`load(env = process.env)`) y `ConfigDefinition` como interfaz de un método. Es una función de fábrica más un singleton de módulo: `awsConfig` (`aws-config.ts:46`), `valkeyConfig` y similares se crean al importar el archivo. Propuesta: `ConfigLoader` (clase) con `load<T>(schema)`; `ConfigModule.forRoot({ schema })` lo ejecuta una vez en el arranque y expone `AppConfig` como provider inmutable, con `ConfigService.get(token)` tipado. Nadie vuelve a leer `process.env`.
+**CFG-3. `defineConfig` returns an object literal and reads `process.env` by default (medium, S).** `define-config.ts:20` (`load(env = process.env)`) and `ConfigDefinition` as a one-method interface. It is a factory function plus a module singleton: `awsConfig` (`aws-config.ts:46`), `valkeyConfig` and similar are created when the file is imported. Proposal: `ConfigLoader` (class) with `load<T>(schema)`; `ConfigModule.forRoot({ schema })` runs it once at startup and exposes `AppConfig` as an immutable provider, with typed `ConfigService.get(token)`. Nobody reads `process.env` again.
 
-**CFG-4. `as unknown as` y fábricas sin clase (bajo, S).** `env.ts:63` usa un cast doble; hay que tipar el `match` con una tupla. `env.ts` (`envBoolean`, `envNumber`, `envList`, `envDuration`) y `secret.ts:52` (`secret()`) son fábricas de esquemas zod. Son aceptables como DSL declarativo (ver sección 3, excepciones), pero `isSecret` y `Secret` con `WeakMap` de módulo (`secret.ts:8`) es estado global; `Secret` puede guardar el valor en un campo privado `#value` y quitar el `WeakMap`.
+**CFG-4. `as unknown as` and factories without a class (low, S).** `env.ts:63` uses a double cast; the `match` must be typed with a tuple. `env.ts` (`envBoolean`, `envNumber`, `envList`, `envDuration`) and `secret.ts:52` (`secret()`) are zod schema factories. They are acceptable as a declarative DSL (see section 3, exceptions), but `isSecret` and `Secret` with a module-level `WeakMap` (`secret.ts:8`) are global state; `Secret` can keep the value in a private `#value` field and drop the `WeakMap`.
 
-**CFG-5. Opciones y esquemas que nadie declara (bajo, S).** `Secret` y `secret()` no los usa ninguna librería (valkey, aws y postgres no tienen secretos en esquema aún, y `DB_CREDENTIALS` de Terraform llega sin esquema). Se mantienen por la skill de seguridad pero hace falta un `SecretsProvider` (puerto) con adaptador AWS Secrets Manager; hoy el contrato de variables de Terraform y el de las librerías no coincide (ver auditoría BE-02 del 14 de noviembre).
+**CFG-5. Options and schemas nobody declares (low, S).** `Secret` and `secret()` are not used by any library (valkey, aws and postgres have no secrets in their schemas yet, and Terraform's `DB_CREDENTIALS` arrives without a schema). They are kept because of the security skill, but a `SecretsProvider` (port) with an AWS Secrets Manager adapter is needed; today the Terraform variable contract and the libraries' contract do not match (see audit BE-02 of November 14).
 
 ### 2.5 observability
 
-1.708 líneas. La librería más grande en funciones y en estado global.
+1,708 lines. The largest library in functions and in global state.
 
-**OBS-1. Estado global y APIs estáticas (alto, M).**
+**OBS-1. Global state and static APIs (high, M).**
 
-- `request-context.ts:76` `const storage = new AsyncLocalStorage()` a nivel de módulo, y `RequestContext` con métodos `static` (`run`, `current`, :99). Cada llamador usa `RequestContext.current()` sin inyección (`logger.ts:106`, `persistence-context.ts`, saga, internal-api).
-- `logger.ts:102,105` (`RESERVED_FIELDS`, `contextFields()`) y `logger.ts:258` `defaultSink` escribe a `process.stdout` directo.
-- `spans.ts:33` `platformTracer()` y `withSpan` (:79) usan el tracer global de OTel.
-- `redaction.ts:22-130`: ocho `Set` y expresiones a nivel de módulo; `redact` y `redactString` son funciones.
-- `propagation.ts:33` crea `EXTERNAL_TRACE_ID_KEY` a nivel de módulo.
+- `request-context.ts:76` `const storage = new AsyncLocalStorage()` at module level, and `RequestContext` with `static` methods (`run`, `current`, :99). Every caller uses `RequestContext.current()` without injection (`logger.ts:106`, `persistence-context.ts`, saga, internal-api).
+- `logger.ts:102,105` (`RESERVED_FIELDS`, `contextFields()`) and `logger.ts:258` `defaultSink` writes directly to `process.stdout`.
+- `spans.ts:33` `platformTracer()` and `withSpan` (:79) use the global OTel tracer.
+- `redaction.ts:22-130`: eight module-level `Set`s and expressions; `redact` and `redactString` are functions.
+- `propagation.ts:33` creates `EXTERNAL_TRACE_ID_KEY` at module level.
 
-Propuesta de clases:
+Proposed classes:
 
-- `RequestContextStore` (inyectable, envuelve el `AsyncLocalStorage`; `run(init, fn)`, `current()`). El `AsyncLocalStorage` queda como campo privado. Un `RequestContextInterceptor` y un `RequestContextMiddleware` de NestJS lo alimentan.
-- `Tracing` (clase con `withSpan(name, fn, options)` y `current()`), inyectable con el `Tracer`.
-- `Redactor` (clase) con `redact(value)`, `redactString(text)`; sus listas de palabras entran por constructor con valores por defecto y se pueden ampliar por servicio.
-- `StructuredLogger` (implementa `LoggerPort`) con dos destinos como estrategia, no con un `if` interno: `StdoutLogSink` y `OtlpLogSink` (`LogSink.write(record)`). Quita `LogDestination` y `logDestinationFor` (`logger.ts:45,60`) y las ramas `this.otel !== undefined`.
+- `RequestContextStore` (injectable, wraps the `AsyncLocalStorage`; `run(init, fn)`, `current()`). The `AsyncLocalStorage` becomes a private field. A NestJS `RequestContextInterceptor` and `RequestContextMiddleware` feed it.
+- `Tracing` (class with `withSpan(name, fn, options)` and `current()`), injectable with the `Tracer`.
+- `Redactor` (class) with `redact(value)`, `redactString(text)`; its word lists come in through the constructor with defaults and can be extended per service.
+- `StructuredLogger` (implements `LoggerPort`) with two destinations as a strategy, not with an internal `if`: `StdoutLogSink` and `OtlpLogSink` (`LogSink.write(record)`). Removes `LogDestination` and `logDestinationFor` (`logger.ts:45,60`) and the `this.otel !== undefined` branches.
 
-**OBS-2. `metrics.ts` mezcla puerto, tres adaptadores y listeners acoplados a otras librerías (alto, M).** 263 líneas con `MetricsPort`, `NoopMetrics`, `InMemoryMetrics`, `OtelMetrics`, y `resilienceMetricsListener` (:174, con una interfaz espejo `ResilienceMetricEvent` para no depender de resilience), `cacheErrorMetricsReporter` (:236), `recordCacheLookup` (:249) y `recordError` (:261). Observability conoce las métricas de cache y de resilience, que es un acoplamiento invertido. Propuesta: observability solo tiene `MetricsPort`, `OtelMetrics`, `NoopMetrics` y `ErrorMetricAttributes`. `resilience` publica un `ResilienceEventListener` que recibe un `MetricsPort`; `cache` publica `CacheMetrics`. Cada librería depende de observability, no al revés. `InMemoryMetrics` va a `test-utils` (T5).
+**OBS-2. `metrics.ts` mixes a port, three adapters and listeners coupled to other libraries (high, M).** 263 lines with `MetricsPort`, `NoopMetrics`, `InMemoryMetrics`, `OtelMetrics`, and `resilienceMetricsListener` (:174, with a mirror interface `ResilienceMetricEvent` to avoid depending on resilience), `cacheErrorMetricsReporter` (:236), `recordCacheLookup` (:249) and `recordError` (:261). Observability knows about cache and resilience metrics, which is inverted coupling. Proposal: observability only has `MetricsPort`, `OtelMetrics`, `NoopMetrics` and `ErrorMetricAttributes`. `resilience` publishes a `ResilienceEventListener` that receives a `MetricsPort`; `cache` publishes `CacheMetrics`. Each library depends on observability, not the other way around. `InMemoryMetrics` goes to `test-utils` (T5).
 
-**OBS-3. `telemetry.ts` con 337 líneas y cuatro responsabilidades (medio, M).** `UuidV7TraceIdGenerator`, `ExternalTraceIdSpanProcessor`, `IovalkeyInstrumentation` y la función `setupTelemetry` (:243) más `telemetryOptionsFromConfig` (:316) en un archivo. Propuesta: una clase por archivo y un `TelemetryBootstrap` (clase con `start()` y `shutdown()`) que implementa `OnApplicationShutdown`. `setupTelemetry` devuelve un objeto literal `Telemetry`; pasa a ser el propio `TelemetryBootstrap`. `ObservabilityModule.forRoot()` lo arranca con valores por defecto desde `AppConfig`. Hoy el servicio debe llamar a `setupTelemetry` en `main.ts` antes de importar nada, y el sub-entrada `@platform/observability/setup` existe solo por eso.
+**OBS-3. `telemetry.ts` with 337 lines and four responsibilities (medium, M).** `UuidV7TraceIdGenerator`, `ExternalTraceIdSpanProcessor`, `IovalkeyInstrumentation` and the `setupTelemetry` function (:243) plus `telemetryOptionsFromConfig` (:316) in one file. Proposal: one class per file and a `TelemetryBootstrap` (class with `start()` and `shutdown()`) that implements `OnApplicationShutdown`. `setupTelemetry` returns an object literal `Telemetry`; it becomes the `TelemetryBootstrap` itself. `ObservabilityModule.forRoot()` starts it with defaults from `AppConfig`. Today the service must call `setupTelemetry` in `main.ts` before importing anything, and the sub-entry `@platform/observability/setup` exists only for that.
 
-**OBS-4. Funciones de `trace.ts` y `propagation.ts` (bajo, S).** `isTraceId`, `normalizeTraceId`, `parseTraceparent`, `formatTraceparent`, `newTraceId`, `newSpanId` son utilidades puras de formato, pero `newTraceId` (`trace.ts:79`) crea un `new UuidV7IdGenerator()` como valor por defecto (instancia compartida a la vista) y `newSpanId` (:84) usa `randomBytes`. Se agrupan en `TraceContextCodec` y reciben `IdGenerator`/`RandomSource`.
+**OBS-4. Functions in `trace.ts` and `propagation.ts` (low, S).** `isTraceId`, `normalizeTraceId`, `parseTraceparent`, `formatTraceparent`, `newTraceId`, `newSpanId` are pure formatting utilities, but `newTraceId` (`trace.ts:79`) creates a `new UuidV7IdGenerator()` as a default value (a shared instance in plain sight) and `newSpanId` (:84) uses `randomBytes`. They are grouped into `TraceContextCodec` and receive `IdGenerator`/`RandomSource`.
 
-**OBS-5. Código de métricas de errores duplicado (bajo, S).** `metrics.ts:204` (`errorMetricAttributes`) y `spans.ts:42` (`recordSpanError`) extraen `code`/`name` del error con lógica parecida, y `call-outcome.ts:102` (`reasonOf`) una tercera vez. Va a `ErrorDescriptor` (T7).
+**OBS-5. Duplicated error metrics code (low, S).** `metrics.ts:204` (`errorMetricAttributes`) and `spans.ts:42` (`recordSpanError`) extract `code`/`name` from the error with similar logic, and `call-outcome.ts:102` (`reasonOf`) a third time. It goes to `ErrorDescriptor` (T7).
 
 ### 2.6 cache
 
-840 líneas. Bien pensada; las costuras son de cableado.
+840 lines. Well thought out; the seams are about wiring.
 
-**CAC-1. `CacheAside` pide demasiado cableado (alto, M).** `cache-aside.ts:153` recibe `CachePort`, `VersionedKeyspace` y un objeto con `resilience`, `transactions`, `singleFlight`, `random`, `onError`, `dependencyKey`, `maxValueBytes`. Para usarlo hay que construir `ResilienceRegistry`, un `CacheTransactionScope`, un `VersionedKeyspace` y un `SingleFlight`. Propuesta: `CacheModule.forRoot()` (por defecto `InMemoryCache` o `ValkeyCache` según config, `SingleFlight` y `ResilienceRegistry` compartidos) y `CacheModule.forFeature({ namespace, ttlMs })` que registra un `CacheAside` listo para inyectar. `onError` pasa a un `CacheErrorReporter` (puerto, con adaptador de métricas), y se borran `random`, `singleFlight` y `maxValueBytes` de la opción pública (nadie los cambia fuera de pruebas).
+**CAC-1. `CacheAside` asks for too much wiring (high, M).** `cache-aside.ts:153` receives `CachePort`, `VersionedKeyspace` and an object with `resilience`, `transactions`, `singleFlight`, `random`, `onError`, `dependencyKey`, `maxValueBytes`. To use it you have to build a `ResilienceRegistry`, a `CacheTransactionScope`, a `VersionedKeyspace` and a `SingleFlight`. Proposal: `CacheModule.forRoot()` (by default `InMemoryCache` or `ValkeyCache` depending on config, with shared `SingleFlight` and `ResilienceRegistry`) and `CacheModule.forFeature({ namespace, ttlMs })` that registers a `CacheAside` ready to inject. `onError` becomes a `CacheErrorReporter` (port, with a metrics adapter), and `random`, `singleFlight` and `maxValueBytes` are removed from the public options (nobody changes them outside tests).
 
-**CAC-2. Reimplementa lo que ya hay en primitives (medio, S).** `wait.ts` (78 líneas) duplica `raceDeadline` y `abortReason` (T3). `jittered-ttl.ts` replica `boundedRandom` de `backoff.ts:54` (T4). `stable-hash.ts:58` tiene `isPlainObject`, que está también en `canonical-json.ts` y `value-object.ts`. Propuesta: `stable-hash.ts` pasa a llamar a `CanonicalJson.digest` de primitives (la misma serialización canónica) y se borra.
+**CAC-2. Reimplements what primitives already has (medium, S).** `wait.ts` (78 lines) duplicates `raceDeadline` and `abortReason` (T3). `jittered-ttl.ts` replicates `boundedRandom` from `backoff.ts:54` (T4). `stable-hash.ts:58` has `isPlainObject`, which is also in `canonical-json.ts` and `value-object.ts`. Proposal: `stable-hash.ts` calls primitives' `CanonicalJson.digest` (the same canonical serialization) and is deleted.
 
-**CAC-3. La invalidación con `afterCommit` como callback (medio, S).** `InvalidateOptions.afterCommit?: (fn) => void` (`cache-aside.ts:94`) y `CacheTransactionScope.isInTransaction()` (:36) reinventan una parte del `TransactionManager`. Con `TransactionManager` inyectado (que ya expone `afterCommit` e `isInTransaction`), `invalidate(namespace)` hace las dos cosas sin que el llamador pase una función. Se borran `CacheTransactionScope` e `InvalidateOptions`.
+**CAC-3. Invalidation with `afterCommit` as a callback (medium, S).** `InvalidateOptions.afterCommit?: (fn) => void` (`cache-aside.ts:94`) and `CacheTransactionScope.isInTransaction()` (:36) reinvent part of the `TransactionManager`. With an injected `TransactionManager` (which already exposes `afterCommit` and `isInTransaction`), `invalidate(namespace)` does both without the caller passing a function. `CacheTransactionScope` and `InvalidateOptions` are deleted.
 
-**CAC-4. Funciones sueltas y errores (bajo, S).** El script señala `jittered-ttl.ts`, `stable-hash.ts` y `wait.ts`. `jitteredTtl` → `TtlJitter` (clase con `RandomSource`). `errors.ts` repite cinco clases con el patrón de T2.
+**CAC-4. Loose functions and errors (low, S).** The script flags `jittered-ttl.ts`, `stable-hash.ts` and `wait.ts`. `jitteredTtl` → `TtlJitter` (class with `RandomSource`). `errors.ts` repeats five classes with the T2 pattern.
 
-**CAC-5. `VersionedKeyspace` usa `randomUUID` directo (bajo, S).** `versioned-keyspace.ts:67,73,78` (T4): recibe `IdGenerator`.
+**CAC-5. `VersionedKeyspace` uses `randomUUID` directly (low, S).** `versioned-keyspace.ts:67,73,78` (T4): it receives `IdGenerator`.
 
 ### 2.7 bloom
 
-681 líneas. Autocontenida y de buen nivel; hay tres piezas sin uso.
+681 lines. Self-contained and of good quality; there are three unused pieces.
 
-**BLO-1. `BloomFilterDefinition.rebuildCron` y `resolveBloomFilterDefinition` no tienen consumidor (alto, S).** `bloom-filter-definition.ts:42,50` validan una expresión cron que nadie programa. Nada reconstruye el filtro. Se necesita un `BloomRebuildJob` (clase con `BloomFilterRegistry` y fuente de datos inyectada) dentro del módulo de NestJS, con un puerto `JobScheduler` de plataforma que hoy no existe. Si el programador de jobs va a ser el de `@nestjs/schedule`, `rebuildCron` se pasa tal cual al decorador; si no, se borra el campo. Hoy es una opción que nadie usa.
+**BLO-1. `BloomFilterDefinition.rebuildCron` and `resolveBloomFilterDefinition` have no consumer (high, S).** `bloom-filter-definition.ts:42,50` validate a cron expression that nobody schedules. Nothing rebuilds the filter. A `BloomRebuildJob` is needed (class with an injected `BloomFilterRegistry` and data source) inside the NestJS module, with a platform `JobScheduler` port that does not exist today. If the job scheduler is going to be `@nestjs/schedule`'s, `rebuildCron` is passed as is to the decorator; if not, the field is deleted. Today it is an option nobody uses.
 
-**BLO-2. Funciones sueltas (medio, S).** El script marca `bloom-filter-definition.ts`, `hashing.ts`, `limits.ts`, `optimal-parameters.ts`, `partitioned-bloom-filter.ts` y `positions.ts`. `murmur3_32` (nombre con guion bajo contra la convención de nombres), `bloomPositions`, `requiredBits`, `optimalParameters`, `partitionCount`, `partitionOf` y `assertIntegerInRange` pasan a una clase `BloomMath` (estática y pura, justificada) y a `BloomSizing`. `partitionOf` también existe en `adapters/aws/messaging-names.ts:11` con otro significado (partición del ARN); renombrar el de AWS a `awsPartitionFor`.
+**BLO-2. Loose functions (medium, S).** The script flags `bloom-filter-definition.ts`, `hashing.ts`, `limits.ts`, `optimal-parameters.ts`, `partitioned-bloom-filter.ts` and `positions.ts`. `murmur3_32` (a name with an underscore, against the naming convention), `bloomPositions`, `requiredBits`, `optimalParameters`, `partitionCount`, `partitionOf` and `assertIntegerInRange` become a `BloomMath` class (static and pure, justified) and `BloomSizing`. `partitionOf` also exists in `adapters/aws/messaging-names.ts:11` with a different meaning (ARN partition); rename the AWS one to `awsPartitionFor`.
 
-**BLO-3. Sin módulo ni punto único (medio, M).** Para usar un filtro un servicio construye `BloomFilter`, o `ValkeyBloomFilter`, o `PartitionedBloomFilter`, según tamaño. Propuesta: `BloomModule.forFeature({ name, expectedItems, falsePositiveRate })` registra un `AsyncBloomFilter` con token por nombre y elige particionado si `expectedItems` lo exige.
+**BLO-3. No module and no single entry point (medium, M).** To use a filter a service builds `BloomFilter`, or `ValkeyBloomFilter`, or `PartitionedBloomFilter`, depending on size. Proposal: `BloomModule.forFeature({ name, expectedItems, falsePositiveRate })` registers an `AsyncBloomFilter` with a token per name and picks the partitioned one if `expectedItems` requires it.
 
-**BLO-4. Nombres de error (bajo, S).** T8.
+**BLO-4. Error names (low, S).** T8.
 
 ### 2.8 sharding
 
-2.140 líneas. Afectada por la decisión de persistencia, porque la capa TypeORM de sharding la consume.
+2,140 lines. Affected by the persistence decision, because the TypeORM sharding layer consumes it.
 
-**SHD-1. `ShardRouter` hace demasiado (alto, L).** `shard-router.ts` tiene 733 líneas, 14 campos privados y un constructor con 12 opciones (`:264`). Mezcla: resolución, caché local con LRU, caché compartida con versiones y lápidas, tabla de invalidaciones con secuencia, deduplicación de cargas en vuelo y publicación de cambios. Propuesta de colaboradores con constructor propio:
+**SHD-1. `ShardRouter` does too much (high, L).** `shard-router.ts` has 733 lines, 14 private fields and a constructor with 12 options (`:264`). It mixes: resolution, a local LRU cache, a shared cache with versions and tombstones, an invalidation table with a sequence, deduplication of in-flight loads and publication of changes. Proposed collaborators, each with its own constructor:
 
-- `ShardRouter` (solo `resolve` y `assertWritable`),
-- `PlacementCache` (LRU local más `RoutingCache` compartida, con lápidas y versión mínima),
+- `ShardRouter` (only `resolve` and `assertWritable`),
+- `PlacementCache` (local LRU plus shared `RoutingCache`, with tombstones and a minimum version),
 - `InvalidationLog`,
-- `PlacementLoader` (carga en vuelo compartida con `LookupBudget`),
+- `PlacementLoader` (shared in-flight load with `LookupBudget`),
 - `DirectoryChangeApplier`.
-  Debe quedar cada uno bajo 200 líneas. La API pública (`resolve`, `invalidate`, `applyDirectoryChange`) no cambia, para no romper a persistencia.
+  Each must stay under 200 lines. The public API (`resolve`, `invalidate`, `applyDirectoryChange`) does not change, so persistence does not break.
 
-**SHD-2. Funciones sueltas de configuración (medio, S).** El script marca `clock.ts`, `directory-changes.ts`, `lru-map.ts`, `placement-codec.ts`, `placement-policy.ts` y `sharding-feature.ts`. `nowMs(clock)` (`clock.ts:5`) es una función de una línea que se usa solo en el router; se borra. `validateShardingFeature` y `routingKeyFor` (`sharding-feature.ts:26,48`) pasan a `ShardingFeature` (clase inmutable con `validate()` y `keyFor(context)`). `LruMap` es una utilidad general que solo usa sharding: se mueve a `primitives` como `LruCache` o se queda como clase interna. `encodePlacement/decodePlacement` → `PlacementCodec` (clase; hoy usa un `Set` de módulo, `placement-codec.ts`).
+**SHD-2. Loose configuration functions (medium, S).** The script flags `clock.ts`, `directory-changes.ts`, `lru-map.ts`, `placement-codec.ts`, `placement-policy.ts` and `sharding-feature.ts`. `nowMs(clock)` (`clock.ts:5`) is a one-line function used only in the router; it is deleted. `validateShardingFeature` and `routingKeyFor` (`sharding-feature.ts:26,48`) become `ShardingFeature` (an immutable class with `validate()` and `keyFor(context)`). `LruMap` is a general utility that only sharding uses: it moves to `primitives` as `LruCache` or stays as an internal class. `encodePlacement/decodePlacement` → `PlacementCodec` (class; today it uses a module-level `Set`, `placement-codec.ts`).
 
-**SHD-3. `LookupBudget` duplica espera con plazo (medio, S).** T3. `lookup-budget.ts:4` copia `MAX_TIMER_MS`.
+**SHD-3. `LookupBudget` duplicates wait with a deadline (medium, S).** T3. `lookup-budget.ts:4` copies `MAX_TIMER_MS`.
 
-**SHD-4. Comentarios obsoletos y documentación de algo inexistente (bajo, S).** `ports.ts:3` dice que el Postgres del directorio pertenece a `@platform/persistence`; vive en `adapters/postgres`. `types.ts:12` documenta `PersistenceModule.forFeature({ sharding: ... })`, que no existe. La decisión de TypeORM dará ese módulo; hasta entonces el comentario miente.
+**SHD-4. Stale comments and documentation of something that does not exist (low, S).** `ports.ts:3` says the directory's Postgres belongs to `@platform/persistence`; it lives in `adapters/postgres`. `types.ts:12` documents `PersistenceModule.forFeature({ sharding: ... })`, which does not exist. The TypeORM decision will provide that module; until then the comment lies.
 
-**SHD-5. Constante de tenant con dos valores (medio, S).** `MAX_TENANT_ID_LENGTH = 64` en `shard-router.ts:45` y `128` en `internal-api/limits.ts:8` y `messaging/envelope/message-envelope.ts:30`. Un tenant de 100 caracteres entra por mensajería y falla en el router. Una constante en `kernel` (`TenantId` como `ValueObject`).
+**SHD-5. Tenant constant with two values (medium, S).** `MAX_TENANT_ID_LENGTH = 64` in `shard-router.ts:45` and `128` in `internal-api/limits.ts:8` and `messaging/envelope/message-envelope.ts:30`. A 100-character tenant gets in through messaging and fails in the router. One constant in `kernel` (`TenantId` as a `ValueObject`).
 
-**SHD-6. Ports con solo implementación en memoria o en un único adaptador (medio, M).** `DirectoryStore`/`DirectoryWriter`: Postgres (`adapters/postgres`) más memoria; `RoutingCache`: Valkey más memoria; `ShardDirectoryChangeSubscriber`/`Publisher`: Valkey Pub/Sub más memoria. Están implementados de verdad. Lo que falta es el job que consume `DirectoryWriter` (el alta y el traslado de tenants son sagas que nadie ha escrito) y quien llama a `ShardRouter.applyDirectoryChange` al arrancar (suscripción a `ValkeyShardDirectoryChannel` desde `onModuleInit`). Propuesta para el equipo de persistencia: `ShardingModule.forRoot()` conecta canal, router y directorio.
+**SHD-6. Ports with only an in-memory implementation or a single adapter (medium, M).** `DirectoryStore`/`DirectoryWriter`: Postgres (`adapters/postgres`) plus memory; `RoutingCache`: Valkey plus memory; `ShardDirectoryChangeSubscriber`/`Publisher`: Valkey Pub/Sub plus memory. They are really implemented. What is missing is the job that consumes `DirectoryWriter` (tenant onboarding and relocation are sagas nobody has written) and whoever calls `ShardRouter.applyDirectoryChange` at startup (subscription to `ValkeyShardDirectoryChannel` from `onModuleInit`). Proposal for the persistence team: `ShardingModule.forRoot()` connects channel, router and directory.
 
 ### 2.9 resilience
 
-1.156 líneas. Bien hecha pero con un solo consumidor.
+1,156 lines. Well made but with a single consumer.
 
-**RES-1. `ResiliencePolicyName` es un enum cerrado con políticas sin uso (alto, S).** `policy-name.ts:2-10` fija `Database`, `Cache`, `ExternalApi`, `Ai`, `AiStreaming`, `Email`, `Queue`, y `config.ts` trae valores para todas. Solo `Cache` tiene consumidor. Un servicio que necesite otra política tiene que editar la librería. Propuesta: el nombre es un `string` brand o un token creado con `ResiliencePolicy.named('payments')`; la librería trae solo `Cache` y `Database` por defecto; cada módulo registra la suya con `ResilienceModule.forFeature({ name, policy })`. Se borran `Ai`, `AiStreaming`, `Email` hasta que haya un adaptador.
+**RES-1. `ResiliencePolicyName` is a closed enum with unused policies (high, S).** `policy-name.ts:2-10` fixes `Database`, `Cache`, `ExternalApi`, `Ai`, `AiStreaming`, `Email`, `Queue`, and `config.ts` ships values for all of them. Only `Cache` has a consumer. A service that needs another policy has to edit the library. Proposal: the name is a branded `string` or a token created with `ResiliencePolicy.named('payments')`; the library ships only `Cache` and `Database` by default; each module registers its own with `ResilienceModule.forFeature({ name, policy })`. `Ai`, `AiStreaming` and `Email` are deleted until there is an adapter.
 
-**RES-2. `ResilienceRegistry` con 532 líneas y estado mutable compartido (medio, M).** `registry.ts:153`: `configs`, `entries` y `listeners` en la misma clase que hace `execute`, bulkhead, reintentos, tiempo por intento y emisión. Se parte en `PolicyRegistry` (resolución de política y entradas), `PolicyExecutor` (`runAttempts`, `runTimedAttempt`, `shouldRetry`) y `ResilienceEventBus` (listeners). `Bulkhead` y `CircuitBreaker` ya son clases.
+**RES-2. `ResilienceRegistry` with 532 lines and shared mutable state (medium, M).** `registry.ts:153`: `configs`, `entries` and `listeners` in the same class that does `execute`, bulkhead, retries, per-attempt timeout and emission. It is split into `PolicyRegistry` (policy and entry resolution), `PolicyExecutor` (`runAttempts`, `runTimedAttempt`, `shouldRetry`) and `ResilienceEventBus` (listeners). `Bulkhead` and `CircuitBreaker` are already classes.
 
-**RES-3. Funciones sueltas y duplicado (bajo, S).** `config.ts` y `transient.ts` en la lista del script: `retryAfterHintMs` (T2/PRM-2), `assertFinite`. `describeError` (`registry.ts:107`) repetida (T7). `registry.ts:176` y `:48` aceptan `random` (T4).
+**RES-3. Loose functions and duplication (low, S).** `config.ts` and `transient.ts` are on the script's list: `retryAfterHintMs` (T2/PRM-2), `assertFinite`. `describeError` (`registry.ts:107`) repeated (T7). `registry.ts:176` and `:48` accept `random` (T4).
 
-**RES-4. Sin cableado (medio, S).** T1. Para que `internal-api`, `aws` y Valkey la usen hay que exponer `ResilienceModule` global con `Database` y `Cache` y un decorador `@Resilient(policyName)` opcional (la auditoría anterior lo vio como código obsoleto; si no hay decorador se documenta `registry.execute` como única vía).
+**RES-4. No wiring (medium, S).** T1. For `internal-api`, `aws` and Valkey to use it, a global `ResilienceModule` with `Database` and `Cache` must be exposed, plus an optional `@Resilient(policyName)` decorator (the previous audit saw it as obsolete code; if there is no decorator, `registry.execute` is documented as the only way).
 
 ### 2.10 messaging
 
-3.129 líneas. La librería más completa; sus dos huecos son de operación.
+3,129 lines. The most complete library; its two gaps are operational.
 
-**MSG-1. Nadie ejecuta el relay del outbox ni limpia el outbox (alto, M).** `OutboxRelay.relayOnce` (`outbox-relay.ts:150`) procesa un lote; en todo el repo solo lo llama la documentación (`outbox-message-bus.ts:29`: "por ejemplo `() => relay.relayOnce()`"). El `PostgresOutboxStore.purge` y `PostgresIdempotencyStore.purgeCompleted` tampoco tienen job. Propuesta: `OutboxRelayRunner` (clase con bucle, `start()/stop()`, intervalo y `unref`, enganchada a `onApplicationBootstrap/BeforeApplicationShutdown`), `OutboxRetentionJob` y `IdempotencyRetentionJob`. El runner despierta con `OutboxMessageBus` (el `onAppended` que hoy debe pasar el servicio) y con un temporizador de respaldo. Todo se registra con `MessagingModule.forRoot({ relay: true })`.
+**MSG-1. Nobody runs the outbox relay or cleans the outbox (high, M).** `OutboxRelay.relayOnce` (`outbox-relay.ts:150`) processes a batch; in the whole repo only the documentation calls it (`outbox-message-bus.ts:29`: "for example `() => relay.relayOnce()`"). `PostgresOutboxStore.purge` and `PostgresIdempotencyStore.purgeCompleted` have no job either. Proposal: `OutboxRelayRunner` (class with a loop, `start()/stop()`, interval and `unref`, hooked to `onApplicationBootstrap/BeforeApplicationShutdown`), `OutboxRetentionJob` and `IdempotencyRetentionJob`. The runner wakes up with `OutboxMessageBus` (the `onAppended` that the service has to pass today) and with a fallback timer. Everything is registered with `MessagingModule.forRoot({ relay: true })`.
 
-**MSG-2. Los consumidores son funciones registradas, no clases (alto, M).** `MessageDispatcher.register(contract, handler)` (`message-dispatcher.ts:290`) recibe un closure `MessageHandler<T>`. La skill pide consumidores como clases con `@Subscribe` en `presentation/`, con el caso de uso inyectado. Hoy un servicio escribe un `onModuleInit` que llama a `dispatcher.register` a mano. Propuesta: decorador `@Subscribe(UserRegisteredV1)` sobre un método de una clase `@Injectable()`, y un `MessagingExplorer` que descubre los métodos con `DiscoveryService` y los registra en el dispatcher. Lo mismo para `TenantVerifier` (tipo función, `message-dispatcher.ts:119`): sin ninguna implementación. Se hace `abstract class TenantVerifier`.
+**MSG-2. Consumers are registered functions, not classes (high, M).** `MessageDispatcher.register(contract, handler)` (`message-dispatcher.ts:290`) receives a `MessageHandler<T>` closure. The skill asks for consumers as classes with `@Subscribe` in `presentation/`, with the use case injected. Today a service writes an `onModuleInit` that calls `dispatcher.register` by hand. Proposal: a `@Subscribe(UserRegisteredV1)` decorator on a method of an `@Injectable()` class, and a `MessagingExplorer` that discovers the methods with `DiscoveryService` and registers them in the dispatcher. The same for `TenantVerifier` (a function type, `message-dispatcher.ts:119`): it has no implementation. It becomes `abstract class TenantVerifier`.
 
-**MSG-3. `MessageDispatcher` con 601 líneas y tres responsabilidades (medio, M).** Validación de envelope y límites, reclamo de idempotencia con lease y clasificación de resultados en una clase. Propuesta: `EnvelopeValidator`, `ClaimGuard` (reclamo y liberación con `ProcessedMessageStore`), `DeliveryClassifier` (`classify-error.ts` pasa a clase) y `MessageDispatcher` que los orquesta. Las constantes de lease (`DEFAULT_CLAIM_LEASE_MS`, `assertLease` en `:235`) van a `ClaimGuard`.
+**MSG-3. `MessageDispatcher` with 601 lines and three responsibilities (medium, M).** Envelope and limit validation, idempotency claim with a lease, and result classification in one class. Proposal: `EnvelopeValidator`, `ClaimGuard` (claim and release with `ProcessedMessageStore`), `DeliveryClassifier` (`classify-error.ts` becomes a class) and a `MessageDispatcher` that orchestrates them. The lease constants (`DEFAULT_CLAIM_LEASE_MS`, `assertLease` at `:235`) go to `ClaimGuard`.
 
-**MSG-4. Segundo modelo de topología (medio, M).** `topology/queue-def.ts`, `topic-def.ts`, `route.ts` y `retry-policy.ts` definen `QueueDef`/`TopicDef`/`Route` con API encadenada, y `contract-topology.ts` traduce desde `QueueDefinition`/`TopicDefinition` de contracts. Fuera de `contract-topology.ts` solo los usa la propia librería, con 36 usos en pruebas. Es una abstracción sin segundo uso. Propuesta: `Topology` se construye directo de los `*Definition` del kit (que ya validan en `define-messaging.ts`) y se borra el DSL. La validación de `topology.ts:169` (170 líneas) y la de `defineQueue` se solapan.
+**MSG-4. Second topology model (medium, M).** `topology/queue-def.ts`, `topic-def.ts`, `route.ts` and `retry-policy.ts` define `QueueDef`/`TopicDef`/`Route` with a chained API, and `contract-topology.ts` translates from contracts' `QueueDefinition`/`TopicDefinition`. Outside `contract-topology.ts` only the library itself uses them, with 36 uses in tests. It is an abstraction without a second use. Proposal: `Topology` is built directly from the kit's `*Definition`s (which already validate in `define-messaging.ts`) and the DSL is deleted. The validation in `topology.ts:169` (170 lines) and that of `defineQueue` overlap.
 
-**MSG-5. Opciones obsoletas y estado global (medio, S).** `outbox-relay.ts:33-58` `LegacyBackoffOptions` marcada `@deprecated` y aceptada en `OutboxRelayOptions.backoff`. `message-envelope.ts:100-103` `newId` y `now` obsoletos que "tienen precedencia" sobre `ids` y `clock`. `message-envelope.ts:107-108` crea `defaultIds` y `defaultClock` como singletons de módulo, y `createEnvelope` (:110), `parseEnvelope` (:166) y `toWireEnvelope` (:200) son funciones. Propuesta: `EnvelopeFactory` (recibe `Clock` e `IdGenerator`) y `EnvelopeParser`; se borran las dos opciones obsoletas y `LegacyBackoffOptions`.
+**MSG-5. Deprecated options and global state (medium, S).** `outbox-relay.ts:33-58` `LegacyBackoffOptions` marked `@deprecated` and accepted in `OutboxRelayOptions.backoff`. `message-envelope.ts:100-103` deprecated `newId` and `now` that "take precedence" over `ids` and `clock`. `message-envelope.ts:107-108` creates `defaultIds` and `defaultClock` as module singletons, and `createEnvelope` (:110), `parseEnvelope` (:166) and `toWireEnvelope` (:200) are functions. Proposal: `EnvelopeFactory` (receives `Clock` and `IdGenerator`) and `EnvelopeParser`; the two deprecated options and `LegacyBackoffOptions` are deleted.
 
-**MSG-6. Choques con lo decidido y con la skill (medio, S).**
+**MSG-6. Clashes with what was decided and with the skill (medium, S).**
 
-- La skill muestra `OutboxWriter.add(events)` y `processed.tryRegister(id, consumer)`; la librería usa `OutboxWriter.append(record)` (`outbox.ts:109`) y `ProcessedMessageStore = IdempotencyStore<ProcessedMessage>` con `claim/complete/release`. La librería es más robusta (fencing). Se actualiza la skill, no el código.
-- `OutboxWriter.append` "encuentra la transacción por su propio `TransactionManager`" (`outbox.ts:106`): con TypeORM será el `EntityManager` de la transacción activa. Queda anotado para el equipo de persistencia.
+- The skill shows `OutboxWriter.add(events)` and `processed.tryRegister(id, consumer)`; the library uses `OutboxWriter.append(record)` (`outbox.ts:109`) and `ProcessedMessageStore = IdempotencyStore<ProcessedMessage>` with `claim/complete/release`. The library is more robust (fencing). The skill is updated, not the code.
+- `OutboxWriter.append` "finds the transaction through its own `TransactionManager`" (`outbox.ts:106`): with TypeORM it will be the active transaction's `EntityManager`. Noted for the persistence team.
 
-**MSG-7. Constante de grupo y nombres (bajo, S).** `topology.ts:22` `MESSAGING_RESOURCE_NAME = /^[A-Za-z0-9_-]+$/` y `contracts/define-messaging.ts:82` `MESSAGING_NAME_PATTERN = /^[a-z][a-z0-9-]*[a-z0-9]$/`: dos reglas para el mismo nombre. Se usa la de contracts. `describe-error.ts` (4 líneas) es `ErrorDescriptor` (T7).
+**MSG-7. Group constant and names (low, S).** `topology.ts:22` `MESSAGING_RESOURCE_NAME = /^[A-Za-z0-9_-]+$/` and `contracts/define-messaging.ts:82` `MESSAGING_NAME_PATTERN = /^[a-z][a-z0-9-]*[a-z0-9]$/`: two rules for the same name. The contracts one is used. `describe-error.ts` (4 lines) is `ErrorDescriptor` (T7).
 
-**MSG-8. `InMemoryBus` e `InMemoryOutboxStore` en producción (medio, S).** T5. `InMemoryBus.drain` (:124) es una herramienta de prueba.
+**MSG-8. `InMemoryBus` and `InMemoryOutboxStore` in production (medium, S).** T5. `InMemoryBus.drain` (:124) is a testing tool.
 
 ### 2.11 internal-api
 
-1.597 líneas. Contrato fuerte, tamaño razonable, pero sin transporte real y con cableado manual.
+1,597 lines. Strong contract, reasonable size, but without a real transport and with manual wiring.
 
-**INT-1. Solo existe el transporte en proceso (alto, L).** `Transport` (`transport.ts:20`) tiene una sola implementación, `InProcessTransport` (`in-process-transport.ts:5`). Para que un servicio llame a otro hace falta `HttpTransport` (cliente con `fetch`, `traceparent`, `CallMeta` en cabeceras, validación contra contrato antes de llamar, política de resiliencia `ExternalApi`) y `InternalApiController` (el borde que expone `InternalRouter.handle` en `/internal/v1/:operationId`, con autenticación de servicio). La skill de seguridad y la de composición lo dan por hecho. Propuesta: ambas piezas más `InternalApiModule.forRoot({ transport: 'http' | 'in-process' })`.
+**INT-1. Only the in-process transport exists (high, L).** `Transport` (`transport.ts:20`) has a single implementation, `InProcessTransport` (`in-process-transport.ts:5`). For one service to call another you need `HttpTransport` (a client with `fetch`, `traceparent`, `CallMeta` in headers, validation against the contract before calling, `ExternalApi` resilience policy) and `InternalApiController` (the edge that exposes `InternalRouter.handle` at `/internal/v1/:operationId`, with service authentication). The security and composition skills take it for granted. Proposal: both pieces plus `InternalApiModule.forRoot({ transport: 'http' | 'in-process' })`.
 
-**INT-2. `InternalClient` implementa su propio reintento y tiene costuras de prueba como opciones (medio, M).** `client.ts:114`. Los campos `sleep`, `random` y `clock` como opciones (`:46-53`) son costuras de pruebas; el bucle propio se reemplaza por `ResilienceRegistry` (T3). `client.ts:93` `isRetryable` y `:101` `defaultSleep` son funciones sueltas. `InternalClient.call` (:137) y `callById` (:154) quedan; el armado de intentos pasa a `CallAttempt` (clase pequeña).
+**INT-2. `InternalClient` implements its own retry and has test seams as options (medium, M).** `client.ts:114`. The `sleep`, `random` and `clock` fields as options (`:46-53`) are test seams; the hand-rolled loop is replaced by `ResilienceRegistry` (T3). `client.ts:93` `isRetryable` and `:101` `defaultSleep` are loose functions. `InternalClient.call` (:137) and `callById` (:154) stay; building the attempts moves to `CallAttempt` (a small class).
 
-**INT-3. `InternalRouter` con 537 líneas y una máquina de estados escondida (medio, M).** `router.ts:164`. Tiene `Stage` (:132), `Progress`, un `ROLLBACK` como símbolo de módulo (:149) usado para forzar el rollback lanzando una excepción, y `traceContext` (:527). Propuesta: `OperationDispatcher` (validación y ruta), `IdempotencyGate` (claim, complete, release con el `ProcessedOperationStore`) y `UnitOfWorkRunner`. El `ROLLBACK` como excepción centinela se reemplaza por una `Rollback` clase de control de flujo, o mejor por devolver un `Outcome` y decidir el commit fuera.
+**INT-3. `InternalRouter` with 537 lines and a hidden state machine (medium, M).** `router.ts:164`. It has `Stage` (:132), `Progress`, a `ROLLBACK` as a module symbol (:149) used to force the rollback by throwing an exception, and `traceContext` (:527). Proposal: `OperationDispatcher` (validation and routing), `IdempotencyGate` (claim, complete, release with the `ProcessedOperationStore`) and `UnitOfWorkRunner`. The `ROLLBACK` sentinel exception is replaced by a `Rollback` control flow class, or better by returning an `Outcome` and deciding the commit outside.
 
-**INT-4. Registro de handlers imperativo (medio, M).** `InternalRouter.register(operation, handler)` (:206) con closures. Igual que MSG-2: `@InternalHandler(operation)` sobre clases inyectables con descubrimiento automático. El `assertComplete(registry)` (:203) se ejecuta en `onApplicationBootstrap` automáticamente.
+**INT-4. Imperative handler registration (medium, M).** `InternalRouter.register(operation, handler)` (:206) with closures. Same as MSG-2: `@InternalHandler(operation)` on injectable classes with automatic discovery. `assertComplete(registry)` (:203) runs automatically in `onApplicationBootstrap`.
 
-**INT-5. Funciones sueltas de contrato (medio, S).** El script marca `contract.ts`, `json-safety.ts`, `limits.ts` y `result.ts`. `effectiveRetry`, `effectiveTimeout`, `effectiveAttempts`, `defaultCallBudgetMs`, `compensationOf`, `allowedErrorCodes` (`contract.ts:63-134`) son métodos de `OperationMetadata`, que hoy es una interfaz. Pasa a clase inmutable con esos métodos. `resolveOperation` usa un `WeakMap` de módulo (:158). `limits.ts` (`operationIdempotencyKey`, `isValidCallKey`, `fitsPayload`) pasa a `IdempotencyKeyPolicy` y `PayloadLimit`.
+**INT-5. Loose contract functions (medium, S).** The script flags `contract.ts`, `json-safety.ts`, `limits.ts` and `result.ts`. `effectiveRetry`, `effectiveTimeout`, `effectiveAttempts`, `defaultCallBudgetMs`, `compensationOf`, `allowedErrorCodes` (`contract.ts:63-134`) are methods of `OperationMetadata`, which today is an interface. It becomes an immutable class with those methods. `resolveOperation` uses a module-level `WeakMap` (:158). `limits.ts` (`operationIdempotencyKey`, `isValidCallKey`, `fitsPayload`) becomes `IdempotencyKeyPolicy` and `PayloadLimit`.
 
-**INT-6. `DEFAULT_RETRY_POLICY` y `RetryPolicy` duplican a messaging y resilience (medio, S).** T3.
+**INT-6. `DEFAULT_RETRY_POLICY` and `RetryPolicy` duplicate messaging and resilience (medium, S).** T3.
 
-**INT-7. `ProcessedOperationStore` solo tiene memoria dentro de la librería (bajo, S).** `store.ts:25`. El adaptador real es `PostgresIdempotencyStore`, que cumple. Se mueve el en memoria a `test-utils` (T5).
+**INT-7. `ProcessedOperationStore` only has memory inside the library (low, S).** `store.ts:25`. The real adapter is `PostgresIdempotencyStore`, which complies. The in-memory one moves to `test-utils` (T5).
 
-### 2.12 saga (ya decidido: solo choques)
+### 2.12 saga (already decided: clashes only)
 
-El rediseño (store persistente con TypeORM, `SagaInstance` como agregado, `StepExecutor`, `CompensationRunner`, `LeaseKeeper`, `SagaRecoveryJob`, `SagaEventPublisher`, `SagaModule.forFeature`) ya está decidido. Lo que choca con el código actual y que el equipo de saga debe tener a la vista:
+The redesign (persistent store with TypeORM, `SagaInstance` as an aggregate, `StepExecutor`, `CompensationRunner`, `LeaseKeeper`, `SagaRecoveryJob`, `SagaEventPublisher`, `SagaModule.forFeature`) is already decided. What clashes with the current code and the saga team must keep in view:
 
-- `engine/saga-engine.ts` (1.093 líneas) se reparte entre los colaboradores. Tiene 30 métodos privados y un `Run` interno; `engine/transitions.ts` (217 líneas) y `model.ts` (133) son funciones y tipos que pasan a métodos de `SagaInstance`.
-- `engine/engine-setup.ts` (`defaultBackoff`, `assertLeaseOutlivesStep`, `compileAll`, `callContext`), `engine/step-call.ts` y `util.ts` (`assertNever`, `jsonClone`, `copyDate`, `assertSerializableState`) son los módulos de funciones sueltas que se disuelven. `util.ts` es un nombre prohibido por la skill. `jsonClone` y `copyDate` solo existen para el store en memoria; con TypeORM desaparecen. `assertSerializableState` usa `CanonicalJson` de primitives.
-- `store/in-memory-saga-store.ts` pasa a `test-utils` (T5) y debe pasar la misma prueba de contrato que el store TypeORM.
-- `SagaRecoveryJob.runOnce` (`recovery/saga-recovery-job.ts:58`) no se programa en ningún sitio: el módulo debe hacerlo.
-- Las opciones `random`, `owner`, `leaseMs`, `maxStepDurationMs` y las de suspensión (`engine-setup.ts:11-14`) se mueven a la configuración del módulo con valores por defecto.
-- `saga-engine.ts:85,107` define `StartOptions` y `SagaSpanAttribute`; `engine/saga-engine.ts:1085` `inTrace` replica `traceContext` de `internal-api/router.ts:527`. Una sola `TraceContextRestorer` en observability.
-- `InternalClientInvoker` (`internal-client-invoker.ts`, 47 líneas) y `OperationInvoker` (`invoker.ts`) adaptan `InternalClient`: tendrán que seguir la API nueva de INT-2.
-- El 1.670 líneas de `engine/__tests__/saga-engine.spec.ts` se parte con el rediseño.
+- `engine/saga-engine.ts` (1,093 lines) is split among the collaborators. It has 30 private methods and an internal `Run`; `engine/transitions.ts` (217 lines) and `model.ts` (133) are functions and types that become methods of `SagaInstance`.
+- `engine/engine-setup.ts` (`defaultBackoff`, `assertLeaseOutlivesStep`, `compileAll`, `callContext`), `engine/step-call.ts` and `util.ts` (`assertNever`, `jsonClone`, `copyDate`, `assertSerializableState`) are the loose-function modules that dissolve. `util.ts` is a name forbidden by the skill. `jsonClone` and `copyDate` only exist for the in-memory store; with TypeORM they disappear. `assertSerializableState` uses primitives' `CanonicalJson`.
+- `store/in-memory-saga-store.ts` moves to `test-utils` (T5) and must pass the same contract test as the TypeORM store.
+- `SagaRecoveryJob.runOnce` (`recovery/saga-recovery-job.ts:58`) is not scheduled anywhere: the module must do it.
+- The `random`, `owner`, `leaseMs`, `maxStepDurationMs` options and the suspension ones (`engine-setup.ts:11-14`) move to the module configuration with defaults.
+- `saga-engine.ts:85,107` defines `StartOptions` and `SagaSpanAttribute`; `engine/saga-engine.ts:1085` `inTrace` replicates `traceContext` from `internal-api/router.ts:527`. A single `TraceContextRestorer` in observability.
+- `InternalClientInvoker` (`internal-client-invoker.ts`, 47 lines) and `OperationInvoker` (`invoker.ts`) adapt `InternalClient`: they will have to follow the new INT-2 API.
+- The 1,670 lines of `engine/__tests__/saga-engine.spec.ts` are split along with the redesign.
 
 ### 2.13 rate-limit
 
-555 líneas. Es la librería mejor alineada con las skills (clase abstracta como puerto, `test-utils`, `DegradingRateLimiter`). Dos puntos.
+555 lines. It is the library best aligned with the skills (abstract class as port, `test-utils`, `DegradingRateLimiter`). Two points.
 
-**RTL-1. Funciones de reglas y ventana sueltas (medio, S).** `rate-limit-rule.ts:61,90,119` (`assertRateLimitRule`, `assertRateLimitCall`, `defineRateLimitRule`) y `sliding-window.ts:31,68,112` (`windowPosition`, `admits`, `slidingWindowResult`). Propuesta: `RateLimitRule` pasa a clase inmutable con `validate()` y `static define()`; `SlidingWindow` clase con la aritmética (la usan `InMemoryRateLimiter` y el script Lua de Valkey por equivalencia, y una prueba de contrato debe verificar que dan lo mismo). Hoy la equivalencia entre memoria y Lua no tiene prueba.
+**RTL-1. Loose rule and window functions (medium, S).** `rate-limit-rule.ts:61,90,119` (`assertRateLimitRule`, `assertRateLimitCall`, `defineRateLimitRule`) and `sliding-window.ts:31,68,112` (`windowPosition`, `admits`, `slidingWindowResult`). Proposal: `RateLimitRule` becomes an immutable class with `validate()` and `static define()`; `SlidingWindow` a class with the arithmetic (used by `InMemoryRateLimiter` and, by equivalence, by the Valkey Lua script, and a contract test must verify that they give the same result). Today the equivalence between memory and Lua has no test.
 
-**RTL-2. Sin cableado (medio, S).** `RateLimitModule.forRoot()` elige `ValkeyRateLimiter` si hay Valkey configurado y lo envuelve en `DegradingRateLimiter` con `localDivisor` tomado de `INSTANCE_COUNT`; si no, `InMemoryRateLimiter`. Un `@RateLimit(rule)` más `RateLimitGuard` cubre el uso en controllers. `onDegraded` pasa a un `RateLimitDegradationReporter` que escribe un log y una métrica.
+**RTL-2. No wiring (medium, S).** `RateLimitModule.forRoot()` picks `ValkeyRateLimiter` if Valkey is configured and wraps it in `DegradingRateLimiter` with `localDivisor` taken from `INSTANCE_COUNT`; otherwise, `InMemoryRateLimiter`. A `@RateLimit(rule)` plus `RateLimitGuard` covers usage in controllers. `onDegraded` becomes a `RateLimitDegradationReporter` that writes a log and a metric.
 
 ### 2.14 adapters/aws
 
-1.033 líneas. Único lugar con `@aws-sdk` (correcto).
+1,033 lines. The only place with `@aws-sdk` (correct).
 
-**AWS-1. Sin módulo, con fábricas y `destroy` manuales (alto, M).** `aws-clients.ts:19,29` `createAwsMessagingClients` y `destroyAwsMessagingClients`; `aws-config.ts:46` `awsConfig = defineConfig(...)` como singleton al importar. Propuesta: `AwsModule.forRoot()` crea `SNSClient` y `SQSClient` con `AwsConfig` (token `SNS_CLIENT`, `SQS_CLIENT`), implementa `OnModuleDestroy`, y registra `SnsSqsEnvelopePublisher`, `AwsMessagingNames` y `SnsSqsMessageBus` ligados a los puertos `EnvelopePublisher` y `MessageBus` de messaging. Con eso `MessagingModule` + `AwsModule` bastan para publicar.
+**AWS-1. No module, with manual factories and `destroy` (high, M).** `aws-clients.ts:19,29` `createAwsMessagingClients` and `destroyAwsMessagingClients`; `aws-config.ts:46` `awsConfig = defineConfig(...)` as a singleton on import. Proposal: `AwsModule.forRoot()` creates `SNSClient` and `SQSClient` with `AwsConfig` (tokens `SNS_CLIENT`, `SQS_CLIENT`), implements `OnModuleDestroy`, and registers `SnsSqsEnvelopePublisher`, `AwsMessagingNames` and `SnsSqsMessageBus` bound to messaging's `EnvelopePublisher` and `MessageBus` ports. With that, `MessagingModule` + `AwsModule` are enough to publish.
 
-**AWS-2. `SqsDeliveryRunner` con 503 líneas y dos modos en una clase (medio, M).** `sqs-delivery-runner.ts:161`. Tiene el consumo por Lambda (`handleLambdaEvent`, :189), el sondeo largo (`pollOnce`, `start`, `stop`, :234-311), el reenvío a DLQ (`sendToDeadLetter`, :401), el cambio de visibilidad y el borrado por lote. Propuesta: `SqsPoller` (modo servicio) y `SqsLambdaHandler` (modo Lambda) sobre un `SqsDeliveryProcessor` común, más `SqsDeadLetterRedriver`. `sleep` propio (:130, T3). Las constantes (`MAX_VISIBILITY_SECONDS`, `DEFAULT_BATCH_SIZE`, `DEFAULT_WAIT_TIME_SECONDS`) a un `SqsConsumerConfig` con valores por defecto.
+**AWS-2. `SqsDeliveryRunner` with 503 lines and two modes in one class (medium, M).** `sqs-delivery-runner.ts:161`. It has Lambda consumption (`handleLambdaEvent`, :189), long polling (`pollOnce`, `start`, `stop`, :234-311), DLQ forwarding (`sendToDeadLetter`, :401), the visibility change and the batch delete. Proposal: `SqsPoller` (service mode) and `SqsLambdaHandler` (Lambda mode) on top of a common `SqsDeliveryProcessor`, plus `SqsDeadLetterRedriver`. Its own `sleep` (:130, T3). The constants (`MAX_VISIBILITY_SECONDS`, `DEFAULT_BATCH_SIZE`, `DEFAULT_WAIT_TIME_SECONDS`) go to an `SqsConsumerConfig` with defaults.
 
-**AWS-3. Funciones sueltas (medio, S).** El script marca `aws-clients.ts`, `aws-errors.ts` (`isRetryableAwsError`, `transportError`), `elasticache-iam-auth.ts` (`credentialsOf`, `elastiCacheIamAuthToken`) y `messaging-names.ts` (`partitionOf`). Propuesta: `AwsErrorTranslator` (clase, registrable como `FailureRule` en `FailureClassifier`, PRM-2), `ElastiCacheIamAuthTokenProvider` (clase con `Clock` y las credenciales por constructor) y `partitionOf` como método privado de `AwsMessagingNames`. `elasticache-iam-auth.ts` pertenece al adaptador de Valkey por cohesión; es lo que consume `valkey-client`. Hoy `valkey` no depende de `aws` y se resuelve pasando la función; mover la clase a un `adapters/aws` es correcto y el módulo `ValkeyModule` la recibe por token opcional.
+**AWS-3. Loose functions (medium, S).** The script flags `aws-clients.ts`, `aws-errors.ts` (`isRetryableAwsError`, `transportError`), `elasticache-iam-auth.ts` (`credentialsOf`, `elastiCacheIamAuthToken`) and `messaging-names.ts` (`partitionOf`). Proposal: `AwsErrorTranslator` (class, registrable as a `FailureRule` in `FailureClassifier`, PRM-2), `ElastiCacheIamAuthTokenProvider` (class with `Clock` and the credentials through the constructor) and `partitionOf` as a private method of `AwsMessagingNames`. `elasticache-iam-auth.ts` belongs to the Valkey adapter by cohesion; it is what `valkey-client` consumes. Today `valkey` does not depend on `aws` and this is solved by passing the function; moving the class to `adapters/aws` is correct and `ValkeyModule` receives it through an optional token.
 
-**AWS-4. Mezcla de capas en errores (bajo, S).** `aws-errors.ts` devuelve `MessagingError` con código `TransportFailed`: el adaptador conoce el error de su puerto, está bien. Los mensajes de validación de `aws-config.ts:23-44` están en español y el resto del código en inglés (T8).
+**AWS-4. Mixed layers in errors (low, S).** `aws-errors.ts` returns `MessagingError` with code `TransportFailed`: the adapter knows its port's error, which is fine. The validation messages in `aws-config.ts:23-44` are in Spanish and the rest of the code in English (T8).
 
 ### 2.15 adapters/valkey
 
-1.202 líneas.
+1,202 lines.
 
-**VLK-1. Fábricas y configuración por funciones, sin módulo (alto, M).** `valkey-client.ts:143,169` (`createValkeyClient`, `createTokenAuthenticatedValkeyClient`), `valkey-config.ts` (`valkeyConnectionFromConfig`, esquema propio con 8 variables). Sin `quit()` en el cierre ni `HealthCheckable`. Propuesta: `ValkeyModule.forRoot()` con `ValkeyClientFactory` (clase), `OnModuleDestroy` que hace `quit`, un `ValkeyHealthIndicator`, y los adaptadores como providers: `ValkeyCache` ligado a `CachePort`, `ValkeyRateLimiter` a `RateLimiter`, `ValkeyRoutingCache` a `RoutingCache`, `ValkeyShardDirectoryChannel`, `ValkeyBloomFilter`. Con `VALKEY_URL` o `VALKEY_HOST` salen todos con valores por defecto.
+**VLK-1. Factories and configuration through functions, without a module (high, M).** `valkey-client.ts:143,169` (`createValkeyClient`, `createTokenAuthenticatedValkeyClient`), `valkey-config.ts` (`valkeyConnectionFromConfig`, its own schema with 8 variables). No `quit()` on shutdown and no `HealthCheckable`. Proposal: `ValkeyModule.forRoot()` with `ValkeyClientFactory` (class), an `OnModuleDestroy` that does `quit`, a `ValkeyHealthIndicator`, and the adapters as providers: `ValkeyCache` bound to `CachePort`, `ValkeyRateLimiter` to `RateLimiter`, `ValkeyRoutingCache` to `RoutingCache`, `ValkeyShardDirectoryChannel`, `ValkeyBloomFilter`. With `VALKEY_URL` or `VALKEY_HOST` they all come up with defaults.
 
-**VLK-2. `runCommand`, `integerReply`, `optionalStringReply` y `LuaScript` (medio, S).** `valkey-client.ts:42,84,92`. Funciones que envuelven el cliente: pasan a `ValkeyCommandExecutor` (clase con el cliente por constructor, `run(command, args)`, `integer()`, `optionalString()`), que ya es lo que cada adaptador usa por separado. `bloom-keys.ts` (`bloomKey`, `rebuildKey`) y `valkey-error.ts` (`errorMessage` privada, `valkeyError`) pasan a ser métodos de `ValkeyKeyspace` y de `ValkeyErrorTranslator`.
+**VLK-2. `runCommand`, `integerReply`, `optionalStringReply` and `LuaScript` (medium, S).** `valkey-client.ts:42,84,92`. Functions that wrap the client: they become `ValkeyCommandExecutor` (a class with the client through the constructor, `run(command, args)`, `integer()`, `optionalString()`), which is already what each adapter uses separately. `bloom-keys.ts` (`bloomKey`, `rebuildKey`) and `valkey-error.ts` (private `errorMessage`, `valkeyError`) become methods of `ValkeyKeyspace` and `ValkeyErrorTranslator`.
 
-**VLK-3. Prefijo obligatorio sin valor por defecto (bajo, S, ya anotado en BE-02).** `ValkeyKeyspace` exige prefijo, lo cual es correcto por la ACL; en el módulo, `VALKEY_KEY_PREFIX` por defecto debe ser `SERVICE_NAME`, no obligar a declararlo dos veces.
+**VLK-3. Mandatory prefix without a default (low, S, already noted in BE-02).** `ValkeyKeyspace` requires a prefix, which is correct because of the ACL; in the module, `VALKEY_KEY_PREFIX` should default to `SERVICE_NAME`, not force declaring it twice.
 
-**VLK-4. Faltan puertos con implementación en Valkey (medio, M).** `IdempotencyStore` solo tiene memoria y Postgres. Un `ValkeyIdempotencyStore` (con `SET NX PX` y el token de fencing) serviría a la API interna fuera de transacción. Es decisión de producto; se anota.
+**VLK-4. Missing ports with a Valkey implementation (medium, M).** `IdempotencyStore` only has memory and Postgres. A `ValkeyIdempotencyStore` (with `SET NX PX` and the fencing token) would serve the internal API outside a transaction. It is a product decision; it is noted.
 
-### 2.16 adapters/postgres (afectado por lo decidido)
+### 2.16 adapters/postgres (affected by what was decided)
 
-1.149 líneas. Implementa de verdad el outbox, los procesados, la idempotencia y el directorio, y por eso es la pieza crítica. Todo lo que sigue choca con la decisión de TypeORM y se rehace en ese equipo:
+1,149 lines. It really implements the outbox, processed messages, idempotency and the directory, which is why it is the critical piece. Everything below clashes with the TypeORM decision and is redone by that team:
 
-- `shard-migrations.ts` (127) y `catalog-migrations.ts` (49) son SQL a mano con `CREATE TABLE`, índices parciales y `CHECK`. Pasan a entidades (`OutboxEntity`, `IdempotencyKeyEntity`, `ProcessedMessageEntity`, `ShardDirectoryEntity`, `ShardInstanceEntity`, `ShardLockEntity`) y a migraciones generadas con la CLI. `CLAIM_STATES_SQL`, `OUTBOX_STATUSES_SQL` y similares (`shard-migrations.ts:11-35`) generan el `CHECK` desde los enums; con TypeORM se usa `@Check` o `enum` en `varchar`. Los índices parciales (`outbox_open_idx` y los otros tres) se conservan con `@Index({ where })`.
-- Los cuatro stores (`postgres-outbox-store.ts` 353, `postgres-directory-store.ts` 330, `postgres-idempotency-store.ts` 244, `postgres-processed-message-store.ts` 40) usan `Database`/`DatabaseResolver`/`SqlSession` de persistence y SQL con `$n`. Pasan a `TypeOrmOutboxStore`, etc., sobre el `EntityManager` de la transacción activa. `FOR UPDATE SKIP LOCKED` y la reclamación con lease se escriben con `QueryBuilder.setLock('pessimistic_write_or_fail')` o SQL parametrizado en el `manager.query`, justificado por la skill.
-- `PostgresProcessedMessageStore` hereda de `PostgresIdempotencyStore` (:23); es una herencia que no es jerarquía estable. Con TypeORM, composición: un `ClaimTable<R>` que parametriza la entidad.
-- Pruebas: `pg-mem` (`__tests__/utils/pg-mem.ts`) simula Postgres. La skill dice "no se mockea lo que no es tuyo cuando se puede levantar real". La capa nueva se prueba solo con Testcontainers, y las pruebas de contrato (`outbox-contract.ts`, `idempotency-contract.ts`, `processed-message-contract.ts`) se conservan porque son las que sirven.
-- `postgres-outbox-store.ts:57-90` y `postgres-idempotency-store.ts:53` tienen funciones de conversión de fecha repetidas (`toDate`, `toMs`).
+- `shard-migrations.ts` (127) and `catalog-migrations.ts` (49) are hand-written SQL with `CREATE TABLE`, partial indexes and `CHECK`. They become entities (`OutboxEntity`, `IdempotencyKeyEntity`, `ProcessedMessageEntity`, `ShardDirectoryEntity`, `ShardInstanceEntity`, `ShardLockEntity`) and migrations generated with the CLI. `CLAIM_STATES_SQL`, `OUTBOX_STATUSES_SQL` and similar (`shard-migrations.ts:11-35`) generate the `CHECK` from the enums; with TypeORM, `@Check` or `enum` on `varchar` is used. The partial indexes (`outbox_open_idx` and the other three) are kept with `@Index({ where })`.
+- The four stores (`postgres-outbox-store.ts` 353, `postgres-directory-store.ts` 330, `postgres-idempotency-store.ts` 244, `postgres-processed-message-store.ts` 40) use persistence's `Database`/`DatabaseResolver`/`SqlSession` and SQL with `$n`. They become `TypeOrmOutboxStore`, etc., on top of the active transaction's `EntityManager`. `FOR UPDATE SKIP LOCKED` and lease-based claiming are written with `QueryBuilder.setLock('pessimistic_write_or_fail')` or parameterized SQL in `manager.query`, justified by the skill.
+- `PostgresProcessedMessageStore` inherits from `PostgresIdempotencyStore` (:23); this inheritance is not a stable hierarchy. With TypeORM, composition: a `ClaimTable<R>` that parameterizes the entity.
+- Tests: `pg-mem` (`__tests__/utils/pg-mem.ts`) simulates Postgres. The skill says "do not mock what you do not own when you can run the real thing". The new layer is tested only with Testcontainers, and the contract tests (`outbox-contract.ts`, `idempotency-contract.ts`, `processed-message-contract.ts`) are kept because they are the useful ones.
+- `postgres-outbox-store.ts:57-90` and `postgres-idempotency-store.ts:53` have repeated date conversion functions (`toDate`, `toMs`).
 
-### 2.17 persistence (ya decidido: solo choques)
+### 2.17 persistence (already decided: clashes only)
 
-Se rehace sobre TypeORM; el equipo debe revisar estos puntos de acoplamiento que otras librerías asumen hoy:
+It is redone on top of TypeORM; the team must review these coupling points that other libraries assume today:
 
-- `TransactionManager` e `IsolationLevel` existen en `primitives` y en `persistence/enums.ts`. La nueva capa implementa el puerto del kernel (PRM-1) y borra el enum duplicado.
-- `SqlUnitOfWork.session` (`transaction/transaction-manager.ts:13`) es lo que usan los stores. Con TypeORM será `manager: EntityManager`.
-- `PersistenceContext` copia campos de `RequestContext` por función (`persistence-context.ts:28`, `requestContextProvider` como constante de módulo); pasa a `PersistenceContextProvider` inyectable sobre `RequestContextStore` (OBS-1).
-- `SessionSetting` (`app.actor_id`, `app.tenant_id`, `app.trace_id`), `@Audited` (`metadata/entity-metadata.ts:19`, con `WeakMap` de módulo) y el trigger de auditoría (`schema-helpers.ts`, `persistence-migrations.ts`) se conservan: son la parte que aporta valor y no existe en TypeORM. `@Audited` pasa a leer metadatos con `Reflect` o con un `EntitySubscriber` y el trigger se emite en la migración.
-- `persistence.ts:107` `createPersistence` (función fábrica con dos ramas) pasa a `PersistenceModule.forRoot` y `forFeature`.
-- `base-repository.ts` (678 líneas) y `database.ts` (417) desaparecen en favor de `BaseRepository` sobre TypeORM, con la política de réplicas (`DatabaseRole`) y de `DataAccess` resuelta por el `DataSource` del shard.
-- `docs/adr/0009-rds-postgresql-capa-persistencia-propia.md` debe ser sustituido por un ADR nuevo. El título y la decisión contradicen lo acordado.
-- `criteria` y `sharding/ports.ts`, `sharding/types.ts` (SHD-4, CRI-1) dependen de este rediseño.
+- `TransactionManager` and `IsolationLevel` exist in `primitives` and in `persistence/enums.ts`. The new layer implements the kernel port (PRM-1) and deletes the duplicated enum.
+- `SqlUnitOfWork.session` (`transaction/transaction-manager.ts:13`) is what the stores use. With TypeORM it will be `manager: EntityManager`.
+- `PersistenceContext` copies fields from `RequestContext` through a function (`persistence-context.ts:28`, `requestContextProvider` as a module constant); it becomes an injectable `PersistenceContextProvider` on top of `RequestContextStore` (OBS-1).
+- `SessionSetting` (`app.actor_id`, `app.tenant_id`, `app.trace_id`), `@Audited` (`metadata/entity-metadata.ts:19`, with a module-level `WeakMap`) and the audit trigger (`schema-helpers.ts`, `persistence-migrations.ts`) are kept: they are the part that adds value and does not exist in TypeORM. `@Audited` switches to reading metadata with `Reflect` or with an `EntitySubscriber`, and the trigger is emitted in the migration.
+- `persistence.ts:107` `createPersistence` (a factory function with two branches) becomes `PersistenceModule.forRoot` and `forFeature`.
+- `base-repository.ts` (678 lines) and `database.ts` (417) disappear in favor of a `BaseRepository` on top of TypeORM, with the replica policy (`DatabaseRole`) and the `DataAccess` policy resolved by the shard's `DataSource`.
+- `docs/adr/0009-rds-postgresql-capa-persistencia-propia.md` must be superseded by a new ADR. Its title and decision contradict what was agreed.
+- `criteria` and `sharding/ports.ts`, `sharding/types.ts` (SHD-4, CRI-1) depend on this redesign.
 
-### 2.18 contracts (kit y plataforma)
+### 2.18 contracts (kit and platform)
 
-**CTR-1. El catálogo de errores conoce toda la plataforma (alto, M).** T2. `platform-error-catalog.ts` (521 líneas) y `platform-error-code.enum.ts` (108 líneas, 100 valores).
+**CTR-1. The error catalog knows the whole platform (high, M).** T2. `platform-error-catalog.ts` (521 lines) and `platform-error-code.enum.ts` (108 lines, 100 values).
 
-**CTR-2. `kit/define-*` como funciones (medio, S, con excepción).** El script lista once archivos del kit: `define-command`, `define-event`, `define-messaging`, `define-operation`, `define-route`, `define-service-contract`, `error-catalog`, `field-errors`, `message-definition`, `problem-details`, `query-params`, y `schemas/pagination.schema.ts`. Estas funciones son un DSL declarativo sin dependencias ni estado que arma descriptores inmutables; se tratan como excepción justificada de "utilidades puras" (sección 3). Los que sí deben ser clase por tener lógica y estado: `ErrorCatalog` (ya lo es, :62), `validateContract` y los `check*` privados de `define-service-contract.ts:63-183` (unas 150 líneas de verificación) → `ServiceContractValidator`; `toProblemDetails` (`problem-details.ts`) → `ProblemDetailsFactory`, inyectable en el `ProblemDetailsFilter` de la skill de errores; `queryParamsOf` y `decodeQuery` en `query-params.ts` → `QueryParamsCodec`.
+**CTR-2. `kit/define-*` as functions (medium, S, with an exception).** The script lists eleven kit files: `define-command`, `define-event`, `define-messaging`, `define-operation`, `define-route`, `define-service-contract`, `error-catalog`, `field-errors`, `message-definition`, `problem-details`, `query-params`, and `schemas/pagination.schema.ts`. These functions are a declarative DSL without dependencies or state that builds immutable descriptors; they are treated as a justified exception under "pure utilities" (section 3). The ones that must be classes because they have logic and state: `ErrorCatalog` (already one, :62), `validateContract` and the private `check*` in `define-service-contract.ts:63-183` (about 150 lines of verification) → `ServiceContractValidator`; `toProblemDetails` (`problem-details.ts`) → `ProblemDetailsFactory`, injectable in the error skill's `ProblemDetailsFilter`; `queryParamsOf` and `decodeQuery` in `query-params.ts` → `QueryParamsCodec`.
 
-**CTR-3. Constantes y patrones duplicados (medio, S).** `ERROR_CODE_PATTERN` (KRN-3), `MESSAGING_NAME_PATTERN` (MSG-7), `MAX_TENANT_ID_LENGTH` (SHD-5). Una constante por concepto, en `contracts/platform/constants`.
+**CTR-3. Duplicated constants and patterns (medium, S).** `ERROR_CODE_PATTERN` (KRN-3), `MESSAGING_NAME_PATTERN` (MSG-7), `MAX_TENANT_ID_LENGTH` (SHD-5). One constant per concept, in `contracts/platform/constants`.
 
-**CTR-4. `Date` sin reloj en una validación (bajo, S).** `define-route.ts:91` valida fechas de deprecación con `new Date(...)`, es parseo y no lectura del reloj, así que está bien. No se toca.
+**CTR-4. `Date` without a clock in a validation (low, S).** `define-route.ts:91` validates deprecation dates with `new Date(...)`; that is parsing, not reading the clock, so it is fine. Not touched.
 
-**CTR-5. `contracts/identity` (bajo, S).** 1.284 líneas con la prueba `contract.spec.ts` que mezcla comprobaciones; las 9 sentencias `if` de `contract.spec.ts` y las 8 de `platform-error-catalog.spec.ts` verifican por bucle (ver sección 3, pruebas).
+**CTR-5. `contracts/identity` (low, S).** 1,284 lines with the `contract.spec.ts` test that mixes checks; the 9 `if` statements in `contract.spec.ts` and the 8 in `platform-error-catalog.spec.ts` verify through loops (see section 3, tests).
 
 ### 2.19 shared/utils
 
-**UTL-1. `money.ts` sin consumidor y con funciones sueltas (medio, S).** 106 líneas (`money`, `addMoney`, `subtractMoney`, `multiplyMoney`, `sumMoney`, `allocateMoney`, `compareMoney`, `currencyDigits`, `formatMoney`) y alias `@shared/utils`; nadie lo importa (el tipo viene de `@contracts/platform`). Es un objeto de valor del dominio. Propuesta: `Money` como `ValueObject` del kernel (`Money.of(amountMinor, currency)`, `.add()`, `.subtract()`, `.multiply()`, `.allocate(ratios)`, `.compareTo()`, `.format(locale)`) y se borra `libs/shared/utils`. Si no se quiere en el kernel, se queda como `Money` en una librería `@platform/money`, nunca como "utils" (nombre que la skill prohíbe).
+**UTL-1. `money.ts` without a consumer and with loose functions (medium, S).** 106 lines (`money`, `addMoney`, `subtractMoney`, `multiplyMoney`, `sumMoney`, `allocateMoney`, `compareMoney`, `currencyDigits`, `formatMoney`) and the `@shared/utils` alias; nobody imports it (the type comes from `@contracts/platform`). It is a domain value object. Proposal: `Money` as a kernel `ValueObject` (`Money.of(amountMinor, currency)`, `.add()`, `.subtract()`, `.multiply()`, `.allocate(ratios)`, `.compareTo()`, `.format(locale)`) and `libs/shared/utils` is deleted. If it is not wanted in the kernel, it stays as `Money` in a `@platform/money` library, never as "utils" (a name the skill forbids).
 
 ### 2.20 tools
 
-**TLS-1. `contracts-export` (778 líneas) en funciones y con registro a mano (medio, M).**
+**TLS-1. `contracts-export` (778 lines) in functions and with manual registration (medium, M).**
 
-- `build-export.ts`, `build-asyncapi.ts` y `build-topology.ts` son tres módulos de funciones con `fail()` repetida (`build-export.ts:32`, `build-topology.ts:25`, `define-service-contract.ts:105`).
-- `main.ts` (117 líneas) tiene `MODES` como `Record`, `CONTRACTS_DIR = resolve('libs/contracts')` a nivel de módulo (depende del `cwd`), `console.log` y un `main()` con cuatro responsabilidades.
-- `registry.ts:8` lista los contratos a mano, y `unregisteredDirs` (`main.ts:38`) obliga a recordar editarlo.
-  Propuesta: `ContractExporter` (orquesta, recibe `ContractRegistry` y `FileSystem`), `SchemaExportBuilder`, `AsyncApiBuilder`, `TopologyBuilder`, `ExportCommand` con un `CheckMode` y un `WriteMode` (estrategia, no un diccionario de banderas) y `ContractsDiscovery` que lee `libs/contracts/*/src/index.ts` y evita el registro manual. `ContractExporter` escribe por un `ArtifactWriter` para poder probar sin disco.
+- `build-export.ts`, `build-asyncapi.ts` and `build-topology.ts` are three function modules with a repeated `fail()` (`build-export.ts:32`, `build-topology.ts:25`, `define-service-contract.ts:105`).
+- `main.ts` (117 lines) has `MODES` as a `Record`, `CONTRACTS_DIR = resolve('libs/contracts')` at module level (depends on the `cwd`), `console.log` and a `main()` with four responsibilities.
+- `registry.ts:8` lists the contracts by hand, and `unregisteredDirs` (`main.ts:38`) forces you to remember to edit it.
+  Proposal: `ContractExporter` (orchestrates, receives `ContractRegistry` and `FileSystem`), `SchemaExportBuilder`, `AsyncApiBuilder`, `TopologyBuilder`, `ExportCommand` with a `CheckMode` and a `WriteMode` (a strategy, not a dictionary of flags) and `ContractsDiscovery`, which reads `libs/contracts/*/src/index.ts` and avoids manual registration. `ContractExporter` writes through an `ArtifactWriter` so it can be tested without disk.
 
-**TLS-2. `app-bundler` bien (bajo, S).** `AppBundler` y `DecoratorMetadataPlugin` ya son clases con constructor. Solo `main.ts` es un script con `console`; está bien en un binario de línea de comandos. El plugin recomienda `types: ["*"]` y `emitDecoratorMetadata` coherentes con el resto (verificado). Falta un generador de apps y de módulos, anunciado en CLAUDE.md como "fase F11".
-
----
-
-## 3. Excepciones razonables (no se tocan)
-
-Para no sobre-aplicar la regla "nada de funciones sueltas", quedan como están:
-
-- Fábricas declarativas sin estado ni dependencias: `defineEvent`, `defineCommand`, `defineOperation`, `defineRoute`, `defineTopic`, `defineQueue`, `defineServiceContract`, `defineErrorCatalog`, y los esquemas zod de `env.ts` y `secret()`. Son un DSL de contratos.
-- Funciones puras de formato o matemática sin configuración que ya están agrupadas en un archivo cohesivo (`fnv1a32`, `murmur3_32`): se encapsulan como métodos estáticos de una clase de utilidad con nombre de negocio (`Hashes`, `BloomMath`), sin inyección.
-- Los `main()` de los binarios de `tools/`.
+**TLS-2. `app-bundler` is fine (low, S).** `AppBundler` and `DecoratorMetadataPlugin` are already classes with a constructor. Only `main.ts` is a script with `console`; that is fine in a command-line binary. The plugin recommends `types: ["*"]` and `emitDecoratorMetadata` consistent with the rest (verified). An app and module generator is missing, announced in CLAUDE.md as "phase F11".
 
 ---
 
-## 4. Pruebas (sección 7 de la solicitud)
+## 3. Reasonable exceptions (not touched)
 
-- **Verificación de detalles internos.** `shard-router.spec.ts` (1.339 líneas) tiene 56 `jest.fn` y 45 aserciones `toHaveBeenCalledTimes/With` sobre el directorio y la caché compartida; `cache-aside.spec.ts` (794 líneas) 54 y 25; `internal-api/router.spec.ts` 38 y 17; `client.spec.ts` 17 y 16. Cuentan llamadas internas, que es lo que la skill prohíbe ("no se verifica el orden ni el número de llamadas internas"). Se sustituyen por fakes con comportamiento (`InMemoryDirectoryStore` con un contador observable como atributo público del fake) y se verifica el resultado externo (a qué shard llegó, cuántas veces se leyó la fuente de verdad solo cuando es requisito, como la deduplicación de cargas).
-- **Lógica en pruebas.** `adapters/aws/src/__tests__/sqs-delivery-runner.spec.ts` (14 `if`), `sns-sqs.integration.spec.ts` (:172-177, :320-325) con una escalera `if (name === 'GetQueueUrlCommand')` que reimplementa el SDK; `sharding/consistent-hash-ring.spec.ts` (9), `saga-engine.spec.ts` (9), `contracts/identity/contract.spec.ts` (9), `platform-error-catalog.spec.ts` (8). Propuesta: un `FakeSqsClient` y un `FakeSnsClient` como clases en `adapters/aws/src/__tests__/utils/` (hoy solo hay `fixtures.ts`) y `it.each` para las tablas.
-- **Archivos enormes.** `saga-engine.spec.ts` 1.670 líneas, `shard-router.spec.ts` 1.339, `router.spec.ts` 909, `define.spec.ts` 795. Se parten por escenario junto con el refactor de cada clase.
-- **`pg-mem` en lugar de contenedor.** T6 y 2.16.
-- **Fakes sin prueba de contrato.** Solo hay contrato compartido para outbox, idempotencia y procesados de Postgres. Faltan para `RateLimiter` (memoria frente a Valkey), `CachePort` (memoria frente a Valkey), `DirectoryStore`, `RoutingCache` y `SagaStore`.
-- **Integración con otro nombre y alcance.** T9.
+To avoid over-applying the "no loose functions" rule, these stay as they are:
 
----
-
-## 5. Tabla de puertos y quién los implementa de verdad
-
-| Puerto                             | Memoria    | Real           | Falta                                                             |
-| ---------------------------------- | ---------- | -------------- | ----------------------------------------------------------------- |
-| `OutboxStore`                      | sí         | Postgres       | job que ejecute `OutboxRelay` y limpie (MSG-1)                    |
-| `EnvelopePublisher`                | no         | SNS/SQS        | nada                                                              |
-| `ProcessedMessageStore`            | sí         | Postgres       | nada; `TenantVerifier` sin implementación (MSG-2)                 |
-| `IdempotencyStore`                 | sí         | Postgres       | Valkey opcional (VLK-4), job de purga                             |
-| `DirectoryStore`/`DirectoryWriter` | sí         | Postgres       | quien escribe (sagas de alta y traslado), arranque del suscriptor |
-| `RoutingCache`                     | sí         | Valkey         | nada                                                              |
-| `ShardDirectoryChange*`            | sí         | Valkey Pub/Sub | suscripción en `onModuleInit`                                     |
-| `Transport` (internal-api)         | en proceso | ninguno        | `HttpTransport` y el controller de entrada (INT-1)                |
-| `SagaStore`                        | sí         | ninguno        | decidido: TypeORM                                                 |
-| `CachePort`                        | sí         | Valkey         | nada                                                              |
-| `RateLimiter`                      | sí         | Valkey         | nada                                                              |
-| `AsyncBloomFilter`                 | sí         | Valkey         | job de reconstrucción (BLO-1)                                     |
-| `LoggerPort`                       | consola    | OTLP           | nada                                                              |
-| `MetricsPort`                      | sí         | OTLP           | nada                                                              |
-| `Clock`/`IdGenerator`              | sí         | sí             | `RandomSource` (T4)                                               |
-| secretos                           | no         | no             | `SecretsProvider` con Secrets Manager (CFG-5)                     |
-| salud                              | no         | no             | `HealthCheckable` en cada adaptador (T1)                          |
+- Declarative factories without state or dependencies: `defineEvent`, `defineCommand`, `defineOperation`, `defineRoute`, `defineTopic`, `defineQueue`, `defineServiceContract`, `defineErrorCatalog`, and the zod schemas in `env.ts` and `secret()`. They are a contract DSL.
+- Pure formatting or math functions without configuration that are already grouped in a cohesive file (`fnv1a32`, `murmur3_32`): they are wrapped as static methods of a utility class with a business name (`Hashes`, `BloomMath`), without injection.
+- The `main()` functions of the `tools/` binaries.
 
 ---
 
-## 6. Plan por paquetes de trabajo
+## 4. Tests (section 7 of the request)
 
-Cada paquete toca un conjunto de archivos disjunto del resto. Los paquetes P1 a P6 pueden correr en paralelo una vez cerrado P0. PD1 y PD2 son lo ya decidido; se listan para fijar las fronteras de archivos.
+- **Verification of internal details.** `shard-router.spec.ts` (1,339 lines) has 56 `jest.fn` and 45 `toHaveBeenCalledTimes/With` assertions on the directory and the shared cache; `cache-aside.spec.ts` (794 lines) 54 and 25; `internal-api/router.spec.ts` 38 and 17; `client.spec.ts` 17 and 16. They count internal calls, which is what the skill forbids ("neither the order nor the number of internal calls is verified"). They are replaced by fakes with behavior (`InMemoryDirectoryStore` with an observable counter as a public attribute of the fake) and the external result is verified (which shard it reached, how many times the source of truth was read only when that is a requirement, such as load deduplication).
+- **Logic in tests.** `adapters/aws/src/__tests__/sqs-delivery-runner.spec.ts` (14 `if`), `sns-sqs.integration.spec.ts` (:172-177, :320-325) with an `if (name === 'GetQueueUrlCommand')` ladder that reimplements the SDK; `sharding/consistent-hash-ring.spec.ts` (9), `saga-engine.spec.ts` (9), `contracts/identity/contract.spec.ts` (9), `platform-error-catalog.spec.ts` (8). Proposal: a `FakeSqsClient` and a `FakeSnsClient` as classes in `adapters/aws/src/__tests__/utils/` (today there is only `fixtures.ts`) and `it.each` for the tables.
+- **Huge files.** `saga-engine.spec.ts` 1,670 lines, `shard-router.spec.ts` 1,339, `router.spec.ts` 909, `define.spec.ts` 795. They are split by scenario along with the refactor of each class.
+- **`pg-mem` instead of a container.** T6 and 2.16.
+- **Fakes without a contract test.** There is only a shared contract for Postgres outbox, idempotency and processed messages. Missing for `RateLimiter` (memory versus Valkey), `CachePort` (memory versus Valkey), `DirectoryStore`, `RoutingCache` and `SagaStore`.
+- **Integration with another name and scope.** T9.
 
-Regla común: los alias de `tsconfig.base.json` y las dependencias de `package.json` los edita solo P0 (agrega los alias `@platform/<lib>/nest` y `@platform/<lib>/test-utils` de todas las librerías, y `@nestjs/common`, `@nestjs/core`, `@nestjs/testing`, `typeorm`, `reflect-metadata`). Ningún otro paquete toca esos dos archivos. La API pública de las librerías no cambia de nombre hasta que el paquete dueño lo anuncia en su `index.ts`; los demás paquetes importan solo lo que ya existe.
+---
 
-### P0. Fundaciones (primero, secuencial, tropa de 1 a 2 agentes)
+## 5. Table of ports and who really implements them
 
-Archivos: `libs/platform/kernel/**`, `libs/platform/primitives/**`, `libs/contracts/platform/src/enums/platform-error-code.enum.ts`, `libs/contracts/platform/src/errors/**`, `libs/contracts/platform/src/kit/error-catalog.ts`, `tsconfig.base.json`, `package.json`, `jest.preset.js`.
+| Port                               | Memory     | Real           | Missing                                                          |
+| ---------------------------------- | ---------- | -------------- | ---------------------------------------------------------------- |
+| `OutboxStore`                      | yes        | Postgres       | job that runs `OutboxRelay` and cleans up (MSG-1)                |
+| `EnvelopePublisher`                | no         | SNS/SQS        | nothing                                                          |
+| `ProcessedMessageStore`            | yes        | Postgres       | nothing; `TenantVerifier` without an implementation (MSG-2)      |
+| `IdempotencyStore`                 | yes        | Postgres       | optional Valkey (VLK-4), purge job                               |
+| `DirectoryStore`/`DirectoryWriter` | yes        | Postgres       | who writes (onboarding and relocation sagas), subscriber startup |
+| `RoutingCache`                     | yes        | Valkey         | nothing                                                          |
+| `ShardDirectoryChange*`            | yes        | Valkey Pub/Sub | subscription in `onModuleInit`                                   |
+| `Transport` (internal-api)         | in-process | none           | `HttpTransport` and the inbound controller (INT-1)               |
+| `SagaStore`                        | yes        | none           | decided: TypeORM                                                 |
+| `CachePort`                        | yes        | Valkey         | nothing                                                          |
+| `RateLimiter`                      | yes        | Valkey         | nothing                                                          |
+| `AsyncBloomFilter`                 | yes        | Valkey         | rebuild job (BLO-1)                                              |
+| `LoggerPort`                       | console    | OTLP           | nothing                                                          |
+| `MetricsPort`                      | yes        | OTLP           | nothing                                                          |
+| `Clock`/`IdGenerator`              | yes        | yes            | `RandomSource` (T4)                                              |
+| secrets                            | no         | no             | `SecretsProvider` with Secrets Manager (CFG-5)                   |
+| health                             | no         | no             | `HealthCheckable` in each adapter (T1)                           |
 
-Contenido: KRN-1 a KRN-4, PRM-1 a PRM-3, T2 (reparto de enums y catálogos por librería, dejando `PlatformErrorCode` transversal), T4 (`RandomSource`), T7 (`Guard`, `ErrorDescriptor`), T6 (`ContainerRuntime` en `kernel/__tests__/utils`), `HealthCheckable`, tokens base (`CLOCK`, `ID_GENERATOR`, `RANDOM_SOURCE`), puertos de transacción e idempotencia movidos al kernel, y los alias y dependencias de todos. Esfuerzo total L. Cada librería necesita después solo cambiar sus imports; P0 deja alias de compatibilidad (reexport) durante un ciclo para que los paquetes siguientes no se bloqueen.
+---
 
-### P1. Config y observabilidad
+## 6. Plan by work package
 
-Archivos: `libs/platform/config/**`, `libs/platform/observability/**`.
+Each package touches a set of files disjoint from the rest. Packages P1 to P6 can run in parallel once P0 is closed. PD1 and PD2 are what was already decided; they are listed to fix the file boundaries.
 
-Contenido: CFG-1 a CFG-5, OBS-1 a OBS-5, T1 para ambas (`ConfigModule`, `ObservabilityModule`, `RequestContextInterceptor`). Mover `LogLevel` a observability. Sacar de `metrics.ts` los listeners de resilience y cache, que adoptan P2. Esfuerzo L. Depende de P0.
+Common rule: the `tsconfig.base.json` aliases and the `package.json` dependencies are edited only by P0 (it adds the `@platform/<lib>/nest` and `@platform/<lib>/test-utils` aliases for all libraries, and `@nestjs/common`, `@nestjs/core`, `@nestjs/testing`, `typeorm`, `reflect-metadata`). No other package touches those two files. The public API of the libraries does not change names until the owning package announces it in its `index.ts`; the other packages import only what already exists.
 
-### P2. Resiliencia, cache, rate-limit y bloom
+### P0. Foundations (first, sequential, team of 1 to 2 agents)
 
-Archivos: `libs/platform/resilience/**`, `libs/platform/cache/**`, `libs/platform/rate-limit/**`, `libs/platform/bloom/**`.
+Files: `libs/platform/kernel/**`, `libs/platform/primitives/**`, `libs/contracts/platform/src/enums/platform-error-code.enum.ts`, `libs/contracts/platform/src/errors/**`, `libs/contracts/platform/src/kit/error-catalog.ts`, `tsconfig.base.json`, `package.json`, `jest.preset.js`.
 
-Contenido: RES-1 a RES-4, CAC-1 a CAC-5, RTL-1 y RTL-2, BLO-1 a BLO-4, T3 (eliminar `wait.ts`), módulos `ResilienceModule`, `CacheModule`, `RateLimitModule`, `BloomModule`, y los listeners de métricas que salieron de observability. Esfuerzo L. Depende de P0 y de P1 solo por el `MetricsPort` (que no cambia de forma).
+Content: KRN-1 to KRN-4, PRM-1 to PRM-3, T2 (splitting enums and catalogs per library, leaving `PlatformErrorCode` cross-cutting), T4 (`RandomSource`), T7 (`Guard`, `ErrorDescriptor`), T6 (`ContainerRuntime` in `kernel/__tests__/utils`), `HealthCheckable`, base tokens (`CLOCK`, `ID_GENERATOR`, `RANDOM_SOURCE`), transaction and idempotency ports moved to the kernel, and everyone's aliases and dependencies. Total effort L. Afterwards each library only needs to change its imports; P0 leaves compatibility aliases (re-exports) for one cycle so the following packages are not blocked.
 
-### P3. Messaging y adaptador AWS
+### P1. Config and observability
 
-Archivos: `libs/platform/messaging/**`, `libs/platform/adapters/aws/**`.
+Files: `libs/platform/config/**`, `libs/platform/observability/**`.
 
-Contenido: MSG-1 a MSG-8, AWS-1 a AWS-4, T5 (para sus dobles), T6 (su integración con `ContainerRuntime`), `MessagingModule`, `AwsModule`, `@Subscribe`, `OutboxRelayRunner` y jobs de retención, partición del runner de SQS. `adapters/aws` mantiene `elasticache-iam-auth` hasta que P5 lo consuma por token. Esfuerzo L. Depende de P0 y P1.
+Content: CFG-1 to CFG-5, OBS-1 to OBS-5, T1 for both (`ConfigModule`, `ObservabilityModule`, `RequestContextInterceptor`). Move `LogLevel` to observability. Take the resilience and cache listeners out of `metrics.ts`; P2 adopts them. Effort L. Depends on P0.
 
-### P4. API interna
+### P2. Resilience, cache, rate-limit and bloom
 
-Archivos: `libs/platform/internal-api/**`.
+Files: `libs/platform/resilience/**`, `libs/platform/cache/**`, `libs/platform/rate-limit/**`, `libs/platform/bloom/**`.
 
-Contenido: INT-1 a INT-7, `InternalApiModule`, `HttpTransport`, controller de entrada, decorador `@InternalHandler`. Debe conservar la forma de `InternalClient.call/callById` y de `OperationInvoker`, porque PD2 los consume. Esfuerzo L. Depende de P0, P1 y P2 (resiliencia).
+Content: RES-1 to RES-4, CAC-1 to CAC-5, RTL-1 and RTL-2, BLO-1 to BLO-4, T3 (delete `wait.ts`), the `ResilienceModule`, `CacheModule`, `RateLimitModule`, `BloomModule` modules, and the metrics listeners that came out of observability. Effort L. Depends on P0, and on P1 only for the `MetricsPort` (which does not change shape).
 
-### P5. Sharding y adaptador Valkey
+### P3. Messaging and AWS adapter
 
-Archivos: `libs/platform/sharding/**`, `libs/platform/adapters/valkey/**`.
+Files: `libs/platform/messaging/**`, `libs/platform/adapters/aws/**`.
 
-Contenido: SHD-1 a SHD-6, VLK-1 a VLK-4, T3 (borrar `LookupBudget`), `ShardingModule` (sin la parte TypeORM), `ValkeyModule`, `ValkeyHealthIndicator`. La API pública de `ShardRouter` no cambia; PD1 la consume. Esfuerzo L. Depende de P0 y P2 (cache, bloom, rate-limit).
+Content: MSG-1 to MSG-8, AWS-1 to AWS-4, T5 (for its doubles), T6 (its integration with `ContainerRuntime`), `MessagingModule`, `AwsModule`, `@Subscribe`, `OutboxRelayRunner` and retention jobs, splitting the SQS runner. `adapters/aws` keeps `elasticache-iam-auth` until P5 consumes it through a token. Effort L. Depends on P0 and P1.
 
-### P6. Contratos, herramientas y utilidades
+### P4. Internal API
 
-Archivos: `libs/contracts/platform/src/kit/**` (menos `error-catalog.ts`), `libs/contracts/platform/src/{schemas,constants,types,contract.ts,index.ts}`, `libs/contracts/identity/**`, `libs/shared/utils/**` (se elimina), `tools/**`.
+Files: `libs/platform/internal-api/**`.
 
-Contenido: CTR-2, CTR-3, CTR-5, UTL-1 (`Money` al kernel: coordinar con P0 el archivo `kernel/src/money.ts` que P0 crea vacío con el contrato acordado, o se pide a P0 incluirlo), TLS-1 y TLS-2, y el generador de apps y módulos (F11) si se desea. Esfuerzo M. Depende de P0 (por el reparto de catálogos).
+Content: INT-1 to INT-7, `InternalApiModule`, `HttpTransport`, inbound controller, `@InternalHandler` decorator. It must keep the shape of `InternalClient.call/callById` and of `OperationInvoker`, because PD2 consumes them. Effort L. Depends on P0, P1 and P2 (resilience).
 
-### PD1. Persistencia con TypeORM y sharding físico (ya decidido)
+### P5. Sharding and Valkey adapter
 
-Archivos: `libs/platform/persistence/**`, `libs/platform/adapters/postgres/**`, `libs/platform/criteria/**`, `docs/adr/0009-*.md` (se supera con un ADR nuevo).
+Files: `libs/platform/sharding/**`, `libs/platform/adapters/valkey/**`.
 
-Contenido: lo decidido, más CRI-1 a CRI-4, 2.16 y 2.17. Consume `ShardRouter` de P5 y los puertos del kernel de P0. Debe empezar después de que P0 mueva `TransactionManager` y de que P5 cierre la división del router (o trabajar contra la API pública, que no cambia). Esfuerzo L.
+Content: SHD-1 to SHD-6, VLK-1 to VLK-4, T3 (delete `LookupBudget`), `ShardingModule` (without the TypeORM part), `ValkeyModule`, `ValkeyHealthIndicator`. The public API of `ShardRouter` does not change; PD1 consumes it. Effort L. Depends on P0 and P2 (cache, bloom, rate-limit).
 
-### PD2. Sagas (ya decidido)
+### P6. Contracts, tools and utilities
 
-Archivos: `libs/platform/saga/**`.
+Files: `libs/contracts/platform/src/kit/**` (except `error-catalog.ts`), `libs/contracts/platform/src/{schemas,constants,types,contract.ts,index.ts}`, `libs/contracts/identity/**`, `libs/shared/utils/**` (deleted), `tools/**`.
 
-Contenido: lo decidido, más las notas de 2.12. Consume `InternalClient` de P4 y `PersistenceModule`/`EntityManager` de PD1. Esfuerzo L. Depende de P0, P4 y PD1.
+Content: CTR-2, CTR-3, CTR-5, UTL-1 (`Money` to the kernel: coordinate with P0 on the `kernel/src/money.ts` file that P0 creates empty with the agreed contract, or ask P0 to include it), TLS-1 and TLS-2, and the app and module generator (F11) if desired. Effort M. Depends on P0 (for the catalog split).
 
-### Orden sugerido
+### PD1. Persistence with TypeORM and physical sharding (already decided)
 
-1. P0 solo.
-2. P1, P2 y P6 en paralelo.
-3. P3, P4 y P5 en paralelo (cada uno necesita P1 y P2).
-4. PD1 (tras P0 y P5) y luego PD2 (tras P4 y PD1).
+Files: `libs/platform/persistence/**`, `libs/platform/adapters/postgres/**`, `libs/platform/criteria/**`, `docs/adr/0009-*.md` (superseded by a new ADR).
 
-Cada paquete cierra con `pnpm nx run-many -t lint test typecheck -p <proyectos del paquete>` y con `node .claude/skills/backend-estructura/scripts/check-structure.mjs --all .`, cuyo objetivo es bajar de 97 a las excepciones de la sección 3 (unas 12, todas del DSL de contratos y de los `main()` de `tools`).
+Content: what was decided, plus CRI-1 to CRI-4, 2.16 and 2.17. It consumes `ShardRouter` from P5 and the kernel ports from P0. It must start after P0 moves `TransactionManager` and after P5 closes the router split (or work against the public API, which does not change). Effort L.
+
+### PD2. Sagas (already decided)
+
+Files: `libs/platform/saga/**`.
+
+Content: what was decided, plus the notes in 2.12. It consumes `InternalClient` from P4 and `PersistenceModule`/`EntityManager` from PD1. Effort L. Depends on P0, P4 and PD1.
+
+### Suggested order
+
+1. P0 alone.
+2. P1, P2 and P6 in parallel.
+3. P3, P4 and P5 in parallel (each one needs P1 and P2).
+4. PD1 (after P0 and P5) and then PD2 (after P4 and PD1).
+
+Each package closes with `pnpm nx run-many -t lint test typecheck -p <package projects>` and with `node .claude/skills/backend-estructura/scripts/check-structure.mjs --all .`, whose goal is to go down from 97 to the exceptions in section 3 (about 12, all from the contract DSL and the `main()` functions in `tools`).

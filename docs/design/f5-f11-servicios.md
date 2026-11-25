@@ -1,158 +1,158 @@
-# Diseño de las fases F5 a F11: servicios de ejemplo, negocio y escala
+# Design of phases F5 to F11: example services, business and scale
 
-- Estado: Aprobado el 2026-11-16, con la recomendación de cada decisión de la sección 15
-- Fecha: 2026-11-16
-- ADR relacionados: [0007](../adr/0007-mensajeria-topologia-tipada-sns-sqs-cloudevents.md), [0008](../adr/0008-sagas-orquestadas-bitacora-persistente.md), [0010](../adr/0010-sharding-logico-residencia-region.md), [0011](../adr/0011-tiempo-real-socketio-sse.md), [0013](../adr/0013-modulo-ia-puertos-claude.md), [0014](../adr/0014-acuerdos-documentos-firmados.md), [0020](../adr/0020-terraform-por-stacks-y-runtime-por-servicio.md), [0023](../adr/0023-enrutamiento-de-datos-de-identity.md), [0024](../adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md), [0025](../adr/0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md) y [0026](../adr/0026-jobs-programados-scheduledjob-y-joblock.md)
+- Status: Approved on 2026-11-16, with the recommendation of each decision in section 15
+- Date: 2026-11-16
+- Related ADRs: [0007](../adr/0007-mensajeria-topologia-tipada-sns-sqs-cloudevents.md), [0008](../adr/0008-sagas-orquestadas-bitacora-persistente.md), [0010](../adr/0010-sharding-logico-residencia-region.md), [0011](../adr/0011-tiempo-real-socketio-sse.md), [0013](../adr/0013-modulo-ia-puertos-claude.md), [0014](../adr/0014-acuerdos-documentos-firmados.md), [0020](../adr/0020-terraform-por-stacks-y-runtime-por-servicio.md), [0023](../adr/0023-enrutamiento-de-datos-de-identity.md), [0024](../adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md), [0025](../adr/0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md) and [0026](../adr/0026-jobs-programados-scheduledjob-y-joblock.md)
 
-Este documento reparte la construcción de los servicios `tasks`, `notifications`, `reports` y `billing`, de sus pantallas, de las sagas de ejemplo, del sharding real y de los generadores en las tropas de las olas 5 a 7 del [plan](../plan/README.md#orden-de-ejecución-por-olas). No contiene código de producción: fija nombres, carpetas, contratos, tablas, eventos, colas, permisos, paquetes y decisiones. Sigue el formato del [diseño de F4](f4-identity.md) y no repite lo que ese documento ya fija: la estructura de un servicio ([sección 4](f4-identity.md#4-estructura-de-backendappsidentity)), las piezas de plataforma ([sección 3](f4-identity.md#3-piezas-de-plataforma-nuevas)) y las reglas de paquetes ([sección 6](f4-identity.md#6-paquetes-de-trabajo)).
+This document splits the construction of the `tasks`, `notifications`, `reports` and `billing` services, their screens, the example sagas, real sharding and the generators across the troops of waves 5 to 7 of the [plan](../plan/README.md#orden-de-ejecución-por-olas). It contains no production code: it fixes names, folders, contracts, tables, events, queues, permissions, packages and decisions. It follows the format of the [F4 design](f4-identity.md) and does not repeat what that document already fixes: the structure of a service ([section 4](f4-identity.md#4-structure-of-backendappsidentity)), the platform pieces ([section 3](f4-identity.md#3-new-platform-pieces)) and the package rules ([section 6](f4-identity.md#6-work-packages)).
 
-Donde este documento y un ADR se contradicen, manda el ADR, salvo en lo que la sección 15 propone cambiar. Los datos de demostración de los microfrontends son la fuente de lo que piden los contratos: no se agregan campos ni pantallas que hoy no existan salvo los que la sección 15 aprueba.
+Where this document and an ADR contradict each other, the ADR wins, except for what section 15 proposes to change. The demo data of the microfrontends is the source of what the contracts ask for: no fields or screens that do not exist today are added, except those that section 15 approves.
 
-## 1. Punto de partida y alcance
+## 1. Starting point and scope
 
-### 1.1 Estado de partida (ola 5, con la ola 4 integrada)
+### 1.1 Starting state (wave 5, with wave 4 integrated)
 
-| Pieza          | Estado                                                                                                                                                                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Contratos      | Solo `@contracts/platform` (kit, `MoneyAmount`, `PageQuerySchema`, catálogo `PLATFORM.*`) y `@contracts/identity`. No hay contrato de `tasks`, `notifications`, `reports` ni `billing`.                                                    |
-| Plataforma     | `kernel`, `config`, `observability`, `persistence` (TypeORM), `sharding`, `messaging`, `internal-api`, `saga` (motor con bitácora persistente), `scheduling` (`ScheduledJob`), `cache`, `bloom`, `rate-limit`, `resilience` y adaptadores. |
-| F4             | Con la ola 4: `@platform/auth` y `@platform/service`. En la ola 5 llegan `@platform/http` y el esqueleto de identity; en la 6, los módulos de identity.                                                                                    |
-| Entorno local  | `catalog`, `identity_shard_0`, `identity_shard_1` y `tasks_shard_0` en Postgres 17 con `vector`; Valkey, LocalStack (SNS, SQS, SES, S3, scheduler), Mailpit y OpenObserve.                                                                 |
-| Terraform      | Stacks `network`, `platform`, `data`, `messaging`, `edge` y `service` (se instancia por servicio en `environments/<ambiente>/services/<servicio>/`).                                                                                       |
-| Front          | `tasks`, `notifications`, `billing`, `verifier`, `assistant`, `account` y `backoffice` con repositorios `Fake*` y `RepositoryBinding.demoOnly`. No existe un microfrontend `reports`.                                                      |
-| `backend/apps` | Solo existe lo que construye la ola 4 y 5 (identity). Nada de los cuatro servicios.                                                                                                                                                        |
+| Piece          | State                                                                                                                                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contracts      | Only `@contracts/platform` (kit, `MoneyAmount`, `PageQuerySchema`, `PLATFORM.*` catalog) and `@contracts/identity`. There is no contract for `tasks`, `notifications`, `reports` or `billing`.                                        |
+| Platform       | `kernel`, `config`, `observability`, `persistence` (TypeORM), `sharding`, `messaging`, `internal-api`, `saga` (engine with persistent log), `scheduling` (`ScheduledJob`), `cache`, `bloom`, `rate-limit`, `resilience` and adapters. |
+| F4             | With wave 4: `@platform/auth` and `@platform/service`. Wave 5 brings `@platform/http` and the identity skeleton; wave 6, the identity modules.                                                                                        |
+| Local env      | `catalog`, `identity_shard_0`, `identity_shard_1` and `tasks_shard_0` on Postgres 17 with `vector`; Valkey, LocalStack (SNS, SQS, SES, S3, scheduler), Mailpit and OpenObserve.                                                       |
+| Terraform      | Stacks `network`, `platform`, `data`, `messaging`, `edge` and `service` (instantiated per service in `environments/<environment>/services/<service>/`).                                                                               |
+| Front          | `tasks`, `notifications`, `billing`, `verifier`, `assistant`, `account` and `backoffice` with `Fake*` repositories and `RepositoryBinding.demoOnly`. There is no `reports` microfrontend.                                             |
+| `backend/apps` | Only what waves 4 and 5 build (identity) exists. Nothing of the four services.                                                                                                                                                        |
 
-### 1.2 Alcance por fase
+### 1.2 Scope per phase
 
-| Fase | Entra                                                                                                                                                                                                                                         | Ola                         | Queda fuera (ver sección 14)                                      |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------- |
-| F5   | Servicio `tasks` (CRUD, búsqueda con `@platform/search` en modo texto o híbrido, borrado de datos de usuario) y las capacidades: feature flags (`@platform/flags`, `features` y `flags` en la ruta) y jobs sobre `ScheduledJob` ya existente. | 5, 7                        | Archivos, webhooks salientes                                      |
-| F6   | Servicio `notifications`: bandeja, preferencias, despacho por canal, email (SES o SMTP), push por puertos con fakes, y tiempo real con `@platform/realtime` (SSE, Socket.IO o ambos), dentro del servicio o en `apps/realtime`.               | 5, 7                        | Push real (APNs, FCM, Web Push), eventos de rebote de SES         |
-| F7   | Servicio `reports` (catálogo de reportes, ejecuciones, proyecciones por eventos) y las sagas de ejemplo `TenantOnboarding` y `DeleteAccount`.                                                                                                 | 5, 8                        | PDF y XLSX, reportes de plataforma en backoffice                  |
-| F8   | Servicio `billing`: planes, suscripciones, medición, entitlements, cuotas, facturas, morosidad y puerto `PaymentProvider` con un fake. Medición desde los servicios.                                                                          | 5, 8                        | Cobro real, factura electrónica ante la DIAN                      |
-| F9   | Pantallas de `tasks`, `notifications`, `billing` y un microfrontend `reports` nuevo contra la API real, con el Dart de la ola 5. `backoffice` y `assistant` siguen con datos de demostración.                                                 | 9                           | Pantallas nuevas que hoy no existen                               |
-| F10  | Varias regiones (registro, URL regional, `WRONG_REGION`), `MoveTenant` entre grupos y regiones, y dos shards por servicio en local y en las pruebas.                                                                                          | 9                           | Rebalanceo automático, recuperación ante desastres entre regiones |
-| F11  | Generadores de servicio y de módulo, OpenAPI desde `contract.json`, WP15 de F4 y la documentación de lo construido.                                                                                                                           | 9                           | Portal de documentación                                           |
-| F12  | Pipeline con OIDC hacia AWS, publicación de la web y la app móvil, entrada Lambda y firma SigV4 (ola 5, tropa 3); tfvars, runtime y stack por servicio (ola 6).                                                                               | 5 y la ola de cada servicio | Nada de F12: lo que sigue está en la lista posterior del README   |
+| Phase | In scope                                                                                                                                                                                                                                | Wave                      | Out of scope (see section 14)                                     |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------- |
+| F5    | `tasks` service (CRUD, search with `@platform/search` in text or hybrid mode, user data deletion) and the capabilities: feature flags (`@platform/flags`, `features` and `flags` on the route) and jobs on the existing `ScheduledJob`. | 5, 7                      | Files, outgoing webhooks                                          |
+| F6    | `notifications` service: inbox, preferences, dispatch per channel, email (SES or SMTP), push through ports with fakes, and real time with `@platform/realtime` (SSE, Socket.IO or both), inside the service or in `apps/realtime`.      | 5, 7                      | Real push (APNs, FCM, Web Push), SES bounce events                |
+| F7    | `reports` service (report catalog, runs, event-driven projections) and the example sagas `TenantOnboarding` and `DeleteAccount`.                                                                                                        | 5, 8                      | PDF and XLSX, platform reports in backoffice                      |
+| F8    | `billing` service: plans, subscriptions, metering, entitlements, quotas, invoices, delinquency and a `PaymentProvider` port with a fake. Metering from the services.                                                                    | 5, 8                      | Real charging, electronic invoicing with the DIAN                 |
+| F9    | Screens of `tasks`, `notifications`, `billing` and a new `reports` microfrontend against the real API, with the Dart from wave 5. `backoffice` and `assistant` keep demo data.                                                          | 9                         | New screens that do not exist today                               |
+| F10   | Multiple regions (registration, regional URL, `WRONG_REGION`), `MoveTenant` between groups and regions, and two shards per service locally and in tests.                                                                                | 9                         | Automatic rebalancing, cross-region disaster recovery             |
+| F11   | Service and module generators, OpenAPI from `contract.json`, WP15 of F4 and the documentation of what was built.                                                                                                                        | 9                         | Documentation portal                                              |
+| F12   | Pipeline with OIDC to AWS, publishing of the web and the mobile app, Lambda entry point and SigV4 signing (wave 5, troop 3); tfvars, runtime and stack per service (wave 6).                                                            | 5 and each service's wave | Nothing from F12: what follows is in the later list of the README |
 
-## 2. Decisiones clave
+## 2. Key decisions
 
-0. **La plantilla ofrece las alternativas, no elige por el usuario.** Cada tecnología que un ADR o ARCHITECTURE nombra como opción es un puerto (clase abstracta) con un adaptador por alternativa, y quien usa la plantilla elige por configuración o por tfvars, por servicio. La plantilla trae todos esos adaptadores probados. Solo quedan como puerto con fake los que exigen cuentas externas del usuario (APNs, FCM, Web Push) o un módulo que ninguna fase de este documento construye. La tabla 2.1 lista las alternativas.
+0. **The template offers the alternatives, it does not choose for the user.** Each technology that an ADR or ARCHITECTURE names as an option is a port (abstract class) with one adapter per alternative, and whoever uses the template chooses by configuration or by tfvars, per service. The template ships all those adapters tested. Only those that require the user's external accounts (APNs, FCM, Web Push) or a module that no phase of this document builds remain as a port with a fake. Table 2.1 lists the alternatives.
 
-1. **Todos los contratos en la ola 5, una sola tropa.** Un contrato solo depende del kit. Las rutas, operaciones, eventos, comandos, colas y errores de los cuatro servicios, más lo que identity necesita para las sagas, entran juntos con su Dart y sus textos ARB. Los servicios de la ola 6 no editan contratos (decisión 7 de [F4](f4-identity.md#2-decisiones-clave)).
-2. **Cada servicio es una app con la estructura de F4.** `bootstrapHttp` y `bootstrapWorker` de [`@platform/service`](f4-identity.md#35-platformservice-arranque), módulos con las cuatro capas, fachadas abstractas y fakes en `modules/<m>/__tests__/utils/`. Un módulo importa de otro solo su `index.ts`.
-3. **Datos de tenant en el shard del tenant, datos de usuario en el shard del usuario** ([ADR 0023](../adr/0023-enrutamiento-de-datos-de-identity.md)). `tasks`, `billing` y `reports` usan `ShardKey.Tenant`. La bandeja y las preferencias de `notifications` usan `ShardKey.User` con el `homeTenantId` del usuario, así que todo evento que nombra a un usuario lleva su `UserRef` (`{ userId, homeTenantId }`).
-4. **Los servicios no leen la base de otros.** Se hablan por operaciones internas con compensación declarada, por eventos y por comandos. `reports` arma sus propias proyecciones con eventos y, para completar historia, llama a una operación de lectura paginada del dueño del dato.
-5. **Acceso por la ruta.** Los permisos nuevos, las funcionalidades del plan y los flags se declaran con `Access.authenticated({ permissions, features, flags })` en la ruta del contrato (como el step-up en F4), y `evaluateAccess` los comprueba con el `AccessGrant` que ya trae `features` y `flags`. Sin opciones nuevas en `@Endpoint`.
-6. **Medición como comando.** Los servicios envían `billing.usage.record.v1` a la cola de `billing`. El kit exige que el dueño de un evento sea quien lo publica, así que `BillingEvent.UsageRecorded` de la arquitectura pasa a ser un comando (decisión 12 de la sección 15).
-7. **Runtime elegible por servicio** ([ADR 0020](../adr/0020-terraform-por-stacks-y-runtime-por-servicio.md)). Cada servicio trae `main.ts` (Fargate) y `lambda.ts` (Lambda) sobre `@platform/service`; `api.runtime` en sus tfvars elige. El valor por defecto de la plantilla es `fargate`.
-8. **En casa salvo protocolos ajenos.** Lo propio va sobre la librería estándar. Las dependencias nuevas son el cliente de SES y Socket.IO con su adaptador de streams (sección 13), porque reimplementar el protocolo de Socket.IO es imprudente.
+1. **All contracts in wave 5, a single troop.** A contract depends only on the kit. The routes, operations, events, commands, queues and errors of the four services, plus what identity needs for the sagas, go in together with their Dart and their ARB texts. The services of wave 6 do not edit contracts (decision 7 of [F4](f4-identity.md#2-key-decisions)).
+2. **Each service is an app with the F4 structure.** `bootstrapHttp` and `bootstrapWorker` from [`@platform/service`](f4-identity.md#35-platformservice-bootstrap), modules with the four layers, abstract facades and fakes in `modules/<m>/__tests__/utils/`. A module imports only the `index.ts` of another one.
+3. **Tenant data in the tenant's shard, user data in the user's shard** ([ADR 0023](../adr/0023-enrutamiento-de-datos-de-identity.md)). `tasks`, `billing` and `reports` use `ShardKey.Tenant`. The inbox and preferences of `notifications` use `ShardKey.User` with the user's `homeTenantId`, so every event that names a user carries its `UserRef` (`{ userId, homeTenantId }`).
+4. **Services do not read each other's database.** They talk through internal operations with declared compensation, through events and through commands. `reports` builds its own projections from events and, to fill in history, calls a paginated read operation of the data owner.
+5. **Access by route.** New permissions, plan features and flags are declared with `Access.authenticated({ permissions, features, flags })` on the contract route (like step-up in F4), and `evaluateAccess` checks them with the `AccessGrant` that already carries `features` and `flags`. No new options in `@Endpoint`.
+6. **Metering as a command.** Services send `billing.usage.record.v1` to the `billing` queue. The kit requires the owner of an event to be the one who publishes it, so the architecture's `BillingEvent.UsageRecorded` becomes a command (decision 12 of section 15).
+7. **Runtime selectable per service** ([ADR 0020](../adr/0020-terraform-por-stacks-y-runtime-por-servicio.md)). Each service ships `main.ts` (Fargate) and `lambda.ts` (Lambda) on `@platform/service`; `api.runtime` in its tfvars chooses. The template's default value is `fargate`.
+8. **In-house except for third-party protocols.** Our own code goes on the standard library. The new dependencies are the SES client and Socket.IO with its streams adapter (section 13), because reimplementing the Socket.IO protocol is unwise.
 
-### 2.1 Alternativas que la plantilla trae
+### 2.1 Alternatives the template ships
 
-| Pieza                                    | Puerto                                   | Adaptadores                                                                                                            | Cómo se elige                         | Origen                                                       |
-| ---------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------ |
-| Tiempo real                              | `RealtimeTransport`                      | `SseTransport`, `SocketIoTransport` (streams de Valkey para escalar y recuperar)                                       | `REALTIME_TRANSPORTS` (uno o ambos)   | [ADR 0011](../adr/0011-tiempo-real-socketio-sse.md)          |
-| Credencial del canal en tiempo real      | `StreamAuthenticator`                    | `BearerStreamAuthenticator` (access token), `CookieStreamAuthenticator` (cookie de sesión, verificada contra identity) | `REALTIME_AUTH`                       | ADR 0011                                                     |
-| Lugar del tiempo real                    | `RealtimeModule` de `@platform/realtime` | montado dentro de un servicio o en `apps/realtime`                                                                     | `app.module.ts` del servicio o la app | ADR 0011                                                     |
-| Runtime                                  | `bootstrapHttp`, `bootstrapLambda`       | Fargate, Lambda                                                                                                        | `api.runtime` en tfvars               | ADR 0020                                                     |
-| Firma de llamadas internas               | `InternalRequestSigner`                  | `HmacSigner`, `SigV4Signer`                                                                                            | `INTERNAL_API_SIGNER`                 | ARCHITECTURE                                                 |
-| Búsqueda                                 | `SearchIndex`                            | `PostgresTextSearch` (`tsvector`), `PostgresHybridSearch` (pgvector y `EmbeddingProvider`)                             | `SEARCH_MODE`                         | ARCHITECTURE                                                 |
-| Correo                                   | `EmailSender`                            | `SesEmailSender`, `SmtpEmailSender`                                                                                    | `EMAIL_TRANSPORT`                     | ARCHITECTURE                                                 |
-| Plantillas de correo                     | `TemplateRenderer`                       | `TypeScriptTemplateRenderer`                                                                                           | solo uno; el puerto admite otros      | este diseño                                                  |
-| Push                                     | `PushSender`                             | `InMemoryPushSender` (APNs, FCM y Web Push piden cuentas del usuario)                                                  | `PUSH_TRANSPORT`                      | ARCHITECTURE                                                 |
-| Flags                                    | `FlagStore`                              | `ConfigFlagStore`, `InMemoryFlagStore`                                                                                 | `FLAGS_STORE`                         | este diseño                                                  |
-| Resultado de reportes                    | `ReportResultStore`                      | `RowReportResultStore`; S3 llega con `files`                                                                           | `REPORTS_RESULT_STORE`                | este diseño                                                  |
-| Traslado de tenant                       | `TenantDataTransfer`                     | `BatchCopyTransfer` (lotes y rondas delta), `LogicalReplicationTransfer` (replicación lógica de PostgreSQL)            | `TENANT_MOVE_STRATEGY`                | [ADR 0010](../adr/0010-sharding-logico-residencia-region.md) |
-| Bloqueo de escritura durante el traslado | `TenantWriteGate`                        | `DirectoryWriteGate` (directorio de shards), `ValkeyWriteGate` (candado en Valkey)                                     | `TENANT_WRITE_GATE`                   | ADR 0010                                                     |
-| Cobro                                    | `PaymentProvider`                        | `FakePaymentProvider`                                                                                                  | el real llega después de F12          | ARCHITECTURE                                                 |
+| Piece                        | Port                                       | Adapters                                                                                                            | How it is chosen                      | Source                                                       |
+| ---------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------ |
+| Real time                    | `RealtimeTransport`                        | `SseTransport`, `SocketIoTransport` (Valkey streams to scale and recover)                                           | `REALTIME_TRANSPORTS` (one or both)   | [ADR 0011](../adr/0011-tiempo-real-socketio-sse.md)          |
+| Real-time channel credential | `StreamAuthenticator`                      | `BearerStreamAuthenticator` (access token), `CookieStreamAuthenticator` (session cookie, verified against identity) | `REALTIME_AUTH`                       | ADR 0011                                                     |
+| Location of real time        | `RealtimeModule` from `@platform/realtime` | mounted inside a service or in `apps/realtime`                                                                      | `app.module.ts` of the service or app | ADR 0011                                                     |
+| Runtime                      | `bootstrapHttp`, `bootstrapLambda`         | Fargate, Lambda                                                                                                     | `api.runtime` in tfvars               | ADR 0020                                                     |
+| Internal call signing        | `InternalRequestSigner`                    | `HmacSigner`, `SigV4Signer`                                                                                         | `INTERNAL_API_SIGNER`                 | ARCHITECTURE                                                 |
+| Search                       | `SearchIndex`                              | `PostgresTextSearch` (`tsvector`), `PostgresHybridSearch` (pgvector and `EmbeddingProvider`)                        | `SEARCH_MODE`                         | ARCHITECTURE                                                 |
+| Email                        | `EmailSender`                              | `SesEmailSender`, `SmtpEmailSender`                                                                                 | `EMAIL_TRANSPORT`                     | ARCHITECTURE                                                 |
+| Email templates              | `TemplateRenderer`                         | `TypeScriptTemplateRenderer`                                                                                        | only one; the port allows others      | this design                                                  |
+| Push                         | `PushSender`                               | `InMemoryPushSender` (APNs, FCM and Web Push require the user's accounts)                                           | `PUSH_TRANSPORT`                      | ARCHITECTURE                                                 |
+| Flags                        | `FlagStore`                                | `ConfigFlagStore`, `InMemoryFlagStore`                                                                              | `FLAGS_STORE`                         | this design                                                  |
+| Report results               | `ReportResultStore`                        | `RowReportResultStore`; S3 arrives with `files`                                                                     | `REPORTS_RESULT_STORE`                | this design                                                  |
+| Tenant move                  | `TenantDataTransfer`                       | `BatchCopyTransfer` (batches and delta rounds), `LogicalReplicationTransfer` (PostgreSQL logical replication)       | `TENANT_MOVE_STRATEGY`                | [ADR 0010](../adr/0010-sharding-logico-residencia-region.md) |
+| Write lock during the move   | `TenantWriteGate`                          | `DirectoryWriteGate` (shard directory), `ValkeyWriteGate` (lock in Valkey)                                          | `TENANT_WRITE_GATE`                   | ADR 0010                                                     |
+| Charging                     | `PaymentProvider`                          | `FakePaymentProvider`                                                                                               | the real one arrives after F12        | ARCHITECTURE                                                 |
 
-El `EmbeddingProvider` de la búsqueda híbrida trae un fake determinista; el adaptador real llega con el módulo de IA ([ADR 0013](../adr/0013-modulo-ia-puertos-claude.md)).
+The `EmbeddingProvider` of hybrid search ships a deterministic fake; the real adapter arrives with the AI module ([ADR 0013](../adr/0013-modulo-ia-puertos-claude.md)).
 
-## 3. Lo común a los cuatro servicios
+## 3. What the four services have in common
 
-### 3.1 Anatomía
+### 3.1 Anatomy
 
-Cada servicio sigue la [sección 4 de F4](f4-identity.md#4-estructura-de-backendappsidentity): `backend/apps/<servicio>/`, `src/{instrumentation,main,worker,migrate,<servicio>.service,app.module}.ts`, `config/`, `database/`, `messaging/`, `shared/{enums,constants,types,utils}` y `modules/<módulo>/{index.ts,domain,application,infrastructure,presentation,__tests__/utils}`. Reglas de lint, tags (`type:app`, `scope:<servicio>`) y pruebas idénticas. `main.ts` sirve la API; `worker.ts` corre el relay del outbox, los consumidores y los jobs.
+Each service follows [section 4 of F4](f4-identity.md#4-structure-of-backendappsidentity): `backend/apps/<service>/`, `src/{instrumentation,main,worker,migrate,<service>.service,app.module}.ts`, `config/`, `database/`, `messaging/`, `shared/{enums,constants,types,utils}` and `modules/<module>/{index.ts,domain,application,infrastructure,presentation,__tests__/utils}`. Identical lint rules, tags (`type:app`, `scope:<service>`) and tests. `main.ts` serves the API; `worker.ts` runs the outbox relay, the consumers and the jobs.
 
-Enums por servicio (todos en el contrato salvo los de la app):
+Enums per service (all in the contract except the app ones):
 
-| Enum                                                                                         | Dónde          | Valores de ejemplo                                        |
+| Enum                                                                                         | Where          | Example values                                            |
 | -------------------------------------------------------------------------------------------- | -------------- | --------------------------------------------------------- |
-| `<S>ErrorCode`, `<S>Route`, `<S>Operation`, `<S>Event`, `<S>Command`, `<S>Topic`, `<S>Queue` | contrato       | `TASKS.TASK.NOT_FOUND`, `tasks.task.list`, `tasks-events` |
+| `<S>ErrorCode`, `<S>Route`, `<S>Operation`, `<S>Event`, `<S>Command`, `<S>Topic`, `<S>Queue` | contract       | `TASKS.TASK.NOT_FOUND`, `tasks.task.list`, `tasks-events` |
 | `<S>Resource`, `<S>Job`, `<S>CacheKey`                                                       | `shared/enums` | `TasksResource.Tasks`, `BillingJob.CloseInvoicePeriods`   |
 
-Los ids de ruta son `servicio.recurso.acción`; los de operación, comando y evento llevan `.vN` ([kit de contratos](../../backend/libs/contracts/platform/src/kit/define-operation.ts)). Los errores son `SERVICIO.SUBMÓDULO.ERROR` con su entrada en el catálogo del servicio y textos es y en.
+Route ids are `service.resource.action`; operation, command and event ids carry `.vN` ([contract kit](../../backend/libs/contracts/platform/src/kit/define-operation.ts)). Errors are `SERVICE.SUBMODULE.ERROR` with their entry in the service's catalog and es and en texts.
 
-### 3.2 Shards locales y bases
+### 3.2 Local shards and databases
 
-`backend/infra/local/postgres/init.sql` (lo edita el general) crea `<servicio>_shard_0` y `<servicio>_shard_1` para `tasks`, `notifications`, `reports` y `billing`, con `vector`, como ya hace con identity: el enrutamiento se ejercita desde el primer día. Las tablas de referencia van en `catalog` con el prefijo del servicio.
+`backend/infra/local/postgres/init.sql` (edited by the general) creates `<service>_shard_0` and `<service>_shard_1` for `tasks`, `notifications`, `reports` and `billing`, with `vector`, as it already does for identity: routing is exercised from day one. Reference tables go in `catalog` with the service prefix.
 
-| Servicio        | Tablas por shard de tenant                                                                                             | Tablas por shard de usuario                                            | Catálogo                               |
+| Service         | Tables per tenant shard                                                                                                | Tables per user shard                                                  | Catalog                                |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------- |
-| `tasks`         | `tasks`                                                                                                                | ninguna                                                                | ninguna                                |
+| `tasks`         | `tasks`                                                                                                                | none                                                                   | none                                   |
 | `notifications` | `email_messages`                                                                                                       | `notifications`, `notification_preferences`, `notification_deliveries` | `email_suppressions`                   |
-| `reports`       | `report_runs`, `proj_tasks`, `proj_invoices`, `proj_deliveries`                                                        | ninguna                                                                | ninguna                                |
-| `billing`       | `subscriptions`, `usage_records`, `usage_totals`, `invoices`, `invoice_lines`, `invoice_sequences`, `payment_attempts` | ninguna                                                                | `billing_plans`, `billing_plan_quotas` |
+| `reports`       | `report_runs`, `proj_tasks`, `proj_invoices`, `proj_deliveries`                                                        | none                                                                   | none                                   |
+| `billing`       | `subscriptions`, `usage_records`, `usage_totals`, `invoices`, `invoice_lines`, `invoice_sequences`, `payment_attempts` | none                                                                   | `billing_plans`, `billing_plan_quotas` |
 
-Todas las tablas de shard llevan `created_at`, `updated_at`, `created_by`, `updated_by` y `version`; las de tenant declaran `tenant_id` y tienen RLS; las marcadas "auditada" llevan el trigger de `audit_log` ([F4, sección 5](f4-identity.md#5-módulos)). Cada módulo usa su bloque de timestamps de migración, declarado en `shared/constants/migration-ranges.constants.ts` del servicio. Las entidades y migraciones salen del CLI de TypeORM (`migration-generate`), nunca a mano.
+All shard tables carry `created_at`, `updated_at`, `created_by`, `updated_by` and `version`; tenant tables declare `tenant_id` and have RLS; those marked "audited" carry the `audit_log` trigger ([F4, section 5](f4-identity.md#5-modules)). Each module uses its own block of migration timestamps, declared in the service's `shared/constants/migration-ranges.constants.ts`. Entities and migrations come from the TypeORM CLI (`migration-generate`), never by hand.
 
-### 3.3 Permisos y roles de sistema
+### 3.3 Permissions and system roles
 
-El catálogo `Permission` vive en `@contracts/identity`. Hoy trae `tasks:read`, `tasks:write`, `billing:read`, `billing:write` y `backoffice:access`; sirven a `tasks` y `billing` sin cambios. Se agregan dos:
+The `Permission` catalog lives in `@contracts/identity`. Today it carries `tasks:read`, `tasks:write`, `billing:read`, `billing:write` and `backoffice:access`; they serve `tasks` and `billing` unchanged. Two are added:
 
-| Permiso        | Valor           | Rutas que lo exigen                                |
-| -------------- | --------------- | -------------------------------------------------- |
-| `ReportsRead`  | `reports:read`  | Catálogo, lista y detalle de ejecuciones, descarga |
-| `ReportsWrite` | `reports:write` | Crear una ejecución                                |
+| Permission     | Value           | Routes that require it                     |
+| -------------- | --------------- | ------------------------------------------ |
+| `ReportsRead`  | `reports:read`  | Catalog, list and detail of runs, download |
+| `ReportsWrite` | `reports:write` | Create a run                               |
 
-`notifications` no tiene permisos de tenant: sus rutas son `Access.authenticated()` y cada usuario solo toca lo suyo. Reparto en los roles de sistema (`shared/constants/system-roles.constants.ts` de identity; el general agrega las filas de `reports:*` al integrar la ola 5):
+`notifications` has no tenant permissions: its routes are `Access.authenticated()` and each user only touches their own data. Distribution across the system roles (identity's `shared/constants/system-roles.constants.ts`; the general adds the `reports:*` rows when integrating wave 5):
 
-| Permiso                     | Owner | Admin | Member | Billing |
+| Permission                  | Owner | Admin | Member | Billing |
 | --------------------------- | ----- | ----- | ------ | ------- |
-| `tasks:read`, `tasks:write` | sí    | sí    | sí     | no      |
-| `reports:read`              | sí    | sí    | sí     | sí      |
-| `reports:write`             | sí    | sí    | no     | no      |
-| `billing:read`              | sí    | sí    | no     | sí      |
-| `billing:write`             | sí    | no    | no     | sí      |
+| `tasks:read`, `tasks:write` | yes   | yes   | yes    | no      |
+| `reports:read`              | yes   | yes   | yes    | yes     |
+| `reports:write`             | yes   | yes   | no     | no      |
+| `billing:read`              | yes   | yes   | no     | yes     |
+| `billing:write`             | yes   | no    | no     | yes     |
 
-`PlanFeature` suma `AdvancedReports = 'advanced_reports'` (decisión 8). `FeatureFlag.NewReports` ya existe y gobierna el acceso a `reports`.
+`PlanFeature` adds `AdvancedReports = 'advanced_reports'` (decision 8). `FeatureFlag.NewReports` already exists and governs access to `reports`.
 
-### 3.4 Cambios de contrato en `@contracts/platform` y `@contracts/identity` (tropa 2, ola 5)
+### 3.4 Contract changes in `@contracts/platform` and `@contracts/identity` (troop 2, wave 5)
 
-| Contrato | Cambio                                                                                                                                                                                                                                                                                                    |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| platform | `Access.authenticated` y `AccessRequirement` suman `features` y `flags` (texto, como `permissions`). Códigos `PLATFORM.ACCESS.FEATURE_NOT_INCLUDED` (403) y `PLATFORM.ACCESS.FLAG_DISABLED` (404, el flag apagado se comporta como ruta inexistente).                                                     |
-| platform | Esquemas `UserRefSchema` (`{ userId, homeTenantId }`) y `CalendarDateSchema` (`AAAA-MM-DD`). Fábrica `defineTenantMoveOperations(servicio)` con las cuatro operaciones de traslado (sección 8.4) y sus esquemas.                                                                                          |
-| identity | Enums: `Permission.ReportsRead` y `ReportsWrite`, `PlanFeature.AdvancedReports`, `IdentitySaga` (`identity.tenant-onboarding`, `identity.delete-account`, `identity.move-tenant`).                                                                                                                        |
-| identity | Rutas: `POST /v1/me/deletion` (step-up, inicia `DeleteAccount`) y `GET /v1/sagas/{sagaId}` (estado de una saga del propio usuario o tenant). `POST /v1/tenants` pasa a responder 202 con `{ tenantId, sagaId }` (decisión 14). La respuesta de `sign-in` suma `region` y `apiBaseUrl`.                    |
-| identity | Operaciones: `identity.tenants.activate.v1` (sin compensación, va después del pivote), `identity.users.erase.v1` (sin compensación), `identity.devices.list-push-targets.v1` y `identity.members.list-by-permission.v1` (lecturas), y las cuatro de traslado de `defineTenantMoveOperations('identity')`. |
-| identity | Evento `identity.user.erased.v1`. Cola `identity-billing`, suscrita a `billing-events` (`subscription.suspended`, `subscription.reactivated`, `entitlements.changed`). `sends` de `billing.usage.record.v1`.                                                                                              |
+| Contract | Change                                                                                                                                                                                                                                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| platform | `Access.authenticated` and `AccessRequirement` add `features` and `flags` (text, like `permissions`). Codes `PLATFORM.ACCESS.FEATURE_NOT_INCLUDED` (403) and `PLATFORM.ACCESS.FLAG_DISABLED` (404, a disabled flag behaves like a nonexistent route).                                                       |
+| platform | Schemas `UserRefSchema` (`{ userId, homeTenantId }`) and `CalendarDateSchema` (`YYYY-MM-DD`). Factory `defineTenantMoveOperations(servicio)` with the four move operations (section 8.4) and their schemas.                                                                                                 |
+| identity | Enums: `Permission.ReportsRead` and `ReportsWrite`, `PlanFeature.AdvancedReports`, `IdentitySaga` (`identity.tenant-onboarding`, `identity.delete-account`, `identity.move-tenant`).                                                                                                                        |
+| identity | Routes: `POST /v1/me/deletion` (step-up, starts `DeleteAccount`) and `GET /v1/sagas/{sagaId}` (status of a saga of the user's own or tenant's). `POST /v1/tenants` now responds 202 with `{ tenantId, sagaId }` (decision 14). The `sign-in` response adds `region` and `apiBaseUrl`.                       |
+| identity | Operations: `identity.tenants.activate.v1` (no compensation, it goes after the pivot), `identity.users.erase.v1` (no compensation), `identity.devices.list-push-targets.v1` and `identity.members.list-by-permission.v1` (reads), and the four move operations of `defineTenantMoveOperations('identity')`. |
+| identity | Event `identity.user.erased.v1`. Queue `identity-billing`, subscribed to `billing-events` (`subscription.suspended`, `subscription.reactivated`, `entitlements.changed`). `sends` of `billing.usage.record.v1`.                                                                                             |
 
-Las operaciones nuevas de identity quedan registradas como stub (`PLATFORM.INTERNAL.UNEXPECTED`) por el general al integrar la ola 5, porque el esqueleto de identity (WP6) se escribe a la vez; sus handlers reales los escribe la tropa 1 de la ola 7.
+The new identity operations are registered as stubs (`PLATFORM.INTERNAL.UNEXPECTED`) by the general when integrating wave 5, because the identity skeleton (WP6) is written at the same time; their real handlers are written by troop 1 of wave 7.
 
-### 3.5 Piezas de plataforma nuevas
+### 3.5 New platform pieces
 
-| Librería                   | Carpeta                                                             | Ola, tropa | Contenido                                                                                                                                                                                                                       |
-| -------------------------- | ------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@platform/flags`          | `backend/libs/platform/flags`                                       | 7          | `FlagEvaluator`, `FlagStore`, `ConfigFlagStore`, `InMemoryFlagStore`, `FlagContext` (tenant, usuario, plan, grupos). Rollout por porcentaje con hash estable de `flag:usuario`. Identity la usa para llenar `UserAccess.flags`. |
-| cambio en `@platform/auth` | `libs/platform/auth/src/access`                                     | 7          | `evaluateAccess` y `AccessRequirement` comprueban `features` y `flags` contra el `AccessGrant`.                                                                                                                                 |
-| cambio en `@platform/http` | `libs/platform/http`                                                | 7          | `EndpointGuard` traduce las dos decisiones nuevas a los códigos de la sección 3.4. Sin opciones nuevas de `@Endpoint`.                                                                                                          |
-| `@platform/quotas`         | `backend/libs/platform/quotas`                                      | 8          | `QuotaChecker` (abstracta), `BillingQuotaChecker` (operación `billing.quotas.check.v1`, caché local de 10 s), `QuotaGuard` y decorador `@Quota(UsageMetric.X)`. Responde `BILLING.QUOTA.EXCEEDED`.                              |
-| `@platform/metering`       | `backend/libs/platform/metering`                                    | 8          | `UsageRecorder`, `BufferedUsageRecorder` (contadores en Valkey, volcado por job), `ApiCallMeteringInterceptor` y `UsageFlushJob` (sección 8.3).                                                                                 |
-| `@platform/tenant-move`    | `backend/libs/platform/tenant-move`                                 | 9          | `TenantMoveManifest`, `TenantDataTransfer`, `TenantMoveModule` (sección 8.4).                                                                                                                                                   |
-| `@platform/realtime`       | `backend/libs/platform/realtime`                                    | 7          | `RealtimeTransport`, `SseTransport`, `SocketIoTransport`, `StreamAuthenticator` con sus dos adaptadores, `RealtimeModule` y recuperación con `Last-Event-ID` y connection state recovery sobre un Valkey Stream.                |
-| `apps/realtime`            | `backend/apps/realtime`                                             | 7          | App mínima que monta `RealtimeModule` para quien prefiera el tiempo real aparte; consume la cola de entregas de `notifications`.                                                                                                |
-| `@platform/search`         | `backend/libs/platform/search`                                      | 7          | `SearchIndex`, `PostgresTextSearch`, `PostgresHybridSearch`, `EmbeddingProvider` y su fake.                                                                                                                                     |
-| `bootstrapLambda`          | `libs/platform/service/src/lambda`                                  | 5, tropa 3 | Entrada Lambda con el mismo `ServiceDefinition` que `bootstrapHttp`.                                                                                                                                                            |
-| `SigV4Signer`              | `libs/platform/internal-api/src/signing` y `adapters/aws/src/sigv4` | 5, tropa 3 | `InternalRequestSigner` con `HmacSigner` (actual) y `SigV4Signer`.                                                                                                                                                              |
-| SES                        | `libs/platform/adapters/aws/src/ses`                                | 7          | `SesEmailSender` sobre `@aws-sdk/client-sesv2`. Es el único lugar con `@aws-sdk/*` para correo.                                                                                                                                 |
+| Library                    | Folder                                                                | Wave, troop | Content                                                                                                                                                                                                              |
+| -------------------------- | --------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@platform/flags`          | `backend/libs/platform/flags`                                         | 7           | `FlagEvaluator`, `FlagStore`, `ConfigFlagStore`, `InMemoryFlagStore`, `FlagContext` (tenant, user, plan, groups). Percentage rollout with a stable hash of `flag:user`. Identity uses it to fill `UserAccess.flags`. |
+| change in `@platform/auth` | `libs/platform/auth/src/access`                                       | 7           | `evaluateAccess` and `AccessRequirement` check `features` and `flags` against the `AccessGrant`.                                                                                                                     |
+| change in `@platform/http` | `libs/platform/http`                                                  | 7           | `EndpointGuard` translates the two new decisions into the codes of section 3.4. No new `@Endpoint` options.                                                                                                          |
+| `@platform/quotas`         | `backend/libs/platform/quotas`                                        | 8           | `QuotaChecker` (abstract), `BillingQuotaChecker` (operation `billing.quotas.check.v1`, local cache of 10 s), `QuotaGuard` and the `@Quota(UsageMetric.X)` decorator. Responds `BILLING.QUOTA.EXCEEDED`.              |
+| `@platform/metering`       | `backend/libs/platform/metering`                                      | 8           | `UsageRecorder`, `BufferedUsageRecorder` (counters in Valkey, flushed by a job), `ApiCallMeteringInterceptor` and `UsageFlushJob` (section 8.3).                                                                     |
+| `@platform/tenant-move`    | `backend/libs/platform/tenant-move`                                   | 9           | `TenantMoveManifest`, `TenantDataTransfer`, `TenantMoveModule` (section 8.4).                                                                                                                                        |
+| `@platform/realtime`       | `backend/libs/platform/realtime`                                      | 7           | `RealtimeTransport`, `SseTransport`, `SocketIoTransport`, `StreamAuthenticator` with its two adapters, `RealtimeModule` and recovery with `Last-Event-ID` and connection state recovery over a Valkey Stream.        |
+| `apps/realtime`            | `backend/apps/realtime`                                               | 7           | Minimal app that mounts `RealtimeModule` for those who prefer real time separately; consumes the `notifications` deliveries queue.                                                                                   |
+| `@platform/search`         | `backend/libs/platform/search`                                        | 7           | `SearchIndex`, `PostgresTextSearch`, `PostgresHybridSearch`, `EmbeddingProvider` and its fake.                                                                                                                       |
+| `bootstrapLambda`          | `libs/platform/service/src/lambda`                                    | 5, troop 3  | Lambda entry point with the same `ServiceDefinition` as `bootstrapHttp`.                                                                                                                                             |
+| `SigV4Signer`              | `libs/platform/internal-api/src/signing` and `adapters/aws/src/sigv4` | 5, troop 3  | `InternalRequestSigner` with `HmacSigner` (current) and `SigV4Signer`.                                                                                                                                               |
+| SES                        | `libs/platform/adapters/aws/src/ses`                                  | 7           | `SesEmailSender` on `@aws-sdk/client-sesv2`. It is the only place with `@aws-sdk/*` for email.                                                                                                                       |
 
 ## 4. `tasks` (F5)
 
-Una tarea de la organización: título, descripción y estado. La dueña es la organización, no quien la crea.
+A task of the organization: title, description and status. The owner is the organization, not whoever creates it.
 
-### 4.1 Contrato `@contracts/tasks`
+### 4.1 Contract `@contracts/tasks`
 
 ```ts
 export enum TaskStatus {
@@ -161,7 +161,7 @@ export enum TaskStatus {
   Done = 'done',
 }
 // TaskSchema: id, title, description, status, version, createdAt, updatedAt, createdBy (UserRef)
-// TasksLimits: titleMax 200, descriptionMax 5000 (valores iniciales, en constants/)
+// TasksLimits: titleMax 200, descriptionMax 5000 (initial values, in constants/)
 export const CreateTaskRoute = defineRoute({
   id: TasksRoute.CreateTask,
   method: HttpMethod.Post,
@@ -170,33 +170,33 @@ export const CreateTaskRoute = defineRoute({
   response: TaskSchema,
   errors: [...SessionGuardErrors, PlatformErrorCode.ValidationInvalidInput],
   access: Access.authenticated({ permissions: [Permission.TasksWrite] }),
-  description: 'Crea una tarea en el tenant activo.',
+  description: 'Creates a task in the active tenant.',
 });
 ```
 
-| Ruta (`TasksRoute`) | Método y path               | Acceso        | Pantalla que la usa                                                           |
-| ------------------- | --------------------------- | ------------- | ----------------------------------------------------------------------------- |
-| `tasks.task.list`   | `GET /v1/tasks`             | `tasks:read`  | `TasksListController`: `list` y `search` (`status`, `q`, `limit`, `after`)    |
-| `tasks.task.get`    | `GET /v1/tasks/{taskId}`    | `tasks:read`  | `TaskDetailController`                                                        |
-| `tasks.task.create` | `POST /v1/tasks`            | `tasks:write` | `TaskFormController` (alta)                                                   |
-| `tasks.task.update` | `PATCH /v1/tasks/{taskId}`  | `tasks:write` | `TaskFormController` (edición) y cambio de estado; `expectedVersion` opcional |
-| `tasks.task.delete` | `DELETE /v1/tasks/{taskId}` | `tasks:write` | Detalle y lista (borrado lógico)                                              |
+| Route (`TasksRoute`) | Method and path             | Access        | Screen that uses it                                                          |
+| -------------------- | --------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `tasks.task.list`    | `GET /v1/tasks`             | `tasks:read`  | `TasksListController`: `list` and `search` (`status`, `q`, `limit`, `after`) |
+| `tasks.task.get`     | `GET /v1/tasks/{taskId}`    | `tasks:read`  | `TaskDetailController`                                                       |
+| `tasks.task.create`  | `POST /v1/tasks`            | `tasks:write` | `TaskFormController` (create)                                                |
+| `tasks.task.update`  | `PATCH /v1/tasks/{taskId}`  | `tasks:write` | `TaskFormController` (edit) and status change; optional `expectedVersion`    |
+| `tasks.task.delete`  | `DELETE /v1/tasks/{taskId}` | `tasks:write` | Detail and list (soft delete)                                                |
 
-| Elemento    | Detalle                                                                                                                                                                                                                                                                           |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Errores     | `TASKS.TASK.NOT_FOUND` (404), `TASKS.TASK.VERSION_CONFLICT` (409, de `expectedVersion`), `TASKS.SEARCH.QUERY_TOO_SHORT` (400).                                                                                                                                                    |
-| Eventos     | Tópico `tasks-events`: `tasks.task.created.v1`, `tasks.task.updated.v1` (campos cambiados, `statusBefore`, `statusAfter`, `actor`, `createdBy` como `UserRef`) y `tasks.task.deleted.v1`.                                                                                         |
-| Operaciones | `tasks.tasks.list-changes.v1` (lectura paginada por `updatedAt`, para el relleno de `reports`); `tasks.user-data.erase.v1` (sin compensación: es posterior al pivote de `DeleteAccount`; anonimiza `created_by` y `updated_by`, las tareas se conservan); las cuatro de traslado. |
-| Colas       | Ninguna. `tasks` solo publica.                                                                                                                                                                                                                                                    |
+| Element    | Detail                                                                                                                                                                                                                                                                     |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Errors     | `TASKS.TASK.NOT_FOUND` (404), `TASKS.TASK.VERSION_CONFLICT` (409, from `expectedVersion`), `TASKS.SEARCH.QUERY_TOO_SHORT` (400).                                                                                                                                           |
+| Events     | Topic `tasks-events`: `tasks.task.created.v1`, `tasks.task.updated.v1` (changed fields, `statusBefore`, `statusAfter`, `actor`, `createdBy` as `UserRef`) and `tasks.task.deleted.v1`.                                                                                     |
+| Operations | `tasks.tasks.list-changes.v1` (paginated read by `updatedAt`, for the `reports` backfill); `tasks.user-data.erase.v1` (no compensation: it comes after the `DeleteAccount` pivot; anonymizes `created_by` and `updated_by`, the tasks are kept); the four move operations. |
+| Queues     | None. `tasks` only publishes.                                                                                                                                                                                                                                              |
 
-### 4.2 Módulos
+### 4.2 Modules
 
-| Módulo    | Responsabilidad                                                                    | Tablas (shard de tenant)                                                                                                    |
-| --------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `tasks`   | Agregado `Task`, casos de uso de las cinco rutas, búsqueda de texto (`TaskSearch`) | `tasks` (auditada): título, descripción, `status`, `created_by`, `created_by_home_tenant_id`, `deleted_at`, `search_vector` |
-| `privacy` | Operaciones `erase` y `list-changes`; el manifiesto de traslado                    | Ninguna propia                                                                                                              |
+| Module    | Responsibility                                                              | Tables (tenant shard)                                                                                                     |
+| --------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `tasks`   | `Task` aggregate, use cases for the five routes, text search (`TaskSearch`) | `tasks` (audited): title, description, `status`, `created_by`, `created_by_home_tenant_id`, `deleted_at`, `search_vector` |
+| `privacy` | `erase` and `list-changes` operations; the move manifest                    | None of its own                                                                                                           |
 
-`search_vector` es una columna `tsvector` generada con la configuración `spanish` y un índice GIN; `PostgresTaskSearch` la consulta con `websearch_to_tsquery`. El índice por defecto es `(tenant_id, status, id)`, así la lista pagina por cursor UUIDv7.
+`search_vector` is a generated `tsvector` column with the `spanish` configuration and a GIN index; `PostgresTaskSearch` queries it with `websearch_to_tsquery`. The default index is `(tenant_id, status, id)`, so the list paginates by UUIDv7 cursor.
 
 ```ts
 export abstract class TasksFacade {
@@ -209,21 +209,21 @@ export abstract class TaskSearch {
 }
 ```
 
-`FakeTasksFacade` y `InMemoryTaskSearch` viven en `modules/tasks/__tests__/utils/`.
+`FakeTasksFacade` and `InMemoryTaskSearch` live in `modules/tasks/__tests__/utils/`.
 
-### 4.3 Jobs, configuración y capacidades
+### 4.3 Jobs, configuration and capabilities
 
-| Elemento                | Detalle                                                                                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TasksJob.PurgeDeleted` | `ScheduledJob` diario, exclusivo: borra tareas con `deleted_at` anterior a `TASKS_DELETED_RETENTION_DAYS`.                                     |
-| Flags                   | `tasks` no usa flags; ejercita las capacidades con `GET /v1/tasks` y la búsqueda. Los flags los ejercitan `reports` (`NewReports`) y identity. |
-| Configuración           | `baseConfigSchema`, `databaseConfigSchema`, `valkeyConfigSchema` y `TASKS_DELETED_RETENTION_DAYS`.                                             |
+| Element                 | Detail                                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TasksJob.PurgeDeleted` | Daily, exclusive `ScheduledJob`: deletes tasks with `deleted_at` older than `TASKS_DELETED_RETENTION_DAYS`.                                         |
+| Flags                   | `tasks` uses no flags; it exercises the capabilities with `GET /v1/tasks` and search. Flags are exercised by `reports` (`NewReports`) and identity. |
+| Configuration           | `baseConfigSchema`, `databaseConfigSchema`, `valkeyConfigSchema` and `TASKS_DELETED_RETENTION_DAYS`.                                                |
 
 ## 5. `notifications` (F6)
 
-Una sola entrada, `notify(userRef, type, data)`: el tipo fija la criticidad y las preferencias del usuario fijan los canales. Las alertas de seguridad salen siempre por todos los canales. El gateway de tiempo real es un módulo de este servicio ([ADR 0011](../adr/0011-tiempo-real-socketio-sse.md), con los ajustes de la decisión 4).
+A single entry point, `notify(userRef, type, data)`: the type sets the criticality and the user's preferences set the channels. Security alerts always go out through every channel. The real-time gateway is a module of this service ([ADR 0011](../adr/0011-tiempo-real-socketio-sse.md), with the adjustments of decision 4).
 
-### 5.1 Contrato `@contracts/notifications`
+### 5.1 Contract `@contracts/notifications`
 
 ```ts
 export enum NotificationType {
@@ -237,47 +237,47 @@ export enum NotificationChannel {
   Push = 'push',
   Email = 'email',
 }
-// MandatoryNotificationTypes (constants/): [SecurityAlert], ignora preferencias y horario de silencio
+// MandatoryNotificationTypes (constants/): [SecurityAlert], ignores preferences and quiet hours
 ```
 
-| Ruta (`NotificationsRoute`)         | Método y path                                  | Acceso      | Pantalla que la usa                                        |
-| ----------------------------------- | ---------------------------------------------- | ----------- | ---------------------------------------------------------- |
-| `notifications.inbox.list`          | `GET /v1/notifications`                        | autenticado | `InboxController.fetchInbox` (páginas, más nuevas primero) |
-| `notifications.inbox.unread-count`  | `GET /v1/notifications/unread-count`           | autenticado | `watchUnreadCount` y la insignia del menú                  |
-| `notifications.inbox.mark-read`     | `POST /v1/notifications/{notificationId}/read` | autenticado | `markAsRead` (idempotente)                                 |
-| `notifications.inbox.mark-all-read` | `POST /v1/notifications/read-all`              | autenticado | `markAllAsRead`                                            |
-| `notifications.preferences.get`     | `GET /v1/notification-preferences`             | autenticado | `PreferencesController.fetchPreferences`                   |
-| `notifications.preferences.save`    | `PUT /v1/notification-preferences`             | autenticado | `savePreferences`                                          |
+| Route (`NotificationsRoute`)        | Method and path                                | Access        | Screen that uses it                                |
+| ----------------------------------- | ---------------------------------------------- | ------------- | -------------------------------------------------- |
+| `notifications.inbox.list`          | `GET /v1/notifications`                        | authenticated | `InboxController.fetchInbox` (pages, newest first) |
+| `notifications.inbox.unread-count`  | `GET /v1/notifications/unread-count`           | authenticated | `watchUnreadCount` and the menu badge              |
+| `notifications.inbox.mark-read`     | `POST /v1/notifications/{notificationId}/read` | authenticated | `markAsRead` (idempotent)                          |
+| `notifications.inbox.mark-all-read` | `POST /v1/notifications/read-all`              | authenticated | `markAllAsRead`                                    |
+| `notifications.preferences.get`     | `GET /v1/notification-preferences`             | authenticated | `PreferencesController.fetchPreferences`           |
+| `notifications.preferences.save`    | `PUT /v1/notification-preferences`             | authenticated | `savePreferences`                                  |
 
-`NotificationPreferences` lleva `enabled` (tipo a canales), `quietStart`, `quietEnd` (`HH:mm`) y `timezone` (IANA, decisión 6). Los textos `title` y `body` los genera el servidor en el idioma del usuario.
+`NotificationPreferences` carries `enabled` (type to channels), `quietStart`, `quietEnd` (`HH:mm`) and `timezone` (IANA, decision 6). The `title` and `body` texts are generated by the server in the user's language.
 
-Con Socket.IO, el mismo flujo va por el namespace `/notifications` con los mismos tipos de trama; el front trae el adaptador SSE detrás de su puerto `NotificationsStream`. La transmisión SSE `GET /v1/notifications/stream` queda fuera del contrato (no es JSON de petición y respuesta), igual que `/health`. Envía tres tipos de trama: `notification` (la `AppNotification` nueva), `unread-count` y `session-closed`. Autentica con `Authorization: Bearer <access token>` y reanuda con `Last-Event-ID`.
+With Socket.IO, the same flow goes through the `/notifications` namespace with the same frame types; the front ships the SSE adapter behind its `NotificationsStream` port. The SSE stream `GET /v1/notifications/stream` stays out of the contract (it is not request and response JSON), like `/health`. It sends three frame types: `notification` (the new `AppNotification`), `unread-count` and `session-closed`. It authenticates with `Authorization: Bearer <access token>` and resumes with `Last-Event-ID`.
 
-| Elemento    | Detalle                                                                                                                                                                                                                                                                                                                                              |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Errores     | `NOTIFICATIONS.INBOX.NOT_FOUND` (404), `NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS` (400), `NOTIFICATIONS.EMAIL.RECIPIENT_SUPPRESSED` (interno), `NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN` (interno), `NOTIFICATIONS.REALTIME.UNAUTHENTICATED` (401).                                                                                                |
-| Eventos     | Tópico `notifications-events`: `notifications.notification.created.v1` (sin texto: tenant, tipo, canales usados; lo consume `reports`).                                                                                                                                                                                                              |
-| Operaciones | `notifications.messages.send.v1` (correo transaccional con código de un solo uso: viaja por la API interna y nunca por el bus; sin compensación: un correo enviado no se retira), `notifications.users.notify.v1` (mismo motivo), `notifications.user-data.erase.v1` (sin compensación, posterior al pivote) y las cuatro de traslado.               |
-| Colas       | `notifications-triggers` (suscrita a `identity-events`: `security-alert.raised` y `membership.changed`; a `tasks-events`: `task.updated`; a `billing-events`: `invoice.issued`; a `reports-events`: `run.completed`) y `notifications-realtime-control` (suscrita a `identity-events`: `session.revoked` y `tokens.revoked`, cierra conexiones SSE). |
+| Element    | Detail                                                                                                                                                                                                                                                                                                                                                               |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Errors     | `NOTIFICATIONS.INBOX.NOT_FOUND` (404), `NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS` (400), `NOTIFICATIONS.EMAIL.RECIPIENT_SUPPRESSED` (internal), `NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN` (internal), `NOTIFICATIONS.REALTIME.UNAUTHENTICATED` (401).                                                                                                              |
+| Events     | Topic `notifications-events`: `notifications.notification.created.v1` (no text: tenant, type, channels used; consumed by `reports`).                                                                                                                                                                                                                                 |
+| Operations | `notifications.messages.send.v1` (transactional email with a one-time code: it travels through the internal API and never through the bus; no compensation: a sent email cannot be withdrawn), `notifications.users.notify.v1` (same reason), `notifications.user-data.erase.v1` (no compensation, after the pivot) and the four move operations.                    |
+| Queues     | `notifications-triggers` (subscribed to `identity-events`: `security-alert.raised` and `membership.changed`; to `tasks-events`: `task.updated`; to `billing-events`: `invoice.issued`; to `reports-events`: `run.completed`) and `notifications-realtime-control` (subscribed to `identity-events`: `session.revoked` and `tokens.revoked`, closes SSE connections). |
 
-### 5.2 Módulos
+### 5.2 Modules
 
-| Módulo        | Responsabilidad                                                                                                                                                                                                                                | Shard             |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `inbox`       | Agregado `Notification` (`readAt`), lista, conteo, marcar leída; job `NotificationsJob.PurgeRead`                                                                                                                                              | Usuario           |
-| `preferences` | `NotificationPreferences` por usuario y `DeliveryPolicy`: canales según tipo, preferencias, horario de silencio y presencia                                                                                                                    | Usuario           |
-| `dispatch`    | `NotifyUser`, destinatario e idioma por `identity.users.get-profile.v1`, plantillas por tipo, reintento de entregas (`NotificationsJob.RetryDeliveries`, exclusivo, hasta 5 intentos)                                                          | Usuario           |
-| `email`       | `EmailSender` (`SesEmailSender`, `SmtpEmailSender` para Mailpit, `InMemoryEmailSender`), plantillas versionadas y lista de supresión                                                                                                           | Tenant y catálogo |
-| `push`        | `PushSender` por plataforma (`ApnsPushSender`, `FcmPushSender`, `WebPushSender`: en F6 solo `InMemoryPushSender`) y objetivos por `identity.devices.list-push-targets.v1`                                                                      | Ninguno           |
-| `realtime`    | Monta `RealtimeModule` de `@platform/realtime` con los transportes de `REALTIME_TRANSPORTS`; `RealtimeFacade` publica en el Valkey Stream por usuario (`notifications:rt:*`). Con `REALTIME_HOST=app` no monta nada y `apps/realtime` atiende. |
-| `triggers`    | Consumidores que traducen eventos a `NotifyUser`, con la tabla de abajo                                                                                                                                                                        | Ninguno           |
+| Module        | Responsibility                                                                                                                                                                                                                                              | Shard              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `inbox`       | `Notification` aggregate (`readAt`), list, count, mark as read; job `NotificationsJob.PurgeRead`                                                                                                                                                            | User               |
+| `preferences` | `NotificationPreferences` per user and `DeliveryPolicy`: channels by type, preferences, quiet hours and presence                                                                                                                                            | User               |
+| `dispatch`    | `NotifyUser`, recipient and language via `identity.users.get-profile.v1`, templates per type, delivery retry (`NotificationsJob.RetryDeliveries`, exclusive, up to 5 attempts)                                                                              | User               |
+| `email`       | `EmailSender` (`SesEmailSender`, `SmtpEmailSender` for Mailpit, `InMemoryEmailSender`), versioned templates and suppression list                                                                                                                            | Tenant and catalog |
+| `push`        | `PushSender` per platform (`ApnsPushSender`, `FcmPushSender`, `WebPushSender`: in F6 only `InMemoryPushSender`) and targets via `identity.devices.list-push-targets.v1`                                                                                     | None               |
+| `realtime`    | Mounts `RealtimeModule` from `@platform/realtime` with the transports of `REALTIME_TRANSPORTS`; `RealtimeFacade` publishes to the per-user Valkey Stream (`notifications:rt:*`). With `REALTIME_HOST=app` it mounts nothing and `apps/realtime` handles it. |
+| `triggers`    | Consumers that translate events into `NotifyUser`, with the table below                                                                                                                                                                                     | None               |
 
-| Evento origen                                                | Destinatario                                                            | Tipo              |
+| Source event                                                 | Recipient                                                               | Type              |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------- | ----------------- |
-| `identity.security-alert.raised.v1`                          | El usuario de la alerta, todos los canales                              | `SecurityAlert`   |
-| `tasks.task.updated.v1`                                      | `createdBy`, si el actor es otra persona                                | `TaskUpdated`     |
-| `billing.invoice.issued.v1`                                  | Miembros con `billing:write` (`identity.members.list-by-permission.v1`) | `InvoiceIssued`   |
-| `identity.membership.changed.v1`, `reports.run.completed.v1` | El usuario afectado, o quien pidió el reporte                           | `AccountActivity` |
+| `identity.security-alert.raised.v1`                          | The user of the alert, all channels                                     | `SecurityAlert`   |
+| `tasks.task.updated.v1`                                      | `createdBy`, if the actor is someone else                               | `TaskUpdated`     |
+| `billing.invoice.issued.v1`                                  | Members with `billing:write` (`identity.members.list-by-permission.v1`) | `InvoiceIssued`   |
+| `identity.membership.changed.v1`, `reports.run.completed.v1` | The affected user, or whoever requested the report                      | `AccountActivity` |
 
 ```ts
 export abstract class DispatchFacade {
@@ -305,17 +305,17 @@ export abstract class RealtimeFacade {
 }
 ```
 
-Cada fachada tiene su fake en `modules/<m>/__tests__/utils/`. Las plantillas son clases `EmailTemplate` con `render(vars, locale)`, un `escapeHtml` propio y una versión por plantilla; hay una por valor de `IdentityEmailTemplate` de F4, más bienvenida, tarea actualizada, factura emitida y reporte listo. El adaptador `NotificationsIdentityMailer` de identity (sección 11, ola 7) reemplaza al fake de F4.
+Each facade has its fake in `modules/<m>/__tests__/utils/`. Templates are `EmailTemplate` classes with `render(vars, locale)`, their own `escapeHtml` and one version per template; there is one per value of F4's `IdentityEmailTemplate`, plus welcome, task updated, invoice issued and report ready. The identity adapter `NotificationsIdentityMailer` (section 11, wave 7) replaces the F4 fake.
 
-Tablas: `notifications` (usuario: `id`, `type`, `title`, `body`, `locale`, `read_at`), `notification_preferences` (una fila por usuario), `notification_deliveries` (notificación, canal, estado, error, id del proveedor), `email_messages` (tenant: plantilla, versión, huella HMAC del destinatario, estado, `trace_id`; no guarda el cuerpo) y `email_suppressions` (catálogo: huella del correo, motivo). Valkey: `notifications:presence:{userId}` y `notifications:rt:{userId}`, siempre bajo el prefijo del servicio (ADR 0021).
+Tables: `notifications` (user: `id`, `type`, `title`, `body`, `locale`, `read_at`), `notification_preferences` (one row per user), `notification_deliveries` (notification, channel, status, error, provider id), `email_messages` (tenant: template, version, HMAC fingerprint of the recipient, status, `trace_id`; it does not store the body) and `email_suppressions` (catalog: email fingerprint, reason). Valkey: `notifications:presence:{userId}` and `notifications:rt:{userId}`, always under the service prefix (ADR 0021).
 
-Configuración: `NOTIFICATIONS_EMAIL_SENDER` (`memory`, `smtp` o `ses`; `smtp` solo con `NODE_ENV=development`), `SMTP_URL`, `NOTIFICATIONS_FROM_ADDRESS`, `NOTIFICATIONS_PUSH_SENDER` (`memory`), `NOTIFICATIONS_INBOX_RETENTION_DAYS`.
+Configuration: `NOTIFICATIONS_EMAIL_SENDER` (`memory`, `smtp` or `ses`; `smtp` only with `NODE_ENV=development`), `SMTP_URL`, `NOTIFICATIONS_FROM_ADDRESS`, `NOTIFICATIONS_PUSH_SENDER` (`memory`), `NOTIFICATIONS_INBOX_RETENTION_DAYS`.
 
 ## 6. `reports` (F7)
 
-Reportes sobre los datos del tenant, calculados en segundo plano y guardados como resultado.
+Reports on the tenant's data, computed in the background and stored as a result.
 
-### 6.1 Contrato `@contracts/reports`
+### 6.1 Contract `@contracts/reports`
 
 ```ts
 export enum ReportType {
@@ -337,31 +337,31 @@ export enum ReportFormat {
 }
 ```
 
-| Ruta (`ReportsRoute`)  | Método y path                           | Acceso                                                                             | Pantalla (microfrontend `reports`)             |
-| ---------------------- | --------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `reports.catalog.list` | `GET /v1/reports`                       | `reports:read`, flag `NewReports`                                                  | Catálogo y formulario de parámetros            |
-| `reports.run.create`   | `POST /v1/reports/runs`                 | `reports:write`, flag `NewReports` (CSV exige la funcionalidad `advanced_reports`) | Botón "Generar" (202 con `runId`)              |
-| `reports.run.list`     | `GET /v1/reports/runs`                  | `reports:read`, flag `NewReports`                                                  | Lista de ejecuciones                           |
-| `reports.run.get`      | `GET /v1/reports/runs/{runId}`          | `reports:read`, flag `NewReports`                                                  | Detalle y resultado (`columns`, `rows`)        |
-| `reports.run.download` | `GET /v1/reports/runs/{runId}/download` | `reports:read`, flag `NewReports`                                                  | Descarga: `{ fileName, contentType, content }` |
+| Route (`ReportsRoute`) | Method and path                         | Access                                                                           | Screen (`reports` microfrontend)               |
+| ---------------------- | --------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `reports.catalog.list` | `GET /v1/reports`                       | `reports:read`, flag `NewReports`                                                | Catalog and parameters form                    |
+| `reports.run.create`   | `POST /v1/reports/runs`                 | `reports:write`, flag `NewReports` (CSV requires the `advanced_reports` feature) | "Generar" button (202 with `runId`)            |
+| `reports.run.list`     | `GET /v1/reports/runs`                  | `reports:read`, flag `NewReports`                                                | Runs list                                      |
+| `reports.run.get`      | `GET /v1/reports/runs/{runId}`          | `reports:read`, flag `NewReports`                                                | Detail and result (`columns`, `rows`)          |
+| `reports.run.download` | `GET /v1/reports/runs/{runId}/download` | `reports:read`, flag `NewReports`                                                | Download: `{ fileName, contentType, content }` |
 
-El parámetro de una ejecución es `{ from, to, granularity }` con `CalendarDateSchema`. La exigencia de `advanced_reports` en CSV la aplica el caso de uso con `PLATFORM.ACCESS.FEATURE_NOT_INCLUDED`, porque depende del cuerpo y no de la ruta.
+The parameter of a run is `{ from, to, granularity }` with `CalendarDateSchema`. The `advanced_reports` requirement for CSV is applied by the use case with `PLATFORM.ACCESS.FEATURE_NOT_INCLUDED`, because it depends on the body and not on the route.
 
-| Elemento    | Detalle                                                                                                                                                                                                                                                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Errores     | `REPORTS.RUN.NOT_FOUND` (404), `REPORTS.RUN.NOT_READY` (409), `REPORTS.RUN.EXPIRED` (410), `REPORTS.TYPE.UNKNOWN` (400), `REPORTS.PARAMS.INVALID_RANGE` (400), `REPORTS.RESULT.TOO_LARGE` (422).                                                                                                                                |
-| Eventos     | Tópico `reports-events`: `reports.run.completed.v1` (tenant, tipo, estado, `requestedBy` como `UserRef`).                                                                                                                                                                                                                       |
-| Comandos    | `reports.run.execute.v1` en la cola `reports-runs`: el caso de uso lo envía a sí mismo por el outbox, así la ejecución sale de la petición y la retoma un worker.                                                                                                                                                               |
-| Operaciones | `reports.user-data.erase.v1` (sin compensación, posterior al pivote: borra `requestedBy` de las ejecuciones y las proyecciones con usuario) y las cuatro de traslado.                                                                                                                                                           |
-| Colas       | `reports-runs`; `reports-projections` (suscrita a `tasks-events`: las tres) y `reports-finance-projections` (suscrita a `billing-events`: `invoice.issued`, `invoice.paid`, `invoice.failed`, y a `notifications-events`: `notification.created`). Esta última entra al contrato en la ola 5 y su consumidor llega en la ola 7. |
+| Element    | Detail                                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Errors     | `REPORTS.RUN.NOT_FOUND` (404), `REPORTS.RUN.NOT_READY` (409), `REPORTS.RUN.EXPIRED` (410), `REPORTS.TYPE.UNKNOWN` (400), `REPORTS.PARAMS.INVALID_RANGE` (400), `REPORTS.RESULT.TOO_LARGE` (422).                                                                                                                                            |
+| Events     | Topic `reports-events`: `reports.run.completed.v1` (tenant, type, status, `requestedBy` as `UserRef`).                                                                                                                                                                                                                                      |
+| Commands   | `reports.run.execute.v1` on the `reports-runs` queue: the use case sends it to itself through the outbox, so the run leaves the request and a worker picks it up.                                                                                                                                                                           |
+| Operations | `reports.user-data.erase.v1` (no compensation, after the pivot: removes `requestedBy` from the runs and the projections that have a user) and the four move operations.                                                                                                                                                                     |
+| Queues     | `reports-runs`; `reports-projections` (subscribed to `tasks-events`: all three) and `reports-finance-projections` (subscribed to `billing-events`: `invoice.issued`, `invoice.paid`, `invoice.failed`, and to `notifications-events`: `notification.created`). The latter enters the contract in wave 5 and its consumer arrives in wave 7. |
 
-### 6.2 Módulos
+### 6.2 Modules
 
-| Módulo        | Responsabilidad                                                                                                                                | Tablas (shard de tenant)                                                           |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `catalog`     | `ReportDefinition` (clase por tipo: parámetros, columnas, `compute`), `ReportRegistry`                                                         | Ninguna                                                                            |
-| `runs`        | Agregado `ReportRun`, casos de uso de las rutas, ejecución del comando, `ReportsJob.ExpireRuns` (diario, exclusivo, borra resultados vencidos) | `report_runs` (auditada): estado, parámetros, `result jsonb`, tamaño, `expires_at` |
-| `projections` | Consumidores que mantienen las proyecciones y `ReportsJob.BackfillProjections` (relleno por `tasks.tasks.list-changes.v1`, una vez por tenant) | `proj_tasks`, `proj_invoices`, `proj_deliveries`                                   |
+| Module        | Responsibility                                                                                                                             | Tables (tenant shard)                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `catalog`     | `ReportDefinition` (one class per type: parameters, columns, `compute`), `ReportRegistry`                                                  | None                                                                            |
+| `runs`        | `ReportRun` aggregate, use cases for the routes, command execution, `ReportsJob.ExpireRuns` (daily, exclusive, deletes expired results)    | `report_runs` (audited): status, parameters, `result jsonb`, size, `expires_at` |
+| `projections` | Consumers that maintain the projections and `ReportsJob.BackfillProjections` (backfill via `tasks.tasks.list-changes.v1`, once per tenant) | `proj_tasks`, `proj_invoices`, `proj_deliveries`                                |
 
 ```ts
 export abstract class ReportDefinitionRegistry {
@@ -380,15 +380,15 @@ export abstract class ProjectionsFacade {
 }
 ```
 
-`ReportDefinition.compute` solo lee proyecciones por `ProjectionsFacade`, nunca otro servicio ni otra base. El tamaño máximo del resultado es `REPORTS_MAX_RESULT_BYTES`; el resultado vive en la fila y vence a los `REPORTS_RESULT_TTL_DAYS` (decisión 7).
+`ReportDefinition.compute` only reads projections through `ProjectionsFacade`, never another service or another database. The maximum result size is `REPORTS_MAX_RESULT_BYTES`; the result lives in the row and expires after `REPORTS_RESULT_TTL_DAYS` (decision 7).
 
 ## 7. `billing` (F8)
 
-Calcula qué debe pagar cada tenant y lleva el estado de cada factura. El cobro es un proceso aparte detrás del puerto `PaymentProvider`.
+Computes what each tenant must pay and tracks the status of each invoice. Charging is a separate process behind the `PaymentProvider` port.
 
-### 7.1 Contrato `@contracts/billing`
+### 7.1 Contract `@contracts/billing`
 
-Importa `PlanFeature` de `@contracts/identity`; el general agrega la regla de límites `contracts-billing` a `contracts-identity` en `backend/eslint.config.mjs`.
+It imports `PlanFeature` from `@contracts/identity`; the general adds the `contracts-billing` to `contracts-identity` boundary rule in `backend/eslint.config.mjs`.
 
 ```ts
 export enum SubscriptionStatus {
@@ -422,38 +422,38 @@ export enum UsageMetric {
   ApiCalls = 'api_calls',
   StorageGb = 'storage_gb',
 }
-// UsageAggregation (constants/): Users y StorageGb = máximo del periodo; ApiCalls = suma
+// UsageAggregation (constants/): Users and StorageGb = maximum of the period; ApiCalls = sum
 ```
 
-Los esquemas calcan los tipos del front: `Plan` (`id`, `name`, `price: MoneyAmount`, `periodicity`, `quotas: { metric, limit }[]`, `features`), `Subscription` (`id`, `plan`, `status`, `period: { start, end }` con `CalendarDateSchema`), `QuotaUsage` (`metric`, `limit`, `used`), `Invoice` (`id`, `number`, `period`, `status`, `currency`, `lines`, `total`) con `InvoiceLine` (`kind`, `description`, `amount`).
+The schemas mirror the front types: `Plan` (`id`, `name`, `price: MoneyAmount`, `periodicity`, `quotas: { metric, limit }[]`, `features`), `Subscription` (`id`, `plan`, `status`, `period: { start, end }` with `CalendarDateSchema`), `QuotaUsage` (`metric`, `limit`, `used`), `Invoice` (`id`, `number`, `period`, `status`, `currency`, `lines`, `total`) with `InvoiceLine` (`kind`, `description`, `amount`).
 
-| Ruta (`BillingRoute`)              | Método y path                          | Acceso          | Pantalla que la usa                                  |
-| ---------------------------------- | -------------------------------------- | --------------- | ---------------------------------------------------- |
-| `billing.subscription.get`         | `GET /v1/billing/subscription`         | `billing:read`  | `BillingPlanController` (`currentSubscription`)      |
-| `billing.usage.get`                | `GET /v1/billing/usage`                | `billing:read`  | `BillingPlanController` (`currentUsage`) y medidores |
-| `billing.plan.list`                | `GET /v1/billing/plans`                | `billing:read`  | `ChangePlanController` (`availablePlans`)            |
-| `billing.subscription.change-plan` | `PUT /v1/billing/subscription/plan`    | `billing:write` | `ChangePlanController.changePlan`                    |
-| `billing.invoice.list`             | `GET /v1/billing/invoices`             | `billing:read`  | `InvoicesController` (páginas, más nuevas primero)   |
-| `billing.invoice.get`              | `GET /v1/billing/invoices/{invoiceId}` | `billing:read`  | `InvoiceDetailController`                            |
+| Route (`BillingRoute`)             | Method and path                        | Access          | Screen that uses it                                 |
+| ---------------------------------- | -------------------------------------- | --------------- | --------------------------------------------------- |
+| `billing.subscription.get`         | `GET /v1/billing/subscription`         | `billing:read`  | `BillingPlanController` (`currentSubscription`)     |
+| `billing.usage.get`                | `GET /v1/billing/usage`                | `billing:read`  | `BillingPlanController` (`currentUsage`) and meters |
+| `billing.plan.list`                | `GET /v1/billing/plans`                | `billing:read`  | `ChangePlanController` (`availablePlans`)           |
+| `billing.subscription.change-plan` | `PUT /v1/billing/subscription/plan`    | `billing:write` | `ChangePlanController.changePlan`                   |
+| `billing.invoice.list`             | `GET /v1/billing/invoices`             | `billing:read`  | `InvoicesController` (pages, newest first)          |
+| `billing.invoice.get`              | `GET /v1/billing/invoices/{invoiceId}` | `billing:read`  | `InvoiceDetailController`                           |
 
-| Elemento    | Detalle                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Errores     | `BILLING.SUBSCRIPTION.NOT_FOUND` (404), `BILLING.SUBSCRIPTION.NOT_CHANGEABLE` (409, suspendida o cancelada), `BILLING.PLAN.NOT_AVAILABLE` (404), `BILLING.PLAN.USAGE_EXCEEDS_LIMIT` (409, bajar de plan con uso mayor al nuevo límite), `BILLING.INVOICE.NOT_FOUND` (404), `BILLING.INVOICE.INVALID_STATE` (409), `BILLING.QUOTA.EXCEEDED` (403, con `metric`, `limit` y `used` en `details`).                        |
-| Eventos     | Tópico `billing-events`: `billing.subscription.changed.v1`, `billing.subscription.suspended.v1`, `billing.subscription.reactivated.v1`, `billing.entitlements.changed.v1`, `billing.invoice.issued.v1`, `billing.invoice.paid.v1`, `billing.invoice.failed.v1`.                                                                                                                                                       |
-| Comandos    | `billing.usage.record.v1` en la cola FIFO `billing-usage`: lote `{ tenantId, records: [{ metric, quantity, windowStart, key }] }`. Cada servicio que mide lo declara en `sends`.                                                                                                                                                                                                                                      |
-| Operaciones | `billing.accounts.open.v1` (compensa `billing.accounts.close.v1`, que sin factura emitida borra la suscripción y no tiene compensación propia: solo corre como compensación), `billing.entitlements.get.v1` y `billing.quotas.check.v1` (lecturas), `billing.invoices.mark-paid.v1` y `billing.invoices.mark-failed.v1` (sin compensación: el pago ocurrió fuera; se corrige con una nota), y las cuatro de traslado. |
-| Colas       | `billing-usage` (el comando) y `billing-identity` (suscrita a `identity-events`: `membership.changed`, para el conteo de usuarios).                                                                                                                                                                                                                                                                                   |
+| Element    | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Errors     | `BILLING.SUBSCRIPTION.NOT_FOUND` (404), `BILLING.SUBSCRIPTION.NOT_CHANGEABLE` (409, suspended or canceled), `BILLING.PLAN.NOT_AVAILABLE` (404), `BILLING.PLAN.USAGE_EXCEEDS_LIMIT` (409, downgrading with usage above the new limit), `BILLING.INVOICE.NOT_FOUND` (404), `BILLING.INVOICE.INVALID_STATE` (409), `BILLING.QUOTA.EXCEEDED` (403, with `metric`, `limit` and `used` in `details`).                                                             |
+| Events     | Topic `billing-events`: `billing.subscription.changed.v1`, `billing.subscription.suspended.v1`, `billing.subscription.reactivated.v1`, `billing.entitlements.changed.v1`, `billing.invoice.issued.v1`, `billing.invoice.paid.v1`, `billing.invoice.failed.v1`.                                                                                                                                                                                              |
+| Commands   | `billing.usage.record.v1` on the FIFO queue `billing-usage`: batch `{ tenantId, records: [{ metric, quantity, windowStart, key }] }`. Each service that meters declares it in `sends`.                                                                                                                                                                                                                                                                      |
+| Operations | `billing.accounts.open.v1` (compensated by `billing.accounts.close.v1`, which, with no issued invoice, deletes the subscription and has no compensation of its own: it only runs as a compensation), `billing.entitlements.get.v1` and `billing.quotas.check.v1` (reads), `billing.invoices.mark-paid.v1` and `billing.invoices.mark-failed.v1` (no compensation: the payment happened outside; it is corrected with a note), and the four move operations. |
+| Queues     | `billing-usage` (the command) and `billing-identity` (subscribed to `identity-events`: `membership.changed`, for the user count).                                                                                                                                                                                                                                                                                                                           |
 
-### 7.2 Módulos
+### 7.2 Modules
 
-| Módulo          | Responsabilidad                                                                                                                                                                                     | Shard                    |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `plans`         | Catálogo versionado (`billing_plans`, `billing_plan_quotas`), semilla con `nx run billing:seed`                                                                                                     | Catálogo                 |
-| `subscriptions` | Agregado `Subscription`, cambio de plan con prorrateo (`ProrationCalculator`, enteros, redondeo al alza), ciclo de morosidad y prueba. Jobs `BillingJob.AdvanceDunning` y `BillingJob.ExpireTrials` | Tenant (`subscriptions`) |
-| `usage`         | Ingesta idempotente del comando (`usage_records`, único por tenant y `key`), agregados por periodo (`usage_totals`) y conteo de usuarios por `membership.changed`                                   | Tenant                   |
-| `entitlements`  | `EntitlementsSnapshot` (funcionalidades y cuotas del plan vigente), operaciones `get` y `check`, evento `entitlements.changed`                                                                      | Ninguna propia           |
-| `invoices`      | `Invoice` y líneas, numeración consecutiva por tenant (`invoice_sequences`), `BillingJob.CloseInvoicePeriods` (diario, exclusivo)                                                                   | Tenant                   |
-| `payments`      | Puerto `PaymentProvider` (`FakePaymentProvider`), `payment_attempts`, operaciones `mark-paid` y `mark-failed`                                                                                       | Tenant                   |
+| Module          | Responsibility                                                                                                                                                                               | Shard                    |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `plans`         | Versioned catalog (`billing_plans`, `billing_plan_quotas`), seeded with `nx run billing:seed`                                                                                                | Catalog                  |
+| `subscriptions` | `Subscription` aggregate, plan change with proration (`ProrationCalculator`, integers, rounding up), dunning cycle and trial. Jobs `BillingJob.AdvanceDunning` and `BillingJob.ExpireTrials` | Tenant (`subscriptions`) |
+| `usage`         | Idempotent ingestion of the command (`usage_records`, unique per tenant and `key`), aggregates per period (`usage_totals`) and user count via `membership.changed`                           | Tenant                   |
+| `entitlements`  | `EntitlementsSnapshot` (features and quotas of the current plan), `get` and `check` operations, `entitlements.changed` event                                                                 | None of its own          |
+| `invoices`      | `Invoice` and lines, consecutive numbering per tenant (`invoice_sequences`), `BillingJob.CloseInvoicePeriods` (daily, exclusive)                                                             | Tenant                   |
+| `payments`      | `PaymentProvider` port (`FakePaymentProvider`), `payment_attempts`, `mark-paid` and `mark-failed` operations                                                                                 | Tenant                   |
 
 ```ts
 export abstract class SubscriptionsFacade {
@@ -479,75 +479,75 @@ export abstract class PaymentProvider {
 }
 ```
 
-- **Morosidad.** `invoice.failed` lleva la suscripción a `PastDue`; pasados `BILLING_GRACE_DAYS` el job la pasa a `Suspended` y publica `billing.subscription.suspended.v1`; identity lo consume en `identity-billing` y llama `identity.tenants.suspend.v1`. Un pago posterior la reactiva con `subscription.reactivated.v1`.
-- **Entitlements.** Cualquier cambio de plan o de estado publica `billing.entitlements.changed.v1`; identity sube la versión de permisos del tenant (`auth:pv:tenant`) y el siguiente token trae `features` nuevas.
-- **Facturas.** `CloseInvoicePeriods` cierra los periodos vencidos: arma las líneas de cargo fijo y de uso (solo métricas con precio unitario en el plan, decisión 11), emite la factura, publica `invoice.issued` y pide el cobro a `PaymentProvider`. Todo en enteros de la unidad mínima con su moneda.
-- **Cuotas.** `Users` se comprueba en identity al agregar un miembro (`BillingQuotaChecker`); `ApiCalls` con `@Quota(UsageMetric.ApiCalls)` en las rutas de integración. El valor de `check` puede estar atrasado hasta 10 s.
+- **Delinquency.** `invoice.failed` moves the subscription to `PastDue`; after `BILLING_GRACE_DAYS` the job moves it to `Suspended` and publishes `billing.subscription.suspended.v1`; identity consumes it in `identity-billing` and calls `identity.tenants.suspend.v1`. A later payment reactivates it with `subscription.reactivated.v1`.
+- **Entitlements.** Any plan or status change publishes `billing.entitlements.changed.v1`; identity bumps the tenant's permissions version (`auth:pv:tenant`) and the next token carries the new `features`.
+- **Invoices.** `CloseInvoicePeriods` closes the expired periods: it builds the fixed fee and usage lines (only metrics with a unit price in the plan, decision 11), issues the invoice, publishes `invoice.issued` and asks `PaymentProvider` for the charge. Everything in integers of the minimum unit with its currency.
+- **Quotas.** `Users` is checked in identity when adding a member (`BillingQuotaChecker`); `ApiCalls` with `@Quota(UsageMetric.ApiCalls)` on the integration routes. The value of `check` can lag by up to 10 s.
 
-Configuración: `BILLING_TRIAL_DAYS`, `BILLING_GRACE_DAYS`, `BILLING_INVOICE_SERIES`, `BILLING_PAYMENT_PROVIDER` (`fake`). Los números de factura son internos; la factura electrónica ante la DIAN queda fuera.
+Configuration: `BILLING_TRIAL_DAYS`, `BILLING_GRACE_DAYS`, `BILLING_INVOICE_SERIES`, `BILLING_PAYMENT_PROVIDER` (`fake`). Invoice numbers are internal; electronic invoicing with the DIAN is out of scope.
 
-## 8. Lo que cruza servicios (ola 7)
+## 8. What crosses services (wave 7)
 
-### 8.1 Sagas de ejemplo
+### 8.1 Example sagas
 
-Las orquesta identity con `SagaModule.forFeature` ([persistencia y sagas, sección 5](persistencia-typeorm-y-sagas.md#5-sagas)); cada paso es una operación de un contrato, y su reversa sale del `compensatedBy`.
+They are orchestrated by identity with `SagaModule.forFeature` ([persistence and sagas, section 5](persistencia-typeorm-y-sagas.md#5-sagas)); each step is an operation of a contract, and its reverse comes from `compensatedBy`.
 
-**`TenantOnboarding`** (`modules/tenants`). `POST /v1/tenants` crea el tenant en `Provisioning` y arranca la saga en la misma transacción. Sustituye al `CreateTenant` directo de F4.
+**`TenantOnboarding`** (`modules/tenants`). `POST /v1/tenants` creates the tenant in `Provisioning` and starts the saga in the same transaction. It replaces F4's direct `CreateTenant`.
 
-| Paso   | Operación                                    | Compensación                  | Fase             |
-| ------ | -------------------------------------------- | ----------------------------- | ---------------- |
-| 1      | `identity.tenants.create.v1`                 | `identity.tenants.discard.v1` | Antes del pivote |
-| 2      | `billing.accounts.open.v1`                   | `billing.accounts.close.v1`   | Antes del pivote |
-| pivote |                                              |                               |                  |
-| 3      | `identity.tenants.activate.v1`               | Ninguna (idempotente)         | Después          |
-| 4      | `notifications.users.notify.v1` (bienvenida) | Ninguna (idempotente)         | Después          |
+| Step  | Operation                                 | Compensation                  | Phase            |
+| ----- | ----------------------------------------- | ----------------------------- | ---------------- |
+| 1     | `identity.tenants.create.v1`              | `identity.tenants.discard.v1` | Before the pivot |
+| 2     | `billing.accounts.open.v1`                | `billing.accounts.close.v1`   | Before the pivot |
+| pivot |                                           |                               |                  |
+| 3     | `identity.tenants.activate.v1`            | None (idempotent)             | After            |
+| 4     | `notifications.users.notify.v1` (welcome) | None (idempotent)             | After            |
 
-Mientras corre, el tenant está en `Provisioning` y nadie lo usa. Si `billing` rechaza el paso 2, se descarta el tenant y el creador recibe `GET /v1/sagas/{sagaId}` en `compensated`.
+While it runs, the tenant is in `Provisioning` and nobody uses it. If `billing` rejects step 2, the tenant is discarded and the creator gets `GET /v1/sagas/{sagaId}` in `compensated`.
 
-**`DeleteAccount`** (`modules/users`, `POST /v1/me/deletion` con step-up). Habeas data: el único paso reversible va primero.
+**`DeleteAccount`** (`modules/users`, `POST /v1/me/deletion` with step-up). Habeas data: the only reversible step goes first.
 
-| Paso   | Operación                                                                                                                         | Compensación                   | Fase             |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------- |
-| 1      | `identity.users.suspend.v1`                                                                                                       | `identity.users.reactivate.v1` | Antes del pivote |
-| pivote |                                                                                                                                   |                                |                  |
-| 2      | `tasks.user-data.erase.v1`                                                                                                        | Ninguna (idempotente)          | Después          |
-| 3      | `notifications.user-data.erase.v1`                                                                                                | Ninguna (idempotente)          | Después          |
-| 4      | `reports.user-data.erase.v1`                                                                                                      | Ninguna (idempotente)          | Después          |
-| 5      | `identity.users.erase.v1` (estado `Deleted`, borra credenciales, sesiones, dispositivos, passkeys y la fila de `identity_lookup`) | Ninguna                        | Después          |
+| Step  | Operation                                                                                                                    | Compensation                   | Phase            |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------- |
+| 1     | `identity.users.suspend.v1`                                                                                                  | `identity.users.reactivate.v1` | Before the pivot |
+| pivot |                                                                                                                              |                                |                  |
+| 2     | `tasks.user-data.erase.v1`                                                                                                   | None (idempotent)              | After            |
+| 3     | `notifications.user-data.erase.v1`                                                                                           | None (idempotent)              | After            |
+| 4     | `reports.user-data.erase.v1`                                                                                                 | None (idempotent)              | After            |
+| 5     | `identity.users.erase.v1` (status `Deleted`, deletes credentials, sessions, devices, passkeys and the `identity_lookup` row) | None                           | After            |
 
-Un `BusinessError` después del pivote deja la saga en `RequiresIntervention` (backoffice). La saga publica `identity.user.erased.v1` al terminar. `billing` no borra nada del usuario: las facturas son del tenant y se conservan.
+A `BusinessError` after the pivot leaves the saga in `RequiresIntervention` (backoffice). The saga publishes `identity.user.erased.v1` when it finishes. `billing` deletes nothing of the user: invoices belong to the tenant and are kept.
 
-**`MoveTenant`** se describe en la sección 8.4.
+**`MoveTenant`** is described in section 8.4.
 
-### 8.2 Cómo `reports` agrega datos
+### 8.2 How `reports` aggregates data
 
-1. Los consumidores de `reports-projections` escriben una fila por tarea en `proj_tasks` (estado, creación, cierre, borrado) con el mismo id del evento como llave de idempotencia. Los de `reports-finance-projections` escriben `proj_invoices` y `proj_deliveries`.
-2. Un tenant que existía antes del servicio no tiene historia. `BackfillProjections` pagina `tasks.tasks.list-changes.v1` por tenant y marca el tenant como rellenado; los eventos nuevos y el relleno se mezclan sin duplicar porque la llave es el `taskId` y `version`.
-3. `compute` agrega con SQL sobre las proyecciones del propio shard del tenant. No hay consulta entre shards en un reporte de tenant. `AcrossShards` queda para jobs de mantenimiento propios.
-4. La ola 6 entrega `TasksByStatus` y `TasksActivity` con proyecciones de tareas. La ola 7 suma `InvoicesSummary` y `NotificationsDelivery`, y el relleno de facturas.
+1. The `reports-projections` consumers write one row per task in `proj_tasks` (status, creation, closing, deletion) with the event id itself as the idempotency key. The `reports-finance-projections` consumers write `proj_invoices` and `proj_deliveries`.
+2. A tenant that existed before the service has no history. `BackfillProjections` paginates `tasks.tasks.list-changes.v1` per tenant and marks the tenant as backfilled; new events and the backfill merge without duplicates because the key is the `taskId` and `version`.
+3. `compute` aggregates with SQL over the projections of the tenant's own shard. There is no cross-shard query in a tenant report. `AcrossShards` is reserved for the service's own maintenance jobs.
+4. Wave 6 delivers `TasksByStatus` and `TasksActivity` with task projections. Wave 7 adds `InvoicesSummary` and `NotificationsDelivery`, and the invoice backfill.
 
-### 8.3 Medición hacia `billing`
+### 8.3 Metering towards `billing`
 
-| Métrica     | Fuente                                                                                                                                                                    | Llave de idempotencia                     |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `ApiCalls`  | `ApiCallMeteringInterceptor` cuenta las peticiones de actores `ServiceAccountActor` en un contador de Valkey por tenant y minuto; `UsageFlushJob` envía el lote cada 60 s | `<servicio>:<tenant>:api_calls:<ventana>` |
-| `Users`     | `billing` consume `identity.membership.changed.v1` y mantiene el conteo de miembros activos                                                                               | `membership.changed` (id del mensaje)     |
-| `StorageGb` | Sin fuente: no hay servicio de archivos (decisión 12)                                                                                                                     | No aplica                                 |
+| Metric      | Source                                                                                                                                                                 | Idempotency key                         |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `ApiCalls`  | `ApiCallMeteringInterceptor` counts the requests of `ServiceAccountActor` actors in a Valkey counter per tenant and minute; `UsageFlushJob` sends the batch every 60 s | `<service>:<tenant>:api_calls:<window>` |
+| `Users`     | `billing` consumes `identity.membership.changed.v1` and keeps the count of active members                                                                              | `membership.changed` (message id)       |
+| `StorageGb` | No source: there is no files service (decision 12)                                                                                                                     | Not applicable                          |
 
-`UsageFlushJob` corre por tenant dentro de `ShardScope.run` y `runInTransaction`, porque el outbox exige transacción. Un reinicio pierde a lo sumo la ventana en memoria del proceso, no los contadores de Valkey. Cada servicio suma `MeteringModule` a su `app.module.ts` (una línea que integra el general) y declara `sends` en su contrato desde la ola 5.
+`UsageFlushJob` runs per tenant inside `ShardScope.run` and `runInTransaction`, because the outbox requires a transaction. A restart loses at most the in-memory window of the process, not the Valkey counters. Each service adds `MeteringModule` to its `app.module.ts` (one line that the general integrates) and declares `sends` in its contract from wave 5.
 
-### 8.4 Varias regiones y `MoveTenant` (F10)
+### 8.4 Multiple regions and `MoveTenant` (F10)
 
-**Regiones.** Una variable `REGIONS` (JSON: `code`, `apiBaseUrl`, `issuer`) y `SERVICE_REGION` identifican la región de cada despliegue. El catálogo vive en la región principal. Cada servicio rechaza al tenant de otra región con `PLATFORM.SHARDING.WRONG_REGION` (421) y `details.apiBaseUrl`; el SDK del front (`packages/api`) reintenta una vez contra esa URL. `sign-in` devuelve `region` y `apiBaseUrl`, y los tokens de una región no verifican en la otra porque el `iss` cambia. Cada región tiene su propio Valkey, colas y shards.
+**Regions.** A `REGIONS` variable (JSON: `code`, `apiBaseUrl`, `issuer`) and `SERVICE_REGION` identify the region of each deployment. The catalog lives in the main region. Each service rejects a tenant from another region with `PLATFORM.SHARDING.WRONG_REGION` (421) and `details.apiBaseUrl`; the front SDK (`packages/api`) retries once against that URL. `sign-in` returns `region` and `apiBaseUrl`, and tokens from one region do not verify in the other because the `iss` changes. Each region has its own Valkey, queues and shards.
 
-**Local.** Un segundo Postgres (`postgres-b`) y un segundo Valkey (`valkey-b`) en el compose simulan la región B; cada servicio corre dos veces con `SERVICE_REGION`. El general edita el compose y `init.sql`.
+**Local.** A second Postgres (`postgres-b`) and a second Valkey (`valkey-b`) in the compose file simulate region B; each service runs twice with `SERVICE_REGION`. The general edits the compose file and `init.sql`.
 
-**Mover datos.** `@platform/tenant-move` define lo que cada servicio declara y la copia genérica:
+**Moving data.** `@platform/tenant-move` defines what each service declares and the generic copy:
 
 ```ts
 export interface TenantMoveTable {
   readonly table: string;
-  /** Cómo se llega a las filas del tenant: columna propia o a través de una tabla padre. */
+  /** How the tenant's rows are reached: its own column or through a parent table. */
   readonly selector:
     | { readonly kind: 'tenant-column'; readonly column: string }
     | {
@@ -558,7 +558,7 @@ export interface TenantMoveTable {
       };
 }
 export abstract class TenantMoveManifest {
-  abstract tables(): readonly TenantMoveTable[]; // en orden de dependencia
+  abstract tables(): readonly TenantMoveTable[]; // in dependency order
 }
 export abstract class TenantDataTransfer {
   abstract sync(move: MoveRef): Promise<TransferProgress>;
@@ -568,157 +568,157 @@ export abstract class TenantDataTransfer {
 }
 ```
 
-`BatchTenantDataTransfer` copia por lotes con cursor por `id` (UUIDv7, ordenado por creación) y repite rondas delta con `updated_at` hasta que el atraso baja de un umbral; el borrado lógico hace visibles los borrados. Verifica conteos y suma de `md5` por tabla. El servicio origen se conecta a los shards destino con `TENANT_MOVE_TARGETS` (credenciales solo de escritura en esas bases). Las operaciones `<servicio>.tenant-move.{sync,finalize,abort,cleanup}.v1` de `defineTenantMoveOperations` las registra `TenantMoveModule.forFeature({ service, manifest })`.
+`BatchTenantDataTransfer` copies in batches with a cursor by `id` (UUIDv7, ordered by creation) and repeats delta rounds with `updated_at` until the lag drops below a threshold; soft delete makes deletions visible. It verifies counts and the `md5` sum per table. The source service connects to the target shards with `TENANT_MOVE_TARGETS` (write-only credentials on those databases). The operations `<service>.tenant-move.{sync,finalize,abort,cleanup}.v1` from `defineTenantMoveOperations` are registered by `TenantMoveModule.forFeature({ service, manifest })`.
 
-**Compuerta de escritura.** Con el tenant en `Migrating` el resolver de persistencia espera hasta `TENANT_MOVE_MAX_WAIT_MS` a que vuelva a `Active` y, si no, responde `PLATFORM.SHARDING.TENANT_MIGRATING` (503 con `Retry-After`). Reemplaza al candado en Valkey de la arquitectura, que no cruza el prefijo de cada servicio.
+**Write gate.** With the tenant in `Migrating`, the persistence resolver waits up to `TENANT_MOVE_MAX_WAIT_MS` for it to return to `Active` and, if it does not, responds `PLATFORM.SHARDING.TENANT_MIGRATING` (503 with `Retry-After`). It replaces the architecture's Valkey lock, which does not cross each service's prefix.
 
-| Paso | Qué hace                                                                                               | Compensación                   | Fase    |
-| ---- | ------------------------------------------------------------------------------------------------------ | ------------------------------ | ------- |
-| 1    | `BeginMove`: valida destino, registra `tenant_moves` en el catálogo                                    | `AbortMove`                    | Antes   |
-| 2-6  | `<servicio>.tenant-move.sync` en identity, tasks, notifications, reports y billing (escrituras siguen) | `<servicio>.tenant-move.abort` | Antes   |
-| 7    | `FreezeTenant`: placement en `Migrating`                                                               | `UnfreezeTenant` (`Active`)    | Antes   |
-| 8-12 | `<servicio>.tenant-move.finalize` (última ronda, verificación, `identity_lookup.region` en identity)   | `<servicio>.tenant-move.abort` | Antes   |
-| 13   | `SwitchDirectory`: nuevo grupo y región, `Active`, versión + 1, evento `ShardDirectoryChanged`         | Pivote                         | Pivote  |
-| 14   | `FinishMove`: marca `tenant_moves` como `Switched`                                                     | Ninguna (idempotente)          | Después |
+| Step | What it does                                                                                          | Compensation                  | Phase  |
+| ---- | ----------------------------------------------------------------------------------------------------- | ----------------------------- | ------ |
+| 1    | `BeginMove`: validates the target, records `tenant_moves` in the catalog                              | `AbortMove`                   | Before |
+| 2-6  | `<service>.tenant-move.sync` in identity, tasks, notifications, reports and billing (writes continue) | `<service>.tenant-move.abort` | Before |
+| 7    | `FreezeTenant`: placement in `Migrating`                                                              | `UnfreezeTenant` (`Active`)   | Before |
+| 8-12 | `<service>.tenant-move.finalize` (last round, verification, `identity_lookup.region` in identity)     | `<service>.tenant-move.abort` | Before |
+| 13   | `SwitchDirectory`: new group and region, `Active`, version + 1, `ShardDirectoryChanged` event         | Pivot                         | Pivot  |
+| 14   | `FinishMove`: marks `tenant_moves` as `Switched`                                                      | None (idempotent)             | After  |
 
-`TenantMoveCleanupJob` (identity, diario, exclusivo) llama `cleanup` en cada servicio cuando pasa `TENANT_MOVE_GRACE_DAYS` desde el corte. Un tenant `SharedCustomers` o `Platform` no se mueve (`IDENTITY.TENANT_MOVE.NOT_MOVABLE`). Se lanza con `nx run identity:tenant-move -- --tenant=<id> --target=<región>`, auditado con el commit, no por HTTP. El tenant mueve los usuarios cuyo `homeTenantId` es él (la tabla `users` declara `home_tenant_id` en su manifiesto y las demás tablas de usuario se enlazan con `via-parent`).
+`TenantMoveCleanupJob` (identity, daily, exclusive) calls `cleanup` on each service once `TENANT_MOVE_GRACE_DAYS` have passed since the cutover. A `SharedCustomers` or `Platform` tenant is not moved (`IDENTITY.TENANT_MOVE.NOT_MOVABLE`). It is launched with `nx run identity:tenant-move -- --tenant=<id> --target=<region>`, audited with the commit, not over HTTP. The tenant moves the users whose `homeTenantId` is that tenant (the `users` table declares `home_tenant_id` in its manifest and the other user tables are linked with `via-parent`).
 
-### 8.5 Generadores (F11)
+### 8.5 Generators (F11)
 
-Parten de lo ya construido: `tasks` es la referencia de un servicio mínimo completo y `plans` o `inbox` de un módulo.
+They start from what is already built: `tasks` is the reference for a complete minimal service and `plans` or `inbox` for a module.
 
-| Generador                                              | Crea                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nx run generators:service -- --name=<n>`              | `backend/apps/<n>/` con el esqueleto de la sección 3.1 (`project.json` con tags, `tsconfig*`, `jest.config.cjs`, `eslint.config.mjs`, `src/*.ts`, `config`, `database`, `messaging`, `shared`), `backend/libs/contracts/<n>/` con sus carpetas, el tfvars de `environments/*/services/<n>/` y un módulo `health`. Imprime las líneas de archivos compartidos (alias de `tsconfig.base.json`, `init.sql`, `.env.example`, regla de límites). |
-| `nx run generators:module -- --service=<n> --name=<m>` | `modules/<m>/{index.ts,domain,application/<m>.facade.ts,infrastructure/persistence/{entities,mappers,migrations},presentation/<m>.module.ts,__tests__/utils/fake-<m>.facade.ts}`, un bloque de migraciones en `migration-ranges.constants.ts` y la línea en `app.module.ts` y en `database/*-migrations.ts` (marcadores `// generated:modules`).                                                                                            |
+| Generator                                              | Creates                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nx run generators:service -- --name=<n>`              | `backend/apps/<n>/` with the skeleton of section 3.1 (`project.json` with tags, `tsconfig*`, `jest.config.cjs`, `eslint.config.mjs`, `src/*.ts`, `config`, `database`, `messaging`, `shared`), `backend/libs/contracts/<n>/` with its folders, the tfvars of `environments/*/services/<n>/` and a `health` module. It prints the lines for shared files (`tsconfig.base.json` aliases, `init.sql`, `.env.example`, boundary rule). |
+| `nx run generators:module -- --service=<n> --name=<m>` | `modules/<m>/{index.ts,domain,application/<m>.facade.ts,infrastructure/persistence/{entities,mappers,migrations},presentation/<m>.module.ts,__tests__/utils/fake-<m>.facade.ts}`, a migrations block in `migration-ranges.constants.ts` and the line in `app.module.ts` and in `database/*-migrations.ts` (`// generated:modules` markers).                                                                                        |
 
-Los generadores son clases con plantillas de texto y sustitución de `__name__`, `__Name__` y `__NAME__`, sin librería (decisión 18). `generators:verify` regenera el esqueleto de `tasks` con su nombre y compara byte a byte los archivos que no son de dominio (los de arranque, configuración y `project.json`): una plantilla que se aparta del servicio real rompe CI. `contracts-export` suma un target `openapi` que escribe `export/openapi.json` (OpenAPI 3.1) desde `contract.json`, sin `@nestjs/swagger` (decisión 4 de F4). El ciclo de la ola 9 también actualiza ARCHITECTURE, los ADR y la skill `backend-estructura`, y quita de `CLAUDE.md` la frase "llegan en la fase F11".
+The generators are classes with text templates and substitution of `__name__`, `__Name__` and `__NAME__`, without a library (decision 18). `generators:verify` regenerates the `tasks` skeleton with its name and compares byte by byte the files that are not domain files (the bootstrap, configuration and `project.json` files): a template that drifts from the real service breaks CI. `contracts-export` adds an `openapi` target that writes `export/openapi.json` (OpenAPI 3.1) from `contract.json`, without `@nestjs/swagger` (decision 4 of F4). The wave 9 cycle also updates ARCHITECTURE, the ADRs and the `backend-estructura` skill, and removes the phrase "arrive in phase F11" from `CLAUDE.md`.
 
-## 9. Pantallas (F9)
+## 9. Screens (F9)
 
-Cada microfrontend cambia `RepositoryBinding.demoOnly` por un binding con `demo` y `live`, y agrega un `Api<Nombre>Repository` sobre `ApiClient` y las rutas generadas (`TasksRoutes`, `NotificationsRoutes`, `BillingRoutes`, `ReportsRoutes`), que valida la petición contra el contrato antes de llamar. Los fakes se conservan para el modo demo y las pruebas. Las pruebas usan `test_utils` con un transporte falso; no necesitan backend.
+Each microfrontend replaces `RepositoryBinding.demoOnly` with a binding with `demo` and `live`, and adds an `Api<Name>Repository` on `ApiClient` and the generated routes (`TasksRoutes`, `NotificationsRoutes`, `BillingRoutes`, `ReportsRoutes`), which validates the request against the contract before calling. The fakes are kept for demo mode and tests. Tests use `test_utils` with a fake transport; they do not need a backend.
 
-| Microfrontend                                    | Repositorio real                                                                                                                                                             | Particularidades                                                                                                                                  |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tasks`                                          | `ApiTasksRepository`: `list` y `search` salen de `GET /v1/tasks`; el `TaskNotFoundException` sale de `TASKS.TASK.NOT_FOUND`; `changes()` se emite tras cada escritura propia | La búsqueda pasa a paginarse con `after`                                                                                                          |
-| `notifications`                                  | `ApiNotificationsRepository` y `SseNotificationsStream` (lee `GET /v1/notifications/stream` con `package:http` y el token de `packages/auth`, reanuda con `Last-Event-ID`)   | `live()` y `watchUnreadCount()` salen del stream; sin conexión caen a consultar el conteo. Agrega `timezone` al guardar preferencias              |
-| `billing`                                        | `ApiBillingRepository`; `BILLING.QUOTA.EXCEEDED` y `BILLING.PLAN.USAGE_EXCEEDS_LIMIT` se muestran en `ChangePlanController`                                                  | Los enums `Currency`, `QuotaKey` y los estados se reemplazan por los generados; `invoice(id)` devuelve null ante `BILLING.INVOICE.NOT_FOUND`      |
-| `reports` (nuevo)                                | Generado con `dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`; `ApiReportsRepository`                                                                 | Pantallas: catálogo con parámetros, lista de ejecuciones (con sondeo mientras `Queued` o `Running`) y detalle con descarga. Acceso `reports:read` |
-| `backoffice`, `assistant`, `verifier`, `account` | Sin cambios en estas fases                                                                                                                                                   | `verifier` y `account` dependen de F4; `backoffice` y `assistant` esperan al `backoffice-api` y al módulo de IA                                   |
+| Microfrontend                                    | Real repository                                                                                                                                                                       | Particulars                                                                                                                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tasks`                                          | `ApiTasksRepository`: `list` and `search` come from `GET /v1/tasks`; `TaskNotFoundException` comes from `TASKS.TASK.NOT_FOUND`; `changes()` is emitted after each own write           | Search becomes paginated with `after`                                                                                                                     |
+| `notifications`                                  | `ApiNotificationsRepository` and `SseNotificationsStream` (reads `GET /v1/notifications/stream` with `package:http` and the token from `packages/auth`, resumes with `Last-Event-ID`) | `live()` and `watchUnreadCount()` come from the stream; without a connection they fall back to polling the count. Adds `timezone` when saving preferences |
+| `billing`                                        | `ApiBillingRepository`; `BILLING.QUOTA.EXCEEDED` and `BILLING.PLAN.USAGE_EXCEEDS_LIMIT` are shown in `ChangePlanController`                                                           | The `Currency` and `QuotaKey` enums and the statuses are replaced by the generated ones; `invoice(id)` returns null on `BILLING.INVOICE.NOT_FOUND`        |
+| `reports` (new)                                  | Generated with `dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`; `ApiReportsRepository`                                                                        | Screens: catalog with parameters, runs list (with polling while `Queued` or `Running`) and detail with download. Access `reports:read`                    |
+| `backoffice`, `assistant`, `verifier`, `account` | No changes in these phases                                                                                                                                                            | `verifier` and `account` depend on F4; `backoffice` and `assistant` wait for the `backoffice-api` and the AI module                                       |
 
-Cada código de error nuevo con audiencia pública tiene su texto es y en en `front/packages/i18n` (lo entrega la tropa 2 de la ola 5). Las claves de etiquetas de cada microfrontend siguen en su propio ARB.
+Each new error code with a public audience has its es and en text in `front/packages/i18n` (delivered by troop 2 of wave 5). The label keys of each microfrontend stay in its own ARB.
 
-## 10. Despliegue por servicio (F12, solo lo que toca a estos servicios)
+## 10. Deployment per service (F12, only what concerns these services)
 
-Un servicio es desplegable cuando cumple el contrato con el pipeline que escribe la tropa 3 de la ola 5, sin leer su código. Cada servicio trae `main.ts` y `lambda.ts`, y la tabla muestra el runtime por defecto de la plantilla; cambiarlo es una línea de tfvars:
+A service is deployable when it meets the contract with the pipeline written by troop 3 of wave 5, without reading its code. Each service ships `main.ts` and `lambda.ts`, and the table shows the template's default runtime; changing it is one tfvars line:
 
-1. `backend/apps/<servicio>/project.json` con tag `type:app` y los targets `build` (`app-bundler`, salida en `backend/dist/<servicio>`), `migrate` y `seed`.
-2. `backend/infra/terraform/environments/<ambiente>/services/<servicio>/{terraform.tfvars,backend.tfvars}`. El pipeline recorre esa carpeta: no hay lista de servicios escrita en el workflow.
-3. Orden por servicio: `migrate`, `apply` del stack `service` y publicación de la imagen.
+1. `backend/apps/<service>/project.json` with tag `type:app` and the targets `build` (`app-bundler`, output in `backend/dist/<service>`), `migrate` and `seed`.
+2. `backend/infra/terraform/environments/<environment>/services/<service>/{terraform.tfvars,backend.tfvars}`. The pipeline walks that folder: there is no list of services written in the workflow.
+3. Order per service: `migrate`, `apply` of the `service` stack and image publishing.
 
-| Servicio        | `api.runtime` | `route_prefixes`                                    | Partes extra                                                                                                          |
-| --------------- | ------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `tasks`         | `fargate`     | `/v1/tasks`                                         | Worker para el outbox y los jobs                                                                                      |
-| `notifications` | `fargate`     | `/v1/notifications`, `/v1/notification-preferences` | `realtime` (ALB público, ruta `/v1/notifications/stream`), workers `triggers` y `realtime-control`, `ses_send = true` |
-| `reports`       | `fargate`     | `/v1/reports`                                       | Workers `runs` y `projections`                                                                                        |
-| `billing`       | `fargate`     | `/v1/billing`                                       | Workers `usage` e `identity`                                                                                          |
+| Service         | `api.runtime` | `route_prefixes`                                    | Extra parts                                                                                                             |
+| --------------- | ------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `tasks`         | `fargate`     | `/v1/tasks`                                         | Worker for the outbox and the jobs                                                                                      |
+| `notifications` | `fargate`     | `/v1/notifications`, `/v1/notification-preferences` | `realtime` (public ALB, route `/v1/notifications/stream`), `triggers` and `realtime-control` workers, `ses_send = true` |
+| `reports`       | `fargate`     | `/v1/reports`                                       | `runs` and `projections` workers                                                                                        |
+| `billing`       | `fargate`     | `/v1/billing`                                       | `usage` and `identity` workers                                                                                          |
 
-Las tropas 4 y 5 escriben los tfvars de `dev`, `staging` y `prod` de sus servicios; la prioridad única de `listener_rule_priority` de cada API en Fargate y las bases `<servicio>_shard_<n>` de `environments/*/data/terraform.tfvars` las asigna el general. `topology.json` lo regenera `contracts-export` en la ola 5 (colas, tópicos y `producers`). El rol de cada servicio no pide `files_access`.
+Troops 4 and 5 write the `dev`, `staging` and `prod` tfvars of their services; the unique `listener_rule_priority` of each Fargate API and the `<service>_shard_<n>` databases of `environments/*/data/terraform.tfvars` are assigned by the general. `topology.json` is regenerated by `contracts-export` in wave 5 (queues, topics and `producers`). Each service's role does not request `files_access`.
 
-## 11. Paquetes de trabajo
+## 11. Work packages
 
-En la ola 5 cada tropa es un guía Sonnet y dos Haiku (la de `@platform/http` e identity suma un capitán Opus); desde la ola 6 cada ola es un ciclo con un constructor y un revisor Opus (11.2). Las rutas son relativas a la raíz del repositorio. Lo que el general integra en cada ola: `nx.json`, `backend/tsconfig.base.json` (alias), `backend/eslint.config.mjs`, `backend/docker-compose.yml`, `backend/infra/local/**`, `backend/.env.example`, `front/pubspec.yaml`, `front/apps/*/lib/main.dart`, `environments/*/data/terraform.tfvars`, los `app.module.ts` que varias tropas tocan en la ola 7 y `docs/plan/**`. Cada tropa lista en su informe las líneas que pide al general.
+In wave 5 each troop is one Sonnet guide and two Haiku (the `@platform/http` and identity troop adds an Opus captain); from wave 6 on, each wave is a cycle with an Opus builder and an Opus reviewer (11.2). Paths are relative to the repository root. What the general integrates in each wave: `nx.json`, `backend/tsconfig.base.json` (aliases), `backend/eslint.config.mjs`, `backend/docker-compose.yml`, `backend/infra/local/**`, `backend/.env.example`, `front/pubspec.yaml`, `front/apps/*/lib/main.dart`, `environments/*/data/terraform.tfvars`, the `app.module.ts` files that several troops touch in wave 7 and `docs/plan/**`. Each troop lists in its report the lines it asks the general for.
 
-### 11.1 Ola 5
+### 11.1 Wave 5
 
-| Tropa             | Carpetas exclusivas                                                                                                                                                                                                                                                                                                                                                                  | Produce                                                                                                                                                                                                                            | Cierra                                                                                                                                                                                                                                                        | Depende de      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 2 (contratos)     | `backend/libs/contracts/{tasks,notifications,reports,billing}/**`; `backend/libs/contracts/identity/src/**` y `export/**` (solo el delta de 3.4); `backend/libs/contracts/platform/src/{kit,schemas,types,enums,errors}/**`; `backend/libs/contracts/asyncapi.json`; `backend/infra/terraform/topology.json`; `front/packages/contracts/lib/src/**`; ARB de `front/packages/i18n/**` | Secciones 3.3, 3.4, 4.1, 5.1, 6.1 y 7.1 completas con su Dart, `topology.json`, `asyncapi.json` y los textos es y en de cada código público. Haiku 1: tasks y notifications. Haiku 2: reports y billing. Guía: platform e identity | `contract.spec.ts` de cada servicio (ids únicos, compensaciones existentes, códigos con catálogo, esquemas JSON-safe); `pnpm nx run contracts-export:check`; `dart run contracts_gen --check`; prueba ARB                                                     | Ola 4 integrada |
-| 3 (pipeline, F12) | `.github/workflows/{deploy,publish-web,publish-mobile}.yml`; `backend/infra/scripts/**`; `backend/infra/terraform/modules/oidc*/**`; el módulo de OIDC dentro de `stacks/platform`; `backend/libs/platform/service/src/lambda/**`; `backend/libs/platform/internal-api/src/signing/**`; `backend/libs/platform/adapters/aws/src/sigv4/**`                                            | Despliegue con OIDC hacia AWS, por servicio, según la sección 10; publicación de la web y la app móvil; `bootstrapLambda` y `SigV4Signer` (tabla 2.1)                                                                              | `terraform test` y `tf-validate` en verde; un servicio de prueba (fixture) recorre migrar, aplicar y publicar en Fargate y en Lambda; la prueba de contrato de `InternalRequestSigner` pasa con los dos firmantes; sin claves de larga vida en el repositorio | Ninguna         |
+| Troop             | Exclusive folders                                                                                                                                                                                                                                                                                                                                                                             | Produces                                                                                                                                                                                                                                      | Closes                                                                                                                                                                                                                                        | Depends on        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| 2 (contracts)     | `backend/libs/contracts/{tasks,notifications,reports,billing}/**`; `backend/libs/contracts/identity/src/**` and `export/**` (only the delta of 3.4); `backend/libs/contracts/platform/src/{kit,schemas,types,enums,errors}/**`; `backend/libs/contracts/asyncapi.json`; `backend/infra/terraform/topology.json`; `front/packages/contracts/lib/src/**`; ARB files of `front/packages/i18n/**` | Sections 3.3, 3.4, 4.1, 5.1, 6.1 and 7.1 complete with their Dart, `topology.json`, `asyncapi.json` and the es and en texts of each public code. Haiku 1: tasks and notifications. Haiku 2: reports and billing. Guide: platform and identity | `contract.spec.ts` of each service (unique ids, existing compensations, codes with catalog, JSON-safe schemas); `pnpm nx run contracts-export:check`; `dart run contracts_gen --check`; ARB test                                              | Wave 4 integrated |
+| 3 (pipeline, F12) | `.github/workflows/{deploy,publish-web,publish-mobile}.yml`; `backend/infra/scripts/**`; `backend/infra/terraform/modules/oidc*/**`; the OIDC module inside `stacks/platform`; `backend/libs/platform/service/src/lambda/**`; `backend/libs/platform/internal-api/src/signing/**`; `backend/libs/platform/adapters/aws/src/sigv4/**`                                                          | Deployment with OIDC to AWS, per service, according to section 10; publishing of the web and the mobile app; `bootstrapLambda` and `SigV4Signer` (table 2.1)                                                                                  | `terraform test` and `tf-validate` green; a test service (fixture) goes through migrate, apply and publish on Fargate and on Lambda; the `InternalRequestSigner` contract test passes with both signers; no long-lived keys in the repository | None              |
 
-La tropa 1 de la ola 5 (WP2 y WP6 de F4) no toca nada de lo anterior. Si el esqueleto de identity (WP6) necesita los permisos nuevos, el general los agrega al integrar.
+Troop 1 of wave 5 (WP2 and WP6 of F4) touches none of the above. If the identity skeleton (WP6) needs the new permissions, the general adds them when integrating.
 
-### 11.2 Olas 6 a 9: ciclos de construcción y revisión
+### 11.2 Waves 6 to 9: build and review cycles
 
-Desde la ola 6, cada ola es un ciclo con dos agentes Opus: un constructor que planea, implementa y prueba, y un revisor independiente que lee el diff completo, corre la verificación y devuelve hallazgos sin editar. El constructor corrige y el revisor vuelve a revisar, hasta dos rondas (flujo `ciclo-fase`). Después el general integra, verifica, abre el PR y lo mezcla con los checks en verde, y arranca el ciclo siguiente sin esperar al usuario. El usuario revisa todo al final; sus correcciones corren como un ciclo más con el mismo flujo.
+From wave 6 on, each wave is a cycle with two Opus agents: a builder that plans, implements and tests, and an independent reviewer that reads the full diff, runs the verification and returns findings without editing. The builder fixes and the reviewer reviews again, up to two rounds (`ciclo-fase` flow). Then the general integrates, verifies, opens the PR and merges it with green checks, and starts the next cycle without waiting for the user. The user reviews everything at the end; their corrections run as one more cycle with the same flow.
 
-Las fases se juntan por dependencia: cada servicio trae su stack de Terraform, cada librería de plataforma nace en el ciclo que la usa y WP15 de F4 entra con identity.
+Phases are grouped by dependency: each service brings its Terraform stack, each platform library is born in the cycle that uses it and WP15 of F4 goes in with identity.
 
-| Ola | Fases         | Qué construye                                                                                                                                                                                                                                | Cierra                                                                                                                                                             |
-| --- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 6   | F4            | WP7 a WP14 sobre las fachadas y fakes de WP6, y WP15 (e2e y matriz de acceso de identity)                                                                                                                                                    | Fichas de WP7 a WP15 del diseño de F4                                                                                                                              |
-| 7   | F5 y F6       | Servicios `tasks` y `notifications` con sus tfvars; `@platform/flags`, `@platform/search` con sus dos modos, `features` y `flags` en `auth` y `http`; `@platform/realtime` con SSE y Socket.IO, `apps/realtime` y SES (secciones 3.5, 4 y 5) | Integración sobre dos shards; Mailpit recibe un correo; prueba de contrato de cada puerto con todos sus adaptadores; reconexión sin pérdida en los dos transportes |
-| 8   | F7 y F8       | Servicios `reports` y `billing` con sus tfvars; `@platform/quotas` y `@platform/metering`; sagas `TenantOnboarding` y `DeleteAccount`; medición y proyecciones entre servicios (secciones 6, 7, 8.1 a 8.3)                                   | Cada saga con `CrashingSagaStore`; flujo de alta de tenant, cambio de plan, factura, morosidad y reactivación                                                      |
-| 9   | F9, F10 y F11 | Pantallas de negocio y escenarios de las apps (sección 9); regiones, sharding real y `MoveTenant` con sus dos estrategias y sus dos compuertas (8.4); generadores, OpenAPI, ARCHITECTURE, ADR y runbooks (8.5); el mapa visual final         | Checks del front; traslado entre grupos y regiones sin pérdida; un servicio y un módulo generados pasan `lint test typecheck build`                                |
+| Wave | Phases          | What it builds                                                                                                                                                                                                                                              | Closes                                                                                                                                                 |
+| ---- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 6    | F4              | WP7 to WP14 on the facades and fakes of WP6, and WP15 (e2e and identity access matrix)                                                                                                                                                                      | Cards of WP7 to WP15 of the F4 design                                                                                                                  |
+| 7    | F5 and F6       | `tasks` and `notifications` services with their tfvars; `@platform/flags`, `@platform/search` with its two modes, `features` and `flags` in `auth` and `http`; `@platform/realtime` with SSE and Socket.IO, `apps/realtime` and SES (sections 3.5, 4 and 5) | Integration over two shards; Mailpit receives an email; contract test of each port with all its adapters; reconnection without loss on both transports |
+| 8    | F7 and F8       | `reports` and `billing` services with their tfvars; `@platform/quotas` and `@platform/metering`; `TenantOnboarding` and `DeleteAccount` sagas; metering and projections across services (sections 6, 7, 8.1 to 8.3)                                         | Each saga with `CrashingSagaStore`; tenant creation, plan change, invoice, delinquency and reactivation flow                                           |
+| 9    | F9, F10 and F11 | Business screens and app scenarios (section 9); regions, real sharding and `MoveTenant` with its two strategies and its two gates (8.4); generators, OpenAPI, ARCHITECTURE, ADRs and runbooks (8.5); the final visual map                                   | Front checks; move between groups and regions without loss; a generated service and module pass `lint test typecheck build`                            |
 
-## 12. Pruebas y criterio de terminado
+## 12. Tests and definition of done
 
-- **Unitarias.** Con los fakes de cada fachada y puerto, reloj e `IdGenerator` deterministas. Dominio sin Nest ni TypeORM.
-- **Integración** (`pgvector/pgvector:0.8.7-pg17` y `valkey/valkey-bundle:8.1.11`, como en [F4, sección 8](f4-identity.md#8-pruebas-y-criterio-de-terminado)). Cada módulo prueba sus filas en el shard que calcula el router, con al menos un usuario o tenant en cada uno de los dos shards. Se saltan sin Docker.
-- **E2E por ruta**, con la app completa, Postgres y Valkey reales y el bus en memoria; un e2e de autorización por servicio con la matriz de acceso (sin token, sin permiso, sin funcionalidad, con flag apagado y con step-up vencido donde aplique).
-- **Sagas.** Cada una con `CrashingSagaStore` y compensación declarada por operación, y la regla "pasos antes del pivote con compensación, después idempotentes".
-- **Front.** `analyze`, `format-check`, `test`, `check_microfrontend_boundaries` y `check_deferred_chunks`.
-- **Un paquete está terminado** con `pnpm nx affected -t lint test typecheck build`, cobertura de 80 % (líneas, sentencias y funciones) y 75 % (ramas) por proyecto, `contracts-export:check` y `dart run contracts_gen --check` cuando toca contratos, sin literales de eventos, permisos, códigos, colas o jobs, sin secretos y sin dependencias fuera de la sección 13.
-- **F5 a F11 terminan** cuando la ola 7 pasa el flujo de punta a punta dos veces seguidas y ARCHITECTURE y los ADR 0008, 0010, 0011, 0013 y 0014 reflejan lo construido.
+- **Unit.** With the fakes of each facade and port, deterministic clock and `IdGenerator`. Domain without Nest or TypeORM.
+- **Integration** (`pgvector/pgvector:0.8.7-pg17` and `valkey/valkey-bundle:8.1.11`, as in [F4, section 8](f4-identity.md#8-tests-and-definition-of-done)). Each module tests its rows in the shard computed by the router, with at least one user or tenant in each of the two shards. They are skipped without Docker.
+- **E2E per route**, with the full app, real Postgres and Valkey and the in-memory bus; one authorization e2e per service with the access matrix (no token, no permission, no feature, with a disabled flag and with expired step-up where it applies).
+- **Sagas.** Each one with `CrashingSagaStore` and declared compensation per operation, and the rule "steps before the pivot with compensation, after it idempotent".
+- **Front.** `analyze`, `format-check`, `test`, `check_microfrontend_boundaries` and `check_deferred_chunks`.
+- **A package is done** with `pnpm nx affected -t lint test typecheck build`, coverage of 80 % (lines, statements and functions) and 75 % (branches) per project, `contracts-export:check` and `dart run contracts_gen --check` when it touches contracts, no literals for events, permissions, codes, queues or jobs, no secrets and no dependencies outside section 13.
+- **F5 to F11 are done** when wave 7 passes the end-to-end flow twice in a row and ARCHITECTURE and ADRs 0008, 0010, 0011, 0013 and 0014 reflect what was built.
 
-## 13. Dependencias externas
+## 13. External dependencies
 
-| Necesidad                   | Decisión                                                                                                                                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Correo en AWS               | Librería: `@aws-sdk/client-sesv2`, aislada en `SesEmailSender`. Implementar el protocolo firmado de SES (SigV4) a mano sería imprudente.                                                    |
-| Correo local (Mailpit)      | Propio: `SmtpEmailSender` sobre `node:net`, sin autenticación ni TLS, solo con `NODE_ENV=development`. Se descarta `nodemailer`.                                                            |
-| Plantillas de correo        | Propias: clases con cadenas y `escapeHtml`. Se descartan React Email y MJML.                                                                                                                |
-| Feature flags               | Propio: `@platform/flags`. Se descarta OpenFeature.                                                                                                                                         |
-| Tiempo real                 | SSE propio sobre `text/event-stream` y Valkey Stream. Socket.IO con su librería y el adaptador de streams, porque reimplementar su protocolo es imprudente.                                 |
-| Push real                   | Fuera de F6 (puertos y fakes). Web Push exige cifrado de carga útil (RFC 8291): cuando llegue, `web-push` es una candidata razonable.                                                       |
-| CSV y JSON de reportes      | Propio: escritor CSV con comillas y escape.                                                                                                                                                 |
-| Copia de datos entre shards | Propio: lotes con TypeORM (`BatchCopyTransfer`) y replicación lógica con publicaciones y suscripciones de PostgreSQL por SQL (`LogicalReplicationTransfer`). Se descarta `pg-copy-streams`. |
-| Generadores y OpenAPI       | Propio: plantillas de texto y un exportador a OpenAPI 3.1. Se descartan `@nx/devkit` y `@nestjs/swagger`.                                                                                   |
-| Cron y jobs                 | Ya existen (`@platform/scheduling`).                                                                                                                                                        |
+| Need                     | Decision                                                                                                                                                                                            |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Email on AWS             | Library: `@aws-sdk/client-sesv2`, isolated in `SesEmailSender`. Implementing the signed SES protocol (SigV4) by hand would be unwise.                                                               |
+| Local email (Mailpit)    | In-house: `SmtpEmailSender` on `node:net`, without authentication or TLS, only with `NODE_ENV=development`. `nodemailer` is discarded.                                                              |
+| Email templates          | In-house: classes with strings and `escapeHtml`. React Email and MJML are discarded.                                                                                                                |
+| Feature flags            | In-house: `@platform/flags`. OpenFeature is discarded.                                                                                                                                              |
+| Real time                | In-house SSE on `text/event-stream` and Valkey Stream. Socket.IO with its library and the streams adapter, because reimplementing its protocol is unwise.                                           |
+| Real push                | Out of F6 (ports and fakes). Web Push requires payload encryption (RFC 8291): when it arrives, `web-push` is a reasonable candidate.                                                                |
+| Report CSV and JSON      | In-house: CSV writer with quoting and escaping.                                                                                                                                                     |
+| Data copy between shards | In-house: batches with TypeORM (`BatchCopyTransfer`) and logical replication with PostgreSQL publications and subscriptions via SQL (`LogicalReplicationTransfer`). `pg-copy-streams` is discarded. |
+| Generators and OpenAPI   | In-house: text templates and an OpenAPI 3.1 exporter. `@nx/devkit` and `@nestjs/swagger` are discarded.                                                                                             |
+| Cron and jobs            | They already exist (`@platform/scheduling`).                                                                                                                                                        |
 
-| Paquete                            | Versión exacta | Publicada  | Dónde                             | Por qué no se implementa en casa                                                                                                                    | Alternativa descartada                                                                     |
-| ---------------------------------- | -------------- | ---------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `@aws-sdk/client-sesv2`            | `3.1160.0`     | 2026-10-29 | `libs/platform/adapters/aws`      | Firmar y llamar la API de SES con SigV4 y reintentos es criptografía y protocolo ajenos al producto. Misma versión que `client-sns` y `client-sqs`. | `fetch` con una firma SigV4 propia: más código y más riesgo que el cliente.                |
-| `socket.io`                        | `4.8.4`        | 2026-09-25 | `libs/platform/realtime`          | Protocolo con transporte, reconexión y recuperación de estado; reimplementarlo es imprudente.                                                       | WebSocket propio sobre `node:http`: otro protocolo que mantener y sin clientes existentes. |
-| `@socket.io/redis-streams-adapter` | `0.3.1`        | 2026-03-12 | `libs/platform/realtime`          | Reparte mensajes entre instancias y da connection state recovery sobre un stream, como pide el ADR 0011. Se prueba con `iovalkey`.                  | `@socket.io/redis-adapter`: Pub/Sub sin recuperación de estado.                            |
-| `@nestjs/websockets`               | `12.3.2`       | 2026-10-27 | `libs/platform/realtime/src/nest` | Gateway de NestJS, misma versión que el resto de NestJS.                                                                                            | Servidor de Socket.IO montado a mano fuera de NestJS.                                      |
-| `@nestjs/platform-socket.io`       | `12.3.2`       | 2026-10-27 | `libs/platform/realtime/src/nest` | Adaptador de NestJS para Socket.IO.                                                                                                                 | La misma.                                                                                  |
+| Package                            | Exact version | Published  | Where                             | Why it is not built in-house                                                                                                                               | Discarded alternative                                                                    |
+| ---------------------------------- | ------------- | ---------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `@aws-sdk/client-sesv2`            | `3.1160.0`    | 2026-10-29 | `libs/platform/adapters/aws`      | Signing and calling the SES API with SigV4 and retries is cryptography and protocol foreign to the product. Same version as `client-sns` and `client-sqs`. | `fetch` with an in-house SigV4 signature: more code and more risk than the client.       |
+| `socket.io`                        | `4.8.4`       | 2026-09-25 | `libs/platform/realtime`          | Protocol with transport, reconnection and state recovery; reimplementing it is unwise.                                                                     | In-house WebSocket on `node:http`: another protocol to maintain and no existing clients. |
+| `@socket.io/redis-streams-adapter` | `0.3.1`       | 2026-03-12 | `libs/platform/realtime`          | Distributes messages across instances and provides connection state recovery over a stream, as ADR 0011 requires. Tested with `iovalkey`.                  | `@socket.io/redis-adapter`: Pub/Sub without state recovery.                              |
+| `@nestjs/websockets`               | `12.3.2`      | 2026-10-27 | `libs/platform/realtime/src/nest` | NestJS gateway, same version as the rest of NestJS.                                                                                                        | Socket.IO server mounted by hand outside NestJS.                                         |
+| `@nestjs/platform-socket.io`       | `12.3.2`      | 2026-10-27 | `libs/platform/realtime/src/nest` | NestJS adapter for Socket.IO.                                                                                                                              | The same.                                                                                |
 
-Las fechas se comprobaron con `npm view` el 16 de noviembre de 2026: todas tienen más de dos semanas. Se fijan exactas, sin `^` ni `~`. SES y las de tiempo real las agrega el ciclo de la ola 7 a `backend/package.json`; el general integra el lockfile.
+The dates were checked with `npm view` on November 16, 2026: all are more than two weeks old. They are pinned exactly, without `^` or `~`. SES and the real-time ones are added to `backend/package.json` by the wave 7 cycle; the general integrates the lockfile.
 
-## 14. Fuera de F5 a F11
+## 14. Outside F5 to F11
 
-| Pieza                                                                                                 | Cómo se simula o se pospone                                                  | Fase           |
-| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------- |
-| Servicio `files`, adjuntos y `StorageGb`                                                              | Sin fuente de `StorageGb`; los reportes guardan el resultado en la fila      | Posterior      |
-| Webhooks salientes                                                                                    | Nada                                                                         | Posterior      |
-| Adaptador real de `EmbeddingProvider`, módulo de IA y `assistant`                                     | Fake determinista de embeddings; `assistant` sigue con datos de demostración | Posterior      |
-| Push real (APNs, FCM, Web Push)                                                                       | `InMemoryPushSender`                                                         | Posterior      |
-| Eventos de rebote y queja de SES, píxel de apertura                                                   | Solo la tabla `email_suppressions` y el puerto                               | Posterior      |
-| `backoffice-api`, pantallas nuevas de `backoffice`, reportes de plataforma                            | Los datos de `backoffice` siguen siendo de demostración                      | Posterior      |
-| Cobro real, factura electrónica ante la DIAN                                                          | `FakePaymentProvider` y numeración interna                                   | Después de F12 |
-| `agreements`, DPoP, exportación a data lake, SLOs, recuperación entre regiones, rebalanceo automático | Nada                                                                         | Después de F12 |
+| Piece                                                                                         | How it is simulated or postponed                           | Phase     |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------- |
+| `files` service, attachments and `StorageGb`                                                  | No `StorageGb` source; reports store the result in the row | Later     |
+| Outgoing webhooks                                                                             | Nothing                                                    | Later     |
+| Real `EmbeddingProvider` adapter, AI module and `assistant`                                   | Deterministic embeddings fake; `assistant` keeps demo data | Later     |
+| Real push (APNs, FCM, Web Push)                                                               | `InMemoryPushSender`                                       | Later     |
+| SES bounce and complaint events, open tracking pixel                                          | Only the `email_suppressions` table and the port           | Later     |
+| `backoffice-api`, new `backoffice` screens, platform reports                                  | `backoffice` data stays demo data                          | Later     |
+| Real charging, electronic invoicing with the DIAN                                             | `FakePaymentProvider` and internal numbering               | After F12 |
+| `agreements`, DPoP, export to a data lake, SLOs, cross-region recovery, automatic rebalancing | Nothing                                                    | After F12 |
 
-## 15. Decisiones que requieren al usuario
+## 15. Decisions that require the user
 
-Cada decisión tiene opciones y una recomendación. El usuario aprobó todas las recomendaciones el 16 de noviembre de 2026.
+Each decision has options and a recommendation. The user approved all recommendations on November 16, 2026.
 
-1. **Qué entra en "capacidades" de F5.** (a) Feature flags propios y búsqueda de texto; archivos y webhooks fuera. (b) Sumar un servicio `files`. (c) Sumar webhooks salientes. **Recomiendo (a).** Los cuatro contratos de la ola 5 no incluyen `files`, F4 deja los flags para F5 y la pantalla de `tasks` pide búsqueda de texto. Los flags viven en la configuración de cada ambiente (`ConfigFlagStore`); una tabla editable en el catálogo necesita el `backoffice-api`, que no existe.
-2. **Campos de la tarea y a quién se avisa.** (a) Solo título, descripción y estado, y se avisa a `createdBy` cuando otra persona la cambia. (b) Sumar responsable, fecha límite y prioridad. **Recomiendo (a).** Es lo que muestra la pantalla de hoy; `NotificationType.taskUpdated` necesita un destinatario y `createdBy` es el único que existe.
-3. **Búsqueda por defecto.** La plantilla trae los dos modos de `SearchIndex` (tabla 2.1). (a) `SEARCH_MODE=text` por defecto, con `tsvector` en español. (b) `hybrid` por defecto. **Recomiendo (a).** El modo híbrido necesita un `EmbeddingProvider` real, que llega con el módulo de IA; hasta entonces corre con el fake en las pruebas.
-4. **Tiempo real por defecto.** La plantilla trae SSE y Socket.IO, autenticación por access token y por cookie, y el módulo montable dentro de un servicio o en `apps/realtime` (tabla 2.1). (a) Por defecto, los dos transportes, montados dentro de `notifications` y con access token. (b) Por defecto, `apps/realtime` aparte, como dice el ADR 0011. **Recomiendo (a).** Ahorra un servicio desplegado en la configuración inicial; pasar a (b) es cambiar `REALTIME_HOST` y desplegar la app.
-5. **Canales de F6.** (a) Email por SES en AWS y SMTP solo local, push solo con puertos y fakes, plantillas propias en TypeScript. (b) Además APNs, FCM y Web Push reales. (c) Plantillas con React Email o MJML. **Recomiendo (a).** Los canales reales de push piden cuentas de Apple y Firebase que solo el usuario tiene, y las plantillas propias evitan dos dependencias; (b) y (c) caben después sin tocar los puertos.
-6. **Zona horaria del horario de silencio.** (a) Campo `timezone` en las preferencias, que el cliente llena la primera vez que guarda. (b) Fijar UTC. (c) Usar una zona por tenant. **Recomiendo (a).** El horario "22:00 a 07:00" sin zona no se puede aplicar; (c) exige un dato de tenant que identity no tiene.
-7. **Reportes de la plantilla y exportación.** (a) `TasksByStatus`, `TasksActivity`, `InvoicesSummary` y `NotificationsDelivery`, en JSON y CSV, con el resultado guardado en la fila (hasta `REPORTS_MAX_RESULT_BYTES`) y vencimiento por `REPORTS_RESULT_TTL_DAYS`. (b) Resultados en S3. (c) Sumar PDF o XLSX. **Recomiendo (a).** Cada reporte sale de un servicio ya construido; (b) y (c) piden `files` y librerías de formato.
-8. **CSV como funcionalidad de plan.** (a) La exportación CSV exige `PlanFeature.AdvancedReports`. (b) Todos los planes la tienen. **Recomiendo (a).** Ejercita entitlements de punta a punta con la ruta de ejemplo; la regla es una línea que se quita.
-9. **Microfrontend `reports` nuevo en F9.** (a) Sí, generado con el script de P4.3. (b) No hay pantalla y `reports` se usa solo por API. **Recomiendo (a).** Sin pantalla, F7 no se ve y no hay forma de probar los permisos nuevos desde el front.
-10. **Planes semilla, prueba y gracia.** (a) Sembrar Inicio, Pro y Empresa con los valores de demostración del front, editables en el catálogo, y exigir `BILLING_TRIAL_DAYS` y `BILLING_GRACE_DAYS` en la configuración (sin valor por defecto en el código; el entorno local usa 14 y 7). (b) Otros planes o precios. **Recomiendo (a).** Los precios son una decisión comercial y el repositorio no debe fijarla; el ciclo de morosidad del README no da cifras.
-11. **Qué pasa al superar una cuota.** (a) Se bloquea con `BILLING.QUOTA.EXCEEDED` (como dice ARCHITECTURE) y las líneas de uso de la factura solo existen para métricas con precio unitario en el plan. (b) Se factura el excedente. **Recomiendo (a).** Es lo ya decidido; el medidor del front marca peligro al 100 % y los planes semilla no definen precio por unidad.
-12. **Qué se mide y cómo.** (a) `ApiCalls` cuenta las peticiones de service accounts con API key; `Users` se calcula en `billing` por los eventos de membresía; `StorageGb` queda sin fuente. La medición viaja como comando `billing.usage.record.v1`, no como el evento `BillingEvent.UsageRecorded` de ARCHITECTURE. (b) Contar todas las peticiones. (c) Mantener el evento y permitir que otros servicios publiquen en el tópico de `billing`. **Recomiendo (a).** "Llamadas de API" es el uso de integración; el kit de contratos solo deja publicar un evento a su dueño, y el comando con `sends` es su forma de pedir trabajo a otro servicio.
-13. **Roles de sistema.** La tabla de 3.3 (Owner todo; Admin sin `billing:write`; Member sin reportes de escritura ni billing; Billing solo billing y lectura de reportes). Alternativa: Admin con `billing:write`. **Recomiendo la tabla.** Cambiar un plan tiene costo, así que queda con Owner y Billing; es un cambio de una fila.
-14. **`POST /v1/tenants` asíncrono.** (a) Responde 202 con `{ tenantId, sagaId }` y el cliente consulta `GET /v1/sagas/{sagaId}`. (b) Espera a que la saga termine y responde 201. **Recomiendo (a).** La saga cruza tres servicios y puede reintentar; el cliente de F4 no cambia de pantalla, solo de espera.
-15. **Borrado de cuenta.** (a) Sin periodo de gracia: se suspende la cuenta y se borra en el acto; las tareas se conservan sin autor. (b) Gracia de N días con un job. **Recomiendo (a).** Es una saga de ejemplo; quien necesite gracia agrega un job que arranque la saga. Se confirma también que las facturas no se borran.
-16. **Regiones de la plantilla.** (a) Dos regiones identificadas con los ids de AWS de Terraform (`us-east-1`, `sa-east-1`), con la segunda simulada en local por un segundo Postgres y Valkey. (b) Códigos de país (`co`, `us`) como el ejemplo de ARCHITECTURE. (c) Solo `dev` con dos regiones y `prod` con una. **Recomiendo (a).** El estado de Terraform ya se guarda por `<región>`, y los nombres no se traducen entre el catálogo y la infraestructura; las demos del backoffice (`euWest`, `usEast`, `saEast`) son datos de prueba. La ola 9 solo escribe el segundo `dev`; `staging` y `prod` los define el usuario.
-17. **Traslado por defecto.** La plantilla trae `BatchCopyTransfer` y `LogicalReplicationTransfer`, y `DirectoryWriteGate` y `ValkeyWriteGate` (tabla 2.1). (a) Por defecto, copia por lotes y compuerta en el directorio. (b) Por defecto, replicación lógica y candado en Valkey, como dicen ARCHITECTURE y el ADR 0010. **Recomiendo (a).** La replicación lógica pide `wal_level=logical`, roles de replicación y red entre regiones, que no todo ambiente tiene; con (a) el traslado funciona en cualquier PostgreSQL. El ciclo de la ola 9 actualiza el ADR 0010 para nombrar las dos estrategias.
-18. **Generadores y documentación.** (a) Clases propias con plantillas, expuestas como targets de Nx, y OpenAPI en JSON desde `contract.json`. (b) Generadores con `@nx/devkit` (`nx g`) y página de Scalar. **Recomiendo (a).** Cero dependencias nuevas; `nx run` basta para dos generadores y el portal de documentación sigue fuera del plan.
-19. **Runtime por defecto y alcance de F9.** Cada servicio trae `main.ts` y `lambda.ts` (tabla 2.1). (a) Por defecto `fargate` en los cuatro servicios y F9 limitado a `tasks`, `notifications`, `billing` y `reports`; `backoffice` y `assistant` siguen en demostración hasta que existan sus APIs. (b) Algún servicio en `lambda` por defecto. (c) Incluir `backoffice` con un `backoffice-api` mínimo. **Recomiendo (a).** Los workers y el tiempo real necesitan procesos que viven; un servicio solo de API cambia a Lambda con una línea de tfvars.
+1. **What goes into F5 "capabilities".** (a) In-house feature flags and text search; files and webhooks out. (b) Add a `files` service. (c) Add outgoing webhooks. **I recommend (a).** The four wave 5 contracts do not include `files`, F4 leaves flags for F5 and the `tasks` screen asks for text search. Flags live in each environment's configuration (`ConfigFlagStore`); an editable table in the catalog needs the `backoffice-api`, which does not exist.
+2. **Task fields and who is notified.** (a) Only title, description and status, and `createdBy` is notified when someone else changes it. (b) Add assignee, due date and priority. **I recommend (a).** It is what today's screen shows; `NotificationType.taskUpdated` needs a recipient and `createdBy` is the only one that exists.
+3. **Default search.** The template ships both `SearchIndex` modes (table 2.1). (a) `SEARCH_MODE=text` by default, with `tsvector` in Spanish. (b) `hybrid` by default. **I recommend (a).** Hybrid mode needs a real `EmbeddingProvider`, which arrives with the AI module; until then it runs with the fake in tests.
+4. **Default real time.** The template ships SSE and Socket.IO, authentication by access token and by cookie, and the module mountable inside a service or in `apps/realtime` (table 2.1). (a) By default, both transports, mounted inside `notifications` and with access token. (b) By default, a separate `apps/realtime`, as ADR 0011 says. **I recommend (a).** It saves one deployed service in the initial configuration; moving to (b) means changing `REALTIME_HOST` and deploying the app.
+5. **F6 channels.** (a) Email through SES on AWS and SMTP only locally, push only with ports and fakes, in-house templates in TypeScript. (b) Also real APNs, FCM and Web Push. (c) Templates with React Email or MJML. **I recommend (a).** The real push channels require Apple and Firebase accounts that only the user has, and in-house templates avoid two dependencies; (b) and (c) fit later without touching the ports.
+6. **Time zone of quiet hours.** (a) A `timezone` field in the preferences, which the client fills the first time it saves. (b) Fix UTC. (c) Use one zone per tenant. **I recommend (a).** A "22:00 to 07:00" schedule without a zone cannot be applied; (c) requires a tenant attribute that identity does not have.
+7. **Template reports and export.** (a) `TasksByStatus`, `TasksActivity`, `InvoicesSummary` and `NotificationsDelivery`, in JSON and CSV, with the result stored in the row (up to `REPORTS_MAX_RESULT_BYTES`) and expiry by `REPORTS_RESULT_TTL_DAYS`. (b) Results in S3. (c) Add PDF or XLSX. **I recommend (a).** Each report comes from a service already built; (b) and (c) require `files` and format libraries.
+8. **CSV as a plan feature.** (a) CSV export requires `PlanFeature.AdvancedReports`. (b) All plans have it. **I recommend (a).** It exercises entitlements end to end with the example route; the rule is one line that can be removed.
+9. **New `reports` microfrontend in F9.** (a) Yes, generated with the P4.3 script. (b) There is no screen and `reports` is used only through the API. **I recommend (a).** Without a screen, F7 is not visible and there is no way to test the new permissions from the front.
+10. **Seed plans, trial and grace.** (a) Seed Inicio, Pro and Empresa with the front's demo values, editable in the catalog, and require `BILLING_TRIAL_DAYS` and `BILLING_GRACE_DAYS` in the configuration (no default value in the code; the local environment uses 14 and 7). (b) Other plans or prices. **I recommend (a).** Prices are a business decision and the repository must not fix them; the README's dunning cycle gives no figures.
+11. **What happens when a quota is exceeded.** (a) It is blocked with `BILLING.QUOTA.EXCEEDED` (as ARCHITECTURE says) and the invoice usage lines only exist for metrics with a unit price in the plan. (b) The overage is billed. **I recommend (a).** It is what was already decided; the front meter flags danger at 100 % and the seed plans define no unit price.
+12. **What is metered and how.** (a) `ApiCalls` counts the requests of service accounts with an API key; `Users` is computed in `billing` from the membership events; `StorageGb` has no source. Metering travels as the command `billing.usage.record.v1`, not as the `BillingEvent.UsageRecorded` event of ARCHITECTURE. (b) Count all requests. (c) Keep the event and allow other services to publish to the `billing` topic. **I recommend (a).** "API calls" is integration usage; the contract kit only lets an event's owner publish it, and the command with `sends` is how a service asks another one for work.
+13. **System roles.** The table in 3.3 (Owner everything; Admin without `billing:write`; Member without write reports or billing; Billing only billing and report reads). Alternative: Admin with `billing:write`. **I recommend the table.** Changing a plan has a cost, so it stays with Owner and Billing; it is a one-row change.
+14. **Asynchronous `POST /v1/tenants`.** (a) It responds 202 with `{ tenantId, sagaId }` and the client queries `GET /v1/sagas/{sagaId}`. (b) It waits for the saga to finish and responds 201. **I recommend (a).** The saga crosses three services and can retry; the F4 client does not change screens, only the wait.
+15. **Account deletion.** (a) No grace period: the account is suspended and deleted on the spot; tasks are kept without an author. (b) Grace of N days with a job. **I recommend (a).** It is an example saga; whoever needs grace adds a job that starts the saga. It is also confirmed that invoices are not deleted.
+16. **Template regions.** (a) Two regions identified with Terraform's AWS ids (`us-east-1`, `sa-east-1`), with the second one simulated locally by a second Postgres and Valkey. (b) Country codes (`co`, `us`) like the ARCHITECTURE example. (c) Only `dev` with two regions and `prod` with one. **I recommend (a).** Terraform state is already stored per `<region>`, and names are not translated between the catalog and the infrastructure; the backoffice demos (`euWest`, `usEast`, `saEast`) are test data. Wave 9 only writes the second `dev`; `staging` and `prod` are defined by the user.
+17. **Default move.** The template ships `BatchCopyTransfer` and `LogicalReplicationTransfer`, and `DirectoryWriteGate` and `ValkeyWriteGate` (table 2.1). (a) By default, batch copy and the directory gate. (b) By default, logical replication and the Valkey lock, as ARCHITECTURE and ADR 0010 say. **I recommend (a).** Logical replication requires `wal_level=logical`, replication roles and networking between regions, which not every environment has; with (a) the move works on any PostgreSQL. The wave 9 cycle updates ADR 0010 to name both strategies.
+18. **Generators and documentation.** (a) In-house classes with templates, exposed as Nx targets, and OpenAPI in JSON from `contract.json`. (b) Generators with `@nx/devkit` (`nx g`) and a Scalar page. **I recommend (a).** Zero new dependencies; `nx run` is enough for two generators and the documentation portal stays out of the plan.
+19. **Default runtime and F9 scope.** Each service ships `main.ts` and `lambda.ts` (table 2.1). (a) `fargate` by default in the four services and F9 limited to `tasks`, `notifications`, `billing` and `reports`; `backoffice` and `assistant` stay in demo mode until their APIs exist. (b) Some service on `lambda` by default. (c) Include `backoffice` with a minimal `backoffice-api`. **I recommend (a).** The workers and real time need long-lived processes; an API-only service switches to Lambda with one tfvars line.

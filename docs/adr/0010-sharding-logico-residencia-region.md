@@ -1,40 +1,40 @@
-# 0010. Sharding lógico por grupos y residencia por región
+# 0010. Logical sharding by groups and residency by region
 
-- Estado: Aceptada, modificada por [ADR 0023](0023-enrutamiento-de-datos-de-identity.md), [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) y [ADR 0032](0032-traslado-de-tenants-y-regiones.md)
-- Fecha: 2026-11-11
+- Status: Accepted, amended by [ADR 0023](0023-enrutamiento-de-datos-de-identity.md), [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) and [ADR 0032](0032-traslado-de-tenants-y-regiones.md)
+- Date: 2026-11-11
 
-## Contexto
+## Context
 
-La plataforma atiende muchos tenants, algunos muy grandes, y cada tenant elige su país o región por residencia de datos. Crecer no debe obligar a cambiar el código de negocio ni a interrumpir tenants.
+The platform serves many tenants, some of them very large, and each tenant chooses its country or region for data residency. Growth must not force changes to business code or interrupt tenants.
 
-## Decisión
+## Decision
 
-Shard lógico: una base PostgreSQL con el esquema completo del servicio. Varios shards lógicos conviven en una instancia física. La cadena de enrutamiento es tenant, región, grupo de shards, shard lógico e instancia física.
+Logical shard: a PostgreSQL database with the service's complete schema. Several logical shards coexist on one physical instance. The routing chain is tenant, region, shard group, logical shard and physical instance.
 
-- Cada servicio tiene su catálogo, que guarda solo datos de enrutamiento: directorio tenant a región y grupo, mapa de shard a instancia y, en identity, índices globales y HMAC del email.
-- Cada servicio o entidad declara su llave (`ShardKey.Tenant`, `ShardKey.User` o propia). Sin llave, la query falla con `PLATFORM.SHARDING.KEY_MISSING`.
-- Estrategia por defecto `Directory`. Las transacciones no cruzan shards (`PLATFORM.SHARDING.CROSS_SHARD_TX`).
-- Los traslados de un tenant (`MoveTenant`) copian por lotes por defecto, o con replicación lógica cuando el manifiesto lo admite, y frenan las escrituras con una compuerta (en el directorio o en Valkey) y una barrera por tenant en el shard de origen ([ADR 0032](0032-traslado-de-tenants-y-regiones.md)). El traslado de un shard entero (`MoveShard`) no está construido.
-- Cada región despliega su propio stack (`REGIONS` y `SERVICE_REGION`). El login devuelve la URL regional, el JWT lleva la región (`rgn`) y un tenant de otra región responde `PLATFORM.SHARDING.WRONG_REGION` (421) con la URL de su API, que `ApiClient` del front sigue una vez ([ADR 0034](0034-repositorios-live-del-front-sse-y-region.md)).
-- Los cinco servicios de la plantilla usan shards: uno por región en producción y dos en local y pruebas, con un tenant en cada uno.
+- Each service has its catalog, which stores only routing data: the tenant to region and group directory, the shard to instance map and, in identity, global indexes and the email HMAC.
+- Each service or entity declares its key (`ShardKey.Tenant`, `ShardKey.User` or its own). Without a key, the query fails with `PLATFORM.SHARDING.KEY_MISSING`.
+- Default strategy `Directory`. Transactions do not cross shards (`PLATFORM.SHARDING.CROSS_SHARD_TX`).
+- Tenant moves (`MoveTenant`) copy in batches by default, or with logical replication when the manifest allows it, and stop writes with a gate (in the directory or in Valkey) and a per-tenant barrier in the source shard ([ADR 0032](0032-traslado-de-tenants-y-regiones.md)). Moving a whole shard (`MoveShard`) is not built.
+- Each region deploys its own stack (`REGIONS` and `SERVICE_REGION`). Login returns the regional URL, the JWT carries the region (`rgn`) and a tenant from another region responds with `PLATFORM.SHARDING.WRONG_REGION` (421) with the URL of its API, which the front's `ApiClient` follows once ([ADR 0034](0034-repositorios-live-del-front-sse-y-region.md)).
+- The template's five services use shards: one per region in production and two locally and in tests, with one tenant in each.
 
-## Consecuencias
+## Consequences
 
-Positivas:
+Positive:
 
-- Crecer significa agregar shards o mover tenants, sin cambiar el código de negocio.
-- Los datos de un tenant permanecen en su región.
-- Los traslados ocurren sin que las peticiones fallen.
+- Growing means adding shards or moving tenants, without changing business code.
+- A tenant's data stays in its region.
+- Moves happen without requests failing.
 
-Costos:
+Costs:
 
-- Las consultas entre shards son explícitas, tienen límite de concurrencia y pueden llegar parciales.
-- Cada región nueva es un stack completo que desplegar con Terraform.
-- El rebalanceo automático de shards queda para una fase posterior.
+- Cross-shard queries are explicit, have a concurrency limit and can return partial results.
+- Each new region is a complete stack to deploy with Terraform.
+- Automatic shard rebalancing is left for a later phase.
 
-## Alternativas consideradas
+## Alternatives considered
 
-- `ConsistentHash`: anillo con nodos virtuales, para muchas llaves pequeñas sin catálogo.
-- `Range`: rangos de la llave, para llaves con orden natural como las fechas.
-- Estrategia propia: implementación de `ShardingStrategy` para reglas de negocio específicas.
-- Un solo stack global para todos los tenants: el documento lo descarta por la residencia de datos.
+- `ConsistentHash`: ring with virtual nodes, for many small keys without a catalog.
+- `Range`: key ranges, for keys with a natural order such as dates.
+- Custom strategy: an implementation of `ShardingStrategy` for specific business rules.
+- A single global stack for all tenants: the document discards it because of data residency.
