@@ -16,9 +16,10 @@ import { PasswordResetTokens } from './password-reset-tokens.js';
 import { PasswordVerifier } from './password-verifier.js';
 
 /**
- * Restablece la contraseña con el token del correo y cierra todas las sesiones. El canje del token y la
- * contraseña nueva se confirman en la misma transacción del shard del usuario: si la contraseña no cumple
- * la política, el token sigue sirviendo para otro intento.
+ * Resets the password with the emailed token and closes every session. Redeeming the token, storing the new
+ * password and revoking the sessions commit in the same transaction of the user shard: a reset is never
+ * confirmed with the sessions still open, and if the password breaks the policy the token still serves
+ * another attempt.
  */
 @Injectable()
 export class ConfirmPasswordReset {
@@ -33,6 +34,12 @@ export class ConfirmPasswordReset {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Confirms a password reset.
+   * @param request Emailed token and the new password.
+   * @throws IdentityError `IDENTITY.PASSWORD.RESET_INVALID` if the token is unknown, used or expired.
+   * @throws IdentityError `IDENTITY.PASSWORD.POLICY_VIOLATION` or `IDENTITY.PASSWORD.BREACHED` for a weak password.
+   */
   async execute(request: PasswordResetConfirmRequest): Promise<void> {
     const ref = this.resets.ownerOf(request.token);
     if (ref === undefined) {
@@ -46,11 +53,11 @@ export class ConfirmPasswordReset {
         const user = await this.users.getByRef(ref);
         await this.acceptance.assert(request.newPassword, user.email);
         await this.verifier.store(ref, request.newPassword);
+        await this.sessions.revokeUserSessions(
+          ref,
+          RevocationReason.PasswordChanged,
+        );
       }),
-    );
-    await this.sessions.revokeUserSessions(
-      ref,
-      RevocationReason.PasswordChanged,
     );
     await this.alerts.raise({
       type: SecurityAlertType.PasswordRecovered,
