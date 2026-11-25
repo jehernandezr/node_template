@@ -1,8 +1,10 @@
 ---
 name: front-accesibilidad
-description: Accesibilidad de los widgets del front de node_template (Flutter, web y móvil). Semantics, nombres accesibles, tamaños táctiles de 48 en el tema, contraste, escala de texto, foco y teclado, animaciones y anuncios de cambios async, con las pruebas que lo fijan (expectAccessible y escala 2x). Úsala al crear, revisar o auditar pantallas, componentes de ui o formularios.
+description: 'Accesibilidad del front Flutter: Semantics, tamaños táctiles, contraste, escala de texto, foco y sus pruebas. Úsala en pantallas, widgets y ui.'
 paths:
-  - 'front/**/lib/**'
+  - 'front/**/screens/**'
+  - 'front/**/widgets/**'
+  - 'front/packages/ui/**'
 ---
 
 # Accesibilidad del front
@@ -27,19 +29,7 @@ El objetivo es WCAG 2.2 nivel AA en web, Android e iOS. Los componentes de `fron
 
 ## Ejemplo
 
-```dart
-IconButton(
-  onPressed: onClose,
-  tooltip: l10n.close,
-  icon: const Icon(Icons.close),
-  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-)
-
-Semantics(
-  liveRegion: true,
-  child: Text(l10n.savedMessage),
-)
-```
+Ejemplo en `references/ejemplos.md`, sección "Ejemplo".
 
 ## Comprobación
 
@@ -53,8 +43,4 @@ Cada hallazgo lleva el criterio con su nombre (`2.5.8 Target Size (Minimum)`), s
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- `principle-prove-it-works`: la accesibilidad se demuestra con `expectAccessible` y la prueba a escala 2x, no con la lectura del código.
-- `principle-experience-first` cuando un ajuste de accesibilidad compite con la conveniencia de implementación.
-- Para revisar una pantalla: `interrogate` sobre el diff, con estos criterios como reglas.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-prove-it-works`, `principle-experience-first`, `interrogate`.

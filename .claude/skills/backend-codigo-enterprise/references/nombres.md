@@ -11,23 +11,21 @@
 
 El nombre dice qué es. El archivo es kebab-case con el rol como sufijo y contiene una clase pública.
 
-| Rol                | Clase                         | Archivo                             |
-| ------------------ | ----------------------------- | ----------------------------------- |
-| Caso de uso        | `SignInUseCase`               | `sign-in.use-case.ts`               |
-| Comando            | `SignInCommand`               | `sign-in.command.ts`                |
-| Consulta           | `GetUserProfileQuery`         | `get-user-profile.query.ts`         |
-| Agregado           | `User`                        | `user.aggregate.ts`                 |
-| Objeto de valor    | `Email`                       | `email.value-object.ts`             |
-| Evento de dominio  | `UserRegisteredEvent`         | `user-registered.event.ts`          |
-| Error de dominio   | `EmailAlreadyRegisteredError` | `email-already-registered.error.ts` |
-| Puerto             | `UserRepository` (abstracta)  | `user.repository.ts`                |
-| Adaptador          | `TypeOrmUserRepository`       | `typeorm-user.repository.ts`        |
-| Entidad ORM        | `UserEntity`                  | `user.entity.ts`                    |
-| Mapper             | `UserMapper`                  | `user.mapper.ts`                    |
-| Controller         | `UsersController`             | `users.controller.ts`               |
-| Consumidor         | `UserRegisteredConsumer`      | `user-registered.consumer.ts`       |
-| Esquema zod        | `signInRequestSchema`         | `sign-in.request.schema.ts`         |
-| Token de inyección | `USER_REPOSITORY`             | junto al puerto                     |
+- Caso de uso: clase: `SignInUseCase`; archivo: `sign-in.use-case.ts`
+- Comando: clase: `SignInCommand`; archivo: `sign-in.command.ts`
+- Consulta: clase: `GetUserProfileQuery`; archivo: `get-user-profile.query.ts`
+- Agregado: clase: `User`; archivo: `user.aggregate.ts`
+- Objeto de valor: clase: `Email`; archivo: `email.value-object.ts`
+- Evento de dominio: clase: `UserRegisteredEvent`; archivo: `user-registered.event.ts`
+- Error de dominio: clase: `EmailAlreadyRegisteredError`; archivo: `email-already-registered.error.ts`
+- Puerto: clase: `UserRepository` (abstracta); archivo: `user.repository.ts`
+- Adaptador: clase: `TypeOrmUserRepository`; archivo: `typeorm-user.repository.ts`
+- Entidad ORM: clase: `UserEntity`; archivo: `user.entity.ts`
+- Mapper: clase: `UserMapper`; archivo: `user.mapper.ts`
+- Controller: clase: `UsersController`; archivo: `users.controller.ts`
+- Consumidor: clase: `UserRegisteredConsumer`; archivo: `user-registered.consumer.ts`
+- Esquema zod: clase: `signInRequestSchema`; archivo: `sign-in.request.schema.ts`
+- Token de inyección: clase: `USER_REPOSITORY`; archivo: junto al puerto
 
 ## Métodos
 

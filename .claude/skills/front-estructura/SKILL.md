@@ -1,8 +1,10 @@
 ---
 name: front-estructura
-description: Cómo se organizan carpetas, dependencias y nombres del front de node_template. Un solo pub workspace, apps, paquetes compartidos y microfrontends, capas de lib/src, API pública por paquete y reglas de dependencia. Úsala al crear o mover paquetes, microfrontends, pantallas, archivos o pruebas del front.
+description: 'Carpetas, paquetes, microfrontends, capas de lib/src y reglas de dependencia del front. Úsala al crear o mover paquetes, archivos o pruebas.'
 paths:
-  - 'front/**'
+  - 'front/**/pubspec.yaml'
+  - 'front/**/lib/*.dart'
+  - 'front/tools/**'
 ---
 
 # Estructura del front
@@ -33,18 +35,7 @@ front/
 
 Un microfrontend organiza `lib/src` por capa. La dependencia va en un solo sentido: `screens` conoce a `data` y a `shared`, `data` conoce a `shared`, `shared` no conoce a nadie.
 
-```
-lib/src/
-├── screens/     pantallas (widgets), controladores y flujos de esas pantallas
-├── data/        puerto del repositorio, adaptador de API y adaptador de demostración
-├── lifecycle/   ciclo de vida del microfrontend
-├── l10n/        ARB y localizaciones generadas
-└── shared/
-    ├── enums/       sin imports internos
-    ├── constants/   importa enums
-    ├── types/       importa enums y constants
-    └── utils/       importa las tres
-```
+Ejemplo en `references/ejemplos.md`, sección "Capas dentro de un microfrontend".
 
 - `screens/` agrupa por pantalla, no por tipo de widget: `tasks_list_screen.dart` y `tasks_list_controller.dart` conviven. Un widget que solo usa una pantalla es privado de su archivo o hermano suyo.
 - Lo que dos microfrontends necesitan no se copia ni se importa del otro: sube a `front/packages` (`ui` para widgets, `utils` para funciones puras, `tokens` para diseño).
@@ -71,8 +62,4 @@ lib/src/
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- Dónde debe vivir algo o qué paquete lo posee: `how`. El porqué de una frontera: `why`.
-- Una regla de dependencias que se repite: `principle-encode-lessons-in-structure`. Se vuelve un chequeo de `check_microfrontend_boundaries` o de `check-structure.mjs`.
-- Al mover una API pública entre paquetes: `principle-migrate-callers-then-delete-legacy-apis`, en el mismo cambio.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `how`, `why`, `principle-encode-lessons-in-structure`, `principle-migrate-callers-then-delete-legacy-apis`.

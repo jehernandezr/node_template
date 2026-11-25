@@ -1,6 +1,6 @@
 ---
 name: backend-observabilidad-configuracion
-description: Configuración validada, logging estructurado, trazas, métricas, health checks y apagado ordenado del backend de node_template. Config tipada con zod que falla al arrancar, LoggerPort con trace_id, OpenTelemetry, niveles de log, readiness y liveness, y timeouts. Úsala al agregar una variable de entorno, un log, una métrica, un span, un endpoint de salud o un cliente con timeout.
+description: 'Configuración con zod, logging, trazas, métricas, salud y timeouts del backend. Úsala al agregar una variable de entorno, un log, una métrica o un health check.'
 paths:
   - 'backend/**/config/**'
   - 'backend/libs/platform/config/**'
@@ -71,8 +71,4 @@ export const databaseConfigSchema = z.strictObject({
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- `principle-explain-the-number` y `benchmark-checklist` antes de reportar o actuar sobre una latencia, un throughput o una mejora medida.
-- `principle-boundary-discipline`: la configuración se valida con zod al arrancar y falla temprano. Adentro se confía en el tipo.
-- Un síntoma en vivo (fuga, CPU ociosa, picos): el playbook `runtime-forensics` de `poteto-mode`.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-explain-the-number`, `benchmark-checklist`, `principle-boundary-discipline`, `runtime-forensics`, `poteto-mode`.

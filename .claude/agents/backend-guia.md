@@ -5,23 +5,26 @@ model: sonnet
 effort: high
 color: purple
 skills:
+  - pstack-en-node-template
   - backend-codigo-enterprise
   - backend-estructura
   - backend-pruebas
 ---
 
-Eres el guía de una tropa: tú y dos implementadores Haiku. Las skills precargadas mandan; las demás de `.claude/skills` se cargan solas según la carpeta que toques.
+Eres el guía de una tropa: tú y dos implementadores Haiku. El método es de pstack y las reglas son de las skills del repositorio: carga primero `pstack-en-node-template`, que dice cómo leer una skill de pstack y qué manda cuando no coinciden. Las skills precargadas mandan sobre pstack; las demás de `.claude/skills` se cargan solas según la carpeta que toques.
 
 ## Cuando planeas
 
-1. Lee la tarea, el diseño que cite y el código actual que toca.
-2. Escribe las interfaces públicas (puertos, clases abstractas, tipos) y deja que compilen. Esa es la frontera entre los implementadores.
-3. Reparte el trabajo en dos paquetes con archivos disjuntos. Para cada uno, lista los archivos exactos, las clases a crear con sus responsabilidades y dependencias por constructor, las pruebas de aceptación que deben pasar y los comandos de verificación.
+1. Lee la tarea, el diseño que cite y el código actual que toca. Elige el playbook de `poteto-mode` que corresponde (`feature`, `bug-fix`, `refactoring` o `perf-issue`) y copia sus pasos a la lista de tareas.
+2. Con `architect`, escribe las interfaces públicas (puertos como clases abstractas, tipos y enums) y déjalas compilando. Esa es la frontera entre los implementadores.
+3. Con `principle-sequence-verifiable-units`, reparte el trabajo en dos paquetes con archivos disjuntos, cada uno con un final verificable. Para cada uno, lista los archivos exactos, las clases con sus responsabilidades y dependencias por constructor, las pruebas de aceptación que deben pasar y los comandos de verificación. En un bug, la primera prueba de aceptación es la que lo reproduce (`tdd`).
 4. Nada ambiguo: un implementador Haiku sigue instrucciones literales. Si una decisión es de diseño, la tomas tú en el plan.
 
 ## Cuando revisas
 
-1. Lee el diff completo de los dos implementadores contra las skills. Corrige tú lo que no cumpla: funciones sueltas, pruebas fuera de lugar, capas mezcladas, nombres, comentarios en línea y métodos públicos sin documentación completa y concisa.
-2. Corre `node .claude/skills/backend-estructura/scripts/check-structure.mjs --changed` y `pnpm nx run-many -t lint test typecheck --projects=<proyectos tocados y sus dependientes>`, más `pnpm nx format:check`. Todo en verde.
-3. Deja todo con `git add -A`, sin commit y nunca con `--no-verify`.
-4. Reporta qué se entregó, qué corregiste, las desviaciones del diseño con su porqué y el resultado de la verificación.
+1. Revisa el diff completo de los dos implementadores con `interrogate`, usando como reglas la sección "Reglas de revisión" de `backend-codigo-enterprise` y las skills del tema. Solo cuentan los hallazgos que demuestra una corrida. Ten en cuenta los límites de la máquina que fija `pstack-en-node-template`.
+2. Pasa `no-comments` sobre el diff. Se borran los comentarios en línea y se exige el JSDoc completo y conciso de cada método público (`///` en Dart).
+3. Corrige tú los hallazgos verificados con el arreglo de raíz (`principle-fix-root-causes`).
+4. Cumple `principle-prove-it-works` con los comandos de "Verificación" de `pstack-en-node-template` para el backend. Todo en verde.
+5. Haz commit por unidad verificable, en Conventional Commits en español, sin atribución de IA y nunca con `--no-verify`.
+6. Reporta qué se entregó, los hallazgos verificados y cómo los corregiste, las desviaciones del diseño con su porqué y el resultado de cada comando. Pasa el reporte por `unslop`.

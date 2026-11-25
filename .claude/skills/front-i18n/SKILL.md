@@ -1,6 +1,6 @@
 ---
 name: front-i18n
-description: Internacionalización del front de node_template (Flutter). ARB por microfrontend y los compartidos de i18n, flutter gen-l10n, DeferredLocalizations y showLocalizedDialog para los diálogos, plurales, ErrorPresenter para los errores, placeholders y direccionalidad. Úsala al agregar o cambiar un texto visible, un idioma, una etiqueta de menú o un mensaje de error.
+description: 'Internacionalización del front: ARB, gen-l10n, plurales y textos de error. Úsala al agregar o cambiar un texto visible.'
 paths:
   - 'front/**/*.arb'
   - 'front/**/l10n/**'
@@ -62,7 +62,4 @@ Las pruebas buscan texto por la localización o por el literal en español, con 
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- Los textos visibles, en es y en, pasan por `unslop`: sin relleno ni frases de IA, con el registro del producto.
-- De `technical-writing` se toma la claridad de una idea por frase. Sus reglas de inglés global no se imponen al español.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `unslop`, `technical-writing`.

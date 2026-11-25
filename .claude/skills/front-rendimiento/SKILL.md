@@ -1,8 +1,9 @@
 ---
 name: front-rendimiento
-description: Rendimiento de la interfaz del front de node_template (Flutter). const, reconstrucciones acotadas, listas con builder, tamaño de los chunks diferidos, trabajo pesado fuera del hilo de UI, imágenes y animaciones. Úsala al escribir o revisar widgets, listas, pantallas con muchos datos o cuando una pantalla se siente lenta.
+description: 'Rendimiento de la interfaz Flutter: const, reconstrucciones, listas, chunks diferidos e imágenes. Úsala en pantallas y widgets.'
 paths:
-  - 'front/**/lib/**'
+  - 'front/**/screens/**'
+  - 'front/**/widgets/**'
 ---
 
 # Rendimiento del front
@@ -36,8 +37,4 @@ Estas reglas son baratas y se aplican siempre.
 
 ## Con pstack
 
-Carga primero `pstack-en-node-template`: dice cómo se lee una skill de pstack en Claude Code y qué regla manda cuando pstack y el repositorio no coinciden. Si el plugin no está instalado, esta sección no aplica.
-
-- `benchmark-checklist` y `principle-explain-the-number` antes de reportar una mejora o una regresión.
-- Una pantalla lenta se trabaja con el playbook `perf-issue` de `poteto-mode`, contra una línea base medida.
-- Un perfil capturado (timeline, heap): el playbook `trace-forensics`.
+Método en `pstack-en-node-template`. De pstack aplican aquí: `benchmark-checklist`, `principle-explain-the-number`, `perf-issue`, `poteto-mode`, `trace-forensics`.
