@@ -8,6 +8,8 @@ backend/libs/services/users/src/
 ├── shared/{enums,constants,types,utils}/
 └── modules/
     └── sign-in/
+        ├── index.ts              # facade and types other modules use
+        ├── module.ts             # the Nest module classes other modules import
         ├── domain/               # aggregates, value objects, events, errors, ports
         ├── application/          # use cases, commands, queries, facade
         ├── infrastructure/       # TypeORM repositories, entities, mappers, clients
