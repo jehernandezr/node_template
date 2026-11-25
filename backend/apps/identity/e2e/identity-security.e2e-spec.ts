@@ -1,0 +1,377 @@
+import {
+  ActivateTenantOperation,
+  CreateTenantOperation,
+  IdentityErrorCode,
+  IdentityRoute,
+  MfaFactor,
+  Permission,
+  SignInStatus,
+  TenantKind,
+} from '@contracts/identity';
+import { ContainerRuntime } from '@platform/kernel/test-utils';
+import type { HttpTestClient } from '@platform/http/test-utils';
+import { IdentityEmailTemplate } from '../src/shared/enums/identity-email-template.enum.js';
+import {
+  DeviceKey,
+  IdentityJourney,
+  IdentityTestApp,
+  SoftwareAuthenticator,
+  TestIds,
+  type SessionTokensBody,
+} from '../src/__tests__/utils/index.js';
+
+const runtime = new ContainerRuntime(process.env);
+
+interface Named {
+  readonly id: string;
+}
+
+interface PendingBody {
+  readonly status: SignInStatus;
+  readonly mfa: { readonly mfaToken: string; readonly methods: MfaFactor[] };
+}
+
+interface OptionsBody {
+  readonly challengeId: string;
+  readonly optionsJson: string;
+}
+
+runtime.describeIfAvailable('identity security end to end', () => {
+  jest.setTimeout(180_000);
+
+  const app = new IdentityTestApp();
+
+  beforeAll(async () => {
+    await app.start();
+  });
+
+  afterAll(async () => {
+    await app.stop();
+  });
+
+  /** Opens an organization owned by the user of that session and returns a client switched into it. */
+  const organizationOf = async (
+    owner: IdentityJourney,
+    session: SessionTokensBody,
+    slug: string,
+  ): Promise<{ tenantId: string; client: HttpTestClient }> => {
+    const tenantId = TestIds.next();
+    await app.internal().invoke(CreateTenantOperation, {
+      tenantId,
+      slug,
+      name: slug,
+      region: 'eu',
+      kind: TenantKind.Organization,
+      ownerUserId: IdentityJourney.userIdFrom(session.accessToken),
+    });
+    await app.internal().invoke(ActivateTenantOperation, { tenantId });
+    return { tenantId, client: await switchTo(owner, session, tenantId) };
+  };
+
+  const switchTo = async (
+    user: IdentityJourney,
+    session: SessionTokensBody,
+    tenantId: string,
+  ): Promise<HttpTestClient> => {
+    const switched = await user
+      .bearer(session.accessToken)
+      .post('/v1/me/tenant-switch', { body: { tenantId } });
+    IdentityJourney.expectStatus(switched, 200);
+    return user.bearer((switched.body as SessionTokensBody).accessToken);
+  };
+
+  const passkeyOptions = async (
+    client: HttpTestClient,
+    path: string,
+    body?: object,
+  ): Promise<OptionsBody> =>
+    (await client.post(path, body === undefined ? undefined : { body }))
+      .body as OptionsBody;
+
+  describe('sign-in from a registered device', () => {
+    const leo = new IdentityJourney(app, 'leo.device@example.com');
+    let deviceId: string;
+
+    beforeAll(async () => {
+      await leo.register();
+      deviceId = IdentityJourney.deviceIdFrom(
+        (await leo.signInWithEmailCode()).accessToken,
+      );
+    });
+
+    it('skips the second factor only with the signature of the device key', async () => {
+      const signedIn = await leo.signInFromDevice(deviceId);
+
+      expect(signedIn.body).toMatchObject({
+        status: SignInStatus.Authenticated,
+      });
+    });
+
+    it('asks for a second factor when the public device id comes signed by another key', async () => {
+      const forged = await leo.native().post('/v1/auth/sign-in', {
+        body: {
+          email: leo.email,
+          password: IdentityJourney.PASSWORD,
+          device: new DeviceKey().signed(IdentityRoute.SignIn, deviceId, [
+            leo.email,
+          ]),
+        },
+      });
+
+      expect(forged.body).toMatchObject({ status: SignInStatus.MfaRequired });
+    });
+
+    it('asks for a second factor when a device signature is replayed', async () => {
+      const proof = leo.device.signed(IdentityRoute.SignIn, deviceId, [
+        leo.email,
+      ]);
+      const body = {
+        email: leo.email,
+        password: IdentityJourney.PASSWORD,
+        device: proof,
+      };
+
+      const first = await leo.native().post('/v1/auth/sign-in', { body });
+      const replayed = await leo.native().post('/v1/auth/sign-in', { body });
+
+      expect(first.body).toMatchObject({ status: SignInStatus.Authenticated });
+      expect(replayed.body).toMatchObject({
+        status: SignInStatus.MfaRequired,
+      });
+    });
+
+    it('rejects the bare public device id the sign-in used to accept', async () => {
+      const bare = await leo.native().post('/v1/auth/sign-in', {
+        body: {
+          email: leo.email,
+          password: IdentityJourney.PASSWORD,
+          deviceId,
+        },
+      });
+
+      expect(bare.status).toBe(400);
+    });
+  });
+
+  describe('a passkey without user verification', () => {
+    const noe = new IdentityJourney(app, 'noe.passkey@example.com');
+    const securityKey = new SoftwareAuthenticator(
+      IdentityTestApp.WEB_ORIGIN,
+      false,
+    );
+    let deviceId: string;
+
+    beforeAll(async () => {
+      await noe.register();
+      const session = await noe.signInWithEmailCode();
+      deviceId = IdentityJourney.deviceIdFrom(session.accessToken);
+      const me = noe.bearer(session.accessToken);
+      const options = await passkeyOptions(
+        me,
+        '/v1/me/passkeys/registration-options',
+      );
+      IdentityJourney.expectStatus(
+        await me.post('/v1/me/passkeys', {
+          body: {
+            challengeId: options.challengeId,
+            credentialJson: securityKey.create(options.optionsJson),
+            name: 'Security key',
+          },
+        }),
+        201,
+      );
+    });
+
+    it('does not offer the same passkey as the second factor of its own sign-in', async () => {
+      const options = await passkeyOptions(
+        noe.native(),
+        '/v1/auth/passkeys/options',
+      );
+      const signIn = await noe.native().post('/v1/auth/passkeys/verify', {
+        body: {
+          challengeId: options.challengeId,
+          credentialJson: securityKey.get(options.optionsJson),
+          device: noe.device.signed(
+            IdentityRoute.PasskeySignInVerify,
+            deviceId,
+            [options.challengeId],
+          ),
+        },
+      });
+      const pending = signIn.body as PendingBody;
+      const second = await noe.native().post('/v1/auth/mfa/passkey/options', {
+        body: { mfaToken: pending.mfa.mfaToken },
+      });
+
+      expect(pending.status).toBe(SignInStatus.MfaRequired);
+      expect(pending.mfa.methods).not.toContain(MfaFactor.Passkey);
+      expect(second.body).toMatchObject({
+        code: IdentityErrorCode.MfaMethodUnavailable,
+      });
+    });
+
+    it('does not count as the second factor of a password sign-in', async () => {
+      const signIn = await noe.signIn();
+      const pending = signIn.body as PendingBody;
+      const options = await passkeyOptions(
+        noe.native(),
+        '/v1/auth/mfa/passkey/options',
+        { mfaToken: pending.mfa.mfaToken },
+      );
+
+      const verified = await noe.native().post('/v1/auth/mfa/passkey/verify', {
+        body: {
+          mfaToken: pending.mfa.mfaToken,
+          challengeId: options.challengeId,
+          credentialJson: securityKey.get(options.optionsJson),
+        },
+      });
+
+      expect(pending.mfa.methods).toContain(MfaFactor.Passkey);
+      expect(verified.body).toMatchObject({
+        code: IdentityErrorCode.PasskeyVerificationFailed,
+      });
+    });
+  });
+
+  describe('API keys of a service account', () => {
+    const owen = new IdentityJourney(app, 'owen.owner@example.com');
+    const kim = new IdentityJourney(app, 'kim.keys@example.com');
+    let owner: HttpTestClient;
+    let keyManager: HttpTestClient;
+    let accountId: string;
+
+    beforeAll(async () => {
+      await owen.register();
+      const organization = await organizationOf(
+        owen,
+        await owen.signInWithEmailCode(),
+        'llaves',
+      );
+      owner = organization.client;
+      const role = await owner.post('/v1/tenant/roles', {
+        body: {
+          name: 'Key managers',
+          permissions: [Permission.IdentityApiKeysManage],
+        },
+      });
+      const group = await owner.post('/v1/tenant/groups', {
+        body: { name: 'Key managers' },
+      });
+      await owner.put(`/v1/tenant/groups/${(group.body as Named).id}/roles`, {
+        body: { roleIds: [(role.body as Named).id] },
+      });
+      const account = await owner.post('/v1/tenant/service-accounts', {
+        body: {
+          name: 'Reader',
+          permissions: [
+            Permission.BillingWrite,
+            Permission.IdentityMembersRead,
+          ],
+        },
+      });
+      accountId = (account.body as Named).id;
+      await owner.post('/v1/tenant/invitations', {
+        body: { email: kim.email, groupIds: [(group.body as Named).id] },
+      });
+      await kim.signUp(
+        kim.mailTo(IdentityEmailTemplate.TenantInvitation)['token'],
+      );
+      keyManager = await switchTo(
+        kim,
+        await kim.signInWithEmailCode(),
+        organization.tenantId,
+      );
+    });
+
+    it('refuses a key for an account with permissions its creator lacks', async () => {
+      const created = await keyManager.post(
+        `/v1/tenant/service-accounts/${accountId}/api-keys`,
+        { body: { environment: 'live' } },
+      );
+
+      expect(created.status).toBe(403);
+      expect(created.body).toMatchObject({
+        code: IdentityErrorCode.ApiKeyPermissionNotGrantable,
+      });
+    });
+
+    it('refuses to rotate a key of an account with permissions the caller lacks', async () => {
+      const issued = await owner.post(
+        `/v1/tenant/service-accounts/${accountId}/api-keys`,
+        { body: { environment: 'live' } },
+      );
+      const apiKeyId = (issued.body as { apiKey: Named }).apiKey.id;
+
+      const rotated = await keyManager.post(
+        `/v1/tenant/api-keys/${apiKeyId}/rotate`,
+      );
+
+      expect(issued.status).toBe(201);
+      expect(rotated.body).toMatchObject({
+        code: IdentityErrorCode.ApiKeyPermissionNotGrantable,
+      });
+    });
+  });
+
+  describe('a member who is removed and invited again', () => {
+    const ona = new IdentityJourney(app, 'ona.owner@example.com');
+    const mia = new IdentityJourney(app, 'mia.member@example.com');
+    let owner: HttpTestClient;
+    let tenantId: string;
+    let miaSession: SessionTokensBody;
+
+    const inviteAndAccept = async (): Promise<void> => {
+      await owner.post('/v1/tenant/invitations', {
+        body: { email: mia.email, groupIds: [] },
+      });
+      const accepted = await mia
+        .bearer(miaSession.accessToken)
+        .post('/v1/invitations/accept', {
+          body: {
+            token: mia.mailTo(IdentityEmailTemplate.TenantInvitation)['token'],
+          },
+        });
+      IdentityJourney.expectStatus(accepted, 204);
+    };
+
+    beforeAll(async () => {
+      await ona.register();
+      const organization = await organizationOf(
+        ona,
+        await ona.signInWithEmailCode(),
+        'regreso',
+      );
+      owner = organization.client;
+      tenantId = organization.tenantId;
+      const group = await owner.post('/v1/tenant/groups', {
+        body: { name: 'Readers' },
+      });
+      IdentityJourney.expectStatus(
+        await owner.put(`/v1/tenant/groups/${(group.body as Named).id}/roles`, {
+          body: { roleIds: [] },
+        }),
+        204,
+      );
+      await mia.register();
+      miaSession = await mia.signInWithEmailCode();
+    });
+
+    it('works in the tenant again with a token issued after the new invitation', async () => {
+      await inviteAndAccept();
+      await switchTo(mia, miaSession, tenantId);
+      const userId = IdentityJourney.userIdFrom(miaSession.accessToken);
+      IdentityJourney.expectStatus(
+        await owner.delete(`/v1/tenant/members/${userId}`),
+        204,
+      );
+      await inviteAndAccept();
+
+      const again = await switchTo(mia, miaSession, tenantId);
+      const access = await again.get('/v1/me/access');
+
+      expect(access.status).toBe(200);
+      expect(access.body).toMatchObject({ tenantId });
+    });
+  });
+});

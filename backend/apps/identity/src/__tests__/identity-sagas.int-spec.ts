@@ -109,7 +109,7 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
     }
   });
 
-  it('discards the tenant and frees its slug when billing refuses the account', async () => {
+  it('discards the tenant, its access and the projection of its owner when billing refuses the account', async () => {
     peers.refuseAccountsOf(IdentityJourney.userIdFrom(beaSession.accessToken));
 
     const created = await bea
@@ -135,6 +135,31 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
         .shards()
         .catalogRows(`SELECT 1 FROM tenant_lookup WHERE slug = 'rechazado'`),
     ).resolves.toEqual([]);
+    await expect(
+      app
+        .shards()
+        .shardsWith(
+          [
+            'tenant_members',
+            'groups',
+            'roles',
+            'tenant_access_versions',
+            'user_tenants',
+          ]
+            .map(
+              (table) =>
+                `SELECT 1 FROM ${table} WHERE tenant_id = '${tenantId}'`,
+            )
+            .join(' UNION ALL '),
+        ),
+    ).resolves.toEqual([]);
+    const mine = await bea.bearer(beaSession.accessToken).get('/v1/me/tenants');
+    expect(mine.status).toBe(200);
+    expect(
+      (mine.body as { items: Array<{ id: string }> }).items.map(
+        (tenant) => tenant.id,
+      ),
+    ).not.toContain(tenantId);
   });
 
   it('shows a saga only to whoever started it', async () => {
