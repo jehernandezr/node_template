@@ -9,8 +9,8 @@ import { OptimisticLockError } from './errors/optimistic-lock.error.js';
 import type { VersionedEntity } from './entities/versioned-entity.js';
 
 /**
- * Updates a row only if its version is still the one that was read. Shared by
- * `ShardedRepository` and `CatalogRepository`.
+ * Updates a row only if its version is still the one that was read. `TenantIsolatedRepository` and the
+ * service repositories without a tenant column use it.
  */
 export class OptimisticWriter {
   /**

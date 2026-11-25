@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Pagination } from '@contracts/platform';
-import { CriteriaValidator } from './criteria-validator.js';
+import { CriteriaError } from './errors/criteria-error.js';
+import { CriteriaErrorCode } from './errors/criteria-error-code.enum.js';
 import {
   MAX_CURSOR_LENGTH,
   MAX_CURSOR_TEXT_LENGTH,
@@ -25,12 +26,12 @@ export class CursorCodec {
    */
   encode(cursor: Cursor): string {
     if (!CursorCodec.isValidId(cursor.id)) {
-      throw CriteriaValidator.invalid(
+      throw CursorCodec.invalid(
         `cursor id must be a non-empty string of at most ${MAX_CURSOR_TEXT_LENGTH} characters`,
       );
     }
     if (!CursorCodec.areValidValues(cursor.values)) {
-      throw CriteriaValidator.invalid(
+      throw CursorCodec.invalid(
         `cursor values must be at most ${MAX_CURSOR_VALUES} strings, finite numbers or booleans`,
       );
     }
@@ -44,7 +45,7 @@ export class CursorCodec {
         : Buffer.concat([payload, CursorCodec.sign(payload, this.secret)])
     ).toString('base64url');
     if (token.length > MAX_CURSOR_LENGTH) {
-      throw CriteriaValidator.invalid(
+      throw CursorCodec.invalid(
         `cursor exceeds ${MAX_CURSOR_LENGTH} characters`,
       );
     }
@@ -62,13 +63,13 @@ export class CursorCodec {
       token.length > MAX_CURSOR_LENGTH ||
       !CursorCodec.TOKEN.test(token)
     ) {
-      throw CriteriaValidator.invalid('malformed cursor');
+      throw CursorCodec.invalid('malformed cursor');
     }
     const bytes = Buffer.from(token, 'base64url');
     let payloadBytes = bytes;
     if (this.secret !== undefined) {
       if (bytes.length <= CursorCodec.SIGNATURE_BYTES) {
-        throw CriteriaValidator.invalid('malformed cursor');
+        throw CursorCodec.invalid('malformed cursor');
       }
       payloadBytes = bytes.subarray(
         0,
@@ -79,17 +80,17 @@ export class CursorCodec {
       if (
         !timingSafeEqual(CursorCodec.sign(payloadBytes, this.secret), actual)
       ) {
-        throw CriteriaValidator.invalid('malformed cursor');
+        throw CursorCodec.invalid('malformed cursor');
       }
     }
     let payload: unknown;
     try {
       payload = JSON.parse(payloadBytes.toString('utf8'));
     } catch {
-      throw CriteriaValidator.invalid('malformed cursor');
+      throw CursorCodec.invalid('malformed cursor');
     }
     if (typeof payload !== 'object' || payload === null) {
-      throw CriteriaValidator.invalid('malformed cursor');
+      throw CursorCodec.invalid('malformed cursor');
     }
     const keys = Object.keys(payload);
     const { v, i } = payload as { v?: unknown; i?: unknown };
@@ -98,7 +99,7 @@ export class CursorCodec {
       !CursorCodec.areValidValues(v) ||
       !CursorCodec.isValidId(i)
     ) {
-      throw CriteriaValidator.invalid('malformed cursor');
+      throw CursorCodec.invalid('malformed cursor');
     }
     // Canonical form: re-encoding must yield the same payload, so a token has a single representation.
     const canonical = Buffer.from(JSON.stringify({ v, i }), 'utf8');
@@ -106,7 +107,7 @@ export class CursorCodec {
       !canonical.equals(payloadBytes) ||
       bytes.toString('base64url') !== token
     ) {
-      throw CriteriaValidator.invalid('malformed cursor');
+      throw CursorCodec.invalid('malformed cursor');
     }
     return Object.freeze({ values: Object.freeze([...v]), id: i });
   }
@@ -133,6 +134,10 @@ export class CursorCodec {
       values.length <= MAX_CURSOR_VALUES &&
       values.every((value) => CursorCodec.isCursorValue(value))
     );
+  }
+
+  private static invalid(message: string): CriteriaError {
+    return new CriteriaError(CriteriaErrorCode.InvalidValue, message);
   }
 
   private static sign(payload: Buffer, secret: string | Uint8Array): Buffer {

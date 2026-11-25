@@ -139,6 +139,19 @@ export class ShardedTestDatabase {
     await this.container?.stop();
   }
 
+  /** Runs `fn` as a request of the given tenant (and user) with that tenant's `ShardScope` open, as a use case does. */
+  inTenant<T>(
+    tenantId: string,
+    fn: () => Promise<T>,
+    userId?: string,
+  ): Promise<T> {
+    return this.runAs(
+      tenantId,
+      () => this.scope.run({ tenantId, keyKind: ShardKey.Tenant }, fn),
+      userId,
+    );
+  }
+
   /** Runs `fn` as a request of the given tenant (and user), with actor and trace. */
   runAs<T>(
     tenantId: string,

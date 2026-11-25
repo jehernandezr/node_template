@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionManager } from '@platform/kernel';
+import { ShardScopes } from '@platform/persistence';
 import { SmokeOrderCache } from './smoke-order-cache.js';
 import { SmokeOrderRepository } from './smoke-order.repository.js';
 import type { SmokeOrderStatus } from './smoke-order-status.enum.js';
@@ -14,6 +15,7 @@ export class ChangeSmokeOrderStatus {
     private readonly transactions: TransactionManager,
     private readonly orders: SmokeOrderRepository,
     private readonly cache: SmokeOrderCache,
+    private readonly scopes: ShardScopes,
   ) {}
 
   async execute(input: {
@@ -21,15 +23,17 @@ export class ChangeSmokeOrderStatus {
     readonly orderId: string;
     readonly status: SmokeOrderStatus;
   }): Promise<void> {
-    await this.transactions.runInTransaction(async () => {
-      const current = await this.orders.findById(input.orderId);
-      if (current === null) {
-        return;
-      }
-      await this.orders.save(current.withStatus(input.status));
-      this.transactions.afterCommit(() =>
-        this.cache.invalidate(input.tenantId),
-      );
-    });
+    await this.scopes.inTenantShard(input.tenantId, () =>
+      this.transactions.runInTransaction(async () => {
+        const current = await this.orders.findById(input.orderId);
+        if (current === null) {
+          return;
+        }
+        await this.orders.save(current.withStatus(input.status));
+        this.transactions.afterCommit(() =>
+          this.cache.invalidate(input.tenantId),
+        );
+      }),
+    );
   }
 }

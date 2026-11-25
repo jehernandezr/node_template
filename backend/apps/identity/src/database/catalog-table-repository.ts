@@ -3,7 +3,7 @@ import type { EntityManager } from 'typeorm';
 
 /**
  * Base for the repositories of identity's indexes in the global catalog (emails, credentials,
- * slugs, prefixes). They are tables without their own id or version, so they do not use `CatalogRepository`.
+ * slugs, prefixes). They are tables without their own id or version, read and written in the catalog database.
  */
 export abstract class CatalogTableRepository {
   protected constructor(private readonly catalog: CatalogDataSource) {}

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { OutboxWriter } from '@platform/messaging';
 import { EnvelopeFactory } from '@platform/messaging';
+import { ShardScopes } from '@platform/persistence';
 import { SmokeService } from '../smoke-service.enum.js';
 import { SmokeOrder } from './smoke-order.js';
 import { SmokeOrderCreated } from './smoke-order-events.js';
@@ -27,26 +28,29 @@ export class RegisterSmokeOrder {
     private readonly envelopes: EnvelopeFactory,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly scopes: ShardScopes,
   ) {}
 
   execute(input: RegisterSmokeOrderInput): Promise<SmokeOrder> {
-    return this.transactions.runInTransaction(async () => {
-      const order = new SmokeOrder(
-        this.ids.next().toString(),
-        input.customer,
-        SmokeOrderStatus.Placed,
-        0,
-      );
-      await this.outbox.append({
-        envelope: this.envelopes.create({
-          type: SmokeOrderCreated.type,
-          source: SmokeService.Name,
-          tenantId: input.tenantId,
-          data: { orderId: order.id, customer: order.customer },
-        }),
-        createdAt: this.clock.now(),
-      });
-      return this.orders.save(order);
-    });
+    return this.scopes.inTenantShard(input.tenantId, () =>
+      this.transactions.runInTransaction(async () => {
+        const order = new SmokeOrder(
+          this.ids.next().toString(),
+          input.customer,
+          SmokeOrderStatus.Placed,
+          0,
+        );
+        await this.outbox.append({
+          envelope: this.envelopes.create({
+            type: SmokeOrderCreated.type,
+            source: SmokeService.Name,
+            tenantId: input.tenantId,
+            data: { orderId: order.id, customer: order.customer },
+          }),
+          createdAt: this.clock.now(),
+        });
+        return this.orders.save(order);
+      }),
+    );
   }
 }

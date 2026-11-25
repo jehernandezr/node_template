@@ -1,3 +1,4 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { InMemoryTransactionManager } from '@platform/messaging/test-utils';
 import { FakeSmokeOrderRepository } from '../../__tests__/utils/fake-smoke-order-repository.js';
 import { RecordingCacheAside } from '../../__tests__/utils/recording-cache-aside.js';
@@ -20,7 +21,12 @@ describe('ChangeSmokeOrderStatus', () => {
     const useCase = new ChangeSmokeOrderStatus(
       transactions,
       orders,
-      new SmokeOrderCache(aside.asCacheAside(), orders),
+      new SmokeOrderCache(
+        aside.asCacheAside(),
+        orders,
+        UnroutedShardScopes.create(),
+      ),
+      UnroutedShardScopes.create(),
     );
 
     await useCase.execute({
@@ -40,7 +46,12 @@ describe('ChangeSmokeOrderStatus', () => {
     const useCase = new ChangeSmokeOrderStatus(
       transactions,
       orders,
-      new SmokeOrderCache(aside.asCacheAside(), orders),
+      new SmokeOrderCache(
+        aside.asCacheAside(),
+        orders,
+        UnroutedShardScopes.create(),
+      ),
+      UnroutedShardScopes.create(),
     );
 
     await useCase.execute({
