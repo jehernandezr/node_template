@@ -16,15 +16,17 @@ import {
   UserAccessRepository,
 } from '../domain/access-store.js';
 import type { Membership } from '../domain/membership.js';
+import { AccessVersionPublisher } from './access-version-publisher.js';
 
 /**
- * Prepara el acceso de un tenant nuevo y agrega miembros. La membresía vive en el shard del tenant; la
- * proyección `user_tenants` del shard del usuario se escribe después, en otra transacción, y el evento
- * `MembershipChanged` sale por el outbox para quien la quiera reconstruir.
+ * Prepares the access of a new tenant, adds members and discards the access of a tenant that never
+ * activated. The membership lives in the tenant shard; the `user_tenants` projection of the user shard is
+ * written afterwards, in another transaction, and `MembershipChanged` leaves through the outbox for whoever
+ * rebuilds it. A user who returns after a removal starts above the permission version the removal published.
  */
 @Injectable()
 export class TenantAccessSetup {
-  /** Nombre visible de cada grupo y rol de sistema. */
+  /** Visible name of each system group and role. */
   static readonly SYSTEM_NAMES: Readonly<Record<TenantRole, string>> = {
     [TenantRole.Owner]: 'Owners',
     [TenantRole.Admin]: 'Admins',
@@ -35,6 +37,7 @@ export class TenantAccessSetup {
   constructor(
     private readonly tenantAccess: TenantAccessRepository,
     private readonly userAccess: UserAccessRepository,
+    private readonly versions: AccessVersionPublisher,
     private readonly scopes: IdentityShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
@@ -42,7 +45,12 @@ export class TenantAccessSetup {
     private readonly clock: Clock,
   ) {}
 
-  /** Crea los roles y grupos de sistema y, si hay dueño, su membresía. Corre en la transacción de quien llama. */
+  /**
+   * Creates the system roles and groups and, if there is an owner, its membership. It runs in the caller's
+   * transaction.
+   * @param tenantId New tenant.
+   * @param owner Owner of the tenant, if any.
+   */
   async setup(tenantId: string, owner?: UserRef): Promise<void> {
     await this.scopes.inTenantShard(tenantId, async () => {
       if ((await this.tenantAccess.listGroups()).length > 0) {
@@ -73,8 +81,12 @@ export class TenantAccessSetup {
   }
 
   /**
-   * Agrega un miembro con esos grupos, o con el de miembros si no se indica ninguno. Si ya era miembro no
-   * cambia nada.
+   * Adds a member with those groups, or with the members group if none is given. If the user is already a
+   * member nothing changes.
+   * @param tenantId Tenant that gains the member.
+   * @param ref New member.
+   * @param groupIds Groups of the member.
+   * @throws IdentityError `IDENTITY.INVITATION.INVALID` if a group does not exist in the tenant.
    */
   async addMember(
     tenantId: string,
@@ -105,7 +117,12 @@ export class TenantAccessSetup {
     await this.project(tenantId, ref);
   }
 
-  /** Copia la membresía al shard del usuario. Es idempotente. */
+  /**
+   * Copies the membership to the user shard, or removes the copy if the user is no longer a member. It is
+   * idempotent.
+   * @param tenantId Tenant of the membership.
+   * @param ref Member.
+   */
   async project(tenantId: string, ref: UserRef): Promise<void> {
     const membership = await this.scopes.inTenantShard(tenantId, () =>
       this.tenantAccess.findMembership(ref.userId),
@@ -118,6 +135,26 @@ export class TenantAccessSetup {
             tenantId,
             joinedAt: membership.joinedAt,
           }),
+    );
+  }
+
+  /**
+   * Deletes the whole access of a tenant that is being discarded: first the projections of its members,
+   * then its memberships, groups, roles and versions. Repeating it after a partial run finishes the job.
+   * @param tenantId Discarded tenant.
+   */
+  async discard(tenantId: string): Promise<void> {
+    const memberships = await this.scopes.inTenantShard(tenantId, () =>
+      this.tenantAccess.listMemberships(),
+    );
+    for (const membership of memberships) {
+      await this.scopes.inUserShard(
+        { userId: membership.userId, homeTenantId: membership.homeTenantId },
+        () => this.userAccess.removeTenant(membership.userId, tenantId),
+      );
+    }
+    await this.scopes.inTenantShard(tenantId, () =>
+      this.transactions.runInTransaction(() => this.tenantAccess.purgeTenant()),
     );
   }
 
@@ -144,13 +181,14 @@ export class TenantAccessSetup {
     ref: UserRef,
     groupIds: readonly string[],
   ): Promise<Membership> {
+    const removedVersion = await this.tenantAccess.removedVersion(ref.userId);
     const membership: Membership = {
       id: this.ids.next().toString(),
       tenantId,
       userId: ref.userId,
       homeTenantId: ref.homeTenantId,
       groupIds,
-      permissionVersion: 1,
+      permissionVersion: (removedVersion ?? 0) + 1,
       joinedAt: this.clock.now(),
     };
     await this.tenantAccess.insertMembership(membership);
@@ -165,6 +203,14 @@ export class TenantAccessSetup {
       },
       { tenantId },
     );
+    if (removedVersion !== undefined) {
+      await this.versions.memberChanged(
+        tenantId,
+        ref.userId,
+        await this.tenantAccess.tenantVersion(),
+        membership.permissionVersion,
+      );
+    }
     return membership;
   }
 }

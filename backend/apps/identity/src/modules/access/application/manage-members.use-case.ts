@@ -22,8 +22,9 @@ import { GrantCeiling } from './grant-ceiling.js';
 import { TenantAccessSetup } from './tenant-access-setup.js';
 
 /**
- * Miembros del tenant: listar, quitar y cambiar sus grupos. Un tenant nunca queda sin dueño, y quien edita
- * no toca a un miembro con permisos que él no tiene ni le da grupos que otorguen más que los suyos.
+ * Members of the tenant: list, remove and change their groups. A tenant never ends without an owner, and
+ * the editor neither touches a member with permissions the editor lacks nor grants groups that give more
+ * than the editor's own. A removal keeps the last permission version, so a later return starts above it.
  */
 @Injectable()
 export class ManageMembers {
@@ -39,6 +40,11 @@ export class ManageMembers {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Lists the members of the tenant with their profile.
+   * @param tenantId Tenant.
+   * @returns The members.
+   */
   async list(tenantId: string): Promise<MemberPage> {
     const memberships = await this.scopes.inTenantShard(tenantId, () =>
       this.tenantAccess.listMemberships(),
@@ -61,6 +67,15 @@ export class ManageMembers {
     return { items, nextCursor: null };
   }
 
+  /**
+   * Removes a member.
+   * @param tenantId Tenant.
+   * @param userId Member to remove.
+   * @param granted Permissions of the editor.
+   * @throws IdentityError `PLATFORM.AUTH.FORBIDDEN` if the member holds more than the editor.
+   * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if the member is the last owner.
+   * @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` if the user is not a member.
+   */
   async remove(
     tenantId: string,
     userId: string,
@@ -88,22 +103,35 @@ export class ManageMembers {
   }
 
   /**
-   * Quita a un usuario que se está borrando de un tenant, sin las reglas de quien edita: el borrado de una
-   * cuenta no espera a que el tenant tenga otro dueño. Repetirlo no cambia nada.
+   * Deletes for good the membership of a user whose account is being erased, without the editor rules and
+   * without a tombstone. Repeating it changes nothing.
+   * @param tenantId Tenant.
+   * @param ref Erased user.
    */
   async removeErased(tenantId: string, ref: UserRef): Promise<void> {
     await this.scopes.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         await this.tenantAccess.lockForChanges();
         const membership = await this.tenantAccess.findMembership(ref.userId);
+        await this.tenantAccess.purgeMembership(ref.userId);
         if (membership !== undefined) {
-          await this.deleteMembership(tenantId, membership);
+          await this.announceRemoval(tenantId, membership);
         }
       }),
     );
     await this.setup.project(tenantId, ref);
   }
 
+  /**
+   * Replaces the groups of a member.
+   * @param tenantId Tenant.
+   * @param userId Member.
+   * @param groupIds New groups.
+   * @param granted Permissions of the editor.
+   * @throws IdentityError `PLATFORM.AUTH.FORBIDDEN` if the member or the groups exceed the editor.
+   * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if the change leaves no owner.
+   * @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` if the user is not a member.
+   */
   async setGroups(
     tenantId: string,
     userId: string,
@@ -166,7 +194,6 @@ export class ManageMembers {
     );
   }
 
-  /** @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` si el cambio deja al tenant sin dueños. */
   private assertOwnerRemains(
     changed: Membership,
     nextGroupIds: readonly string[],
@@ -194,7 +221,17 @@ export class ManageMembers {
     tenantId: string,
     membership: Membership,
   ): Promise<void> {
-    await this.tenantAccess.deleteMembership(membership.userId);
+    await this.tenantAccess.removeMembership(
+      membership.userId,
+      membership.permissionVersion + 1,
+    );
+    await this.announceRemoval(tenantId, membership);
+  }
+
+  private async announceRemoval(
+    tenantId: string,
+    membership: Membership,
+  ): Promise<void> {
     await this.publishMembership(
       tenantId,
       membership.userId,

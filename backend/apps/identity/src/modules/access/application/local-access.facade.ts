@@ -10,7 +10,7 @@ import { GrantCeiling } from './grant-ceiling.js';
 import { ManageMembers } from './manage-members.use-case.js';
 import { TenantAccessSetup } from './tenant-access-setup.js';
 
-/** `AccessFacade` dentro del proceso. */
+/** `AccessFacade` inside the process. */
 @Injectable()
 export class LocalAccessFacade extends AccessFacade {
   constructor(
@@ -23,22 +23,27 @@ export class LocalAccessFacade extends AccessFacade {
     super();
   }
 
+  /** {@inheritDoc AccessFacade.resolve} */
   resolve(userId: string, tenantId: string): Promise<UserAccess> {
     return this.resolver.resolve(userId, tenantId);
   }
 
+  /** {@inheritDoc AccessFacade.isMember} */
   isMember(userId: string, tenantId: string): Promise<boolean> {
     return this.resolver.isMember(userId, tenantId);
   }
 
+  /** {@inheritDoc AccessFacade.defaultTenant} */
   defaultTenant(ref: UserRef): Promise<string> {
     return this.resolver.defaultTenant(ref);
   }
 
+  /** {@inheritDoc AccessFacade.requiresMfaOnEveryLogin} */
   requiresMfaOnEveryLogin(ref: UserRef, tenantId: string): Promise<boolean> {
     return this.resolver.requiresMfaOnEveryLogin(ref, tenantId);
   }
 
+  /** {@inheritDoc AccessFacade.addMember} */
   addMember(
     tenantId: string,
     ref: UserRef,
@@ -47,6 +52,7 @@ export class LocalAccessFacade extends AccessFacade {
     return this.setup.addMember(tenantId, ref, groupIds);
   }
 
+  /** {@inheritDoc AccessFacade.assertCanGrantGroups} */
   assertCanGrantGroups(
     tenantId: string,
     actor: Actor | undefined,
@@ -55,24 +61,34 @@ export class LocalAccessFacade extends AccessFacade {
     return this.ceiling.assertActorCanGrantGroups(tenantId, actor, groupIds);
   }
 
+  /** {@inheritDoc AccessFacade.setupTenant} */
   setupTenant(tenantId: string, owner?: UserRef): Promise<void> {
     return this.setup.setup(tenantId, owner);
   }
 
+  /** {@inheritDoc AccessFacade.projectMembership} */
   projectMembership(tenantId: string, ref: UserRef): Promise<void> {
     return this.setup.project(tenantId, ref);
   }
 
+  /** {@inheritDoc AccessFacade.tenantsOf} */
   tenantsOf(ref: UserRef): Promise<readonly UserTenant[]> {
     return this.resolver.tenantsOf(ref);
   }
 
+  /** {@inheritDoc AccessFacade.removeFromAllTenants} */
   async removeFromAllTenants(ref: UserRef): Promise<void> {
     for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
       await this.members.removeErased(tenantId, ref);
     }
   }
 
+  /** {@inheritDoc AccessFacade.discardTenant} */
+  discardTenant(tenantId: string): Promise<void> {
+    return this.setup.discard(tenantId);
+  }
+
+  /** {@inheritDoc AccessFacade.refreshTenant} */
   refreshTenant(tenantId: string): Promise<void> {
     return this.refresh.execute(tenantId);
   }

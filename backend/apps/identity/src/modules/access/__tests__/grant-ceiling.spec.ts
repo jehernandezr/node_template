@@ -72,6 +72,7 @@ describe('GrantCeiling', () => {
   const setup = new TenantAccessSetup(
     tenantAccess,
     userAccess,
+    versions,
     scopes,
     transactions,
     bus,

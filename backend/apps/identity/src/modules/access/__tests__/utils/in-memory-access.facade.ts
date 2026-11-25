@@ -8,7 +8,7 @@ import { IdentityError } from '../../../../shared/errors/identity.error.js';
 const keyOf = (userId: string, tenantId: string): string =>
   `${userId}@${tenantId}`;
 
-/** Accesos, membresías y tenants predeterminados en memoria. */
+/** Accesses, memberships and default tenants in memory. */
 export class InMemoryAccessFacade extends AccessFacade {
   readonly added: Array<{
     tenantId: string;
@@ -31,7 +31,7 @@ export class InMemoryAccessFacade extends AccessFacade {
     return this;
   }
 
-  /** Permisos que otorga un grupo: los usa `assertCanGrantGroups`. */
+  /** Permissions a group grants: `assertCanGrantGroups` uses them. */
   setGroupPermissions(
     groupId: string,
     permissions: readonly Permission[],
@@ -124,6 +124,14 @@ export class InMemoryAccessFacade extends AccessFacade {
   async removeFromAllTenants(ref: UserRef): Promise<void> {
     for (const key of [...this.memberships]) {
       if (key.startsWith(`${ref.userId}@`)) {
+        this.memberships.delete(key);
+      }
+    }
+  }
+
+  async discardTenant(tenantId: string): Promise<void> {
+    for (const key of [...this.memberships]) {
+      if (key.endsWith(`@${tenantId}`)) {
         this.memberships.delete(key);
       }
     }
