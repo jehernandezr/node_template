@@ -1,4 +1,4 @@
-import type { UserAccess } from '@contracts/identity';
+import type { Permission, UserAccess } from '@contracts/identity';
 import type { Actor } from '@platform/auth';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { UserTenant } from '../domain/user-tenant.js';
@@ -44,11 +44,38 @@ export abstract class AccessFacade {
    * @param tenantId Tenant.
    * @param ref New member.
    * @param groupIds Groups of the member; the members group if empty.
+   * @param seatLimit Members the plan admits, counted under the tenant lock; no limit if absent.
+   * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` if the tenant already holds `seatLimit` members.
    */
   abstract addMember(
     tenantId: string,
     ref: UserRef,
     groupIds: readonly string[],
+    seatLimit?: number,
+  ): Promise<void>;
+
+  /**
+   * Reads the current permissions of a member, or none if the user is not a member.
+   * @param tenantId Tenant.
+   * @param userId User.
+   * @returns The permissions of the membership.
+   */
+  abstract memberPermissions(
+    tenantId: string,
+    userId: string,
+  ): Promise<readonly Permission[]>;
+
+  /**
+   * Checks that the groups exist in the tenant and grant nothing beyond those permissions.
+   * @param tenantId Tenant.
+   * @param groupIds Groups to grant.
+   * @param granted Permissions of whoever grants them.
+   * @throws IdentityError `PLATFORM.AUTH.FORBIDDEN` or `PLATFORM.RESOURCE.NOT_FOUND`.
+   */
+  abstract assertGroupsWithin(
+    tenantId: string,
+    groupIds: readonly string[],
+    granted: readonly Permission[],
   ): Promise<void>;
 
   /**

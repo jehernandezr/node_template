@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UsageMetric } from '@contracts/billing';
 import {
   IdentityErrorCode,
   MembershipChangeKind,
@@ -7,6 +8,7 @@ import {
 } from '@contracts/identity';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
+import { QuotaExceededError } from '@platform/quotas';
 import { SystemRolePermissions } from '../../../shared/constants/system-roles.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
@@ -86,12 +88,16 @@ export class TenantAccessSetup {
    * @param tenantId Tenant that gains the member.
    * @param ref New member.
    * @param groupIds Groups of the member.
+   * @param seatLimit Members the plan admits; they are counted under the tenant lock, so concurrent
+   *   additions never go past it. No limit if absent.
    * @throws IdentityError `IDENTITY.INVITATION.INVALID` if a group does not exist in the tenant.
+   * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` if the tenant already holds `seatLimit` members.
    */
   async addMember(
     tenantId: string,
     ref: UserRef,
     groupIds: readonly string[],
+    seatLimit?: number,
   ): Promise<void> {
     await this.scopes.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
@@ -100,6 +106,12 @@ export class TenantAccessSetup {
           (await this.tenantAccess.findMembership(ref.userId)) !== undefined
         ) {
           return;
+        }
+        if (seatLimit !== undefined) {
+          const members = (await this.tenantAccess.listMemberships()).length;
+          if (members >= seatLimit) {
+            throw new QuotaExceededError(UsageMetric.Users, seatLimit, members);
+          }
         }
         const groups = await this.tenantAccess.listGroups();
         const chosen =

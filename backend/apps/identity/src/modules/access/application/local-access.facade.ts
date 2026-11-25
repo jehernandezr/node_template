@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { UserAccess } from '@contracts/identity';
+import type { Permission, UserAccess } from '@contracts/identity';
 import type { Actor } from '@platform/auth';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { UserTenant } from '../domain/user-tenant.js';
@@ -48,8 +48,26 @@ export class LocalAccessFacade extends AccessFacade {
     tenantId: string,
     ref: UserRef,
     groupIds: readonly string[],
+    seatLimit?: number,
   ): Promise<void> {
-    return this.setup.addMember(tenantId, ref, groupIds);
+    return this.setup.addMember(tenantId, ref, groupIds, seatLimit);
+  }
+
+  /** {@inheritDoc AccessFacade.memberPermissions} */
+  memberPermissions(
+    tenantId: string,
+    userId: string,
+  ): Promise<readonly Permission[]> {
+    return this.resolver.memberPermissions(tenantId, userId);
+  }
+
+  /** {@inheritDoc AccessFacade.assertGroupsWithin} */
+  assertGroupsWithin(
+    tenantId: string,
+    groupIds: readonly string[],
+    granted: readonly Permission[],
+  ): Promise<void> {
+    return this.ceiling.assertGroupsWithin(tenantId, groupIds, granted);
   }
 
   /** {@inheritDoc AccessFacade.assertCanGrantGroups} */

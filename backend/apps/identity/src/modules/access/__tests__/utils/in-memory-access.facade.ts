@@ -137,6 +137,26 @@ export class InMemoryAccessFacade extends AccessFacade {
     }
   }
 
+  async memberPermissions(
+    tenantId: string,
+    userId: string,
+  ): Promise<readonly Permission[]> {
+    return this.accesses.get(keyOf(userId, tenantId))?.permissions ?? [];
+  }
+
+  async assertGroupsWithin(
+    _tenantId: string,
+    groupIds: readonly string[],
+    granted: readonly Permission[],
+  ): Promise<void> {
+    const missing = groupIds
+      .flatMap((id) => this.groupPermissions.get(id) ?? [])
+      .filter((permission) => !granted.includes(permission));
+    if (missing.length > 0) {
+      throw IdentityError.forbidden(missing);
+    }
+  }
+
   readonly refreshed: string[] = [];
 
   async refreshTenant(tenantId: string): Promise<void> {
