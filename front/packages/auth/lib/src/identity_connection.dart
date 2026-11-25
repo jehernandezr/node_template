@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'api_auth_repository.dart';
 import 'ports.dart';
 import 'session_manager.dart';
+import 'session_transport.dart';
 
 /// Lee el acceso de la sesión actual.
 typedef SessionAccessLoader = Future<SessionAccess> Function();
@@ -30,7 +31,8 @@ final class IdentityConnection {
   /// [transport] y lo cierra en [dispose].
   ///
   /// Las rutas del login, el refresh y el cierre de sesión usan un
-  /// [ApiClient] sin token; el resto (también el paso adicional),
+  /// [ApiClient] sin token y declaran el [SessionTransport] que corresponde a
+  /// [tokenStore] (cookie en web, bearer en la app nativa); el resto (también el paso adicional),
   /// [apiClient], que toma el token de [sessionManager] y le avisa cuando la
   /// API rechaza ese token con un código de invalidación.
   factory IdentityConnection({
@@ -65,6 +67,7 @@ final class IdentityConnection {
           baseUri: baseUri,
           defaultHeaders: defaultHeaders,
         ),
+        sessionTransport: SessionTransport.of(tokenStore),
         sessionClient: apiClient,
       ),
       tokenStore: tokenStore,

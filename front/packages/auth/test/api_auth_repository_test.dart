@@ -38,6 +38,7 @@ void main() {
         transport: transport,
         baseUri: Uri.parse('https://api.example.com'),
       ),
+      sessionTransport: SessionTransport.bearer,
     );
   });
 
@@ -202,6 +203,59 @@ void main() {
     );
   });
 
+  Future<List<String?>> sessionRouteTransports(ApiAuthRepository auth) async {
+    transport.queue
+      ..add(_json(200, {'status': 'authenticated'}))
+      ..add(_json(200, {'status': 'authenticated'}))
+      ..add(
+        _json(200, {
+          'accessToken': 'a2',
+          'accessExpiresAt': '2026-11-13T12:15:00.000Z',
+        }),
+      )
+      ..add(const TransportResponse(statusCode: 204));
+    await auth.signIn(
+      const SignInRequest(email: 'ana@example.com', password: 'secret'),
+    );
+    await auth.verifyMfa(
+      const MfaVerifyRequest(
+        mfaToken: 'mfa-1',
+        challengeId: _challengeId,
+        code: '123456',
+      ),
+    );
+    await auth.refresh(sessionToken: 's1');
+    await auth.logout(sessionToken: 's1');
+    return [
+      for (final request in transport.requests)
+        request.headers['x-session-transport'],
+    ];
+  }
+
+  test(
+    'a native app declares the bearer transport on every session route',
+    () async {
+      expect(await sessionRouteTransports(repository), [
+        'bearer',
+        'bearer',
+        'bearer',
+        'bearer',
+      ]);
+    },
+  );
+
+  test(
+    'a browser declares no transport, so its cookie carries the session',
+    () async {
+      final browser = ApiAuthRepository(
+        repository.client,
+        sessionTransport: SessionTransport.cookie,
+      );
+
+      expect(await sessionRouteTransports(browser), [null, null, null, null]);
+    },
+  );
+
   test('logout posts to sign-out with the session token', () async {
     transport.queue.add(const TransportResponse(statusCode: 204));
 
@@ -233,6 +287,7 @@ void main() {
   test('the step-up uses the session client and its access token', () async {
     final withSession = ApiAuthRepository(
       repository.client,
+      sessionTransport: SessionTransport.bearer,
       sessionClient: ApiClient(
         transport: transport,
         baseUri: Uri.parse('https://api.example.com'),

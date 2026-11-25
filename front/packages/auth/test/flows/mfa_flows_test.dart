@@ -153,7 +153,10 @@ void main() {
       final flow = SignInFlow(
         IdentityConnection.withParts(
           sessionManager: SessionManager(
-            repository: ApiAuthRepository(connection.apiClient),
+            repository: ApiAuthRepository(
+              connection.apiClient,
+              sessionTransport: SessionTransport.bearer,
+            ),
             tokenStore: FakeTokenStore(),
           ),
           apiClient: connection.apiClient,

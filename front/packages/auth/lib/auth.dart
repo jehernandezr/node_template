@@ -17,3 +17,4 @@ export 'src/flows/mfa_state.dart';
 export 'src/identity_connection.dart';
 export 'src/ports.dart';
 export 'src/session_manager.dart';
+export 'src/session_transport.dart';

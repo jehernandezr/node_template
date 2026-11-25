@@ -444,4 +444,72 @@ void main() {
       expect(transport.closed, isTrue);
     });
   });
+
+  group('the session channel', () {
+    const credentials = SignInRequest(
+      email: 'ana@example.com',
+      password: 'secret',
+    );
+
+    IdentityConnection connect(FakeIdentityServer server, TokenStore store) {
+      final connection = IdentityConnection(
+        transport: server,
+        baseUri: Uri.parse('https://api.example.com'),
+        tokenStore: store,
+      );
+      addTearDown(connection.dispose);
+      return connection;
+    }
+
+    test('a native app keeps its session across a refresh', () async {
+      final server = FakeIdentityServer(keepsCookies: false);
+      final store = InMemoryTokenStore();
+      final connection = connect(server, store);
+
+      await connection.sessionManager.signIn(credentials);
+      await connection.sessionManager.refresh();
+
+      expect(connection.sessionManager.state, AuthState.signedIn);
+      expect(server.sessionChannels, [
+        FakeClientChannel.native,
+        FakeClientChannel.native,
+      ]);
+      final stored = await store.readSessionToken();
+      expect(stored, isNotNull);
+      expect(server.isLive(stored!), isTrue);
+    });
+
+    test('a native sign-out revokes the session on the server', () async {
+      final server = FakeIdentityServer(keepsCookies: false);
+      final store = InMemoryTokenStore();
+      final connection = connect(server, store);
+      await connection.sessionManager.signIn(credentials);
+      final opened = await store.readSessionToken();
+
+      await connection.signOut();
+
+      expect(server.revokedSessions, [opened]);
+      expect(server.isLive(opened!), isFalse);
+      expect(connection.sessionManager.state, AuthState.signedOut);
+    });
+
+    test(
+      'a browser keeps its session in the cookie across a refresh',
+      () async {
+        final server = FakeIdentityServer(keepsCookies: true);
+        final connection = connect(server, const CookieTokenStore());
+
+        await connection.sessionManager.signIn(credentials);
+        await connection.sessionManager.refresh();
+        await connection.signOut();
+
+        expect(server.sessionChannels, [
+          FakeClientChannel.web,
+          FakeClientChannel.web,
+          FakeClientChannel.web,
+        ]);
+        expect(server.revokedSessions, hasLength(1));
+      },
+    );
+  });
 }
