@@ -75,6 +75,57 @@ runtime.describeIfAvailable('TypeOrmIdempotencyStore over PostgreSQL', () => {
       );
     });
 
+    it('renews the lease of a claim in progress so another attempt cannot take it after the first lease would have ended', async () => {
+      const first = await inTenantA(() =>
+        store.claim(KEY, {
+          fingerprint: FINGERPRINT,
+          deadline: Deadline.after(1_000, clock),
+        }),
+      );
+      const token = (first as AcquiredClaim).claimToken;
+      clock.advance(5_000);
+
+      const renewed = await inTenantA(() =>
+        store.renew(KEY, token, clock.now().getTime() + 10_000),
+      );
+      clock.advance(5_000);
+      const retry = await inTenantA(() =>
+        store.claim(KEY, {
+          fingerprint: FINGERPRINT,
+          deadline: Deadline.after(1_000, clock),
+        }),
+      );
+
+      expect(renewed).toBe(true);
+      expect(retry.state).toBe(ClaimState.InProgress);
+    });
+
+    it('refuses to renew a claim that another attempt took over', async () => {
+      const first = await inTenantA(() =>
+        store.claim(KEY, {
+          fingerprint: FINGERPRINT,
+          deadline: Deadline.after(1_000, clock),
+        }),
+      );
+      clock.advance(ONE_HOUR_MS);
+      await inTenantA(() =>
+        store.claim(KEY, {
+          fingerprint: FINGERPRINT,
+          deadline: Deadline.after(1_000, clock),
+        }),
+      );
+
+      await expect(
+        inTenantA(() =>
+          store.renew(
+            KEY,
+            (first as AcquiredClaim).claimToken,
+            clock.now().getTime() + 10_000,
+          ),
+        ),
+      ).resolves.toBe(false);
+    });
+
     it('keeps the claim in progress when the transaction that completed it rolls back', async () => {
       const first = await inTenantA(() =>
         store.claim(KEY, {

@@ -106,6 +106,41 @@ export class ClaimTable<R> {
     }
   }
 
+  /**
+   * Extiende hasta `leaseUntil` el lease de un claim en curso que sigue siendo de `claimToken`, sin acortarlo nunca.
+   * Devuelve `false` si el claim ya terminó o lo tomó otro intento.
+   */
+  async renew(
+    key: string,
+    claimToken: string,
+    leaseUntil: Date,
+  ): Promise<boolean> {
+    const affected = await this.managers.run(
+      ManagerIntent.Write,
+      async (manager) => {
+        const outcome = await manager
+          .createQueryBuilder()
+          .update(this.entity)
+          .set({ leaseUntil, updatedAt: this.clock.now() })
+          .where({ key, claimToken, state: ClaimState.InProgress })
+          .andWhere('lease_until < :leaseUntil', { leaseUntil })
+          .execute();
+        return outcome.affected ?? 0;
+      },
+    );
+    if (affected > 0) {
+      return true;
+    }
+    const owned = await this.managers.run(ManagerIntent.Write, (manager) =>
+      manager.existsBy(this.entity, {
+        key,
+        claimToken,
+        state: ClaimState.InProgress,
+      }),
+    );
+    return owned;
+  }
+
   /** Borra resultados completados antes de `before`; recorre todos los shards si no hay uno fijo. Devuelve cuántos borró. */
   purgeCompleted(before: Date): Promise<number> {
     return this.managers.sweep(async (manager) => {

@@ -45,6 +45,11 @@ export const internalApiErrorCatalog = defineErrorCatalog(
       false,
       'La llave de idempotencia o el tenant de la llamada interna falta o supera la longitud máxima.',
     ),
+    [InternalApiErrorCode.StepCompensated]: ErrorSpecs.internal(
+      409,
+      false,
+      'La compensación de este paso de saga ya corrió: el paso no se aplica.',
+    ),
     [InternalApiErrorCode.IdempotencyKeyReuse]: ErrorSpecs.internal(
       409,
       false,

@@ -34,7 +34,9 @@ describe('InProcessTransport', () => {
 
     expect(outcome).toEqual(CallOutcome.success({ reservationId: 'r-1' }));
     expect(handler.inputs).toEqual([{ sku: 'A', qty: 1 }]);
-    expect(handler.contexts).toEqual([meta]);
+    expect(handler.contexts).toEqual([
+      { ...meta, signal: expect.any(AbortSignal) },
+    ]);
   });
 
   it('invoke, unknown operation, answers unknown-operation', async () => {

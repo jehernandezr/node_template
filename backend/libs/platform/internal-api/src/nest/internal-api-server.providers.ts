@@ -5,7 +5,11 @@ import {
   type PurgeableStore,
   type TransactionManager,
 } from '@platform/kernel';
-import { TraceContextRestorer, Tracing } from '@platform/observability';
+import {
+  LoggerPort,
+  TraceContextRestorer,
+  Tracing,
+} from '@platform/observability';
 import { CallOutcomeFactory } from '@platform/primitives';
 import { DenyAllInternalCallAuthenticator } from '../auth/deny-all-internal-call-authenticator.js';
 import { HmacInternalCallAuthenticator } from '../auth/hmac-internal-call-authenticator.js';
@@ -13,6 +17,8 @@ import { InternalCallAuthenticator } from '../auth/internal-call-authenticator.j
 import { OperationResolver } from '../contract/operation-resolver.js';
 import { PayloadLimit } from '../contract/payload-limit.js';
 import { HandlerOutcomeChecker } from '../server/handler-outcome-checker.js';
+import { ClaimKeeper } from '../server/claim-keeper.js';
+import { CompensationTombstones } from '../server/compensation-tombstones.js';
 import { IdempotencyGate } from '../server/idempotency-gate.js';
 import { InternalRouter } from '../server/internal-router.js';
 import { OperationDispatcher } from '../server/operation-dispatcher.js';
@@ -100,6 +106,8 @@ export class InternalApiServerProviders {
           runner: UnitOfWorkRunner,
           clock: Clock | undefined,
           outcomes: CallOutcomeFactory,
+          store: ProcessedOperationStore,
+          logger: LoggerPort | undefined,
         ) =>
           new OperationDispatcher(
             payload,
@@ -107,6 +115,8 @@ export class InternalApiServerProviders {
             runner,
             clock ?? new SystemClock(),
             outcomes,
+            new ClaimKeeper(store, clock ?? new SystemClock(), {}, logger),
+            new CompensationTombstones(store),
           ),
         inject: [
           PayloadLimit,
@@ -114,6 +124,8 @@ export class InternalApiServerProviders {
           UnitOfWorkRunner,
           InternalApiOptionalDependency.CLOCK,
           CallOutcomeFactory,
+          ProcessedOperationStore,
+          InternalApiOptionalDependency.LOGGER,
         ],
       },
       {

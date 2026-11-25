@@ -1,3 +1,6 @@
+import { ClaimKeeper } from '../../claim-keeper.js';
+import { CompensationTombstones } from '../../compensation-tombstones.js';
+import type { ClaimKeeperOptions } from '../../claim-keeper.options.js';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   Redactor,
@@ -25,6 +28,7 @@ export interface ServerHarnessOptions {
   readonly minLeaseMs?: number;
   readonly maxPayloadBytes?: number;
   readonly store?: ProcessedOperationStore;
+  readonly keeper?: ClaimKeeperOptions;
 }
 
 /**
@@ -79,6 +83,8 @@ export class ServerHarness {
       this.runner,
       this.clock,
       this.outcomes,
+      new ClaimKeeper(this.store, this.clock, options.keeper ?? {}),
+      new CompensationTombstones(this.store),
     );
     this.router = new InternalRouter(
       this.resolver,

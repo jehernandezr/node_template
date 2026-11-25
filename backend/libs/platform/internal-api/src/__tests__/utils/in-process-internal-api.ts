@@ -1,3 +1,5 @@
+import { ClaimKeeper } from '../../server/claim-keeper.js';
+import { CompensationTombstones } from '../../server/compensation-tombstones.js';
 import type { OperationDefinition } from '@contracts/platform';
 import type { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import {
@@ -69,7 +71,15 @@ export class InProcessInternalApi {
     );
     this.router = new InternalRouter(
       resolver,
-      new OperationDispatcher(payload, gate, runner, options.clock, outcomes),
+      new OperationDispatcher(
+        payload,
+        gate,
+        runner,
+        options.clock,
+        outcomes,
+        new ClaimKeeper(this.store, options.clock),
+        new CompensationTombstones(this.store),
+      ),
       tracing,
       restorer,
     );

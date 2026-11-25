@@ -67,6 +67,26 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
     return Promise.resolve();
   }
 
+  /**
+   * Extiende hasta `leaseUntilMs` el lease de un claim en curso que sigue siendo de `claimToken`. Devuelve `false` si
+   * el claim ya terminó o lo tomó otro intento.
+   */
+  renew(
+    key: string,
+    claimToken: string,
+    leaseUntilMs: number,
+  ): Promise<boolean> {
+    const record = this.ownedRecord(key, claimToken);
+    if (record === undefined) {
+      return Promise.resolve(false);
+    }
+    this.records.set(key, {
+      ...record,
+      leaseUntil: Math.max(record.leaseUntil, leaseUntilMs),
+    });
+    return Promise.resolve(true);
+  }
+
   private claimNow(key: string, request: ClaimRequest): ClaimResult<R> {
     ClaimRules.assertInput(key, request.fingerprint);
     const now = this.clock.now().getTime();

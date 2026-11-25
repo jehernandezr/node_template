@@ -5,6 +5,7 @@ import {
   type FinalOutcome,
 } from '@platform/primitives';
 import { ClaimState, type ClaimResult } from '@platform/kernel';
+import { CompensationKey } from '../contract/compensation-key.js';
 import { InternalApiReason } from '../contract/internal-api-reason.enum.js';
 import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js';
 import type { ClaimedOperation } from './claimed-operation.js';
@@ -24,6 +25,7 @@ export class IdempotencyGate {
    * Pide el claim de `key` con la huella `fingerprint`, del tenant de la llamada si la trae; el lease dura hasta
    * `deadline` más el margen.
    * - El almacén lanza: `Respond` con `outcomes.fromError(error)`.
+   * - La llave tiene la lápida de su compensación: `Respond` con el resultado de la lápida, sin correr el paso.
    * - La huella guardada difiere: si el claim se adquirió se libera sin ruido, y `Respond`
    *   con `protocol-violation` `idempotency-key-reuse`.
    * - `Completed`: `Respond` con el resultado guardado.
@@ -56,6 +58,12 @@ export class IdempotencyGate {
       };
     }
 
+    if (
+      claim.state === ClaimState.Completed &&
+      claim.fingerprint === CompensationKey.TOMBSTONE_FINGERPRINT
+    ) {
+      return { kind: GateDecisionKind.Respond, outcome: claim.result };
+    }
     if (claim.fingerprint !== fingerprint) {
       // Un claim adquirido con otra huella no lo usa nadie: se libera para que la llave quede libre.
       if (claim.state === ClaimState.Acquired) {

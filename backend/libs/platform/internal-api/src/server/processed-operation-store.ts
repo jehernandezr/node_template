@@ -10,4 +10,15 @@ import type { FinalOutcome } from '@platform/primitives';
  */
 export abstract class ProcessedOperationStore extends IdempotencyStore<
   FinalOutcome<unknown>
-> {}
+> {
+  /**
+   * Extiende hasta `leaseUntilMs` el lease de un claim en curso que sigue siendo de `claimToken`, sin acortarlo. Lo
+   * llama el servidor mientras el handler corre, así otro intento solo toma la llave si el proceso dueño dejó de
+   * renovarla. Devuelve `false` si el claim ya terminó o lo tomó otro intento.
+   */
+  abstract renew(
+    key: string,
+    claimToken: string,
+    leaseUntilMs: number,
+  ): Promise<boolean>;
+}

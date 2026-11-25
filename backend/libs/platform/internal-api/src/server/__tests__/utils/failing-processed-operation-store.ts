@@ -52,6 +52,14 @@ export class FailingProcessedOperationStore extends ProcessedOperationStore {
     return this.inner.complete(key, claimToken, result);
   }
 
+  renew(
+    key: string,
+    claimToken: string,
+    leaseUntilMs: number,
+  ): Promise<boolean> {
+    return this.inner.renew(key, claimToken, leaseUntilMs);
+  }
+
   async release(key: string, claimToken: string): Promise<void> {
     if (this.releaseFailure !== undefined) {
       throw this.releaseFailure.error;
