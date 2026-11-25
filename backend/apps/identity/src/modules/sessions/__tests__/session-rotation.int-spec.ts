@@ -1,5 +1,9 @@
 import { randomBytes } from 'node:crypto';
-import { IdentityErrorCode, IdentityEvent } from '@contracts/identity';
+import {
+  IdentityErrorCode,
+  IdentityEvent,
+  RevocationReason,
+} from '@contracts/identity';
 import { PlatformErrorCode } from '@contracts/platform';
 import { AuthStateReader } from '@platform/auth';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
@@ -10,6 +14,7 @@ import {
   ShardedUsers,
   type SessionTokensBody,
 } from '../../../__tests__/utils/index.js';
+import { RevokeSessions } from '../application/revoke-sessions.use-case.js';
 import { SessionToken } from '../domain/session-token.js';
 
 const runtime = new ContainerRuntime(process.env);
@@ -228,6 +233,38 @@ runtime.describeIfAvailable(
           tokensEvent: [shard],
         })),
       );
+    });
+
+    it('publishes the revocation of every session of a user with the tenant of origin, so the consumers that require a placed tenant accept it', async () => {
+      const outcomes = await Promise.all(
+        (await openSessionInEachShard('todas')).map(
+          async ([shard, session]) => {
+            await app.get(RevokeSessions).execute({
+              user: {
+                userId: session.ref.userId,
+                homeTenantId: session.ref.homeTenantId,
+              },
+              reason: RevocationReason.UserAction,
+            });
+            return {
+              shard,
+              envelopeTenants: await app
+                .shards()
+                .rowsIn<{ tenant: string }>(
+                  shard,
+                  `SELECT envelope->>'tenantid' AS tenant FROM outbox WHERE envelope->>'type' = '${IdentityEvent.TokensRevoked}' AND envelope->'data'->>'subjectId' = '${session.ref.userId}'`,
+                ),
+              homeTenantId: session.ref.homeTenantId,
+            };
+          },
+        ),
+      );
+
+      for (const outcome of outcomes) {
+        expect(outcome.envelopeTenants).toEqual([
+          { tenant: outcome.homeTenantId },
+        ]);
+      }
     });
   },
 );

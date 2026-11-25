@@ -80,12 +80,20 @@ export class RevokeSessions {
     );
   }
 
+  /**
+   * La revocación de todo el usuario sale con su tenant de origen en el sobre: los consumidores que exigen un tenant
+   * ubicado (notifications cierra sus conexiones de tiempo real) la rechazarían sin él.
+   */
   private async publishUserRevocation(user: UserRef): Promise<void> {
-    await this.bus.publish(TokensRevokedEvent, {
-      scope: RevocationScope.User,
-      subjectId: user.userId,
-      revokedBefore: this.clock.now().toISOString(),
-    });
+    await this.bus.publish(
+      TokensRevokedEvent,
+      {
+        scope: RevocationScope.User,
+        subjectId: user.userId,
+        revokedBefore: this.clock.now().toISOString(),
+      },
+      { tenantId: user.homeTenantId },
+    );
   }
 
   /** Conserva la suspensión vigente: la escribe `users`, y esta época solo corre el corte. */

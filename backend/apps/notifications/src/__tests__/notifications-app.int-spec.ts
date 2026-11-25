@@ -10,8 +10,10 @@ import {
   SendEmailOperation,
   TemplateParameter,
 } from '@contracts/notifications';
+import { IdentityEvent, RevocationScope } from '@contracts/identity';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
-import { Eventually } from '@platform/messaging/test-utils';
+import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
+import { EnvelopeBuilder, Eventually } from '@platform/messaging/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
 import { ProvisionedService } from '@platform/service/test-utils';
 import { TenantStatus } from '@platform/sharding';
@@ -356,6 +358,34 @@ new ContainerRuntime(process.env).describeIfAvailable(
           `SELECT 1 FROM notification_deliveries WHERE user_id = '${ANA.userId}'`,
         ),
       ).resolves.toEqual([]);
+    });
+
+    it('accepts through the dispatcher the revocation of every session of a user that comes with the tenant of origin', async () => {
+      const revocation = (id: string, tenantid?: string) =>
+        EnvelopeBuilder.anEnvelope({
+          id,
+          type: IdentityEvent.TokensRevoked,
+          source: 'identity',
+          ...(tenantid === undefined ? {} : { tenantid }),
+          data: {
+            scope: RevocationScope.User,
+            subjectId: ANA.userId,
+            revokedBefore: new Date().toISOString(),
+          },
+        });
+      const dispatcher = app.get(MessageDispatcher);
+
+      const withTenant = await dispatcher.dispatch(
+        revocation('0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f81', ANA.tenantId),
+        { receiveCount: 1 },
+      );
+      const withoutTenant = await dispatcher.dispatch(
+        revocation('0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f82'),
+        { receiveCount: 1 },
+      );
+
+      expect(withTenant.outcome).toBe(DispatchOutcome.Processed);
+      expect(withoutTenant.outcome).toBe(DispatchOutcome.DeadLetter);
     });
 
     it('records the same email twice at once without a duplicate key and counts both writes', async () => {
