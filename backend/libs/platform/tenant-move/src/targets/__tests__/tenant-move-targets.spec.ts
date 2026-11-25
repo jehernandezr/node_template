@@ -26,6 +26,11 @@ describe('TenantMoveTargets', () => {
     expect(targets.find('eu-group-1')).toBeUndefined();
   });
 
+  it('names the group of a shard only in the region of the group', () => {
+    expect(targets.groupOf('sa-east-1', 'tasks_shard_b0')).toBe('sa-group-1');
+    expect(targets.groupOf('us-east-1', 'tasks_shard_b0')).toBeUndefined();
+  });
+
   it.each([
     ['a group that is not configured', 'eu-group-1', 'sa-east-1'],
     ['a group of another region', 'sa-group-1', 'us-east-1'],

@@ -33,6 +33,11 @@ export const tenantMoveErrorCatalog = defineErrorCatalog(TenantMoveErrorCode, {
     false,
     'El servicio todavía enruta al tenant al shard de origen: la limpieza no borra datos vivos.',
   ),
+  [TenantMoveErrorCode.ShardTaken]: ErrorSpecs.internal(
+    409,
+    false,
+    'El grupo de shards del tenant choca en el directorio del servicio con un tenant dedicado.',
+  ),
   [TenantMoveErrorCode.InvalidManifest]: ErrorSpecs.internal(
     500,
     false,

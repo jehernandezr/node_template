@@ -115,6 +115,14 @@
         {
           "name": "TenantMoveCleanup",
           "value": "billing.tenant-move.cleanup.v1"
+        },
+        {
+          "name": "TenantDirectoryPlace",
+          "value": "billing.tenant-directory.place.v1"
+        },
+        {
+          "name": "TenantDirectoryRemove",
+          "value": "billing.tenant-directory.remove.v1"
         }
       ]
     },
@@ -1181,6 +1189,41 @@
       "errors": [],
       "timeoutMs": 6000,
       "description": "Borra de billing los datos del tenant trasladado cuando pasa el periodo de gracia."
+    },
+    {
+      "name": "tenantDirectoryPlace",
+      "id": "billing.tenant-directory.place.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantDirectoryEntry"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantDirectoryAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "billing.tenant-directory.remove.v1",
+      "errors": [],
+      "timeoutMs": 5000,
+      "description": "Anota un tenant nuevo en el directorio de shards de billing con la región y los grupos que eligió identity; si ya está, lo deja como está."
+    },
+    {
+      "name": "tenantDirectoryRemove",
+      "id": "billing.tenant-directory.remove.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantDirectoryRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantDirectoryAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo corre como compensación del alta, antes de que el tenant tenga datos: no hay nada que restaurar.",
+      "errors": [],
+      "timeoutMs": 5000,
+      "description": "Retira de billing la fila del directorio de un tenant cuya alta se deshace."
     }
   ],
   "events": [

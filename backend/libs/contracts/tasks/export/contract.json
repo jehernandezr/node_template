@@ -52,7 +52,18 @@
         },
         { "name": "TenantMoveAbort", "value": "tasks.tenant-move.abort.v1" },
         { "name": "TenantMoveSwitch", "value": "tasks.tenant-move.switch.v1" },
-        { "name": "TenantMoveCleanup", "value": "tasks.tenant-move.cleanup.v1" }
+        {
+          "name": "TenantMoveCleanup",
+          "value": "tasks.tenant-move.cleanup.v1"
+        },
+        {
+          "name": "TenantDirectoryPlace",
+          "value": "tasks.tenant-directory.place.v1"
+        },
+        {
+          "name": "TenantDirectoryRemove",
+          "value": "tasks.tenant-directory.remove.v1"
+        }
       ]
     },
     "TasksEvent": {
@@ -653,6 +664,41 @@
       "errors": [],
       "timeoutMs": 6000,
       "description": "Borra de tasks los datos del tenant trasladado cuando pasa el periodo de gracia."
+    },
+    {
+      "name": "tenantDirectoryPlace",
+      "id": "tasks.tenant-directory.place.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantDirectoryEntry"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantDirectoryAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "tasks.tenant-directory.remove.v1",
+      "errors": [],
+      "timeoutMs": 5000,
+      "description": "Anota un tenant nuevo en el directorio de shards de tasks con la región y los grupos que eligió identity; si ya está, lo deja como está."
+    },
+    {
+      "name": "tenantDirectoryRemove",
+      "id": "tasks.tenant-directory.remove.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantDirectoryRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantDirectoryAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo corre como compensación del alta, antes de que el tenant tenga datos: no hay nada que restaurar.",
+      "errors": [],
+      "timeoutMs": 5000,
+      "description": "Retira de tasks la fila del directorio de un tenant cuya alta se deshace."
     }
   ],
   "events": [

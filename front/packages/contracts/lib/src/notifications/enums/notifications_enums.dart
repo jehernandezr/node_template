@@ -226,7 +226,9 @@ enum NotificationsOperation {
   tenantMoveFinalize('notifications.tenant-move.finalize.v1'),
   tenantMoveAbort('notifications.tenant-move.abort.v1'),
   tenantMoveSwitch('notifications.tenant-move.switch.v1'),
-  tenantMoveCleanup('notifications.tenant-move.cleanup.v1');
+  tenantMoveCleanup('notifications.tenant-move.cleanup.v1'),
+  tenantDirectoryPlace('notifications.tenant-directory.place.v1'),
+  tenantDirectoryRemove('notifications.tenant-directory.remove.v1');
 
   const NotificationsOperation(this.wireCode);
 

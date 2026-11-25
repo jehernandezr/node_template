@@ -7,6 +7,8 @@ environment:
   sdk: ^3.14.0
 
 dependencies:
+  api:
+    path: ../../packages/api
   contracts:
     path: ../../packages/contracts
   flutter:
@@ -14,6 +16,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   go_router: 18.1.4
+  http: 1.6.0
   i18n:
     path: ../../packages/i18n
   intl: 0.20.3

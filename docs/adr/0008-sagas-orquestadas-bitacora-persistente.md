@@ -4,6 +4,7 @@
 - Fecha: 2026-11-11
 - Revisión: 2026-11-14 (la bitácora vive en las tablas `saga.instances` y `saga.step_log` del esquema `saga` del shard, con `TypeOrmSagaStore`, y el catálogo del servicio guarda un directorio de sagas; ver [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md). `OperationRef` se retiró: cada paso recibe el descriptor de `defineOperation`)
 - Actualizada: 2026-11-14 (store TypeORM, `SagaRecoveryJob` como `ScheduledJob` y transacción del kernel; ver [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) y [ADR 0026](0026-jobs-programados-scheduledjob-y-joblock.md))
+- Actualizada: 2026-11-24 (sagas construidas: `TenantOnboarding`, `DeleteAccount` y `MoveTenant`, todas orquestadas por identity; ver [ADR 0031](0031-reportes-facturacion-y-sagas-de-identity.md) y [ADR 0032](0032-traslado-de-tenants-y-regiones.md))
 
 ## Contexto
 
@@ -11,7 +12,7 @@ Algunas operaciones cruzan varios servicios: el alta de un tenant, el borrado de
 
 ## Decisión
 
-`libs/platform/saga` coordina las operaciones con una bitácora persistente en la base del servicio que orquesta, en las tablas `saga_instances` y `saga_step_log`. El store es `TypeOrmSagaStore` con las entidades `SagaInstanceEntity` y `SagaStepLogEntity`, en `@platform/adapters-postgres`; `InMemorySagaStore` vive en `@platform/saga/test-utils`.
+`libs/platform/saga` coordina las operaciones con una bitácora persistente en el shard del servicio que orquesta, en las tablas `saga.instances` y `saga.step_log`. El store es `TypeOrmSagaStore` con las entidades `SagaInstanceEntity` y `SagaStepLogEntity`, en `@platform/adapters-postgres`; `InMemorySagaStore` vive en `@platform/saga/test-utils`.
 
 - Cada paso se registra como `Dispatched` con la llave `sagaId:paso:dirección` antes de llamar al servicio destino. Después se guarda el resultado en otra transacción.
 - Quien ejecuta una saga toma un lease de 30 segundos. `SagaRecoveryJob` es un `ScheduledJob` ([ADR 0026](0026-jobs-programados-scheduledjob-y-joblock.md)) que corre cada 5 segundos, con `FOR UPDATE SKIP LOCKED`, y retoma las sagas con lease vencido.
@@ -27,8 +28,6 @@ Algunas operaciones cruzan varios servicios: el alta de un tenant, el borrado de
 - Una operación con `Compensation.None` o de solo lectura (`mutating: false`) no tiene compensación.
 - Antes del pivote, un paso que modifica datos necesita compensación; con `Compensation.None` tiene que ir después del pivote. Un paso de solo lectura puede ir antes y se salta al compensar, porque no hay nada que deshacer.
 - Después del pivote, la operación tiene que ser `idempotent: true`.
-
-`OperationRef`, la referencia escrita a mano con `id` y `compensatedBy`, sigue funcionando marcada `@deprecated`.
 
 ### Validación al arrancar
 
@@ -62,6 +61,16 @@ La recuperación sigue estas reglas:
 - Una compensación con resultado incierto también queda en `Suspended` y se reintenta igual.
 - Cuando los intentos fallidos superan 20 o la suspensión llega a 24 horas (`maxSuspendAttempts` y `maxSuspendAgeMs`), la saga pasa a `RequiresIntervention` y una persona decide.
 - El lease (`leaseMs`) tiene que ser mayor que `maxStepDurationMs`; el motor rechaza la configuración si no lo es. Así ningún otro nodo retoma la saga mientras la llamada sigue dentro de su plazo.
+
+### Sagas de la plantilla
+
+| Saga               | Orquesta | Antes del pivote (con compensación)                                          | Después del pivote (idempotentes)                                         |
+| ------------------ | -------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `TenantOnboarding` | identity | crear el tenant en `Provisioning`, abrir la cuenta en billing                | activar el tenant, avisar al dueño por notifications                      |
+| `DeleteAccount`    | identity | suspender al usuario                                                         | borrar sus datos en tasks, notifications y reports, y después en identity |
+| `MoveTenant`       | identity | `sync` y después `finalize` en los cinco servicios (compensados con `abort`) | `switch` en los cinco servicios y `FinishMove`                            |
+
+Cada una se prueba con `CrashingSagaStore`, que cae el proceso en cada paso, y la de traslado además con escrituras continuas entre grupos y regiones. La limpieza del origen de un traslado no es un paso: la hace `TenantMoveCleanupJob` pasada la gracia. La bitácora de `MoveTenant` vive en el shard del tenant de plataforma, no en el del tenant que se mueve.
 
 ## Consecuencias
 

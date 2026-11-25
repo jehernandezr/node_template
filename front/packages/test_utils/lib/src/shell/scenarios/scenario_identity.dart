@@ -6,6 +6,7 @@ import 'package:utils/utils.dart';
 
 import '../../auth/fake_auth_repository.dart';
 import '../../auth/fake_token_store.dart';
+import '../../http/scripted_transport.dart';
 
 /// Builds the real [IdentityConnection] of the live scenarios over a
 /// [FakeAuthRepository], with no network behind it.
@@ -19,11 +20,13 @@ final class ScenarioIdentity {
   /// A connection whose sign-in goes through [repository] and whose access
   /// loads [permissions] for [defaultUserId]. With no [tokenStore] the store
   /// is empty, so there is no session to restore. Its session manager reads
-  /// token expiries with [clock].
+  /// token expiries with [clock]. The microfrontends reach the API through
+  /// [api], which by default answers unavailable to everything.
   IdentityConnection build(
     FakeAuthRepository repository, {
     TokenStore? tokenStore,
     Clock clock = systemClock,
+    HttpTransport? api,
   }) {
     final manager = SessionManager(
       repository: repository,
@@ -33,7 +36,7 @@ final class ScenarioIdentity {
     return IdentityConnection.withParts(
       sessionManager: manager,
       apiClient: ApiClient(
-        transport: _NoNetwork(),
+        transport: api ?? ScriptedTransport.unavailable(),
         baseUri: Uri.parse('https://api.example.com'),
         accessToken: manager.accessToken,
       ),
@@ -54,15 +57,4 @@ final class ScenarioIdentity {
 
   /// Id of the user the connection loads.
   static const String defaultUserId = '0193f1c2-0000-7000-8000-0000000000a1';
-}
-
-/// Transport that answers every request with unavailable: the scenarios
-/// never reach the API, only identity.
-final class _NoNetwork implements HttpTransport {
-  @override
-  Future<TransportResponse> send(TransportRequest request) async =>
-      const TransportResponse(statusCode: 503);
-
-  @override
-  void close() {}
 }

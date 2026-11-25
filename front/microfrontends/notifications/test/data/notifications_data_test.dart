@@ -1,10 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_notifications/mf_notifications.dart';
+import 'package:mf_notifications/src/data/api_notifications_repository.dart';
 import 'package:mf_notifications/src/data/fake_notifications_repository.dart';
 import 'package:mf_notifications/src/data/notifications_data.dart';
 import 'package:mf_notifications/src/data/notifications_repository.dart';
 import 'package:mf_notifications/src/screens/screens.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
 
 import '../utils/notification_fixtures.dart';
 import '../utils/notifications_scopes.dart';
@@ -119,6 +121,22 @@ void main() {
         expect(liveDone, isTrue);
         expect(counts, [2]);
       });
+    });
+
+    test('a live scope reads the inbox from the API', () async {
+      final transport = ScriptedTransport()
+        ..json(200, {
+          'items': [NotificationFixtures.json(1)],
+          'nextCursor': null,
+        });
+      final scope = ScriptedApi.liveScope(transport);
+      addTearDown(scope.dispose);
+
+      final repository = scope.repository(NotificationsData.repository);
+      final inbox = await repository.fetchInbox();
+
+      expect(repository, isA<ApiNotificationsRepository>());
+      expect(inbox.single.id, NotificationFixtures.id(1));
     });
   });
 }

@@ -14,6 +14,7 @@ import { TasksOperation } from '@contracts/tasks';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { DispatchOutcome, MessageDispatcher } from '@platform/messaging';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
+import { TenantDirectoryFollowers } from '../modules/tenants/index.js';
 import {
   IdentityJourney,
   IdentityTestApp,
@@ -63,7 +64,20 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
       { receiveCount: 1 },
     );
 
-  it('onboards a tenant: creates it, opens its billing account, activates it and welcomes its owner', async () => {
+  it('places the tenants of the region in the directory of every service when it seeds them', () => {
+    const seeded = [
+      String(app.env()['IDENTITY_DEFAULT_TENANT_ID']),
+      String(app.env()['IDENTITY_PLATFORM_TENANT_ID']),
+    ];
+
+    for (const follower of TenantDirectoryFollowers.ALL) {
+      expect([
+        ...(peers.placed.get(follower.tenantDirectoryPlace.id) ?? []),
+      ]).toEqual(expect.arrayContaining(seeded));
+    }
+  });
+
+  it('onboards a tenant: creates it, places it in every service, opens its billing account, activates it and welcomes its owner', async () => {
     const created = await ana
       .bearer(anaSession.accessToken)
       .post('/v1/tenants', { body: { slug: 'acme-sagas', name: 'Acme' } });
@@ -88,6 +102,11 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
         NotificationsOperation.NotifyUser,
       ]),
     );
+    for (const follower of TenantDirectoryFollowers.ALL) {
+      expect(peers.placed.get(follower.tenantDirectoryPlace.id)).toContain(
+        acme.tenantId,
+      );
+    }
   });
 
   it('discards the tenant and frees its slug when billing refuses the account', async () => {
@@ -105,6 +124,12 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
       status: IdentitySagaStatus.Compensated,
     });
     await expect(tenantStatus(tenantId)).resolves.toEqual([]);
+    for (const follower of TenantDirectoryFollowers.ALL) {
+      expect(peers.placed.get(follower.tenantDirectoryPlace.id)).not.toContain(
+        tenantId,
+      );
+      expect(peers.received).toContain(follower.tenantDirectoryRemove.id);
+    }
     await expect(
       app
         .shards()

@@ -1,0 +1,209 @@
+{
+  "@@locale": "es",
+  "catalogTitle": "Reportes",
+  "@catalogTitle": {
+    "description": "Título del catálogo de reportes."
+  },
+  "runsTitle": "Ejecuciones",
+  "@runsTitle": {
+    "description": "Título de la lista de ejecuciones y de su acción en el catálogo."
+  },
+  "runTitle": "Reporte",
+  "@runTitle": {
+    "description": "Título de la página de una ejecución."
+  },
+  "loadError": "No se pudieron cargar los reportes.",
+  "@loadError": {
+    "description": "Mensaje cuando falla la carga del catálogo, de las ejecuciones o de una ejecución."
+  },
+  "emptyCatalogTitle": "No hay reportes disponibles",
+  "@emptyCatalogTitle": {
+    "description": "Título del catálogo vacío."
+  },
+  "emptyCatalogMessage": "Tu plan no incluye reportes por ahora.",
+  "@emptyCatalogMessage": {
+    "description": "Texto de apoyo del catálogo vacío."
+  },
+  "emptyRunsTitle": "Todavía no hay ejecuciones",
+  "@emptyRunsTitle": {
+    "description": "Título de la lista de ejecuciones vacía."
+  },
+  "emptyRunsMessage": "Genera un reporte desde el catálogo y aparecerá aquí.",
+  "@emptyRunsMessage": {
+    "description": "Texto de apoyo de la lista de ejecuciones vacía."
+  },
+  "chooseReport": "Elige un reporte para ver sus parámetros.",
+  "@chooseReport": {
+    "description": "Indicación cuando no hay un reporte elegido en el catálogo."
+  },
+  "periodLabel": "Periodo",
+  "@periodLabel": {
+    "description": "Etiqueta del rango de días del reporte."
+  },
+  "granularityLabel": "Agrupar por",
+  "@granularityLabel": {
+    "description": "Etiqueta de la agrupación del reporte."
+  },
+  "formatLabel": "Formato",
+  "@formatLabel": {
+    "description": "Etiqueta del formato del archivo."
+  },
+  "generate": "Generar reporte",
+  "@generate": {
+    "description": "Botón que pide una ejecución del reporte elegido."
+  },
+  "generateError": "No se pudo generar el reporte.",
+  "@generateError": {
+    "description": "Mensaje cuando falla pedir una ejecución."
+  },
+  "download": "Descargar",
+  "@download": {
+    "description": "Botón que descarga el resultado de una ejecución lista."
+  },
+  "downloaded": "Se descargó {fileName}.",
+  "@downloaded": {
+    "description": "Aviso cuando el navegador guardó el archivo.",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "copied": "Se copió {fileName} al portapapeles.",
+  "@copied": {
+    "description": "Aviso cuando el contenido del archivo quedó en el portapapeles.",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadError": "No se pudo descargar el reporte.",
+  "@downloadError": {
+    "description": "Mensaje cuando falla la descarga."
+  },
+  "runPending": "El reporte se está generando. Esta página se actualiza sola.",
+  "@runPending": {
+    "description": "Aviso mientras la ejecución está en cola o en curso."
+  },
+  "runFailed": "El reporte no se pudo generar. Pide uno nuevo desde el catálogo.",
+  "@runFailed": {
+    "description": "Aviso de una ejecución fallida."
+  },
+  "runExpired": "El resultado de este reporte venció. Pide uno nuevo desde el catálogo.",
+  "@runExpired": {
+    "description": "Aviso de una ejecución vencida."
+  },
+  "runNotFound": "Ese reporte no existe.",
+  "@runNotFound": {
+    "description": "Mensaje cuando la ejecución pedida no existe."
+  },
+  "noRows": "El reporte no tiene filas en ese periodo.",
+  "@noRows": {
+    "description": "Texto cuando el resultado está vacío."
+  },
+  "runRange": "Del {from} al {to}",
+  "@runRange": {
+    "description": "Rango de fechas de una ejecución.",
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "requestedAt": "Pedido el {date}",
+  "@requestedAt": {
+    "description": "Fecha en que se pidió la ejecución.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "typeTasksByStatus": "Tareas por estado",
+  "@typeTasksByStatus": {
+    "description": "Nombre de un tipo de reporte."
+  },
+  "typeTasksActivity": "Actividad de tareas",
+  "@typeTasksActivity": {
+    "description": "Nombre de un tipo de reporte."
+  },
+  "typeInvoicesSummary": "Resumen de facturas",
+  "@typeInvoicesSummary": {
+    "description": "Nombre de un tipo de reporte."
+  },
+  "typeNotificationsDelivery": "Entrega de notificaciones",
+  "@typeNotificationsDelivery": {
+    "description": "Nombre de un tipo de reporte."
+  },
+  "statusQueued": "En cola",
+  "@statusQueued": {
+    "description": "Estado de una ejecución."
+  },
+  "statusRunning": "Generando",
+  "@statusRunning": {
+    "description": "Estado de una ejecución."
+  },
+  "statusReady": "Listo",
+  "@statusReady": {
+    "description": "Estado de una ejecución."
+  },
+  "statusFailed": "Falló",
+  "@statusFailed": {
+    "description": "Estado de una ejecución."
+  },
+  "statusExpired": "Vencido",
+  "@statusExpired": {
+    "description": "Estado de una ejecución."
+  },
+  "formatJson": "JSON",
+  "@formatJson": {
+    "description": "Formato de archivo."
+  },
+  "formatCsv": "CSV",
+  "@formatCsv": {
+    "description": "Formato de archivo."
+  },
+  "granularityDay": "Día",
+  "@granularityDay": {
+    "description": "Agrupación del reporte."
+  },
+  "granularityWeek": "Semana",
+  "@granularityWeek": {
+    "description": "Agrupación del reporte."
+  },
+  "granularityMonth": "Mes",
+  "@granularityMonth": {
+    "description": "Agrupación del reporte."
+  },
+  "periodLast7Days": "7 días",
+  "@periodLast7Days": {
+    "description": "Rango de días del reporte."
+  },
+  "periodLast30Days": "30 días",
+  "@periodLast30Days": {
+    "description": "Rango de días del reporte."
+  },
+  "periodLast90Days": "90 días",
+  "@periodLast90Days": {
+    "description": "Rango de días del reporte."
+  },
+  "runSummary": "{range}, agrupado por {granularity}, en {format}",
+  "@runSummary": {
+    "description": "Parámetros de una ejecución: rango, agrupación y formato.",
+    "placeholders": {
+      "range": {
+        "type": "String"
+      },
+      "granularity": {
+        "type": "String"
+      },
+      "format": {
+        "type": "String"
+      }
+    }
+  }
+}

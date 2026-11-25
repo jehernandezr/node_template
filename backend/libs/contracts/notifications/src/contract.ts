@@ -1,6 +1,7 @@
 import { RecordUsageCommand } from '@contracts/billing';
 import {
   defineServiceContract,
+  defineTenantDirectoryOperations,
   defineTenantMoveOperations,
 } from '@contracts/platform';
 import {
@@ -36,6 +37,10 @@ import * as schemas from './schemas/index.js';
 /** Las operaciones de traslado de tenant de notifications, con su tipo exacto para registrarlas y llamarlas. */
 export const NotificationsTenantMoveOperations =
   defineTenantMoveOperations('notifications');
+
+/** Las operaciones del directorio de tenants de notifications, con su tipo exacto para registrarlas y llamarlas. */
+export const NotificationsTenantDirectoryOperations =
+  defineTenantDirectoryOperations('notifications');
 
 /** Contrato del servicio notifications: bandeja, preferencias, despacho por canal, correo transaccional y tiempo real. */
 export const notificationsContract = defineServiceContract({
@@ -93,6 +98,10 @@ export const notificationsContract = defineServiceContract({
     tenantMoveAbort: NotificationsTenantMoveOperations.tenantMoveAbort,
     tenantMoveSwitch: NotificationsTenantMoveOperations.tenantMoveSwitch,
     tenantMoveCleanup: NotificationsTenantMoveOperations.tenantMoveCleanup,
+    tenantDirectoryPlace:
+      NotificationsTenantDirectoryOperations.tenantDirectoryPlace,
+    tenantDirectoryRemove:
+      NotificationsTenantDirectoryOperations.tenantDirectoryRemove,
   },
   events: { notificationCreated: NotificationCreatedEvent },
   topics: { events: NotificationsEventsTopic },

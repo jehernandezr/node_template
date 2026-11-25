@@ -448,6 +448,129 @@ final class TenantMoveAck {
   int get hashCode => contractHash([moveId]);
 }
 
+/// Ubicación de un tenant que cada servicio anota en su directorio de shards.
+@immutable
+final class TenantDirectoryEntry {
+  const TenantDirectoryEntry({
+    required this.tenantId,
+    required this.region,
+    required this.groups,
+    required this.dedicated,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory TenantDirectoryEntry.fromJson(Map<String, dynamic> json) {
+    try {
+      return TenantDirectoryEntry(
+        tenantId: json['tenantId'] as String,
+        region: json['region'] as String,
+        groups: [
+          for (final e0 in json['groups'] as List<dynamic>) e0 as String,
+        ],
+        dedicated: json['dedicated'] as bool,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid TenantDirectoryEntry: $error', json);
+    }
+  }
+
+  final String tenantId;
+
+  final String region;
+
+  final List<String> groups;
+
+  final bool dedicated;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'tenantId': tenantId,
+    'region': region,
+    'groups': groups,
+    'dedicated': dedicated,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(TenantDirectoryEntry value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TenantDirectoryEntry &&
+          contractEquals(tenantId, other.tenantId) &&
+          contractEquals(region, other.region) &&
+          contractEquals(groups, other.groups) &&
+          contractEquals(dedicated, other.dedicated);
+
+  @override
+  int get hashCode => contractHash([tenantId, region, groups, dedicated]);
+}
+
+/// Tenant cuya fila se retira del directorio de un servicio.
+@immutable
+final class TenantDirectoryRef {
+  const TenantDirectoryRef({required this.tenantId});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory TenantDirectoryRef.fromJson(Map<String, dynamic> json) {
+    try {
+      return TenantDirectoryRef(tenantId: json['tenantId'] as String);
+    } on TypeError catch (error) {
+      throw FormatException('Invalid TenantDirectoryRef: $error', json);
+    }
+  }
+
+  final String tenantId;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{'tenantId': tenantId};
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(TenantDirectoryRef value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TenantDirectoryRef && contractEquals(tenantId, other.tenantId);
+
+  @override
+  int get hashCode => contractHash([tenantId]);
+}
+
+/// Acuse de la ubicación o del retiro de un tenant en el directorio de un servicio.
+@immutable
+final class TenantDirectoryAck {
+  const TenantDirectoryAck({required this.tenantId});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory TenantDirectoryAck.fromJson(Map<String, dynamic> json) {
+    try {
+      return TenantDirectoryAck(tenantId: json['tenantId'] as String);
+    } on TypeError catch (error) {
+      throw FormatException('Invalid TenantDirectoryAck: $error', json);
+    }
+  }
+
+  final String tenantId;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{'tenantId': tenantId};
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(TenantDirectoryAck value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TenantDirectoryAck && contractEquals(tenantId, other.tenantId);
+
+  @override
+  int get hashCode => contractHash([tenantId]);
+}
+
 /// Datos públicos del error, por ejemplo la URL de la región del tenant.
 @immutable
 final class ProblemDetailsDetails {

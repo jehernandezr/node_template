@@ -1,6 +1,7 @@
 # 0013. Módulo de IA con puertos y Claude por defecto
 
-- Estado: Aceptada
+- Estado: Aceptada, sin construir
+- Actualizada: 2026-11-24 (estado de lo construido)
 - Fecha: 2026-11-11
 
 ## Contexto
@@ -16,6 +17,10 @@ Los servicios de la plataforma necesitan capacidades de IA con las mismas reglas
 - `@AiTool` expone un caso de uso como herramienta, con el `Actor`, el tenant y los permisos del usuario que conversa. Las herramientas que modifican datos piden confirmación.
 - Cada llamada publica `BillingEvent.UsageRecorded` por tenant, usuario y modelo.
 - Un conjunto de casos de evaluación por prompt corre en CI cuando el prompt cambia.
+
+### Estado
+
+`libs/platform/ai` todavía no existe. Lo único construido es el microfrontend `assistant`, que solo sirve el modo demo con datos en memoria; su modo live espera a esta librería y al servicio que la use. Cuando se construya, el uso se mide como cualquier otra métrica de `@platform/metering` hacia billing, en vez de un evento propio `BillingEvent.UsageRecorded`.
 
 ## Consecuencias
 

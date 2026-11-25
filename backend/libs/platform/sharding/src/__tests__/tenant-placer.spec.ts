@@ -25,6 +25,10 @@ class AlwaysTakenDirectory extends DirectoryWriter {
   async putPlacement(): Promise<DirectoryWriteResult> {
     return DirectoryWriteResult.ShardTaken;
   }
+
+  async deletePlacement(): Promise<DirectoryWriteResult> {
+    return DirectoryWriteResult.VersionConflict;
+  }
 }
 
 describe('TenantPlacer', () => {

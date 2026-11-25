@@ -9,6 +9,7 @@ export 'src/auth/fake_device_key_port.dart';
 export 'src/auth/fake_token_store.dart';
 export 'src/clock/fake_clock.dart';
 export 'src/errors/fake_failure.dart';
+export 'src/http/scripted_transport.dart';
 export 'src/layout/pump_at_text_scale.dart';
 export 'src/layout/pump_at_widths.dart';
 export 'src/problem/problem_fixtures.dart';

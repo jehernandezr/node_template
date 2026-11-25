@@ -7,8 +7,7 @@ import 'package:mf_billing/src/shared/types/billing_types.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:test_utils/test_utils.dart';
 import 'package:utils/utils.dart' show formatMoney;
-import 'package:contracts/contracts.dart' hide Currency, Invoice;
-import 'package:mf_billing/src/shared/enums/billing_enums.dart';
+import 'package:contracts/contracts.dart' hide Invoice, InvoiceSummary;
 import 'package:material_ui/material_ui.dart';
 
 import '../utils/billing_test_app.dart';
@@ -17,14 +16,14 @@ final _es = BillingTestApp.es;
 
 /// Repository whose invoices never arrive, to keep a screen loading.
 base class _PendingRepository extends FakeBillingRepository {
-  final Completer<List<Invoice>> completer = Completer();
+  final Completer<List<InvoiceSummary>> completer = Completer();
 
   @override
-  Future<List<Invoice>> invoices() => completer.future;
+  Future<List<InvoiceSummary>> invoices() => completer.future;
 }
 
 String _cop(int amountMinor) => formatMoney(
-  MoneyAmount(amountMinor: amountMinor, currency: Currency.cop.code),
+  MoneyAmount(amountMinor: amountMinor, currency: Currency.cop.wireCode),
   locale: 'es',
 );
 

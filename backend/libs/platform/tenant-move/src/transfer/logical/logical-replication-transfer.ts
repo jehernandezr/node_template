@@ -104,7 +104,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   /** Espera a que la suscripción reciba todo el WAL del origen congelado, la retira y verifica como la copia por lotes. */
   async verify(transfer: TenantTransfer): Promise<TenantMoveVerification> {
     const name = ReplicationNames.of(transfer.moveId);
-    const budget = new TransferBudget(this.clock, this.options.callBudgetMs);
+    const budget = transfer.budget ?? this.newBudget();
     if (await this.isSubscribed(transfer.target, name)) {
       const goal = await this.currentLsn(transfer.source);
       while (!(await this.reached(transfer.source, name, goal))) {
@@ -113,21 +113,26 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
       }
     }
     await this.unsubscribe(transfer.target, transfer.source, name, budget);
-    return this.batch.verify(transfer);
+    return this.batch.verify({ ...transfer, budget });
   }
 
   async abort(transfer: TenantTransfer): Promise<void> {
+    const budget = transfer.budget ?? this.newBudget();
     await this.unsubscribe(
       transfer.target,
       transfer.source,
       ReplicationNames.of(transfer.moveId),
-      new TransferBudget(this.clock, this.options.callBudgetMs),
+      budget,
     );
-    await this.batch.abort(transfer);
+    await this.batch.abort({ ...transfer, budget });
   }
 
-  async cleanup(tenantId: string, source: DataSource): Promise<void> {
-    await this.batch.cleanup(tenantId, source);
+  async cleanup(
+    tenantId: string,
+    source: DataSource,
+    budget?: TransferBudget,
+  ): Promise<void> {
+    await this.batch.cleanup(tenantId, source, budget);
   }
 
   async assignRegion(
@@ -392,6 +397,10 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
       [value],
     );
     return rows[0]?.literal ?? "''";
+  }
+
+  private newBudget(): TransferBudget {
+    return new TransferBudget(this.clock, this.options.callBudgetMs);
   }
 
   private static pause(): Promise<void> {

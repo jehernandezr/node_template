@@ -23,6 +23,8 @@ export enum TasksOperation {
   TenantMoveAbort = 'tasks.tenant-move.abort.v1',
   TenantMoveSwitch = 'tasks.tenant-move.switch.v1',
   TenantMoveCleanup = 'tasks.tenant-move.cleanup.v1',
+  TenantDirectoryPlace = 'tasks.tenant-directory.place.v1',
+  TenantDirectoryRemove = 'tasks.tenant-directory.remove.v1',
 }
 
 /** Tipos CloudEvents de los eventos que publica tasks. */

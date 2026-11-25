@@ -11,13 +11,12 @@ import 'src/shared/constants/billing_paths.dart';
 /// Manifest registered by the shells. Routes live under `/billing`.
 ///
 /// Everything in `src/data`, `src/screens` and `src/l10n` loads through the
-/// deferred `screens` import on the first visit. Demo only: billing has no
-/// contract yet.
+/// deferred `screens` import on the first visit. It serves demo and live
+/// shells: in live mode the data comes from the billing API.
 final MicrofrontendManifest billingManifest = MicrofrontendManifest(
   id: billingId,
   platforms: {AppPlatform.web},
   access: billingAccessRule,
-  modes: const {ShellMode.demo},
   menu: const [
     MenuEntry(
       label: billingMenuLabel,

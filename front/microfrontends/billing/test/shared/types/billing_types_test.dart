@@ -43,7 +43,7 @@ void main() {
             description: 'Plan',
             amount: MoneyAmount(
               amountMinor: 189000,
-              currency: Currency.cop.code,
+              currency: Currency.cop.wireCode,
             ),
           ),
           InvoiceLine(
@@ -51,7 +51,7 @@ void main() {
             description: 'Uso',
             amount: MoneyAmount(
               amountMinor: 12500,
-              currency: Currency.cop.code,
+              currency: Currency.cop.wireCode,
             ),
           ),
         ],

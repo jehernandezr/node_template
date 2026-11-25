@@ -2,6 +2,7 @@ import { CalendarDateFormat } from './constants/calendar-date.constants.js';
 import { IdentifierFormat } from './constants/identifier.constants.js';
 import { MoneyLimits } from './constants/money.constants.js';
 import { Pagination } from './constants/pagination.constants.js';
+import { TenantDirectoryLimits } from './constants/tenant-directory.constants.js';
 import { TenantMoveLimits } from './constants/tenant-move.constants.js';
 import { ValidationRules } from './constants/validation.constants.js';
 import { AccessKind } from './enums/access-kind.enum.js';
@@ -37,13 +38,18 @@ import {
   TenantMoveTableProgressSchema,
   TenantMoveVerificationSchema,
 } from './schemas/tenant-move.schema.js';
+import {
+  TenantDirectoryAckSchema,
+  TenantDirectoryEntrySchema,
+  TenantDirectoryRefSchema,
+} from './schemas/tenant-directory.schema.js';
 import { UserRefSchema } from './schemas/user-ref.schema.js';
 
 /** Piezas transversales que usan todos los contratos y clientes. */
 export const platformContract = defineServiceContract({
   service: 'platform',
   description:
-    'Kit de contratos y piezas transversales: identificadores, paginación, montos, fechas, referencias de usuario, traslado de tenants y errores.',
+    'Kit de contratos y piezas transversales: identificadores, paginación, montos, fechas, referencias de usuario, directorio y traslado de tenants y errores.',
   enums: {
     PlatformErrorCode,
     ErrorAudience,
@@ -59,6 +65,7 @@ export const platformContract = defineServiceContract({
     ValidationRules,
     CalendarDateFormat,
     TenantMoveLimits,
+    TenantDirectoryLimits,
   },
   schemas: {
     Id: IdSchema,
@@ -79,6 +86,9 @@ export const platformContract = defineServiceContract({
     TenantMoveTableCheck: TenantMoveTableCheckSchema,
     TenantMoveVerification: TenantMoveVerificationSchema,
     TenantMoveAck: TenantMoveAckSchema,
+    TenantDirectoryEntry: TenantDirectoryEntrySchema,
+    TenantDirectoryRef: TenantDirectoryRefSchema,
+    TenantDirectoryAck: TenantDirectoryAckSchema,
   },
   errors: { PlatformErrorCode: platformErrorCatalog },
 });

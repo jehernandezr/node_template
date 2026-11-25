@@ -1,17 +1,5 @@
 import 'package:contracts/contracts.dart'
-    hide
-        BillingOperation,
-        BillingPeriod,
-        Currency,
-        Invoice,
-        InvoiceLine,
-        InvoiceLineKind,
-        InvoiceStatus,
-        Plan,
-        PlanPeriodicity,
-        QuotaUsage,
-        Subscription,
-        SubscriptionStatus;
+    show ApiErrorException, MoneyAmount, PlatformErrorCode, ProblemDetails;
 import 'package:shell_core/shell_core.dart';
 
 import '../shared/enums/billing_enums.dart';
@@ -29,8 +17,8 @@ base class FakeBillingRepository implements BillingRepository {
 
   final DemoBehavior _behavior;
 
-  static final _cop = Currency.cop.code;
-  static final _usd = Currency.usd.code;
+  static final _cop = Currency.cop.wireCode;
+  static final _usd = Currency.usd.wireCode;
 
   static final _catalog = <Plan>[
     Plan(
@@ -39,8 +27,8 @@ base class FakeBillingRepository implements BillingRepository {
       price: MoneyAmount(amountMinor: 49900, currency: _cop),
       periodicity: PlanPeriodicity.monthly,
       quotas: [
-        Quota(key: QuotaKey.users, limit: 5),
-        Quota(key: QuotaKey.apiCalls, limit: 10000),
+        Quota(key: UsageMetric.users, limit: 5),
+        Quota(key: UsageMetric.apiCalls, limit: 10000),
       ],
     ),
     Plan(
@@ -49,9 +37,9 @@ base class FakeBillingRepository implements BillingRepository {
       price: MoneyAmount(amountMinor: 189000, currency: _cop),
       periodicity: PlanPeriodicity.monthly,
       quotas: [
-        Quota(key: QuotaKey.users, limit: 25),
-        Quota(key: QuotaKey.apiCalls, limit: 100000),
-        Quota(key: QuotaKey.storageGb, limit: 50),
+        Quota(key: UsageMetric.users, limit: 25),
+        Quota(key: UsageMetric.apiCalls, limit: 100000),
+        Quota(key: UsageMetric.storageGb, limit: 50),
       ],
     ),
     Plan(
@@ -60,9 +48,9 @@ base class FakeBillingRepository implements BillingRepository {
       price: MoneyAmount(amountMinor: 110000, currency: _usd),
       periodicity: PlanPeriodicity.annual,
       quotas: [
-        Quota(key: QuotaKey.users, limit: 200),
-        Quota(key: QuotaKey.apiCalls, limit: 1000000),
-        Quota(key: QuotaKey.storageGb, limit: 500),
+        Quota(key: UsageMetric.users, limit: 200),
+        Quota(key: UsageMetric.apiCalls, limit: 1000000),
+        Quota(key: UsageMetric.storageGb, limit: 500),
       ],
     ),
   ];
@@ -77,10 +65,10 @@ base class FakeBillingRepository implements BillingRepository {
     ),
   );
 
-  final Map<QuotaKey, int> _usedByQuota = {
-    QuotaKey.users: 20,
-    QuotaKey.apiCalls: 4200,
-    QuotaKey.storageGb: 50,
+  final Map<UsageMetric, int> _usedByQuota = {
+    UsageMetric.users: 20,
+    UsageMetric.apiCalls: 4200,
+    UsageMetric.storageGb: 50,
   };
 
   late final List<Invoice> _invoices = [
@@ -155,7 +143,7 @@ base class FakeBillingRepository implements BillingRepository {
       id: 'inv_001',
       number: 'FAC-2026-0007',
       month: 7,
-      status: InvoiceStatus.voided,
+      status: InvoiceStatus.voidValue,
       lines: [
         InvoiceLine(
           kind: InvoiceLineKind.fixedFee,
@@ -233,8 +221,10 @@ base class FakeBillingRepository implements BillingRepository {
   }, operation: BillingOperation.changePlan);
 
   @override
-  Future<List<Invoice>> invoices() =>
-      _behavior.respond(() => _invoices, operation: BillingOperation.invoices);
+  Future<List<InvoiceSummary>> invoices() => _behavior.respond(
+    () => [for (final invoice in _invoices) invoice.summary],
+    operation: BillingOperation.invoices,
+  );
 
   @override
   Future<Invoice?> invoice(String id) => _behavior.respond(

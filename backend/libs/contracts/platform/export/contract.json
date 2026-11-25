@@ -3,7 +3,7 @@
   "formatVersion": 2,
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "service": "platform",
-  "description": "Kit de contratos y piezas transversales: identificadores, paginación, montos, fechas, referencias de usuario, traslado de tenants y errores.",
+  "description": "Kit de contratos y piezas transversales: identificadores, paginación, montos, fechas, referencias de usuario, directorio y traslado de tenants y errores.",
   "enums": {
     "PlatformErrorCode": {
       "values": [
@@ -208,6 +208,12 @@
       "abortTimeoutMs": 6000,
       "switchTimeoutMs": 6000,
       "cleanupTimeoutMs": 6000
+    },
+    "TenantDirectoryLimits": {
+      "fieldMaxLength": 64,
+      "maxGroups": 64,
+      "placeTimeoutMs": 5000,
+      "removeTimeoutMs": 5000
     }
   },
   "schemas": {
@@ -406,6 +412,36 @@
       "properties": { "moveId": { "$ref": "#/schemas/Id" } },
       "required": ["moveId"],
       "description": "Acuse de una cancelación o una limpieza de traslado."
+    },
+    "TenantDirectoryEntry": {
+      "type": "object",
+      "properties": {
+        "tenantId": { "$ref": "#/schemas/Id" },
+        "region": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "groups": {
+          "minItems": 1,
+          "maxItems": 64,
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "dedicated": { "type": "boolean" }
+      },
+      "required": ["tenantId", "region", "groups", "dedicated"],
+      "additionalProperties": false,
+      "description": "Ubicación de un tenant que cada servicio anota en su directorio de shards."
+    },
+    "TenantDirectoryRef": {
+      "type": "object",
+      "properties": { "tenantId": { "$ref": "#/schemas/Id" } },
+      "required": ["tenantId"],
+      "additionalProperties": false,
+      "description": "Tenant cuya fila se retira del directorio de un servicio."
+    },
+    "TenantDirectoryAck": {
+      "type": "object",
+      "properties": { "tenantId": { "$ref": "#/schemas/Id" } },
+      "required": ["tenantId"],
+      "description": "Acuse de la ubicación o del retiro de un tenant en el directorio de un servicio."
     }
   },
   "routes": [],

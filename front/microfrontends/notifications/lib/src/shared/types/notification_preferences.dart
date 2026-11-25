@@ -1,7 +1,9 @@
+import '../constants/notifications_api.dart';
 import '../enums/notification_enums.dart';
 import 'clock_time.dart';
 
-/// Preferences by type and channel, with quiet hours.
+/// Preferences by type and channel, with quiet hours in [timezone] (an IANA
+/// zone such as `America/Bogota`).
 ///
 /// Mandatory combinations (security alerts) are always on; [withChannel]
 /// ignores them.
@@ -10,6 +12,7 @@ final class NotificationPreferences {
     required Map<NotificationType, Set<NotificationChannel>> enabled,
     required this.quietStart,
     required this.quietEnd,
+    this.timezone = NotificationsApi.defaultTimezone,
   }) : enabled = Map.unmodifiable({
          for (final type in NotificationType.values)
            type: Set.unmodifiable(
@@ -37,6 +40,7 @@ final class NotificationPreferences {
   final Map<NotificationType, Set<NotificationChannel>> enabled;
   final ClockTime quietStart;
   final ClockTime quietEnd;
+  final String timezone;
 
   bool isEnabled(NotificationType type, NotificationChannel channel) =>
       type.isMandatory || (enabled[type]?.contains(channel) ?? false);
@@ -55,6 +59,7 @@ final class NotificationPreferences {
       enabled: {...enabled, type: channels},
       quietStart: quietStart,
       quietEnd: quietEnd,
+      timezone: timezone,
     );
   }
 
@@ -63,5 +68,6 @@ final class NotificationPreferences {
         enabled: enabled,
         quietStart: start ?? quietStart,
         quietEnd: end ?? quietEnd,
+        timezone: timezone,
       );
 }

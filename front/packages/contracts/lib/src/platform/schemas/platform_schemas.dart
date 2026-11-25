@@ -1456,6 +1456,339 @@ extension TenantMoveAckValidation on TenantMoveAck {
   List<FieldError> validate() => TenantMoveAckSchema.validate(toJson());
 }
 
+/// Validador de [TenantDirectoryEntry] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class TenantDirectoryEntrySchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('tenantId')) {
+      final value41 = json['tenantId'];
+      if (value41 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'tenantId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern2.hasMatch(value41)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'tenantId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'tenantId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('region')) {
+      final value42 = json['region'];
+      if (value42 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'region'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value42.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'region'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value42.length > 64) {
+          addFieldError(
+            errors,
+            joinPath(path, 'region'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'region'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('groups')) {
+      final value43 = json['groups'];
+      if (value43 is! List) {
+        addFieldError(
+          errors,
+          joinPath(path, 'groups'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value43.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'groups'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value43.length > 64) {
+          addFieldError(
+            errors,
+            joinPath(path, 'groups'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+        for (var i44 = 0; i44 < value43.length; i44++) {
+          final item45 = value43[i44];
+          if (item45 is! String) {
+            addFieldError(
+              errors,
+              joinPath(joinPath(path, 'groups'), '$i44'),
+              PlatformErrorCode.validationInvalidType.code,
+            );
+          } else {
+            if (item45.isEmpty) {
+              addFieldError(
+                errors,
+                joinPath(joinPath(path, 'groups'), '$i44'),
+                PlatformErrorCode.validationTooShort.code,
+              );
+            }
+            if (item45.length > 64) {
+              addFieldError(
+                errors,
+                joinPath(joinPath(path, 'groups'), '$i44'),
+                PlatformErrorCode.validationTooLong.code,
+              );
+            }
+          }
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'groups'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('dedicated')) {
+      final value46 = json['dedicated'];
+      if (value46 is! bool) {
+        addFieldError(
+          errors,
+          joinPath(path, 'dedicated'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'dedicated'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    for (final key in json.keys) {
+      if (!const <String>{
+        'tenantId',
+        'region',
+        'groups',
+        'dedicated',
+      }.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [TenantDirectoryEntry] contra su contrato.
+extension TenantDirectoryEntryValidation on TenantDirectoryEntry {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => TenantDirectoryEntrySchema.validate(toJson());
+}
+
+/// Validador de [TenantDirectoryRef] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class TenantDirectoryRefSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('tenantId')) {
+      final value47 = json['tenantId'];
+      if (value47 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'tenantId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern2.hasMatch(value47)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'tenantId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'tenantId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    for (final key in json.keys) {
+      if (!const <String>{'tenantId'}.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [TenantDirectoryRef] contra su contrato.
+extension TenantDirectoryRefValidation on TenantDirectoryRef {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => TenantDirectoryRefSchema.validate(toJson());
+}
+
+/// Validador de [TenantDirectoryAck] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class TenantDirectoryAckSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('tenantId')) {
+      final value48 = json['tenantId'];
+      if (value48 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'tenantId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern2.hasMatch(value48)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'tenantId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'tenantId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [TenantDirectoryAck] contra su contrato.
+extension TenantDirectoryAckValidation on TenantDirectoryAck {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => TenantDirectoryAckSchema.validate(toJson());
+}
+
 /// Validador de [ProblemDetailsDetails] generado desde el JSON Schema del contrato.
 ///
 /// Devuelve los mismos códigos y rutas de campo que el servidor.
@@ -1493,15 +1826,15 @@ abstract final class ProblemDetailsDetailsSchema {
       return;
     }
     if (json.containsKey('apiBaseUrl')) {
-      final value41 = json['apiBaseUrl'];
-      if (value41 is! String) {
+      final value49 = json['apiBaseUrl'];
+      if (value49 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'apiBaseUrl'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value41.length > 2048) {
+        if (value49.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'apiBaseUrl'),
@@ -1511,15 +1844,15 @@ abstract final class ProblemDetailsDetailsSchema {
       }
     }
     if (json.containsKey('region')) {
-      final value42 = json['region'];
-      if (value42 is! String) {
+      final value50 = json['region'];
+      if (value50 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'region'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value42.length > 64) {
+        if (value50.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'region'),

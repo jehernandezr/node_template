@@ -90,6 +90,14 @@ export class TwoRegionLedger {
     );
   }
 
+  /** Las filas de un tenant en el directorio del catálogo, leídas como superusuario. */
+  async placementRows(tenant: string): Promise<{ shard_group: string[] }[]> {
+    return (await this.regionA.connect(this.catalog)).query(
+      'SELECT shard_group FROM shard_directory WHERE tenant_id = $1',
+      [tenant],
+    );
+  }
+
   async close(): Promise<void> {
     await Promise.all(this.apps.splice(0).map((app) => app.close()));
   }

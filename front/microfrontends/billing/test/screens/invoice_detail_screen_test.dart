@@ -1,10 +1,9 @@
-import 'package:contracts/contracts.dart' hide Currency;
+import 'package:contracts/contracts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_billing/src/data/fake_billing_repository.dart';
 import 'package:mf_billing/src/screens/invoice_detail_screen.dart';
 import 'package:mf_billing/src/screens/invoices_screen.dart';
-import 'package:mf_billing/src/shared/enums/billing_enums.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:test_utils/test_utils.dart';
 import 'package:utils/utils.dart' show formatMoney;
@@ -15,7 +14,7 @@ final _es = BillingTestApp.es;
 final _en = BillingTestApp.en;
 
 String _cop(int amountMinor) => formatMoney(
-  MoneyAmount(amountMinor: amountMinor, currency: Currency.cop.code),
+  MoneyAmount(amountMinor: amountMinor, currency: Currency.cop.wireCode),
   locale: 'es',
 );
 

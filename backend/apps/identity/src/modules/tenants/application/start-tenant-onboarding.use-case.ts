@@ -12,11 +12,13 @@ import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { IdentitySagas } from '../../sagas/index.js';
 import { TenantDirectory } from '../domain/tenant-directory.js';
 import { TenantPlacement } from '../domain/tenant-placement.js';
+import { TenantDirectoryEntryFactory } from './tenant-directory-entry.factory.js';
 import { TenantOnboardingSaga } from './tenant-onboarding.saga.js';
 
 /**
  * `POST /v1/tenants`: ubica al tenant en un shard de su región (ahí vive la bitácora de la saga) y arranca
- * `TenantOnboarding`, cuyo primer paso reserva el slug con su reversa. Así ninguna caída deja un slug tomado
+ * `TenantOnboarding` con esa ubicación, que la saga lleva a los demás servicios. Su primer paso reserva el slug con su
+ * reversa. Así ninguna caída deja un slug tomado
  * sin una saga que lo libere. El tenant queda en aprovisionamiento hasta que la saga lo activa; el cliente
  * sigue su avance con `GET /v1/sagas/{sagaId}`.
  */
@@ -25,6 +27,7 @@ export class StartTenantOnboarding {
   constructor(
     private readonly directory: TenantDirectory,
     private readonly placement: TenantPlacement,
+    private readonly entries: TenantDirectoryEntryFactory,
     private readonly sagas: IdentitySagas,
     private readonly ids: IdGenerator,
     private readonly settings: IdentitySettings,
@@ -45,7 +48,7 @@ export class StartTenantOnboarding {
     if (await this.directory.isTaken(request.slug)) {
       throw new IdentityError(IdentityErrorCode.TenantSlugTaken);
     }
-    await this.placement.place(tenantId, region, false);
+    const placed = await this.placement.place(tenantId, region, false);
     await this.sagas.start({
       definition: TenantOnboardingSaga,
       saga: IdentitySaga.TenantOnboarding,
@@ -59,6 +62,7 @@ export class StartTenantOnboarding {
         region,
         owner,
         welcomeId: this.ids.next().toString(),
+        directory: this.entries.of(tenantId, placed),
       },
     });
     return { tenantId, sagaId };

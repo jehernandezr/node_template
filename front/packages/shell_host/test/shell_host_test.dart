@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
 import 'package:test_utils/test_utils.dart';
@@ -173,16 +175,26 @@ void main() {
       expect(reported.single.exception, isA<ApiErrorException>());
     });
 
-    test('dispose closes the connection transport', () async {
-      final transport = _Transport(
-        (_) async => const TransportResponse(statusCode: 503),
-      );
-      final host = _host(connection: _connection(transport));
+    test(
+      'dispose closes the connection transport, then completes whenDisposed',
+      () async {
+        final transport = _Transport(
+          (_) async => const TransportResponse(statusCode: 503),
+        );
+        final host = _host(connection: _connection(transport));
 
-      await host.dispose();
+        var disposed = false;
+        unawaited(host.whenDisposed.then((_) => disposed = true));
+        final disposing = host.dispose();
+        final beforeDisposal = disposed;
+        await disposing;
+        await pumpEventQueue();
 
-      expect(transport.closed, isTrue);
-    });
+        expect(transport.closed, isTrue);
+        expect(beforeDisposal, isFalse);
+        expect(disposed, isTrue);
+      },
+    );
   });
 
   test('a menu badge follows its event and resets with the identity', () async {

@@ -1,6 +1,7 @@
 # 0011. Tiempo real con Socket.IO y SSE
 
-- Estado: Aceptada, modificada por [ADR 0028](0028-tiempo-real-sobre-un-stream-por-usuario.md)
+- Estado: Aceptada, modificada por [ADR 0028](0028-tiempo-real-sobre-un-stream-por-usuario.md) y [ADR 0034](0034-repositorios-live-del-front-sse-y-region.md)
+- Actualizada: 2026-11-24 (el cliente SSE del front)
 - Fecha: 2026-11-11
 
 ## Contexto
@@ -12,7 +13,7 @@ Algunas pantallas necesitan enviar y recibir en tiempo real, como la colaboraci�
 `apps/realtime` es un gateway de NestJS en Fargate, detrás de un ALB, con dos canales alimentados por el mismo origen de mensajes.
 
 - Socket.IO (`@WebSocketGateway`) para comunicación bidireccional. Autentica con el JWT en el handshake.
-- SSE (`@Sse()`) para envío del servidor al cliente. Autentica con la cookie de sesión.
+- SSE para envío del servidor al cliente, en `GET /v1/notifications/stream`. Autentica con el access token en `Authorization` o con la cookie de sesión. En el front, `SseNotificationsStream` lo lee con `package:http` y el token de la sesión, y reanuda con `Last-Event-ID`.
 - Escala con el adaptador de Socket.IO sobre Valkey. El transporte es solo WebSocket, así el balanceador no usa sesiones pegajosas.
 - Recuperación tras un corte: connection state recovery en Socket.IO y `Last-Event-ID` en SSE, con los mensajes de los últimos minutos guardados en un Valkey Stream.
 - `notifications` decide qué enviar. `realtime` solo entrega, mediante el puerto `RealtimeGateway`.

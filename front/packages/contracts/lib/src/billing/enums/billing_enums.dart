@@ -300,7 +300,9 @@ enum BillingOperation {
   tenantMoveFinalize('billing.tenant-move.finalize.v1'),
   tenantMoveAbort('billing.tenant-move.abort.v1'),
   tenantMoveSwitch('billing.tenant-move.switch.v1'),
-  tenantMoveCleanup('billing.tenant-move.cleanup.v1');
+  tenantMoveCleanup('billing.tenant-move.cleanup.v1'),
+  tenantDirectoryPlace('billing.tenant-directory.place.v1'),
+  tenantDirectoryRemove('billing.tenant-directory.remove.v1');
 
   const BillingOperation(this.wireCode);
 

@@ -114,6 +114,21 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     });
   }
 
+  async deletePlacement(
+    tenantId: string,
+    expectedVersion: number,
+  ): Promise<DirectoryWriteResult> {
+    const result = await this.catalog.write((manager) =>
+      manager.delete(ShardDirectoryEntity, {
+        tenantId,
+        version: expectedVersion,
+      }),
+    );
+    return (result.affected ?? 0) > 0
+      ? DirectoryWriteResult.Written
+      : DirectoryWriteResult.VersionConflict;
+  }
+
   /** Shards lógicos registrados, ordenados por id. */
   async listShards(): Promise<string[]> {
     const entities = await this.read((manager) =>

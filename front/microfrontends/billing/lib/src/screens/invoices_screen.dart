@@ -28,7 +28,7 @@ class InvoicesScreen extends StatelessWidget {
       return AppPage(
         title: l10n.invoicesTitle,
         onBack: () => context.go(BillingPaths.plan),
-        body: AsyncValueView<List<Invoice>>(
+        body: AsyncValueView<List<InvoiceSummary>>(
           value: controller.invoices,
           errorMessage: l10n.loadError,
           onRetry: controller.start,
@@ -62,7 +62,7 @@ class InvoicesScreen extends StatelessWidget {
 class _InvoiceTile extends StatelessWidget {
   const _InvoiceTile({required this.invoice, required this.onTap});
 
-  final Invoice invoice;
+  final InvoiceSummary invoice;
   final VoidCallback onTap;
 
   @override

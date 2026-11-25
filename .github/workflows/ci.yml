@@ -114,6 +114,13 @@ jobs:
           pnpm nx affected -t test --exclude='tag:lang:dart' --coverage
           --coverageReporters=text-summary
 
+      # Los cinco servicios en un proceso con PostgreSQL y Valkey reales: alta de tenant, tareas, avisos, reportes,
+      # factura y traslado del tenant. Sin Docker debe fallar, no pasar con cero pruebas.
+      - name: Flujo de punta a punta de la plataforma
+        run: pnpm nx affected -t e2e
+        env:
+          INTEGRATION_TESTS: require
+
       - name: Pruebas del front
         run: pnpm nx affected -t test --exclude='*,!tag:lang:dart'
 

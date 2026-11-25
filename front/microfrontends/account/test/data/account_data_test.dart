@@ -5,8 +5,8 @@ import 'package:mf_account/src/data/api_account_repository.dart';
 import 'package:mf_account/src/data/fake_account_repository.dart';
 import 'package:mf_account/src/shared/enums/account_enums.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
 
-import '../utils/no_network_transport.dart';
 import '../utils/test_app.dart';
 
 void main() {
@@ -37,7 +37,7 @@ void main() {
     test('live mode talks to the API without security', () {
       final scope = liveScope(
         ApiClient(
-          transport: NoNetworkTransport(),
+          transport: ScriptedTransport(),
           baseUri: Uri.parse('https://api.example.com'),
           accessToken: () async => 'token',
         ),

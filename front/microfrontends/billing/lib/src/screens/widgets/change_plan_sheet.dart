@@ -93,7 +93,11 @@ class ChangePlanSheet extends StatelessWidget {
       Navigator.of(context).pop(true);
       return;
     }
-    showActionResult(context, result, failure: failure);
+    showActionResult(
+      context,
+      result,
+      failure: controller.isPlanRefused ? null : failure,
+    );
   }
 }
 

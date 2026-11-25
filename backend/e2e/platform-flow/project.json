@@ -1,0 +1,22 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-flow",
+  "sourceRoot": "backend/e2e/platform-flow/src",
+  "projectType": "application",
+  "tags": ["type:e2e", "scope:e2e"],
+  "targets": {
+    "typecheck": {
+      "options": {
+        "command": "tsc -p tsconfig.spec.json"
+      }
+    },
+    "e2e": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest --config jest.e2e.config.cjs --runInBand",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    }
+  }
+}

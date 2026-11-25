@@ -28,6 +28,8 @@ dependencies:
     path: ../../microfrontends/billing
   mf_notifications:
     path: ../../microfrontends/notifications
+  mf_reports:
+    path: ../../microfrontends/reports
   mf_tasks:
     path: ../../microfrontends/tasks
   shell_core:

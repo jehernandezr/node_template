@@ -11,7 +11,6 @@ import 'package:test_utils/test_utils.dart';
 import 'utils/probe_manifest.dart';
 import 'utils/flow_harness.dart';
 import 'utils/mounted_host.dart';
-import 'utils/scripted_transport.dart';
 
 void main() {
   ShellHost web({IdentityConnection? connection, bool withBadge = false}) =>

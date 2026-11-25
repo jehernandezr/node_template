@@ -33,6 +33,8 @@ export enum BillingOperation {
   TenantMoveAbort = 'billing.tenant-move.abort.v1',
   TenantMoveSwitch = 'billing.tenant-move.switch.v1',
   TenantMoveCleanup = 'billing.tenant-move.cleanup.v1',
+  TenantDirectoryPlace = 'billing.tenant-directory.place.v1',
+  TenantDirectoryRemove = 'billing.tenant-directory.remove.v1',
 }
 
 /** Tipos CloudEvents de los eventos que publica billing. */

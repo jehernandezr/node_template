@@ -8,21 +8,26 @@ import {
 import { PlatformErrorCode } from '@contracts/platform';
 import {
   EraseReportsUserDataOperation,
+  type ReportDownload,
   ReportFormat,
   ReportGranularity,
+  type ReportRunCreated,
+  type ReportRunDetail,
   ReportRunStatus,
   ReportsCommand,
   ReportsErrorCode,
   ReportsEvent,
+  ReportsTenantDirectoryOperations,
   ReportType,
-  type ReportDownload,
-  type ReportRunCreated,
-  type ReportRunDetail,
 } from '@contracts/reports';
 import { TaskField, TasksEvent, TaskStatus } from '@contracts/tasks';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
+import { ProvisionedService } from '@platform/service/test-utils';
+import { TenantStatus } from '@platform/sharding';
+import { TenantDirectoryRehearsal } from '@platform/tenant-move/test-utils';
+import { TenantMoveErrorCode } from '@platform/tenant-move';
 import { BackfillProjectionsJob } from '../modules/projections/application/backfill-projections.job.js';
 import { BackfillSource } from '../modules/projections/domain/backfill-progress.js';
 import { ExpireRunsJob } from '../modules/runs/application/expire-runs.job.js';
@@ -473,6 +478,37 @@ new ContainerRuntime(process.env).describeIfAvailable(
           `SELECT 1 FROM report_runs WHERE requested_by = '${ANA}'`,
         ),
       ).resolves.toEqual([]);
+    });
+
+    it('places a tenant onboarded by identity in the shard of its group once and takes it out when the onboarding is undone', async () => {
+      const rehearsal = new TenantDirectoryRehearsal(
+        ReportsTenantDirectoryOperations,
+        app.internal(),
+        app.servers,
+      );
+
+      const report = await rehearsal.rehearse();
+
+      expect(report.placements).toEqual([
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+      ]);
+      expect(report.placedRows).toEqual([
+        {
+          region: ProvisionedService.REGION,
+          shard_group: [rehearsal.expectedShard()],
+          status: TenantStatus.Active,
+        },
+      ]);
+      expect(report.removals).toEqual([
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+      ]);
+      expect(report.rowsAfterRemoval).toEqual([]);
+      expect(report.unknownGroup).toMatchObject({
+        kind: CallOutcomeKind.ProtocolViolation,
+        code: TenantMoveErrorCode.UnknownTarget,
+      });
     });
   },
 );

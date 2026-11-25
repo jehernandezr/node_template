@@ -17,6 +17,6 @@ abstract final class BillingTones {
     InvoiceStatus.issued => StatusTone.info,
     InvoiceStatus.paid => StatusTone.success,
     InvoiceStatus.failed => StatusTone.danger,
-    InvoiceStatus.voided => StatusTone.neutral,
+    InvoiceStatus.voidValue => StatusTone.neutral,
   };
 }

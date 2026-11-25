@@ -10,7 +10,7 @@ import 'utils/tasks_app.dart';
 void main() {
   test('manifest id matches package', () {
     expect(tasksManifest.id, const MicrofrontendId('tasks'));
-    expect(tasksManifest.modes, {ShellMode.demo});
+    expect(tasksManifest.modes, {ShellMode.demo, ShellMode.live});
   });
 
   group('deep links', () {

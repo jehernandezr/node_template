@@ -7,6 +7,7 @@ export * from './define-operation.js';
 export * from './define-reference.js';
 export * from './define-route.js';
 export * from './define-service-contract.js';
+export * from './define-tenant-directory.js';
 export * from './define-tenant-move.js';
 export * from './error-catalog.js';
 export * from './field-errors.js';

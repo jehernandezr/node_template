@@ -22,6 +22,7 @@ import { EraseReportsUserDataOperation } from '@contracts/reports';
 import { EraseTasksUserDataOperation } from '@contracts/tasks';
 import { InternalApiRoute } from '@platform/internal-api';
 import { CallOutcome } from '@platform/primitives';
+import { TenantDirectoryFollowers } from '../../modules/tenants/index.js';
 
 /** Lo que el plan de un tenant permite de una métrica y lo que ya usó. */
 export interface StubQuota {
@@ -37,11 +38,14 @@ type Input = Record<string, unknown> & {
 };
 
 /**
- * Billing, notifications, tasks y reports de mentira para identity: responden los pasos de las sagas y las
- * consultas de cuota, y anotan cada operación que reciben. Un tenant sin cuota fijada no tiene suscripción.
+ * Billing, notifications, tasks y reports de mentira para identity: responden los pasos de las sagas, las
+ * ubicaciones en sus directorios y las consultas de cuota, y anotan cada operación que reciben. Un tenant sin cuota
+ * fijada no tiene suscripción.
  */
 export class PeerServicesStub {
   readonly received: string[] = [];
+  /** Los tenants que cada directorio tiene anotados, por id de la operación que los ubica. */
+  readonly placed = new Map<string, Set<string>>();
   private readonly refused = new Set<string>();
   private readonly quotas = new Map<string, StubQuota>();
   private readonly unlimitedChecks = new Map<string, number>();
@@ -121,6 +125,10 @@ export class PeerServicesStub {
 
   private outcomeOf(path: string, input: Input): unknown {
     const tenantId = String(input.tenantId);
+    const directory = this.directoryOf(path);
+    if (directory !== undefined) {
+      return this.answerDirectory(path, directory, tenantId);
+    }
     switch (path) {
       case InternalApiRoute.pathOf(OpenAccountOperation.id):
         return this.refused.has(String(input['ownerUserId']))
@@ -149,6 +157,30 @@ export class PeerServicesStub {
       default:
         return CallOutcome.protocolViolation(`unexpected ${path}`);
     }
+  }
+
+  /** La operación de ubicación del directorio al que va una llamada de ubicación o de retiro. */
+  private directoryOf(path: string): string | undefined {
+    return TenantDirectoryFollowers.ALL.find((follower) =>
+      [follower.tenantDirectoryPlace, follower.tenantDirectoryRemove].some(
+        (operation) => InternalApiRoute.pathOf(operation.id) === path,
+      ),
+    )?.tenantDirectoryPlace.id;
+  }
+
+  private answerDirectory(
+    path: string,
+    directory: string,
+    tenantId: string,
+  ): unknown {
+    const tenants = this.placed.get(directory) ?? new Set<string>();
+    this.placed.set(directory, tenants);
+    if (path === InternalApiRoute.pathOf(directory)) {
+      tenants.add(tenantId);
+    } else {
+      tenants.delete(tenantId);
+    }
+    return CallOutcome.success({ tenantId });
   }
 
   private quotaOf(tenantId: string, input: Input): unknown {

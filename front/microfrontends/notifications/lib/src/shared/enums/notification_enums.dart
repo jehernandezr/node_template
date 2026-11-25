@@ -1,17 +1,14 @@
-/// Kinds of notification. The kind sets how critical it is; the preferences
-/// of the user set the channels it arrives on.
-enum NotificationType {
-  securityAlert,
-  taskUpdated,
-  invoiceIssued,
-  accountActivity;
+import 'package:contracts/contracts.dart' show NotificationType;
 
+export 'package:contracts/contracts.dart'
+    show NotificationChannel, NotificationType;
+
+/// How critical each kind of notification is. The kind sets it; the
+/// preferences of the user set the channels it arrives on.
+extension NotificationTypeRules on NotificationType {
   /// Whether it always goes out on every channel, as security alerts do.
-  bool get isMandatory => this == securityAlert;
+  bool get isMandatory => this == NotificationType.securityAlert;
 }
-
-/// Channels a notification can arrive on.
-enum NotificationChannel { inApp, push, email }
 
 /// Operations of the notifications repository. The demo repository tags each
 /// call with one so a test can make a single operation fail.

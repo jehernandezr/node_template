@@ -6,7 +6,7 @@ import 'package:shell_core/shell_core.dart';
 void main() {
   test('manifest id matches the package', () {
     expect(notificationsManifest.id, const MicrofrontendId('notifications'));
-    expect(notificationsManifest.modes, {ShellMode.demo});
+    expect(notificationsManifest.modes, {ShellMode.demo, ShellMode.live});
     expect(notificationsManifest.platforms, {
       AppPlatform.web,
       AppPlatform.mobile,

@@ -30,11 +30,11 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0007   | [Mensajería con topología tipada, SNS/SQS y CloudEvents](0007-mensajeria-topologia-tipada-sns-sqs-cloudevents.md)            | Aceptada                 |
 | 0008   | [Sagas orquestadas con bitácora persistente](0008-sagas-orquestadas-bitacora-persistente.md)                                 | Aceptada                 |
 | 0009   | [RDS PostgreSQL con capa de persistencia propia](0009-rds-postgresql-capa-persistencia-propia.md)                            | Reemplazada por ADR 0024 |
-| 0010   | [Sharding lógico por grupos y residencia por región](0010-sharding-logico-residencia-region.md)                              | Aceptada                 |
-| 0011   | [Tiempo real con Socket.IO y SSE](0011-tiempo-real-socketio-sse.md)                                                          | Modificada por ADR 0028  |
+| 0010   | [Sharding lógico por grupos y residencia por región](0010-sharding-logico-residencia-region.md)                              | Modificada por ADR 0032  |
+| 0011   | [Tiempo real con Socket.IO y SSE](0011-tiempo-real-socketio-sse.md)                                                          | Modificada por ADR 0034  |
 | 0012   | [Front en Flutter con shells y microfrontends](0012-front-flutter-shells-microfrontends.md)                                  | Aceptada                 |
-| 0013   | [Módulo de IA con puertos y Claude por defecto](0013-modulo-ia-puertos-claude.md)                                            | Aceptada                 |
-| 0014   | [Acuerdos y documentos firmados](0014-acuerdos-documentos-firmados.md)                                                       | Aceptada                 |
+| 0013   | [Módulo de IA con puertos y Claude por defecto](0013-modulo-ia-puertos-claude.md)                                            | Aceptada, sin construir  |
+| 0014   | [Acuerdos y documentos firmados](0014-acuerdos-documentos-firmados.md)                                                       | Aceptada, sin construir  |
 | 0015   | [Estructura del repositorio y código compartido por aplicación](0015-estructura-backend-front-y-codigo-compartido.md)        | Aceptada                 |
 | 0016   | [Salida a Internet con NAT solo para las subredes de aplicación](0016-egress-de-red.md)                                      | Aceptada                 |
 | 0017   | [Export de contratos](0017-export-de-contratos.md)                                                                           | Aceptada                 |
@@ -54,3 +54,5 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0031   | [Reportes, facturación y sagas de identity](0031-reportes-facturacion-y-sagas-de-identity.md)                                | Aceptada                 |
 | 0032   | [Traslado de tenants y regiones](0032-traslado-de-tenants-y-regiones.md)                                                     | Aceptada                 |
 | 0033   | [Generadores de servicio y de módulo, y OpenAPI desde los contratos](0033-generadores-y-openapi.md)                          | Aceptada                 |
+| 0034   | [Repositorios live del front, SSE y región en el cliente](0034-repositorios-live-del-front-sse-y-region.md)                  | Aceptada                 |
+| 0035   | [Flujo de punta a punta de la plataforma](0035-flujo-de-punta-a-punta-de-la-plataforma.md)                                   | Aceptada                 |

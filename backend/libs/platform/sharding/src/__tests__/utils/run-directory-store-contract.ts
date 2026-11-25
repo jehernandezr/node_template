@@ -132,6 +132,28 @@ export function runDirectoryStoreContract(
       await expect(store.getPlacement(TestTenants.Two)).resolves.toBeDefined();
     });
 
+    it('deletes a placement only at the expected version', async () => {
+      const { writer, store } = await factory();
+      await writer.putPlacement(
+        PlacementBuilder.aPlacement().build(),
+        undefined,
+      );
+
+      await expect(writer.deletePlacement(TestTenants.One, 2)).resolves.toBe(
+        DirectoryWriteResult.VersionConflict,
+      );
+      await expect(store.getPlacement(TestTenants.One)).resolves.toBeDefined();
+      await expect(writer.deletePlacement(TestTenants.One, 1)).resolves.toBe(
+        DirectoryWriteResult.Written,
+      );
+      await expect(
+        store.getPlacement(TestTenants.One),
+      ).resolves.toBeUndefined();
+      await expect(writer.deletePlacement(TestTenants.One, 1)).resolves.toBe(
+        DirectoryWriteResult.VersionConflict,
+      );
+    });
+
     it('returns a seeded instance for its logical shard', async () => {
       const { store, seedInstance } = await factory();
       await seedInstance('shard-1', 'db-1');

@@ -16,12 +16,12 @@ import 'src/shared/constants/tasks_paths.dart';
 /// Data is not created here: the deferred screens get it from the scope of
 /// the current identity, so each user starts with a fresh repository.
 ///
-/// Demo only: tasks has no contract yet.
+/// It serves demo and live shells: in live mode the data comes from the tasks
+/// API.
 final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
   id: tasksId,
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: tasksReadRule,
-  modes: const {ShellMode.demo},
   menu: const [
     MenuEntry(
       label: tasksMenuLabel,

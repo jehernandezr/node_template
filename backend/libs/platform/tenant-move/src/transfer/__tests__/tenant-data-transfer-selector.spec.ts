@@ -48,6 +48,7 @@ describe('TenantDataTransferSelector', () => {
       'ledgers',
       'entries',
       'idempotency_keys',
+      'processed_messages',
       'saga.instances',
       'saga.step_log',
     ]);

@@ -1,4 +1,7 @@
+import 'package:contracts/contracts.dart'
+    show ApiErrorException, BillingErrorCode;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_billing/src/data/billing_repository.dart';
 import 'package:mf_billing/src/data/fake_billing_repository.dart';
@@ -10,6 +13,7 @@ import 'package:test_utils/test_utils.dart';
 import '../../utils/billing_test_app.dart';
 
 final _es = BillingTestApp.es;
+final _shared = lookupAppLocalizations(const Locale('es'));
 
 /// A screen with a button that opens the sheet the way the screen does, and
 /// reports what the sheet popped with.
@@ -117,6 +121,38 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(_es.changePlanTitle), findsOneWidget);
     });
+
+    testWidgets(
+      'a plan the usage does not fit shows why instead of the generic failure',
+      (tester) async {
+        final repository = FakeBillingRepository(
+          behavior: DemoBehavior()
+            ..failNext(
+              ApiErrorException(
+                ProblemFixtures.withCode(
+                  BillingErrorCode.planUsageExceedsLimit.code,
+                  status: 409,
+                ),
+              ),
+              operation: BillingOperation.changePlan,
+            ),
+        );
+        await const BillingTestApp().pump(tester, _host(repository));
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Empresa'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(_es.confirmChange));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining(_shared.error_billing_plan_usage_exceeds_limit),
+          findsOneWidget,
+        );
+        expect(find.text(_es.changePlanError), findsNothing);
+        expect(find.text(_es.changePlanTitle), findsOneWidget);
+      },
+    );
 
     testWidgets('meets the accessibility guidelines', (tester) async {
       await const BillingTestApp().pump(tester, _host(FakeBillingRepository()));

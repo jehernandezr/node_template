@@ -27,6 +27,8 @@ export enum NotificationsOperation {
   TenantMoveAbort = 'notifications.tenant-move.abort.v1',
   TenantMoveSwitch = 'notifications.tenant-move.switch.v1',
   TenantMoveCleanup = 'notifications.tenant-move.cleanup.v1',
+  TenantDirectoryPlace = 'notifications.tenant-directory.place.v1',
+  TenantDirectoryRemove = 'notifications.tenant-directory.remove.v1',
 }
 
 /** Tipos CloudEvents de los eventos que publica notifications. */

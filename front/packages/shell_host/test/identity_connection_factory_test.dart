@@ -2,8 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shell_host/src/identity_connection_factory.dart';
 import 'package:test_utils/test_utils.dart';
 
-import 'utils/scripted_transport.dart';
-
 void main() {
   group('IdentityConnectionFactory', () {
     test('an empty base URL is demo mode: no connection, nothing built', () {
@@ -48,7 +46,7 @@ void main() {
       expect(stores, 1);
 
       await connection!.dispose();
-      expect(transport.closed, isTrue);
+      expect(transport.isClosed, isTrue);
     });
   });
 }

@@ -1,6 +1,7 @@
 # 0014. Acuerdos y documentos firmados
 
-- Estado: Aceptada
+- Estado: Aceptada, sin construir
+- Actualizada: 2026-11-24 (estado de lo construido)
 - Fecha: 2026-11-11
 
 ## Contexto
@@ -17,6 +18,10 @@ La plataforma debe registrar que un usuario o un tenant aceptó términos, dio c
 - Un endpoint declara sus acuerdos. Si falta alguno, responde `LEGAL.AGREEMENT.ACCEPTANCE_REQUIRED`.
 - Aceptar publica `AgreementsEvent.Accepted`, que puede habilitar permisos. Revocar publica `AgreementsEvent.Revoked`.
 - Cada aceptación genera un paquete PDF de evidencia guardado con S3 Object Lock.
+
+### Estado
+
+`apps/agreements` todavía no existe y `EndpointOptions` no declara `agreements`. Lo construido es la sección de acuerdos del microfrontend `account`, que en modo live no se ofrece (`AccountCapability.agreements` falta en el repositorio de la API) porque no hay contrato que la respalde.
 
 ## Consecuencias
 

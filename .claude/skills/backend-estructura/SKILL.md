@@ -82,6 +82,7 @@ backend/libs/platform/kernel/
 - Las pruebas de integración terminan en `.int-spec.ts`. `check-structure.mjs` rechaza `*.integration.spec.ts`, que correría como unitaria.
 - El código de producción nunca importa nada de `__tests__/`.
 - Las pruebas end to end de una app viven en `backend/apps/<app>/e2e/`.
+- El flujo de punta a punta entre servicios vive en `backend/e2e/platform-flow` (tags `type:e2e` y `scope:e2e`), con su target `platform-flow:e2e`. Es el único proyecto que importa apps, y solo por `@apps/<servicio>/test-utils` (`allowAppImports` de `backend/eslint.config.mjs`).
 - Detalle en `backend-pruebas`.
 
 ## Compilado

@@ -17,6 +17,8 @@ import type {
 import { OutboundMessageFactory } from '../../bus/outbound-message.js';
 import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
 import { DispatchOutcome } from '../../dispatch/dispatch-outcome.enum.js';
+import type { OutboundTarget } from '../../outbox/outbox.js';
+import { TargetKind } from '../../topology/target-kind.enum.js';
 
 /** Opciones del bus en memoria. */
 export interface InMemoryBusOptions {
@@ -89,18 +91,7 @@ export class InMemoryBus implements MessageBus {
     options: PublishOptions = {},
   ): Promise<MessageEnvelope<MessageOutput<M>>> {
     const { envelope, route } = this.factory.event(event, data, options);
-    const now = this.clock();
-
-    for (const queue of this.topology.queues) {
-      const subscribed = queue.subscriptions.some(
-        (subscription) =>
-          subscription.topic.name === route.target.name &&
-          (subscription.filterTypes.length === 0 ||
-            subscription.filterTypes.includes(event.type)),
-      );
-      if (subscribed)
-        this.push(queue.name, { envelope, receiveCount: 0, availableAt: now });
-    }
+    this.fanOut(route.target.name, envelope);
     return envelope;
   }
 
@@ -120,6 +111,22 @@ export class InMemoryBus implements MessageBus {
       availableAt: this.clock() + (delayMs ?? 0),
     });
     return envelope;
+  }
+
+  /**
+   * Encola un sobre ya armado, como lo entrega el relay de un outbox: un evento va a cada cola suscrita a su
+   * tópico y un comando a su cola, visible después de `delayMs`.
+   */
+  accept(envelope: MessageEnvelope, target: OutboundTarget, delayMs = 0): void {
+    if (target.kind === TargetKind.Topic) {
+      this.fanOut(target.name, envelope);
+      return;
+    }
+    this.push(target.name, {
+      envelope,
+      receiveCount: 0,
+      availableAt: this.clock() + delayMs,
+    });
   }
 
   /**
@@ -211,6 +218,20 @@ export class InMemoryBus implements MessageBus {
   deadLetters(queueName: string): readonly DeadLetterEntry[] {
     this.requireQueue(queueName);
     return [...(this.deadLetterQueues.get(queueName) ?? [])];
+  }
+
+  private fanOut(topicName: string, envelope: MessageEnvelope): void {
+    const now = this.clock();
+    for (const queue of this.topology.queues) {
+      const subscribed = queue.subscriptions.some(
+        (subscription) =>
+          subscription.topic.name === topicName &&
+          (subscription.filterTypes.length === 0 ||
+            subscription.filterTypes.includes(envelope.type)),
+      );
+      if (subscribed)
+        this.push(queue.name, { envelope, receiveCount: 0, availableAt: now });
+    }
   }
 
   private clock(): number {

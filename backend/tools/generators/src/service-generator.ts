@@ -47,6 +47,7 @@ export class ServiceGenerator {
       `backend/.env.example: DB_DATABASES con ${snake}_shard_0 y ${snake}_shard_1 para correr ${kebab} en local`,
       `backend/tools/contracts-export/project.json (implicitDependencies): "contracts-${kebab}", y después nx run contracts-export:export`,
       `backend/apps/identity/src/modules/tenant-moves/application/tenant-move-participants.ts: ${forms.pascal}TenantMoveOperations en ALL, para que la saga MoveTenant traslade sus datos`,
+      `backend/apps/identity/src/modules/tenants/application/tenant-directory-followers.ts: ${forms.pascal}TenantDirectoryOperations en ALL, para que el alta de un tenant lo ubique también en ${kebab}`,
     ];
   }
 }

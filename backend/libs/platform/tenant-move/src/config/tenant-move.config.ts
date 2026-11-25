@@ -37,6 +37,14 @@ export const tenantMoveConfigSchema = z.object({
   TENANT_MOVE_CALL_BUDGET_MS: envNumber({ min: 100, max: 5_000 }).default(
     4_000,
   ),
+  /** Pausa de la limpieza entre una llamada que responde que su ronda sigue y la siguiente. */
+  TENANT_MOVE_CLEANUP_PAUSE_MS: envNumber({ min: 0, max: 60_000 }).default(
+    1_000,
+  ),
+  /** Llamadas de limpieza seguidas a un servicio en una corrida; las que faltan quedan para la corrida siguiente. */
+  TENANT_MOVE_CLEANUP_MAX_ATTEMPTS: envNumber({ min: 1, max: 1_000 }).default(
+    30,
+  ),
   /** Margen hacia atrás de cada ronda delta, para las transacciones que confirmaron tarde. */
   TENANT_MOVE_DELTA_MARGIN_MS: envNumber({ min: 0 }).default(60_000),
   /** Filas cambiadas en una ronda por debajo de las cuales la copia se da por alcanzada. */

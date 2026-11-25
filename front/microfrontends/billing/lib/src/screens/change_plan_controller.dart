@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:contracts/contracts.dart'
+    show ApiErrorException, BillingErrorCode;
 import 'package:flutter/foundation.dart';
 import 'package:ui/ui.dart';
 
@@ -22,8 +24,24 @@ final class ChangePlanController extends ChangeNotifier {
   int _requestId = 0;
   bool _disposed = false;
 
+  /// Codes the API answers when the selected plan does not fit the tenant.
+  /// Their own message tells the user why, instead of the generic failure.
+  static final Set<String> planRefusals = {
+    BillingErrorCode.quotaExceeded.code,
+    BillingErrorCode.planUsageExceedsLimit.code,
+  };
+
   /// Current step of the sheet: loading, choosing, saving, failed or done.
   ChangePlanState get state => _state;
+
+  /// Whether the last save failed because the plan does not fit the tenant,
+  /// so the sheet shows the message of that refusal.
+  bool get isPlanRefused => switch (_state) {
+    ChangePlanFailed(:final ApiErrorException error) => planRefusals.contains(
+      error.problem.code,
+    ),
+    _ => false,
+  };
 
   /// Whether [confirm] would save something now.
   bool get canConfirm =>

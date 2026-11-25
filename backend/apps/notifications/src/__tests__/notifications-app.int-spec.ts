@@ -1,17 +1,22 @@
 import {
   EmailTemplate,
   EraseNotificationsUserDataOperation,
-  SendEmailOperation,
   NotificationChannel,
   NotificationFrameType,
   NotificationsErrorCode,
+  NotificationsTenantDirectoryOperations,
   NotificationType,
   NotifyUserOperation,
+  SendEmailOperation,
   TemplateParameter,
 } from '@contracts/notifications';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { Eventually } from '@platform/messaging/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
+import { ProvisionedService } from '@platform/service/test-utils';
+import { TenantStatus } from '@platform/sharding';
+import { TenantDirectoryRehearsal } from '@platform/tenant-move/test-utils';
+import { TenantMoveErrorCode } from '@platform/tenant-move';
 import { SseTestClient } from '@platform/realtime/test-utils';
 import { RetryDeliveriesJob } from '../modules/dispatch/application/retry-deliveries.job.js';
 import { DeliveryStatus } from '../modules/dispatch/domain/delivery.js';
@@ -379,6 +384,37 @@ new ContainerRuntime(process.env).describeIfAvailable(
           `SELECT version FROM notification_deliveries WHERE id = '${id}'`,
         ),
       ).resolves.toEqual([{ version: 2 }]);
+    });
+
+    it('places a tenant onboarded by identity in the shard of its group once and takes it out when the onboarding is undone', async () => {
+      const rehearsal = new TenantDirectoryRehearsal(
+        NotificationsTenantDirectoryOperations,
+        app.internal(),
+        app.servers,
+      );
+
+      const report = await rehearsal.rehearse();
+
+      expect(report.placements).toEqual([
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+      ]);
+      expect(report.placedRows).toEqual([
+        {
+          region: ProvisionedService.REGION,
+          shard_group: [rehearsal.expectedShard()],
+          status: TenantStatus.Active,
+        },
+      ]);
+      expect(report.removals).toEqual([
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+        { kind: CallOutcomeKind.Success, value: { tenantId: report.tenantId } },
+      ]);
+      expect(report.rowsAfterRemoval).toEqual([]);
+      expect(report.unknownGroup).toMatchObject({
+        kind: CallOutcomeKind.ProtocolViolation,
+        code: TenantMoveErrorCode.UnknownTarget,
+      });
     });
   },
 );

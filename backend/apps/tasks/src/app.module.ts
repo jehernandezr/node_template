@@ -1,13 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ValkeyUsageCounterStore } from '@platform/adapters-valkey';
 import { ValkeyMeteringModule } from '@platform/adapters-valkey/nest';
-import { TasksTenantMoveOperations, tasksContract } from '@contracts/tasks';
+import {
+  tasksContract,
+  TasksTenantDirectoryOperations,
+  TasksTenantMoveOperations,
+} from '@contracts/tasks';
 import { HttpModule } from '@platform/http/nest';
 import { MeteringModule } from '@platform/metering/nest';
 import { QuotasModule } from '@platform/quotas/nest';
 import { SearchModule } from '@platform/search/nest';
 import { RemoteIdentityAuthModule } from '@platform/service/nest';
-import { TenantMoveModule } from '@platform/tenant-move/nest';
+import {
+  TenantDirectoryModule,
+  TenantMoveModule,
+} from '@platform/tenant-move/nest';
 import { TasksTenantMoveManifest } from './database/tasks-tenant-move.manifest.js';
 import { TASKS_ERROR_CATALOGS } from './shared/constants/tasks-error-catalogs.constants.js';
 import { PrivacyModule } from './modules/privacy/index.js';
@@ -33,6 +40,10 @@ import { TasksModule } from './modules/tasks/presentation/tasks.module.js';
     TenantMoveModule.forFeature({
       operations: TasksTenantMoveOperations,
       manifest: TasksTenantMoveManifest,
+    }),
+    TenantDirectoryModule.forFeature({
+      service: tasksContract.service,
+      operations: TasksTenantDirectoryOperations,
     }),
     // generated:modules
   ],

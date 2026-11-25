@@ -22,12 +22,12 @@ export 'src/shared/constants/notifications_paths.dart';
 /// Manifest registered by the shells. Routes live under `/notifications`;
 /// screens, data and copy load as deferred libraries.
 ///
-/// Demo only: the backend has no notifications contract yet.
+/// It serves demo and live shells: in live mode the data comes from the
+/// notifications API and its server-sent events.
 final MicrofrontendManifest notificationsManifest = MicrofrontendManifest(
   id: notificationsId,
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: AccessRule.authenticated(),
-  modes: const {ShellMode.demo},
   menu: const [
     MenuEntry(
       label: notificationsMenuLabel,

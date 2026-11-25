@@ -36,15 +36,19 @@ export class TenantDataTransferSelector {
     ) {
       return batchOf(new MergedTenantMoveManifest([manifest, platform]));
     }
-    return new CompositeTenantDataTransfer([
-      new LogicalReplicationTransfer(manifest, batchOf(manifest), clock, {
-        callBudgetMs: settings.TENANT_MOVE_CALL_BUDGET_MS,
-        caughtUpBytes: settings.TENANT_MOVE_CAUGHT_UP_BYTES,
-        lockTimeoutMs: settings.TENANT_MOVE_LOCK_TIMEOUT_MS,
-        sourceHost: settings.TENANT_MOVE_REPLICATION_HOST,
-        sourcePort: settings.TENANT_MOVE_REPLICATION_PORT,
-      }),
-      batchOf(platform),
-    ]);
+    return new CompositeTenantDataTransfer(
+      [
+        new LogicalReplicationTransfer(manifest, batchOf(manifest), clock, {
+          callBudgetMs: settings.TENANT_MOVE_CALL_BUDGET_MS,
+          caughtUpBytes: settings.TENANT_MOVE_CAUGHT_UP_BYTES,
+          lockTimeoutMs: settings.TENANT_MOVE_LOCK_TIMEOUT_MS,
+          sourceHost: settings.TENANT_MOVE_REPLICATION_HOST,
+          sourcePort: settings.TENANT_MOVE_REPLICATION_PORT,
+        }),
+        batchOf(platform),
+      ],
+      clock,
+      settings.TENANT_MOVE_CALL_BUDGET_MS,
+    );
   }
 }

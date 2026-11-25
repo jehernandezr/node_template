@@ -5,6 +5,8 @@ export * from './application/tenant-move-shards.js';
 export * from './application/tenant-moves.js';
 export * from './config/tenant-move.config.js';
 export * from './config/tenant-move-strategy.enum.js';
+export * from './directory/tenant-directory-entries.js';
+export * from './directory/tenant-shard-groups.js';
 export * from './errors/tenant-move-error-catalog.js';
 export * from './errors/tenant-move-error-code.enum.js';
 export * from './errors/tenant-move.error.js';

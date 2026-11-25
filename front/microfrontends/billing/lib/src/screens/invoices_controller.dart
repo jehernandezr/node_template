@@ -7,14 +7,14 @@ import '../shared/types/billing_types.dart';
 /// State of the invoice list.
 final class InvoicesController extends ChangeNotifier {
   InvoicesController(BillingRepository repository)
-    : _loader = AsyncLoader<List<Invoice>>(repository.invoices) {
+    : _loader = AsyncLoader<List<InvoiceSummary>>(repository.invoices) {
     _loader.addListener(notifyListeners);
   }
 
-  final AsyncLoader<List<Invoice>> _loader;
+  final AsyncLoader<List<InvoiceSummary>> _loader;
 
   /// Invoices, newest first: loading, loaded or failed.
-  AsyncValue<List<Invoice>> get invoices => _loader.value;
+  AsyncValue<List<InvoiceSummary>> get invoices => _loader.value;
 
   /// Loads the invoices. Calling it again reloads.
   Future<void> start() => _loader.load();
