@@ -46,14 +46,15 @@ The general review of 2026-11-24 found ways around the second factor and the per
 
 - Discarding a tenant deletes, before its row, the projections of its members and then its memberships, groups, roles and versions, so a repetition after a partial run finishes the job. "My tenants" leaves out a projection whose tenant no longer exists.
 - The last owner of a tenant with other members cannot delete their account until they hand over ownership (`IDENTITY.ACCESS.LAST_OWNER`). A tenant where the owner is the only member is left without members. This amends ADR 0031, which let the deletion go through without another owner.
-- Starting a deletion reserves the departure of the user under the lock of each tenant: it checks the rule and sets `tenant_members.leaving_since`. A member who is leaving no longer counts as an owner but still counts as a member, so two owners who ask at the same time cannot both leave, and an editor cannot demote the only owner who stays. A refusal in one tenant, a saga that does not start or the reactivation of the user gives the departures back.
+- Starting a deletion reserves the departure of the user under the lock of each tenant: it checks the rule and sets `tenant_members.leaving_since`. A member who is leaving no longer counts as an owner but still counts as a member, so two owners who ask at the same time cannot both leave, and an editor cannot demote the only owner who stays. A refusal in one tenant or a saga that does not start gives back only the departures that request reserved, so a repeated request that fails leaves those of an earlier deletion still in flight. The reactivation of the user gives every departure back.
+- Nobody but a new owner joins a tenant whose every owner is leaving: accepting an invitation to any other group answers `IDENTITY.INVITATION.INVALID`. Letting the member in would leave the tenant with a member and without an owner once the departure completes, and the erasure of the last owner would stop after its pivot.
 - The erasure removes the user from their tenants before anything else of identity and checks the rule again under the lock, so a tenant is never left with members and without an owner; if it would be, the step fails and the saga stops.
 - The erasure of an account also deletes its sessions (IP and user agent), its sign-in history and its second factors.
 - An email change moves the catalog entry back if the user shard fails, and a move that finds no entry is not a success.
 
 ### Enumeration
 
-- A password reset request only sends `identity.password-reset.send.v1` to the `identity-password-resets` queue through the outbox of the default tenant shard and answers 202. It never looks up the email, so the answer, its cost and the rows it writes are the same whether or not an account exists. The worker looks up the account and, if it can reset its password, issues the token and asks notifications for the email. The command carries the email and stays inside identity; the token never goes through the bus.
+- A password reset request only sends `identity.password-reset.send.v1` to the `identity-password-resets` queue through the outbox of the default tenant shard and answers 202. It never looks up the email, so the answer, its cost and the rows it writes are the same whether or not an account exists. The worker looks up the account and, if it can reset its password, issues the token and asks notifications for the email. The command carries the email and stays inside identity; the token never goes through the bus. The email is the typed one, also when no account has it, because the worker needs it to look up the account.
 - A failed sign-in with an email without an account is recorded in `login_attempts` without a user, in the shard of the default tenant, so a failure writes one row whether or not the account exists.
 
 ## Consequences
@@ -73,7 +74,8 @@ The general review of 2026-11-24 found ways around the second factor and the per
 - The erasure of an account visits every shard to delete the tombstones of earlier removals.
 - A reset email now goes out from the worker a moment after the request, and a redelivery may send a second token.
 - `login_attempts` keeps the IP of attempts on emails without an account until the partition retention drops them.
-- If someone joins a tenant after the deletion started and the user is its last owner, the erasure stops the saga after its pivot and needs an operator.
+- An invitation to a tenant whose only owner is deleting their account cannot be accepted until the deletion finishes or is cancelled, unless it grants the owners group.
+- Every password reset request, also for an email without an account, writes the typed email in clear into the outbox of the default tenant shard and into the `identity-password-resets` queue. The outbox keeps the published row for 7 days (the default retention of the platform), the queue keeps an unread message for 4 days (the SQS default) and its dead letter queue for 14 days; both queues are encrypted with the messaging KMS key. That is personal data of people who may not be users, kept longer than the request needs.
 - The sign-in that locks an existing account still writes a security alert for its owner, one outbox row that an unknown email does not write.
 - A tenant whose only member deletes their account stays without members until a lifecycle job retires it.
 
@@ -90,3 +92,4 @@ The general review of 2026-11-24 found ways around the second factor and the per
 - Refusing every account deletion of an owner: it would keep a person who is the only member of their tenant from erasing their data.
 - Checking the last owner only when the erasure removes the membership: the second deletion would pass its check, reach its pivot and then fail with the account half erased.
 - Sending the reset email in the request and padding the unknown case with the same work: the timing of notifications and its errors would still differ between the two cases.
+- Carrying a keyed hash of the email instead of the email: the catalog finds accounts by normalized email, so the worker would need a new hashed index in the catalog and its migration; it stays open as a data minimization step if the retention above proves too long.
