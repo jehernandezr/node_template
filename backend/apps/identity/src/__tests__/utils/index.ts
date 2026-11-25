@@ -23,6 +23,7 @@ export { SoftwareAuthenticator } from './software-authenticator.js';
 export { Eventually } from './eventually.js';
 export { RecordingParticipants } from './recording-participants.js';
 export { PeerServicesStub } from './peer-services-stub.js';
+export { QueuedCommands } from './queued-commands.js';
 export {
   RecordingMessageBus,
   type RecordedMessage,

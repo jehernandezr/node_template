@@ -227,3 +227,28 @@ abstract final class IdentityEvents {
     return null;
   }
 }
+
+/// Comandos que atiende el contrato `identity`.
+abstract final class IdentityCommands {
+  /// Looks up the account of the email and, if it can reset its password, sends it the reset email.
+  ///
+  /// `identity.password-reset.send.v1`
+  static const sendPasswordReset = MessageDescriptor<PasswordResetRequest>(
+    type: 'identity.password-reset.send.v1',
+    kind: MessageKind.command,
+    version: 1,
+    validatePayload: PasswordResetRequestSchema.validateIncoming,
+    decodePayload: PasswordResetRequest.fromJson,
+  );
+
+  /// Todos los descriptores, en el orden del contrato.
+  static const all = <MessageDescriptor<Object?>>[sendPasswordReset];
+
+  /// Descriptor con [type], o null si este cliente no lo conoce.
+  static MessageDescriptor<Object?>? byType(String type) {
+    for (final message in all) {
+      if (message.type == type) return message;
+    }
+    return null;
+  }
+}

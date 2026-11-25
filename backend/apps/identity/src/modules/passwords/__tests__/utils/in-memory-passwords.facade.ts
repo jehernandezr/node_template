@@ -2,10 +2,12 @@ import { constantTimeEquals } from '../../../../shared/utils/constant-time.js';
 import type { UserRef } from '../../../../shared/types/user-ref.type.js';
 import { PasswordsFacade } from '../../application/passwords.facade.js';
 
-/** Contraseñas en memoria, en claro: solo para pruebas. */
+/** Passwords in memory, in the clear: for tests only. */
 export class InMemoryPasswordsFacade extends PasswordsFacade {
-  /** Cuántas veces se verificó sin usuario, para comprobar que se compara igual. */
+  /** How many times it verified without a user, to check that it compares all the same. */
   unknownUserChecks = 0;
+  /** Accepts everything except the passwords in this list. */
+  readonly rejected = new Set<string>();
   private readonly passwords = new Map<string, string>();
 
   async verify(ref: UserRef | undefined, password: string): Promise<boolean> {
@@ -20,9 +22,6 @@ export class InMemoryPasswordsFacade extends PasswordsFacade {
   async setInitial(ref: UserRef, password: string): Promise<void> {
     this.passwords.set(ref.userId, password);
   }
-
-  /** Acepta todo salvo las contraseñas de la lista `rejected`. */
-  readonly rejected = new Set<string>();
 
   async assertAcceptable(password: string): Promise<void> {
     if (this.rejected.has(password)) {

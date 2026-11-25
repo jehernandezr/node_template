@@ -137,7 +137,13 @@ describe('SchemaExportBuilder', () => {
         kind: 'event',
         version: 1,
       });
-      expect(identity['commands']).toEqual([]);
+      expect(identity['commands']).toEqual([
+        expect.objectContaining({
+          type: 'identity.password-reset.send.v1',
+          kind: 'command',
+          payload: { $ref: '#/schemas/PasswordResetRequest' },
+        }),
+      ]);
       const errors = (identity['errors'] as Obj)['IdentityErrorCode'] as Obj[];
       expect(errors[0]).toMatchObject({
         name: 'AuthInvalidCredentials',

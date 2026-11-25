@@ -149,6 +149,15 @@
         }
       }
     },
+    "identity-password-resets": {
+      "address": "identity-password-resets",
+      "description": "Cola de identity. Password reset requests that identity sends to itself and answers by email from the worker.",
+      "messages": {
+        "identity.password-reset.send.v1": {
+          "$ref": "#/components/messages/identity.password-reset.send.v1"
+        }
+      }
+    },
     "notifications-events": {
       "address": "notifications-events",
       "description": "Tópico de notifications. Eventos de notifications: se creó una notificación. Cada servicio suscribe su propia cola.",
@@ -420,6 +429,28 @@
         }
       ],
       "x-consumer": "identity"
+    },
+    "identity-password-resets.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/identity-password-resets" },
+      "summary": "identity consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/identity-password-resets/messages/identity.password-reset.send.v1"
+        }
+      ],
+      "x-consumer": "identity"
+    },
+    "identity-password-resets.send": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/identity-password-resets" },
+      "summary": "Comandos que recibe identity.",
+      "messages": [
+        {
+          "$ref": "#/channels/identity-password-resets/messages/identity.password-reset.send.v1"
+        }
+      ],
+      "x-producers": ["identity"]
     },
     "notifications-events.publish": {
       "action": "send",
@@ -846,6 +877,18 @@
           "$ref": "identity/export/contract.json#/schemas/UserErasedPayload"
         },
         "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.password-reset.send.v1": {
+        "name": "identity.password-reset.send.v1",
+        "title": "identity.password-reset.send.v1",
+        "summary": "Looks up the account of the email and, if it can reset its password, sends it the reset email.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/PasswordResetRequest"
+        },
+        "x-kind": "command",
         "x-version": 1,
         "x-owner": "identity"
       },

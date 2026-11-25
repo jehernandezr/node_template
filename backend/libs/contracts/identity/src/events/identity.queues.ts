@@ -5,6 +5,7 @@ import {
   PermissionsChangedEvent,
 } from './access.events.js';
 import { BillingEventsReference } from './billing.references.js';
+import { SendPasswordResetCommand } from './identity.commands.js';
 import { IdentityEventsTopic } from './identity.topics.js';
 import { SessionRevokedEvent, TokensRevokedEvent } from './identity.events.js';
 
@@ -60,4 +61,14 @@ export const BillingEventsQueue = defineQueue({
   ],
   description:
     'Billing events that identity applies: it suspends or reactivates the tenant and refreshes its features.',
+});
+
+/**
+ * Password reset requests identity sends to itself, so the request answers before anyone looks up the email.
+ */
+export const PasswordResetsQueue = defineQueue({
+  name: IdentityQueue.PasswordResets,
+  commands: [SendPasswordResetCommand],
+  description:
+    'Password reset requests that identity sends to itself and answers by email from the worker.',
 });

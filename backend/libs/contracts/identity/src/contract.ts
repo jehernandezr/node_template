@@ -28,6 +28,7 @@ import {
   ServiceAccountStatus,
 } from './enums/api-key.enum.js';
 import {
+  IdentityCommand,
   IdentityErrorCode,
   IdentityEvent,
   IdentityOperation,
@@ -56,9 +57,11 @@ import {
   DeviceRemovedEvent,
   IdentityEventsTopic,
   MembershipChangedEvent,
+  PasswordResetsQueue,
   PermissionsChangedEvent,
   RecordUsageReference,
   SecurityAlertRaisedEvent,
+  SendPasswordResetCommand,
   SessionRevokedEvent,
   TenantCreatedEvent,
   TenantReactivatedEvent,
@@ -203,6 +206,7 @@ export const identityContract = defineServiceContract({
     IdentityOperation,
     IdentityEvent,
     IdentityTopic,
+    IdentityCommand,
     IdentityQueue,
     IdentitySaga,
     IdentitySagaStatus,
@@ -488,12 +492,14 @@ export const identityContract = defineServiceContract({
     securityAlertRaised: SecurityAlertRaisedEvent,
     userErased: UserErasedEvent,
   },
+  commands: { sendPasswordReset: SendPasswordResetCommand },
   topics: { events: IdentityEventsTopic },
   queues: {
     accessProjection: AccessProjectionQueue,
     authState: AuthStateQueue,
     billing: BillingEventsQueue,
+    passwordResets: PasswordResetsQueue,
   },
-  sends: [RecordUsageReference],
+  sends: [SendPasswordResetCommand, RecordUsageReference],
   errors: { IdentityErrorCode: identityErrorCatalog },
 });

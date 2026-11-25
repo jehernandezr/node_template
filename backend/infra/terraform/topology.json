@@ -148,6 +148,22 @@
       "description": "Billing events that identity applies: it suspends or reactivates the tenant and refreshes its features."
     },
     {
+      "name": "identity-password-resets",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 10,
+      "retry": { "maxAttempts": 10, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "identity-password-resets-dlq",
+        "maxReceiveCount": 100,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [],
+      "consumer": "identity",
+      "producers": ["identity"],
+      "description": "Password reset requests that identity sends to itself and answers by email from the worker."
+    },
+    {
       "name": "notifications-realtime-control",
       "fifo": false,
       "visibilityTimeoutSeconds": 30,
@@ -365,6 +381,13 @@
       "kind": "event",
       "target": "identity-events",
       "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.password-reset.send.v1",
+      "kind": "command",
+      "target": "identity-password-resets",
+      "targetKind": "queue",
       "owner": "identity"
     },
     {

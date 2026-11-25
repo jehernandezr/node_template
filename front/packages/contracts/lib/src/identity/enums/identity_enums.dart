@@ -1063,6 +1063,27 @@ enum IdentityTopic {
   }
 }
 
+/// Enum `IdentityCommand` del contrato `identity`.
+///
+/// [tryParse] devuelve null para valores que este cliente no conoce,
+/// así un valor nuevo del backend se ignora sin romper.
+enum IdentityCommand {
+  sendPasswordReset('identity.password-reset.send.v1');
+
+  const IdentityCommand(this.wireCode);
+
+  /// Valor que usa el backend.
+  final String wireCode;
+
+  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  static IdentityCommand? tryParse(String code) {
+    for (final value in values) {
+      if (value.wireCode == code) return value;
+    }
+    return null;
+  }
+}
+
 /// Enum `IdentityQueue` del contrato `identity`.
 ///
 /// [tryParse] devuelve null para valores que este cliente no conoce,
@@ -1070,7 +1091,8 @@ enum IdentityTopic {
 enum IdentityQueue {
   accessProjection('identity-access-projection'),
   authState('identity-auth-state'),
-  billing('identity-billing');
+  billing('identity-billing'),
+  passwordResets('identity-password-resets');
 
   const IdentityQueue(this.wireCode);
 

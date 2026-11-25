@@ -171,6 +171,11 @@ export enum IdentityEvent {
   UserErased = 'identity.user.erased.v1',
 }
 
+/** CloudEvents types of the commands identity sends to itself. */
+export enum IdentityCommand {
+  SendPasswordReset = 'identity.password-reset.send.v1',
+}
+
 /** Topics where identity publishes its events. */
 export enum IdentityTopic {
   Events = 'identity-events',
@@ -181,6 +186,7 @@ export enum IdentityQueue {
   AccessProjection = 'identity-access-projection',
   AuthState = 'identity-auth-state',
   Billing = 'identity-billing',
+  PasswordResets = 'identity-password-resets',
 }
 
 /** Sagas identity orchestrates. */

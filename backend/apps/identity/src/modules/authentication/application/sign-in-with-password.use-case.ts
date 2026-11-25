@@ -10,6 +10,7 @@ import {
 } from '@contracts/identity';
 import { Clock, IdGenerator } from '@platform/kernel';
 import { RequestContextStore } from '@platform/observability';
+import { IdentitySettings } from '../../../config/identity-settings.js';
 import { DeploymentRegion } from '../../../shared/utils/deployment-region.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
@@ -42,8 +43,9 @@ export interface SignInCommand {
 /**
  * Password sign-in: checks the lockouts, verifies the password (also without a user, at the same cost),
  * recognizes the device by its signature and decides whether a second factor is needed. A failure counts
- * for the origin, the account and the IP; an unknown email counts the same, without leaving a trace in a
- * shard.
+ * for the origin, the account and the IP, and is recorded as an attempt; an unknown email is recorded too,
+ * without a user and in the shard of the default tenant, so a failure costs the same whether or not the
+ * account exists.
  */
 @Injectable()
 export class SignInWithPassword {
@@ -65,6 +67,7 @@ export class SignInWithPassword {
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly deployment: DeploymentRegion,
+    private readonly settings: IdentitySettings,
   ) {}
 
   /**
@@ -173,25 +176,25 @@ export class SignInWithPassword {
     client: ClientInfo,
   ): Promise<never> {
     const outcome = await this.lockout.recordFailure(account, client.ip);
-    if (ref !== undefined) {
-      await this.record(
-        ref,
-        client,
-        LoginAttemptResult.Failed,
-        LoginAttemptReason.InvalidPassword,
-      );
-      if (outcome.lockedForMs !== undefined) {
-        await this.alerts.raise({
-          type: SecurityAlertType.AccountLocked,
-          user: ref,
-        });
-      }
-      if (outcome.protectedModeEnabled) {
-        await this.alerts.raise({
-          type: SecurityAlertType.ProtectedModeEnabled,
-          user: ref,
-        });
-      }
+    await this.record(
+      ref,
+      client,
+      LoginAttemptResult.Failed,
+      ref === undefined
+        ? LoginAttemptReason.UnknownAccount
+        : LoginAttemptReason.InvalidPassword,
+    );
+    if (ref !== undefined && outcome.lockedForMs !== undefined) {
+      await this.alerts.raise({
+        type: SecurityAlertType.AccountLocked,
+        user: ref,
+      });
+    }
+    if (ref !== undefined && outcome.protectedModeEnabled) {
+      await this.alerts.raise({
+        type: SecurityAlertType.ProtectedModeEnabled,
+        user: ref,
+      });
     }
     throw outcome.lockedForMs === undefined
       ? new IdentityError(IdentityErrorCode.AuthInvalidCredentials)
@@ -202,23 +205,28 @@ export class SignInWithPassword {
   }
 
   private async record(
-    ref: UserRef,
+    ref: UserRef | undefined,
     client: ClientInfo,
     result: LoginAttemptResult,
     reason?: LoginAttemptReason,
   ): Promise<void> {
     const traceId = this.context.current()?.traceId;
-    await this.scopes.inUserShard(ref, () =>
+    const write = () =>
       this.attempts.record({
         id: this.ids.next().toString(),
-        userId: ref.userId,
+        userId: ref?.userId ?? null,
         result,
         ...(reason === undefined ? {} : { reason }),
         ip: client.ip,
         ...(traceId === undefined ? {} : { traceId }),
         attemptedAt: this.clock.now(),
-      }),
-    );
+      });
+    await (ref === undefined
+      ? this.scopes.inTenantShard(
+          this.settings.values.IDENTITY_DEFAULT_TENANT_ID,
+          write,
+        )
+      : this.scopes.inUserShard(ref, write));
   }
 
   private static proofOf(request: SignInRequest): DeviceProof | undefined {

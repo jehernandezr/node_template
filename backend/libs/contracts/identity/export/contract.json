@@ -560,11 +560,20 @@
     "IdentityTopic": {
       "values": [{ "name": "Events", "value": "identity-events" }]
     },
+    "IdentityCommand": {
+      "values": [
+        {
+          "name": "SendPasswordReset",
+          "value": "identity.password-reset.send.v1"
+        }
+      ]
+    },
     "IdentityQueue": {
       "values": [
         { "name": "AccessProjection", "value": "identity-access-projection" },
         { "name": "AuthState", "value": "identity-auth-state" },
-        { "name": "Billing", "value": "identity-billing" }
+        { "name": "Billing", "value": "identity-billing" },
+        { "name": "PasswordResets", "value": "identity-password-resets" }
       ]
     },
     "IdentitySaga": {
@@ -5505,7 +5514,16 @@
       "description": "Se borraron los datos personales de un usuario. Los servicios que guardan su rastro lo borran o anonimizan."
     }
   ],
-  "commands": [],
+  "commands": [
+    {
+      "name": "sendPasswordReset",
+      "type": "identity.password-reset.send.v1",
+      "kind": "command",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/PasswordResetRequest" },
+      "description": "Looks up the account of the email and, if it can reset its password, sends it the reset email."
+    }
+  ],
   "errors": {
     "IdentityErrorCode": [
       {

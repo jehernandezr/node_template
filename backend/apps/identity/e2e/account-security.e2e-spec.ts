@@ -1,4 +1,5 @@
 import {
+  IdentityCommand,
   ListPushTargetsOperation,
   IdentityErrorCode,
 } from '@contracts/identity';
@@ -9,6 +10,7 @@ import { IdentityEmailTemplate } from '../src/shared/enums/identity-email-templa
 import {
   AccessTokenClaimsReader,
   IdentityJourney,
+  QueuedCommands,
   TotpCodes,
   type SessionTokensBody,
 } from '../src/__tests__/utils/index.js';
@@ -289,6 +291,10 @@ runtime.describeIfAvailable('account security end to end', () => {
     const requested = await rita.native().post('/v1/auth/password-resets', {
       body: { email: rita.email },
     });
+    await new QueuedCommands(app).deliver(
+      IdentityCommand.SendPasswordReset,
+      rita.email,
+    );
     const token = rita.mailTo(IdentityEmailTemplate.PasswordReset)['token'];
     const breached = await rita
       .native()
@@ -300,6 +306,12 @@ runtime.describeIfAvailable('account security end to end', () => {
       .post('/v1/auth/password-resets', {
         body: { email: rita.email },
       })
+      .then(() =>
+        new QueuedCommands(app).deliver(
+          IdentityCommand.SendPasswordReset,
+          rita.email,
+        ),
+      )
       .then(() => rita.mailTo(IdentityEmailTemplate.PasswordReset)['token']);
     const confirmed = await rita
       .native()
