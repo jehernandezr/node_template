@@ -22,6 +22,11 @@ const USER = {
 class UnreachableSagaDirectory extends InMemorySagaDirectory {
   reachable = true;
 
+  /**
+   * Records the saga while the catalog answers.
+   * @param entry Saga to record.
+   * @throws Error if the catalog is unreachable.
+   */
   override async record(
     entry: Parameters<InMemorySagaDirectory['record']>[0],
   ): Promise<void> {
@@ -53,6 +58,10 @@ class AccountDeletionFixture {
     new SequentialIdGenerator(),
   );
 
+  /**
+   * Lists the tenants the user is leaving.
+   * @returns Tenants whose departure is reserved, in a fixed order.
+   */
   leavingTenants(): readonly string[] {
     return [HOME, ACME].filter((tenantId) =>
       this.access.isLeaving(USER.userId, tenantId),

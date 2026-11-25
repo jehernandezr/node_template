@@ -45,6 +45,10 @@ class TenantWithSoleOwner {
     );
   }
 
+  /**
+   * Creates the owners and members groups and makes Ana the owner.
+   * @returns The fixture.
+   */
   async build(): Promise<this> {
     await this.tenantAccess.insertGroup({
       id: OWNERS,
@@ -64,6 +68,10 @@ class TenantWithSoleOwner {
     return this;
   }
 
+  /**
+   * Marks Ana as leaving, as a deletion of her account would.
+   * @returns The fixture.
+   */
   async ownerLeaves(): Promise<this> {
     const ana = await this.tenantAccess.findMembership(ANA.userId);
     if (ana !== undefined) {

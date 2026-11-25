@@ -127,11 +127,17 @@ export class InMemoryAccessFacade extends AccessFacade {
 
   private readonly departures = new Set<string>();
 
-  /** Whether the user is leaving the tenant because a deletion of their account reserved it. */
+  /**
+   * Tells whether the user is leaving the tenant because a deletion of their account reserved it.
+   * @param userId User.
+   * @param tenantId Tenant.
+   * @returns Whether the departure is reserved.
+   */
   isLeaving(userId: string, tenantId: string): boolean {
     return this.departures.has(keyOf(userId, tenantId));
   }
 
+  /** {@inheritDoc AccessFacade.reserveDepartures} */
   async reserveDepartures(ref: UserRef): Promise<readonly string[]> {
     const reserved: string[] = [];
     for (const { tenantId } of await this.tenantsOf(ref)) {
@@ -144,6 +150,7 @@ export class InMemoryAccessFacade extends AccessFacade {
     return reserved;
   }
 
+  /** {@inheritDoc AccessFacade.releaseDepartures} */
   async releaseDepartures(
     ref: UserRef,
     tenantIds: readonly string[],
@@ -153,6 +160,7 @@ export class InMemoryAccessFacade extends AccessFacade {
     }
   }
 
+  /** {@inheritDoc AccessFacade.cancelDepartures} */
   async cancelDepartures(ref: UserRef): Promise<void> {
     for (const { tenantId } of await this.tenantsOf(ref)) {
       this.departures.delete(keyOf(ref.userId, tenantId));
