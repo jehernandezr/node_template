@@ -1,21 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { AccessGrantSource, type AccessGrant } from '@platform/auth';
 import { AccessFacade } from '../modules/access/index.js';
 
-/**
- * In-process source of truth for access: `access` computes the permissions. The facade is looked up on
- * each call because the module may load after authentication.
- */
+/** In-process source of truth for access: `access` computes the permissions. */
 @Injectable()
 export class AccessFacadeGrantSource extends AccessGrantSource {
-  constructor(private readonly modules: ModuleRef) {
+  constructor(private readonly access: AccessFacade) {
     super();
   }
 
+  /** The permissions, roles, features, flags and permission version of the user in the tenant. */
   async fetch(tenantId: string, userId: string): Promise<AccessGrant> {
-    const facade = this.modules.get(AccessFacade, { strict: false });
-    const access = await facade.resolve(userId, tenantId);
+    const access = await this.access.resolve(userId, tenantId);
     return {
       permissions: [...access.permissions],
       platformRoles: [...access.platformRoles],

@@ -8,6 +8,8 @@ import {
 import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { ChannelDeliverer } from '../../application/channel-deliverer.js';
 import type { NotifyCommand } from '../../application/notify-command.js';
+import { EraseUserDeliveries } from '../../application/erase-user-deliveries.use-case.js';
+import { LocalDispatchFacade } from '../../application/local-dispatch.facade.js';
 import { NotifyUser } from '../../application/notify-user.use-case.js';
 import { RetryDeliveriesJob } from '../../application/retry-deliveries.job.js';
 import { DeliveryStatus } from '../../domain/delivery.js';
@@ -86,6 +88,10 @@ export class DispatchHarness {
     this.transactions,
     this.ids,
     this.clock,
+  );
+  readonly facade = new LocalDispatchFacade(
+    this.notifyUser,
+    new EraseUserDeliveries(this.deliveries, this.shard),
   );
   readonly retry = new RetryDeliveriesJob(
     new InMemoryFailedDeliveries(this.deliveries),

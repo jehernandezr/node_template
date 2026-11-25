@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { LockoutKeys } from '../application/lockout-keys.js';
@@ -20,13 +20,27 @@ import { LoginAttemptEntity } from '../infrastructure/persistence/entities/login
 import { TypeOrmLoginAttemptRepository } from '../infrastructure/persistence/typeorm-login-attempt.repository.js';
 import { AuthenticationController } from './authentication.controller.js';
 
+import { AccessCoreModule } from '../../access/module.js';
+import { AlertsModule } from '../../alerts/module.js';
+import { DevicesCoreModule } from '../../devices/module.js';
+import { MfaModule } from '../../mfa/module.js';
+import { PasswordsCoreModule } from '../../passwords/module.js';
+import { SessionsModule } from '../../sessions/module.js';
+import { UsersCoreModule } from '../../users/module.js';
+
 /**
- * Password sign-in, lockout by attempts and account unlock. It is global only to share the lockout with the
- * API keys and with the "It was not me" of the devices, and the sign-in history with the account erasure.
+ * Password sign-in, lockout by attempts and account unlock. It exports the lockout to the API keys and to the
+ * "It was not me" of the devices, and the sign-in history to the account erasure.
  */
-@Global()
 @Module({
   imports: [
+    AccessCoreModule,
+    AlertsModule,
+    DevicesCoreModule,
+    MfaModule,
+    PasswordsCoreModule,
+    SessionsModule,
+    UsersCoreModule,
     PersistenceModule.forFeature({
       entities: [LoginAttemptEntity],
       sharding: { key: ShardKey.User },

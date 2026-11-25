@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { ChallengeVerifier } from '../application/challenge-verifier.js';
@@ -24,10 +24,20 @@ import { TotpFactorEntity } from '../infrastructure/persistence/entities/totp-fa
 import { TypeOrmMfaFactorRepository } from '../infrastructure/persistence/typeorm-mfa-factor.repository.js';
 import { MfaController } from './mfa.controller.js';
 
-/** Challenges, TOTP, recovery codes, step-up and recovery without a device. Global only for its facade. */
-@Global()
+import { AlertsModule } from '../../alerts/module.js';
+import { DevicesCoreModule } from '../../devices/module.js';
+import { PasskeysCoreModule } from '../../passkeys/module.js';
+import { SessionsModule } from '../../sessions/module.js';
+import { UsersCoreModule } from '../../users/module.js';
+
+/** Challenges, TOTP, recovery codes, step-up and recovery without a device. */
 @Module({
   imports: [
+    AlertsModule,
+    DevicesCoreModule,
+    PasskeysCoreModule,
+    SessionsModule,
+    UsersCoreModule,
     PersistenceModule.forFeature({
       entities: [TotpFactorEntity, RecoveryCodeEntity, MfaRecoveryEntity],
       sharding: { key: ShardKey.User },

@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { InboxFacade } from '../application/inbox.facade.js';
@@ -11,11 +11,12 @@ import { TypeOrmInboxMaintenance } from '../infrastructure/persistence/typeorm-i
 import { TypeOrmInboxRepository } from '../infrastructure/persistence/typeorm-inbox.repository.js';
 import { InboxController } from './inbox.controller.js';
 import { NotificationsSettings } from '../../../config/notifications-settings.js';
+import { NotificationsRealtimeModule } from '../../realtime/module.js';
 
-/** Per-user notification inbox. Global only for its facade. */
-@Global()
+/** Per-user notification inbox. */
 @Module({
   imports: [
+    NotificationsRealtimeModule,
     PersistenceModule.forFeature({
       entities: [NotificationEntity],
       sharding: { key: ShardKey.User },

@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { CollectInvoice } from '../application/collect-invoice.use-case.js';
@@ -20,11 +20,16 @@ import { TypeOrmInvoiceRepository } from '../infrastructure/persistence/typeorm-
 import { InvoicesController } from './invoices.controller.js';
 import { InvoicesInternalOperations } from './invoices.internal-operations.js';
 import { BillingSettings } from '../../../config/billing-settings.js';
+import { PaymentsModule } from '../../payments/module.js';
+import { SubscriptionsModule } from '../../subscriptions/module.js';
+import { UsageModule } from '../../usage/module.js';
 
-/** Invoices: period closing, numbering, charging and its result. Global only for its facade. */
-@Global()
+/** Invoices: period closing, numbering, charging and its result. */
 @Module({
   imports: [
+    PaymentsModule,
+    SubscriptionsModule,
+    UsageModule,
     PersistenceModule.forFeature({
       entities: [InvoiceEntity, InvoiceLineEntity, InvoiceSequenceEntity],
       sharding: { key: ShardKey.Tenant },

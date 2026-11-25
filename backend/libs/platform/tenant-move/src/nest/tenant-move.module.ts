@@ -39,7 +39,10 @@ export class TenantMoveModule {
     const operations = TenantMoveOperationsFactory.create(options.operations);
     return {
       module: TenantMoveModule,
-      imports: [ConfigModule.forFeature(TenantMoveConfig)],
+      imports: [
+        ConfigModule.forFeature(TenantMoveConfig),
+        ...(options.imports ?? []),
+      ],
       providers: [
         { provide: TenantMoveManifest, useClass: options.manifest },
         { provide: TenantMoveActivity, useClass: OpenSagaActivity },

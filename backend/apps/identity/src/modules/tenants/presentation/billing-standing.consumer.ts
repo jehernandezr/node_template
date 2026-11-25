@@ -8,7 +8,7 @@ import {
   type SubscriptionSuspendedPayload,
 } from '@contracts/billing';
 import { Subscribe } from '@platform/messaging/nest';
-import { ApplyBillingStanding } from '../modules/tenants/index.js';
+import { ApplyBillingStanding } from '../application/apply-billing-standing.use-case.js';
 
 /**
  * Queue `identity-billing`: delinquency suspends the tenant, a payment reactivates it and a plan change

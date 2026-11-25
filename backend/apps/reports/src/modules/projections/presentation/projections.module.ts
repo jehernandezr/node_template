@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { BackfillProjectionsJob } from '../application/backfill-projections.job.js';
@@ -25,7 +25,6 @@ import { TasksServiceHistory } from '../infrastructure/tasks-service-history.js'
 import { ProjectionsConsumer } from './projections.consumer.js';
 
 /** reports' own projections, fed by events and by the backfill from tasks and billing. */
-@Global()
 @Module({
   imports: [
     PersistenceModule.forFeature({

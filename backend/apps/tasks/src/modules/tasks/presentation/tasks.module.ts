@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { RepositoryKit } from '@platform/persistence';
 import { SearchIndex, SearchIndexFactory } from '@platform/search';
@@ -23,8 +23,7 @@ import { TypeOrmTaskRepository } from '../infrastructure/persistence/typeorm-tas
 import { TasksController } from './tasks.controller.js';
 import { TasksSettings } from '../../../config/tasks-settings.js';
 
-/** Tenant tasks: routes, search, events and the purge of deleted ones. Global only for its facade. */
-@Global()
+/** Tenant tasks: routes, search, events and the purge of deleted ones. */
 @Module({
   imports: [
     PersistenceModule.forFeature({

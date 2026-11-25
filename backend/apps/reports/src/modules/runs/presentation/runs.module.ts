@@ -20,10 +20,12 @@ import { RunsConsumer } from './runs.consumer.js';
 import { RunsController } from './runs.controller.js';
 import { RunsInternalOperations } from './runs.internal-operations.js';
 import { ReportsSettings } from '../../../config/reports-settings.js';
+import { CatalogModule } from '../../catalog/module.js';
 
 /** Report runs: creation, computation in the worker, query, download, expiration and user deletion. */
 @Module({
   imports: [
+    CatalogModule,
     PersistenceModule.forFeature({
       entities: [ReportRunEntity],
       sharding: { key: ShardKey.Tenant },

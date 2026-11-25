@@ -40,10 +40,12 @@ The general review of 2026-11-24 found that the services had grown their own cop
 ### Composition of a service
 
 - **`@Global()` is not the rule for business modules.** A business module imports the modules whose facades it uses. Only platform modules and a service's infrastructure modules that hold no business rules (identity's secrets, ephemeral store, shared utilities and auth support) are global.
-- **Core and entry modules.** When the facades of a service form cycles between modules, each module that others need is split in two: `<Name>CoreModule` holds the facade, the repositories and what the facade needs, and exports the facade; `<Name>Module` holds the controllers, consumers, jobs, internal operations and the use cases no other module calls, and imports its core and the cores it uses. Core modules only import other core modules, and their import graph has no cycles. A module whose providers do not create a cycle stays whole.
+- **Core and entry modules.** When the facades of a service form cycles between modules, each module caught in a cycle is split in two: `<Name>CoreModule` holds the facade and what it needs, with the repositories, and exports them; `<Name>Module` holds the controllers, consumers, jobs, internal operations and the use cases no other module calls, and imports its core and the modules it uses. Core modules only import other core modules (and modules without business dependencies, such as identity's alerts), so their import graph has no cycles. A module that does not close a cycle stays whole.
+- **`module.ts` next to `index.ts`.** A module that others import exposes its Nest module classes in `modules/<name>/module.ts`; `index.ts` keeps the facades and types. Loading a facade then never loads a module graph, which would otherwise evaluate a module class before the class it imports is defined.
 - **No `ModuleRef` lookups and no `forwardRef`.** A dependency is either imported or the design is changed.
+- **A module does not reach into another module's repositories.** It asks the other module's facade.
 
-Identity applies this: it has a core module per module that others call, and `IdentityAccessGrantsModule` gives `AuthModule` the access grant source with `AccessFacade` injected through the constructor.
+Identity applies this with core modules for access, tenants, users, passwords, passkeys, devices and tenant moves, and `IdentityAccessGrantsModule` gives `AuthModule` the access grant source with `AccessFacade` injected through the constructor; a test checks that no identity business module is global and that core modules only import core modules. Billing, notifications, reports and tasks had no cycles: their modules stopped being global and import the modules they use, and notifications' privacy handler erases deliveries through `DispatchFacade` instead of the dispatch repository.
 
 ### Domain events
 
@@ -63,6 +65,6 @@ A domain without events is allowed. The rule is that a fact leaves the service t
 
 ### Costs
 
-- Identity has more module files: a core module next to each module that others call.
+- Identity has more module files: a core module next to each module caught in a cycle.
 - Library modules no longer compile on their own in a test without `KernelModule`.
 - A repository that wants dynamic filters writes its query by hand; there is no generic criteria language.

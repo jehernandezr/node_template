@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { ChargeInvoice } from '../application/charge-invoice.use-case.js';
@@ -12,8 +12,7 @@ import { PaymentAttemptEntity } from '../infrastructure/persistence/entities/pay
 import { TypeOrmPaymentAttempts } from '../infrastructure/persistence/typeorm-payment-attempts.js';
 import { BillingSettings } from '../../../config/billing-settings.js';
 
-/** Invoice charging with the `BILLING_PAYMENT_PROVIDER` provider and its log. Global only for its facade. */
-@Global()
+/** Invoice charging with the `BILLING_PAYMENT_PROVIDER` provider and its log. */
 @Module({
   imports: [
     PersistenceModule.forFeature({

@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { IdentitySettings } from '../../../config/identity-settings.js';
 import { IdentityMailer } from '../domain/identity-mailer.js';
 import { SecurityAlerts } from '../domain/security-alerts.js';
@@ -8,11 +8,7 @@ import { MemoryIdentityMailer } from '../infrastructure/memory-identity-mailer.j
 import { NotificationsIdentityMailer } from '../infrastructure/notifications-identity-mailer.js';
 import { OutboxSecurityAlerts } from '../infrastructure/outbox-security-alerts.js';
 
-/**
- * Security alerts and transactional email. The mailer is selected with `IDENTITY_MAILER`. It is global because
- * all identity modules raise alerts and send email.
- */
-@Global()
+/** Security alerts and transactional email. The mailer is selected with `IDENTITY_MAILER`. */
 @Module({
   providers: [
     MemoryIdentityMailer,

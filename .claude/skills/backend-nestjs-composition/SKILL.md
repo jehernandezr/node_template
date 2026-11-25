@@ -20,7 +20,9 @@ NestJS is a detail of `presentation/` and of the composition root. The domain an
 - `providers` lists use cases, adapters and services. `exports` lists only the facade and the tokens other modules may use.
 - Modules import modules, never loose providers from another module. No `forwardRef`: a circular dependency is a design error, solved with an event or by moving the responsibility.
 - `@Global()` only for platform modules (config, logger, `KernelModule`) and for a service's infrastructure modules that hold no business rules. Never for a business module ([ADR 0037](../../../docs/adr/0037-composition-shared-platform-pieces-and-domain-events.md)).
-- When the facades of a service's modules need each other in a cycle, split each module that others call: `<Name>CoreModule` holds the facade, its repositories and what the facade needs, and exports the facade; `<Name>Module` holds controllers, consumers, jobs, internal operations and the use cases nobody else calls, and imports its core and the cores it uses. Core modules import only core modules, without cycles. Identity is the example.
+- When the facades of a service's modules need each other in a cycle, split each module caught in it: `<Name>CoreModule` holds the facade, what it needs and the repositories, and exports them; `<Name>Module` holds controllers, consumers, jobs, internal operations and the use cases nobody else calls, and imports its core and the modules it uses. Core modules import only core modules, without cycles. Identity is the example.
+- A module that others import exposes its Nest module classes in `modules/<name>/module.ts`; `index.ts` keeps facades and types, so loading a facade never loads a module graph.
+- A module never injects another module's repository: it asks that module's facade.
 - No `ModuleRef` lookups and no `forwardRef`: a dependency is imported or the design changes.
 - Providers use the default scope (singleton). `Scope.REQUEST` is forbidden in business code: it hurts performance and lifecycle hooks do not run. The request context (tenant, trace) lives in the platform `AsyncLocalStorage`.
 

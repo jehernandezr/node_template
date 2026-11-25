@@ -1,83 +1,30 @@
-import { Global, Module } from '@nestjs/common';
-import { BloomModule } from '@platform/bloom/nest';
-import { PersistenceModule } from '@platform/persistence/nest';
-import { ShardKey } from '@platform/sharding';
+import { Module } from '@nestjs/common';
 import { ChangePassword } from '../application/change-password.use-case.js';
 import { ConfirmPasswordReset } from '../application/confirm-password-reset.use-case.js';
-import { LocalPasswordsFacade } from '../application/local-passwords.facade.js';
-import { PasswordAcceptance } from '../application/password-acceptance.js';
-import { PasswordVerifier } from '../application/password-verifier.js';
-import { PasswordsFacade } from '../application/passwords.facade.js';
 import { PurgePasswordResetsJob } from '../application/purge-password-resets.job.js';
 import { RequestPasswordReset } from '../application/request-password-reset.use-case.js';
 import { SendPasswordReset } from '../application/send-password-reset.use-case.js';
-import { BreachedPasswordList } from '../domain/breached-password-list.js';
-import { PasswordCredentialRepository } from '../domain/password-credential.repository.js';
-import { PasswordHasher } from '../domain/password-hasher.js';
-import { PasswordResetRepository } from '../domain/password-reset.repository.js';
-import { PasswordResetRetention } from '../domain/password-reset-retention.js';
 import { PasswordResetTokens } from '../application/password-reset-tokens.js';
-import { PasswordResetEntity } from '../infrastructure/persistence/entities/password-reset.entity.js';
-import { TypeOrmPasswordResetRepository } from '../infrastructure/persistence/typeorm-password-reset.repository.js';
-import { TypeOrmPasswordResetRetention } from '../infrastructure/persistence/typeorm-password-reset-retention.js';
-import { NodeArgon2idHasher } from '../infrastructure/node-argon2id-hasher.js';
-import { PasswordCredentialEntity } from '../infrastructure/persistence/entities/password-credential.entity.js';
-import { TypeOrmPasswordCredentialRepository } from '../infrastructure/persistence/typeorm-password-credential.repository.js';
-import { BloomBreachedPasswordList } from '../infrastructure/bloom-breached-password-list.js';
-import { KnownBreachedPasswordsSource } from '../infrastructure/known-breached-passwords-source.js';
-import { BloomFilterName } from '../../../shared/enums/bloom-filter-name.enum.js';
 import { PasswordResetsConsumer } from './password-resets.consumer.js';
 import { PasswordsController } from './passwords.controller.js';
 
-/** Passwords: hash, policy, change and reset. Global only for its facade. */
-@Global()
+import { PasswordsCoreModule } from './passwords-core.module.js';
+import { AlertsModule } from '../../alerts/module.js';
+import { SessionsModule } from '../../sessions/module.js';
+import { UsersCoreModule } from '../../users/module.js';
+
+/** Passwords: hash, policy, change and reset. */
 @Module({
-  imports: [
-    PersistenceModule.forFeature({
-      entities: [PasswordCredentialEntity, PasswordResetEntity],
-      sharding: { key: ShardKey.User },
-    }),
-    BloomModule.forFeature({
-      definition: {
-        name: BloomFilterName.BreachedPasswords,
-        expectedItems: PasswordsModule.BREACHED_PASSWORDS_CAPACITY,
-        falsePositiveRate: 0.001,
-        rebuildCron: '0 4 * * 0',
-      },
-      source: KnownBreachedPasswordsSource,
-    }),
-  ],
+  imports: [PasswordsCoreModule, AlertsModule, SessionsModule, UsersCoreModule],
   controllers: [PasswordsController],
   providers: [
-    {
-      provide: PasswordCredentialRepository,
-      useClass: TypeOrmPasswordCredentialRepository,
-    },
-    { provide: PasswordHasher, useClass: NodeArgon2idHasher },
-    KnownBreachedPasswordsSource,
-    { provide: BreachedPasswordList, useClass: BloomBreachedPasswordList },
-    {
-      provide: PasswordResetRepository,
-      useClass: TypeOrmPasswordResetRepository,
-    },
-    {
-      provide: PasswordResetRetention,
-      useClass: TypeOrmPasswordResetRetention,
-    },
     PurgePasswordResetsJob,
     PasswordResetTokens,
-    PasswordAcceptance,
-    PasswordVerifier,
     ChangePassword,
     RequestPasswordReset,
     SendPasswordReset,
     PasswordResetsConsumer,
     ConfirmPasswordReset,
-    { provide: PasswordsFacade, useClass: LocalPasswordsFacade },
   ],
-  exports: [PasswordsFacade],
 })
-export class PasswordsModule {
-  /** Room above the starting list: the Have I Been Pwned list arrives through the same filter. */
-  static readonly BREACHED_PASSWORDS_CAPACITY = 10_000;
-}
+export class PasswordsModule {}

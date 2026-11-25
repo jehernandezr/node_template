@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { ApiKeysFacade } from '../application/api-keys.facade.js';
@@ -25,13 +25,19 @@ import { TypeOrmApiKeyRepository } from '../infrastructure/persistence/typeorm-a
 import { ApiKeysController } from './api-keys.controller.js';
 import { ApiKeysInternalOperations } from './api-keys.internal-operations.js';
 
+import { AccessCoreModule } from '../../access/module.js';
+import { AuthenticationModule } from '../../authentication/module.js';
+import { TenantsCoreModule } from '../../tenants/module.js';
+
 /**
- * Service accounts and API keys. It is global to export `IdentityApiKeyResolver`, which identity's
- * verification uses to validate keys in process, and its facade.
+ * Service accounts and API keys. It exports `IdentityApiKeyResolver`, which identity's verification uses to validate
+ * keys in process, and its facade.
  */
-@Global()
 @Module({
   imports: [
+    AccessCoreModule,
+    AuthenticationModule,
+    TenantsCoreModule,
     PersistenceModule.forFeature({
       entities: [ServiceAccountEntity, ApiKeyEntity],
       sharding: { key: ShardKey.Tenant },

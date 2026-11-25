@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { AcceptInvitation } from '../application/accept-invitation.use-case.js';
@@ -11,10 +11,20 @@ import { InvitationEntity } from '../infrastructure/persistence/entities/invitat
 import { TypeOrmInvitationRepository } from '../infrastructure/persistence/typeorm-invitation.repository.js';
 import { InvitationsController } from './invitations.controller.js';
 
-/** Invitations to a tenant. Global only for its facade. */
-@Global()
+import { AccessCoreModule } from '../../access/module.js';
+import { AlertsModule } from '../../alerts/module.js';
+import { ApiKeysModule } from '../../api-keys/module.js';
+import { TenantsCoreModule } from '../../tenants/module.js';
+import { UsersCoreModule } from '../../users/module.js';
+
+/** Invitations to a tenant. */
 @Module({
   imports: [
+    AccessCoreModule,
+    AlertsModule,
+    ApiKeysModule,
+    TenantsCoreModule,
+    UsersCoreModule,
     PersistenceModule.forFeature({
       entities: [InvitationEntity],
       sharding: { key: ShardKey.Tenant },

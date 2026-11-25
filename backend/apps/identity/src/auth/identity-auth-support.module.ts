@@ -7,18 +7,16 @@ import {
   SigningKeyJwksSource,
   SigningKeyProvider,
 } from '../modules/tokens/index.js';
-import { AccessFacadeGrantSource } from './access-facade-grant-source.js';
 import { ClientIpContext } from './client-ip-context.js';
 
 /**
- * Identity pieces that `AuthModule` needs and that do not come from the platform: the access computed in
- * process, the `auth:*` writer, the signing keys identity uses to verify its own tokens and
- * the client IP used to check CIDR-restricted API keys.
+ * Identity infrastructure that `AuthModule` and the business modules share: the `auth:*` writer, the signing keys
+ * identity uses to verify its own tokens and the client IP used to check CIDR-restricted API keys. It holds no business
+ * rules, so it is global like the platform modules.
  */
 @Global()
 @Module({
   providers: [
-    AccessFacadeGrantSource,
     ClientIpContext,
     { provide: AuthStateWriter, useExisting: ValkeyAuthStateWriter },
     IdentitySettings,
@@ -37,7 +35,6 @@ import { ClientIpContext } from './client-ip-context.js';
     },
   ],
   exports: [
-    AccessFacadeGrantSource,
     ClientIpContext,
     AuthStateWriter,
     SigningKeyProvider,

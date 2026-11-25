@@ -19,7 +19,6 @@ import {
 import type { Recipient } from '../domain/recipient.js';
 import { RecipientDirectory } from '../domain/recipient-directory.js';
 import { ChannelDeliverer } from './channel-deliverer.js';
-import { DispatchFacade } from './dispatch.facade.js';
 import type { NotifyCommand } from './notify-command.js';
 
 /**
@@ -28,7 +27,7 @@ import type { NotifyCommand } from './notify-command.js';
  * the retry job finds the pending deliveries. A repeated notification returns the channels it already had.
  */
 @Injectable()
-export class NotifyUser extends DispatchFacade {
+export class NotifyUser {
   private readonly policy = new DeliveryPolicy();
 
   constructor(
@@ -43,10 +42,9 @@ export class NotifyUser extends DispatchFacade {
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
-  ) {
-    super();
-  }
+  ) {}
 
+  /** Notifies the user and returns the channels it went out through; empty if the user no longer exists. */
   async notify(
     command: NotifyCommand,
   ): Promise<readonly NotificationChannel[]> {

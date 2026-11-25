@@ -1,4 +1,3 @@
-import { Test } from '@nestjs/testing';
 import {
   FeatureFlag,
   Permission,
@@ -6,7 +5,6 @@ import {
   PlatformRole,
   type UserAccess,
 } from '@contracts/identity';
-import { AccessFacade } from '../../modules/access/index.js';
 import { InMemoryAccessFacade } from '../../modules/access/__tests__/utils/index.js';
 import { AccessFacadeGrantSource } from '../access-facade-grant-source.js';
 
@@ -23,17 +21,11 @@ const ACCESS: UserAccess = {
 
 describe('AccessFacadeGrantSource', () => {
   it('maps the access of the facade to an access grant', async () => {
-    const facade = new InMemoryAccessFacade().setAccess(USER, TENANT, ACCESS);
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        AccessFacadeGrantSource,
-        { provide: AccessFacade, useValue: facade },
-      ],
-    }).compile();
+    const source = new AccessFacadeGrantSource(
+      new InMemoryAccessFacade().setAccess(USER, TENANT, ACCESS),
+    );
 
-    const grant = await moduleRef
-      .get(AccessFacadeGrantSource)
-      .fetch(TENANT, USER);
+    const grant = await source.fetch(TENANT, USER);
 
     expect(grant).toEqual({
       permissions: ACCESS.permissions,
@@ -44,13 +36,13 @@ describe('AccessFacadeGrantSource', () => {
     });
   });
 
-  it('rejects when the access facade is not registered yet', async () => {
-    const moduleRef = await Test.createTestingModule({
-      providers: [AccessFacadeGrantSource],
-    }).compile();
+  it('copies the lists, so the grant does not share them with the facade', async () => {
+    const source = new AccessFacadeGrantSource(
+      new InMemoryAccessFacade().setAccess(USER, TENANT, ACCESS),
+    );
 
-    await expect(
-      moduleRef.get(AccessFacadeGrantSource).fetch(TENANT, USER),
-    ).rejects.toThrow();
+    const grant = await source.fetch(TENANT, USER);
+
+    expect(grant.permissions).not.toBe(ACCESS.permissions);
   });
 });
