@@ -31,6 +31,7 @@ class InvoiceDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       ControllerBuilder<InvoiceDetailController>(
+        key: ValueKey((repository, invoiceId)),
         create: (_) =>
             InvoiceDetailController(repository, invoiceId: invoiceId)..start(),
         builder: (context, controller) {

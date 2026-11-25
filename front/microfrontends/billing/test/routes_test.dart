@@ -13,7 +13,7 @@ MicrofrontendScope _scope() => MicrofrontendScope(
 
 void main() {
   group('routes', () {
-    Future<void> mount(
+    Future<GoRouter> mount(
       WidgetTester tester,
       UserSession session,
       String initial,
@@ -38,6 +38,7 @@ void main() {
         BillingTestApp(session: session).wrapRouter(router),
       );
       await tester.pumpAndSettle();
+      return router;
     }
 
     testWidgets('/billing/invoices renders through the deferred library', (
@@ -55,6 +56,22 @@ void main() {
         '/billing/invoices/inv_002',
       );
       expect(find.text('FAC-2026-0008'), findsOneWidget);
+    });
+
+    testWidgets('going from one invoice to another shows the new one', (
+      tester,
+    ) async {
+      final router = await mount(
+        tester,
+        BillingSessions.writer(),
+        '/billing/invoices/inv_002',
+      );
+
+      router.go('/billing/invoices/inv_003');
+      await tester.pumpAndSettle();
+
+      expect(find.text('FAC-2026-0009'), findsOneWidget);
+      expect(find.text('FAC-2026-0008'), findsNothing);
     });
 
     testWidgets('a session without the permission is redirected', (

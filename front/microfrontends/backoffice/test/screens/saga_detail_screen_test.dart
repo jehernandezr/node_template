@@ -57,6 +57,23 @@ void main() {
       expect(find.text(_es.sagaTypeLine('TenantOnboarding')), findsOneWidget);
     });
 
+    testWidgets('going from one saga to another shows the new one', (
+      tester,
+    ) async {
+      final mounted = await harness.pump(
+        tester,
+        location: '/backoffice/sagas/s-101',
+        repository: fake,
+      );
+
+      mounted.router.go('/backoffice/sagas/s-102');
+      await tester.pumpAndSettle();
+
+      expect(find.text('s-102'), findsOneWidget);
+      expect(find.text('s-101'), findsNothing);
+      expect(find.text(_es.sagaTenantLine('t-004')), findsOneWidget);
+    });
+
     testWidgets('an unknown saga shows the not found message', (tester) async {
       await harness.pump(
         tester,

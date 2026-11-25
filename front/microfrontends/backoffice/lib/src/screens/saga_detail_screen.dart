@@ -34,6 +34,7 @@ class SagaDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ControllerBuilder<SagaDetailController>(
+    key: ValueKey((repository, sagaId)),
     create: (_) => SagaDetailController(repository, sagaId: sagaId)..start(),
     builder: (context, controller) {
       final l10n = BackofficeLocalizations.of(context);
