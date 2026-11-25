@@ -1,11 +1,13 @@
 ---
 name: front-codigo
-description: Reglas de diseño del código del front de node_template (Flutter, Dart 3). Clases, composición e inyección por constructor, widgets que solo pintan, controladores probados sin widgets con AsyncLoader y ActionRunner, estados y errores tipados, async seguro, nombres y contrato de microfrontend. Úsala antes de escribir, revisar o integrar código en front/.
+description: 'Reglas del código del front (Flutter, Dart 3): clases e inyección, controladores, estados tipados, async seguro, documentación /// y reglas de revisión. Puerta de entrada de las skills front-*.'
 paths:
   - 'front/**'
 ---
 
 # Código del front
+
+Al crear archivos, paquetes o microfrontends, carga `front-estructura`; al crear un microfrontend, `front-nuevo-microfrontend`; en pantallas y widgets se cargan solas `front-accesibilidad` y `front-rendimiento`.
 
 El front es software enterprise, no scripting. Todo código nuevo, y todo código que se toque, sigue estas reglas. Las skills hermanas cubren el resto: `front-estructura`, `front-pruebas`, `front-accesibilidad`, `front-layout-adaptable`, `front-i18n`, `front-navegacion`, `front-rendimiento`, `front-seguridad`, `front-analisis` y `front-nuevo-microfrontend`.
 
@@ -30,7 +32,7 @@ El front es software enterprise, no scripting. Todo código nuevo, y todo códig
 
 Detalle, firmas y ejemplos en [references/estado-y-errores.md](references/estado-y-errores.md). Resumen:
 
-- El estado de una pantalla es un tipo cerrado: `AsyncValue<T>` de `ui` (`AsyncLoading`, `AsyncData`, `AsyncError`) o una jerarquía `sealed` propia. Nada de pares `bool isLoading` más `Object? error` que permiten combinaciones imposibles.
+- El estado de una pantalla es un tipo cerrado: `AsyncValue<T>` de `ui` (`AsyncLoading`, `AsyncData`, `AsyncError`) o una jerarquía `sealed` propia.
 - Una carga la compone el controlador con `AsyncLoader<T>` de `ui`, que descarta la respuesta de una llamada vieja y no notifica después de `dispose`. Una acción del usuario pasa por `ActionRunner`, que devuelve un `ActionResult` (`ActionSucceeded`, `ActionFailed` o `ActionSkipped`).
 - Solo la lógica que no cabe en un `AsyncLoader` (búsqueda con filtros y paginación, como `TasksListController.reload`) lleva un `_requestId` propio.
 - El controlador expone estado inmutable. Cambia el estado asignando un valor nuevo y llamando a `notifyListeners`, nunca mutando una lista que ya se entregó.
@@ -59,11 +61,35 @@ Detalle en [references/dart3.md](references/dart3.md). Resumen:
 
 - Nombres que dicen qué es y siguen el rol: `TasksListController`, `ApiTasksRepository`, `TasksListScreen`, `taskStatusLabel`. Sin prefijos de tecnología ni nombres que choquen con tipos de Flutter (`Page`, `Route`, `State`, `Theme` a secas).
 - Booleanos con forma de pregunta (`isLoading`, `hasMore`, `canRetry`). Sin parámetros booleanos posicionales que cambian el comportamiento: dos métodos o un enum.
-- Métodos cortos. Un `build` que supera unas 60 líneas se parte en widgets (clases `StatelessWidget`), no en métodos `_buildX` que reconstruyen todo en cada cambio.
+- Un `build` que supera unas 60 líneas se parte en widgets (clases `StatelessWidget`), no en métodos `_buildX` que reconstruyen todo en cada cambio.
 - Enums generados para permisos, errores, planes y flags. Nunca literales de texto sueltos.
 - Los textos de la interfaz salen de los ARB (ver `front-i18n`); nunca se muestra el texto que manda el servidor.
-- Comentarios solo para el porqué, sin referencias al proceso. Los `///` de API pública siguen `front-analisis`.
+- El código se explica solo: sin comentarios en línea (`//`). Si un bloque necesita uno, se renombra o se extrae a un método o widget con nombre. La documentación es el `///` de cada método y miembro público (ver "Documentación con `///`").
 
-## Antes de integrar el trabajo de un agente
+## Documentación con `///`
 
-Revisa que el diff cumpla esta skill, `front-estructura` y `front-pruebas`, y la que aplique al cambio (accesibilidad, layout, i18n, navegación, rendimiento, seguridad). Si no cumple, se corrige antes del commit.
+- Todo método, propiedad y clase pública de los paquetes compartidos y de cada microfrontend lleva `///`, completo y conciso. Lo privado no lleva `///`: su nombre basta.
+- No hay comentarios en línea (`//`). El código se explica con nombres, tipos y métodos o widgets extraídos. Excepciones: directivas del analizador (`// ignore: <regla>` con el motivo en la misma línea) y el código generado.
+- Primera línea: una oración que resume y termina en punto, separada del resto por una línea `///` vacía.
+- Propiedades con frase nominal (`/// Tasks of the current filter.`); booleanos con "Whether" (`/// Whether another page can be appended.`); métodos con verbo en tercera persona (`/// Loads the first page.`). Los comentarios de la API van en inglés, como en el resto del código; los textos de usuario, en el ARB.
+- Completo quiere decir que cubre cada parámetro, lo que devuelve y lo que lanza, tejidos en la prosa como pide Effective Dart. Sin etiquetas `@param`, `@return` ni `@throws`. Conciso quiere decir una frase por idea y nada que repita el nombre.
+- Los símbolos van entre corchetes (`[TasksRepository]`); las palabras clave y literales entre comillas invertidas (`null`, `true`). Sin paréntesis en los enlaces.
+- Un override que no cambia el contrato no repite la documentación. Con getter y setter, solo el getter se documenta.
+- Los bloques de código llevan el lenguaje (` ```dart `).
+- La documentación explica el contrato (efectos, condiciones, errores), nunca la implementación, el proceso ni la historia del cambio.
+
+```dart
+/// Appends the next page.
+///
+/// A failure leaves the list as it was and is rethrown for the screen to
+/// report. Does nothing when [hasMore] is false or a page is already loading.
+Future<void> loadMore() async { ... }
+```
+
+## Reglas de revisión
+
+`interrogate` y quien revisa un diff del front, propio o de un agente, usan como reglas esta skill, `front-estructura`, `front-pruebas` y la que aplique al cambio (accesibilidad, layout, i18n, navegación, rendimiento, seguridad). Un hallazgo se demuestra con una corrida o con la línea del diff que la rompe, y se corrige antes del commit.
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-model-the-domain`, `principle-type-system-discipline`, `principle-laziness-protocol`, `principle-minimize-reader-load`, `architect`, `interrogate`, `blast-radius`.

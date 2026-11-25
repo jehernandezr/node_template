@@ -1,8 +1,10 @@
 ---
 name: front-estructura
-description: Cómo se organizan carpetas, dependencias y nombres del front de node_template. Un solo pub workspace, apps, paquetes compartidos y microfrontends, capas de lib/src, API pública por paquete y reglas de dependencia. Úsala al crear o mover paquetes, microfrontends, pantallas, archivos o pruebas del front.
+description: 'Carpetas, paquetes, microfrontends, capas de lib/src y reglas de dependencia del front. Úsala al crear o mover paquetes, archivos o pruebas.'
 paths:
-  - 'front/**'
+  - 'front/**/pubspec.yaml'
+  - 'front/**/lib/*.dart'
+  - 'front/tools/**'
 ---
 
 # Estructura del front
@@ -33,18 +35,7 @@ front/
 
 Un microfrontend organiza `lib/src` por capa. La dependencia va en un solo sentido: `screens` conoce a `data` y a `shared`, `data` conoce a `shared`, `shared` no conoce a nadie.
 
-```
-lib/src/
-├── screens/     pantallas (widgets), controladores y flujos de esas pantallas
-├── data/        puerto del repositorio, adaptador de API y adaptador de demostración
-├── lifecycle/   ciclo de vida del microfrontend
-├── l10n/        ARB y localizaciones generadas
-└── shared/
-    ├── enums/       sin imports internos
-    ├── constants/   importa enums
-    ├── types/       importa enums y constants
-    └── utils/       importa las tres
-```
+Ejemplo en `references/ejemplos.md`, sección "Capas dentro de un microfrontend".
 
 - `screens/` agrupa por pantalla, no por tipo de widget: `tasks_list_screen.dart` y `tasks_list_controller.dart` conviven. Un widget que solo usa una pantalla es privado de su archivo o hermano suyo.
 - Lo que dos microfrontends necesitan no se copia ni se importa del otro: sube a `front/packages` (`ui` para widgets, `utils` para funciones puras, `tokens` para diseño).
@@ -68,3 +59,7 @@ lib/src/
 - La clase lleva el mismo rol que el archivo: `TasksListController`, `ApiTasksRepository`, `FakeTasksRepository`, `TasksListScreen`.
 - Constantes agrupadas en clases `abstract final class` (`TasksPaths`, `AppSpacing`), no como una nube de constantes sueltas.
 - Prefijo `Fake` para el adaptador en memoria, `Api` para el que habla con el servidor. Sin sufijos `Impl`.
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `how`, `why`, `principle-encode-lessons-in-structure`, `principle-migrate-callers-then-delete-legacy-apis`.

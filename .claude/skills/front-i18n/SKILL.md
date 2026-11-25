@@ -1,6 +1,6 @@
 ---
 name: front-i18n
-description: Internacionalización del front de node_template (Flutter). ARB por microfrontend y los compartidos de i18n, flutter gen-l10n, DeferredLocalizations y showLocalizedDialog para los diálogos, plurales, ErrorPresenter para los errores, placeholders y direccionalidad. Úsala al agregar o cambiar un texto visible, un idioma, una etiqueta de menú o un mensaje de error.
+description: 'Internacionalización del front: ARB, gen-l10n, plurales y textos de error. Úsala al agregar o cambiar un texto visible.'
 paths:
   - 'front/**/*.arb'
   - 'front/**/l10n/**'
@@ -59,3 +59,7 @@ Si no hay un `DeferredLocalizations` arriba, el helper lanza un `FlutterError` q
 ## Probar
 
 Las pruebas buscan texto por la localización o por el literal en español, con `TestApp` de `test_utils` (`TestApp(delegates: const [TasksLocalizations.delegate])`), que instala los delegados compartidos y los del microfrontend. Una prueba de cada idioma soportado comprueba que cada clave se resuelve (`supportedLocales` de `i18n`).
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `unslop`, `technical-writing`.

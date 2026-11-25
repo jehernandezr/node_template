@@ -1,6 +1,6 @@
 ---
 name: front-pruebas
-description: Cómo se escriben y ubican las pruebas del front de node_template (Flutter). Carpeta test/ que replica lib/src, controladores probados sin widgets, dobles como clases, pruebas de widgets con TestApp y pumpAtWidths, accesibilidad con expectAccessible, golden tests, sin esperas fijas y carga de librerías diferidas con DeferredLibrariesPreloader. Úsala al escribir o revisar pruebas del front.
+description: 'Pruebas del front: test/ que replica lib/src, controladores sin widgets, dobles como clases, TestApp y accesibilidad. Úsala al escribir o revisar pruebas del front.'
 paths:
   - 'front/**/test/**'
   - 'front/packages/test_utils/**'
@@ -17,14 +17,12 @@ paths:
 
 ## Qué probar y dónde
 
-| Pieza                           | Prueba                                                                            |
-| ------------------------------- | --------------------------------------------------------------------------------- |
-| Controlador, flujo, repositorio | `test()` sin widgets, con dobles. Aquí vive la lógica.                            |
-| Widget o pantalla               | `testWidgets`: lo que se ve y los eventos que salen.                              |
-| Estados de la pantalla          | Cargando, datos, vacío y error. Los cuatro.                                       |
-| Layout                          | Un ancho compacto y uno expandido con `pumpAtWidths`.                             |
-| Accesibilidad                   | `expectAccessible` y escala 2x con `pumpAtTextScale` (ver `front-accesibilidad`). |
-| Componentes de `ui`             | Opcional: golden tag `golden`.                                                    |
+- Controlador, flujo, repositorio: `test()` sin widgets, con dobles. Aquí vive la lógica.
+- Widget o pantalla: `testWidgets`: lo que se ve y los eventos que salen.
+- Estados de la pantalla: Cargando, datos, vacío y error. Los cuatro.
+- Layout: Un ancho compacto y uno expandido con `pumpAtWidths`.
+- Accesibilidad: `expectAccessible` y escala 2x con `pumpAtTextScale` (ver `front-accesibilidad`).
+- Componentes de `ui`: Opcional: golden tag `golden`.
 
 Cada regla de negocio nueva trae su prueba de controlador. Cada bug corregido trae la prueba que lo habría atrapado.
 
@@ -37,7 +35,6 @@ Cada regla de negocio nueva trae su prueba de controlador. Cada bug corregido tr
 - Una falla de prueba es `FakeFailure` de `test_utils` (`const FakeFailure()`), que es una `Exception`. Nunca un `StateError` ni un `Error`: `AsyncValue.guard` y `ActionRunner` dejan pasar un `Error` y la prueba no vería el estado de error.
 - Un doble de demostración se crea con `DemoBehavior()` sin retardo. Los fallos se programan con `failNext`.
 - Estado mutable en `setUp` con `late`, sin variables de nivel superior que se compartan entre pruebas. Lo que hay que liberar se registra con `addTearDown`.
-- Se prueba el comportamiento público; nunca un método privado directamente.
 - Los tiempos salen de un `FakeClock` de `test_utils` (`clock: fake.now`) o de constantes del código bajo prueba (`TasksListController.searchDebounce`), no de números mágicos.
 - Las suites que montan rutas con bibliotecas diferidas llaman a `const DeferredLibrariesPreloader().load(manifests)` en `setUpAll`. Su `///` explica por qué va ahí y no dentro de `testWidgets`.
 - No se filtran errores de layout (como el overflow) para que una prueba pase: se corrige el widget.
@@ -57,3 +54,7 @@ Plantillas completas en [references/pruebas-de-widgets.md](references/pruebas-de
 - `analyze`, `test` y `format-check` de cada proyecto del front.
 - `check_microfrontend_boundaries` para las fronteras de import y `check_deferred_chunks` sobre el build web para la carga diferida.
 - `contracts_gen --check` cuando cambian los contratos.
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-test-behavior-not-implementation`, `tdd`. Los transportes falsos de `test_utils` aplican las reglas del backend (cabeceras, cookies, errores), para que una prueba verde signifique algo.

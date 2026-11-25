@@ -67,7 +67,7 @@ Nunca edites archivos fuera de ${t.path}. Los hooks del repositorio no se activa
 Tu paquete: ${t.package} del plan ${t.path}/${t.plan}. Léelo completo junto con las decisiones de diseño que cita (y las secciones de reglas y oleadas del plan). Respeta sus carpetas exclusivas: no toques nada fuera de ellas salvo lo que el paquete declare.
 ${t.notes ?? ''}
 
-Reglas que mandan (léelas en ${t.path}/.claude/skills y ${t.path}/CLAUDE.md): las skills ${t.area === 'front' ? 'front-*' : t.area === 'full' ? 'backend-* y front-*' : 'backend-*'}. Innegociable: clases, composición e inyección por constructor (nada de funciones sueltas exportadas, salvo utilidades puras y las excepciones que el plan declara); pruebas en __tests__/ (backend) o en test/ (front) con utilitarios en __tests__/utils, test/utils o el paquete test_utils, nunca carpetas testing/support; código directo en src/ sin src/lib/; enums en vez de literales; comentarios solo del porqué, sin mencionar WP, olas, tropas, auditorías ni el plan. Español sin guiones largos en docs.
+Reglas que mandan (léelas en ${t.path}/.claude/skills y ${t.path}/CLAUDE.md): las skills ${t.area === 'front' ? 'front-*' : t.area === 'full' ? 'backend-* y front-*' : 'backend-*'}. Innegociable: clases, composición e inyección por constructor (nada de funciones sueltas exportadas, salvo utilidades puras y las excepciones que el plan declara); pruebas en __tests__/ (backend) o en test/ (front) con utilitarios en __tests__/utils, test/utils o el paquete test_utils, nunca carpetas testing/support; código directo en src/ sin src/lib/; enums en vez de literales; el código se explica solo, sin comentarios en línea; cada método público lleva su JSDoc (o /// en Dart) completo y conciso, sin mencionar WP, olas, tropas, auditorías ni el plan. Español sin guiones largos en docs.
 
 Verificación (todo en verde antes de terminar):
 ${VERIFY[t.area]}
@@ -158,10 +158,12 @@ let report = await agent(
   `Eres el CONSTRUCTOR (Opus) del ciclo "${t.title}". Trabajas solo: planeas, implementas, pruebas y verificas todo tú, sin delegar en otros agentes.
 ${COMMON(t)}${corrections}
 
-Cómo trabajas:
-1. Lee el paquete y las decisiones que cita, las skills y el código actual. Si la copia ya tiene trabajo de una corrida anterior (git status), parte de ahí.
-2. Ordena el trabajo por fases del ciclo: cada parte queda compilando y con pruebas antes de pasar a la siguiente. Primero puertos e interfaces, luego implementaciones con pruebas, al final el cableado.
-3. Corre la verificación completa hasta verde y cierra con un último commit y push: no dejes nada sin commit.
+Cómo trabajas (método de pstack, reglas del repositorio; lee primero la skill pstack-en-node-template y su sección "Cómo se trabaja"):
+1. Lee el paquete y las decisiones que cita, las skills y el código actual. Si la rama ya tiene trabajo de una corrida anterior (git log main..HEAD y git status), parte de ahí.
+2. Elige el playbook de poteto-mode que corresponde al paquete (feature, bug-fix, refactoring o perf-issue) y sigue sus pasos. Para el diseño no trivial usa architect antes de codificar.
+3. Construye en unidades verificables (principle-sequence-verifiable-units): primero puertos e interfaces, luego implementaciones con pruebas, al final el cableado. Cada unidad termina compilando, con sus pruebas en verde y con su commit y push. Cada bug o hallazgo empieza con la prueba que lo reproduce (tdd).
+4. Antes de entregar pasa no-comments sobre tu diff y unslop sobre los ADR y la documentación que tocaste.
+5. Cumple principle-prove-it-works: corre la verificación completa hasta verde y cierra con un último commit y push. No dejes nada sin commit.
 Devuelve el reporte con el schema.`,
   {
     model: 'opus',
@@ -181,11 +183,12 @@ ${COMMON(t)}${corrections}
 Reporte del constructor:
 ${JSON.stringify(report, null, 2)}
 
-Qué haces:
+Qué haces (sigues la skill interrogate de pstack; lee primero pstack-en-node-template y su sección "interrogate en este repositorio"):
 1. Lee el diff completo de la rama contra main (git -C ${t.path} log --oneline main..HEAD, git -C ${t.path} diff main...HEAD y status por si quedó algo sin commit) contra el paquete del plan, las decisiones que cita y las skills.
-2. Busca: lo que el paquete pide y no está; errores de lógica y de concurrencia; pruebas débiles o que no prueban lo que dicen; violaciones de las reglas (funciones sueltas, puertos que no son clases abstractas, literales donde van enums, imports de infraestructura en domain, NestJS fuera de src/nest); alternativas de la tabla 2.1 del diseño de F5 a F11 que faltan; secretos o literales con forma de credencial en fixtures; comentarios que narran el proceso.
-3. Corre tú la verificación completa para confirmar que está en verde.
-No edites archivos. approved es true solo si no queda ningún hallazgo bloqueante. Devuelve la revisión con el schema.`,
+2. Busca: lo que el paquete pide y no está; errores de lógica y de concurrencia; pruebas débiles o que no prueban lo que dicen; violaciones de las reglas (funciones sueltas, puertos que no son clases abstractas, literales donde van enums, imports de infraestructura en domain, NestJS fuera de src/nest); alternativas de la tabla 2.1 del diseño de F5 a F11 que faltan; secretos o literales con forma de credencial en fixtures; comentarios en línea, métodos públicos sin JSDoc completo y conciso, o JSDoc que narra el proceso.
+3. Abre el panel de adversarios de interrogate con los modelos de la línea interrogate reviewers de ~/.claude/rules/pstack-models.md, cada uno en su propia copia (isolation worktree), con las reglas del punto 2 y las de "Reglas de revisión" de las skills del área. Sus corridas son puntuales (un archivo de prueba o un script, nunca una suite completa). Vuelve a correr tú cada hallazgo y conserva solo los que la corrida demuestra; los demás van a dropped en el summary. Pasa también no-comments en modo de solo lectura y, si el cambio toca plataforma, contratos, autenticación o datos, blast-radius.
+4. Corre tú la verificación completa para confirmar que está en verde.
+No edites archivos de la copia del ciclo. approved es true solo si no queda ningún hallazgo bloqueante. Devuelve la revisión con el schema.`,
     {
       model: 'opus',
       phase: 'Revisar',
@@ -193,6 +196,15 @@ No edites archivos. approved es true solo si no queda ningún hallazgo bloqueant
       schema: REVIEW_SCHEMA,
     },
   );
+  if (!review) {
+    return {
+      cycle: t.key,
+      path: t.path,
+      report,
+      reviews,
+      error: `el revisor ${round} no devolvió resultado`,
+    };
+  }
   reviews.push(review);
   if (review.approved || round === maxRounds) break;
 
@@ -204,7 +216,7 @@ ${COMMON(t)}${corrections}
 Hallazgos:
 ${JSON.stringify(review.findings, null, 2)}
 
-Corrige todos los bloqueantes e importantes, y los menores que tengan sentido. Si no estás de acuerdo con un hallazgo, explícalo en deviations. Corre la verificación completa hasta verde y cierra con commit y push: no dejes nada sin commit. Devuelve el reporte con el schema.`,
+Corrige todos los bloqueantes e importantes, y los menores que tengan sentido. Cada uno empieza con la prueba que lo reproduce (tdd) y se arregla en su raíz (principle-fix-root-causes). Si no estás de acuerdo con un hallazgo, explícalo en deviations. Corre la verificación completa hasta verde y cierra con commit y push: no dejes nada sin commit. Devuelve el reporte con el schema.`,
     {
       model: 'opus',
       phase: 'Corregir',

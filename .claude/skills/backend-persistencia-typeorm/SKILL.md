@@ -1,6 +1,6 @@
 ---
 name: backend-persistencia-typeorm
-description: Cómo se persiste en node_template con TypeORM sobre PostgreSQL con shards. Entidades, mappers, repositorios que implementan puertos del dominio, transacciones y locking optimista, consultas sin N+1, índices, migraciones generadas y aplicadas con la CLI de TypeORM (incluidas las seguras sin downtime) y sharding por DataSource. Úsala al crear tablas, entidades, repositorios, consultas o migraciones.
+description: 'Persistencia con TypeORM sobre PostgreSQL con shards: entidades, mappers, repositorios, transacciones y migraciones. Úsala al tocar tablas o consultas.'
 paths:
   - 'backend/**/infrastructure/persistence/**'
   - 'backend/**/migrations/**'
@@ -32,20 +32,7 @@ El ORM es TypeORM sobre PostgreSQL. Se usan sus capacidades (entidades, `DataSou
 - Los errores de la base se traducen a errores de dominio dentro del repositorio (`23505` a la regla de unicidad). Los que no tienen significado de negocio los traduce `PersistenceErrorTranslator` a `PersistenceError`, clasificados por `PostgresFailureClassifier`. Ver `backend-errores`.
 - Las lecturas de consulta devuelven DTO de lectura con `select` de las columnas necesarias, no entidades.
 
-```ts
-@Injectable()
-export class TypeOrmUserRepository
-  extends ShardedRepository<User, UserEntity>
-  implements UserRepository
-{
-  async findByEmail(email: Email): Promise<User | null> {
-    const row = await this.manager().findOne(UserEntity, {
-      where: { email: email.value },
-    });
-    return row ? this.mapper.toDomain(row) : null;
-  }
-}
-```
+Ejemplo en `references/ejemplos.md`, sección "Repositorios y mappers".
 
 ## Transacciones y concurrencia
 
@@ -91,3 +78,7 @@ export class TypeOrmUserRepository
 La persistencia es TypeORM con `@platform/persistence` ([ADR 0024](../../../docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)), que reemplaza la capa propia sobre `pg` del ADR 0009. El ruteo al shard, la transacción de un solo shard (`ShardScope`, error `CROSS_SHARD_TX`), la lectura de réplica y las migraciones por shard y catálogo las pone la plataforma; el servicio escribe entidades, mappers, repositorios que extienden `ShardedRepository` y migraciones. Las tablas de la plataforma (outbox, mensajes procesados, idempotencia, directorio de shards y bitácora de sagas) viven en `@platform/adapters-postgres`.
 
 Las pruebas de integración de repositorios usan Testcontainers con `ContainerRuntime` y `INTEGRATION_TESTS=require` en CI (ver `backend-pruebas`).
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-separate-before-serializing-shared-state`, `principle-make-operations-idempotent`, `blast-radius`, `principle-migrate-callers-then-delete-legacy-apis`.

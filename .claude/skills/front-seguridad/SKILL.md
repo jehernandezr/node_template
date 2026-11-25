@@ -1,6 +1,6 @@
 ---
 name: front-seguridad
-description: Seguridad del código del front de node_template (Flutter, web y móvil). Secretos, almacenamiento de tokens, HTTPS, validación de entrada, logs, aleatoriedad y dependencias. Úsala al tocar sesión, tokens, ApiClient, almacenamiento local, configuración por entorno, deep links o al agregar una dependencia.
+description: 'Seguridad del front: secretos, tokens, HTTPS, validación, logs y enlaces profundos. Úsala al tocar sesión, ApiClient o almacenamiento.'
 paths:
   - 'front/packages/auth/**'
   - 'front/packages/api/**'
@@ -38,3 +38,7 @@ Uri taskUri(String id, {TaskStatus? status}) => Uri(
 ## Informe de una revisión
 
 Cada hallazgo es Critical (secreto en el binario, validación TLS apagada, token en almacenamiento en claro, datos sensibles en logs), Warning (sin validación de entrada, `Random()` en un identificador, backup habilitado) o Note (dependencia desactualizada, ofuscación ausente). Cada uno trae archivo, regla y el código corregido.
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `interrogate`, `blast-radius`, `principle-boundary-discipline`.

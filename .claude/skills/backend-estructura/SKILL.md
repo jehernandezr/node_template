@@ -1,8 +1,13 @@
 ---
 name: backend-estructura
-description: Cómo se organizan carpetas, capas, dependencias y compilado del backend de node_template. Un solo node_modules con pnpm, librerías por alias de TypeScript, límites entre proyectos con tags de Nx, código directo en src/, pruebas en __tests__ y compilado de cada app en backend/dist. Úsala al crear o mover librerías, apps, módulos, carpetas o pruebas del backend.
+description: 'Carpetas, capas, proyectos de Nx, alias y ubicación de pruebas del backend. Úsala al crear o mover librerías, apps, módulos, carpetas o pruebas.'
 paths:
-  - 'backend/**'
+  - 'backend/**/project.json'
+  - 'backend/**/tsconfig*.json'
+  - 'backend/**/jest.config.cjs'
+  - 'backend/**/src/index.ts'
+  - 'backend/eslint.config.mjs'
+  - 'backend/package.json'
 ---
 
 # Estructura del backend
@@ -23,17 +28,7 @@ paths:
 
 ## Capas dentro de un servicio
 
-```
-backend/libs/services/users/src/
-├── index.ts                      # API pública: fachada, enums, tokens
-├── shared/{enums,constants,types,utils}/
-└── modules/
-    └── sign-in/
-        ├── domain/               # agregados, objetos de valor, eventos, errores, puertos
-        ├── application/          # casos de uso, comandos, consultas, fachada
-        ├── infrastructure/       # repositorios TypeORM, entidades, mappers, clientes
-        └── presentation/         # controllers, consumidores, esquemas zod, *.module.ts
-```
+Ejemplo en `references/ejemplos.md`, sección "Capas dentro de un servicio".
 
 - Se agrupa por módulo de negocio, no por tipo técnico. Dentro del módulo, por capa.
 - Un módulo expone al resto solo lo que exporta su `index.ts`. Lo demás es privado.
@@ -44,22 +39,7 @@ backend/libs/services/users/src/
 - El código va directo en `src/`. No existe `src/lib/`.
 - Lo compartido dentro de un servicio vive en `shared/{enums,constants,types,utils}`.
 
-```
-backend/libs/platform/kernel/
-├── project.json
-├── tsconfig.json
-├── jest.config.cjs
-└── src/
-    ├── index.ts
-    ├── ids/
-    │   ├── uuid-v7-id-generator.ts
-    │   └── __tests__/
-    │       └── uuid-v7-id-generator.spec.ts
-    └── errors/
-        ├── domain-error.ts
-        └── __tests__/
-            └── domain-error.spec.ts
-```
+Ejemplo en `references/ejemplos.md`, sección "Carpetas de código".
 
 ## NestJS solo en `src/nest/`
 
@@ -109,3 +89,7 @@ backend/libs/platform/kernel/
 - [ ] Target typecheck y test
 - [ ] pnpm nx lint <proyecto> pasa sin romper límites
 ```
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `how`, `why`, `principle-encode-lessons-in-structure`, `correct`, `principle-migrate-callers-then-delete-legacy-apis`, `principle-subtract-before-you-add`.

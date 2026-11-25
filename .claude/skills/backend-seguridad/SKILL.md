@@ -1,11 +1,12 @@
 ---
 name: backend-seguridad
-description: Reglas de seguridad del backend de node_template. Validación de entrada con zod, autenticación JWT y sesiones, autorización por permisos con enums y por tenant, aislamiento entre tenants, secretos, hash de contraseñas, límites de tasa y tamaño, cabeceras, inyección SQL, datos sensibles en logs y dependencias. Úsala al exponer un endpoint, un consumidor, una consulta, o al manejar credenciales, tokens o datos personales.
+description: 'Seguridad del backend: zod en el borde, JWT y sesiones, permisos y tenants, secretos, límites, SQL y datos personales. Úsala al exponer un endpoint o manejar credenciales.'
 paths:
-  - 'backend/apps/**'
+  - 'backend/**/presentation/**'
   - 'backend/libs/platform/auth/**'
   - 'backend/libs/platform/http/**'
-  - 'backend/libs/contracts/**'
+  - 'backend/libs/contracts/**/http/**'
+  - 'backend/apps/identity/**'
 ---
 
 # Seguridad
@@ -14,7 +15,7 @@ Contexto: ADR 0005 (autenticación), 0006 (MFA), 0010 (sharding por tenant), 001
 
 ## Entrada
 
-- Todo dato que cruza una frontera (HTTP, mensaje, job, variable de entorno) se valida con el esquema zod del contrato antes de usarse. Es `unknown` hasta entonces.
+- Todo dato que cruza una frontera (HTTP, mensaje, job, variable de entorno) se valida con el esquema zod del contrato antes de usarse.
 - Esquemas estrictos: `z.strictObject` para rechazar campos desconocidos, longitudes máximas en cadenas, límites en números y arreglos, `uuid` para ids.
 - Lista blanca en la entrada y en la salida. Un endpoint nunca devuelve una entidad completa: arma el DTO campo por campo, así un campo nuevo no se filtra por accidente.
 - Tamaño máximo de cuerpo y de carga por ruta. Subidas de archivos con tipo MIME y tamaño validados y almacenadas fuera del servidor de aplicación.
@@ -75,3 +76,7 @@ Contexto: ADR 0005 (autenticación), 0006 (MFA), 0010 (sharding por tenant), 001
 - [ ] Límite de tasa en rutas de credenciales o costosas
 - [ ] Evento de auditoría en acciones sensibles
 ```
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `interrogate`, `blast-radius`, `principle-boundary-discipline`, `principle-type-system-discipline`.

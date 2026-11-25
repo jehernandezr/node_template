@@ -1,6 +1,6 @@
 ---
 name: backend-pruebas
-description: Cómo se escriben y ubican las pruebas del backend de node_template, por capas. Unitarias del dominio, de casos de uso con dobles como clases, de integración con Testcontainers (PostgreSQL, Valkey, LocalStack), de contrato zod, de componente y e2e con NestJS Testing. Carpetas __tests__, nombres, datos de prueba, sin esperas fijas y cobertura mínima. Úsala al escribir o revisar pruebas del backend.
+description: 'Pruebas del backend por capas: ubicación, dobles como clases, Testcontainers, contrato y e2e. Úsala al escribir o revisar pruebas del backend.'
 paths:
   - 'backend/**/__tests__/**'
   - 'backend/**/e2e/**'
@@ -8,7 +8,7 @@ paths:
 
 # Pruebas del backend
 
-Se prueba comportamiento observable por capas, con el costo mínimo que da confianza. El patrón es un panal: mucho en componentes e integración, poco en unitarias de lógica real y muy poco e2e.
+Se prueba por capas, con el costo mínimo que da confianza. El patrón es un panal: mucho en componentes e integración, poco en unitarias de lógica real y muy poco e2e.
 
 ## Ubicación
 
@@ -31,14 +31,12 @@ Las reglas de `backend-codigo-enterprise` aplican a las pruebas y a sus utilitar
 
 ## Qué probar en cada capa
 
-| Capa            | Qué prueba                                                                              | Con qué                                  | Dobles                          |
-| --------------- | --------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------- |
-| Dominio         | Invariantes, transiciones, eventos emitidos                                             | Jest puro                                | Ninguno                         |
-| Aplicación      | Un caso de uso: orquestación, errores, eventos al outbox                                | Jest                                     | Fakes en memoria de los puertos |
-| Infraestructura | Repositorio, mapper, consumidor contra sistema real                                     | Testcontainers                           | Ninguno para la base            |
-| Contrato        | El esquema zod acepta lo válido y rechaza lo inválido; productor y consumidor coinciden | Jest                                     | Ninguno                         |
-| Componente      | Un módulo NestJS completo por HTTP                                                      | `@nestjs/testing` y supertest, base real | Solo servicios externos         |
-| E2E             | Pocos flujos críticos con la app empaquetada                                            | docker-compose                           | Ninguno                         |
+- Dominio: qué prueba: Invariantes, transiciones, eventos emitidos; con qué: Jest puro
+- Aplicación: qué prueba: Un caso de uso: orquestación, errores, eventos al outbox; con qué: Jest; dobles: Fakes en memoria de los puertos
+- Infraestructura: qué prueba: Repositorio, mapper, consumidor contra sistema real; con qué: Testcontainers; dobles: Ninguno para la base
+- Contrato: qué prueba: El esquema zod acepta lo válido y rechaza lo inválido; productor y consumidor coinciden; con qué: Jest
+- Componente: qué prueba: Un módulo NestJS completo por HTTP; con qué: `@nestjs/testing` y supertest, base real; dobles: Solo servicios externos
+- E2E: qué prueba: Pocos flujos críticos con la app empaquetada; con qué: docker-compose
 
 Detalle y recetas en `references/capas-y-testcontainers.md`.
 
@@ -46,7 +44,6 @@ Detalle y recetas en `references/capas-y-testcontainers.md`.
 
 - Una prueba verifica un comportamiento. El nombre dice unidad, escenario y resultado: `rejects a password shorter than 12 characters`. Dos niveles de `describe`: la unidad y el escenario.
 - Arrange, act, assert separados por una línea en blanco. Un `act` y pocas aserciones.
-- Se prueba la interfaz pública. Nunca métodos privados ni detalles internos: un refactor correcto no rompe pruebas.
 - Sin lógica en la prueba: ni bucles ni condicionales. Si se repite una verificación, es un matcher o un helper con nombre.
 - Los errores se verifican por `code`: `await expect(promise).rejects.toMatchObject({ code: ... })`. Nada de `try/catch`.
 - Valores generados (ids, fechas) se verifican por forma, no por valor exacto (`expect.any(String)`), o se fijan con `FixedClock` e `SequentialIdGenerator`.
@@ -55,24 +52,7 @@ Detalle y recetas en `references/capas-y-testcontainers.md`.
 - Snapshots solo pequeños y en línea. Nunca de un objeto grande.
 - Una prueba no depende del orden ni del estado de otra, y cada una crea sus datos. Sin semillas globales.
 
-```ts
-describe('SignInUseCase', () => {
-  describe('when the password is wrong five times', () => {
-    it('locks the account and emits user.locked', async () => {
-      const harness = SignInHarness.withUser(
-        aUser({ email: 'ana@example.com' }),
-      );
-
-      for (let attempt = 0; attempt < 5; attempt++) {
-        await harness.signInWith('wrong-password').catch(() => undefined);
-      }
-
-      expect(harness.users.get('ana@example.com').isLocked()).toBe(true);
-      expect(harness.outbox.types()).toContain(UserEventType.Locked);
-    });
-  });
-});
-```
+Ejemplo en `references/ejemplos.md`, sección "Cómo se escriben".
 
 - Las tablas de casos van con `it.each`, no con bucles ni `if`.
 - Cada archivo de prueba corresponde a una clase. Si prueba varias, se parte.
@@ -80,26 +60,23 @@ describe('SignInUseCase', () => {
 ## Dobles
 
 - Son clases que implementan el puerto: `InMemoryUserRepository`, `FixedClock`, `FakeRateLimiter`, `InMemoryBus`. Se prefiere un fake con comportamiento a un mock.
-- Se verifica el resultado externo, no el número ni el orden de las llamadas internas. Si la cantidad es un requisito (la deduplicación de cargas de `PlacementLoader`), se usa un fake con comportamiento y un contador público, no `jest.fn` con `toHaveBeenCalledTimes`.
+- Si la cantidad de llamadas es un requisito (la deduplicación de cargas de `PlacementLoader`), se usa un fake con comportamiento y un contador público, no `jest.fn` con `toHaveBeenCalledTimes`.
 - Un fake en memoria debe cumplir la misma prueba de contrato que el adaptador real (`runUserRepositoryContract(factory)`), para que no diverjan.
 - Servicios externos HTTP: interceptor (`nock`, MSW) con respuestas lentas, 503 y timeouts.
-- No se mockea lo que no es tuyo cuando se puede levantar real (PostgreSQL, Valkey, LocalStack).
 - La aleatoriedad, los ids y el tiempo se controlan con dobles de `RandomSource`, `IdGenerator` (`SequentialIdGenerator`) y `Clock` (`FixedClock`). Nada de `Math.random` ni `Date.now` en el código bajo prueba.
 
 ## Dobles que se quedan en producción
 
 Son un modo de ejecución y no un doble, así que siguen en el índice público: `InMemoryCache` (único modo sin Valkey), `InMemoryRateLimiter` (lo usa `DegradingRateLimiter`), `NoopMetrics`, `InProcessJobLock`, `NullRoutingCache` e `InProcessDirectoryChannel`. Los demás dobles van a `test-utils`:
 
-| Doble                                                                 | Sale por                             | Contrato                                                     |
-| --------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------ |
-| `InMemoryIdempotencyStore`                                            | `@platform/kernel/test-utils`        | `runIdempotencyStoreContract`                                |
-| `InMemoryBus`, `InMemoryOutboxStore`, `InMemoryProcessedMessageStore` | `@platform/messaging/test-utils`     | `runOutboxStoreContract`, `runProcessedMessageStoreContract` |
-| `InMemoryProcessedOperationStore`                                     | `@platform/internal-api/test-utils`  | `runIdempotencyStoreContract`                                |
-| `InMemorySagaStore`                                                   | `@platform/saga/test-utils`          | `runSagaStoreContract`                                       |
-| `InMemoryDirectoryStore`                                              | `@platform/sharding/test-utils`      | `runDirectoryStoreContract`                                  |
-| `InMemoryRoutingCache`                                                | `@platform/sharding/test-utils`      | `runRoutingCacheContract`                                    |
-| `InMemoryMetrics`                                                     | `@platform/observability/test-utils` | ninguno                                                      |
-| `FakeSqsClient`, `FakeSnsClient`                                      | `@platform/adapters-aws/test-utils`  | ninguno                                                      |
+- `InMemoryIdempotencyStore`: sale por: `@platform/kernel/test-utils`; contrato: `runIdempotencyStoreContract`
+- `InMemoryBus`, `InMemoryOutboxStore`, `InMemoryProcessedMessageStore`: sale por: `@platform/messaging/test-utils`; contrato: `runOutboxStoreContract`, `runProcessedMessageStoreContract`
+- `InMemoryProcessedOperationStore`: sale por: `@platform/internal-api/test-utils`; contrato: `runIdempotencyStoreContract`
+- `InMemorySagaStore`: sale por: `@platform/saga/test-utils`; contrato: `runSagaStoreContract`
+- `InMemoryDirectoryStore`: sale por: `@platform/sharding/test-utils`; contrato: `runDirectoryStoreContract`
+- `InMemoryRoutingCache`: sale por: `@platform/sharding/test-utils`; contrato: `runRoutingCacheContract`
+- `InMemoryMetrics`: sale por: `@platform/observability/test-utils`
+- `FakeSqsClient`, `FakeSnsClient`: sale por: `@platform/adapters-aws/test-utils`
 
 ## Tiempo y asincronía
 
@@ -111,20 +88,7 @@ Son un modo de ejecución y no un doble, así que siguen en el índice público:
 
 - Contra servicios reales con Testcontainers (PostgreSQL, Valkey, LocalStack). `ContainerRuntime` de `@platform/kernel/test-utils` decide si hay Docker según la variable `INTEGRATION_TESTS`: `skip` (por defecto fuera de CI, la suite se omite sin Docker) o `require` (CI, falla sin Docker). `describeIfAvailable(name, body)` envuelve cada suite de integración. No hay banderas por servicio. `pg-mem` no se usa: la capa TypeORM se prueba con Testcontainers.
 
-```ts
-export enum IntegrationMode {
-  Skip = 'skip',
-  Require = 'require',
-}
-
-const runtime = new ContainerRuntime(process.env);
-
-runtime.describeIfAvailable('TypeOrmOutboxStore', () => {
-  it('appends a message inside the transaction', async () => {
-    /* ... */
-  });
-});
-```
+Ejemplo en `references/ejemplos.md`, sección "Integración".
 
 En CI: `INTEGRATION_TESTS=require pnpm nx test <proyecto>`.
 
@@ -140,7 +104,7 @@ En una prueba de componente se piensa en cinco resultados: la respuesta, el esta
 ## Cobertura
 
 - 80 % de líneas, sentencias y funciones, y 75 % de ramas por proyecto. El umbral vive en `backend/jest.preset.js`.
-- La cobertura no se sube con pruebas que no verifican nada. Los `catch` y los caminos de error cuentan.
+- Los `catch` y los caminos de error cuentan.
 - Una prueba de mutación (Stryker) sobre `domain/` y `application/` es la medida de que las pruebas verifican de verdad.
 
 ## Pruebas obligatorias por tipo de cambio
@@ -155,3 +119,7 @@ En una prueba de componente se piensa en cinco resultados: la respuesta, el esta
 - [ ] Puerto nuevo: prueba de contrato run<Puerto>Contract contra el doble y contra el adaptador real
 - [ ] Job nuevo: una prueba que llama a run() directamente
 ```
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-test-behavior-not-implementation`, `typescript-best-practices`, `tdd`, `principle-prove-it-works`, `interrogate`.

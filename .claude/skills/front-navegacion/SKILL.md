@@ -1,6 +1,6 @@
 ---
 name: front-navegacion
-description: Navegación y enlaces profundos del front de node_template con go_router. Rutas declaradas por el manifiesto del microfrontend, go contra push, parámetros por ruta y query sin extra, guardias de acceso y retorno tras el login. Úsala al agregar una ruta, un enlace, un redirect o una llamada de navegación desde una pantalla.
+description: 'Navegación con go_router: rutas del manifiesto, parámetros, guardias y retorno tras el login. Úsala al agregar una ruta o navegar desde una pantalla.'
 paths:
   - 'front/packages/shell_core/**'
   - 'front/packages/shell_host/**'
@@ -30,17 +30,7 @@ paths:
 
 El controlador devuelve el resultado de la acción y la pantalla decide la navegación (ver `front-codigo`). Ejemplo ilustrativo:
 
-```dart
-Future<void> _save() async {
-  final result = await widget.controller.save();
-  if (!mounted) return;
-  if (result is ActionSucceeded<String>) {
-    context.go(TasksPaths.detail(result.value));
-    return;
-  }
-  showActionResult(context, result);
-}
-```
+Ejemplo en `references/ejemplos.md`, sección "Ejemplo".
 
 ## Pruebas
 
@@ -49,3 +39,7 @@ Las rutas de un microfrontend se prueban montando su manifiesto en un `GoRouter`
 ## Descartado de las guías públicas
 
 Rutas tipadas con `@TypedGoRoute` y `go_router_builder` exigen un generador de código. Las constantes de `*Paths` dan el mismo resultado sin dependencia nueva.
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-test-behavior-not-implementation`, `principle-model-the-domain`, `blast-radius`. Toda pantalla con parámetro de ruta tiene una prueba que navega de un id a otro y comprueba que la pantalla muestra el nuevo.

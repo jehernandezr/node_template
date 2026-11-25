@@ -1,8 +1,11 @@
 ---
 name: backend-nestjs-composicion
-description: Cómo se compone una app NestJS en node_template. Módulos como raíz de composición, tokens de inyección para puertos, casos de uso, comandos, controllers delgados, validación con zod, fachadas, ciclo de vida y apagado ordenado. Úsala al crear módulos, providers, casos de uso, controllers o consumidores, o al cablear un puerto con su adaptador.
+description: 'Composición NestJS: módulos como raíz de composición, tokens de puertos, casos de uso, controllers, fachadas y apagado. Úsala al cablear módulos y providers.'
 paths:
-  - 'backend/apps/**'
+  - 'backend/**/presentation/**'
+  - 'backend/**/*.module.ts'
+  - 'backend/**/main.ts'
+  - 'backend/libs/platform/*/src/nest/**'
   - 'backend/libs/platform/http/**'
   - 'backend/libs/platform/service/**'
 ---
@@ -30,34 +33,11 @@ export abstract class UserRepository {
 }
 ```
 
-```ts
-@Module({
-  providers: [
-    SignInUseCase,
-    { provide: UserRepository, useClass: TypeOrmUserRepository },
-    { provide: PasswordHasher, useClass: Argon2PasswordHasher },
-    { provide: Clock, useClass: SystemClock },
-    { provide: IdGenerator, useClass: UuidV7IdGenerator },
-  ],
-  exports: [UsersFacade],
-})
-export class UsersModule {}
-```
+Ejemplo en `references/ejemplos.md`, sección "Tokens para puertos".
 
 Un `Symbol` solo cuando conviven varias instancias del mismo tipo: `SNS_CLIENT`, `SQS_CLIENT` o un filtro Bloom por nombre con `bloomFilterToken(name)`. Ahí el constructor lleva `@Inject`:
 
-```ts
-export enum UserBloomFilter {
-  Emails = 'users.emails',
-}
-
-export class UsersEmailChecker {
-  constructor(
-    @Inject(bloomFilterToken(UserBloomFilter.Emails))
-    private readonly emails: AsyncBloomFilter,
-  ) {}
-}
-```
+Ejemplo en `references/ejemplos.md`, sección "Tokens para puertos".
 
 - Tokens de cadena sueltos están prohibidos. Los `Symbol` se exportan desde un solo archivo, junto al puerto.
 - `useFactory` con `inject` cuando el adaptador necesita configuración o un cliente asíncrono. El factory solo arma, no tiene lógica.
@@ -80,100 +60,11 @@ export interface CacheModuleOptions {
 // en CacheModule: { provide: CachePort, useExisting: options.store ?? InMemoryCache }
 ```
 
-| Módulo                   | Provee                                                                                                                                                                         | Hooks                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| `ConfigModule`           | `AppConfig`                                                                                                                                                                    | ninguno                                               |
-| `ObservabilityModule`    | `LoggerPort`, `MetricsPort`, `RequestContextStore`, `Tracing`, `Redactor`, `HealthRegistry`, `TELEMETRY`                                                                       | `OnApplicationShutdown` (flush de telemetría)         |
-| `ResilienceModule`       | `ResilienceRegistry`; `forFeature({ name, policy })` agrega una política                                                                                                       | ninguno                                               |
-| `CacheModule`            | `CachePort`, `SingleFlight`, `CacheAside` por espacio (`cacheAsideToken(namespace)`)                                                                                           | ninguno                                               |
-| `RateLimitModule`        | `RateLimiter`, `RateLimitGuard`                                                                                                                                                | ninguno                                               |
-| `BloomModule`            | `bloomFilterToken(name)` por `forFeature`, `BloomRebuildJob`                                                                                                                   | ninguno                                               |
-| `SchedulingModule`       | `JobRunner`, `JobLock`                                                                                                                                                         | `OnApplicationBootstrap`, `BeforeApplicationShutdown` |
-| `ShardingModule`         | `ShardRouter`, `DirectoryChangeSubscription`                                                                                                                                   | `OnModuleInit`, `OnModuleDestroy`                     |
-| `MessagingModule`        | `OutboxWriter`, `MessageBus`, `MessageDispatcher`, `OutboxRelay`, `MessagingExplorer`, jobs                                                                                    | `OnApplicationBootstrap` (registro de consumidores)   |
-| `InternalApiModule`      | `InternalClient`, `InternalRouter`, `Transport`, `InternalApiController`, jobs                                                                                                 | `OnApplicationBootstrap` (`assertComplete`)           |
-| `PersistenceModule`      | `TransactionManager`, `EntityManagerProvider`, `ShardResolver`, `ShardScope`, `AcrossShards`                                                                                   | `OnModuleDestroy` (cierra los `DataSource`)           |
-| `PostgresPlatformModule` | `TypeOrmOutboxStore`, `TypeOrmProcessedMessageStore`, `TypeOrmIdempotencyStore`, `TypeOrmDirectoryStore`                                                                       | ninguno                                               |
-| `SagaModule`             | `Sagas`, `SagaEngine`, `SagaRecoveryJob`, `SagaRetentionJob`; `forFeature([definiciones])`                                                                                     | ninguno                                               |
-| `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `AwsMessagingNames`, `AwsErrorTranslator`                                                           | `OnModuleDestroy`                                     |
-| `SqsConsumerModule`      | `SqsPoller`, `SqsDeliveryProcessor`, `SqsDeadLetterRedriver`; no es global                                                                                                     | `OnApplicationBootstrap`, `OnModuleDestroy`           |
-| `ValkeyModule`           | `VALKEY_CLIENT`, `ValkeyCache`, `ValkeyRateLimiter`, `ValkeyRoutingCache`, `ValkeyShardDirectoryChannel`, `ValkeyBloomFilterFactory`, `ValkeyJobLock`, `ValkeyHealthIndicator` | `OnModuleDestroy` (`quit`)                            |
-
-```ts
-@Module({
-  imports: [
-    // Configuración propia del servicio. Las librerías traen sus secciones.
-    ConfigModule.forRoot({ env: process.env }),
-
-    ObservabilityModule.forRoot({ telemetry }),
-    ResilienceModule.forRoot(),
-    SchedulingModule.forRoot({
-      mode: SchedulingMode.InProcess,
-      logger: LoggerPort,
-      metrics: MetricsPort,
-    }),
-
-    // Adaptadores de infraestructura.
-    ValkeyModule.forRoot({ connectionName: SERVICE_NAME }),
-    AwsModule.forRoot({
-      messaging: { topology: identityTopology, source: SERVICE_NAME },
-    }),
-    PersistenceModule.forRoot({
-      shard: { entities: shardEntities, migrations: shardMigrations },
-      catalog: {
-        entities: platformCatalogEntities,
-        migrations: platformCatalogMigrations,
-      },
-      shardLister: DirectoryShardLister,
-    }),
-    PostgresPlatformModule.forRoot(),
-
-    // Núcleo, con el adaptador elegido por `Type<Port>`.
-    ShardingModule.forRoot({
-      routingCache: ValkeyRoutingCache,
-      channel: ValkeyShardDirectoryChannel,
-      directory: TypeOrmDirectoryStore,
-    }),
-    CacheModule.forRoot({ store: ValkeyCache, metrics: MetricsPort }),
-    RateLimitModule.forRoot({
-      limiter: ValkeyRateLimiter,
-      degradeLocally: true,
-    }),
-    MessagingModule.forRoot({
-      source: SERVICE_NAME,
-      consumer: QueueName.Orders,
-      topology: identityTopology,
-      outboxStore: TypeOrmOutboxStore,
-      processedStore: TypeOrmProcessedMessageStore,
-      publisher: SnsSqsEnvelopePublisher,
-      bus: SnsSqsMessageBus,
-      relay: true, // registra OutboxRelayJob y las retenciones
-      relayScopes: ShardedRelayScopes,
-    }),
-    // No es global: se destruye antes que AwsModule y detiene el sondeo antes de cerrar los clientes.
-    SqsConsumerModule.forRoot({
-      topology: identityTopology,
-      queue: QueueName.Orders,
-    }),
-    InternalApiModule.forRoot({
-      operations: identityOperations,
-      transport: InternalTransportKind.Http,
-      processedStore: TypeOrmIdempotencyStore,
-    }),
-    SagaPostgresModule,
-    SagaModule.forRoot({
-      store: TypeOrmSagaStore,
-      scopes: ShardedSagaScopes,
-    }),
-
-    // Módulos de negocio.
-    UsersModule,
-  ],
-})
-export class AppModule {}
-```
+Ejemplo en `references/ejemplos.md`, sección "Módulos de las librerías de plataforma".
 
 Sin Valkey (modo local con una sola instancia), el servicio omite `ValkeyModule` y deja `CacheModule.forRoot()` y `RateLimitModule.forRoot()` sin opciones: usan `InMemoryCache` e `InMemoryRateLimiter`, y `ShardingModule` usa `NullRoutingCache` e `InProcessDirectoryChannel`. Los jobs exclusivos usan `InProcessJobLock`.
+
+Catálogo de cada módulo (qué provee y sus hooks) en `references/modulos-de-plataforma.md`.
 
 ## Casos de uso y comandos
 
@@ -185,39 +76,7 @@ Sin Valkey (modo local con una sola instancia), el servicio omite `ValkeyModule`
 - Las consultas (lecturas) tienen su propia clase `*Query` y manejador, y no abren transacción de escritura.
 - La transacción la abre el caso de uso con `TransactionManager.runInTransaction`. Nunca el controller.
 
-```ts
-@Injectable()
-export class RegisterUserUseCase implements UseCase<
-  RegisterUserCommand,
-  RegisterUserResult
-> {
-  constructor(
-    private readonly users: UserRepository,
-    private readonly transactions: TransactionManager,
-    private readonly bus: MessageBus,
-    private readonly ids: IdGenerator,
-    private readonly clock: Clock,
-  ) {}
-
-  async execute(command: RegisterUserCommand): Promise<RegisterUserResult> {
-    const email = Email.create(command.email);
-    return this.transactions.runInTransaction(async () => {
-      if (await this.users.findByEmail(email)) {
-        throw new EmailAlreadyRegisteredError();
-      }
-      const user = User.register({
-        id: this.ids.next(),
-        email,
-        now: this.clock.now(),
-        eventId: this.ids.next(),
-      });
-      await this.users.save(user);
-      await this.bus.publish(UserRegisteredV1, { userId: user.id.value });
-      return { userId: user.id.value };
-    });
-  }
-}
-```
+Ejemplo en `references/ejemplos.md`, sección "Casos de uso y comandos".
 
 ## Controllers y consumidores
 
@@ -254,3 +113,7 @@ Un módulo se comunica con otro por su fachada (`UsersFacade`) o por eventos. La
 - [ ] enableShutdownHooks activo
 - [ ] La app arranca con NEST_DEBUG=true sin dependencias sin resolver
 ```
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-boundary-discipline`, `principle-minimize-reader-load`, `principle-laziness-protocol`, `principle-encode-lessons-in-structure`. Un adaptador se elige con una clase selectora probada, nunca con un `switch` dentro de `useFactory`.

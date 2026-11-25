@@ -1,6 +1,6 @@
 ---
 name: backend-observabilidad-configuracion
-description: Configuración validada, logging estructurado, trazas, métricas, health checks y apagado ordenado del backend de node_template. Config tipada con zod que falla al arrancar, LoggerPort con trace_id, OpenTelemetry, niveles de log, readiness y liveness, y timeouts. Úsala al agregar una variable de entorno, un log, una métrica, un span, un endpoint de salud o un cliente con timeout.
+description: 'Configuración con zod, logging, trazas, métricas, salud y timeouts del backend. Úsala al agregar una variable de entorno, un log, una métrica o un health check.'
 paths:
   - 'backend/**/config/**'
   - 'backend/libs/platform/config/**'
@@ -68,3 +68,7 @@ export const databaseConfigSchema = z.strictObject({
 - [ ] Span propio en el caso de uso o consumidor nuevo
 - [ ] Timeout en cada llamada de red nueva
 ```
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-explain-the-number`, `benchmark-checklist`, `principle-boundary-discipline`, `runtime-forensics`, `poteto-mode`.

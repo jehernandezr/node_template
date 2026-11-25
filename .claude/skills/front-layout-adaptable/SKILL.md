@@ -1,6 +1,6 @@
 ---
 name: front-layout-adaptable
-description: Layout adaptable y tema del front de node_template (Flutter). Breakpoint, PlatformScreen, ContentColumn y AppPage de ui, restricciones de ancho, tokens de espaciado y color, ColorScheme y StatusColors (context.statusColors), modo claro y oscuro, y pruebas por ancho con pumpAtWidths. Úsala al construir o revisar la presentación de una pantalla, al elegir tamaños, colores o tipografía, o al arreglar un overflow.
+description: 'Layout adaptable y tema del front: breakpoints, ContentColumn, AppPage, tokens y modo oscuro. Úsala al construir la presentación de una pantalla.'
 paths:
   - 'front/packages/ui/**'
   - 'front/packages/tokens/**'
@@ -37,30 +37,7 @@ La web y el móvil comparten pantallas, así que el layout responde al espacio q
 
 ## Ejemplo
 
-```dart
-Widget build(BuildContext context) {
-  final theme = Theme.of(context);
-  return ContentColumn(
-    child: Padding(
-      padding: const EdgeInsetsDirectional.all(AppSpacing.md),
-      child: Row(
-        children: [
-          Icon(Icons.check_circle, color: context.statusColors.success),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-```
+Ejemplo en `references/ejemplos.md`, sección "Ejemplo".
 
 Una prueba de un widget en varios anchos (ejemplo ilustrativo, el widget `TaskSummaryCard` no existe en el código) usa `pumpAtWidths` de `test_utils`, que pinta la pantalla a 320, 800 y 1280 por defecto y llama a `check` en cada uno:
 
@@ -71,3 +48,7 @@ await pumpAtWidths(
   check: (width) async => expect(tester.takeException(), isNull),
 );
 ```
+
+## Con pstack
+
+Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-experience-first`, `principle-prove-it-works`, `visual-parity`, `poteto-mode`.
