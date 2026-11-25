@@ -6,7 +6,7 @@ export class FlutterTestImportRule extends Rule {
   constructor() {
     super(
       RuleId.FLUTTER_TEST_IMPORT,
-      'lib/ no importa flutter_test; los dobles compartidos van en el paquete test_utils',
+      'lib/ does not import flutter_test; shared test doubles go in the test_utils package',
     );
   }
 

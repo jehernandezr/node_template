@@ -1,57 +1,57 @@
 ---
 name: backend-errores
-description: 'Errores del backend: códigos SERVICIO.SUBMÓDULO.ERROR, clasificación de fallas, catálogo y Problem Details. Úsala al lanzar, atrapar o traducir un error.'
+description: 'Backend errors: SERVICE.SUBMODULE.ERROR codes, failure classification, catalog and Problem Details. Use it when throwing, catching or translating an error.'
 paths:
   - 'backend/**/errors/**'
   - 'backend/**/*.error.ts'
   - 'backend/libs/contracts/**/errors/**'
 ---
 
-# Errores
+# Errors
 
-El cliente reacciona al `code`. El `message` es para personas y no lleva valores de entrada.
+The client reacts to the `code`. The `message` is for people and carries no input values.
 
-- Dominio: lo lanzan agregados y servicios de dominio; cruza al cliente con su código público.
-- Infraestructura (`connection refused`, `23505`): nunca cruza tal cual; se traduce o es 500.
-- Programación (`TypeError`, invariante rota): 500 con `traceId`.
+- Domain: thrown by aggregates and domain services; reaches the client with its public code.
+- Infrastructure (`connection refused`, `23505`): never crosses as is; it is translated or is a 500.
+- Programming (`TypeError`, broken invariant): 500 with `traceId`.
 
-## Errores de dominio
+## Domain errors
 
-- Extienden `DomainError` con `code` de un enum del servicio en formato `SERVICIO.SUBMÓDULO.ERROR`. Los enums viven en `@contracts/<servicio>` (`enums/`).
-- Una clase por regla. Nunca `throw new Error('...')` en negocio.
-- `details` sin datos sensibles (ids y límites sí; emails y contraseñas no).
-- No reintentable por defecto; un conflicto de concurrencia sí (`retryable: true`).
-- Código nuevo: entra al enum y a `<servicio>ErrorCatalog` con `httpStatus`, `retryable`, `audience` y `description`, y se regenera el Dart del front en el mismo cambio. La prueba del catálogo falla si falta una entrada.
-- Fallas de negocio como `DomainError`. Donde el llamador decide con ramas (sagas, lotes) se puede devolver `Result<T, E>` del kernel. Un método no mezcla ambos.
-- La validación de entrada acumula los errores de campo (`PLATFORM.VALIDATION.INVALID_INPUT` con `details.fieldErrors`). Las guardas del dominio fallan en la primera.
+- Extend `DomainError` with a `code` from a service enum in the `SERVICE.SUBMODULE.ERROR` format. The enums live in `@contracts/<service>` (`enums/`).
+- One class per rule. Never `throw new Error('...')` in business code.
+- `details` without sensitive data (ids and limits yes; emails and passwords no).
+- Not retryable by default; a concurrency conflict is (`retryable: true`).
+- New code: it goes into the enum and into `<service>ErrorCatalog` with `httpStatus`, `retryable`, `audience` and `description`, and the front Dart is regenerated in the same change. The catalog test fails if an entry is missing.
+- Business failures as `DomainError`. Where the caller decides by branching (sagas, batches), a kernel `Result<T, E>` may be returned. A method does not mix both.
+- Input validation accumulates field errors (`PLATFORM.VALIDATION.INVALID_INPUT` with `details.fieldErrors`). Domain guards fail on the first one.
 
-## Errores de infraestructura
+## Infrastructure errors
 
-- El adaptador traduce el error de su librería a un error de dominio o a `PlatformError` con `cause`.
-- `23505` se traduce a la regla de negocio. Conflicto de versión a `ConcurrencyConflictError` reintentable. `40P01` y `40001` a reintentable.
-- Se clasifica con `FailureKind` y `FailureClassifier` de `@platform/primitives` (`classify`, `isTransient`), al que cada adaptador suma reglas: `Transient` se reintenta con backoff, `Permanent` no, `ProtocolViolation` nunca.
-- Se conserva la causa: `new XError(message, details, { cause })`.
+- The adapter translates its library's error to a domain error or to a `PlatformError` with `cause`.
+- `23505` is translated to the business rule. Version conflict to a retryable `ConcurrencyConflictError`. `40P01` and `40001` to retryable.
+- Classified with `FailureKind` and `FailureClassifier` from `@platform/primitives` (`classify`, `isTransient`), to which each adapter adds rules: `Transient` is retried with backoff, `Permanent` is not, `ProtocolViolation` never.
+- The cause is kept: `new XError(message, details, { cause })`.
 
 ## Problem Details
 
-- Un filtro global traduce todo con `toProblemDetails` de `@contracts/platform` a `application/problem+json`. Se registra con `APP_FILTER` en el módulo de plataforma para inyectar `LoggerPort` y el catálogo. Esquema en `references/problem-details-filter.md`.
-- Cuerpo: `type`, `title`, `status`, `code`, `detail`, `traceId` y, si aplica, `fieldErrors`.
-- Audiencia `internal` o error desconocido: `PLATFORM.INTERNAL.UNEXPECTED` y `traceId`, sin mensaje ni stack.
-- Estados: validación 400, no autenticado 401, sin permiso 403, inexistente 404, conflicto 409, estado inválido 422, tasa 429, dependencia caída 503. Salen del catálogo, no del controller.
-- El dominio y la aplicación nunca lanzan `HttpException`.
-- Si saber que el recurso existe es sensible, 404 en vez de 403.
+- A global filter translates everything with `toProblemDetails` from `@contracts/platform` to `application/problem+json`. It is registered with `APP_FILTER` in the platform module to inject `LoggerPort` and the catalog. Sketch in `references/problem-details-filter.md`.
+- Body: `type`, `title`, `status`, `code`, `detail`, `traceId` and, when applicable, `fieldErrors`.
+- `internal` audience or unknown error: `PLATFORM.INTERNAL.UNEXPECTED` and `traceId`, without message or stack.
+- Statuses: validation 400, unauthenticated 401, no permission 403, not found 404, conflict 409, invalid state 422, rate 429, dependency down 503. They come from the catalog, not from the controller.
+- The domain and the application never throw `HttpException`.
+- If knowing that the resource exists is sensitive, 404 instead of 403.
 
-## Consumidores y jobs
+## Consumers and jobs
 
-- Un manejador por tipo de disparador que clasifica, registra con `traceId`, cuenta una métrica y decide.
-- Consumidor: `Permanent` o de contrato a la DLQ; `Transient` se reintenta con el backoff de la plataforma.
-- Job: un error no atrapado no tumba el proceso, pero alerta.
-- `unhandledRejection` o `uncaughtException`: se registra y el proceso termina limpio.
+- One handler per trigger type that classifies, logs with `traceId`, counts a metric and decides.
+- Consumer: `Permanent` or contract errors to the DLQ; `Transient` is retried with the platform backoff.
+- Job: an uncaught error does not bring the process down, but it alerts.
+- `unhandledRejection` or `uncaughtException`: logged and the process exits cleanly.
 
-## Pruebas
+## Tests
 
-Se verifica el `code`: `await expect(promise).rejects.toMatchObject({ code: IdentityErrorCode.EmailAlreadyRegistered })`. Sin `try/catch`.
+Check the `code`: `await expect(promise).rejects.toMatchObject({ code: IdentityErrorCode.EmailAlreadyRegistered })`. No `try/catch`.
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-boundary-discipline`, `principle-fix-root-causes`, `principle-make-operations-idempotent`.
+Method in `pstack-en-node-template`. From pstack, these apply here: `principle-boundary-discipline`, `principle-fix-root-causes`, `principle-make-operations-idempotent`.

@@ -1,82 +1,82 @@
 ---
 name: front-codigo
-description: 'Reglas del código del front (Flutter, Dart 3): clases e inyección, controladores, estados tipados, async seguro, documentación /// y reglas de revisión. Puerta de entrada de las skills front-*.'
+description: 'Code rules for the front (Flutter, Dart 3): classes and injection, controllers, typed states, safe async, /// documentation and review rules. Entry point of the front-* skills.'
 paths:
   - 'front/**'
 ---
 
-# Código del front
+# Front code
 
-Al crear archivos, paquetes o microfrontends, carga `front-estructura`; al crear un microfrontend, `front-nuevo-microfrontend`; en pantallas y widgets se cargan solas `front-accesibilidad` y `front-rendimiento`.
+When creating files, packages or microfrontends, load `front-estructura`; when creating a microfrontend, `front-nuevo-microfrontend`; on screens and widgets, `front-accesibilidad` and `front-rendimiento` load on their own.
 
-El front es software enterprise, no scripting. Todo código nuevo, y todo código que se toque, sigue estas reglas. Las skills hermanas cubren el resto: `front-estructura`, `front-pruebas`, `front-accesibilidad`, `front-layout-adaptable`, `front-i18n`, `front-navegacion`, `front-rendimiento`, `front-seguridad`, `front-analisis` y `front-nuevo-microfrontend`.
+The front is enterprise software, not scripting. All new code, and all code that is touched, follows these rules. The sibling skills cover the rest: `front-estructura`, `front-pruebas`, `front-accesibilidad`, `front-layout-adaptable`, `front-i18n`, `front-navegacion`, `front-rendimiento`, `front-seguridad`, `front-analisis` and `front-nuevo-microfrontend`.
 
-## Clases, composición e inyección
+## Classes, composition and injection
 
-- Cada pieza con comportamiento es una clase con una sola responsabilidad. Sus colaboradores llegan por el constructor como campos `final`, tipados con el puerto (clase abstracta o `interface class`), nunca con la implementación concreta.
-- Composición antes que herencia. Las clases concretas son `final class`; los puertos son `abstract interface class`.
-- Nada de instancias globales ni estado en variables de nivel superior. Las dependencias se arman en el shell (`ShellHost`) y llegan a cada microfrontend por `ShellServices` y su scope.
-- Funciones de nivel superior solo para utilidades puras sin dependencias.
-- El tiempo se inyecta. `Clock` (`typedef Clock = DateTime Function()`) y `systemClock` viven en `package:utils`, el único lugar con `DateTime.now()`. Un controlador recibe el `Clock` o un `Duration` por constructor. Nunca `DateTime.now()` ni `Timer` con tiempos fijos dentro de la lógica.
-- Un solo pub workspace y mínimas dependencias. Los principios de Riverpod, BLoC o Freezed (estado inmutable, un solo dueño, eventos hacia arriba) se logran con `ChangeNotifier`, clases `final` y `sealed`. No se agregan esas librerías ni generadores de código.
+- Every piece with behavior is a class with a single responsibility. Its collaborators arrive through the constructor as `final` fields, typed with the port (abstract class or `interface class`), never with the concrete implementation.
+- Composition over inheritance. Concrete classes are `final class`; ports are `abstract interface class`.
+- No global instances and no state in top-level variables. Dependencies are assembled in the shell (`ShellHost`) and reach each microfrontend through `ShellServices` and its scope.
+- Top-level functions only for pure utilities without dependencies.
+- Time is injected. `Clock` (`typedef Clock = DateTime Function()`) and `systemClock` live in `package:utils`, the only place with `DateTime.now()`. A controller receives the `Clock` or a `Duration` through its constructor. Never `DateTime.now()` or a `Timer` with fixed times inside the logic.
+- A single pub workspace and minimal dependencies. The principles of Riverpod, BLoC or Freezed (immutable state, a single owner, events going up) are achieved with `ChangeNotifier`, `final` and `sealed` classes. Those libraries and code generators are not added.
 
-## Capas
+## Layers
 
-- **Widgets:** solo pintan estado y reenvían eventos. Sin llamadas HTTP, sin reglas de negocio, sin `try/catch` de lógica. Lo único permitido: mostrar u ocultar según estado, animaciones del propio widget, layout según el ancho y navegación simple. Una pantalla es un `StatelessWidget` con `ControllerBuilder`.
-- **Controladores y flujos** (`ChangeNotifier`): tienen el estado de la pantalla y la lógica, y se prueban sin widgets. Ejemplos: `SignInFlow` y `StepUpFlow` de `auth`, `TasksListController`.
-- **Repositorios:** puertos en el microfrontend o el paquete; adaptadores de API (sobre `ApiClient`) y de demostración (en memoria) elegidos por `RepositoryBinding` según el `ShellMode`.
-- **Contratos:** solo los tipos generados en `front/packages/contracts`. Ningún código del front importa el backend.
-- Flujo unidireccional: los datos bajan del repositorio al controlador y al widget; los eventos suben por métodos del controlador.
+- **Widgets:** they only paint state and forward events. No HTTP calls, no business rules, no logic `try/catch`. The only things allowed: showing or hiding based on state, the widget's own animations, layout by width and simple navigation. A screen is a `StatelessWidget` with `ControllerBuilder`.
+- **Controllers and flows** (`ChangeNotifier`): they hold the screen state and the logic, and are tested without widgets. Examples: `SignInFlow` and `StepUpFlow` from `auth`, `TasksListController`.
+- **Repositories:** ports in the microfrontend or package; API adapters (on top of `ApiClient`) and demo adapters (in memory) chosen by `RepositoryBinding` according to the `ShellMode`.
+- **Contracts:** only the generated types in `front/packages/contracts`. No front code imports the backend.
+- Unidirectional flow: data goes down from the repository to the controller and the widget; events go up through controller methods.
 
-## Estados, errores y async
+## States, errors and async
 
-Detalle, firmas y ejemplos en [references/estado-y-errores.md](references/estado-y-errores.md). Resumen:
+Details, signatures and examples in [references/estado-y-errores.md](references/estado-y-errores.md). Summary:
 
-- El estado de una pantalla es un tipo cerrado: `AsyncValue<T>` de `ui` (`AsyncLoading`, `AsyncData`, `AsyncError`) o una jerarquía `sealed` propia.
-- Una carga la compone el controlador con `AsyncLoader<T>` de `ui`, que descarta la respuesta de una llamada vieja y no notifica después de `dispose`. Una acción del usuario pasa por `ActionRunner`, que devuelve un `ActionResult` (`ActionSucceeded`, `ActionFailed` o `ActionSkipped`).
-- Solo la lógica que no cabe en un `AsyncLoader` (búsqueda con filtros y paginación, como `TasksListController.reload`) lleva un `_requestId` propio.
-- El controlador expone estado inmutable. Cambia el estado asignando un valor nuevo y llamando a `notifyListeners`, nunca mutando una lista que ya se entregó.
-- En un widget, después de cada `await` se revisa `context.mounted` antes de usar el `context`. Los resultados de una acción se muestran con `showActionResult`.
-- `AsyncValue.guard` y `ActionRunner` atrapan solo `Exception`: un `Error` es un bug y escapa. Un `catch` sin `on` solo se escribe con la marca `// catch-all: <motivo>` en la línea anterior, en un punto que reporta el fallo.
-- Las fallas esperadas son excepciones tipadas (`ApiErrorException` con su código del contrato, `SignedOutException`). Un texto de error del servidor nunca se muestra: se traduce con `ErrorPresenter` de `i18n`.
-- Timers, suscripciones y `StreamController` se cancelan en `dispose`. Un recurso por identidad implementa `ScopedResource`.
+- A screen's state is a closed type: `AsyncValue<T>` from `ui` (`AsyncLoading`, `AsyncData`, `AsyncError`) or a custom `sealed` hierarchy.
+- The controller composes a load with `AsyncLoader<T>` from `ui`, which discards the response of a stale call and does not notify after `dispose`. A user action goes through `ActionRunner`, which returns an `ActionResult` (`ActionSucceeded`, `ActionFailed` or `ActionSkipped`).
+- Only logic that does not fit in an `AsyncLoader` (search with filters and pagination, like `TasksListController.reload`) has its own `_requestId`.
+- The controller exposes immutable state. It changes state by assigning a new value and calling `notifyListeners`, never by mutating a list it already handed out.
+- In a widget, after every `await`, check `context.mounted` before using the `context`. Action results are shown with `showActionResult`.
+- `AsyncValue.guard` and `ActionRunner` catch only `Exception`: an `Error` is a bug and escapes. A `catch` without `on` is only written with the `// catch-all: <reason>` mark on the line before, at a point that reports the failure.
+- Expected failures are typed exceptions (`ApiErrorException` with its contract code, `SignedOutException`). A server error text is never shown: it is translated with `ErrorPresenter` from `i18n`.
+- Timers, subscriptions and `StreamController` are cancelled in `dispose`. A per-identity resource implements `ScopedResource`.
 
 ## Microfrontends
 
-- Cumplen el contrato del ADR 0018: manifiesto con `id`, `platforms`, `modes`, `access`, `menu`, `deepLinks` y `screens` con `ScreenRoute.deferred`.
-- Dependen solo de `front/packages`, nunca de otro microfrontend. Se comunican por eventos del shell y por rutas.
-- Pantallas, datos y textos van detrás de `deferred as`. El manifiesto solo importa constantes, enums y el ciclo de vida.
-- El repositorio de cada microfrontend se declara con `RepositoryBinding` en `data/` y la pantalla lo pide con `scope.repository(...)`. Los fakes reciben `DemoBehavior` para la latencia y los fallos programados.
+- They meet the ADR 0018 contract: a manifest with `id`, `platforms`, `modes`, `access`, `menu`, `deepLinks` and `screens` with `ScreenRoute.deferred`.
+- They depend only on `front/packages`, never on another microfrontend. They communicate through shell events and routes.
+- Screens, data and texts go behind `deferred as`. The manifest only imports constants, enums and the lifecycle.
+- Each microfrontend's repository is declared with `RepositoryBinding` in `data/` and the screen requests it with `scope.repository(...)`. Fakes receive `DemoBehavior` for latency and scheduled failures.
 
 ## Dart 3
 
-Detalle en [references/dart3.md](references/dart3.md). Resumen:
+Details in [references/dart3.md](references/dart3.md). Summary:
 
-- `sealed` más `switch` exhaustivo para estados y resultados: el compilador avisa cuando falta un caso. Sin rama `_` sobre un `sealed` o un enum propio, para que agregar un caso rompa la compilación donde falta tratarlo.
-- Records para devolver dos o tres valores sin clase (`(String name, int count)`). Si el valor viaja por capas o se nombra en la API pública, es una clase.
-- Pattern matching para decodificar mapas y listas de entrada y para desestructurar. No para sustituir un `if (x is T)` simple.
-- Constructores primarios (Dart 3.12 o superior, el workspace usa 3.14) permitidos en código nuevo cuando quitan repetición. No se migra código existente solo por estilo.
+- `sealed` plus an exhaustive `switch` for states and results: the compiler warns when a case is missing. No `_` branch over a `sealed` or a custom enum, so adding a case breaks compilation where it still needs handling.
+- Records to return two or three values without a class (`(String name, int count)`). If the value travels across layers or is named in the public API, it is a class.
+- Pattern matching to decode input maps and lists and to destructure. Not to replace a simple `if (x is T)`.
+- Primary constructors (Dart 3.12 or later, the workspace uses 3.14) are allowed in new code when they remove repetition. Existing code is not migrated just for style.
 
 ## Clean Code
 
-- Nombres que dicen qué es y siguen el rol: `TasksListController`, `ApiTasksRepository`, `TasksListScreen`, `taskStatusLabel`. Sin prefijos de tecnología ni nombres que choquen con tipos de Flutter (`Page`, `Route`, `State`, `Theme` a secas).
-- Booleanos con forma de pregunta (`isLoading`, `hasMore`, `canRetry`). Sin parámetros booleanos posicionales que cambian el comportamiento: dos métodos o un enum.
-- Un `build` que supera unas 60 líneas se parte en widgets (clases `StatelessWidget`), no en métodos `_buildX` que reconstruyen todo en cada cambio.
-- Enums generados para permisos, errores, planes y flags. Nunca literales de texto sueltos.
-- Los textos de la interfaz salen de los ARB (ver `front-i18n`); nunca se muestra el texto que manda el servidor.
-- El código se explica solo: sin comentarios en línea (`//`). Si un bloque necesita uno, se renombra o se extrae a un método o widget con nombre. La documentación es el `///` de cada método y miembro público (ver "Documentación con `///`").
+- Names that say what something is and follow the role: `TasksListController`, `ApiTasksRepository`, `TasksListScreen`, `taskStatusLabel`. No technology prefixes and no names that clash with Flutter types (bare `Page`, `Route`, `State`, `Theme`).
+- Booleans shaped as questions (`isLoading`, `hasMore`, `canRetry`). No positional boolean parameters that change behavior: two methods or an enum.
+- A `build` longer than about 60 lines is split into widgets (`StatelessWidget` classes), not into `_buildX` methods that rebuild everything on every change.
+- Generated enums for permissions, errors, plans and flags. Never loose string literals.
+- Interface texts come from the ARB files (see `front-i18n`); the text the server sends is never shown.
+- Code explains itself: no inline comments (`//`). If a block needs one, rename it or extract it into a named method or widget. The documentation is the `///` of each public method and member (see "Documentation with `///`").
 
-## Documentación con `///`
+## Documentation with `///`
 
-- Todo método, propiedad y clase pública de los paquetes compartidos y de cada microfrontend lleva `///`, completo y conciso. Lo privado no lleva `///`: su nombre basta.
-- No hay comentarios en línea (`//`). El código se explica con nombres, tipos y métodos o widgets extraídos. Excepciones: directivas del analizador (`// ignore: <regla>` con el motivo en la misma línea) y el código generado.
-- Primera línea: una oración que resume y termina en punto, separada del resto por una línea `///` vacía.
-- Propiedades con frase nominal (`/// Tasks of the current filter.`); booleanos con "Whether" (`/// Whether another page can be appended.`); métodos con verbo en tercera persona (`/// Loads the first page.`). Los comentarios de la API van en inglés, como en el resto del código; los textos de usuario, en el ARB.
-- Completo quiere decir que cubre cada parámetro, lo que devuelve y lo que lanza, tejidos en la prosa como pide Effective Dart. Sin etiquetas `@param`, `@return` ni `@throws`. Conciso quiere decir una frase por idea y nada que repita el nombre.
-- Los símbolos van entre corchetes (`[TasksRepository]`); las palabras clave y literales entre comillas invertidas (`null`, `true`). Sin paréntesis en los enlaces.
-- Un override que no cambia el contrato no repite la documentación. Con getter y setter, solo el getter se documenta.
-- Los bloques de código llevan el lenguaje (` ```dart `).
-- La documentación explica el contrato (efectos, condiciones, errores), nunca la implementación, el proceso ni la historia del cambio.
+- Every public method, property and class in the shared packages and in each microfrontend has `///`, complete and concise. Private members have no `///`: their name is enough.
+- There are no inline comments (`//`). Code explains itself through names, types and extracted methods or widgets. Exceptions: analyzer directives (`// ignore: <rule>` with the reason on the same line) and generated code.
+- First line: one sentence that summarizes and ends with a period, separated from the rest by an empty `///` line.
+- Properties with a noun phrase (`/// Tasks of the current filter.`); booleans with "Whether" (`/// Whether another page can be appended.`); methods with a third-person verb (`/// Loads the first page.`). API comments are in English, like the rest of the code; user texts go in the ARB.
+- Complete means it covers each parameter, what it returns and what it throws, woven into the prose as Effective Dart asks. No `@param`, `@return` or `@throws` tags. Concise means one sentence per idea and nothing that repeats the name.
+- Symbols go in square brackets (`[TasksRepository]`); keywords and literals in backticks (`null`, `true`). No parentheses in links.
+- An override that does not change the contract does not repeat the documentation. With a getter and setter, only the getter is documented.
+- Code blocks state the language (` ```dart `).
+- Documentation explains the contract (effects, conditions, errors), never the implementation, the process or the history of the change.
 
 ```dart
 /// Appends the next page.
@@ -86,10 +86,10 @@ Detalle en [references/dart3.md](references/dart3.md). Resumen:
 Future<void> loadMore() async { ... }
 ```
 
-## Reglas de revisión
+## Review rules
 
-`interrogate` y quien revisa un diff del front, propio o de un agente, usan como reglas esta skill, `front-estructura`, `front-pruebas` y la que aplique al cambio (accesibilidad, layout, i18n, navegación, rendimiento, seguridad). Un hallazgo se demuestra con una corrida o con la línea del diff que la rompe, y se corrige antes del commit.
+`interrogate` and whoever reviews a front diff, their own or an agent's, use as rules this skill, `front-estructura`, `front-pruebas` and whichever applies to the change (accessibility, layout, i18n, navigation, performance, security). A finding is proven with a run or with the diff line that breaks the rule, and is fixed before the commit.
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-model-the-domain`, `principle-type-system-discipline`, `principle-laziness-protocol`, `principle-minimize-reader-load`, `architect`, `interrogate`, `blast-radius`.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `principle-model-the-domain`, `principle-type-system-discipline`, `principle-laziness-protocol`, `principle-minimize-reader-load`, `architect`, `interrogate`, `blast-radius`.

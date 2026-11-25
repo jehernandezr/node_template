@@ -1,79 +1,79 @@
 ---
 name: backend-codigo-enterprise
-description: 'Reglas transversales del backend (TypeScript, NestJS): clases e inyección, hexagonal, nombres, comentarios y reglas de revisión. Puerta de entrada de las skills backend-*.'
+description: 'Cross-cutting backend rules (TypeScript, NestJS): classes and injection, hexagonal, names, comments and review rules. Entry point for the backend-* skills.'
 paths:
   - 'backend/**'
 ---
 
-# Código enterprise del backend
+# Enterprise backend code
 
-Al crear archivos, carpetas, librerías o apps, carga `backend-estructura`; al tocar módulos, controllers o consumidores, `backend-nestjs-composicion`.
+When creating files, folders, libraries or apps, load `backend-estructura`; when touching modules, controllers or consumers, `backend-nestjs-composicion`.
 
-## Mapa de skills
+## Skill map
 
-- Carpetas, alias, compilado, nombres de archivo: `backend-estructura`.
-- Agregados, objetos de valor, eventos de dominio: `backend-dominio`.
-- Casos de uso, módulos NestJS, tokens, controllers: `backend-nestjs-composicion`.
-- Errores, códigos, Problem Details: `backend-errores`.
-- Entidades, repositorios, transacciones, migraciones: `backend-persistencia-typeorm`.
-- Outbox, consumidores, idempotencia, colas: `backend-mensajeria-idempotencia`.
-- Autenticación, autorización, entrada, secretos: `backend-seguridad`.
-- Config, logs, trazas, health, apagado: `backend-observabilidad-configuracion`.
-- Pruebas: `backend-pruebas`.
+- Folders, aliases, build, file names: `backend-estructura`.
+- Aggregates, value objects, domain events: `backend-dominio`.
+- Use cases, NestJS modules, tokens, controllers: `backend-nestjs-composicion`.
+- Errors, codes, Problem Details: `backend-errores`.
+- Entities, repositories, transactions, migrations: `backend-persistencia-typeorm`.
+- Outbox, consumers, idempotency, queues: `backend-mensajeria-idempotencia`.
+- Authentication, authorization, input, secrets: `backend-seguridad`.
+- Config, logs, traces, health, shutdown: `backend-observabilidad-configuracion`.
+- Tests: `backend-pruebas`.
 
-## Clases e inyección
+## Classes and injection
 
-- Todo comportamiento va en una clase con una responsabilidad. Nada de funciones sueltas que se llaman entre sí. Ejemplo en `references/clases.md`.
-- Colaboradores por constructor como `private readonly`, tipados con el puerto.
-- Herencia solo para `DomainError`, `AggregateRoot`, `ValueObject` y bases estables como `ShardedRepository`.
-- Sin `new` de dependencias en negocio: se arman en el módulo NestJS (ver `backend-nestjs-composicion`).
-- Sin singletons, estado de módulo ni efectos al importar.
-- Funciones exportadas solo las que admite `check-structure.mjs` (ver `backend-estructura`).
-- Tiempo e ids inyectados (`Clock`, `IdGenerator`). Nunca `Date.now()`, `new Date()` ni `randomUUID()` en negocio.
+- All behavior goes in a class with one responsibility. No loose functions calling each other. Example in `references/clases.md`.
+- Collaborators through the constructor as `private readonly`, typed with the port.
+- Inheritance only for `DomainError`, `AggregateRoot`, `ValueObject` and stable bases such as `ShardedRepository`.
+- No `new` of dependencies in business code: they are wired in the NestJS module (see `backend-nestjs-composicion`).
+- No singletons, module state or import side effects.
+- Exported functions only where `check-structure.mjs` allows them (see `backend-estructura`).
+- Time and ids are injected (`Clock`, `IdGenerator`). Never `Date.now()`, `new Date()` or `randomUUID()` in business code.
 
 ## Hexagonal
 
-- `domain/`: agregados, objetos de valor, eventos, errores y puertos. Solo depende de `@platform/kernel`.
-- `application/`: un caso de uso por clase con `execute`, comandos, consultas, fachadas. Depende de `domain/`.
-- `infrastructure/`: adaptadores de los puertos (TypeORM, HTTP, colas, mappers).
-- `presentation/`: controllers, consumidores, esquemas de entrada y módulo NestJS.
-- Un módulo no importa el interior de otro: usa su fachada o sus eventos.
-- Puertos como clases abstractas, pequeños y con el lenguaje del dominio (`UserRepository.findByEmail`, no `findBy(filter: any)`).
-- I/O, aleatoriedad o librerías de propósito general entran al núcleo solo detrás de un puerto.
+- `domain/`: aggregates, value objects, events, errors and ports. Depends only on `@platform/kernel`.
+- `application/`: one use case per class with `execute`, commands, queries, facades. Depends on `domain/`.
+- `infrastructure/`: port adapters (TypeORM, HTTP, queues, mappers).
+- `presentation/`: controllers, consumers, input schemas and the NestJS module.
+- A module does not import another module's internals: it uses its facade or its events.
+- Ports as abstract classes, small and in the domain language (`UserRepository.findByEmail`, not `findBy(filter: any)`).
+- I/O, randomness or general-purpose libraries enter the core only behind a port.
 
-## Nombres y código
+## Names and code
 
-- Sin abreviaturas ni sufijos vacíos (`Manager`, `Helper`, `Util`, `Data`). Detalle en `references/nombres.md`.
-- Sin parámetros booleanos de comportamiento: dos métodos o un enum. Más de tres parámetros: un objeto con nombre.
-- Enums para eventos, errores, permisos, colas, jobs y estados. Nunca literales sueltos.
-- Constantes numéricas con nombre (`MAX_SIGN_IN_ATTEMPTS`).
-- Un archivo, una clase pública, con sufijo de rol. Nada de `util.ts`, `types.ts`, `limits.ts`, `model.ts`.
-- Las clases de error terminan en `Error`.
-- No se atrapa un error para callarlo (ver `backend-errores`).
+- No abbreviations or empty suffixes (`Manager`, `Helper`, `Util`, `Data`). Details in `references/nombres.md`.
+- No boolean behavior parameters: two methods or an enum. More than three parameters: a named object.
+- Enums for events, errors, permissions, queues, jobs and states. Never loose literals.
+- Named numeric constants (`MAX_SIGN_IN_ATTEMPTS`).
+- One file, one public class, with a role suffix. No `util.ts`, `types.ts`, `limits.ts`, `model.ts`.
+- Error classes end in `Error`.
+- An error is never caught to silence it (see `backend-errores`).
 
-## Comentarios y JSDoc
+## Comments and JSDoc
 
-- Sin comentarios en línea (`//` ni `/* */`). Si hace falta uno, se renombra o se extrae un método.
-- JSDoc en español, completo y conciso, en cada método público y de puerto: resumen, `@param`, `@returns`, `@throws` con su código.
-- Clase pública: una línea de JSDoc con su rol. Métodos privados sin JSDoc.
-- El JSDoc no narra implementación ni proceso (planes, olas, IDs de tareas) ni repite el nombre.
-- Excepciones: `// eslint-disable-next-line <regla> -- <motivo>`, `// @ts-expect-error <motivo>` y código generado (migraciones, `export/`).
-- JSDoc en inglés se pasa a español al tocar el archivo. Identificadores en inglés.
+- No inline comments (`//` or `/* */`). If one seems needed, rename or extract a method.
+- JSDoc in English, complete and concise, on every public and port method: summary, `@param`, `@returns`, `@throws` with its code.
+- Public class: one JSDoc line with its role. Private methods without JSDoc.
+- JSDoc does not narrate implementation or process (plans, waves, task IDs) or repeat the name.
+- Exceptions: `// eslint-disable-next-line <rule> -- <reason>`, `// @ts-expect-error <reason>` and generated code (migrations, `export/`).
+- JSDoc, identifiers and docs in English. Spanish JSDoc in a file you touch is translated entirely to English.
 
 ## TypeScript
 
-- `strict`. `eslint-disable` solo con motivo.
-- `readonly` en propiedades, `ReadonlyArray` en entradas y salidas públicas.
-- Estados excluyentes como unión discriminada por enum, no dos opcionales.
-- Importaciones relativas con `.js` (`nodenext`), `import type`, módulos nativos con `node:`.
-- `async/await`, sin promesas flotantes, `return await` dentro de `try`. Solo se lanza `Error`.
+- `strict`. `eslint-disable` only with a reason.
+- `readonly` on properties, `ReadonlyArray` on public inputs and outputs.
+- Mutually exclusive states as a union discriminated by an enum, not two optionals.
+- Relative imports with `.js` (`nodenext`), `import type`, native modules with `node:`.
+- `async/await`, no floating promises, `return await` inside `try`. Only `Error` is thrown.
 
-## Reglas de revisión
+## Review rules
 
-Ejemplo en `references/ejemplos.md`, sección "Reglas de revisión".
+Example in `references/ejemplos.md`, section "Review rules".
 
-Un hallazgo se demuestra con una corrida o con la línea del diff que rompe la regla.
+A finding is proven with a run or with the diff line that breaks the rule.
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `typescript-best-practices`, `principle-boundary-discipline`, `architect`, `interrogate`, `blast-radius`, `no-comments`, `principle-prove-it-works`.
+Method in `pstack-en-node-template`. From pstack, these apply here: `typescript-best-practices`, `principle-boundary-discipline`, `architect`, `interrogate`, `blast-radius`, `no-comments`, `principle-prove-it-works`.

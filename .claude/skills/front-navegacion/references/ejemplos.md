@@ -1,8 +1,8 @@
-# Ejemplos de front-navegacion
+# front-navegacion examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies to you.
 
-## Ejemplo
+## Example
 
 ```dart
 Future<void> _save() async {

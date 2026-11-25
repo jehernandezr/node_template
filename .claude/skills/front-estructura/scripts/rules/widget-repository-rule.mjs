@@ -6,7 +6,7 @@ export class WidgetRepositoryRule extends PatternRule {
   constructor() {
     super(
       RuleId.WIDGET_REPOSITORY,
-      'la pantalla habla con su controlador, no con widget.repository',
+      'the screen talks to its controller, not to widget.repository',
       /\bwidget\.repository\./,
     );
   }

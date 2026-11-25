@@ -1,40 +1,40 @@
 ---
 name: front-rendimiento
-description: 'Rendimiento de la interfaz Flutter: const, reconstrucciones, listas, chunks diferidos e imágenes. Úsala en pantallas y widgets.'
+description: 'Flutter UI performance: const, rebuilds, lists, deferred chunks and images. Use it in screens and widgets.'
 paths:
   - 'front/**/screens/**'
   - 'front/**/widgets/**'
 ---
 
-# Rendimiento del front
+# Front performance
 
-Estas reglas son baratas y se aplican siempre.
+These rules are cheap and always apply.
 
-## En el código
+## In the code
 
-- **`const`:** todo constructor de widget, `EdgeInsets`, `SizedBox` y `Icon` que pueda ser `const` lo es. El lint `prefer_const_constructors` lo pide.
-- **Widgets como clases, no métodos:** un `Widget _buildHeader()` se reconstruye con su padre en cada `build`. Una clase `StatelessWidget` con constructor `const` se salta la reconstrucción si no cambian sus parámetros.
-- **Reconstrucción acotada:** el `ListenableBuilder` envuelve la parte que cambia, no la pantalla entera. Un controlador que notifica seguido (escritura, progreso) se escucha en el widget más pequeño posible. El argumento `child` de `ListenableBuilder` y `AnimatedBuilder` pasa lo que no depende del estado.
-- **`setState` mínimo:** en el `State` más bajo que lo necesita. Estado que varias partes comparten va al controlador.
-- **`build` puro:** sin crear controladores, futuros, streams ni formateadores (`DateFormat`) dentro de `build`. Se crean en `initState` o en el controlador.
-- **Listas:** `ListView.builder` o `.separated`, con `itemExtent` o `prototypeItem` cuando las filas miden lo mismo. `shrinkWrap: true` en una lista larga anula el perezoso: se evita. Una `Key` estable (`ValueKey(task.id)`) en filas que se reordenan o se borran.
-- **Paginación:** listas del servidor con cursor (`TasksListController.loadMore`), no cargar todo.
-- **Imágenes:** con `cacheWidth` o `cacheHeight` cuando se muestran más chicas que el original, y con `errorBuilder`. Un `Image.network` sin tamaño provoca saltos de layout.
-- **Opacidad y recorte:** `Opacity`, `ClipRRect` y `saveLayer` son caros dentro de listas y animaciones; se prefiere un color con alfa y `DecoratedBox`.
-- **Animaciones:** `AnimatedBuilder` o implícitas acotadas, con `RepaintBoundary` alrededor de lo que anima sin parar. Un indicador infinito no vive sobre toda la pantalla.
-- **Trabajo pesado:** parseo de JSON grande o cálculo largo en `Isolate.run`, con una función que no capture un widget ni un `BuildContext`.
-- **Entrada de texto:** la búsqueda mientras se escribe usa debounce inyectado (`TasksListController.search`) y descarta respuestas viejas.
+- **`const`:** every widget constructor, `EdgeInsets`, `SizedBox` and `Icon` that can be `const` is. The `prefer_const_constructors` lint requires it.
+- **Widgets as classes, not methods:** a `Widget _buildHeader()` is rebuilt with its parent on every `build`. A `StatelessWidget` class with a `const` constructor skips the rebuild if its parameters do not change.
+- **Scoped rebuilds:** the `ListenableBuilder` wraps the part that changes, not the whole screen. A controller that notifies often (typing, progress) is listened to in the smallest possible widget. The `child` argument of `ListenableBuilder` and `AnimatedBuilder` passes what does not depend on the state.
+- **Minimal `setState`:** in the lowest `State` that needs it. State shared by several parts goes to the controller.
+- **Pure `build`:** no controllers, futures, streams or formatters (`DateFormat`) created inside `build`. They are created in `initState` or in the controller.
+- **Lists:** `ListView.builder` or `.separated`, with `itemExtent` or `prototypeItem` when the rows have the same size. `shrinkWrap: true` on a long list defeats lazy building: avoid it. A stable `Key` (`ValueKey(task.id)`) on rows that are reordered or deleted.
+- **Pagination:** server lists with a cursor (`TasksListController.loadMore`), never load everything.
+- **Images:** with `cacheWidth` or `cacheHeight` when shown smaller than the original, and with `errorBuilder`. An `Image.network` without a size causes layout jumps.
+- **Opacity and clipping:** `Opacity`, `ClipRRect` and `saveLayer` are expensive inside lists and animations; prefer a color with alpha and `DecoratedBox`.
+- **Animations:** `AnimatedBuilder` or scoped implicit animations, with a `RepaintBoundary` around what animates nonstop. An infinite indicator does not sit over the whole screen.
+- **Heavy work:** large JSON parsing or long computation in `Isolate.run`, with a function that captures no widget or `BuildContext`.
+- **Text input:** search-as-you-type uses an injected debounce (`TasksListController.search`) and discards stale responses.
 
-## Carga diferida
+## Deferred loading
 
-- Pantallas, datos y textos de un microfrontend van en un chunk diferido (`deferred as`). El manifiesto solo importa constantes, enums y el ciclo de vida, y `check_deferred_chunks` lo vigila sobre el build web.
-- Una dependencia pesada que solo usa un microfrontend (gráficas, editor) se importa desde su chunk, no desde un paquete compartido que todos cargan.
-- La carga de un chunk muestra un estado y un reintento si falla. `ScreenRoute.deferred` lo hace con `DeferredLibraryLoader.page` de `shell_core`, que acepta un `loading` y un `errorBuilder` propios. Cada biblioteca se carga una vez por instancia del cargador, y un fallo se olvida para poder reintentarlo.
+- A microfrontend's screens, data and texts go in a deferred chunk (`deferred as`). The manifest only imports constants, enums and the lifecycle, and `check_deferred_chunks` enforces it on the web build.
+- A heavy dependency that only one microfrontend uses (charts, editor) is imported from its chunk, not from a shared package everyone loads.
+- Loading a chunk shows a state and a retry if it fails. `ScreenRoute.deferred` does this with `DeferredLibraryLoader.page` from `shell_core`, which accepts its own `loading` and `errorBuilder`. Each library is loaded once per loader instance, and a failure is forgotten so it can be retried.
 
-## Cómo se mide
+## How to measure
 
-- Sospecha antes de optimizar: Flutter DevTools (rendimiento, "Track widget rebuilds") en modo `--profile`, no en debug.
+- Suspect before optimizing: Flutter DevTools (performance, "Track widget rebuilds") in `--profile` mode, not in debug.
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `benchmark-checklist`, `principle-explain-the-number`, `perf-issue`, `poteto-mode`, `trace-forensics`.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `benchmark-checklist`, `principle-explain-the-number`, `perf-issue`, `poteto-mode`, `trace-forensics`.

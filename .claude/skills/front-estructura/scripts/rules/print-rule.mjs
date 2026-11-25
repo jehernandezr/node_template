@@ -6,7 +6,7 @@ export class PrintRule extends Rule {
   constructor() {
     super(
       RuleId.PRINT_CALL,
-      'sin print(): los fallos se reportan por el canal de errores del shell',
+      'no print(): failures are reported through the shell error channel',
     );
   }
 

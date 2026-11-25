@@ -5,7 +5,7 @@ export class LibTestingRule extends Rule {
   constructor() {
     super(
       RuleId.LIB_TESTING,
-      'los dobles compartidos van en el paquete test_utils, no en lib/testing',
+      'shared test doubles go in the test_utils package, not in lib/testing',
     );
   }
 

@@ -6,8 +6,8 @@ export class TextLiteralRule extends PatternRule {
   constructor() {
     super(
       RuleId.TEXT_LITERAL,
-      'los textos de usuario salen de l10n, no de un Text con literal',
-      // Un texto que solo interpola datos ($count, ${x.y}) no es texto de usuario.
+      'user texts come from l10n, not from a Text with a literal',
+      // A text that only interpolates data ($count, ${x.y}) is not user text.
       /\bText\(\s*(['"])(?!(?:\$\w+|\$\{[^}]*\})+\1)/,
     );
   }

@@ -1,18 +1,18 @@
-# Estados, errores y async seguro
+# States, errors and safe async
 
-## Contenido
+## Contents
 
-- Estado de pantalla como tipo cerrado
-- Carga con `AsyncLoader`
-- Acciones con `ActionRunner` y `ActionResult`
-- Pantalla con `ControllerBuilder`
-- Petición vigente a mano
-- Errores tipados
-- Cancelación y limpieza
+- Screen state as a closed type
+- Loading with `AsyncLoader`
+- Actions with `ActionRunner` and `ActionResult`
+- Screen with `ControllerBuilder`
+- Current request by hand
+- Typed errors
+- Cancellation and cleanup
 
-## Estado de pantalla como tipo cerrado
+## Screen state as a closed type
 
-Para un valor que se carga se usa `AsyncValue<T>` de `package:ui/ui.dart`: `AsyncLoading`, `AsyncData` y `AsyncError`. `AsyncValue.guard` convierte una `Future` en ese estado y solo atrapa `Exception`. `when` obliga a tratar los tres casos:
+For a value that is loaded, use `AsyncValue<T>` from `package:ui/ui.dart`: `AsyncLoading`, `AsyncData` and `AsyncError`. `AsyncValue.guard` turns a `Future` into that state and catches only `Exception`. `when` forces handling the three cases:
 
 ```dart
 final Widget body = value.when(
@@ -26,7 +26,7 @@ final Widget body = value.when(
 );
 ```
 
-Cuando la pantalla tiene más estados (borrador, enviando, enviado), se declara un `sealed` propio junto al controlador, como `TaskFormState`:
+When the screen has more states (draft, sending, sent), declare a custom `sealed` next to the controller, like `TaskFormState`:
 
 ```dart
 sealed class TaskFormState {
@@ -49,7 +49,7 @@ final class TaskFormSaved extends TaskFormState {
 }
 ```
 
-El widget lo pinta con un `switch` exhaustivo, sin `default`:
+The widget paints it with an exhaustive `switch`, without `default`:
 
 ```dart
 Widget build(BuildContext context) => switch (controller.state) {
@@ -59,9 +59,9 @@ Widget build(BuildContext context) => switch (controller.state) {
 };
 ```
 
-## Carga con `AsyncLoader`
+## Loading with `AsyncLoader`
 
-`AsyncLoader<T>` de `ui` es dueño de una carga. Recibe la función que trae el valor, empieza en `AsyncLoading` y solo busca cuando se le pide. `load` descarta la respuesta de una llamada anterior, y `load(keepCurrent: true)` conserva los datos en pantalla mientras llega la nueva. `setData` reemplaza el valor (una edición optimista) y descarta la carga en curso. Nada notifica después de `dispose`. Los nombres de dominio de los ejemplos de esta sección son ilustrativos, no existen en el código.
+`AsyncLoader<T>` from `ui` owns a load. It receives the function that fetches the value, starts in `AsyncLoading` and only fetches when asked. `load` discards the response of a previous call, and `load(keepCurrent: true)` keeps the data on screen while the new one arrives. `setData` replaces the value (an optimistic edit) and discards the load in progress. Nothing notifies after `dispose`. The domain names in this section's examples are illustrative; they do not exist in the code.
 
 ```dart
 final class SessionsController extends ChangeNotifier {
@@ -84,15 +84,15 @@ final class SessionsController extends ChangeNotifier {
 }
 ```
 
-## Acciones con `ActionRunner` y `ActionResult`
+## Actions with `ActionRunner` and `ActionResult`
 
-`ActionRunner` de `ui` ejecuta lo que el usuario dispara y devuelve un `ActionResult<T>` cerrado:
+`ActionRunner` from `ui` runs what the user triggers and returns a closed `ActionResult<T>`:
 
-- `ActionSucceeded<T>(value)`: la acción terminó.
-- `ActionFailed<T>(error, stackTrace)`: lanzó una `Exception`. Un `Error` escapa.
-- `ActionSkipped<T>()`: no corrió, porque ya había una acción en curso (`ActionConcurrency.dropWhileRunning`) o porque se rechazó una precondición (un step-up).
+- `ActionSucceeded<T>(value)`: the action finished.
+- `ActionFailed<T>(error, stackTrace)`: it threw an `Exception`. An `Error` escapes.
+- `ActionSkipped<T>()`: it did not run, because an action was already in progress (`ActionConcurrency.dropWhileRunning`) or because a precondition was rejected (a step-up).
 
-`ActionConcurrency` tiene tres modos: `parallel`, `serial` (cada llamada espera a la anterior) y `dropWhileRunning`, que es el valor por defecto. `isRunning` dice si hay una acción pendiente y el controlador lo expone para deshabilitar el botón.
+`ActionConcurrency` has three modes: `parallel`, `serial` (each call waits for the previous one) and `dropWhileRunning`, which is the default. `isRunning` says whether an action is pending, and the controller exposes it to disable the button.
 
 ```dart
 Future<ActionResult<void>> closeSession(String id) async {
@@ -104,9 +104,9 @@ Future<ActionResult<void>> closeSession(String id) async {
 }
 ```
 
-## Pantalla con `ControllerBuilder`
+## Screen with `ControllerBuilder`
 
-`ControllerBuilder<C>` de `ui` crea el controlador una vez en `initState`, escucha sus cambios, reconstruye y lo libera en `dispose`. La pantalla queda como `StatelessWidget`:
+`ControllerBuilder<C>` from `ui` creates the controller once in `initState`, listens to its changes, rebuilds and disposes it in `dispose`. The screen stays a `StatelessWidget`:
 
 ```dart
 class SessionsScreen extends StatelessWidget {
@@ -127,9 +127,9 @@ class SessionsScreen extends StatelessWidget {
 }
 ```
 
-Si el repositorio puede cambiar de identidad, la pantalla lo usa como `key: ObjectKey(repository)` para reconstruir el controlador con el nuevo.
+If the repository can change identity, the screen uses it as `key: ObjectKey(repository)` to rebuild the controller with the new one.
 
-Una acción se muestra con `showActionResult`, que ya revisa si el contexto sigue montado:
+An action is shown with `showActionResult`, which already checks whether the context is still mounted:
 
 ```dart
 final result = await controller.closeSession(id);
@@ -141,9 +141,9 @@ showActionResult(
 );
 ```
 
-## Petición vigente a mano
+## Current request by hand
 
-`TasksListController` necesita más que una carga: filtra, busca y pagina con cursor. Ahí `AsyncLoader` no cabe y el controlador lleva su propio `_requestId`. Cada carga que reemplaza la lista sube el id, y la respuesta con un id viejo o llegada después de `dispose` se descarta:
+`TasksListController` needs more than a load: it filters, searches and paginates with a cursor. `AsyncLoader` does not fit there, and the controller keeps its own `_requestId`. Every load that replaces the list bumps the id, and a response with an old id or arriving after `dispose` is discarded:
 
 ```dart
 Future<void> reload() async {
@@ -157,20 +157,20 @@ Future<void> reload() async {
 }
 ```
 
-Fuera de ese caso, se usa `AsyncLoader`.
+Outside that case, use `AsyncLoader`.
 
-## Errores tipados
+## Typed errors
 
-- El servidor responde `ApiErrorException` con un código del contrato (enum generado). La interfaz decide por el código, no por el texto. `ErrorPresenter` de `i18n` describe el error: `describe(error)` devuelve un `ErrorDetails` con `message`, `code` y `traceId`; `actionMessage(error)` da el texto de una acción. `errorMessage(l10n, code)` de `i18n` da el texto de un código.
-- Una validación del cliente que falla es un valor, no una excepción: `fieldErrorsByField` de `utils` agrupa los `FieldError` del contrato por campo.
-- Un fallo propio del microfrontend se declara como `final class XException implements Exception` con campos tipados, como `SignedOutException`. Nunca `throw Exception('texto')` en código que alguien tiene que distinguir.
-- `UnsupportedError` y `StateError` son para errores de programación (un modo que no sirve la operación), no para fallas de red.
-- `AsyncValue.guard` y `ActionRunner` atrapan solo `Exception`. Un `Error` escapa porque es un bug.
-- Un `catch` sin `on` solo se escribe con la marca `// catch-all: <motivo>` en la línea anterior, y en un punto que reporta el fallo (por ejemplo `FlutterError.reportError`). Nunca queda vacío.
+- The server responds with `ApiErrorException` carrying a contract code (generated enum). The interface decides by the code, not by the text. `ErrorPresenter` from `i18n` describes the error: `describe(error)` returns an `ErrorDetails` with `message`, `code` and `traceId`; `actionMessage(error)` gives an action's text. `errorMessage(l10n, code)` from `i18n` gives the text for a code.
+- A failed client-side validation is a value, not an exception: `fieldErrorsByField` from `utils` groups the contract's `FieldError` values by field.
+- A microfrontend's own failure is declared as `final class XException implements Exception` with typed fields, like `SignedOutException`. Never `throw Exception('text')` in code someone has to tell apart.
+- `UnsupportedError` and `StateError` are for programming errors (a mode that does not serve the operation), not for network failures.
+- `AsyncValue.guard` and `ActionRunner` catch only `Exception`. An `Error` escapes because it is a bug.
+- A `catch` without `on` is only written with the `// catch-all: <reason>` mark on the line before, and at a point that reports the failure (for example `FlutterError.reportError`). It is never left empty.
 
-## Widget: `mounted` y acciones
+## Widget: `mounted` and actions
 
-Un widget solo llama al controlador y muestra el resultado. Después de un `await` revisa que siga montado:
+A widget only calls the controller and shows the result. After an `await` it checks that it is still mounted:
 
 ```dart
 Future<void> _save() async {
@@ -188,11 +188,11 @@ Future<void> _save() async {
 }
 ```
 
-`showActionResult` devuelve sin hacer nada si el contexto ya no está montado, pero la navegación y cualquier otro uso del `context` necesitan su propia guarda.
+`showActionResult` returns without doing anything if the context is no longer mounted, but navigation and any other use of the `context` need their own guard.
 
-## Cancelación y limpieza
+## Cancellation and cleanup
 
-- `Timer`, `StreamSubscription` y `StreamController` se crean en el controlador y se cancelan en su `dispose`. El widget que crea el controlador lo libera con `ControllerBuilder`.
-- Un `TextEditingController`, `FocusNode`, `ScrollController` o `AnimationController` tiene el mismo ciclo: `initState` crea, `dispose` libera.
-- Trabajo que debe poder cancelarse (búsqueda mientras se escribe) usa un `Timer` con debounce, como `TasksListController.search`, con el retardo inyectado, no `Future.delayed` suelto.
-- Parseo de JSON grande o cálculo pesado: `Isolate.run` o `compute`, con una función de nivel superior que no capture el `this` de un widget.
+- `Timer`, `StreamSubscription` and `StreamController` are created in the controller and cancelled in its `dispose`. The widget that creates the controller disposes it with `ControllerBuilder`.
+- A `TextEditingController`, `FocusNode`, `ScrollController` or `AnimationController` has the same lifecycle: `initState` creates, `dispose` releases.
+- Work that must be cancellable (search while typing) uses a debounced `Timer`, like `TasksListController.search`, with the delay injected, not a loose `Future.delayed`.
+- Large JSON parsing or heavy computation: `Isolate.run` or `compute`, with a top-level function that does not capture a widget's `this`.

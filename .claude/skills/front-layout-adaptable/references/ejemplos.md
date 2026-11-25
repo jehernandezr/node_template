@@ -1,8 +1,8 @@
-# Ejemplos de front-layout-adaptable
+# front-layout-adaptable examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies.
 
-## Ejemplo
+## Example
 
 ```dart
 Widget build(BuildContext context) {

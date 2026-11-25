@@ -5,7 +5,7 @@ export class TestHelpersFolderRule extends Rule {
   constructor() {
     super(
       RuleId.TEST_HELPERS_FOLDER,
-      'lo compartido por las pruebas de un paquete va en test/utils/',
+      "what a package's tests share goes in test/utils/",
     );
   }
 

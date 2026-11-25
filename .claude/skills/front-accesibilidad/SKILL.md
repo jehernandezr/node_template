@@ -1,46 +1,46 @@
 ---
 name: front-accesibilidad
-description: 'Accesibilidad del front Flutter: Semantics, tamaños táctiles, contraste, escala de texto, foco y sus pruebas. Úsala en pantallas, widgets y ui.'
+description: 'Accessibility of the Flutter front: Semantics, touch target sizes, contrast, text scale, focus and their tests. Use it on screens, widgets and ui.'
 paths:
   - 'front/**/screens/**'
   - 'front/**/widgets/**'
   - 'front/packages/ui/**'
 ---
 
-# Accesibilidad del front
+# Front accessibility
 
-El objetivo es WCAG 2.2 nivel AA en web, Android e iOS. Los componentes de `front/packages/ui` ya cumplen esta lista; una pantalla nueva o tocada la cumple por completo.
+The target is WCAG 2.2 level AA on web, Android and iOS. The components in `front/packages/ui` already meet this list; a new or touched screen meets it in full.
 
-## Reglas
+## Rules
 
-- **Acciones:** nunca un `GestureDetector` desnudo como botón. Se usan `AppButton`, `FilledButton`, `TextButton`, `IconButton` o `InkWell`, que reciben foco y teclado. Si hace falta un gesto propio, se envuelve en `Semantics(button: true, label: ..., onTap: ...)` y un `FocusableActionDetector`.
-- **Nombre accesible:** un botón con solo icono lleva `tooltip` (que también sirve de etiqueta) o `Semantics(label:)`. Una `Image` informativa lleva `semanticLabel`; una decorativa, `excludeFromSemantics: true`. El texto sale del ARB.
-- **Tamaño táctil:** el tema fija 48 de alto y ancho mínimo en botones (`FilledButton` y `OutlinedButton`) y en campos (`InputDecorationTheme`), en web y en móvil. Un icono de 24 se rodea de `IconButton` con `constraints` de 48, no se agranda el icono.
-- **Contraste:** 4.5:1 para texto y 3:1 para texto grande y bordes de controles. Los colores salen de `ColorScheme` o de `context.statusColors` (ver `front-layout-adaptable`); si se define un par nuevo en `tokens`, se comprueba con `textContrastGuideline` o a mano.
-- **Color no es el único canal:** un estado (error, hecho) lleva también icono o texto. Un estado de tarea se muestra con etiqueta, no solo con un color.
-- **Escala de texto:** sin `SizedBox` ni `Container` de alto fijo alrededor de `Text`; se usa `ConstrainedBox(minHeight:)`. No se limita `textScaler` salvo en un elemento concreto y justificado. La interfaz tiene que sobrevivir a 2x sin overflow.
-- **Foco y teclado:** todo lo accionable se alcanza con Tab y se activa con Enter o Espacio. El orden de foco sigue el orden visual. Un diálogo devuelve el foco a quien lo abrió. Un campo de texto declara `textInputAction` y, si es dato personal, `autofillHints`.
-- **Arrastre:** todo gesto de arrastrar (`Dismissible`, reordenar) tiene un botón equivalente en la misma pantalla.
-- **Cambios async:** `AsyncValueView` ya anuncia la carga y el error: `LoadingView` es un `Semantics` con `liveRegion` y su indicador lleva la etiqueta de carga, y `ErrorView` pone `liveRegion` sobre su mensaje. Un guardado o un aviso puntual que no pasa por esos widgets se anuncia con `Semantics(liveRegion: true, child: ...)` o con `SemanticsService.sendAnnouncement`.
-- **Movimiento:** una animación que no es esencial se omite con `MediaQuery.disableAnimationsOf(context)`.
-- **Grupos:** `MergeSemantics` solo para un par etiqueta y valor estáticos. Nunca `ExcludeSemantics` sobre algo accionable: quita el control del lector de pantalla.
-- **Encabezados:** el título de `AppPage` sale en un `AppBar`, que ya lo expone como encabezado. Un título de sección propio dentro del cuerpo lleva `Semantics(header: true)`.
-- **Formularios:** cada campo tiene `labelText` (no solo `hintText`), el error de validación se asocia al campo con `errorText` y es texto, no solo color.
+- **Actions:** never a bare `GestureDetector` as a button. Use `AppButton`, `FilledButton`, `TextButton`, `IconButton` or `InkWell`, which take focus and keyboard input. If a custom gesture is needed, wrap it in `Semantics(button: true, label: ..., onTap: ...)` and a `FocusableActionDetector`.
+- **Accessible name:** an icon-only button has a `tooltip` (which also serves as its label) or `Semantics(label:)`. An informative `Image` has a `semanticLabel`; a decorative one, `excludeFromSemantics: true`. The text comes from the ARB.
+- **Touch target size:** the theme sets a minimum height and width of 48 on buttons (`FilledButton` and `OutlinedButton`) and on fields (`InputDecorationTheme`), on web and mobile. A 24 icon is wrapped in an `IconButton` with `constraints` of 48; the icon is not enlarged.
+- **Contrast:** 4.5:1 for text and 3:1 for large text and control borders. Colors come from `ColorScheme` or `context.statusColors` (see `front-layout-adaptable`); if a new pair is defined in `tokens`, check it with `textContrastGuideline` or by hand.
+- **Color is not the only channel:** a state (error, done) also has an icon or text. A task state is shown with a label, not only with a color.
+- **Text scale:** no fixed-height `SizedBox` or `Container` around `Text`; use `ConstrainedBox(minHeight:)`. Do not clamp `textScaler` except on a specific, justified element. The interface must survive 2x without overflow.
+- **Focus and keyboard:** everything actionable is reachable with Tab and activated with Enter or Space. Focus order follows visual order. A dialog returns focus to whoever opened it. A text field declares `textInputAction` and, for personal data, `autofillHints`.
+- **Dragging:** every drag gesture (`Dismissible`, reordering) has an equivalent button on the same screen.
+- **Async changes:** `AsyncValueView` already announces loading and errors: `LoadingView` is a `Semantics` with `liveRegion` and its indicator carries the loading label, and `ErrorView` puts `liveRegion` on its message. A save or a one-off notice that does not go through those widgets is announced with `Semantics(liveRegion: true, child: ...)` or with `SemanticsService.sendAnnouncement`.
+- **Motion:** a non-essential animation is skipped with `MediaQuery.disableAnimationsOf(context)`.
+- **Groups:** `MergeSemantics` only for a static label and value pair. Never `ExcludeSemantics` over something actionable: it removes the control from the screen reader.
+- **Headings:** the `AppPage` title goes in an `AppBar`, which already exposes it as a heading. A custom section title inside the body has `Semantics(header: true)`.
+- **Forms:** every field has a `labelText` (not just `hintText`), and the validation error is tied to the field with `errorText` and is text, not only color.
 
-## Ejemplo
+## Example
 
-Ejemplo en `references/ejemplos.md`, sección "Ejemplo".
+Example in `references/ejemplos.md`, section "Example".
 
-## Comprobación
+## Verification
 
-- Cada pantalla con acciones llama a `expectAccessible(tester)` de `test_utils`, que corre las guías de tamaño táctil de Android e iOS, de etiqueta y de contraste. Plantilla en `front-pruebas/references/pruebas-de-widgets.md`.
-- Una prueba a 2x de escala de texto con `pumpAtTextScale` sin excepciones.
-- Revisión manual, una vez por pantalla nueva: Tab recorre todo; en web, activar el lector de accesibilidad de Flutter y recorrer; en móvil, TalkBack y VoiceOver.
+- Every screen with actions calls `expectAccessible(tester)` from `test_utils`, which runs the Android and iOS touch target, label and contrast guidelines. Template in `front-pruebas/references/pruebas-de-widgets.md`.
+- A test at 2x text scale with `pumpAtTextScale` and no exceptions.
+- Manual review, once per new screen: Tab goes through everything; on web, turn on Flutter's accessibility reader and walk through; on mobile, TalkBack and VoiceOver.
 
-## Informe de una auditoría
+## Audit report
 
-Cada hallazgo lleva el criterio con su nombre (`2.5.8 Target Size (Minimum)`), severidad CRITICAL, MAJOR o MINOR, archivo, y la corrección como código Dart antes y después. Un hallazgo sin código de corrección no está terminado. Lo que no se puede decidir leyendo el código (contraste sin colores reales, orden del lector) va aparte como "fuera de alcance".
+Each finding has the criterion by name (`2.5.8 Target Size (Minimum)`), severity CRITICAL, MAJOR or MINOR, file, and the fix as Dart code before and after. A finding without fix code is not done. Anything that cannot be decided by reading the code (contrast without real colors, reader order) goes separately as "out of scope".
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-prove-it-works`, `principle-experience-first`, `interrogate`.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `principle-prove-it-works`, `principle-experience-first`, `interrogate`.

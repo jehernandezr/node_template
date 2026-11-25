@@ -1,5 +1,5 @@
-// Pruebas de check-structure.mjs: cada regla tiene un caso en verde y uno en rojo.
-// Corren con `node --test .claude/skills/backend-estructura/scripts/*.test.mjs`.
+// Tests for check-structure.mjs: each rule has a passing case and a failing case.
+// Run with `node --test .claude/skills/backend-estructura/scripts/*.test.mjs`.
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -47,8 +47,8 @@ describe('check-structure.mjs', () => {
   });
   afterEach(() => repo.dispose());
 
-  describe('pruebas de integración', () => {
-    it('rechaza un archivo *.integration.spec.ts', () => {
+  describe('integration tests', () => {
+    it('rejects a *.integration.spec.ts file', () => {
       repo.write(
         'backend/libs/platform/cache/src/__tests__/store.integration.spec.ts',
       );
@@ -59,7 +59,7 @@ describe('check-structure.mjs', () => {
       assert.match(output, /store\.integration\.spec\.ts: .*\*\.int-spec\.ts/);
     });
 
-    it('acepta *.int-spec.ts y *.spec.ts en __tests__', () => {
+    it('accepts *.int-spec.ts and *.spec.ts in __tests__', () => {
       repo
         .write('backend/libs/platform/cache/src/__tests__/store.int-spec.ts')
         .write('backend/libs/platform/cache/src/__tests__/store.spec.ts');
@@ -68,8 +68,8 @@ describe('check-structure.mjs', () => {
     });
   });
 
-  describe('NestJS fuera de src/nest', () => {
-    it('rechaza @nestjs/* en el núcleo de una librería de plataforma', () => {
+  describe('NestJS outside src/nest', () => {
+    it('rejects @nestjs/* in the core of a platform library', () => {
       repo.write(
         'backend/libs/platform/cache/src/cache.service.ts',
         "import { Injectable } from '@nestjs/common';\nexport class CacheService {}\n",
@@ -78,10 +78,10 @@ describe('check-structure.mjs', () => {
       const { status, output } = repo.check();
 
       assert.equal(status, 1);
-      assert.match(output, /cache\.service\.ts: fuera de src\/nest\//);
+      assert.match(output, /cache\.service\.ts: outside src\/nest\//);
     });
 
-    it('rechaza una sub-entrada @platform/<lib>/nest en el núcleo', () => {
+    it('rejects a @platform/<lib>/nest sub-entry in the core', () => {
       repo.write(
         'backend/libs/platform/messaging/src/relay.ts',
         "import { SchedulingModule } from '@platform/scheduling/nest';\nexport class Relay {}\n",
@@ -90,7 +90,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 1);
     });
 
-    it('rechaza una importación dinámica de @nestjs/* en el núcleo', () => {
+    it('rejects a dynamic import of @nestjs/* in the core', () => {
       repo.write(
         'backend/libs/contracts/platform/src/kit/route-loader.ts',
         "export class RouteLoader {\n  load() {\n    return import('@nestjs/core');\n  }\n}\n",
@@ -99,7 +99,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 1);
     });
 
-    it('rechaza @nestjs/* en una prueba fuera de src/nest', () => {
+    it('rejects @nestjs/* in a test outside src/nest', () => {
       repo.write(
         'backend/libs/platform/cache/src/__tests__/cache.spec.ts',
         "import { Test } from '@nestjs/testing';\n",
@@ -108,7 +108,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 1);
     });
 
-    it('acepta @nestjs/* dentro de src/nest', () => {
+    it('accepts @nestjs/* inside src/nest', () => {
       repo.write(
         'backend/libs/platform/cache/src/nest/cache.module.ts',
         "import { Module } from '@nestjs/common';\nexport class CacheModule {}\n",
@@ -117,7 +117,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta @nestjs/* en una app', () => {
+    it('accepts @nestjs/* in an app', () => {
       repo.write(
         'backend/apps/identity/src/app.module.ts',
         "import { Module } from '@nestjs/common';\nexport class AppModule {}\n",
@@ -127,8 +127,8 @@ describe('check-structure.mjs', () => {
     });
   });
 
-  describe('funciones sueltas', () => {
-    it('rechaza una función exportada en un archivo de plataforma', () => {
+  describe('loose functions', () => {
+    it('rejects an exported function in a platform file', () => {
       repo.write(
         'backend/libs/platform/cache/src/jittered-ttl.ts',
         LOOSE_FUNCTION,
@@ -137,10 +137,10 @@ describe('check-structure.mjs', () => {
       const { status, output } = repo.check();
 
       assert.equal(status, 1);
-      assert.match(output, /jittered-ttl\.ts: exporta funciones sueltas/);
+      assert.match(output, /jittered-ttl\.ts: exports loose functions/);
     });
 
-    it('acepta las fábricas define* de contracts', () => {
+    it('accepts the define* factories of contracts', () => {
       repo.write(
         'backend/libs/contracts/platform/src/kit/define-route.ts',
         LOOSE_FUNCTION,
@@ -149,19 +149,19 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta los esquemas de env.ts', () => {
+    it('accepts the env.ts schemas', () => {
       repo.write('backend/libs/platform/config/src/env.ts', LOOSE_FUNCTION);
 
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta secret() de config', () => {
+    it('accepts secret() of config', () => {
       repo.write('backend/libs/platform/config/src/secret.ts', LOOSE_FUNCTION);
 
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta defineErrorCatalog en kit/error-catalog.ts', () => {
+    it('accepts defineErrorCatalog in kit/error-catalog.ts', () => {
       repo.write(
         'backend/libs/contracts/platform/src/kit/error-catalog.ts',
         LOOSE_FUNCTION,
@@ -170,13 +170,13 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta main() de una herramienta', () => {
+    it('accepts main() of a tool', () => {
       repo.write('backend/tools/contracts-export/src/main.ts', LOOSE_FUNCTION);
 
       assert.equal(repo.check().status, 0);
     });
 
-    it('rechaza una función suelta en otro archivo de config', () => {
+    it('rejects a loose function in another config file', () => {
       repo.write(
         'backend/libs/platform/config/src/config-loader.ts',
         LOOSE_FUNCTION,
@@ -185,7 +185,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 1);
     });
 
-    it('acepta las utilidades del DSL de field-errors de contracts', () => {
+    it('accepts the field-errors DSL utilities of contracts', () => {
       repo.write(
         'backend/libs/contracts/platform/src/kit/field-errors.ts',
         LOOSE_FUNCTION,
@@ -194,7 +194,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta las utilidades del DSL de message-definition de contracts', () => {
+    it('accepts the message-definition DSL utilities of contracts', () => {
       repo.write(
         'backend/libs/contracts/platform/src/kit/message-definition.ts',
         LOOSE_FUNCTION,
@@ -203,7 +203,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta el esquema parametrizado de paginación de contracts', () => {
+    it('accepts the parameterized pagination schema of contracts', () => {
       repo.write(
         'backend/libs/contracts/platform/src/schemas/pagination.schema.ts',
         LOOSE_FUNCTION,
@@ -212,7 +212,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta las guardas de call-outcome.ts', () => {
+    it('accepts the call-outcome.ts guards', () => {
       repo.write(
         'backend/libs/platform/primitives/src/call-outcome.ts',
         LOOSE_FUNCTION,
@@ -221,7 +221,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta la fábrica de topología de messaging', () => {
+    it('accepts the messaging topology factory', () => {
       repo.write(
         'backend/libs/platform/messaging/src/topology/contract-topology.ts',
         LOOSE_FUNCTION,
@@ -230,7 +230,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('acepta el decorador Audited de persistence', () => {
+    it('accepts the Audited decorator of persistence', () => {
       repo.write(
         'backend/libs/platform/persistence/src/metadata/entity-metadata.ts',
         LOOSE_FUNCTION,
@@ -239,7 +239,7 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 0);
     });
 
-    it('rechaza una función suelta en un archivo kit que no es define*', () => {
+    it('rejects a loose function in a kit file that is not define*', () => {
       repo.write(
         'backend/libs/contracts/platform/src/kit/query-params.ts',
         LOOSE_FUNCTION,
@@ -249,20 +249,20 @@ describe('check-structure.mjs', () => {
     });
   });
 
-  describe('reglas de ubicación existentes', () => {
-    it('rechaza src/lib', () => {
+  describe('existing placement rules', () => {
+    it('rejects src/lib', () => {
       repo.write('backend/libs/platform/cache/src/lib/cache.ts');
 
       assert.equal(repo.check().status, 1);
     });
 
-    it('acepta código directo en src', () => {
+    it('accepts code directly in src', () => {
       repo.write('backend/libs/platform/cache/src/cache.ts');
 
       assert.equal(repo.check().status, 0);
     });
 
-    it('rechaza una prueba fuera de __tests__', () => {
+    it('rejects a test outside __tests__', () => {
       repo.write('backend/libs/platform/cache/src/cache.spec.ts');
 
       assert.equal(repo.check().status, 1);

@@ -1,48 +1,48 @@
-# Migraciones seguras sin downtime
+# Safe migrations without downtime
 
-## Contenido
+## Contents
 
-- Principios
-- Operación por operación
-- Expand y contract
-- Backfill por lotes
-- Migración sin transacción
-- Modo de transacción
-- Verificación
+- Principles
+- Operation by operation
+- Expand and contract
+- Batched backfill
+- Migration without a transaction
+- Transaction mode
+- Verification
 
-## Principios
+## Principles
 
-- La versión N y la N+1 de la app corren a la vez durante un despliegue. El esquema debe servir a las dos.
-- Cada migración es pequeña, una intención. Esquema y datos van separados.
-- Tras aplicarse en un ambiente, una migración es inmutable. Se corrige con otra.
-- En producción solo se avanza. `migration-revert` es para desarrollo y emergencias, y la reversa del `down` debe estar probada.
-- Se prueban con volumen parecido al de producción: una migración rápida con 100 filas puede bloquear con 10 millones.
-- Ponle a la migración un tope de bloqueo para que falle en vez de encolar a toda la app: `SET LOCAL lock_timeout = '5s'`.
+- App version N and N+1 run at the same time during a deploy. The schema must serve both.
+- Each migration is small, one intent. Schema and data go separately.
+- Once applied in an environment, a migration is immutable. Fix it with another one.
+- In production you only move forward. `migration-revert` is for development and emergencies, and the `down` reversal must be tested.
+- Test them with volume similar to production: a migration that is fast with 100 rows can lock with 10 million.
+- Give the migration a lock cap so it fails instead of queueing the whole app: `SET LOCAL lock_timeout = '5s'`.
 
-## Operación por operación
+## Operation by operation
 
-- Agregar columna: peligrosa: `NOT NULL` sin default en tabla grande con versiones viejas escribiendo; segura: Agregar nullable (o con default constante), backfill, luego `CHECK ... NOT VALID` y `VALIDATE CONSTRAINT`, luego `SET NOT NULL`
-- Agregar índice: peligrosa: `CREATE INDEX` normal: bloquea escrituras; segura: `CREATE INDEX CONCURRENTLY` en migración sin transacción
-- Índice único: peligrosa: Crearlo directo sobre datos que pueden duplicarse; segura: Limpiar duplicados, `CREATE UNIQUE INDEX CONCURRENTLY`, luego `ADD CONSTRAINT ... USING INDEX`
-- Agregar clave foránea: peligrosa: `ADD FOREIGN KEY` directo: bloquea ambas tablas; segura: `ADD CONSTRAINT ... NOT VALID`, luego `VALIDATE CONSTRAINT`
-- Renombrar columna: peligrosa: `RENAME COLUMN` con la app vieja leyéndola; segura: Expand y contract
-- Cambiar tipo: peligrosa: `ALTER COLUMN TYPE`: reescribe la tabla; segura: Columna nueva, doble escritura, backfill, cambio de lectura, borrar la vieja
-- Borrar columna: peligrosa: Mientras el código aún la usa; segura: Quitar el uso del código, desplegar, luego borrarla en otra migración
-- Borrar tabla: peligrosa: Igual; segura: Igual, y tras un periodo sin lecturas
+- Add column: dangerous: `NOT NULL` without a default on a large table with old versions writing; safe: add it nullable (or with a constant default), backfill, then `CHECK ... NOT VALID` and `VALIDATE CONSTRAINT`, then `SET NOT NULL`
+- Add index: dangerous: plain `CREATE INDEX`: it blocks writes; safe: `CREATE INDEX CONCURRENTLY` in a migration without a transaction
+- Unique index: dangerous: creating it directly on data that may have duplicates; safe: clean duplicates, `CREATE UNIQUE INDEX CONCURRENTLY`, then `ADD CONSTRAINT ... USING INDEX`
+- Add foreign key: dangerous: direct `ADD FOREIGN KEY`: it locks both tables; safe: `ADD CONSTRAINT ... NOT VALID`, then `VALIDATE CONSTRAINT`
+- Rename column: dangerous: `RENAME COLUMN` while the old app reads it; safe: expand and contract
+- Change type: dangerous: `ALTER COLUMN TYPE`: it rewrites the table; safe: new column, dual write, backfill, switch reads, drop the old one
+- Drop column: dangerous: while the code still uses it; safe: remove its use from the code, deploy, then drop it in another migration
+- Drop table: dangerous: same; safe: same, and after a period with no reads
 
-El generador de TypeORM propone `DROP` más `ADD` en renombres y cambios de tipo, y `CREATE INDEX` sin `CONCURRENTLY`. Se reescribe a mano antes del commit. Se conserva el resultado del generador y se edita; no se escribe todo desde cero.
+The TypeORM generator proposes `DROP` plus `ADD` for renames and type changes, and `CREATE INDEX` without `CONCURRENTLY`. Rewrite it by hand before the commit. Keep the generator output and edit it; do not write it all from scratch.
 
-## Expand y contract
+## Expand and contract
 
-Un renombre de `users.name` a `users.full_name`, en tres despliegues:
+A rename from `users.name` to `users.full_name`, in three deploys:
 
-1. Expand. Migración 1 agrega `full_name` nullable. La app N+1 escribe en las dos columnas y lee de `name`.
-2. Migrate. Migración 2 hace el backfill por lotes. La app lee de `full_name` y sigue escribiendo en las dos. Se verifica la igualdad.
-3. Contract. La app deja de usar `name`. Migración 3, en un despliegue posterior, borra `name`.
+1. Expand. Migration 1 adds a nullable `full_name`. App N+1 writes to both columns and reads from `name`.
+2. Migrate. Migration 2 runs the batched backfill. The app reads from `full_name` and keeps writing to both. Equality is verified.
+3. Contract. The app stops using `name`. Migration 3, in a later deploy, drops `name`.
 
-Cada fase es un despliegue y una migración distintos. La entidad refleja el esquema de la fase, no el final.
+Each phase is a separate deploy and migration. The entity reflects the schema of the phase, not the final one.
 
-## Backfill por lotes
+## Batched backfill
 
 ```ts
 export class BackfillUserFullName1731000000000 implements MigrationInterface {
@@ -63,17 +63,17 @@ export class BackfillUserFullName1731000000000 implements MigrationInterface {
   }
 
   async down(): Promise<void> {
-    // No hay nada que deshacer: la columna vieja sigue intacta.
+    // Nothing to undo: the old column is still intact.
   }
 }
 ```
 
-- Lotes de miles de filas, cada uno en su commit. Se detiene cuando un lote no actualiza nada.
-- Un backfill muy grande se corre como job, no como migración, para no retener el despliegue.
+- Batches of thousands of rows, each in its own commit. It stops when a batch updates nothing.
+- A very large backfill runs as a job, not as a migration, so it does not hold up the deploy.
 
-## Migración sin transacción
+## Migration without a transaction
 
-`CREATE INDEX CONCURRENTLY` no corre dentro de una transacción. TypeORM envuelve las migraciones en una transacción según `migrationsTransactionMode` (`all` por defecto, `each`, `none`). Se declara por migración con `transaction = false` en la clase, o se aplica `none` al comando. Una migración con operaciones concurrentes no mezcla otros cambios, porque sin transacción no se deshace a medias.
+`CREATE INDEX CONCURRENTLY` does not run inside a transaction. TypeORM wraps migrations in a transaction according to `migrationsTransactionMode` (`all` by default, `each`, `none`). Declare it per migration with `transaction = false` on the class, or apply `none` to the command. A migration with concurrent operations does not mix in other changes, because without a transaction it is not rolled back halfway.
 
 ```ts
 export class AddUserEmailIndex1731000000001 implements MigrationInterface {
@@ -94,23 +94,23 @@ export class AddUserEmailIndex1731000000001 implements MigrationInterface {
 }
 ```
 
-Si `CONCURRENTLY` falla deja un índice inválido: `DROP INDEX` y reintenta. Por eso se escribe con `IF NOT EXISTS`.
+If `CONCURRENTLY` fails it leaves an invalid index: `DROP INDEX` and retry. That is why it is written with `IF NOT EXISTS`.
 
-## Modo de transacción
+## Transaction mode
 
-- `migrationsTransactionMode: 'each'` para que una migración fallida no deshaga las anteriores ya aplicadas, y cada una quede registrada en la tabla de migraciones.
-- Todas bajo `pg_advisory_lock`, una sola tarea a la vez por base.
-- Con shards, el migrador recorre cada shard y el catálogo; un shard que falla se reporta y no bloquea el resto, y el despliegue no avanza hasta que todos queden al día.
+- `migrationsTransactionMode: 'each'` so a failed migration does not undo the earlier ones already applied, and each one is recorded in the migrations table.
+- All under `pg_advisory_lock`, a single task at a time per database.
+- With shards, the migrator walks every shard and the catalog; a failing shard is reported and does not block the rest, and the deploy does not proceed until all are up to date.
 
-## Verificación
+## Verification
 
 ```
-- [ ] La app anterior funciona con el esquema nuevo
-- [ ] La app nueva funciona con el esquema anterior (para el rollback)
-- [ ] Sin bloqueos largos: lock_timeout definido
-- [ ] Índices nuevos CONCURRENTLY en migración sin transacción
-- [ ] Backfill por lotes y en migración aparte
-- [ ] down probado, o declarado irreversible
-- [ ] Probada sobre una copia con volumen real
-- [ ] migration-generate después no produce diferencias
+- [ ] The previous app works with the new schema
+- [ ] The new app works with the previous schema (for rollback)
+- [ ] No long locks: lock_timeout set
+- [ ] New indexes CONCURRENTLY in a migration without a transaction
+- [ ] Backfill in batches and in a separate migration
+- [ ] down tested, or declared irreversible
+- [ ] Tested on a copy with real volume
+- [ ] migration-generate afterwards produces no differences
 ```

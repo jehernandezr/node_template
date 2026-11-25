@@ -1,24 +1,25 @@
-# Pruebas de widgets
+# Widget tests
 
-## Contenido
+## Contents
 
-- `TestApp` y el arnés por microfrontend
-- Los cuatro estados de una pantalla
-- Layout compacto y expandido
-- Accesibilidad
-- Escala de texto
+- `TestApp` and the per-microfrontend harness
+- The four states of a screen
+- Compact and expanded layout
+- Accessibility
+- Text scale
 - Golden tests
-- Controlador sin widgets, con compuerta
+- Deferred libraries in tests
+- Controller without widgets, with a gate
 
 ## `TestApp`
 
-`TestApp` de `test_utils` arma un `MaterialApp` con el tema, los delegados compartidos, la sesión y el reloj. Ninguna prueba arma su propio `MaterialApp`. Sus métodos:
+`TestApp` from `test_utils` builds a `MaterialApp` with the theme, the shared delegates, the session and the clock. No test builds its own `MaterialApp`. Its methods:
 
-- `wrap(home)`: una app cuyo inicio es `home`. No pone `Scaffold`; la pantalla trae el suyo si lo necesita.
-- `wrapRouter(router)`: la misma app sobre un `GoRouter` de prueba, para probar rutas y guardias.
+- `wrap(home)`: an app whose home is `home`. It adds no `Scaffold`; the screen brings its own if it needs one.
+- `wrapRouter(router)`: the same app on a test `GoRouter`, to test routes and guards.
 - `pump(tester, home)`: `tester.pumpWidget(wrap(home))`.
 
-`delegates` agrega los del microfrontend bajo prueba, como `TasksLocalizations.delegate`. `session` es la sesión que ve `context.can`; sin valor, una sesión con `SessionBuilder()`.
+`delegates` adds those of the microfrontend under test, such as `TasksLocalizations.delegate`. `session` is the session `context.can` sees; without a value, a session from `SessionBuilder()`.
 
 ```dart
 await TestApp(
@@ -27,9 +28,9 @@ await TestApp(
 ).pump(tester, TasksListScreen(repository: repository));
 ```
 
-`SessionBuilder` arma la sesión: `withPermissions`, `withRoles`, `withFeatures`, `withFlags`, `mfaVerifiedAt(at)` y `SessionBuilder.anonymous()`. `ProblemFixtures` da problemas del contrato listos: `unavailable()`, `forbidden()`, `notFound()` y `withCode(code, status:)`.
+`SessionBuilder` builds the session: `withPermissions`, `withRoles`, `withFeatures`, `withFlags`, `mfaVerifiedAt(at)` and `SessionBuilder.anonymous()`. `ProblemFixtures` provides ready-made contract problems: `unavailable()`, `forbidden()`, `notFound()` and `withCode(code, status:)`.
 
-Cada microfrontend con varias pantallas tiene un arnés pequeño, con la forma de `TasksTestApp` en `test/utils/tasks_app.dart`. Monta las rutas reales del manifiesto sobre `TestApp.wrapRouter`, con una ruta de prueba para la página de acceso denegado:
+Every microfrontend with several screens has a small harness, shaped like `TasksTestApp` in `test/utils/tasks_app.dart`. It mounts the manifest's real routes on `TestApp.wrapRouter`, with a test route for the access denied page:
 
 ```dart
 final class TasksTestApp {
@@ -54,9 +55,9 @@ final class TasksTestApp {
 }
 ```
 
-## Los cuatro estados de una pantalla
+## The four states of a screen
 
-Se prueba cada estado con un doble del repositorio, no con el estado forzado a mano. `FakeTasksRepository` recibe un `DemoBehavior` (latencia y fallos) y una `seed` (datos):
+Each state is tested with a repository double, not with the state forced by hand. `FakeTasksRepository` receives a `DemoBehavior` (latency and failures) and a `seed` (data):
 
 ```dart
 testWidgets('shows the empty state when there are no tasks', (tester) async {
@@ -90,11 +91,11 @@ testWidgets('shows the error state and retries', (tester) async {
 });
 ```
 
-El estado de carga se verifica con el primer `pump` y `find.byType(LoadingView)`. Con retardo, `DemoBehavior(delay: ...)` deja la carga en curso hasta avanzar el tiempo. Para un estado que dura lo que la prueba decida, un repositorio con `Completer` (ver el último apartado).
+The loading state is checked with the first `pump` and `find.byType(LoadingView)`. With a delay, `DemoBehavior(delay: ...)` keeps the load in progress until time is advanced. For a state that lasts as long as the test decides, use a repository with a `Completer` (see the last section).
 
-## Layout compacto y expandido
+## Compact and expanded layout
 
-`pumpAtWidths` pinta la misma pantalla a cada ancho (320, 800 y 1280 por defecto) y llama a `check` con el ancho. Restaura la superficie al terminar. `home` trae su propia app, así que el ancho llega al layout de la pantalla:
+`pumpAtWidths` renders the same screen at each width (320, 800 and 1280 by default) and calls `check` with the width. It restores the surface when done. `home` brings its own app, so the width reaches the screen's layout:
 
 ```dart
 testWidgets('the list keeps its controls at every width', (tester) async {
@@ -113,11 +114,11 @@ testWidgets('the list keeps its controls at every width', (tester) async {
 });
 ```
 
-Si un ancho estrecho lanza un overflow, la prueba falla, y es lo correcto.
+If a narrow width throws an overflow, the test fails, and that is correct.
 
-## Accesibilidad
+## Accessibility
 
-`expectAccessible(tester)` de `test_utils` corre las cuatro guías de `flutter_test` (tamaño táctil en Android e iOS, etiqueta de los controles y contraste de texto) y libera el handle de semántica aunque una guía falle:
+`expectAccessible(tester)` from `test_utils` runs the four `flutter_test` guidelines (tap target size on Android and iOS, control labels and text contrast) and releases the semantics handle even if a guideline fails:
 
 ```dart
 testWidgets('the task form meets accessibility guidelines', (tester) async {
@@ -132,11 +133,11 @@ testWidgets('the task form meets accessibility guidelines', (tester) async {
 });
 ```
 
-Para un control con nombre accesible concreto: `expect(tester.getSemantics(find.byIcon(Icons.close)), matchesSemantics(label: 'Cerrar', isButton: true, hasTapAction: true, isEnabled: true, hasEnabledState: true, isFocusable: true));`.
+For a control with a specific accessible name: `expect(tester.getSemantics(find.byIcon(Icons.close)), matchesSemantics(label: 'Cerrar', isButton: true, hasTapAction: true, isEnabled: true, hasEnabledState: true, isFocusable: true));`.
 
-## Escala de texto
+## Text scale
 
-`pumpAtTextScale(tester, home)` fija la escala en 2.0 y la restaura al terminar. El `home` trae su app, igual que en `pumpAtWidths`:
+`pumpAtTextScale(tester, home)` sets the scale to 2.0 and restores it when done. The `home` brings its app, as in `pumpAtWidths`:
 
 ```dart
 testWidgets('the list survives 2x text scale', (tester) async {
@@ -156,7 +157,7 @@ testWidgets('the list survives 2x text scale', (tester) async {
 
 ## Golden tests
 
-Solo en `packages/ui` y solo para componentes visuales estables (botones, tarjetas, vistas de estado), con `flutter_test` y sin librerías extra. Van etiquetados para correrlos aparte, porque el render varía entre sistemas operativos y se generan y comparan en un solo entorno (el de CI).
+Only in `packages/ui` and only for stable visual components (buttons, cards, state views), with `flutter_test` and no extra libraries. They are tagged to run separately, because rendering varies between operating systems and they are generated and compared in a single environment (CI).
 
 ```dart
 @Tags(['golden'])
@@ -175,19 +176,19 @@ testWidgets('EmptyState matches golden', (tester) async {
 });
 ```
 
-Reglas: el golden mide aspecto, no comportamiento; un widget con datos dinámicos recibe datos fijos; los PNG viven junto a la prueba en `test/<carpeta>/goldens/`; se actualizan con `flutter test --update-goldens --tags golden` y el diff se revisa a ojo en el PR. La etiqueta se declara en el `dart_test.yaml` del paquete (`tags: {golden: {}}`).
+Rules: a golden measures appearance, not behavior; a widget with dynamic data receives fixed data; the PNGs live next to the test in `test/<folder>/goldens/`; they are updated with `flutter test --update-goldens --tags golden` and the diff is reviewed by eye in the PR. The tag is declared in the package's `dart_test.yaml` (`tags: {golden: {}}`).
 
-## Bibliotecas diferidas en pruebas
+## Deferred libraries in tests
 
-Una prueba que abre una pantalla diferida necesita que su biblioteca esté cargada. `DeferredLibrariesPreloader` la carga en `setUpAll`, fuera de `testWidgets`, porque la VM guarda una sola carga por unidad diferida atada a la zona de la primera prueba que la pidió. Recibe los manifiestos y carga sus pantallas y los ciclos de vida que arrancan con ellas:
+A test that opens a deferred screen needs its library loaded. `DeferredLibrariesPreloader` loads it in `setUpAll`, outside `testWidgets`, because the VM keeps a single load per deferred unit, bound to the zone of the first test that requested it. It receives the manifests and loads their screens and the lifecycles that start with them:
 
 ```dart
 setUpAll(() => const DeferredLibrariesPreloader().load([tasksManifest]));
 ```
 
-## Controlador sin widgets, con compuerta
+## Controller without widgets, with a gate
 
-Para probar que una respuesta vieja no pisa una nueva, el doble expone un `Completer` por llamada. `ScriptedTasksRepository` de `tasks` es la forma completa:
+To test that an old response does not overwrite a new one, the double exposes one `Completer` per call. `ScriptedTasksRepository` in `tasks` is the full form:
 
 ```dart
 final class ScriptedTasksRepository implements TasksRepository {
@@ -199,11 +200,11 @@ final class ScriptedTasksRepository implements TasksRepository {
     gets.add(completer);
     return completer.future;
   }
-  // ...resto del puerto
+  // ...rest of the port
 }
 ```
 
-La prueba lanza dos cargas, completa la segunda y luego la primera con `await pumpEventQueue()` entre una y otra, y verifica que el estado final es el de la segunda:
+The test starts two loads, completes the second and then the first with `await pumpEventQueue()` in between, and checks that the final state is the second one:
 
 ```dart
 test('an older answer does not replace a newer one', () async {

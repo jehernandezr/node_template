@@ -1,11 +1,11 @@
-# Publica la web de Flutter en el bucket del ambiente. Un push a main publica solo dev.
+# Publishes the Flutter web app to the environment bucket. A push to main only publishes dev.
 name: Publish web
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: Ambiente donde se publica la web
+        description: Environment where the web app is published
         type: choice
         options:
           - dev
@@ -31,7 +31,7 @@ env:
 
 jobs:
   build-and-publish:
-    name: Compilar y publicar la web
+    name: Build and publish the web app
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
@@ -43,7 +43,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Leer la versión de Flutter
+      - name: Read the Flutter version
         id: flutter-version
         run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
 
@@ -53,19 +53,19 @@ jobs:
           flutter-version: ${{ steps.flutter-version.outputs.version }}
           cache: true
 
-      - name: Compilar la web
+      - name: Build the web app
         working-directory: front/apps/web
         run: |
           flutter pub get
           flutter build web --release --source-maps
 
-      - name: Credenciales del rol de la web
+      - name: Web role credentials
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ vars.AWS_WEB_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Subir la web e invalidar CloudFront
+      - name: Upload the web app and invalidate CloudFront
         env:
           NAME_PREFIX: ${{ vars.NAME_PREFIX }}
           AWS_REGION: ${{ vars.AWS_REGION }}

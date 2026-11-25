@@ -1,20 +1,20 @@
-# Árboles de ejemplo
+# Example trees
 
-## Servicio por módulos y capas
+## Service by modules and layers
 
 ```
 backend/libs/services/users/src/
-├── index.ts                      # API pública: fachada, enums, tokens
+├── index.ts                      # public API: facade, enums, tokens
 ├── shared/{enums,constants,types,utils}/
 └── modules/
     └── sign-in/
-        ├── domain/               # agregados, objetos de valor, eventos, errores, puertos
-        ├── application/          # casos de uso, comandos, consultas, fachada
-        ├── infrastructure/       # repositorios TypeORM, entidades, mappers, clientes
-        └── presentation/         # controllers, consumidores, esquemas zod, *.module.ts
+        ├── domain/               # aggregates, value objects, events, errors, ports
+        ├── application/          # use cases, commands, queries, facade
+        ├── infrastructure/       # TypeORM repositories, entities, mappers, clients
+        └── presentation/         # controllers, consumers, zod schemas, *.module.ts
 ```
 
-## Librería de plataforma con `__tests__`
+## Platform library with `__tests__`
 
 ```
 backend/libs/platform/kernel/

@@ -4,7 +4,7 @@ import { DatetimeNowRule } from '../datetime-now-rule.mjs';
 import { RuleId } from '../rule-id.mjs';
 
 describe('DatetimeNowRule', () => {
-  it('se aplica a las librerías de Dart salvo al archivo del reloj', () => {
+  it('applies to Dart libraries except the clock file', () => {
     const rule = new DatetimeNowRule();
     assert.equal(rule.appliesTo('front/packages/auth/lib/src/a.dart'), true);
     assert.equal(
@@ -14,7 +14,7 @@ describe('DatetimeNowRule', () => {
     assert.equal(rule.appliesTo('front/packages/auth/test/a_test.dart'), false);
   });
 
-  it('marca DateTime.now() en la lógica', () => {
+  it('flags DateTime.now() in the logic', () => {
     const rule = new DatetimeNowRule();
     const file = 'front/packages/auth/lib/src/a.dart';
     const text = ['class A {', '  final now = DateTime.now();', '}'].join('\n');
@@ -25,7 +25,7 @@ describe('DatetimeNowRule', () => {
     assert.equal(violation.line, 2);
   });
 
-  it('acepta el tiempo leído del Clock inyectado', () => {
+  it('accepts time read from the injected Clock', () => {
     const rule = new DatetimeNowRule();
     const text = ['class A {', '  final now = clock.now();', '}'].join('\n');
     assert.deepEqual(
@@ -34,7 +34,7 @@ describe('DatetimeNowRule', () => {
     );
   });
 
-  it('ignora DateTime.now() dentro de comentarios', () => {
+  it('ignores DateTime.now() inside comments', () => {
     const rule = new DatetimeNowRule();
     const text = '// DateTime.now()';
     assert.deepEqual(
