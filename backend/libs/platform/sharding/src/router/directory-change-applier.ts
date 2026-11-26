@@ -25,6 +25,7 @@ export class DirectoryChangeApplier {
    * - Placement without `version`: discards the cached placement.
    * - Shard instance: discards the cached instance.
    * Never throws on a bad event: reports it to `onError` and ignores it.
+   * @param event Directory change.
    */
   apply(event: ShardDirectoryChanged): void {
     try {

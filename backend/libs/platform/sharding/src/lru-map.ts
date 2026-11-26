@@ -16,11 +16,16 @@ export class LruMap<K, V> {
     ShardingGuard.instance.positiveInteger('maxEntries', maxEntries);
   }
 
+  /** Number of entries. */
   get size(): number {
     return this.entries.size;
   }
 
-  /** Returns the value and marks it as most recently used. */
+  /**
+   * Returns the value and marks it as most recently used.
+   * @param key Key to read.
+   * @returns The value, or `undefined`.
+   */
   get(key: K): V | undefined {
     if (!this.entries.has(key)) {
       return undefined;
@@ -31,11 +36,20 @@ export class LruMap<K, V> {
     return value;
   }
 
-  /** Returns the value without changing its position. */
+  /**
+   * Returns the value without changing its position.
+   * @param key Key to read.
+   * @returns The value, or `undefined`.
+   */
   peek(key: K): V | undefined {
     return this.entries.get(key);
   }
 
+  /**
+   * Stores a value as the most recent, evicting the least recent beyond the capacity.
+   * @param key Key to write.
+   * @param value Value to store.
+   */
   set(key: K, value: V): void {
     this.entries.delete(key);
     this.entries.set(key, value);
@@ -50,6 +64,11 @@ export class LruMap<K, V> {
     }
   }
 
+  /**
+   * Deletes an entry.
+   * @param key Key to delete.
+   * @returns Whether it existed.
+   */
   delete(key: K): boolean {
     return this.entries.delete(key);
   }

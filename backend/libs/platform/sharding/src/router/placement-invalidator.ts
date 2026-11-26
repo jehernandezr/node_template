@@ -27,6 +27,8 @@ export class PlacementInvalidator {
    * shared entry with a versioned tombstone and publishes
    * `ShardingEvent.ShardDirectoryChanged`. A cache or channel failure is reported to
    * `onError` and not thrown.
+   * @param tenantId Tenant to invalidate.
+   * @param options Version and whether to publish.
    * @throws ShardingError `KeyMissing` or `InvalidTenantId` for a bad id; `InvalidConfiguration`
    *   if `options.version` is not a non-negative integer.
    */

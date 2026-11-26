@@ -16,6 +16,10 @@ export class Sagas {
 
   /**
    * Starts the `definition` saga with `state` and runs it until it pauses or finishes.
+   * @param definition Saga definition class.
+   * @param state Initial state.
+   * @param options Idempotency key, context and deadline.
+   * @returns The instance.
    * @throws SagaError `UnknownDefinition` if the class is not registered with `SagaModule.forFeature`.
    */
   start<TState>(

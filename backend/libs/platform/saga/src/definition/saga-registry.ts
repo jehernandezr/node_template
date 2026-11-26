@@ -30,7 +30,11 @@ export class SagaRegistry {
 
   constructor(private readonly options: SagaRegistryOptions) {}
 
-  /** @throws SagaError `InvalidConfiguration` if the registry is already sealed. */
+  /**
+   * Adds saga definitions before the registry is sealed.
+   * @param definitions Saga definitions.
+   * @throws SagaError `InvalidConfiguration` if the registry is already sealed.
+   */
   add(...definitions: readonly SagaDefinition<unknown>[]): void {
     if (this.compiled !== undefined) {
       throw new SagaError(
@@ -78,7 +82,11 @@ export class SagaRegistry {
     this.compiled = compiled;
   }
 
-  /** Returns the compiled saga of a type. Seals the registry if it is not sealed yet. @throws SagaError `UnknownDefinition` */
+  /**
+   * Returns the compiled saga of a type. Seals the registry if it is not sealed yet. @throws SagaError `UnknownDefinition`
+   * @param type Saga type.
+   * @returns The compiled saga.
+   */
   get(type: string): CompiledSaga<unknown> {
     this.seal();
     const saga = this.compiled?.get(type);
@@ -91,7 +99,11 @@ export class SagaRegistry {
     return saga;
   }
 
-  /** Returns the `type` a definition class was registered with. @throws SagaError `UnknownDefinition` */
+  /**
+   * Returns the `type` a definition class was registered with. @throws SagaError `UnknownDefinition`
+   * @param definition Definition class.
+   * @returns The type.
+   */
   typeOf(definition: abstract new (...args: never[]) => object): string {
     this.seal();
     const type = this.typeByClass.get(definition);

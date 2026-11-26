@@ -67,6 +67,8 @@ export class SagaModule extends SagaModuleClass {
   /**
    * Registers the definitions of a module. Each call uses its own symbol,
    * so two `forFeature` calls do not collide. Requires `forRoot` in the application.
+   * @param definitions Definition classes.
+   * @returns The module.
    */
   static forFeature(
     definitions: readonly Type<SagaDefinition<unknown>>[],

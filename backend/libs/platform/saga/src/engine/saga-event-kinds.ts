@@ -12,6 +12,11 @@ export class SagaEventKinds {
       [SagaStatus.Suspended, SagaEventKind.Suspended],
     ]);
 
+  /**
+   * Maps a saga status to the event it announces.
+   * @param status Saga status.
+   * @returns The event kind, or `undefined`.
+   */
   static of(status: SagaStatus): SagaEventKind | undefined {
     return SagaEventKinds.BY_STATUS.get(status);
   }

@@ -43,6 +43,8 @@ export class ShardRouter {
 
   /**
    * Resolves the physical instance of a request.
+   * @param request Key and intent.
+   * @returns The resolved shard.
    * @throws ShardingError `KeyMissing`, `InvalidTenantId`, `InvalidKey`, `UnknownTenant`,
    *   `UnknownShard`, `TenantMigrating` or `TenantNotWritable`.
    * @throws WrongRegionError when the tenant lives in another region.
@@ -88,6 +90,8 @@ export class ShardRouter {
 
   /**
    * Tenant placement, from the in-process cache or loaded, without checking region or status.
+   * @param tenantId Tenant to read.
+   * @returns The placement.
    * @throws ShardingError `KeyMissing`, `InvalidTenantId` or `UnknownTenant`.
    */
   async placement(tenantId: string): Promise<TenantPlacement> {
@@ -96,7 +100,10 @@ export class ShardRouter {
     return cache.local(normalized) ?? loader.loadOrJoin(normalized);
   }
 
-  /** Throws the same errors as a write `resolve`, for a result already in hand. */
+  /**
+   * Throws the same errors as a write `resolve`, for a result already in hand.
+   * @param resolved Resolved shard.
+   */
   assertWritable(resolved: ResolvedShard): void {
     PlacementWriteRule.assertWritable(resolved.tenantId, resolved.status);
   }
@@ -105,6 +112,8 @@ export class ShardRouter {
    * Discards a tenant placement and the instances of its shard group, leaves a versioned
    * tombstone in the shared cache and publishes the change to the other processes. Called
    * after the directory write is committed.
+   * @param tenantId Tenant to invalidate.
+   * @param options Version and whether to publish.
    * @throws ShardingError `KeyMissing` or `InvalidTenantId` for a bad id, `InvalidConfiguration`
    *   when `options.version` is not a non-negative integer.
    */
@@ -115,6 +124,7 @@ export class ShardRouter {
   /**
    * Applies a change published by another process. Only changes in-process state. Never throws
    * on a bad event: reports it to `onCacheError` and ignores it.
+   * @param event Directory change.
    */
   applyDirectoryChange(event: ShardDirectoryChanged): void {
     this.parts.applier.apply(event);
@@ -123,6 +133,7 @@ export class ShardRouter {
   /**
    * Subscribes this router to directory changes from every process.
    * @returns a function that stops listening.
+   * @param subscriber Source of the changes.
    */
   listen(
     subscriber: ShardDirectoryChangeSubscriber,
@@ -130,7 +141,10 @@ export class ShardRouter {
     return subscriber.subscribe((event) => this.applyDirectoryChange(event));
   }
 
-  /** Deletes the cached instance of a logical shard, regardless of which placements reference it. */
+  /**
+   * Deletes the cached instance of a logical shard, regardless of which placements reference it.
+   * @param logicalShard Logical shard.
+   */
   invalidateShard(logicalShard: string): void {
     this.parts.instances.invalidate(logicalShard);
   }

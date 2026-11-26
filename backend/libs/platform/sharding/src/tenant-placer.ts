@@ -36,6 +36,10 @@ export class TenantPlacer {
   }
 
   /**
+   * Places a new tenant and writes its placement.
+   * @param request Tenant, region and group.
+   * @param availableShards Shards that accept tenants.
+   * @returns The placement.
    * @throws ShardingError from the policy, for example `UnknownShard` when the region has no suitable shard.
    */
   async place(

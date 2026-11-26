@@ -63,6 +63,8 @@ export class SagaRecoveryJob extends ScheduledJob {
   /**
    * Resumes up to `limit` recoverable sagas. An error in one is logged and the
    * batch continues; those held by another run (contention) are skipped.
+   * @param limit Maximum sagas.
+   * @returns The report.
    */
   async runOnce(limit: number): Promise<RecoveryReport> {
     const candidates = await this.deps.store.findRecoverable(

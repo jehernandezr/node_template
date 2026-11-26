@@ -47,6 +47,11 @@ export class StepExecutor {
    * Returns the written instance.
    * Nothing is dispatched after the deadline, but an uncertain step must still be undone.
    * The clock is read after the call: a step that used up its deadline must see the saga deadline already expired and measure the backoff from that moment.
+   * @param run Run that holds the lease.
+   * @param instance Saga instance.
+   * @param compiled Compiled saga.
+   * @param steps Step log.
+   * @returns The instance after the step.
    */
   async run(
     run: SagaRun,

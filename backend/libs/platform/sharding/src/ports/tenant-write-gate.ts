@@ -5,11 +5,22 @@
  * from `@platform/persistence`), because `isClosed` may read from a cache.
  */
 export abstract class TenantWriteGate {
+  /**
+   * Tells whether the tenant's writes are paused by a move.
+   * @param tenantId Tenant to check.
+   * @returns `true` when closed.
+   */
   abstract isClosed(tenantId: string): Promise<boolean>;
 
-  /** Idempotent: closing a closed gate changes nothing. */
+  /**
+   * Idempotent: closing a closed gate changes nothing.
+   * @param tenantId Tenant to pause.
+   */
   abstract close(tenantId: string): Promise<void>;
 
-  /** Idempotent: opening an open gate changes nothing. */
+  /**
+   * Idempotent: opening an open gate changes nothing.
+   * @param tenantId Tenant to resume.
+   */
   abstract open(tenantId: string): Promise<void>;
 }

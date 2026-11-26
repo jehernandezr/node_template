@@ -5,6 +5,9 @@ import { TenantStatus } from '../model/tenant-status.enum.js';
 /** Decides whether a tenant's state allows writing. */
 export class PlacementWriteRule {
   /**
+   * Rejects writes to a tenant that is moving or suspended.
+   * @param tenantId Tenant written.
+   * @param status Its status.
    * @throws ShardingError `TenantMigrating` if it is migrating; `TenantNotWritable` if the status is not `Active`.
    */
   static assertWritable(tenantId: string, status: TenantStatus): void {

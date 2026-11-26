@@ -39,6 +39,11 @@ export class CompensationRunner {
   /**
    * Makes one attempt to compensate step `instance.currentStep`.
    * As in the forward step, the clock is read after the call.
+   * @param run Run that holds the lease.
+   * @param instance Saga instance.
+   * @param compiled Compiled saga.
+   * @param steps Step log.
+   * @returns The instance after compensating.
    * @throws SagaError `InvalidState` if the step has no compensation operation or no forward input.
    */
   async run(

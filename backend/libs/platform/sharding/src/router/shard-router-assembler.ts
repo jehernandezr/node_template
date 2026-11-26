@@ -16,6 +16,9 @@ import type { ShardRouterParts } from './shard-router-parts.js';
 /** Validates the `ShardRouter` options and builds its parts with the cross dependencies already wired. */
 export class ShardRouterAssembler {
   /**
+   * Builds the parts of the router from its options.
+   * @param options Router options.
+   * @returns The parts.
    * @throws ShardingError `InvalidConfiguration` for an invalid TTL, limit or pattern.
    */
   static assemble(options: ShardRouterOptions): ShardRouterParts {

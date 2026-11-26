@@ -7,9 +7,17 @@ import type { TenantPlacement } from '../model/tenant-placement.js';
  * `@platform/adapters-postgres`; `InMemoryDirectoryStore`, from `@platform/sharding/test-utils`, covers tests.
  */
 export abstract class DirectoryStore {
-  /** Placement of a tenant in lowercase, or `undefined` if the tenant does not exist. */
+  /**
+   * Placement of a tenant in lowercase, or `undefined` if the tenant does not exist.
+   * @param tenantId Tenant to read.
+   * @returns The placement, or `undefined`.
+   */
   abstract getPlacement(tenantId: string): Promise<TenantPlacement | undefined>;
 
-  /** Physical instance of a logical shard, or `undefined` if the shard does not exist. */
+  /**
+   * Physical instance of a logical shard, or `undefined` if the shard does not exist.
+   * @param logicalShard Logical shard.
+   * @returns The instance, or `undefined`.
+   */
   abstract getInstance(logicalShard: string): Promise<string | undefined>;
 }

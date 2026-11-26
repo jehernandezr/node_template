@@ -26,12 +26,20 @@ const FINISHED: ReadonlySet<SagaStatus> = new Set([
 export class SagaInstance {
   private constructor(private readonly data: SagaInstanceProps) {}
 
-  /** Rebuilds the instance from what the store saved. */
+  /**
+   * Rebuilds the instance from what the store saved.
+   * @param props Stored fields.
+   * @returns The instance.
+   */
   static rehydrate(props: SagaInstanceProps): SagaInstance {
     return new SagaInstance(props);
   }
 
-  /** New instance in `Running`, at step 0 forward, version 0 and with the lease of the starting run. */
+  /**
+   * New instance in `Running`, at step 0 forward, version 0 and with the lease of the starting run.
+   * @param input Id, type, state and lease.
+   * @returns The instance.
+   */
   static start(input: StartSagaInstance): SagaInstance {
     return new SagaInstance({
       id: input.id,
@@ -75,68 +83,91 @@ export class SagaInstance {
     return Object.keys(kept).length === 0 ? null : kept;
   }
 
-  /** The persistent fields, for the store. */
+  /**
+   * The persistent fields, for the store.
+   * @returns The fields.
+   */
   toProps(): SagaInstanceProps {
     return this.data;
   }
 
+  /** Id of the saga. */
   get id(): string {
     return this.data.id;
   }
+  /** Type of the saga. */
   get type(): string {
     return this.data.type;
   }
+  /** Idempotency key of the start, if any. */
   get idempotencyKey(): string | null {
     return this.data.idempotencyKey;
   }
+  /** Status of the saga. */
   get status(): SagaStatus {
     return this.data.status;
   }
+  /** State of the saga. */
   get state(): unknown {
     return this.data.state;
   }
+  /** Index of the current step. */
   get currentStep(): number {
     return this.data.currentStep;
   }
+  /** Direction of the run: forward or compensating. */
   get direction(): StepDirection {
     return this.data.direction;
   }
+  /** Version for the guarded writes. */
   get version(): number {
     return this.data.version;
   }
+  /** Token of the run that holds the lease. */
   get leaseToken(): string | null {
     return this.data.leaseToken;
   }
+  /** End of the lease. */
   get leaseUntil(): Date | null {
     return this.data.leaseUntil;
   }
+  /** When the next attempt is due. */
   get nextAttemptAt(): Date | null {
     return this.data.nextAttemptAt;
   }
+  /** Attempts of the current step. */
   get attempts(): number {
     return this.data.attempts;
   }
+  /** Instant the current suspension started. */
   get suspendedSince(): Date | null {
     return this.data.suspendedSince;
   }
+  /** Deadline of the whole saga. */
   get deadlineAt(): Date | null {
     return this.data.deadlineAt;
   }
+  /** Code of the error that made the current step fail or suspend. */
   get lastErrorCode(): string | null {
     return this.data.lastErrorCode;
   }
+  /** Redacted detail of the error that made the current step fail or suspend. */
   get lastErrorDetail(): string | null {
     return this.data.lastErrorDetail;
   }
+  /** Context of the calls: tenant, actor and trace. */
   get context(): SagaCallContext | null {
     return this.data.context;
   }
+  /** Fingerprint of the initial state. */
   get inputDigest(): string {
     return this.data.inputDigest;
   }
+  /** Instant the saga was created. */
   get createdAt(): Date {
     return this.data.createdAt;
   }
+  /** Instant of the last change. */
   get updatedAt(): Date {
     return this.data.updatedAt;
   }
@@ -146,11 +177,19 @@ export class SagaInstance {
     return this.data.context?.tenantId ?? null;
   }
 
+  /**
+   * Tells whether the saga reached a terminal status.
+   * @returns `true` when finished.
+   */
   isFinished(): boolean {
     return FINISHED.has(this.data.status);
   }
 
-  /** Whether the saga deadline already passed at `now`. */
+  /**
+   * Whether the saga deadline already passed at `now`.
+   * @param now Current instant.
+   * @returns `true` when passed.
+   */
   deadlinePassed(now: Date): boolean {
     return (
       this.data.deadlineAt !== null &&
@@ -161,6 +200,9 @@ export class SagaInstance {
   /**
    * This instance, found by its idempotency key, as the result of a
    * repeated start: only if it is of the same type and has the same initial state.
+   * @param type Requested type.
+   * @param inputDigest Fingerprint of the requested state.
+   * @returns The instance.
    * @throws SagaError `IdempotencyKeyConflict` if the key is already used by another saga or another input.
    */
   reusableFor(type: string, inputDigest: string): SagaInstance {
@@ -180,17 +222,31 @@ export class SagaInstance {
     return this;
   }
 
-  /** The same instance with another version; the store uses it when saving. */
+  /**
+   * The same instance with another version; the store uses it when saving.
+   * @param version New version.
+   * @returns The instance.
+   */
   withVersion(version: number): SagaInstance {
     return new SagaInstance({ ...this.data, version });
   }
 
-  /** The same instance with another lease; the store uses it when taking, renewing or releasing it. */
+  /**
+   * The same instance with another lease; the store uses it when taking, renewing or releasing it.
+   * @param leaseToken New token.
+   * @param leaseUntil New lease end.
+   * @returns The instance.
+   */
   withLease(leaseToken: string | null, leaseUntil: Date | null): SagaInstance {
     return new SagaInstance({ ...this.data, leaseToken, leaseUntil });
   }
 
-  /** Marks the dispatch of an attempt: `Running` going forward, `Compensating` when undoing. */
+  /**
+   * Marks the dispatch of an attempt: `Running` going forward, `Compensating` when undoing.
+   * @param direction Direction of the attempt.
+   * @param now Current instant.
+   * @returns The instance.
+   */
   recordDispatch(direction: StepDirection, now: Date): SagaInstance {
     return this.next(
       {
@@ -204,7 +260,14 @@ export class SagaInstance {
     );
   }
 
-  /** Step `index` completed: applies `state`, advances or ends in `Completed` and clears the error from previous attempts. */
+  /**
+   * Step `index` completed: applies `state`, advances or ends in `Completed` and clears the error from previous attempts.
+   * @param compiled Compiled saga.
+   * @param index Completed step.
+   * @param state New state.
+   * @param now Current instant.
+   * @returns The instance.
+   */
   completeStep(
     compiled: CompiledSaga<unknown>,
     index: number,
@@ -231,6 +294,13 @@ export class SagaInstance {
   /**
    * Starts compensating from `from` (inclusive) downward. Ends in
    * `Compensated` at once if nothing needs to be undone.
+   * @param compiled Compiled saga.
+   * @param steps Step log.
+   * @param from Step to start from.
+   * @param code Error code.
+   * @param detail Error detail.
+   * @param now Current instant.
+   * @returns The instance.
    */
   startCompensation(
     compiled: CompiledSaga<unknown>,
@@ -257,7 +327,14 @@ export class SagaInstance {
     );
   }
 
-  /** Moves to the next step to undo below `from`, keeping the error that started the compensation. */
+  /**
+   * Moves to the next step to undo below `from`, keeping the error that started the compensation.
+   * @param compiled Compiled saga.
+   * @param steps Step log.
+   * @param from Step compensated.
+   * @param now Current instant.
+   * @returns The instance.
+   */
   completeCompensation(
     compiled: CompiledSaga<unknown>,
     steps: StepLog,
@@ -281,6 +358,11 @@ export class SagaInstance {
   /**
    * Pauses to retry, or requires intervention when the suspension limits are exceeded.
    * The start of the suspension is kept even when giving up, so the instance shows how long the step had been failing.
+   * @param code Error code.
+   * @param detail Error detail.
+   * @param now Current instant.
+   * @param policy Suspend policy.
+   * @returns The instance.
    */
   suspend(
     code: string,
@@ -313,6 +395,11 @@ export class SagaInstance {
   /**
    * Short pause after a call in which the participant made progress: tries again with the first wait of
    * `policy` and without spending suspensions, which are counted again from zero.
+   * @param code Progress reason.
+   * @param detail Detail.
+   * @param now Current instant.
+   * @param policy Suspend policy.
+   * @returns The instance.
    */
   continueAfterProgress(
     code: string,
@@ -333,7 +420,14 @@ export class SagaInstance {
     );
   }
 
-  /** Stops the saga until a person decides: `RequiresIntervention` or `CompensationFailed`. */
+  /**
+   * Stops the saga until a person decides: `RequiresIntervention` or `CompensationFailed`.
+   * @param status Terminal status.
+   * @param code Error code.
+   * @param detail Error detail.
+   * @param now Current instant.
+   * @returns The instance.
+   */
   finish(
     status: SagaStatus.RequiresIntervention | SagaStatus.CompensationFailed,
     code: string,

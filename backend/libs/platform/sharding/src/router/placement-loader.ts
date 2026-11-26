@@ -33,6 +33,9 @@ export class PlacementLoader {
   ) {}
 
   /**
+   * Loads a placement, joining a load already in flight for the same tenant.
+   * @param tenantId Tenant to load.
+   * @returns The placement.
    * @throws ShardingError `UnknownTenant` if the directory does not have the tenant.
    */
   loadOrJoin(tenantId: string): Promise<TenantPlacement> {

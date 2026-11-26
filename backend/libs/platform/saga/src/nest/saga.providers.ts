@@ -41,7 +41,10 @@ import { SAGA_MODULE_OPTIONS } from './saga.module-definition.js';
  */
 export class SagaProviders {
   /**
+   * Builds the providers of the saga engine.
    * `SagaModule` already checked that the store exists.
+   * @param extras Store and scopes adapters.
+   * @returns The providers.
    */
   static build(extras: SagaModuleExtras): Provider[] {
     const { store } = extras as Required<Pick<SagaModuleExtras, 'store'>>;

@@ -48,7 +48,11 @@ export interface SagaEngineDeps {
 export class SagaEngine {
   constructor(private readonly deps: SagaEngineDeps) {}
 
-  /** Subscribes an event listener. Returns the function that removes it. */
+  /**
+   * Subscribes an event listener. Returns the function that removes it.
+   * @param listener Event listener.
+   * @returns The unsubscribe function.
+   */
   onEvent(listener: SagaEventListener): () => void {
     return this.deps.events.subscribe(listener);
   }
@@ -61,6 +65,10 @@ export class SagaEngine {
    * without a log to compensate them. The transaction manager awaits that hook, so the caller's transaction returns
    * only once the saga pauses or finishes. If the transaction rolls back, the saga does not exist.
    * If the run fails after the commit, the lease expires and `SagaRecoveryJob` resumes it.
+   * @param type Saga type.
+   * @param initialState Initial state.
+   * @param options Idempotency key, context and deadline.
+   * @returns The instance.
    * @throws SagaError `UnknownDefinition`, `InvalidState` (non-JSON state), `IdempotencyKeyConflict`.
    */
   async start(
@@ -121,7 +129,11 @@ export class SagaEngine {
     return this.execute(run);
   }
 
-  /** Continues a saga from its log. @throws SagaError `NotFound`, `LeaseNotAcquired`, `LeaseLost`. */
+  /**
+   * Continues a saga from its log. @throws SagaError `NotFound`, `LeaseNotAcquired`, `LeaseLost`.
+   * @param sagaId Saga to resume.
+   * @returns The instance after the run.
+   */
   async resume(sagaId: string): Promise<SagaInstance> {
     const run = this.deps.leases.newRun(sagaId);
     await this.deps.leases.acquire(run);
