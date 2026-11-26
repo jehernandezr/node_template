@@ -20,7 +20,11 @@ export class CallerWait {
 
   constructor(private readonly clock: Clock) {}
 
-  /** Why the caller can no longer wait, or `undefined` while it can. */
+  /**
+   * Why the caller can no longer wait, or `undefined` while it can.
+   * @param options Signal and deadline of the caller.
+   * @returns The cancellation error, or `undefined`.
+   */
   cancellation(options: CallerWaitOptions): Error | undefined {
     if (options.signal?.aborted === true) {
       return TimerScheduler.abortReason(options.signal);
@@ -35,6 +39,9 @@ export class CallerWait {
    * Waits for `work` until it settles, the signal aborts or the deadline expires,
    * whichever happens first. Without a signal or deadline it returns the same promise.
    * `work` may reject later and nobody else listens to it.
+   * @param work Shared work.
+   * @param options Signal and deadline of the caller.
+   * @returns What `work` returns.
    */
   wait<T>(work: Promise<T>, options: CallerWaitOptions): Promise<T> {
     if (options.signal === undefined && options.deadline === undefined) {

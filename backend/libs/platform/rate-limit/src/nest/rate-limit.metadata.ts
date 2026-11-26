@@ -13,6 +13,10 @@ export interface RateLimitMetadata {
 /** Writes the rule of a route. Validates when the class loads, not on the request. */
 export class RateLimitMetadataWriter {
   /**
+   * Builds the metadata decorator of a limit.
+   * @param rule Rule to apply.
+   * @param options Cost of each call.
+   * @returns The decorator.
    * @throws InvalidArgumentError if the rule or the cost is not valid.
    */
   static decorate(

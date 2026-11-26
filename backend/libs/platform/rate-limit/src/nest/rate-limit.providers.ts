@@ -21,6 +21,11 @@ import { RateLimitGuard } from './rate-limit.guard.js';
 
 /** Providers of the rate limit module. */
 export class RateLimitProviders {
+  /**
+   * Builds the providers of the limiter with its adapters.
+   * @param extras Shared store, metrics and logger adapters.
+   * @returns The providers.
+   */
   static build(extras: RateLimitModuleExtras): Provider[] {
     const providers: Provider[] = [
       {

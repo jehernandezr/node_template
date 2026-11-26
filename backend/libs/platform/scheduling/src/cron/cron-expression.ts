@@ -24,7 +24,10 @@ export class CronExpression {
   ) {}
 
   /**
+   * Parses a five or six field cron expression in UTC.
    * Without seconds, the expression fires at the start of the minute.
+   * @param expression Cron text.
+   * @returns The expression.
    * @throws InvalidCronExpressionError when the expression is not valid.
    */
   static parse(expression: string): CronExpression {
@@ -53,6 +56,8 @@ export class CronExpression {
   /**
    * First instant strictly after `from` that matches the expression, in UTC.
    * The limit is computed once: without it, an impossible expression such as February 31 would never end.
+   * @param from Instant to start after.
+   * @returns The next instant.
    * @throws InvalidCronExpressionError if there is no date in the next five years.
    */
   nextAfter(from: Date): Date {

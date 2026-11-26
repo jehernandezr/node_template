@@ -20,6 +20,8 @@ export class RateLimitRule {
   /**
    * Validates and freezes a rule. Meant for declaring them as constants when
    * the module loads, so that a badly written rule fails at startup.
+   * @param rule Rule to define.
+   * @returns The frozen rule.
    * @throws InvalidArgumentError like {@link RateLimitRule.validate}.
    */
   static define(rule: RateLimitRule): RateLimitRule {
@@ -30,6 +32,8 @@ export class RateLimitRule {
   }
 
   /**
+   * Validates a rule.
+   * @param rule Rule to check.
    * @throws InvalidArgumentError if the name does not match
    *   `RateLimitLimits.RULE_NAME_PATTERN` or the limit or the window are not
    *   integers within their range.

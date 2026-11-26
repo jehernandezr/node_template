@@ -12,6 +12,11 @@ export class SearchSchema {
   /** Dimensions of the vectors the table stores; the `EmbeddingProvider` must produce the same. */
   static readonly EMBEDDING_DIMENSIONS = 256;
 
+  /**
+   * SQL that creates the search table and its indexes.
+   * @param language Text search configuration.
+   * @returns The statements.
+   */
   static create(language: SearchLanguage = SearchLanguage.Spanish): string[] {
     const config = SearchSchema.config(language);
     return [
@@ -21,6 +26,10 @@ export class SearchSchema {
     ];
   }
 
+  /**
+   * SQL that drops the search table.
+   * @returns The statements.
+   */
   static drop(): string[] {
     return [`DROP TABLE "${SearchSchema.TABLE}"`];
   }

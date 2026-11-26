@@ -20,6 +20,11 @@ import type { MeteringModuleOptions } from './metering-module-options.js';
  */
 @Module({})
 export class MeteringModule {
+  /**
+   * Registers the usage recorder, its counter store and the flush job.
+   * @param options Counter store adapter and flush settings.
+   * @returns The global module.
+   */
   static forRoot(options: MeteringModuleOptions): DynamicModule {
     return {
       module: MeteringModule,

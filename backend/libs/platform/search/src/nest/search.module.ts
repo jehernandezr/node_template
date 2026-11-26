@@ -11,6 +11,11 @@ import type { SearchModuleOptions } from './search-module-options.js';
  */
 @Module({})
 export class SearchModule {
+  /**
+   * Registers the search index factory of the configured mode.
+   * @param options Search mode and language.
+   * @returns The module.
+   */
   static forRoot(options: SearchModuleOptions = {}): DynamicModule {
     const embeddings: Provider[] =
       options.embeddings === undefined

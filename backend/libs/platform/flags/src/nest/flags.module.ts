@@ -8,6 +8,10 @@ import { FlagsConfig, type FlagsSettings } from '../flags.config.js';
 /** `FlagStore` according to `FLAGS_STORE` and `FlagEvaluator`, global for the service. */
 @Module({})
 export class FlagsModule {
+  /**
+   * Registers the flag evaluator and its store.
+   * @returns The global module.
+   */
   static forRoot(): DynamicModule {
     return {
       module: FlagsModule,

@@ -17,6 +17,11 @@ import type {
 
 /** Providers of the cache root module and those it exports. */
 export class CacheProviders {
+  /**
+   * Builds the providers of the cache with its adapters.
+   * @param extras Cache port and metrics adapters.
+   * @returns The providers.
+   */
   static build(extras: CacheModuleExtras): Provider[] {
     return [
       {
@@ -49,6 +54,11 @@ export class CacheProviders {
     ];
   }
 
+  /**
+   * Lists the tokens the cache module exports.
+   * @param extras Cache port and metrics adapters.
+   * @returns The exported tokens.
+   */
   static exports(
     extras: CacheModuleExtras,
   ): Array<Abstract<unknown> | Type<unknown>> {

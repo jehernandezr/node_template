@@ -6,6 +6,10 @@ export class UsageWindowClock {
 
   constructor(private readonly clock: Clock) {}
 
+  /**
+   * Start of the counting window of the current instant.
+   * @returns The window start.
+   */
   current(): Date {
     const now = this.clock.now().getTime();
     return new Date(now - (now % UsageWindowClock.WINDOW_MS));
@@ -14,6 +18,7 @@ export class UsageWindowClock {
   /**
    * The windows before the one preceding the current one: the preceding one can still receive what an
    * instance with a slightly late clock counts.
+   * @returns The cutoff of the windows that can be flushed.
    */
   closedBefore(): Date {
     return new Date(this.current().getTime() - UsageWindowClock.WINDOW_MS);

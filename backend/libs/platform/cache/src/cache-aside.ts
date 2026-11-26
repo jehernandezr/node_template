@@ -61,6 +61,8 @@ export class CacheAside {
    * background. Cache failures fall back to `load` and are reported.
    * Errors from `load` reach all concurrent callers of the key.
    * The caller's signal and deadline only bound its own wait.
+   * @param options Namespace, params, loader and TTL.
+   * @returns The value.
    */
   async getOrLoad<T>(options: GetOrLoadOptions<T>): Promise<T> {
     const { namespace, params, ttlMs, load } = options;
@@ -132,11 +134,11 @@ export class CacheAside {
    * Makes the cached results of the namespace unreachable by changing
    * its version. Never throws: failures are reported, so a cache that is
    * down does not make the write fail.
-   *
    * Inside a transaction the change is repeated after the commit. A reader
    * outside the transaction may load the old data between the first change and
    * the commit and store it under the new version; the later change makes
    * that entry unreachable. If the transaction rolls back, there is no later change.
+   * @param namespace Namespace to invalidate.
    */
   async invalidate(namespace: readonly string[]): Promise<void> {
     await this.bumpSafely(namespace);

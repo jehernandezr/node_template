@@ -8,7 +8,11 @@ import { CacheMetricName } from './cache-metric-name.enum.js';
 export class CacheMetrics {
   constructor(private readonly metrics: MetricsPort) {}
 
-  /** Counts an absorbed failure, with its name and its code if it has them. */
+  /**
+   * Counts an absorbed failure, with its name and its code if it has them.
+   * @param error Failure.
+   * @param cacheName Name of the cache.
+   */
   reportError(error: unknown, cacheName?: string): void {
     const described = ErrorDescriptor.describe(error);
     const attributes: Record<string, string> = {
@@ -23,7 +27,11 @@ export class CacheMetrics {
     this.metrics.increment(CacheMetricName.Errors, attributes);
   }
 
-  /** Counts a read by result (`hit` or `miss`). */
+  /**
+   * Counts a read by result (`hit` or `miss`).
+   * @param result Hit or miss.
+   * @param cacheName Name of the cache.
+   */
   recordLookup(result: CacheLookupResult, cacheName?: string): void {
     const attributes: Record<string, string> = {
       [CacheMetricAttribute.Result]: result,

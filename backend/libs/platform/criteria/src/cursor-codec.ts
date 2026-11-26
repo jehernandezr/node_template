@@ -22,6 +22,9 @@ export class CursorCodec {
   constructor(private readonly secret?: string | Uint8Array) {}
 
   /**
+   * Encodes a cursor as an opaque, canonical and, with a secret, signed token.
+   * @param cursor Id and sort values of the last item.
+   * @returns The token.
    * @throws CriteriaError `InvalidValue` if the id or the values are invalid or the token would exceed `MAX_CURSOR_LENGTH`.
    */
   encode(cursor: Cursor): string {
@@ -57,6 +60,8 @@ export class CursorCodec {
    * a secret, unsigned or with a signature that does not match.
    * Constant-time comparison so the response time does not reveal the signature.
    * Canonical form: re-encoding must yield the same payload, so a token has a single representation.
+   * @param token Token from the client.
+   * @returns The cursor.
    * @throws CriteriaError `InvalidValue` if the token is malformed or tampered with.
    */
   decode(token: string): Cursor {

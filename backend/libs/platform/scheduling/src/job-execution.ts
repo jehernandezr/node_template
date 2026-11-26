@@ -28,6 +28,8 @@ export class JobExecution {
    * Runs the job once. An exclusive job whose lock is held by another process does not run and is
    * counted as skipped.
    * @param shutdown Aborts the run when the runner shuts down and the grace period ran out.
+   * @param job Job to run.
+   * @returns The outcome of the run.
    * @throws The job error, or `DeadlineExceededError` if it exceeded its `timeoutMs`.
    */
   async execute(

@@ -14,6 +14,12 @@ export class CronField {
    * one a value, a range or a step (over `*`, over a range or from a value),
    * with all values within `[min, max]`.
    * A field that starts with `*` does not restrict the day; anything else does.
+   * @param text Text of the field.
+   * @param min Smallest allowed value.
+   * @param max Largest allowed value.
+   * @param fieldName Name of the field, for errors.
+   * @param expression Whole expression, for errors.
+   * @returns The field.
    * @throws InvalidCronExpressionError if the text does not follow the syntax or the range.
    */
   static parse(
@@ -38,6 +44,11 @@ export class CronField {
     return new CronField(values, !text.startsWith('*'));
   }
 
+  /**
+   * Tells whether the field matches a value.
+   * @param value Value to check.
+   * @returns `true` when it matches.
+   */
   has(value: number): boolean {
     return this.values.has(value);
   }

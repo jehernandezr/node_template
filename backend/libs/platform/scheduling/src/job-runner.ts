@@ -44,6 +44,8 @@ export class JobRunner {
   }
 
   /**
+   * Registers a job to be scheduled when the runner starts.
+   * @param job Job to register.
    * @throws DuplicateJobError if the name is already registered.
    * @throws InvalidJobScheduleError or InvalidCronExpressionError if the schedule is not valid.
    */
@@ -74,6 +76,7 @@ export class JobRunner {
   /**
    * Stops scheduling runs and waits for the ones in progress up to `graceMs`.
    * If they time out, aborts their `signal` and waits for them to finish.
+   * @param graceMs Time to wait for running jobs.
    */
   async stop(graceMs: number): Promise<void> {
     this.started = false;
@@ -106,6 +109,7 @@ export class JobRunner {
 
   /**
    * Runs the job now and waits for the result; if a run is already in progress, waits for that one.
+   * @param name Job to run.
    * @throws UnknownJobError if it is not registered.
    * @throws The job error if the run fails.
    */
@@ -116,6 +120,7 @@ export class JobRunner {
   /**
    * Requests a run soon. Does nothing if the runner is not started or if the
    * job is already running.
+   * @param name Job to run.
    * @throws UnknownJobError if it is not registered.
    */
   trigger(name: string): void {

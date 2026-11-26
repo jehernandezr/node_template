@@ -17,6 +17,11 @@ import { CONFIG_ENV } from './config.tokens.js';
 export class ConfigModule {
   private static readonly EXPORTS = [AppConfig, ConfigLoader, ConfigRegistry];
 
+  /**
+   * Loads and validates the configuration of the service.
+   * @param options Root schema and environment.
+   * @returns The global module.
+   */
   static forRoot(options: ConfigModuleOptions = {}): DynamicModule {
     return {
       module: ConfigModule,
@@ -44,7 +49,11 @@ export class ConfigModule {
     };
   }
 
-  /** Validates the section at startup and exposes it with its own token. */
+  /**
+   * Validates the section at startup and exposes it with its own token.
+   * @param section Section to load.
+   * @returns The module.
+   */
   static forFeature<T>(section: ConfigSection<T>): DynamicModule {
     return {
       module: ConfigModule,

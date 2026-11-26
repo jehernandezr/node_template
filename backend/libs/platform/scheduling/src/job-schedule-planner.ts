@@ -16,6 +16,7 @@ export class JobSchedulePlanner {
 
   /**
    * An invalid deadline would make every run fail; it is rejected when the job is registered.
+   * @param job Job to check.
    * @throws InvalidJobScheduleError or InvalidCronExpressionError when the schedule or the `timeoutMs` is not valid.
    */
   validate(job: ScheduledJob): void {
@@ -45,7 +46,11 @@ export class JobSchedulePlanner {
     }
   }
 
-  /** Milliseconds until the next run, never negative. */
+  /**
+   * Milliseconds until the next run, never negative.
+   * @param job Job to plan.
+   * @returns The delay.
+   */
   delayMs(job: ScheduledJob): number {
     const { schedule } = job;
     if (schedule.kind === JobScheduleKind.Cron) {

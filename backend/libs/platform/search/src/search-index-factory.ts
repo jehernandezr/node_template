@@ -23,6 +23,11 @@ export class SearchIndexFactory {
     }
   }
 
+  /**
+   * Creates the search index of the configured mode over the service's repositories.
+   * @param kit Repository kit of the service.
+   * @returns The search index.
+   */
   create(kit: RepositoryKit): SearchIndex {
     if (
       this.settings.SEARCH_MODE === SearchMode.Text ||

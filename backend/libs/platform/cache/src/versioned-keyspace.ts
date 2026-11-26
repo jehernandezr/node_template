@@ -55,6 +55,8 @@ export class VersionedKeyspace {
    * A corrupt or foreign token would produce keys of unbounded length: it is replaced.
    * Another writer may have won the race: the token that remained stored is read.
    * If it disappeared (eviction), a throwaway token leaves this read without cache.
+   * @param namespace Namespace to read.
+   * @returns The token.
    */
   async version(namespace: readonly string[]): Promise<string> {
     const key = this.versionKey(namespace);
@@ -75,7 +77,11 @@ export class VersionedKeyspace {
       : this.token();
   }
 
-  /** Replaces the version token. Returns the new token. */
+  /**
+   * Replaces the version token. Returns the new token.
+   * @param namespace Namespace to bump.
+   * @returns The new token.
+   */
   async bump(namespace: readonly string[]): Promise<string> {
     const token = this.token();
     await this.cache.set(this.versionKey(namespace), token);
@@ -85,6 +91,9 @@ export class VersionedKeyspace {
   /**
    * Returns the cache key for `params` under the namespace's current token.
    * Validated before touching the store, so a bad call does not cost a round trip.
+   * @param namespace Namespace of the key.
+   * @param params Parameters of the query.
+   * @returns The key.
    * @throws CacheKeyTooLongError when the namespace makes the key too long.
    * @throws NonJsonValueError (primitives) when `params` is not canonical JSON.
    */

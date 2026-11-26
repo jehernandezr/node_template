@@ -33,7 +33,11 @@ export class CacheModule extends CacheConfigurableModule {
     return super.forRoot(options);
   }
 
-  /** Returns the namespace's `CacheAside`, with its versioned keys under that name. */
+  /**
+   * Returns the namespace's `CacheAside`, with its versioned keys under that name.
+   * @param feature Namespace and options.
+   * @returns The module.
+   */
   static forFeature(feature: CacheFeatureOptions): DynamicModule {
     const { namespace } = feature;
     return {
