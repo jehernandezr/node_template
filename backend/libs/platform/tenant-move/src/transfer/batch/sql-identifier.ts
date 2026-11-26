@@ -5,7 +5,12 @@ import { TenantMoveError } from '../../errors/tenant-move.error.js';
 export class SqlIdentifier {
   private static readonly PATTERN = /^[a-z_][a-z0-9_]{0,62}$/;
 
-  /** @throws TenantMoveError `InvalidManifest` if the name is not a simple identifier. */
+  /**
+   * Quotes a simple SQL identifier.
+   * @param name Identifier.
+   * @returns The quoted identifier.
+   * @throws TenantMoveError `InvalidManifest` if the name is not a simple identifier.
+   */
   static quote(name: string): string {
     if (!SqlIdentifier.PATTERN.test(name)) {
       throw new TenantMoveError(
@@ -20,6 +25,8 @@ export class SqlIdentifier {
   /**
    * A table, with its schema if it names one (`saga.instances`): the platform tables do not always live in the
    * default schema.
+   * @param name Table, optionally with its schema.
+   * @returns The quoted table.
    * @throws TenantMoveError `InvalidManifest` if any part is not a simple identifier or there are extra parts.
    */
   static quoteTable(name: string): string {

@@ -8,6 +8,11 @@ import { AccessResolver } from './access-resolver.js';
 export class ActorPermissions {
   constructor(private readonly resolver: AccessResolver) {}
 
+  /**
+   * Reads the effective permissions of an actor in its tenant: a member's or a service account's.
+   * @param actor Actor of the request; none for an anonymous one.
+   * @returns Its permissions, empty without an actor.
+   */
   async of(actor: Actor | undefined): Promise<readonly Permission[]> {
     if (actor === undefined || ActorGuards.isSystem(actor)) {
       return [];

@@ -12,6 +12,7 @@ import 'billing_repository.dart';
 /// Errors use [ApiErrorException], as the real client does. Latency and
 /// programmed failures come from the [DemoBehavior] it receives.
 base class FakeBillingRepository implements BillingRepository {
+  /// Demo repository with sample data and the failures of [behavior].
   FakeBillingRepository({DemoBehavior? behavior})
     : _behavior = behavior ?? DemoBehavior();
 

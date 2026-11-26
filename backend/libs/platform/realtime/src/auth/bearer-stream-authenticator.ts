@@ -10,7 +10,7 @@ export class BearerStreamAuthenticator extends AccessTokenStreamAuthenticator {
     super(verifier);
   }
 
-  protected tokenOf(credentials: StreamCredentials): string {
+  protected override tokenOf(credentials: StreamCredentials): string {
     const token = BearerStreamAuthenticator.SCHEME.exec(
       credentials.authorization ?? '',
     )?.[1];

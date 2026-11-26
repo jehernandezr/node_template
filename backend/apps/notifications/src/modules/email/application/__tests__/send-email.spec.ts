@@ -41,11 +41,11 @@ class InMemoryLedger extends EmailLedger {
     super();
   }
 
-  async find(messageId: string) {
+  override async find(messageId: string) {
     return this.records.get(messageId);
   }
 
-  async reserve(
+  override async reserve(
     entry: Omit<EmailRecord, 'status' | 'providerId'>,
     abandonedAfterMs: number,
   ): Promise<EmailReservation> {
@@ -70,7 +70,7 @@ class InMemoryLedger extends EmailLedger {
     return { kind: EmailReservationKind.Reserved };
   }
 
-  async record(entry: EmailRecord) {
+  override async record(entry: EmailRecord) {
     if (this.clock.now().getTime() < this.downUntil.getTime()) {
       throw new Error('catalog down');
     }
@@ -81,11 +81,11 @@ class InMemoryLedger extends EmailLedger {
     this.records.set(entry.messageId, entry);
   }
 
-  async isSuppressed(hash: string) {
+  override async isSuppressed(hash: string) {
     return this.suppressed.has(hash);
   }
 
-  async suppress(hash: string) {
+  override async suppress(hash: string) {
     this.suppressed.add(hash);
   }
 }
@@ -99,14 +99,14 @@ class ClockAdvancingRetryWait extends LedgerRetryWait {
     super();
   }
 
-  async before(retry: number): Promise<void> {
+  override async before(retry: number): Promise<void> {
     this.waited.push(retry);
     this.clock.advance(ClockAdvancingRetryWait.STEP_MS);
   }
 }
 
 class LowercaseFingerprint extends RecipientFingerprint {
-  of(address: string): string {
+  override of(address: string): string {
     return `fp:${address.toLowerCase()}`;
   }
 }
@@ -114,7 +114,7 @@ class LowercaseFingerprint extends RecipientFingerprint {
 class RecordingSender extends EmailSender {
   readonly sent: OutgoingEmail[] = [];
 
-  async send(email: OutgoingEmail): Promise<string> {
+  override async send(email: OutgoingEmail): Promise<string> {
     this.sent.push(email);
     return `provider-${this.sent.length}`;
   }
@@ -137,7 +137,7 @@ class GatedSender extends RecordingSender {
 }
 
 class FailingSender extends EmailSender {
-  async send(): Promise<string> {
+  override async send(): Promise<string> {
     throw new Error('smtp down');
   }
 }

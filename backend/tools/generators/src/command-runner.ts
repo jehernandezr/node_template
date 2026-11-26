@@ -11,6 +11,10 @@ export interface CommandRun {
 
 /** Runs system commands, to test the smoke test without launching processes. */
 export abstract class CommandRunner {
-  /** @returns the command exit code. */
+  /**
+   * Runs a command and waits for it to end.
+   * @returns the command exit code.
+   * @param run Command, arguments and folder.
+   */
   abstract run(run: CommandRun): Promise<number>;
 }

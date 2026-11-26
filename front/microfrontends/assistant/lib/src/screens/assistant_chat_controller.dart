@@ -14,6 +14,7 @@ import '../shared/types/chat_state.dart';
 
 /// Holds the messages of one conversation and the state of the current answer.
 final class AssistantChatController extends ChangeNotifier {
+  /// Controller of the conversation [_conversationId] over [_repository].
   AssistantChatController(this._repository, {required this._conversationId});
 
   final AssistantRepository _repository;
@@ -192,12 +193,12 @@ final class AssistantChatController extends ChangeNotifier {
     _emit(ChatReady(messages, const AnswerIdle()));
   }
 
+  /// An empty answer has nothing to show next to the error.
   void _fail(String assistantId, Object error) {
     if (!_isStreamingOf(assistantId)) return;
     _subscription = null;
     _pendingError = error;
     final current = _state as ChatReady;
-    // An empty answer has nothing to show next to the error.
     final messages = [
       for (final message in current.messages)
         if (message.id != assistantId)

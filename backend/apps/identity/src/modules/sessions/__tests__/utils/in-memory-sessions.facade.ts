@@ -44,7 +44,9 @@ export class InMemorySessionsFacade extends SessionsFacade {
     super();
   }
 
-  async createSession(input: CreateSessionInput): Promise<IssuedSession> {
+  override async createSession(
+    input: CreateSessionInput,
+  ): Promise<IssuedSession> {
     this.created.push(input);
     const sessionId = this.ids.next().toString();
     const now = this.clock.now().getTime();
@@ -57,7 +59,7 @@ export class InMemorySessionsFacade extends SessionsFacade {
     };
   }
 
-  async revokeUserSessions(
+  override async revokeUserSessions(
     ref: UserRef,
     reason: RevocationReason,
     options?: { except?: string },
@@ -70,7 +72,7 @@ export class InMemorySessionsFacade extends SessionsFacade {
     return this.revokeCount;
   }
 
-  async revokeDeviceSessions(
+  override async revokeDeviceSessions(
     ref: UserRef,
     deviceId: string,
     reason: RevocationReason,
@@ -82,11 +84,11 @@ export class InMemorySessionsFacade extends SessionsFacade {
   /** Last MFA of each session that `mfaVerifiedAt` returns. */
   readonly mfaTimes = new Map<string, Date>();
 
-  async mfaVerifiedAt(session: SessionRef): Promise<Date | undefined> {
+  override async mfaVerifiedAt(session: SessionRef): Promise<Date | undefined> {
     return this.mfaTimes.get(session.sessionId);
   }
 
-  async markMfaVerified(
+  override async markMfaVerified(
     session: SessionRef,
     at: Date,
     amr: readonly AuthMethodReference[],
@@ -100,17 +102,21 @@ export class InMemorySessionsFacade extends SessionsFacade {
 
   readonly forgotten: UserRef[] = [];
 
-  async forget(ref: UserRef): Promise<void> {
+  override async forget(ref: UserRef): Promise<void> {
     this.forgotten.push(ref);
   }
 
   readonly replayed: Array<SessionRevokedPayload | TokensRevokedPayload> = [];
 
-  async replaySessionRevocation(event: SessionRevokedPayload): Promise<void> {
+  override async replaySessionRevocation(
+    event: SessionRevokedPayload,
+  ): Promise<void> {
     this.replayed.push(event);
   }
 
-  async replayUserRevocation(event: TokensRevokedPayload): Promise<void> {
+  override async replayUserRevocation(
+    event: TokensRevokedPayload,
+  ): Promise<void> {
     this.replayed.push(event);
   }
 }

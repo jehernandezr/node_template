@@ -4,7 +4,11 @@ import type { MessageDefinition } from '../contracts/message-contract.js';
 export class SubscribeMetadata {
   static readonly KEY = Symbol('platform.messaging.subscribe');
 
-  /** Contract `method` subscribes to, or `undefined` if it is not decorated. */
+  /**
+   * Contract `method` subscribes to, or `undefined` if it is not decorated.
+   * @param method Method to read.
+   * @returns The contract, or `undefined`.
+   */
   static contractOf(method: unknown): MessageDefinition | undefined {
     if (typeof method !== 'function') {
       return undefined;

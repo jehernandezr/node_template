@@ -13,6 +13,13 @@ export class CronField {
    * Parses the text of a field: a list of comma-separated elements, each
    * one a value, a range or a step (over `*`, over a range or from a value),
    * with all values within `[min, max]`.
+   * A field that starts with `*` does not restrict the day; anything else does.
+   * @param text Text of the field.
+   * @param min Smallest allowed value.
+   * @param max Largest allowed value.
+   * @param fieldName Name of the field, for errors.
+   * @param expression Whole expression, for errors.
+   * @returns The field.
    * @throws InvalidCronExpressionError if the text does not follow the syntax or the range.
    */
   static parse(
@@ -34,10 +41,14 @@ export class CronField {
         values.add(value);
       }
     }
-    // A field that starts with `*` does not restrict the day; anything else does.
     return new CronField(values, !text.startsWith('*'));
   }
 
+  /**
+   * Tells whether the field matches a value.
+   * @param value Value to check.
+   * @returns `true` when it matches.
+   */
   has(value: number): boolean {
     return this.values.has(value);
   }

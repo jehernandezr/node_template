@@ -79,7 +79,6 @@ void main() {
       expect(access['/backoffice/tenants/:id'], isNull);
       expect(access['/backoffice/sagas'], same(backofficeOperationsReadAccess));
       expect(access['/backoffice/dlq'], same(backofficeOperationsReadAccess));
-      // Child routes run their parent's redirect too.
       expect(access['/backoffice/sagas/:id'], isNull);
       expect(access['/backoffice/dlq/:queue'], isNull);
     },

@@ -65,7 +65,6 @@ describe('Id', () => {
   });
 
   it('decodes the creation timestamp from the UUIDv7 prefix', () => {
-    // 0x0190f3a2b4c5 ms
     const id = Id.from('0190f3a2-b4c5-7d6e-8f90-123456789abc');
     expect(id.timestamp().getTime()).toBe(0x0190f3a2b4c5);
   });

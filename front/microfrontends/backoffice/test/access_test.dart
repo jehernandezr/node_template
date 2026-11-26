@@ -23,7 +23,6 @@ void main() {
 
   for (final role in [PlatformRole.superAdmin, PlatformRole.support]) {
     group(role.name, () {
-      // Built per test: group bodies run before setUp creates the harness.
       UserSession session() => harness.platformUser({role});
 
       testWidgets('sees saga actions', (tester) async {
@@ -51,7 +50,6 @@ void main() {
   }
 
   group('readOnly', () {
-    // Built per test: group bodies run before setUp creates the harness.
     UserSession session() => harness.platformUser({PlatformRole.readOnly});
 
     testWidgets('reads a saga but has no actions', (tester) async {
@@ -73,7 +71,6 @@ void main() {
   });
 
   group('finance', () {
-    // Built per test: group bodies run before setUp creates the harness.
     UserSession session() => harness.platformUser({PlatformRole.finance});
 
     testWidgets('overview shows only the tenants card and section', (

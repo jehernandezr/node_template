@@ -6,6 +6,7 @@ import '../shared/types/billing_types.dart';
 
 /// State of one invoice.
 final class InvoiceDetailController extends ChangeNotifier {
+  /// Controller of one invoice over [repository].
   InvoiceDetailController(
     BillingRepository repository, {
     required String invoiceId,

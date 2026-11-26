@@ -46,6 +46,11 @@ export class OperationDispatcher {
    * 7. `gate.claim`: if it responds, that is the response; otherwise, `runner.run` with the parsed input, while
    *    `keeper` renews the key lease. The handler receives in `meta.signal` a signal that aborts when the attempt
    *    deadline expires or when the caller cancels.
+   * @param route Operation route.
+   * @param rawInput Raw input.
+   * @param meta Call metadata.
+   * @param forwards Forward keys a compensation undoes.
+   * @returns The outcome.
    */
   async dispatch(
     route: OperationRoute,

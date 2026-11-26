@@ -21,6 +21,10 @@ export class ProjectTaskEvents {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Projects a created task into the task projection of its tenant.
+   * @param event `TaskCreated` payload.
+   */
   created(event: TaskCreatedPayload): Promise<void> {
     return this.apply(event.tenantId, {
       taskId: event.taskId,
@@ -30,6 +34,10 @@ export class ProjectTaskEvents {
     });
   }
 
+  /**
+   * Projects a task change into the task projection of its tenant.
+   * @param event `TaskUpdated` payload.
+   */
   updated(event: TaskUpdatedPayload): Promise<void> {
     return this.apply(event.tenantId, {
       taskId: event.taskId,
@@ -42,6 +50,10 @@ export class ProjectTaskEvents {
     });
   }
 
+  /**
+   * Projects a deleted task into the task projection of its tenant.
+   * @param event `TaskDeleted` payload.
+   */
   deleted(event: TaskDeletedPayload): Promise<void> {
     return this.apply(event.tenantId, {
       taskId: event.taskId,

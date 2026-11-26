@@ -22,6 +22,9 @@ export class CursorCodec {
   constructor(private readonly secret?: string | Uint8Array) {}
 
   /**
+   * Encodes a cursor as an opaque, canonical and, with a secret, signed token.
+   * @param cursor Id and sort values of the last item.
+   * @returns The token.
    * @throws CriteriaError `InvalidValue` if the id or the values are invalid or the token would exceed `MAX_CURSOR_LENGTH`.
    */
   encode(cursor: Cursor): string {
@@ -55,6 +58,10 @@ export class CursorCodec {
   /**
    * Validates a token produced by `encode`: rejects tokens that are large, non-canonical, with extra keys and, if there is
    * a secret, unsigned or with a signature that does not match.
+   * Constant-time comparison so the response time does not reveal the signature.
+   * Canonical form: re-encoding must yield the same payload, so a token has a single representation.
+   * @param token Token from the client.
+   * @returns The cursor.
    * @throws CriteriaError `InvalidValue` if the token is malformed or tampered with.
    */
   decode(token: string): Cursor {
@@ -76,7 +83,6 @@ export class CursorCodec {
         bytes.length - CursorCodec.SIGNATURE_BYTES,
       );
       const actual = bytes.subarray(bytes.length - CursorCodec.SIGNATURE_BYTES);
-      // Constant-time comparison so the response time does not reveal the signature.
       if (
         !timingSafeEqual(CursorCodec.sign(payloadBytes, this.secret), actual)
       ) {
@@ -101,7 +107,6 @@ export class CursorCodec {
     ) {
       throw CursorCodec.invalid('malformed cursor');
     }
-    // Canonical form: re-encoding must yield the same payload, so a token has a single representation.
     const canonical = Buffer.from(JSON.stringify({ v, i }), 'utf8');
     if (
       !canonical.equals(payloadBytes) ||

@@ -6,7 +6,7 @@ import { TenantVerifier } from './tenant-verifier.js';
  * names a tenant.
  */
 export class AcceptAnyTenantVerifier extends TenantVerifier {
-  verify(): Promise<boolean> {
+  override verify(): Promise<boolean> {
     return Promise.resolve(true);
   }
 }

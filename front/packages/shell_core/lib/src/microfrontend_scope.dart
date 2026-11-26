@@ -83,6 +83,8 @@ final class MicrofrontendScope {
   ///
   /// The scope refuses [get] as soon as this is called. Errors are reported
   /// with [FlutterError.reportError] and do not stop the others.
+  ///
+  /// A failing resource is reported so the remaining ones still close.
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
@@ -94,8 +96,7 @@ final class MicrofrontendScope {
       if (release == null) continue;
       try {
         await release(entry.value);
-        // catch-all: a failing resource is reported so the remaining ones still close
-      } catch (error, stack) {
+      } on Object catch (error, stack) {
         FlutterError.reportError(
           FlutterErrorDetails(
             exception: error,

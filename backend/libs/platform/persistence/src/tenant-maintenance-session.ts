@@ -16,6 +16,12 @@ import { TenantWriteFence } from './tenant-write-fence.js';
 export class TenantMaintenanceSession {
   private static readonly fence = new TenantWriteFence();
 
+  /**
+   * Runs maintenance work across tenants with the row security bypass of the maintenance session.
+   * @param manager Manager of the transaction.
+   * @param fn Work to run.
+   * @returns What `fn` returns.
+   */
   static async run<T>(
     manager: EntityManager,
     fn: (manager: EntityManager) => Promise<T>,
@@ -33,6 +39,7 @@ export class TenantMaintenanceSession {
   /**
    * For maintenance tasks that nobody repeats on their own, such as deleting a user's data: if a shard did not run
    * because it had a relocation halfway through, fails so the caller repeats it.
+   * @param outcome Result of the pass over the shards.
    * @throws ShardingError `TenantMigrating` if some shard did not run because of a relocation.
    */
   static requireEveryShard<T>(outcome: AcrossShardsResult<T>): void {

@@ -9,7 +9,7 @@ class FixedManifest extends TenantMoveManifest {
     super();
   }
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return this.entries;
   }
 }

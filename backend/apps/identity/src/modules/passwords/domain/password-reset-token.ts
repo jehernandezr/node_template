@@ -18,7 +18,11 @@ export class PasswordResetToken {
     readonly secret: Buffer,
   ) {}
 
-  /** `undefined` if the text is not a well-formed recovery token. */
+  /**
+   * `undefined` if the text is not a well-formed recovery token.
+   * @param text Token text.
+   * @returns The token, or `undefined`.
+   */
   static parse(text: string): PasswordResetToken | undefined {
     const parsed = parseOpaqueToken(
       text,
@@ -37,6 +41,10 @@ export class PasswordResetToken {
     return new PasswordResetToken(userId, homeTenantId, resetId, parsed.secret);
   }
 
+  /**
+   * Formats the token for the link.
+   * @returns The token text.
+   */
   format(): string {
     return encodeOpaqueToken(
       PasswordResetToken.PREFIX,

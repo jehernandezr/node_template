@@ -10,6 +10,7 @@ import 'fake_account_repository.dart';
 /// In demo the data lives in memory with an artificial latency; in live it
 /// talks to the identity API, which only serves what has a contract.
 abstract final class AccountData {
+  /// How the account repository is created in each shell mode.
   static final RepositoryBinding<AccountRepository> repository =
       RepositoryBinding<AccountRepository>(
         demo: (services) => FakeAccountRepository(

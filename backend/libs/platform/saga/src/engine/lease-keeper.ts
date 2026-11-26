@@ -17,7 +17,11 @@ export class LeaseKeeper {
     private readonly logger?: LoggerPort,
   ) {}
 
-  /** New run for `sagaId`, with a token nobody else has. */
+  /**
+   * New run for `sagaId`, with a token nobody else has.
+   * @param sagaId Saga id.
+   * @returns The run.
+   */
   newRun(sagaId: string): SagaRun {
     return {
       sagaId,
@@ -25,13 +29,18 @@ export class LeaseKeeper {
     };
   }
 
-  /** Returns until when a lease taken at `now` lasts. */
+  /**
+   * Returns until when a lease taken at `now` lasts.
+   * @param now Instant of the lease.
+   * @returns The lease end.
+   */
   leaseUntil(now: Date): Date {
     return new Date(now.getTime() + this.settings.leaseMs);
   }
 
   /**
    * Takes the lease of the run.
+   * @param run Run to acquire.
    * @throws SagaError `NotFound` if the saga does not exist and `LeaseNotAcquired` if another run holds it.
    */
   async acquire(run: SagaRun): Promise<void> {
@@ -59,6 +68,8 @@ export class LeaseKeeper {
 
   /**
    * Extends the lease beyond the step's deadline. If it was lost, it stops without writing.
+   * @param run Run that holds the lease.
+   * @param deadline Deadline of the step.
    * @throws SagaError `LeaseLost`
    */
   async renewPast(run: SagaRun, deadline: Deadline): Promise<void> {
@@ -77,11 +88,18 @@ export class LeaseKeeper {
     }
   }
 
+  /**
+   * Releases the lease of a finished run.
+   * @param run Run that holds the lease.
+   */
   async release(run: SagaRun): Promise<void> {
     await this.store.releaseLease(run.sagaId, run.token);
   }
 
-  /** Releases the lease after a failed run; the original error is what the caller needs. */
+  /**
+   * Releases the lease after a failed run; the original error is what the caller needs.
+   * @param run Run that holds the lease.
+   */
   async releaseQuietly(run: SagaRun): Promise<void> {
     try {
       await this.release(run);

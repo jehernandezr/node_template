@@ -5,39 +5,68 @@ import type { ShardLocation } from '@platform/persistence';
  * that raised it is the only one that may pivot or lower it.
  */
 export abstract class TenantMoveFence {
-  /** Raises the fence of the move, waiting for the tenant writes already in progress on the shard. */
+  /**
+   * Raises the fence of the move, waiting for the tenant writes already in progress on the shard.
+   * @param shard Source shard.
+   * @param tenantId Moving tenant.
+   * @param moveId Move.
+   */
   abstract raise(
     shard: ShardLocation,
     tenantId: string,
     moveId: string,
   ): Promise<void>;
 
-  /** Marks the fence of the move as pivoted: the tenant now lives on another shard. */
+  /**
+   * Marks the fence of the move as pivoted: the tenant now lives on another shard.
+   * @param shard Source shard.
+   * @param tenantId Moved tenant.
+   * @param moveId Move.
+   */
   abstract markSwitched(
     shard: ShardLocation,
     tenantId: string,
     moveId: string,
   ): Promise<void>;
 
-  /** The move whose fence is raised on the shard, or `undefined`. */
+  /**
+   * The move whose fence is raised on the shard, or `undefined`.
+   * @param shard Shard to read.
+   * @param tenantId Tenant to check.
+   * @returns The move id, or `undefined`.
+   */
   abstract raisedBy(
     shard: ShardLocation,
     tenantId: string,
   ): Promise<string | undefined>;
 
-  /** The move whose fence is raised on the shard and has not pivoted yet, or `undefined`. */
+  /**
+   * The move whose fence is raised on the shard and has not pivoted yet, or `undefined`.
+   * @param shard Shard to read.
+   * @param tenantId Tenant to check.
+   * @returns The move id, or `undefined`.
+   */
   abstract unswitchedBy(
     shard: ShardLocation,
     tenantId: string,
   ): Promise<string | undefined>;
 
-  /** Lowers the fence if it belongs to the move. */
+  /**
+   * Lowers the fence if it belongs to the move.
+   * @param shard Shard of the fence.
+   * @param tenantId Tenant of the fence.
+   * @param moveId Move that raised it.
+   */
   abstract lower(
     shard: ShardLocation,
     tenantId: string,
     moveId: string,
   ): Promise<void>;
 
-  /** Lowers whatever fence the tenant has on the shard. */
+  /**
+   * Lowers whatever fence the tenant has on the shard.
+   * @param shard Shard of the fence.
+   * @param tenantId Tenant of the fence.
+   */
   abstract lowerAny(shard: ShardLocation, tenantId: string): Promise<void>;
 }

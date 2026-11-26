@@ -46,8 +46,6 @@ Future<GoRouter> _pump(
   String location, {
   bool material = false,
 }) async {
-  // Not started and not disposed: its futures belong to the test's fake zone,
-  // so awaiting them from a tear-down would never finish.
   final runtime = fakeRuntime(registry: registry, session: session);
   final router =
       ShellRouterFactory(
@@ -66,8 +64,6 @@ Future<GoRouter> _pump(
         shellBuilder: (context, state, child) => child,
       );
   addTearDown(router.dispose);
-  // MaterialApp animates page exits, so a removed page stays mounted (and
-  // can rebuild) during its exit transition.
   await tester.pumpWidget(
     material
         ? MaterialApp.router(routerConfig: router)

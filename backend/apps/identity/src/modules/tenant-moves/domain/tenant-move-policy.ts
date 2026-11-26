@@ -7,6 +7,7 @@ export class TenantMovePolicy {
   /**
    * The shared customer tenant and the platform tenant have data in every shard of their region, so they do not
    * fit in a single target group.
+   * @param tenant Tenant to move.
    * @throws IdentityError `IDENTITY.TENANT_MOVE.NOT_MOVABLE` if the tenant is not an organization.
    */
   static assertMovable(tenant: TenantSnapshot): void {

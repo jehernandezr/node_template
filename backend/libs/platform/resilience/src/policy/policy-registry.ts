@@ -71,6 +71,8 @@ export class PolicyRegistry {
   /**
    * Registers a service's policy. Registering the same reference again
    * does nothing; a different configuration for the same name fails.
+   * @param name Policy name.
+   * @param config Policy configuration.
    * @throws InvalidPolicyError
    */
   register(name: PolicyName, config: ResiliencePolicyConfig): void {
@@ -88,7 +90,12 @@ export class PolicyRegistry {
     this.pending.delete(name.value);
   }
 
-  /** @throws UnknownPolicyError if there is no policy with that name. */
+  /**
+   * Reads the configuration of a policy.
+   * @param name Policy name.
+   * @returns The configuration.
+   * @throws UnknownPolicyError if there is no policy with that name.
+   */
   config(name: PolicyName): ResiliencePolicyConfig {
     const config = this.configs.get(name.value);
     if (config === undefined) {
@@ -97,7 +104,12 @@ export class PolicyRegistry {
     return config;
   }
 
-  /** Breaker and bulkhead of the dependency, created the first time. */
+  /**
+   * Breaker and bulkhead of the dependency, created the first time.
+   * @param name Policy name.
+   * @param dependencyKey Dependency.
+   * @returns The breaker and bulkhead.
+   */
   dependency(name: PolicyName, dependencyKey: string): DependencyEntry {
     let byDependency = this.entries.get(name.value);
     if (byDependency === undefined) {
@@ -117,6 +129,9 @@ export class PolicyRegistry {
     this.configs.set(name, config);
   }
 
+  /**
+   * Attempt timeouts count as a failure. Non-transient errors, cancellations and an exhausted caller deadline do not open the circuit.
+   */
   private createEntry(
     name: PolicyName,
     dependencyKey: string,
@@ -153,9 +168,6 @@ export class PolicyRegistry {
             consecutiveFailures: breakerConfig.consecutiveFailures,
             halfOpenAfterMs: breakerConfig.halfOpenAfterMs,
             clock: this.clock,
-            // Attempt timeouts count as a failure. Non-transient errors,
-            // cancellations and an exhausted caller deadline
-            // do not open the circuit.
             counts: (error) =>
               error instanceof ResilienceTimeoutError
                 ? error.scope === TimeoutScope.Attempt

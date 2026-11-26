@@ -20,7 +20,12 @@ export class PrivacyInternalOperations {
     private readonly dispatch: DispatchFacade,
   ) {}
 
-  /** Repeating it changes nothing: nothing of the user remains. */
+  /**
+   * Internal operation that deletes the inbox, deliveries and preferences of a user.
+   * Repeating it changes nothing: nothing of the user remains.
+   * @param input User to erase.
+   * @returns How many rows were deleted.
+   */
   @InternalHandler(EraseNotificationsUserDataOperation)
   async eraseUserData(
     input: EraseNotificationsUserInput,

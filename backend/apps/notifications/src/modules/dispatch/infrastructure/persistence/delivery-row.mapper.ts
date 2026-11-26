@@ -4,6 +4,11 @@ import type { DeliveryEntity } from './entities/delivery.entity.js';
 
 /** Maps a `notification_deliveries` row to a `Delivery`. Pure utility. */
 export class DeliveryRowMapper {
+  /**
+   * Rebuilds a delivery from its row.
+   * @param row Stored row.
+   * @returns The domain delivery.
+   */
   static toDomain(row: DeliveryEntity): Delivery {
     return {
       id: row.id,

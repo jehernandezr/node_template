@@ -6,8 +6,12 @@ import type { MigrationStatement } from './model/migration-statement.js';
  */
 export class MigrationSourceRenderer {
   /**
+   * Renders the TypeScript source of a migration class.
    * @param className name of the class and of the migration, for example `CreateUsers1794700000001`.
    * @param up `up` statements in order. @param down `down` statements in the order they must run.
+   * @param up Statements of `up`.
+   * @param down Statements of `down`.
+   * @returns The source text.
    */
   render(
     className: string,

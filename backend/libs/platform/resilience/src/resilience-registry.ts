@@ -33,6 +33,9 @@ export class ResilienceRegistry {
   /**
    * Runs `fn` under the `name` policy.
    * @param fn Operation; receives the attempt's abort signal and the attempt with its child deadline.
+   * @param name Policy name.
+   * @param options Deadline, dependency and signal.
+   * @returns What `fn` returns.
    * @throws CircuitOpenError, ResilienceTimeoutError or BulkheadFullError (all
    *   `ResilienceError`), or `UnknownPolicyError` if the policy does not exist. A
    *   caller abort rejects with its signal's reason; other errors are
@@ -58,6 +61,8 @@ export class ResilienceRegistry {
 
   /**
    * Registers a service's policy.
+   * @param name Policy name.
+   * @param config Policy configuration.
    * @throws InvalidPolicyError if the name already has another configuration.
    */
   register(name: PolicyName, config: ResiliencePolicyConfig): void {
@@ -67,6 +72,7 @@ export class ResilienceRegistry {
   /**
    * Subscribes to the policies' events.
    * @returns function that removes the subscriber.
+   * @param listener Subscriber.
    */
   subscribe(listener: ResilienceEventListener): () => void {
     return this.events.subscribe(listener);

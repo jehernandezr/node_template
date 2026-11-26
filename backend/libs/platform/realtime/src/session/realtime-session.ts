@@ -31,6 +31,7 @@ export class RealtimeSession {
     private readonly logger: LoggerPort,
   ) {}
 
+  /** Channel the session reads. */
   get channel(): string {
     return this.principal.userId;
   }
@@ -56,6 +57,7 @@ export class RealtimeSession {
       .catch((error: unknown) => this.fail(error));
   }
 
+  /** Unsubscribes from the stream. */
   async close(): Promise<void> {
     if (this.closed) {
       return;
@@ -87,12 +89,14 @@ export class RealtimeSession {
     }
   }
 
+  /**
+   * Without Valkey the subscription is not canceled either; a notice that arrives later finds the session closed.
+   */
   private async fail(error: unknown): Promise<void> {
     this.logger.warn('realtime delivery failed', {
       channel: this.channel,
       error: error instanceof Error ? error.message : String(error),
     });
-    // Without Valkey the subscription is not canceled either; a notice that arrives later finds the session closed.
     await this.close().catch(() => undefined);
   }
 

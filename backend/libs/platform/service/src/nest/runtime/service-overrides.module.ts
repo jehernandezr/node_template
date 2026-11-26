@@ -6,6 +6,11 @@ import { Module, type DynamicModule, type Provider } from '@nestjs/common';
  */
 @Module({})
 export class ServiceOverridesModule {
+  /**
+   * Wraps providers that replace the runtime ones, usually in tests.
+   * @param providers Providers to register.
+   * @returns The module.
+   */
   static of(providers: readonly Provider[]): DynamicModule {
     return {
       module: ServiceOverridesModule,

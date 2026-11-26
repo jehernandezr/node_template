@@ -20,12 +20,12 @@ interface Entry {
  * {@link RateLimiter} local to a process. It suits a single process,
  * tests and as a fallback for `DegradingRateLimiter` when the shared
  * limiter fails.
+ * The Map insertion order is the usage order: each access reinserts.
  */
 export class InMemoryRateLimiter extends RateLimiter {
   /** Keys it stores by default. */
   static readonly DEFAULT_MAX_ENTRIES = 100_000;
 
-  // The Map insertion order is the usage order: each access reinserts.
   private readonly entries = new Map<string, Entry>();
   private readonly clock: Clock;
   private readonly maxEntries: number;
@@ -40,7 +40,10 @@ export class InMemoryRateLimiter extends RateLimiter {
     this.clock = options.clock;
   }
 
-  async consume(
+  /**
+   * Also when rejecting: a key that insists is the last one worth forgetting.
+   */
+  override async consume(
     key: string,
     rule: RateLimitRule,
     cost = 1,
@@ -54,14 +57,16 @@ export class InMemoryRateLimiter extends RateLimiter {
       previous: counts.previous,
       current: counts.current + (allowed ? cost : 0),
     };
-    // Also when rejecting: a key that insists is the last one worth forgetting.
     this.entries.delete(id);
     this.entries.set(id, next);
     this.evict();
     return SlidingWindow.result(next, position, rule, allowed, cost);
   }
 
-  async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
+  override async peek(
+    key: string,
+    rule: RateLimitRule,
+  ): Promise<RateLimitResult> {
     RateLimitCallValidator.validate(key, rule);
     const { position, counts } = this.read(
       InMemoryRateLimiter.entryId(key, rule),
@@ -76,7 +81,7 @@ export class InMemoryRateLimiter extends RateLimiter {
     );
   }
 
-  async reset(key: string, rule: RateLimitRule): Promise<void> {
+  override async reset(key: string, rule: RateLimitRule): Promise<void> {
     RateLimitCallValidator.validate(key, rule);
     this.entries.delete(InMemoryRateLimiter.entryId(key, rule));
   }
@@ -89,7 +94,10 @@ export class InMemoryRateLimiter extends RateLimiter {
     return `${rule.name}\u0000${rule.windowMs}\u0000${key}`;
   }
 
-  /** Counts of the current window, shifting the windows that already passed. */
+  /**
+   * Counts of the current window, shifting the windows that already passed.
+   * The clock went back: it stays in the stored window, from its start.
+   */
   private read(
     id: string,
     rule: RateLimitRule,
@@ -103,7 +111,6 @@ export class InMemoryRateLimiter extends RateLimiter {
       return { position: now, counts: { previous: 0, current: 0 } };
     }
     if (entry.index > now.index) {
-      // The clock went back: it stays in the stored window, from its start.
       return {
         position: { index: entry.index, elapsedMs: 0 },
         counts: entry,

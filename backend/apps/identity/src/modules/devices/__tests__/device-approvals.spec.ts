@@ -20,22 +20,25 @@ import { SignedDeviceRequest } from '../application/signed-device-request.js';
 class InMemoryDeviceRepository extends DeviceRepository {
   private readonly devices = new Map<string, Device>();
 
-  async insert(device: Device): Promise<void> {
+  override async insert(device: Device): Promise<void> {
     this.devices.set(device.snapshot().id, device);
   }
 
-  async find(userId: string, deviceId: string): Promise<Device | undefined> {
+  override async find(
+    userId: string,
+    deviceId: string,
+  ): Promise<Device | undefined> {
     const device = this.devices.get(deviceId);
     return device?.snapshot().userId === userId ? device : undefined;
   }
 
-  async listActive(userId: string): Promise<readonly Device[]> {
+  override async listActive(userId: string): Promise<readonly Device[]> {
     return [...this.devices.values()].filter(
       (device) => device.snapshot().userId === userId,
     );
   }
 
-  async update(device: Device): Promise<void> {
+  override async update(device: Device): Promise<void> {
     this.devices.set(device.snapshot().id, device);
   }
 }
@@ -144,7 +147,6 @@ describe('DeviceApprovalsUseCase deny', () => {
     expect(alerts.raised).toEqual([
       expect.objectContaining({ type: SecurityAlertType.DeviceApprovalDenied }),
     ]);
-    // The failure counts as a sign-in failure: the remaining attempts before lockout drop by one.
     for (let i = 0; i < 3; i += 1) {
       await lockout.recordFailure(account, ATTEMPT_IP);
     }

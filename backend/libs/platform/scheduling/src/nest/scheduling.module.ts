@@ -2,7 +2,6 @@ import { Module, type DynamicModule, type Provider } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { Clock, JobLock, RandomSource } from '@platform/kernel';
 import type { LoggerPort, MetricsPort } from '@platform/observability';
-import { InvalidArgumentError } from '@platform/primitives';
 import { InProcessJobLock } from '../locks/in-process-job-lock.js';
 import { JobRunner } from '../job-runner.js';
 import { JobLifecycle } from './job-lifecycle.js';
@@ -21,38 +20,42 @@ import type {
  * inject `JobRunner` without importing this module.
  */
 @Module({})
-export class SchedulingModule extends SchedulingModuleClass {
-  static override forRoot(
+export class SchedulingModule {
+  /**
+   * Registers the module with options known when composing.
+   * @param options Scheduling options and the logger, metrics and lock adapters.
+   * @returns The global module that provides `JobRunner` and `JobLock`.
+   */
+  static forRoot(
     options: SchedulingModuleOptions & SchedulingModuleExtras,
   ): DynamicModule {
-    return SchedulingModule.complete(super.forRoot(options), options);
+    return SchedulingModule.complete(
+      SchedulingModuleClass.forRoot(options),
+      options,
+    );
   }
 
-  static override forRootAsync(
+  /**
+   * Registers the module with options built by a factory, usually from configuration.
+   * @param options Factory of the scheduling options and the logger, metrics and lock adapters.
+   * @returns The global module that provides `JobRunner` and `JobLock`.
+   */
+  static forRootAsync(
     options: SchedulingModuleAsyncOptions & SchedulingModuleExtras,
   ): DynamicModule {
-    return SchedulingModule.complete(super.forRootAsync(options), options);
+    return SchedulingModule.complete(
+      SchedulingModuleClass.forRootAsync(options),
+      options,
+    );
   }
 
-  /** @throws InvalidArgumentError when `logger` or `metrics` is missing. */
   private static complete(
     base: DynamicModule,
     extras: SchedulingModuleExtras,
   ): DynamicModule {
-    if (extras.logger === undefined) {
-      throw new InvalidArgumentError(
-        'logger',
-        'the LoggerPort implementation used by the JobRunner',
-      );
-    }
-    if (extras.metrics === undefined) {
-      throw new InvalidArgumentError(
-        'metrics',
-        'the MetricsPort implementation used by the JobRunner',
-      );
-    }
     return {
       ...base,
+      module: SchedulingModule,
       global: true,
       imports: [...(base.imports ?? []), DiscoveryModule],
       providers: [
@@ -78,8 +81,8 @@ export class SchedulingModule extends SchedulingModuleClass {
   }
 
   private static runnerProvider(
-    loggerToken: NonNullable<SchedulingModuleExtras['logger']>,
-    metricsToken: NonNullable<SchedulingModuleExtras['metrics']>,
+    loggerToken: SchedulingModuleExtras['logger'],
+    metricsToken: SchedulingModuleExtras['metrics'],
   ): Provider {
     return {
       provide: JobRunner,

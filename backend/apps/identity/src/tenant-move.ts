@@ -6,8 +6,9 @@ import { ServiceBootstrap } from '@platform/service/nest';
 import { identityService } from './identity.service.js';
 import { StartTenantMove } from './modules/tenant-moves/index.js';
 
-// Launches a move and runs its saga until it finishes or pauses; if it pauses, the worker resumes it. There is no HTTP route:
-// it is audited with the commit that runs it.
+/**
+ * Launches a move and runs its saga until it finishes or pauses; if it pauses, the worker resumes it. There is no HTTP route: it is audited with the commit that runs it.
+ */
 const { values } = parseArgs({
   options: {
     tenant: { type: 'string' },

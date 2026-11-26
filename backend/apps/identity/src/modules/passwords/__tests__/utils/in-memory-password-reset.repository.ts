@@ -5,11 +5,11 @@ import { PasswordResetRepository } from '../../domain/password-reset.repository.
 export class InMemoryPasswordResetRepository extends PasswordResetRepository {
   readonly rows = new Map<string, PasswordReset>();
 
-  async insert(reset: PasswordReset): Promise<void> {
+  override async insert(reset: PasswordReset): Promise<void> {
     this.rows.set(reset.id, PasswordReset.rehydrate(reset.snapshot()));
   }
 
-  async findForUpdate(
+  override async findForUpdate(
     userId: string,
     resetId: string,
   ): Promise<PasswordReset | undefined> {
@@ -19,7 +19,7 @@ export class InMemoryPasswordResetRepository extends PasswordResetRepository {
       : PasswordReset.rehydrate(row.snapshot());
   }
 
-  async update(reset: PasswordReset): Promise<void> {
+  override async update(reset: PasswordReset): Promise<void> {
     this.rows.set(reset.id, PasswordReset.rehydrate(reset.snapshot()));
   }
 }

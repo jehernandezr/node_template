@@ -9,6 +9,13 @@ import { TelemetryInstrumentation } from './telemetry-instrumentation.enum.js';
 
 /** Creates the automatic instrumentation of each `TelemetryInstrumentation`. */
 export class InstrumentationFactory {
+  /**
+   * Builds an OpenTelemetry instrumentation that keeps parameter values and Valkey keys out of the spans.
+   * No parameter values in spans.
+   * Only the command name: keys and values may carry data.
+   * @param kind Instrumentation to build.
+   * @returns The instrumentation.
+   */
   create(kind: TelemetryInstrumentation): Instrumentation {
     switch (kind) {
       case TelemetryInstrumentation.Http:
@@ -16,10 +23,8 @@ export class InstrumentationFactory {
       case TelemetryInstrumentation.Fetch:
         return new UndiciInstrumentation();
       case TelemetryInstrumentation.Pg:
-        // No parameter values in spans.
         return new PgInstrumentation({ enhancedDatabaseReporting: false });
       case TelemetryInstrumentation.Valkey:
-        // Only the command name: keys and values may carry data.
         return new IovalkeyInstrumentation({
           dbStatementSerializer: (command) => command,
         });

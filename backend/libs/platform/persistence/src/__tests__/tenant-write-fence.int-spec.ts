@@ -71,7 +71,6 @@ runtime.describeIfAvailable('TenantWriteFence over PostgreSQL', () => {
       instance: ShardedTestDatabase.INSTANCE,
     });
 
-  /** Opens a tenant write transaction that stays inside until `held` opens; resolves `entered` on entry. */
   const holdWrite = (
     held: Gate,
     entered: Gate,

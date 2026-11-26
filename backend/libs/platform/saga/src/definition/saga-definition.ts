@@ -14,7 +14,11 @@ export abstract class SagaDefinition<TState = unknown> {
   /** Describes the saga's steps. */
   protected abstract define(flow: SagaFlow<TState>): void;
 
-  /** Runs `define` and validates the result. Throws `SagaError` if it is invalid. */
+  /**
+   * Runs `define` and validates the result. Throws `SagaError` if it is invalid.
+   * @param resolver Resolver of the operations.
+   * @returns The compiled saga.
+   */
   build(resolver: OperationResolver): CompiledSaga<TState> {
     const flow = new SagaFlow<TState>(resolver);
     this.define(flow);

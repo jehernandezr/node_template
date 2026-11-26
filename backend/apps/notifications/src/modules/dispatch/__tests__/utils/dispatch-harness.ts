@@ -31,7 +31,7 @@ class InMemoryFailedDeliveries extends FailedDeliveries {
     super();
   }
 
-  async due(now: Date, limit: number): Promise<readonly Delivery[]> {
+  override async due(now: Date, limit: number): Promise<readonly Delivery[]> {
     return this.deliveries
       .all()
       .filter(

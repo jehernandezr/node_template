@@ -10,23 +10,17 @@ export interface RecordedError {
 export class RecordingLogger extends LoggerPort {
   readonly errors: RecordedError[] = [];
 
-  debug(): void {
-    // Only errors matter.
-  }
+  override debug(): void {}
 
-  info(): void {
-    // Only errors matter.
-  }
+  override info(): void {}
 
-  warn(): void {
-    // Only errors matter.
-  }
+  override warn(): void {}
 
-  error(message: string, fields?: Record<string, unknown>): void {
+  override error(message: string, fields?: Record<string, unknown>): void {
     this.errors.push({ message, fields });
   }
 
-  child(): LoggerPort {
+  override child(): LoggerPort {
     return this;
   }
 }

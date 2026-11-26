@@ -26,8 +26,10 @@ export class ShardingFeature<TSource = unknown> {
 
   /**
    * Validates the declaration.
+   * A resolver without a Custom key would be dead code hiding a misconfiguration.
+   * @returns The feature.
    * @throws ShardingError `InvalidConfiguration` for an unknown strategy or key, a
-   *   `ShardKey.Custom` without `keyResolver` or a `keyResolver` with another key.
+   * `ShardKey.Custom` without `keyResolver` or a `keyResolver` with another key.
    */
   validate(): this {
     if (!ShardingFeature.STRATEGIES.has(this.options.strategy)) {
@@ -36,7 +38,6 @@ export class ShardingFeature<TSource = unknown> {
     if (!ShardingFeature.KEYS.has(this.options.key)) {
       throw ShardingFeature.invalid('Unknown shard key', 'key');
     }
-    // A resolver without a Custom key would be dead code hiding a misconfiguration.
     const hasResolver = this.options.keyResolver !== undefined;
     if (this.options.key === ShardKey.Custom && !hasResolver) {
       throw ShardingFeature.invalid(
@@ -56,6 +57,9 @@ export class ShardingFeature<TSource = unknown> {
   /**
    * Routing key of a query: the tenant, the context user or what the module's
    * `ShardKeyResolver` reads from `source`.
+   * @param context Request context.
+   * @param source Entity or input of the query.
+   * @returns The routing key.
    * @throws ShardingError `KeyMissing` when the key the module declared is not available.
    *   There is never a default shard.
    */

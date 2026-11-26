@@ -24,7 +24,11 @@ export class InstanceResolver {
     this.invalidations = new InvalidationLog(maxInstances);
   }
 
-  /** Current instance in the cache, or `undefined`. */
+  /**
+   * Current instance in the cache, or `undefined`.
+   * @param logicalShard Logical shard.
+   * @returns The instance, or `undefined`.
+   */
   cached(logicalShard: string): string | undefined {
     return this.instances.get(logicalShard);
   }
@@ -32,6 +36,8 @@ export class InstanceResolver {
   /**
    * Reads the instance from the directory and caches it unless the shard was invalidated while
    * it was being read.
+   * @param logicalShard Logical shard.
+   * @returns The instance.
    * @throws ShardingError `UnknownShard` if the directory does not know it.
    */
   async load(logicalShard: string): Promise<string> {
@@ -54,7 +60,10 @@ export class InstanceResolver {
     return instance;
   }
 
-  /** Deletes the cached instance and logs the invalidation. */
+  /**
+   * Deletes the cached instance and logs the invalidation.
+   * @param logicalShard Logical shard.
+   */
   invalidate(logicalShard: string): void {
     this.invalidations.mark(logicalShard);
     this.instances.delete(logicalShard);

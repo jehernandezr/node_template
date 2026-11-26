@@ -4,7 +4,7 @@ import type { UserStatus } from '@contracts/identity';
 export interface UserSnapshot {
   readonly id: string;
   readonly homeTenantId: string;
-  /** Email normalizado. */
+  /** Normalized email. */
   readonly email: string;
   readonly emailVerifiedAt?: Date;
   readonly status: UserStatus;

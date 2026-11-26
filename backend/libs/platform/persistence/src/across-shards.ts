@@ -28,6 +28,9 @@ export class AcrossShards {
 
   /**
    * Runs `fn` on each shard. Never throws because of a down shard: reports it in `failures` and marks `partial`.
+   * @param fn Work on one shard.
+   * @param options Deadline and concurrency.
+   * @returns The results and the failed shards.
    * @throws PersistenceError `PersistenceInvalidConfig` for an invalid option.
    * @throws ShardingError `CrossShardTransaction` if called inside a transaction.
    */

@@ -26,7 +26,7 @@ export class ManifestTenantDataPresence extends TenantDataPresence {
   }
 
   /** Whether any manifest table has at least one tenant row on any shard of its placement. */
-  async holdsData(placement: TenantPlacement): Promise<boolean> {
+  override async holdsData(placement: TenantPlacement): Promise<boolean> {
     for (const shard of placement.shardGroup) {
       const instance = await this.directory.getInstance(shard);
       if (instance === undefined) {

@@ -44,7 +44,7 @@ export class ReportsTenantMoveManifest extends TenantMoveManifest {
     },
   ];
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return ReportsTenantMoveManifest.TABLES;
   }
 }

@@ -47,6 +47,7 @@ export abstract class JobLock {
     name: string,
     ttlMs: number,
   ): Promise<JobLease | undefined>;
+  abstract renew(lease: JobLease, ttlMs: number): Promise<boolean>;
   abstract release(lease: JobLease): Promise<void>;
 }
 export interface JobLease {
@@ -70,7 +71,7 @@ export class JobRunner {
   );
   register(job: ScheduledJob): void;
   start(): void;
-  /** Waits for the running jobs up to `graceMs` and aborts their `signal`. */
+  /** Waits up to `graceMs`, aborts their `signal`, waits up to `graceMs` more and abandons what is left. */
   stop(graceMs: number): Promise<void>;
   /** Runs once right away. Used by tests, wake-ups and external invocation. */
   runNow(name: string): Promise<void>;
@@ -122,13 +123,13 @@ export class SingleRelayScope extends RelayScopes {} // default, a single databa
 
 ### What `exclusive` guarantees
 
-`exclusive` guarantees mutual exclusion while the lease lasts, not one run per occurrence of the schedule. The lease expires after `timeoutMs`: if the run is still going, another replica can take the lock and start another one. Two consecutive occurrences can run in different processes, and an occurrence lost during a restart is not recovered. That is why every job, exclusive or not, is idempotent on its input and honours `context.signal` between units of work: when aborted it stops taking new work, so the next replica does not overlap with what the first one has in flight. What cannot be repeated (a charge, an email) is reserved per unit in the database, not left to the lock.
+`exclusive` guarantees mutual exclusion while the lease lasts, not one run per occurrence of the schedule. The lease is taken for `timeoutMs` and renewed every third of it while the run is still going, even after the run was aborted at its timeout and has not returned yet, so another replica cannot start an overlapping run. If a renewal finds the lease lost (for example after a pause longer than the lease), the run is aborted with `JobLeaseLostError`, since another replica may already hold the job. Two consecutive occurrences can run in different processes, and an occurrence lost during a restart is not recovered. That is why every job, exclusive or not, is idempotent on its input and honours `context.signal` between units of work: when aborted it stops taking new work, so the next replica does not overlap with what the first one has in flight. What cannot be repeated (a charge, an email) is reserved per unit in the database, not left to the lock.
 
 A daily job uses `JobScheduleKind.Cron` anchored in UTC and not a 24 h interval: the interval counts from startup and, with back-to-back deployments, never elapses. If a lost occurrence is not acceptable, the job runs every hour and decides from its data what is due, like the invoice closing.
 
 ### Shutdown
 
-`JobRunner.stop(graceMs)` runs in `BeforeApplicationShutdown`. It waits for the running jobs up to `graceMs` and aborts their `signal`.
+`JobRunner.stop(graceMs)` runs in `OnModuleDestroy`. It waits for the running jobs up to `graceMs` and aborts their `signal`. It then waits up to `graceMs` more for the jobs to return; a job that ignores the abort is abandoned and logged, its lease is no longer renewed and is left to expire, and `stop` returns, so the shutdown always goes on to close the remaining resources.
 
 ## Consequences
 

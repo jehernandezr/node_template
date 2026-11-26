@@ -13,7 +13,7 @@ import {
 import { AccessResolver } from '../application/access-resolver.js';
 import { ListMembersByPermission } from '../application/list-members-by-permission.use-case.js';
 
-/** Internal operations of access. */
+/** Internal operations other services call to read a user's access and the members with a permission. */
 @Injectable()
 export class AccessInternalOperations {
   constructor(
@@ -21,6 +21,11 @@ export class AccessInternalOperations {
     private readonly membersByPermission: ListMembersByPermission,
   ) {}
 
+  /**
+   * Internal operation that returns the access of a user in a tenant.
+   * @param input User and tenant.
+   * @returns The access, or the business error.
+   */
   @InternalHandler(GetUserAccessOperation)
   async getUserAccess(
     input: GetUserAccessInput,
@@ -32,6 +37,11 @@ export class AccessInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that lists the members of a tenant that hold a permission.
+   * @param input Tenant, permission and cursor.
+   * @returns One page of members.
+   */
   @InternalHandler(ListMembersByPermissionOperation)
   async listMembersByPermission(
     input: ListMembersByPermissionInput,

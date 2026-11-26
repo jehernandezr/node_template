@@ -15,11 +15,11 @@ class FlakyFilter extends AsyncBloomFilter {
     super();
   }
 
-  add(item: string): Promise<void> {
+  override add(item: string): Promise<void> {
     return this.inner.add(item);
   }
 
-  async addMany(items: readonly string[]): Promise<void> {
+  override async addMany(items: readonly string[]): Promise<void> {
     if (this.failures > 0) {
       this.failures -= 1;
       throw new Error('valkey does not respond');
@@ -27,7 +27,7 @@ class FlakyFilter extends AsyncBloomFilter {
     await this.inner.addMany(items);
   }
 
-  mightContain(item: string): Promise<boolean> {
+  override mightContain(item: string): Promise<boolean> {
     return this.inner.mightContain(item);
   }
 }

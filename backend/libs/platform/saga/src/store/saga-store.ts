@@ -12,13 +12,24 @@ export abstract class SagaStore {
   /** Sagas that `purge` deletes per call if no other limit is requested: short batches that do not lock the table. */
   static readonly DEFAULT_PURGE_LIMIT = 500;
 
-  /** Inserts a new instance. @throws SagaError `DuplicateSaga` if the id or the idempotency key already exist. */
+  /**
+   * Inserts a new instance. @throws SagaError `DuplicateSaga` if the id or the idempotency key already exist.
+   * @param instance New instance.
+   */
   abstract create(instance: SagaInstance): Promise<void>;
 
-  /** Returns the instance or `null`. */
+  /**
+   * Returns the instance or `null`.
+   * @param id Saga id.
+   * @returns The instance, or `null`.
+   */
   abstract get(id: string): Promise<SagaInstance | null>;
 
-  /** Returns the instance with this idempotency key, or `null`. */
+  /**
+   * Returns the instance with this idempotency key, or `null`.
+   * @param key Idempotency key.
+   * @returns The instance, or `null`.
+   */
   abstract findByIdempotencyKey(key: string): Promise<SagaInstance | null>;
 
   /**
@@ -26,6 +37,8 @@ export abstract class SagaStore {
    * the instance and the optional journal entry together. An entry that already
    * exists for the same step and direction is replaced. Returns the saved
    * instance, with the version bumped by one.
+   * @param write Instance, entry and guards.
+   * @returns The stored instance.
    * @throws SagaError `NotFound` if the saga does not exist, `LeaseLost` if the token
    *   does not match and `ConcurrentModification` if the version does not match; in all
    *   three cases nothing is written.
@@ -34,21 +47,37 @@ export abstract class SagaStore {
 
   /**
    * Guarded write of a `Dispatched` entry together with the instance.
+   * @param write Instance, entry and guards.
+   * @returns The stored instance.
    * @throws SagaError `InvalidState` if the entry is not in `Dispatched`, and those of `commitStep`.
    */
   abstract dispatchStep(write: DispatchWrite): Promise<SagaInstance>;
 
-  /** Journal of a saga, ordered by step index and, within it, forward before compensation. */
+  /**
+   * Journal of a saga, ordered by step index and, within it, forward before compensation.
+   * @param sagaId Saga id.
+   * @returns The entries.
+   */
   abstract steps(sagaId: string): Promise<StepLogEntry[]>;
 
   /**
    * Instances that need a run: `Running` or `Compensating` with an
    * expired lease, or `Suspended` with `nextAttemptAt <= now`. Oldest
    * first (`updatedAt`, then `id`). With several shards it walks all of them.
+   * @param now Current instant.
+   * @param limit Maximum instances.
+   * @returns The instances.
    */
   abstract findRecoverable(now: Date, limit: number): Promise<SagaInstance[]>;
 
-  /** Takes the lease for `token` until `until` if it is free or expired. */
+  /**
+   * Takes the lease for `token` until `until` if it is free or expired.
+   * @param id Saga id.
+   * @param token Token of the run.
+   * @param until Lease end.
+   * @param now Current instant.
+   * @returns Whether it was taken.
+   */
   abstract tryAcquireLease(
     id: string,
     token: string,
@@ -56,12 +85,26 @@ export abstract class SagaStore {
     now: Date,
   ): Promise<boolean>;
 
-  /** Extends the lease if `token` still holds it. Returns `false` if it was lost. */
+  /**
+   * Extends the lease if `token` still holds it. Returns `false` if it was lost.
+   * @param id Saga id.
+   * @param token Token of the run.
+   * @param until New lease end.
+   * @returns Whether it was renewed.
+   */
   abstract renewLease(id: string, token: string, until: Date): Promise<boolean>;
 
-  /** Releases the lease if `token` holds it. */
+  /**
+   * Releases the lease if `token` holds it.
+   * @param id Saga id.
+   * @param token Token of the run.
+   */
   abstract releaseLease(id: string, token: string): Promise<void>;
 
-  /** Deletes the sagas that finished successfully (`Completed`, `Compensated`) and their journal. Returns how many. */
+  /**
+   * Deletes the sagas that finished successfully (`Completed`, `Compensated`) and their journal. Returns how many.
+   * @param options Cutoff and limit.
+   * @returns How many were deleted.
+   */
   abstract purge(options: SagaPurge): Promise<number>;
 }

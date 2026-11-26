@@ -5,12 +5,12 @@ import { ExportMode } from '../../export-mode.js';
 export class RecordingExportMode extends ExportMode {
   readonly applied: { readonly path: string; readonly content: string }[] = [];
 
-  apply(path: string, content: string): Promise<void> {
+  override apply(path: string, content: string): Promise<void> {
     this.applied.push({ path, content });
     return Promise.resolve();
   }
 
-  report(): ExportReport {
+  override report(): ExportReport {
     return { ok: true, lines: this.applied.map((call) => call.path) };
   }
 }

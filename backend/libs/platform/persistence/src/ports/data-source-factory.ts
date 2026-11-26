@@ -4,6 +4,12 @@ import type { InstanceEndpoints } from '../model/instance-endpoints.js';
 
 /** Builds the (uninitialized) `DataSource` of a logical database. It is the seam that tests replace. */
 export abstract class DataSourceFactory {
+  /**
+   * Creates the data source of a database.
+   * @param target Database and its role.
+   * @param endpoints Primary and replica hosts.
+   * @returns The data source, not initialized.
+   */
   abstract create(
     target: DatabaseTarget,
     endpoints: InstanceEndpoints,

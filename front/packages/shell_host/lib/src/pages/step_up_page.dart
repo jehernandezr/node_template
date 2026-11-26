@@ -20,6 +20,7 @@ import 'step_up_form.dart';
 /// `mfaVerifiedAt` the server answered. Without one (demo mode) a button
 /// marks the factor as verified with [clock].
 class StepUpPage extends StatelessWidget {
+  /// Page that asks for a second factor before a sensitive action.
   const StepUpPage({
     super.key,
     required this.session,
@@ -48,13 +49,12 @@ class StepUpPage extends StatelessWidget {
   /// Real identity connection, or null in demo mode.
   final IdentityConnection? connection;
 
+  /// Pop before the session changes: the router refreshes on that change and would otherwise rebuild the stack with this page still on it.
   void _verified(BuildContext context, DateTime at) {
     final router = GoRouter.of(context);
     final onResult = this.onResult;
     if (onResult != null) {
       onResult(true);
-      // Pop before the session changes: the router refreshes on that change
-      // and would otherwise rebuild the stack with this page still on it.
       router.pop(true);
       _publish(at);
     } else {

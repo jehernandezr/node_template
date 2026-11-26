@@ -14,7 +14,12 @@ import { EraseRequester } from '../application/erase-requester.use-case.js';
 export class RunsInternalOperations {
   constructor(private readonly eraseRequester: EraseRequester) {}
 
-  /** Repeating it changes nothing: the user no longer appears in any run. */
+  /**
+   * Internal operation that replaces a user as requester of every run of the shard.
+   * Repeating it changes nothing: the user no longer appears in any run.
+   * @param input User to erase.
+   * @returns How many runs changed.
+   */
   @InternalHandler(EraseReportsUserDataOperation)
   async eraseUserData(
     input: EraseReportsUserInput,

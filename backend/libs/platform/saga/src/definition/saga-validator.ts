@@ -26,7 +26,11 @@ export class SagaValidator {
     private readonly contracts?: ContractRegistry,
   ) {}
 
-  /** Returns the issues found; an empty array if everything is valid. */
+  /**
+   * Returns the issues found; an empty array if everything is valid.
+   * @param sagas Compiled sagas.
+   * @returns The issues.
+   */
   validate(sagas: readonly CompiledSaga<unknown>[]): SagaDefinitionIssue[] {
     return sagas.flatMap((saga) =>
       saga.steps.flatMap((step) => this.validateStep(saga.type, step)),

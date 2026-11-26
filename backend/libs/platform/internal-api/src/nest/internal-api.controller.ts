@@ -40,6 +40,7 @@ export class InternalApiController {
   ) {}
 
   /**
+   * Handles an internal call over HTTP after authenticating its signature.
    * Always responds 200 with `{ outcome }`: the protocol carries the result in the body.
    * 1. Normalizes the headers with `metaReader.normalize`.
    * 2. Authenticates a `SignableRequest` with method `POST`, path `InternalApiRoute.pathOf(operationId)`,
@@ -50,6 +51,10 @@ export class InternalApiController {
    * 4. Delivers `router.handle(operationId, input, meta)` and returns `{ outcome }` without the
    *    `cause` field of a `transient-failure` or an `uncertain`: it is an internal server error
    *    and does not leave the process.
+   * @param operationId Operation id of the path.
+   * @param body Operation input.
+   * @param headers Call metadata and signature.
+   * @returns The outcome.
    */
   @Post(':operationId')
   @HttpCode(HttpStatus.OK)

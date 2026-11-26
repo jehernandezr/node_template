@@ -23,7 +23,12 @@ export class TenantDataTransferSelector {
     private readonly clock: Clock,
   ) {}
 
-  /** The copy the settings and the manifest allow, with the platform tables always copied by batch. */
+  /**
+   * The copy the settings and the manifest allow, with the platform tables always copied by batch.
+   * @param settings Tenant move settings.
+   * @param manifest Manifest of the service.
+   * @returns The transfer.
+   */
   select(
     settings: TenantMoveSettings,
     manifest: TenantMoveManifest,

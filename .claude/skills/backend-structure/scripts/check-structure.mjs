@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-// Checks the rules of backend-structure, backend-code and backend-testing.
-// Usage: node check-structure.mjs [--all | --changed] [repository root]
-//   --changed (default) checks only the files changed against HEAD, including new ones.
-//   --all checks all of backend/.
-// Exits with code 1 and the list of violations if it finds any.
+/**
+ * Checks the rules of backend-structure, backend-code and backend-testing.
+ * Usage: node check-structure.mjs [--all | --changed] [repository root]
+ *   --changed (default) checks only the files changed against HEAD, including new ones.
+ *   --all checks all of backend/.
+ * Exits with code 1 and the list of violations if it finds any.
+ */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -20,15 +22,15 @@ class BackendStructureCheck {
   static INFRA_IN_DOMAIN =
     /from\s+['"](@nestjs\/|typeorm|pg['"/]|@aws-sdk\/|iovalkey|express)/;
   static OUTER_LAYER = /from\s+['"](\.\.\/)+(infrastructure|presentation)\//;
-  // Integration tests: the suffix is `.int-spec.ts`; `*.integration.spec.ts` would run as a unit test.
+  /** Integration tests: the suffix is `.int-spec.ts`; `*.integration.spec.ts` would run as a unit test. */
   static MISNAMED_INTEGRATION_TEST = /\.integration\.spec\.ts$/;
-  // The library core does not know NestJS: only `src/nest/` imports it.
+  /** The library core does not know NestJS: only `src/nest/` imports it. */
   static NEST_GUARDED_AREA =
     /^backend\/libs\/(platform|contracts|shared)\/.+\.ts$/;
   static NEST_FOLDER = /\/src\/nest\//;
   static NEST_IMPORT =
     /(?:from|import)\s*\(?\s*['"](?:@nestjs\/[^'"]*|@platform\/[\w-]+\/nest)['"]/;
-  // Files where an exported function is the declared shape of the API, not a loose script.
+  /** Files where an exported function is the declared shape of the API, not a loose script. */
   static FUNCTION_EXCEPTIONS = [
     {
       pattern: /^backend\/libs\/contracts\/[^/]+\/src\/kit\/define-[\w-]+\.ts$/,
@@ -109,8 +111,8 @@ class BackendStructureCheck {
     );
   }
 
+  /** Tracked or new files of backend/ only: ignored artifacts do not count as code. */
   allBackendFiles() {
-    // Only tracked or new files: ignored artifacts do not count as code.
     return execFileSync(
       'git',
       ['ls-files', '-co', '--exclude-standard', 'backend/'],
@@ -167,8 +169,11 @@ class BackendStructureCheck {
       this.checkSource(file);
   }
 
-  // With --changed only new lines count: moving a file does not force refactoring it,
-  // but what is written today does follow the rules.
+  /**
+   * With --changed only new lines count: moving a file does not force refactoring it,
+   * but what is written today does follow the rules. A new untracked file is checked whole; one moved without
+   * changes contributes no lines.
+   */
   sourceToCheck(file) {
     const full = readFileSync(join(this.root, file), 'utf8');
     if (this.mode === '--all') return full;
@@ -182,11 +187,10 @@ class BackendStructureCheck {
         .split('\n')
         .filter(Boolean),
     );
-    // A new untracked file is checked whole; one moved without changes contributes no lines.
     return this.untracked.has(file) ? full : (this.addedLines.get(file) ?? '');
   }
 
-  // A single diff of the whole tree, so git detects moved files as renames.
+  /** A single diff of the whole tree, so git detects moved files as renames. */
   readAddedLines() {
     const diff = execFileSync(
       'git',
@@ -210,7 +214,7 @@ class BackendStructureCheck {
     return added;
   }
 
-  // Includes tests: those for Nest code live in src/nest/__tests__.
+  /** Includes tests: those for Nest code live in src/nest/__tests__. */
   checkNestBoundary(file) {
     if (
       !BackendStructureCheck.NEST_GUARDED_AREA.test(file) ||

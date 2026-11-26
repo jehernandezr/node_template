@@ -22,6 +22,7 @@ export class ShardedMigrationRunner {
   /**
    * Catalog first, then each shard in order. Databases are migrated one by one: a failure stops the run
    * and the already migrated databases stay up to date. Repeating it never applies anything twice.
+   * @returns One report per database.
    */
   async migrateAll(): Promise<readonly MigrationReport[]> {
     const reports: MigrationReport[] = [await this.migrateCatalog()];
@@ -31,10 +32,19 @@ export class ShardedMigrationRunner {
     return reports;
   }
 
+  /**
+   * Migrates the catalog.
+   * @returns The report.
+   */
   async migrateCatalog(): Promise<MigrationReport> {
     return this.migrate(await this.catalog.get());
   }
 
+  /**
+   * Migrates one shard.
+   * @param location Shard to migrate.
+   * @returns The report.
+   */
   async migrateShard(location: ShardLocation): Promise<MigrationReport> {
     return this.migrate(await this.sources.get(location));
   }

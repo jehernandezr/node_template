@@ -19,11 +19,19 @@ import { RealtimeFacade } from '../../realtime/index.js';
 export class RealtimeControlConsumer {
   constructor(private readonly realtime: RealtimeFacade) {}
 
+  /**
+   * Closes the connections of a revoked session.
+   * @param data Revoked session.
+   */
   @Subscribe(SessionRevokedEvent)
   onSessionRevoked(data: SessionRevokedPayload): Promise<void> {
     return this.realtime.closeSession(data.userId, data.sessionId);
   }
 
+  /**
+   * Closes every connection of a user whose tokens were revoked.
+   * @param data Revocation scope.
+   */
   @Subscribe(TokensRevokedEvent)
   onTokensRevoked(data: TokensRevokedPayload): Promise<void> {
     return data.scope === RevocationScope.User

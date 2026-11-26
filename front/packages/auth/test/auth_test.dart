@@ -44,7 +44,6 @@ void main() {
     );
   });
 
-  /// Opens the session with [initial] through the sign-in flow.
   Future<void> signIn(SessionTokens initial) async {
     repo.signInResult = authenticated(initial);
     await manager.signIn(credentials);
@@ -465,7 +464,6 @@ void main() {
       expect(repo.lastStepUpChallengeRequest?.mfaToken, 'step-1');
       expect(repo.lastStepUpVerify?.challengeId, challengeId);
       expect(await manager.accessToken(), 'access-mfa');
-      // The session token did not change.
       expect(store.sessionToken, 'session-access-1');
       expect(manager.state, AuthState.signedIn);
     });

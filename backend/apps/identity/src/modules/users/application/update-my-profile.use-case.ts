@@ -21,6 +21,12 @@ export class UpdateMyProfile {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Changes the display name or locale of the user.
+   * @param ref Signed-in user.
+   * @param changes New values.
+   * @returns The profile after the change.
+   */
   async execute(
     ref: UserRef,
     changes: UpdateProfileRequest,

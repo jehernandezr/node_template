@@ -28,29 +28,32 @@ export class StructuredLogger extends LoggerPort {
     this.bindings = { ...bindings };
   }
 
-  debug(message: string, fields?: Record<string, unknown>): void {
+  override debug(message: string, fields?: Record<string, unknown>): void {
     this.write(LogLevel.Debug, message, fields);
   }
 
-  info(message: string, fields?: Record<string, unknown>): void {
+  override info(message: string, fields?: Record<string, unknown>): void {
     this.write(LogLevel.Info, message, fields);
   }
 
-  warn(message: string, fields?: Record<string, unknown>): void {
+  override warn(message: string, fields?: Record<string, unknown>): void {
     this.write(LogLevel.Warn, message, fields);
   }
 
-  error(message: string, fields?: Record<string, unknown>): void {
+  override error(message: string, fields?: Record<string, unknown>): void {
     this.write(LogLevel.Error, message, fields);
   }
 
-  child(bindings: Record<string, unknown>): LoggerPort {
+  override child(bindings: Record<string, unknown>): LoggerPort {
     return new StructuredLogger(this.options, {
       ...this.bindings,
       ...bindings,
     });
   }
 
+  /**
+   * A log inside a span without an open context (a job, a library) is also linked to the trace.
+   */
   private write(
     level: LogLevel,
     message: string,
@@ -69,7 +72,6 @@ export class StructuredLogger extends LoggerPort {
       ),
     );
     const ctx = this.options.contextStore.current();
-    // A log inside a span without an open context (a job, a library) is also linked to the trace.
     const span =
       ctx === undefined ? this.options.tracing.activeIds() : undefined;
     const traceId = ctx?.traceId ?? span?.traceId;

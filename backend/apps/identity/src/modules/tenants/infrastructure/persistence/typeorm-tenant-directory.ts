@@ -14,12 +14,14 @@ export class TypeOrmTenantDirectory
     super(catalog);
   }
 
+  /**
+   * The same tenant can repeat the reservation: the creation operation is idempotent.
+   */
   async reserve(
     slug: string,
     tenantId: string,
     region: string,
   ): Promise<boolean> {
-    // The same tenant can repeat the reservation: the creation operation is idempotent.
     const inserted: unknown[] = await this.write((manager) =>
       manager.query(
         'INSERT INTO "tenant_lookup" ("slug", "tenant_id", "region") VALUES ($1, $2, $3) ' +

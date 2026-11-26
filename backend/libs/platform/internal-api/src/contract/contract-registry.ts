@@ -38,6 +38,7 @@ export class ContractRegistry {
   /**
    * Registers operations from their `defineOperation` descriptor.
    * Duplicates are accepted here and reported by `validate()`.
+   * @param definitions Operation descriptors.
    * @throws InternalApiError `InvalidOperation` for any other value and
    *   `NonJsonSafeSchema` for schemas that do not survive JSON transport.
    */
@@ -59,7 +60,10 @@ export class ContractRegistry {
     }
   }
 
-  /** Checks ids, compensation targets and budgets. Returns an empty array if valid. */
+  /**
+   * Checks ids, compensation targets and budgets. Returns an empty array if valid.
+   * @returns The issues.
+   */
   validate(): RegistryIssue[] {
     const issues: RegistryIssue[] = [];
     const seen = new Set<string>();
@@ -112,7 +116,10 @@ export class ContractRegistry {
     return issues;
   }
 
-  /** @throws InternalApiError with every problem listed if the registry is not valid. */
+  /**
+   * Checks that the registry is valid.
+   * @throws InternalApiError with every problem listed if the registry is not valid.
+   */
   assertValid(): void {
     const issues = this.validate();
     if (issues.length === 0) {
@@ -124,12 +131,19 @@ export class ContractRegistry {
     );
   }
 
-  /** Returns the first contract registered with that `id`. */
+  /**
+   * Returns the first contract registered with that `id`.
+   * @param id Operation id.
+   * @returns The contract, or `undefined`.
+   */
   get(id: string): RegisteredContract | undefined {
     return this.byId.get(id);
   }
 
-  /** Returns one entry per operation id. */
+  /**
+   * Returns one entry per operation id.
+   * @returns The operations.
+   */
   operations(): RegisteredContract[] {
     return [...this.byId.values()];
   }

@@ -6,6 +6,10 @@ import type { ValkeyAuthRequest } from './valkey-auth-request.js';
  * from `@platform/adapters-aws` satisfies it structurally, so `valkey` does not depend on `aws`.
  */
 export abstract class ValkeyAuthTokenProvider {
-  /** Returns the current token for that identity. It is requested on each connection and reconnection, never stored. */
+  /**
+   * Returns the current token for that identity. It is requested on each connection and reconnection, never stored.
+   * @param request User, cache name and region.
+   * @returns The token.
+   */
   abstract token(request: ValkeyAuthRequest): Promise<string>;
 }

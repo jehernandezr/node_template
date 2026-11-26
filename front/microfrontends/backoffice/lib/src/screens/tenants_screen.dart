@@ -16,6 +16,7 @@ import 'tenants_controller.dart';
 
 /// Tenant list with search by name or id, and region and status filters.
 class TenantsScreen extends StatelessWidget {
+  /// Tenants screen backed by [repository].
   const TenantsScreen({super.key, required this.repository});
 
   /// Data source of the screen.

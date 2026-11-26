@@ -3,6 +3,12 @@ import { HttpHeader } from './http-header.enum.js';
 
 /** `Deprecation`, `Sunset` and `Link` headers of the contract's deprecated routes. */
 export class DeprecationHeaders {
+  /**
+   * Builds the `Deprecation`, `Sunset` and `Link` headers of a deprecated route.
+   * @param route Route definition.
+   * @param replacementPath Path of the route that replaces it.
+   * @returns The headers.
+   */
   static forRoute(
     route: RouteDefinition,
     replacementPath?: string,
@@ -24,7 +30,12 @@ export class DeprecationHeaders {
     return headers;
   }
 
-  /** `true` from 00:00 UTC of the `sunset` date. */
+  /**
+   * `true` from 00:00 UTC of the `sunset` date.
+   * @param route Route definition.
+   * @param now Current instant.
+   * @returns `true` after the sunset.
+   */
   static isSunset(route: RouteDefinition, now: Date): boolean {
     if (route.deprecated === undefined) {
       return false;

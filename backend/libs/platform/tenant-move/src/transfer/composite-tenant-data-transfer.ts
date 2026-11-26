@@ -22,7 +22,7 @@ export class CompositeTenantDataTransfer extends TenantDataTransfer {
     super();
   }
 
-  async sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
+  override async sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
     const shared = this.withBudget(transfer);
     const progress: TenantMoveProgress[] = [];
     for (const part of this.parts) {
@@ -34,7 +34,9 @@ export class CompositeTenantDataTransfer extends TenantDataTransfer {
     };
   }
 
-  async verify(transfer: TenantTransfer): Promise<TenantMoveVerification> {
+  override async verify(
+    transfer: TenantTransfer,
+  ): Promise<TenantMoveVerification> {
     const shared = this.withBudget(transfer);
     const checks: TenantMoveVerification[] = [];
     for (const part of this.parts) {
@@ -46,14 +48,14 @@ export class CompositeTenantDataTransfer extends TenantDataTransfer {
     };
   }
 
-  async abort(transfer: TenantTransfer): Promise<void> {
+  override async abort(transfer: TenantTransfer): Promise<void> {
     const shared = this.withBudget(transfer);
     for (const part of this.parts) {
       await part.abort(shared);
     }
   }
 
-  async cleanup(
+  override async cleanup(
     tenantId: string,
     source: ShardLocation,
     budget: TransferBudget = this.newBudget(),
@@ -63,7 +65,7 @@ export class CompositeTenantDataTransfer extends TenantDataTransfer {
     }
   }
 
-  async assignRegion(
+  override async assignRegion(
     tenantId: string,
     target: ShardLocation,
     region: string,

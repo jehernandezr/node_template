@@ -8,6 +8,8 @@ export class SubscribeDecorator {
    * Marks a method of an `@Injectable()` class as the handler of the contract:
    * `(data, envelope) => Promise<void>`. `MessagingExplorer` registers it in the
    * `MessageDispatcher` at startup.
+   * @param contract Message contract.
+   * @returns The decorator.
    */
   static create(contract: MessageDefinition): MethodDecorator {
     return SetMetadata(SubscribeMetadata.KEY, contract);

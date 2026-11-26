@@ -44,11 +44,10 @@ class _TaskFormFieldsState extends State<TaskFormFields> {
   late final TextEditingController _description;
   late TaskStatus _status;
 
+  /// Seeded once: a later task from the parent must not overwrite the text the user is typing.
   @override
   void initState() {
     super.initState();
-    // Seeded once: a later task from the parent must not overwrite the text
-    // the user is typing.
     final task = widget.task;
     _title = TextEditingController(text: task?.title ?? '');
     _description = TextEditingController(text: task?.description ?? '');

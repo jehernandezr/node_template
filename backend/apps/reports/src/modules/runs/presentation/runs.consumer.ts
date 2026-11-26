@@ -8,6 +8,10 @@ import { ExecuteRun } from '../application/execute-run.use-case.js';
 export class RunsConsumer {
   constructor(private readonly executeRun: ExecuteRun) {}
 
+  /**
+   * Executes the run of the command.
+   * @param data Tenant and run.
+   */
   @Subscribe(ExecuteRunCommand)
   onExecute(data: ExecuteRunPayload): Promise<void> {
     return this.executeRun.execute(data);

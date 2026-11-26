@@ -14,8 +14,10 @@ import 'account_repository.dart';
 /// [capabilities] and throws [UnsupportedError]: it never answers made-up
 /// data as if it came from the server.
 class ApiAccountRepository implements AccountRepository {
+  /// Repository over the identity API through [client].
   ApiAccountRepository({required this.client});
 
+  /// Client that calls the identity API.
   final ApiClient client;
 
   @override

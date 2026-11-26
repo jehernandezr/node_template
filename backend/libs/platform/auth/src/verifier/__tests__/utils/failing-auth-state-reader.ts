@@ -14,27 +14,27 @@ export class FailingAuthStateReader extends AuthStateReader {
     super();
   }
 
-  async isSessionRevoked(sessionId: string): Promise<boolean> {
+  override async isSessionRevoked(sessionId: string): Promise<boolean> {
     this.check('isSessionRevoked');
     return this.inner.isSessionRevoked(sessionId);
   }
 
-  revokedSessionIds(): AsyncIterable<readonly string[]> {
+  override revokedSessionIds(): AsyncIterable<readonly string[]> {
     this.check('revokedSessionIds');
     return this.inner.revokedSessionIds();
   }
 
-  async userEpoch(userId: string): Promise<Epoch | undefined> {
+  override async userEpoch(userId: string): Promise<Epoch | undefined> {
     this.check('userEpoch');
     return this.inner.userEpoch(userId);
   }
 
-  async tenantEpoch(tenantId: string): Promise<Epoch | undefined> {
+  override async tenantEpoch(tenantId: string): Promise<Epoch | undefined> {
     this.check('tenantEpoch');
     return this.inner.tenantEpoch(tenantId);
   }
 
-  async permissionVersion(
+  override async permissionVersion(
     tenantId: string,
     userId: string,
   ): Promise<PermissionVersion | undefined> {
@@ -42,7 +42,7 @@ export class FailingAuthStateReader extends AuthStateReader {
     return this.inner.permissionVersion(tenantId, userId);
   }
 
-  async accessGrant(
+  override async accessGrant(
     tenantId: string,
     userId: string,
   ): Promise<AccessGrant | undefined> {
@@ -50,7 +50,7 @@ export class FailingAuthStateReader extends AuthStateReader {
     return this.inner.accessGrant(tenantId, userId);
   }
 
-  async apiKey(
+  override async apiKey(
     prefix: string,
     secretHash: string,
   ): Promise<ApiKeyPrincipal | undefined> {

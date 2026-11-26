@@ -21,7 +21,7 @@ export class SseTransport extends RealtimeTransport {
     super();
   }
 
-  attach(host: RealtimeHost): void {
+  override attach(host: RealtimeHost): void {
     host.get(this.path, (request, response) => {
       this.serve(request, response).catch((error: unknown) =>
         response.destroy(error instanceof Error ? error : undefined),
@@ -29,10 +29,13 @@ export class SseTransport extends RealtimeTransport {
     });
   }
 
-  close(): Promise<void> {
+  override close(): Promise<void> {
     return this.connections.closeAll();
   }
 
+  /**
+   * A client that disconnected during the catch-up will no longer emit `close`.
+   */
   private async serve(
     request: IncomingMessage,
     response: ServerResponse,
@@ -52,7 +55,6 @@ export class SseTransport extends RealtimeTransport {
       new SseResponseSink(response),
       typeof lastEventId === 'string' ? lastEventId : undefined,
     );
-    // A client that disconnected during the catch-up will no longer emit `close`.
     if (response.closed) {
       await connection.close();
       return;

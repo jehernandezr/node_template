@@ -19,7 +19,7 @@ export class TypeOrmPlanCatalog extends PlanCatalog {
     super();
   }
 
-  async available(): Promise<readonly Plan[]> {
+  override async available(): Promise<readonly Plan[]> {
     return this.run(async (manager) =>
       this.withQuotas(
         manager,
@@ -28,21 +28,24 @@ export class TypeOrmPlanCatalog extends PlanCatalog {
     );
   }
 
-  async find(planId: string): Promise<Plan | undefined> {
+  override async find(planId: string): Promise<Plan | undefined> {
     return this.run(async (manager) => {
       const rows = await manager.findBy(PlanEntity, { id: planId });
       return (await this.withQuotas(manager, rows))[0];
     });
   }
 
-  async findByCode(code: string): Promise<Plan | undefined> {
+  override async findByCode(code: string): Promise<Plan | undefined> {
     return this.run(async (manager) => {
       const rows = await manager.findBy(PlanEntity, { code });
       return (await this.withQuotas(manager, rows))[0];
     });
   }
 
-  async save(plan: Omit<PlanState, 'id'>, newId: string): Promise<Plan> {
+  override async save(
+    plan: Omit<PlanState, 'id'>,
+    newId: string,
+  ): Promise<Plan> {
     const dataSource = await this.catalog.get();
     return dataSource.transaction(async (manager) => {
       const existing = await manager.findOneBy(PlanEntity, { code: plan.code });

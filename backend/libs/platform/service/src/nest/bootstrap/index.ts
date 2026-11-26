@@ -5,3 +5,5 @@ export * from './service-bootstrap.js';
 export * from './service-http-options.js';
 export * from './service-migrator-options.js';
 export * from './service-migrator.js';
+export * from './application-context-factory.js';
+export * from './nest-application-context-factory.js';

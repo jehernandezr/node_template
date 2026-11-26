@@ -1,15 +1,49 @@
 /// Conversion of contract names to Dart identifiers.
 library;
 
+/// Dart reserved words.
+///
+/// Object members a field cannot take.
 const _reserved = {
-  // Dart reserved words.
-  'assert', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue',
-  'default', 'do', 'else', 'enum', 'extends', 'false', 'final', 'finally',
-  'for', 'if', 'in', 'is', 'new', 'null', 'rethrow', 'return', 'super',
-  'switch', 'this', 'throw', 'true', 'try', 'var', 'void', 'while', 'with',
+  'assert',
+  'await',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'default',
+  'do',
+  'else',
+  'enum',
+  'extends',
+  'false',
+  'final',
+  'finally',
+  'for',
+  'if',
+  'in',
+  'is',
+  'new',
+  'null',
+  'rethrow',
+  'return',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'var',
+  'void',
+  'while',
+  'with',
   'yield',
-  // Object members a field cannot take.
-  'hashCode', 'runtimeType', 'toString', 'noSuchMethod',
+  'hashCode',
+  'runtimeType',
+  'toString',
+  'noSuchMethod',
 };
 
 /// Enum members a value cannot take.

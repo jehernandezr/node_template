@@ -18,7 +18,7 @@ export class ExpressHttpExchange extends HttpExchange {
     super();
   }
 
-  get client(): ClientInfo {
+  override get client(): ClientInfo {
     const client = this.request[HttpRequestKey.ClientInfo];
     if (client === undefined) {
       throw new Error('ClientInfo missing: OriginPolicyMiddleware did not run');
@@ -26,25 +26,25 @@ export class ExpressHttpExchange extends HttpExchange {
     return client;
   }
 
-  sessionCookie(): string | undefined {
+  override sessionCookie(): string | undefined {
     return new SessionCookie().read(this.request.headers[HttpHeader.Cookie]);
   }
 
-  setSessionCookie(token: string, maxAgeMs: number): void {
+  override setSessionCookie(token: string, maxAgeMs: number): void {
     this.response.append(
       HttpHeader.SetCookie,
       new SessionCookie().serialize(token, maxAgeMs),
     );
   }
 
-  clearSessionCookie(): void {
+  override clearSessionCookie(): void {
     this.response.append(
       HttpHeader.SetCookie,
       new SessionCookie().serializeClear(),
     );
   }
 
-  setHeader(name: string, value: string): void {
+  override setHeader(name: string, value: string): void {
     this.response.setHeader(name, value);
   }
 }

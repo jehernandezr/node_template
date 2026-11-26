@@ -32,7 +32,7 @@ class CommitFailingDataSource extends StubDataSource {
 class CommitFailingFactory extends DataSourceFactory {
   readonly created: CommitFailingDataSource[] = [];
 
-  create(target: DatabaseTarget): DataSource {
+  override create(target: DatabaseTarget): DataSource {
     const dataSource = new CommitFailingDataSource(target.database);
     this.created.push(dataSource);
     return dataSource;

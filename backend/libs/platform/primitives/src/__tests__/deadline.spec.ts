@@ -161,15 +161,16 @@ describe('Deadline', () => {
 
     it('does not keep the process alive', () => {
       jest.useRealTimers();
-      const spy = jest.spyOn(globalThis, 'setTimeout');
-      try {
-        Deadline.after(60_000, new FixedClock()).toAbortSignal();
-        const timer = spy.mock.results[0]?.value as NodeJS.Timeout;
-        expect(timer.hasRef()).toBe(false);
-        clearTimeout(timer);
-      } finally {
-        spy.mockRestore();
-      }
+      const aliveTimers = (): number =>
+        process
+          .getActiveResourcesInfo()
+          .filter((resource) => resource === 'Timeout').length;
+      const before = aliveTimers();
+
+      const signal = Deadline.after(60_000, new FixedClock()).toAbortSignal();
+
+      expect(signal.aborted).toBe(false);
+      expect(aliveTimers()).toBe(before);
     });
   });
 });
@@ -273,7 +274,11 @@ describe('Deadline waiting', () => {
     });
 
     it('does not start the work when already expired or aborted', async () => {
-      const work = jest.fn(() => Promise.resolve(1));
+      let started = 0;
+      const work = (): Promise<number> => {
+        started += 1;
+        return Promise.resolve(1);
+      };
       await expect(
         Deadline.at(START.getTime() - 1, clock).race(work),
       ).rejects.toBeInstanceOf(DeadlineExceededError);
@@ -282,7 +287,7 @@ describe('Deadline waiting', () => {
       await expect(
         Deadline.after(1_000, clock).race(work, controller.signal),
       ).rejects.toThrow('stop');
-      expect(work).not.toHaveBeenCalled();
+      expect(started).toBe(0);
     });
 
     it('propagates a failure of the work', async () => {

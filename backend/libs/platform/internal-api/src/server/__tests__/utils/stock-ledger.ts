@@ -45,7 +45,7 @@ export class ReserveHandler extends OperationHandler<
   }
 
   /** Waits for the gate and records the claim. */
-  async handle(input: {
+  override async handle(input: {
     sku: string;
   }): Promise<HandlerResult<{ reservationId: string }>> {
     this.calls += 1;
@@ -64,7 +64,7 @@ export class ReleaseHandler extends OperationHandler<
   }
 
   /** Removes the claim. */
-  async handle(input: {
+  override async handle(input: {
     reservationId: string;
   }): Promise<HandlerResult<{ released: boolean }>> {
     const released = this.ledger.reserved.delete(input.reservationId);

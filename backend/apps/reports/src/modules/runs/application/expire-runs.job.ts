@@ -36,7 +36,7 @@ export class ExpireRunsJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     for (const { tenantId, runId } of await this.maintenance.expireBefore(
       this.clock.now(),
     )) {

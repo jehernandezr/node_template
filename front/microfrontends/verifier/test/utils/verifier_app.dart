@@ -51,7 +51,6 @@ final class VerifierTestApp {
 
   /// Lets the deferred library load and the first frame build.
   static Future<void> settle(WidgetTester tester) async {
-    // The deferred load completes on a zero-duration timer of the fake clock.
     await tester.pump(const Duration(milliseconds: 1));
     await tester.pump();
     await tester.pump();

@@ -2,6 +2,7 @@ import { FrontPaths } from '../front-paths.mjs';
 import { PatternRule } from './pattern-rule.mjs';
 import { RuleId } from './rule-id.mjs';
 
+/** Rejects sentences built by interpolating l10n texts with `:` or `·`: a sentence with data is an ARB key with parameters. */
 export class L10nInterpolationRule extends PatternRule {
   constructor() {
     super(
@@ -11,6 +12,7 @@ export class L10nInterpolationRule extends PatternRule {
     );
   }
 
+  /** @override */
   appliesTo(file) {
     return FrontPaths.isMicrofrontendLib(file) || FrontPaths.isUiLib(file);
   }

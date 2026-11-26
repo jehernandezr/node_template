@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 /// it, rebuilds on change and disposes it. A screen built with it can be a
 /// `StatelessWidget`.
 class ControllerBuilder<C extends ChangeNotifier> extends StatefulWidget {
-  /// Creates the builder.
+  /// Takes [create], which makes the controller once, and [builder], which renders it.
   const ControllerBuilder({
     super.key,
     required this.create,

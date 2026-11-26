@@ -69,6 +69,8 @@ export class PersistenceModule extends PersistenceModuleClass {
   /**
    * Registers the repositories of a module with its sharding key (`PersistenceFeature` and `RepositoryKit`),
    * or the entities of a module that uses the catalog. The entities are added to those of the `DataSource` when it is created.
+   * @param options Repositories, entities and sharding key.
+   * @returns The module.
    */
   static forFeature(options: PersistenceFeatureOptions): DynamicModule {
     if ('catalog' in options) {

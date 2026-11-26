@@ -25,7 +25,13 @@ export class CachedAccessResolver extends AccessResolver {
     this.grants = new TtlLruCache(options.maxEntries);
   }
 
-  async resolve(tenantId: string, userId: string): Promise<AccessGrant> {
+  /**
+   * The Valkey copy is optional: if it does not respond or does not have the grant, it falls through to the source.
+   */
+  override async resolve(
+    tenantId: string,
+    userId: string,
+  ): Promise<AccessGrant> {
     const nowMs = this.clock.now().getTime();
     const key = `${tenantId}:${userId}`;
     const entry = this.grants.get(key);
@@ -35,7 +41,6 @@ export class CachedAccessResolver extends AccessResolver {
     ) {
       return entry.value;
     }
-    // The Valkey copy is optional: if it does not respond or does not have the grant, it falls through to the source.
     let grant: AccessGrant | undefined;
     try {
       grant = await this.state.accessGrant(tenantId, userId);

@@ -13,7 +13,7 @@ export class AuthStateStreamRevocations extends StreamRevocations {
    * opened in the same second as the revocation cannot be told apart from an earlier one, so it is also closed.
    * Whoever reconnects a second later gets back in with their token if it is still valid.
    */
-  async revokedSince(
+  override async revokedSince(
     principal: StreamPrincipal,
     openedAt: Date,
   ): Promise<boolean> {

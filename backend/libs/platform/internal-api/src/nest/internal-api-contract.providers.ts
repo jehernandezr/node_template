@@ -15,6 +15,10 @@ import { PublishedContracts } from './published-contracts.js';
  * database error would be permanent and the server would respond `protocol-violation`.
  */
 export class InternalApiContractProviders {
+  /**
+   * Builds the providers of the contract registry and the outcome classification.
+   * @returns The providers.
+   */
   static build(): Provider[] {
     return [
       { provide: OperationResolver, useFactory: () => new OperationResolver() },

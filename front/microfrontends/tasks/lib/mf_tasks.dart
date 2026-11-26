@@ -18,6 +18,8 @@ import 'src/shared/constants/tasks_paths.dart';
 ///
 /// It serves demo and live shells: in live mode the data comes from the tasks
 /// API.
+///
+/// Declared before `:id` so `new` is not read as an id.
 final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
   id: tasksId,
   platforms: {AppPlatform.web, AppPlatform.mobile},
@@ -38,7 +40,6 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
       library: screens.loadLibrary,
       build: (scope, params) => screens.TasksScreens.list(scope),
       routes: [
-        // Declared before `:id` so `new` is not read as an id.
         ScreenRoute.deferred(
           TasksPaths.newSegment,
           access: tasksWriteRule,

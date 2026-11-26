@@ -26,7 +26,9 @@ class RecordingSendEmailHandler extends OperationHandler<
   static readonly BROKEN = 'roto@example.com';
   readonly received: SendEmailInput[] = [];
 
-  async handle(input: SendEmailInput): Promise<HandlerResult<SendEmailResult>> {
+  override async handle(
+    input: SendEmailInput,
+  ): Promise<HandlerResult<SendEmailResult>> {
     if (input.to === RecordingSendEmailHandler.SUPPRESSED) {
       return {
         outcome: CallOutcome.businessError(

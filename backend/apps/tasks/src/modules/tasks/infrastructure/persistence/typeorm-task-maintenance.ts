@@ -21,7 +21,7 @@ export class TypeOrmTaskMaintenance extends TaskMaintenance {
     super();
   }
 
-  async purgeDeletedBefore(cutoff: Date): Promise<number> {
+  override async purgeDeletedBefore(cutoff: Date): Promise<number> {
     const outcome = await this.inEveryShard(async (manager) => {
       const result = await manager
         .createQueryBuilder()
@@ -36,7 +36,10 @@ export class TypeOrmTaskMaintenance extends TaskMaintenance {
   }
 
   /** A single statement per shard: each task counts once even if the user both created and edited it. */
-  async replaceAuthor(userId: string, replacement: UserRef): Promise<number> {
+  override async replaceAuthor(
+    userId: string,
+    replacement: UserRef,
+  ): Promise<number> {
     const outcome = await this.inEveryShard(async (manager) => {
       const result = await manager
         .createQueryBuilder()

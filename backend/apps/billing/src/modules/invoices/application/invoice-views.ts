@@ -7,6 +7,11 @@ import type { InvoiceState } from '../domain/invoice.js';
 
 /** The invoice as the contract publishes it. Pure utility. */
 export class InvoiceViews {
+  /**
+   * Builds the list row of an invoice.
+   * @param state Stored invoice.
+   * @returns The summary shown in the invoice list.
+   */
   static summary(state: InvoiceState): InvoiceSummary {
     return {
       id: state.id,
@@ -18,6 +23,11 @@ export class InvoiceViews {
     };
   }
 
+  /**
+   * Builds the change record of an invoice for the reports projection.
+   * @param state Stored invoice.
+   * @returns The change with its status and totals.
+   */
   static change(state: InvoiceState): InvoiceChange {
     return {
       ...InvoiceViews.summary(state),
@@ -26,6 +36,11 @@ export class InvoiceViews {
     };
   }
 
+  /**
+   * Builds the full view of an invoice with its lines.
+   * @param state Stored invoice.
+   * @returns The invoice as the API returns it.
+   */
   static detail(state: InvoiceState): InvoiceView {
     return {
       ...InvoiceViews.summary(state),

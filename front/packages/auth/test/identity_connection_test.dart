@@ -167,7 +167,6 @@ void main() {
       ..answer = (request) => switch (request.uri.path) {
         '/v1/auth/sign-in' => TransportResponse(
           statusCode: 200,
-          // The real connection uses the wall clock.
           body: jsonEncode(
             _authenticated(
               'real-token',

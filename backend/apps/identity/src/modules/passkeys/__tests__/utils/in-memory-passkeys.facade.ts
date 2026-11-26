@@ -11,15 +11,15 @@ export class InMemoryPasskeysFacade extends PasskeysFacade {
     return this;
   }
 
-  async hasPasskeys(user: UserRef): Promise<boolean> {
+  override async hasPasskeys(user: UserRef): Promise<boolean> {
     return this.owners.has(user.userId);
   }
 
-  async forget(user: UserRef): Promise<void> {
+  override async forget(user: UserRef): Promise<void> {
     this.owners.delete(user.userId);
   }
 
-  async relocateHomeTenant(
+  override async relocateHomeTenant(
     homeTenantId: string,
     region: string,
   ): Promise<void> {

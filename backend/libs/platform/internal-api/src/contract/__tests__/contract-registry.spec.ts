@@ -123,7 +123,6 @@ describe('ContractRegistry', () => {
   it('reports a call whose attempts exceed the default 25 000 ms budget', () => {
     const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(SlowIdempotent, SlowOnce);
-    // 10 000 ms x 3 attempts + 2 backoffs = 34 000 ms; the non-idempotent op gets one attempt of 30 000 ms.
     expect(registry.validate()).toEqual([
       expect.objectContaining({
         code: RegistryIssueCode.CallBudgetExceeded,
@@ -149,7 +148,6 @@ describe('ContractRegistry', () => {
     const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Tight);
 
-    // 8 000 ms x 3 attempts = 24 000 ms, plus 2 backoffs of up to 2 000 ms = 28 000 ms.
     expect(registry.validate()).toEqual([
       expect.objectContaining({
         code: RegistryIssueCode.CallBudgetExceeded,

@@ -23,6 +23,11 @@ import { TriggerNotifications } from '../application/trigger-notifications.js';
 export class TriggersConsumer {
   constructor(private readonly triggers: TriggerNotifications) {}
 
+  /**
+   * Notifies a security alert.
+   * @param data Event payload.
+   * @param envelope Event envelope; its id makes the notification idempotent.
+   */
   @Subscribe(SecurityAlertRaisedEvent)
   onSecurityAlert(
     data: SecurityAlertRaisedPayload,
@@ -31,6 +36,11 @@ export class TriggersConsumer {
     return this.triggers.securityAlert(envelope.id, data);
   }
 
+  /**
+   * Notifies a task change.
+   * @param data Event payload.
+   * @param envelope Event envelope; its id makes the notification idempotent.
+   */
   @Subscribe(TaskUpdatedEvent)
   onTaskUpdated(
     data: TaskUpdatedPayload,
@@ -39,6 +49,11 @@ export class TriggersConsumer {
     return this.triggers.taskUpdated(envelope.id, data);
   }
 
+  /**
+   * Notifies an issued invoice.
+   * @param data Event payload.
+   * @param envelope Event envelope; its id makes the notification idempotent.
+   */
   @Subscribe(InvoiceIssuedEvent)
   onInvoiceIssued(
     data: InvoiceIssuedPayload,
@@ -47,6 +62,11 @@ export class TriggersConsumer {
     return this.triggers.invoiceIssued(envelope.id, data);
   }
 
+  /**
+   * Notifies a membership change.
+   * @param data Event payload.
+   * @param envelope Event envelope; its id makes the notification idempotent.
+   */
   @Subscribe(MembershipChangedEvent)
   onMembershipChanged(
     data: MembershipChangedPayload,
@@ -55,6 +75,11 @@ export class TriggersConsumer {
     return this.triggers.membershipChanged(envelope.id, data);
   }
 
+  /**
+   * Notifies a finished report.
+   * @param data Event payload.
+   * @param envelope Event envelope; its id makes the notification idempotent.
+   */
   @Subscribe(RunCompletedEvent)
   onReportCompleted(
     data: RunCompletedPayload,

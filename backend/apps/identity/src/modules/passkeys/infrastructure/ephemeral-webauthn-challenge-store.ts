@@ -24,7 +24,7 @@ export class EphemeralWebAuthnChallengeStore extends WebAuthnChallengeStore {
     super();
   }
 
-  async save(challenge: WebAuthnChallenge): Promise<void> {
+  override async save(challenge: WebAuthnChallenge): Promise<void> {
     await this.store.set(
       this.keyOf(challenge.id),
       JSON.stringify(challenge),
@@ -32,7 +32,9 @@ export class EphemeralWebAuthnChallengeStore extends WebAuthnChallengeStore {
     );
   }
 
-  async consume(challengeId: string): Promise<WebAuthnChallenge | undefined> {
+  override async consume(
+    challengeId: string,
+  ): Promise<WebAuthnChallenge | undefined> {
     const raw = await this.store.take(this.keyOf(challengeId));
     if (raw === undefined) {
       return undefined;

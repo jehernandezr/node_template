@@ -76,7 +76,6 @@ describe('ExportCommand', () => {
       expect(fileSystem.contentOf(paths.topology)).toBeDefined();
       expect(fileSystem.contentOf(paths.asyncApi)).toBeDefined();
       expect(fileSystem.contentOf(paths.openApiOf('identity'))).toBeDefined();
-      // contract.json and openapi.json for platform, identity and billing, the topology and the asyncapi.
       expect(output.infoLines).toHaveLength(8);
     });
 

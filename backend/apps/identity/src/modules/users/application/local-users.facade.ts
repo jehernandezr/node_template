@@ -10,7 +10,7 @@ import { UsersFacade } from './users.facade.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityErrorCode } from '@contracts/identity';
 
-/** In-process `UsersFacade`. */
+/** Lets sign-in, registration and tenant moves find, register and relocate users, and remember their last tenant. */
 @Injectable()
 export class LocalUsersFacade extends UsersFacade {
   constructor(
@@ -22,15 +22,15 @@ export class LocalUsersFacade extends UsersFacade {
     super();
   }
 
-  findByEmail(email: string): Promise<UserSnapshot | undefined> {
+  override findByEmail(email: string): Promise<UserSnapshot | undefined> {
     return this.reader.findByEmail(email);
   }
 
-  getByRef(ref: UserRef): Promise<UserSnapshot> {
+  override getByRef(ref: UserRef): Promise<UserSnapshot> {
     return this.reader.getByRef(ref);
   }
 
-  refOf(userId: string): Promise<UserRef | undefined> {
+  override refOf(userId: string): Promise<UserRef | undefined> {
     return this.reader.refOf(userId);
   }
 
@@ -38,7 +38,7 @@ export class LocalUsersFacade extends UsersFacade {
    * @throws IdentityError `IDENTITY.INVITATION.INVALID` if the email already has an account: whoever registers outside the
    * public route (an invitation or the initial load) cannot create another account with that email.
    */
-  async register(input: RegisterUserInput): Promise<UserRef> {
+  override async register(input: RegisterUserInput): Promise<UserRef> {
     const ref = await this.registrar.register(input);
     if (ref === undefined) {
       throw new IdentityError(IdentityErrorCode.InvitationInvalid);
@@ -46,11 +46,14 @@ export class LocalUsersFacade extends UsersFacade {
     return ref;
   }
 
-  setLastTenant(ref: UserRef, tenantId: string): Promise<void> {
+  override setLastTenant(ref: UserRef, tenantId: string): Promise<void> {
     return this.lastTenant.execute(ref, tenantId);
   }
 
-  relocateHomeTenant(homeTenantId: string, region: string): Promise<void> {
+  override relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void> {
     return this.directory.relocateHomeTenant(homeTenantId, region);
   }
 }

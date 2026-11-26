@@ -16,7 +16,14 @@ export abstract class OperationInvoker {
     return undefined;
   }
 
-  /** Calls `operationId` with `idempotencyKey`, which the participant must honor. */
+  /**
+   * Calls `operationId` with `idempotencyKey`, which the participant must honor.
+   * @param operationId Operation id.
+   * @param input Operation input.
+   * @param idempotencyKey Key of the step.
+   * @param options Deadline and context.
+   * @returns The outcome.
+   */
   abstract invoke(
     operationId: string,
     input: unknown,

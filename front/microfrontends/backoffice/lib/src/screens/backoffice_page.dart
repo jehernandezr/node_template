@@ -7,6 +7,7 @@ import 'backoffice_section_nav.dart';
 /// section navigation, an optional subtitle and the content as slivers, so a
 /// long list builds only the rows on screen.
 class BackofficePage extends StatelessWidget {
+  /// Page of the backoffice with its [title], [subtitle] and section navigation.
   const BackofficePage({
     super.key,
     required this.title,
@@ -14,7 +15,10 @@ class BackofficePage extends StatelessWidget {
     this.subtitle,
   });
 
+  /// Title of the page.
   final String title;
+
+  /// Secondary text, if any.
   final String? subtitle;
 
   /// Content below the navigation. Use [SliverList] for long lists and

@@ -30,7 +30,6 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
     await app.stop();
   });
 
-  /** Requests the reset over HTTP, lets the worker answer it and returns the token of the email. */
   const requestReset = async (journey: IdentityJourney): Promise<string> => {
     const requested = await journey
       .native()
@@ -43,7 +42,6 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
     return String(journey.mailTo(IdentityEmailTemplate.PasswordReset)['token']);
   };
 
-  /** What a reset request leaves that its caller could tell apart: the answer and the rows it writes. */
   const traceOfRequest = async (email: string) => {
     const probe = app.shards();
     const count = `SELECT (SELECT count(*) FROM outbox) + (SELECT count(*) FROM password_resets) AS rows`;

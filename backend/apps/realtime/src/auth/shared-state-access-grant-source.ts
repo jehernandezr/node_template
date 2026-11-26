@@ -10,7 +10,7 @@ import {
  * is rejected and the client retries, instead of opening a dependency on identity for each connection.
  */
 export class SharedStateAccessGrantSource extends AccessGrantSource {
-  async fetch(): Promise<AccessGrant> {
+  override async fetch(): Promise<AccessGrant> {
     throw AuthenticationError.stateUnavailable(
       'realtime reads only the shared auth state',
     );

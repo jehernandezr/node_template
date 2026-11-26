@@ -15,12 +15,12 @@ export class DirectoryWriteGate extends TenantWriteGate {
     super();
   }
 
-  async isClosed(tenantId: string): Promise<boolean> {
+  override async isClosed(tenantId: string): Promise<boolean> {
     const placement = await this.router.placement(tenantId);
     return placement.status === TenantStatus.Migrating;
   }
 
-  async close(tenantId: string): Promise<void> {
+  override async close(tenantId: string): Promise<void> {
     await this.transition.apply(tenantId, (current) =>
       current.status === TenantStatus.Migrating
         ? undefined
@@ -28,7 +28,7 @@ export class DirectoryWriteGate extends TenantWriteGate {
     );
   }
 
-  async open(tenantId: string): Promise<void> {
+  override async open(tenantId: string): Promise<void> {
     await this.transition.apply(tenantId, (current) =>
       current.status === TenantStatus.Active
         ? undefined

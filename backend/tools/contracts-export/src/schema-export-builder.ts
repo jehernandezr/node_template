@@ -34,7 +34,11 @@ export class SchemaExportBuilder {
     private readonly uniqueness: GlobalUniquenessChecker,
   ) {}
 
-  /** Map from service name to its `contract.json`. */
+  /**
+   * Map from service name to its `contract.json`.
+   * @param contracts Contracts of every service.
+   * @returns The exported contracts.
+   */
   build(contracts: readonly ServiceContract[]): Map<string, JsonObject> {
     this.uniqueness.check(contracts);
     const owners = this.ownership.of(contracts);

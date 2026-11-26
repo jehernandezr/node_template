@@ -1,7 +1,6 @@
 import { Hashes } from '../hashes.js';
 
 describe('Hashes', () => {
-  // Reference vectors for 32-bit FNV-1a.
   it.each([
     ['', 0x811c9dc5, '811c9dc5'],
     ['a', 0xe40c292c, 'e40c292c'],

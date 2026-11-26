@@ -16,6 +16,10 @@ export class TrackMembership {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Updates the member roster that counts the users of the tenant.
+   * @param change Member who joined or left.
+   */
   execute(change: MembershipChangedPayload): Promise<void> {
     if (change.kind === MembershipChangeKind.GroupsChanged) {
       return Promise.resolve();

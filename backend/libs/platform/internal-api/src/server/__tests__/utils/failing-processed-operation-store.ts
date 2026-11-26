@@ -31,7 +31,7 @@ export class FailingProcessedOperationStore extends ProcessedOperationStore {
     return this;
   }
 
-  async claim(
+  override async claim(
     key: string,
     request: ClaimRequest,
   ): Promise<ClaimResult<FinalOutcome<unknown>>> {
@@ -41,7 +41,7 @@ export class FailingProcessedOperationStore extends ProcessedOperationStore {
     return this.inner.claim(key, request);
   }
 
-  async complete(
+  override async complete(
     key: string,
     claimToken: string,
     result: FinalOutcome<unknown>,
@@ -52,7 +52,7 @@ export class FailingProcessedOperationStore extends ProcessedOperationStore {
     return this.inner.complete(key, claimToken, result);
   }
 
-  renew(
+  override renew(
     key: string,
     claimToken: string,
     leaseUntilMs: number,
@@ -60,7 +60,7 @@ export class FailingProcessedOperationStore extends ProcessedOperationStore {
     return this.inner.renew(key, claimToken, leaseUntilMs);
   }
 
-  async release(key: string, claimToken: string): Promise<void> {
+  override async release(key: string, claimToken: string): Promise<void> {
     if (this.releaseFailure !== undefined) {
       throw this.releaseFailure.error;
     }

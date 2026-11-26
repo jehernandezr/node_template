@@ -11,17 +11,24 @@ import type { MessageEnvelope } from './message-envelope.js';
 export class EnvelopeParser {
   constructor(private readonly validator: EnvelopeValidator) {}
 
-  /** @throws MessagingError `PayloadTooLarge` o `InvalidEnvelope`. */
+  /**
+   * Parses and validates a raw delivery.
+   * @param raw JSON text or decoded value.
+   * @returns The envelope.
+   * @throws MessagingError `PayloadTooLarge` or `InvalidEnvelope`.
+   */
   parse(raw: unknown): MessageEnvelope {
     return this.validator.validate(this.decode(raw));
   }
 
+  /**
+   * A UTF-16 length over the limit already implies more bytes than the limit.
+   */
   private decode(raw: unknown): unknown {
     if (typeof raw !== 'string') {
       this.validator.assertSize(this.serializedSize(raw));
       return raw;
     }
-    // A UTF-16 length over the limit already implies more bytes than the limit.
     if (raw.length > EnvelopeLimits.MAX_BYTES) {
       this.validator.assertSize();
     }

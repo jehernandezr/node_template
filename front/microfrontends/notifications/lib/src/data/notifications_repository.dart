@@ -20,12 +20,16 @@ abstract interface class NotificationsRepository implements ScopedResource {
   /// mark. Ends when the repository closes.
   Stream<int> watchUnreadCount();
 
+  /// Marks the notification [id] read.
   Future<void> markAsRead(String id);
 
+  /// Marks every notification read.
   Future<void> markAllAsRead();
 
+  /// Loads the notification preferences of the user.
   Future<NotificationPreferences> fetchPreferences();
 
+  /// Saves the notification preferences of the user.
   Future<void> savePreferences(NotificationPreferences preferences);
 
   /// Notifications that arrive while the app is open (server-sent events in

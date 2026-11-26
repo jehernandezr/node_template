@@ -8,7 +8,9 @@ export class CountingBloomFilterFactory extends BloomFilterFactory {
   created = 0;
   private readonly delegate = new InMemoryBloomFilterFactory();
 
-  create(definition: ResolvedBloomFilterDefinition): RebuildableBloomFilter {
+  override create(
+    definition: ResolvedBloomFilterDefinition,
+  ): RebuildableBloomFilter {
     this.created += 1;
     return this.delegate.create(definition);
   }

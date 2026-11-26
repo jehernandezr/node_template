@@ -34,7 +34,12 @@ export class TenantRowFilter {
     this.tables = tables;
   }
 
-  /** Condition on the table with alias `alias`. */
+  /**
+   * Condition on the table with alias `alias`.
+   * @param table Table of the manifest.
+   * @param alias Alias of the table in the query.
+   * @returns The SQL condition.
+   */
   where(table: string, alias: string): string {
     return this.condition(this.entry(table), alias, 0);
   }

@@ -115,7 +115,10 @@ export class OutboxRelay {
     this.ownerId = `${options.owner ?? DEFAULT_OWNER}:${this.ids.next().toString()}`;
   }
 
-  /** Runs one pass over the records due at this time. */
+  /**
+   * Runs one pass over the records due at this time.
+   * @returns The report of the pass.
+   */
   async relayOnce(): Promise<RelayReport> {
     const { store, publisher } = this.options;
     const passStart = this.clock.now().getTime();

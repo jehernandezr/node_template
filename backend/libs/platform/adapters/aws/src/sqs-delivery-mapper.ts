@@ -4,12 +4,21 @@ import type { SqsLambdaRecord } from './sqs-lambda-event.js';
 
 /** Converts what SQS delivers (Lambda or `ReceiveMessage`) into a {@link SqsDelivery}. */
 export class SqsDeliveryMapper {
-  /** A missing or invalid count counts as the first delivery. */
+  /**
+   * A missing or invalid count counts as the first delivery.
+   * @param value Attribute value.
+   * @returns The count.
+   */
   static receiveCount(value: string | undefined): number {
     const count = Number(value);
     return Number.isInteger(count) && count > 0 ? count : 1;
   }
 
+  /**
+   * Maps a Lambda SQS record to a delivery.
+   * @param record Lambda record.
+   * @returns The delivery.
+   */
   static fromRecord(record: SqsLambdaRecord): SqsDelivery {
     return {
       messageId: record.messageId,
@@ -24,7 +33,11 @@ export class SqsDeliveryMapper {
     };
   }
 
-  /** `undefined` when the message lacks the id or the receipt: it cannot be acknowledged. */
+  /**
+   * `undefined` when the message lacks the id or the receipt: it cannot be acknowledged.
+   * @param message SQS message.
+   * @returns The delivery, or `undefined`.
+   */
   static fromMessage(message: Message): SqsDelivery | undefined {
     if (!message.MessageId || !message.ReceiptHandle) {
       return undefined;

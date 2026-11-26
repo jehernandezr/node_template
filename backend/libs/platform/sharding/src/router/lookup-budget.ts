@@ -24,6 +24,9 @@ export class LookupBudget {
 
   /**
    * Waits for `promise` until it settles or the budget runs out, whichever comes first.
+   * Without a deadline, `Deadline` already waits on the signal; a deadline that never expires leaves it alone.
+   * @param promise Lookup to wait for.
+   * @returns What the lookup returns.
    * @throws The signal `reason` if it aborts; `DeadlineExceededError` if the deadline expires.
    */
   wait<T>(promise: Promise<T>): Promise<T> {
@@ -31,7 +34,6 @@ export class LookupBudget {
       return this.deadline.wait(promise, this.signal);
     }
     if (this.signal !== undefined) {
-      // Without a deadline, `Deadline` already waits on the signal; a deadline that never expires leaves it alone.
       return Deadline.at(Number.MAX_SAFE_INTEGER, this.clock).wait(
         promise,
         this.signal,

@@ -60,7 +60,8 @@ export class PasskeyAuthentication {
   }
 
   /**
-   * Signs in with a passkey.
+   * Opens a session from a passkey alone when it verifies the user from a device the user trusts; otherwise asks for
+   * a second factor other than a passkey.
    * @param request Challenge, WebAuthn response and, optionally, the device proof.
    * @param client Client that sends the request.
    * @returns The open session, or the pending second factor.

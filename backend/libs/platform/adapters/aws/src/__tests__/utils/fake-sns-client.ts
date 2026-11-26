@@ -49,7 +49,6 @@ export class FakeSnsClient extends SNSClient {
     return this.table.sentOf(command);
   }
 
-  // Same reason as `FakeSqsClient.send`: the only cast in the class.
   override send = (async (command: SdkCommand) => {
     const answer = this.table.respond(command);
     return answer.found ? answer.value : {};

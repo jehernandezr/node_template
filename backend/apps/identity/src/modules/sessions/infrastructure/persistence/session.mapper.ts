@@ -8,6 +8,11 @@ import { SessionEntity } from './entities/session.entity.js';
 
 /** Converts between `Session` and its row. */
 export class SessionMapper {
+  /**
+   * Rebuilds a session from its row.
+   * @param row Stored row.
+   * @returns The domain session.
+   */
   toDomain(row: SessionEntity): Session {
     return Session.rehydrate({
       id: row.id,
@@ -40,6 +45,11 @@ export class SessionMapper {
     });
   }
 
+  /**
+   * Turns a session into its row.
+   * @param session Domain session.
+   * @returns The row to store.
+   */
   toPersistence(session: Session): SessionEntity {
     const state = session.snapshot();
     const row = new SessionEntity();

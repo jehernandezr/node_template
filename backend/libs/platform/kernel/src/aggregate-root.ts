@@ -14,7 +14,10 @@ export abstract class AggregateRoot<
     this.domainEvents.push(event);
   }
 
-  /** Returns the pending events and empties the list. */
+  /**
+   * Returns the pending events and empties the list.
+   * @returns The events.
+   */
   pullDomainEvents(): TEvent[] {
     const events = this.domainEvents;
     this.domainEvents = [];

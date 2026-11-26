@@ -15,6 +15,11 @@ import { AwsProviders } from './aws.providers.js';
  */
 @Module({})
 export class AwsModule {
+  /**
+   * Registers the AWS clients and adapters.
+   * @param options Region, endpoint and adapters to enable.
+   * @returns The module.
+   */
   static forRoot(options: AwsModuleOptions = {}): DynamicModule {
     return {
       module: AwsModule,

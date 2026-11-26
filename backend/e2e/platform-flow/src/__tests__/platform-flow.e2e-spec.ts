@@ -118,7 +118,6 @@ new ContainerRuntime(process.env).describeIfAvailable(
     let doneTaskId: string;
     let runId: string;
 
-    /** The access token of a user session, switched to the test tenant. */
     const tokenIn = async (
       journey: IdentityJourney,
       session: SessionTokensBody,
@@ -133,7 +132,6 @@ new ContainerRuntime(process.env).describeIfAvailable(
       service: PlatformService,
       accessToken: string,
     ): HttpTestClient => app.node(service).clientOf(accessToken);
-    /** The tenant's rows in the shard where the service directory currently places it. */
     const rowsOf = (service: PlatformService, table: string, columns: string) =>
       app
         .node(service)
@@ -141,16 +139,13 @@ new ContainerRuntime(process.env).describeIfAvailable(
           tenantId,
           `SELECT ${columns} FROM ${table} WHERE tenant_id = '${tenantId}' ORDER BY 1`,
         );
-    /** The query for a move table: the tenant's rows or, in per-user tables, the member's rows. */
     const movedRowsSql = ({ table, columns, ownedBy }: MovedTable) =>
       `SELECT ${columns} FROM ${table} WHERE ${ownedBy} = '${ownedBy === 'user_id' ? IdentityJourney.userIdFrom(member) : tenantId}' ORDER BY 1`;
-    /** The rows of a move table read directly in one of the two shards of its service. */
     const movedRowsIn = (moved: MovedTable, shard: 0 | 1) =>
       app
         .node(moved.service)
         .databases.shards()
         [shard].rows<Record<string, unknown>>(movedRowsSql(moved));
-    /** The position, among each service's shards, of the shard where its directory currently places the tenant. */
     const shardIndexes = () =>
       Promise.all(
         SERVICES.map(async (service) => {

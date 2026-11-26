@@ -53,7 +53,7 @@ export class RecordingJob extends ScheduledJob {
     this.behavior = options.behavior ?? RecordingJobBehavior.Succeed;
   }
 
-  async run(context: JobContext): Promise<void> {
+  override async run(context: JobContext): Promise<void> {
     this.runs += 1;
     this.contexts.push(context);
     if (this.behavior === RecordingJobBehavior.Fail) {

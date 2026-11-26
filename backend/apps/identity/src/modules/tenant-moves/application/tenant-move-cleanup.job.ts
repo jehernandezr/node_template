@@ -68,7 +68,7 @@ export class TenantMoveCleanupJob extends ScheduledJob {
     super();
   }
 
-  async run(context: JobContext): Promise<void> {
+  override async run(context: JobContext): Promise<void> {
     const runEndsAt = this.nowMs() + TenantMoveCleanupJob.RUN_BUDGET_MS;
     const graceMs =
       this.settings.TENANT_MOVE_GRACE_DAYS * TenantMoveCleanupJob.DAY_MS;

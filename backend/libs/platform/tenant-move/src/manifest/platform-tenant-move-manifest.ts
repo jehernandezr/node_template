@@ -15,7 +15,7 @@ import type { TenantMoveTable } from './tenant-move-table.js';
 export class PlatformTenantMoveManifest extends TenantMoveManifest {
   static readonly SAGA_INSTANCES = 'saga.instances';
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return [
       {
         table: 'idempotency_keys',

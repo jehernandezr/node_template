@@ -19,6 +19,10 @@ export class CompensationTombstones {
   /**
    * Lays the tombstone on the key of each `forwards` operation that the compensation of `meta` undoes. Returns the
    * result to respond with if the compensation has to wait, or `undefined` if it can run.
+   * @param forwards Forward keys the compensation undoes.
+   * @param meta Call metadata.
+   * @param deadline Call deadline.
+   * @returns An outcome that ends the call, or `undefined` to run it.
    */
   async lay(
     forwards: readonly string[],

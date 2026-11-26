@@ -62,7 +62,10 @@ export class SagaSettings {
     }
   }
 
-  /** Caps and wait of a step's suspension. */
+  /**
+   * Caps and wait of a step's suspension.
+   * @returns The suspend policy.
+   */
   suspendPolicy(): SuspendPolicy {
     return {
       maxSuspendAttempts: this.maxSuspendAttempts,

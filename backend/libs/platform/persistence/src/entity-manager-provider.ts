@@ -17,6 +17,10 @@ export class EntityManagerProvider {
 
   /**
    * Runs `fn` with the manager and releases any `QueryRunner` it opened.
+   * Inside a transaction its session is always used, even if the request is ReadPrimary.
+   * @param request Shard key and intent.
+   * @param fn Work with the manager.
+   * @returns What `fn` returns.
    * @throws ShardingError `CrossShardTransaction` if there is an open transaction on another shard.
    */
   async run<T>(
@@ -37,7 +41,6 @@ export class EntityManagerProvider {
     });
     const uow = this.transactions.current();
     if (uow !== undefined) {
-      // Inside a transaction its session is always used, even if the request is ReadPrimary.
       TransactionShardGuard.current()?.touch(handle.resolved.logicalShard);
       return fn(uow.manager);
     }

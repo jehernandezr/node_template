@@ -61,6 +61,8 @@ export class CacheAside {
    * background. Cache failures fall back to `load` and are reported.
    * Errors from `load` reach all concurrent callers of the key.
    * The caller's signal and deadline only bound its own wait.
+   * @param options Namespace, params, loader and TTL.
+   * @returns The value.
    */
   async getOrLoad<T>(options: GetOrLoadOptions<T>): Promise<T> {
     const { namespace, params, ttlMs, load } = options;
@@ -132,11 +134,11 @@ export class CacheAside {
    * Makes the cached results of the namespace unreachable by changing
    * its version. Never throws: failures are reported, so a cache that is
    * down does not make the write fail.
-   *
    * Inside a transaction the change is repeated after the commit. A reader
    * outside the transaction may load the old data between the first change and
    * the commit and store it under the new version; the later change makes
    * that entry unreachable. If the transaction rolls back, there is no later change.
+   * @param namespace Namespace to invalidate.
    */
   async invalidate(namespace: readonly string[]): Promise<void> {
     await this.bumpSafely(namespace);
@@ -150,7 +152,11 @@ export class CacheAside {
     }
   }
 
-  /** Flight leader path: reads the cache and, if missing, loads and stores in the background. */
+  /**
+   * Flight leader path: reads the cache and, if missing, loads and stores in the background.
+   * It is served, but a huge entry is never written to the shared cache.
+   * Background write: the caller does not wait. `store` never rejects.
+   */
   private async fetchOrLoad<T>(
     key: string,
     ttlMs: number,
@@ -171,13 +177,11 @@ export class CacheAside {
     }
     const bytes = Buffer.byteLength(raw, 'utf8');
     if (bytes > CacheAside.MAX_VALUE_BYTES) {
-      // It is served, but a huge entry is never written to the shared cache.
       this.reporter.report(
         new CacheValueTooLargeError(bytes, CacheAside.MAX_VALUE_BYTES),
       );
       return { kind: FlightOutcomeKind.Raw, raw };
     }
-    // Background write: the caller does not wait. `store` never rejects.
     void this.store(key, raw, ttlMs);
     return { kind: FlightOutcomeKind.Raw, raw };
   }

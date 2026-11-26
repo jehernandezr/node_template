@@ -11,6 +11,7 @@ import 'pages/step_up_page.dart';
 
 /// The shell's own routes: root, login, forbidden and step-up.
 final class ShellRoutes {
+  /// Routes of the shell over its manifests and session.
   ShellRoutes({
     required this._paths,
     required this._session,

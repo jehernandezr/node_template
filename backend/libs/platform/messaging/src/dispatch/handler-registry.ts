@@ -25,6 +25,9 @@ export class HandlerRegistry {
   private readonly registrations = new Map<string, Registration>();
 
   /**
+   * Registers the handler of a message type.
+   * @param contract Message contract.
+   * @param handler Handler.
    * @throws MessagingError `DuplicateHandler` if the type already has a handler.
    */
   register<M extends MessageDefinition>(
@@ -43,7 +46,11 @@ export class HandlerRegistry {
     );
   }
 
-  /** Registration of the type, or `undefined` if nobody handles it. */
+  /**
+   * Registration of the type, or `undefined` if nobody handles it.
+   * @param type Message type.
+   * @returns The registration, or `undefined`.
+   */
   find(type: string): Registration | undefined {
     return this.registrations.get(type);
   }

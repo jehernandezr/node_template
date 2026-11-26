@@ -8,11 +8,11 @@ export class HmacSecretHasher extends SecretHasher {
     super();
   }
 
-  digest(value: string | Uint8Array): string {
+  override digest(value: string | Uint8Array): string {
     return createHmac('sha256', this.key).update(value).digest('base64url');
   }
 
-  matches(value: string | Uint8Array, digest: string): boolean {
+  override matches(value: string | Uint8Array, digest: string): boolean {
     return constantTimeEquals(this.digest(value), digest);
   }
 }

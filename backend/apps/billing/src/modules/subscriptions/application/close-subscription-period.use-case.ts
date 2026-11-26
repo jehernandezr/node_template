@@ -15,7 +15,13 @@ export class CloseSubscriptionPeriod {
     private readonly transactions: TransactionManager,
   ) {}
 
-  /** Runs inside the invoicing caller's transaction, so that the invoice and the new period go together. */
+  /**
+   * Closes the tenant's expired period. Runs inside the invoicing caller's transaction, so that the invoice and the
+   * new period go together.
+   * @param tenantId Tenant whose period closes.
+   * @param today Closing date, `YYYY-MM-DD` in UTC.
+   * @returns What the invoice charges, or `undefined` when nothing was due or it was the trial.
+   */
   execute(
     tenantId: string,
     today: string,

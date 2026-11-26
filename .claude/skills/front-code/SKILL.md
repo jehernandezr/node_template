@@ -37,7 +37,7 @@ Details, signatures and examples in [references/state-and-errors.md](references/
 - Only logic that does not fit in an `AsyncLoader` (search with filters and pagination, like `TasksListController.reload`) has its own `_requestId`.
 - The controller exposes immutable state. It changes state by assigning a new value and calling `notifyListeners`, never by mutating a list it already handed out.
 - In a widget, after every `await`, check `context.mounted` before using the `context`. Action results are shown with `showActionResult`.
-- `AsyncValue.guard` and `ActionRunner` catch only `Exception`: an `Error` is a bug and escapes. A `catch` without `on` is only written with the `// catch-all: <reason>` mark on the line before, at a point that reports the failure.
+- `AsyncValue.guard` and `ActionRunner` catch only `Exception`: an `Error` is a bug and escapes. A catch-all is written as `on Object catch`, only at a point that reports the failure, and the method's `///` says why.
 - Expected failures are typed exceptions (`ApiErrorException` with its contract code, `SignedOutException`). A server error text is never shown: it is translated with `ErrorPresenter` from `i18n`.
 - Timers, subscriptions and `StreamController` are cancelled in `dispose`. A per-identity resource implements `ScopedResource`.
 
@@ -68,8 +68,8 @@ Details in [references/dart3.md](references/dart3.md). Summary:
 
 ## Documentation with `///`
 
-- Every public method, property and class in the shared packages and in each microfrontend has `///`, complete and concise. Private members have no `///`: their name is enough.
-- There are no inline comments (`//`). Code explains itself through names, types and extracted methods or widgets. Exceptions: analyzer directives (`// ignore: <rule>` with the reason on the same line) and generated code.
+- Every public method, property and class in the shared packages and in each microfrontend has `///`, complete and concise; `public_member_api_docs` fails the analysis without it. Private members need no `///`: their name is enough, and a private member that holds a non-obvious reason states it in its `///` instead of an inline comment.
+- There are no inline comments (`//` or `/* */`). Code explains itself through names, types and extracted methods or widgets. Exceptions: analyzer directives with their reason (`// ignore: <rule> -- <reason>` and `// ignore_for_file: <rule> -- <reason>`) and generated code, recognized by its path. A `///` documents a declaration: inside a function body or any other block of code it is an inline comment. The `inline-comment` rule of the front structure check enforces it (ADR 0038).
 - First line: one sentence that summarizes and ends with a period, separated from the rest by an empty `///` line.
 - Properties with a noun phrase (`/// Tasks of the current filter.`); booleans with "Whether" (`/// Whether another page can be appended.`); methods with a third-person verb (`/// Loads the first page.`). API comments are in English, like the rest of the code; user texts go in the ARB.
 - Complete means it covers each parameter, what it returns and what it throws, woven into the prose as Effective Dart asks. No `@param`, `@return` or `@throws` tags. Concise means one sentence per idea and nothing that repeats the name.

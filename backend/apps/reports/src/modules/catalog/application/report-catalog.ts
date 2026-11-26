@@ -23,7 +23,7 @@ export class ReportCatalog extends ReportDefinitionRegistry {
     this.definitions = [byStatus, activity, invoices, deliveries];
   }
 
-  get(type: ReportType): ReportDefinition {
+  override get(type: ReportType): ReportDefinition {
     const definition = this.definitions.find((d) => d.type === type);
     if (definition === undefined) {
       throw new ReportsError(ReportsErrorCode.TypeUnknown, { type });
@@ -31,7 +31,7 @@ export class ReportCatalog extends ReportDefinitionRegistry {
     return definition;
   }
 
-  all(): readonly ReportDefinition[] {
+  override all(): readonly ReportDefinition[] {
     return this.definitions;
   }
 }

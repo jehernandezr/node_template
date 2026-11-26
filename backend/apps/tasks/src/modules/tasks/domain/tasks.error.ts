@@ -11,11 +11,20 @@ export class TasksError extends DomainError {
     super(message, details);
   }
 
-  /** The task does not exist in the tenant, or was already deleted. */
+  /**
+   * The task does not exist in the tenant, or was already deleted.
+   * @returns The `TASKS.TASK.NOT_FOUND` error.
+   */
   static notFound(): TasksError {
     return new TasksError(TasksErrorCode.TaskNotFound);
   }
 
+  /**
+   * The task changed since the client read it.
+   * @param expected Version the client sent.
+   * @param current Version stored now.
+   * @returns The `TASKS.TASK.VERSION_CONFLICT` error.
+   */
   static versionConflict(expected: number, current: number): TasksError {
     return new TasksError(TasksErrorCode.TaskVersionConflict, undefined, {
       expectedVersion: expected,
@@ -23,6 +32,11 @@ export class TasksError extends DomainError {
     });
   }
 
+  /**
+   * The search text is shorter than the minimum.
+   * @param minimum Minimum length.
+   * @returns The `TASKS.SEARCH.QUERY_TOO_SHORT` error.
+   */
   static queryTooShort(minimum: number): TasksError {
     return new TasksError(TasksErrorCode.SearchQueryTooShort, undefined, {
       minimum,

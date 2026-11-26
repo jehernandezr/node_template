@@ -22,7 +22,7 @@ export default [
     },
   },
   {
-    // The codes are declared here: it is the only place where they appear as text.
+    /** The codes are declared here: it is the only place where they appear as text. */
     files: ['src/errors/saga-error-code.enum.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },

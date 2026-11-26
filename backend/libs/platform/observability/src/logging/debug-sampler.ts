@@ -7,6 +7,10 @@ export class DebugSampler {
     private readonly random: RandomSource,
   ) {}
 
+  /**
+   * Decides whether a debug log is kept, at the configured rate.
+   * @returns `true` when kept.
+   */
   shouldSample(): boolean {
     if (!(this.rate > 0)) {
       return false;

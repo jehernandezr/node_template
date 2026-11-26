@@ -11,6 +11,13 @@ export interface EffectiveAccess {
 
 /** Union of the permissions of the roles of the member's groups. */
 export class EffectiveAccessCalculator {
+  /**
+   * Computes the roles and permissions a member gets from its groups.
+   * @param membership Membership of the user.
+   * @param groups Groups of the tenant.
+   * @param roles Roles of the tenant.
+   * @returns The effective access.
+   */
   calculate(
     membership: Membership,
     groups: readonly Group[],
@@ -23,7 +30,13 @@ export class EffectiveAccessCalculator {
     };
   }
 
-  /** Permissions granted by belonging to those groups. */
+  /**
+   * Permissions granted by belonging to those groups.
+   * @param groupIds Groups of the member.
+   * @param groups Groups of the tenant.
+   * @param roles Roles of the tenant.
+   * @returns The permissions, without repeats.
+   */
   permissionsOfGroups(
     groupIds: readonly string[],
     groups: readonly Group[],
@@ -32,7 +45,12 @@ export class EffectiveAccessCalculator {
     return this.union(this.rolesOfGroups(groupIds, groups, roles));
   }
 
-  /** Permissions granted by a group with those roles. */
+  /**
+   * Permissions granted by a group with those roles.
+   * @param roleIds Roles of a group.
+   * @param roles Roles of the tenant.
+   * @returns The permissions, without repeats.
+   */
   permissionsOfRoles(
     roleIds: readonly string[],
     roles: readonly Role[],

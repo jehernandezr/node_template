@@ -16,7 +16,7 @@ import { OpenSubscription } from './open-subscription.use-case.js';
 import { SubscriptionStanding } from './subscription-standing.js';
 import { SubscriptionsFacade } from './subscriptions.facade.js';
 
-/** In-process `SubscriptionsFacade`. */
+/** Lets accounts, entitlements and invoices open, read, lock, close and settle the subscription of a tenant on its shard. */
 @Injectable()
 export class LocalSubscriptionsFacade extends SubscriptionsFacade {
   constructor(
@@ -31,17 +31,17 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
     super();
   }
 
-  open(tenantId: string): Promise<CurrentSubscription> {
+  override open(tenantId: string): Promise<CurrentSubscription> {
     return this.openSubscription.execute(tenantId);
   }
 
-  remove(tenantId: string): Promise<boolean> {
+  override remove(tenantId: string): Promise<boolean> {
     return this.shard.inTenantShard(tenantId, () =>
       this.subscriptions.remove(),
     );
   }
 
-  current(tenantId: string): Promise<CurrentSubscription> {
+  override current(tenantId: string): Promise<CurrentSubscription> {
     return this.shard.inTenantShard(tenantId, async () => {
       const subscription = await this.subscriptions.find();
       if (subscription === undefined) {
@@ -54,7 +54,7 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
     });
   }
 
-  entitlements(tenantId: string): Promise<Entitlements> {
+  override entitlements(tenantId: string): Promise<Entitlements> {
     return this.shard.inTenantShard(tenantId, async () => {
       const subscription = await this.subscriptions.find();
       if (subscription === undefined) {
@@ -67,18 +67,18 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
     });
   }
 
-  closePeriod(
+  override closePeriod(
     tenantId: string,
     today: string,
   ): Promise<ClosedSubscriptionPeriod | undefined> {
     return this.closing.execute(tenantId, today);
   }
 
-  dueForClosing(today: string): Promise<readonly string[]> {
+  override dueForClosing(today: string): Promise<readonly string[]> {
     return this.maintenance.dueForClosing(today);
   }
 
-  markPastDue(tenantId: string): Promise<void> {
+  override markPastDue(tenantId: string): Promise<void> {
     return this.standing.markPastDue(tenantId);
   }
 
@@ -86,11 +86,11 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
    * Takes the tenant's subscription with `FOR UPDATE` in the open transaction, on its shard.
    * @param tenantId Tenant of the subscription.
    */
-  lock(tenantId: string): Promise<void> {
+  override lock(tenantId: string): Promise<void> {
     return this.shard.inTenantShard(tenantId, () => this.subscriptions.lock());
   }
 
-  settle(tenantId: string): Promise<void> {
+  override settle(tenantId: string): Promise<void> {
     return this.standing.settle(tenantId);
   }
 }

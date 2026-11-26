@@ -11,8 +11,13 @@ export class StepKey {
   };
 
   /**
+   * Idempotency key of a step attempt.
    * `${sagaId}:${stepIndex}:${direction}`; reused on every attempt of the step. Follows the convention of
    * `CompensationKey`, so the participant writes the tombstone of the forward step when it receives its compensation.
+   * @param sagaId Saga id.
+   * @param stepIndex Step index.
+   * @param direction Direction.
+   * @returns The key.
    */
   static of(
     sagaId: string,

@@ -6,6 +6,11 @@ import type { SagaInstance } from '../model/saga-instance.js';
  * saga tenant; the recovery job uses it because there is no request that gives the tenant.
  */
 export abstract class SagaScopes {
-  /** Runs `body` in the partition of `instance`. */
+  /**
+   * Runs `body` in the partition of `instance`.
+   * @param instance Saga instance.
+   * @param body Work to run.
+   * @returns What `body` returns.
+   */
   abstract run<T>(instance: SagaInstance, body: () => Promise<T>): Promise<T>;
 }

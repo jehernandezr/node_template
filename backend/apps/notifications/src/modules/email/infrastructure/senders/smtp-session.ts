@@ -24,6 +24,13 @@ export class SmtpSession {
     });
   }
 
+  /**
+   * Connects to the SMTP server and reads its greeting.
+   * @param host Server host.
+   * @param port Server port.
+   * @param timeoutMs Deadline of each reply.
+   * @returns The open session.
+   */
   static async open(
     host: string,
     port: number,
@@ -42,18 +49,30 @@ export class SmtpSession {
     return session;
   }
 
-  /** @throws Error if the server responds with another code. */
+  /**
+   * Sends one command line and waits for its reply.
+   * @param line Command without CRLF.
+   * @param expected Reply code that means success.
+   * @returns The reply.
+   * @throws Error if the server responds with another code.
+   */
   async command(line: string, expected: number): Promise<SmtpReply> {
     this.socket.write(`${line}\r\n`);
     return this.expect(expected);
   }
 
-  /** Sends the `DATA` body already terminated in CRLF and the line with the final dot. */
+  /**
+   * Sends the `DATA` body already terminated in CRLF and the line with the final dot.
+   * @param message Body of the message.
+   * @param expected Reply code that means success.
+   * @returns The reply.
+   */
   async data(message: string, expected: number): Promise<SmtpReply> {
     this.socket.write(`${message}.\r\n`);
     return this.expect(expected);
   }
 
+  /** Closes the connection. */
   close(): void {
     this.socket.end();
   }

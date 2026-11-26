@@ -28,6 +28,8 @@ export class BloomModule extends BloomConfigurableModule {
   /**
    * Returns a named filter and its job. The job stays as a provider so the `JobRunner` discovers it;
    * bloom does not import scheduling.
+   * @param feature Filter definition and source.
+   * @returns The module.
    * @throws InvalidParametersError when the definition is invalid.
    */
   static forFeature(feature: BloomFeatureOptions): DynamicModule {

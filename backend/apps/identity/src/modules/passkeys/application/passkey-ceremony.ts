@@ -34,6 +34,13 @@ export class PasskeyCeremony {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Starts a WebAuthn ceremony: stores its challenge and builds its options.
+   * @param purpose Registration, sign-in or second factor.
+   * @param user User of the ceremony, unknown for a discoverable sign-in.
+   * @param options Builds the options for the challenge.
+   * @returns The options with their challenge id.
+   */
   async begin(
     purpose: WebAuthnPurpose,
     user: UserRef | undefined,
@@ -58,7 +65,13 @@ export class PasskeyCeremony {
     };
   }
 
-  /** @throws IdentityError `IDENTITY.PASSKEY.CHALLENGE_EXPIRED` if the challenge does not exist, expired or is for another use. */
+  /**
+   * Takes a stored challenge once.
+   * @param challengeId Challenge of the ceremony.
+   * @param purpose Expected purpose.
+   * @returns The challenge.
+   * @throws IdentityError `IDENTITY.PASSKEY.CHALLENGE_EXPIRED` if the challenge does not exist, expired or is for another use.
+   */
   async take(
     challengeId: string,
     purpose: WebAuthnPurpose,
@@ -70,7 +83,12 @@ export class PasskeyCeremony {
     return challenge;
   }
 
-  /** @throws IdentityError `IDENTITY.PASSKEY.VERIFICATION_FAILED` if it is not base64url JSON. */
+  /**
+   * Decodes the credential the client sent.
+   * @param credentialJson Base64url JSON.
+   * @returns The credential.
+   * @throws IdentityError `IDENTITY.PASSKEY.VERIFICATION_FAILED` if it is not base64url JSON.
+   */
   credential(credentialJson: string): unknown {
     try {
       return JSON.parse(decodeBase64Url(credentialJson).toString('utf8'));
@@ -79,6 +97,11 @@ export class PasskeyCeremony {
     }
   }
 
+  /**
+   * Reads the credential id of an assertion.
+   * @param credential Decoded assertion.
+   * @returns The credential id.
+   */
   credentialIdOf(credential: unknown): string {
     const id = this.webauthn.credentialIdOf(credential);
     if (id === undefined) {
@@ -89,6 +112,10 @@ export class PasskeyCeremony {
 
   /**
    * Verifies the assertion and saves the new counter and the last use. Returns whether there was user verification.
+   * @param user Owner of the passkey.
+   * @param credential Decoded assertion.
+   * @param challenge Expected challenge.
+   * @returns Whether the user was verified.
    * @throws IdentityError `IDENTITY.PASSKEY.VERIFICATION_FAILED` if the passkey is not the user's or does not verify.
    */
   async assert(
@@ -124,10 +151,19 @@ export class PasskeyCeremony {
     );
   }
 
+  /**
+   * Lists the passkeys of a user.
+   * @param user Owner.
+   * @returns Its passkeys.
+   */
   userPasskeys(user: UserRef): Promise<readonly Passkey[]> {
     return this.scopes.inUserShard(user, () => this.passkeys.list(user.userId));
   }
 
+  /**
+   * Builds the error of a failed verification.
+   * @returns The `IDENTITY.PASSKEY.VERIFICATION_FAILED` error.
+   */
   static failed(): IdentityError {
     return new IdentityError(IdentityErrorCode.PasskeyVerificationFailed);
   }

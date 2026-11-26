@@ -29,7 +29,7 @@ export class SmtpEmailSender extends EmailSender {
     super();
   }
 
-  async send(email: OutgoingEmail): Promise<string> {
+  override async send(email: OutgoingEmail): Promise<string> {
     const messageId = `${this.ids.next().toString()}@${email.from.split('@')[1] ?? 'localhost'}`;
     const session = await SmtpSession.open(
       this.endpoint.host,

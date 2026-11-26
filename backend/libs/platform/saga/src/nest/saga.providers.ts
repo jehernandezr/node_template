@@ -40,8 +40,13 @@ import { SAGA_MODULE_OPTIONS } from './saga.module-definition.js';
  * `undefined`, because optional fields do not accept it).
  */
 export class SagaProviders {
+  /**
+   * Builds the providers of the saga engine.
+   * `SagaModule` already checked that the store exists.
+   * @param extras Store and scopes adapters.
+   * @returns The providers.
+   */
   static build(extras: SagaModuleExtras): Provider[] {
-    // `SagaModule` already checked that the store exists.
     const { store } = extras as Required<Pick<SagaModuleExtras, 'store'>>;
     return [
       ...SagaProviders.random(extras),

@@ -12,12 +12,14 @@ import 'mfa_state_step.dart';
 /// Real sign-in against identity. Draws the state of a [SignInFlow]: email
 /// and password, then the method of the second factor, then its code.
 class SignInForm extends StatefulWidget {
+  /// Email and password form that signs in through [connection].
   const SignInForm({
     super.key,
     required this.connection,
     required this.onSignedIn,
   });
 
+  /// Connection that signs in.
   final IdentityConnection connection;
 
   /// Runs once the session and its access are loaded.

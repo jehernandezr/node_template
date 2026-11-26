@@ -27,24 +27,52 @@ export class AwsMessagingNames {
     private readonly errors: AwsErrorTranslator,
   ) {}
 
+  /**
+   * Physical name of a topic.
+   * @param name Logical name.
+   * @param fifo Whether it is FIFO.
+   * @returns The topic name.
+   */
   topicName(name: string, fifo: boolean): string {
     return this.physical(name, fifo);
   }
 
+  /**
+   * Physical name of a queue.
+   * @param name Logical name.
+   * @param fifo Whether it is FIFO.
+   * @returns The queue name.
+   */
   queueName(name: string, fifo: boolean): string {
     return this.physical(name, fifo);
   }
 
+  /**
+   * Physical name of the dead-letter queue of a queue.
+   * @param name Logical name.
+   * @param fifo Whether it is FIFO.
+   * @returns The queue name.
+   */
   deadLetterQueueName(name: string, fifo: boolean): string {
     return this.physical(`${name}${DEAD_LETTER_SUFFIX}`, fifo);
   }
 
+  /**
+   * ARN of a topic in the configured account and region, for IAM policies and publishing.
+   * @param name Logical name.
+   * @param fifo Whether it is FIFO.
+   * @returns The ARN.
+   */
   topicArn(name: string, fifo: boolean): string {
     const { AWS_REGION: region, AWS_ACCOUNT_ID: account } = this.settings;
     return `arn:${this.partition(region)}:sns:${region}:${account}:${this.topicName(name, fifo)}`;
   }
 
-  /** URL of a queue by its physical name. A failure is not cached. */
+  /**
+   * URL of a queue by its physical name. A failure is not cached.
+   * @param physicalName Physical queue name.
+   * @returns The URL.
+   */
   queueUrl(physicalName: string): Promise<string> {
     let url = this.urls.get(physicalName);
     if (!url) {

@@ -18,6 +18,12 @@ export class SmokeOrderCache {
     private readonly scopes: ShardScopes,
   ) {}
 
+  /**
+   * Reads an order through the tenant's versioned cache.
+   * @param tenantId Tenant of the order.
+   * @param orderId Order to read.
+   * @returns The order view, or `null`.
+   */
   async read(
     tenantId: string,
     orderId: string,
@@ -37,6 +43,10 @@ export class SmokeOrderCache {
     });
   }
 
+  /**
+   * Invalidates the cached orders of a tenant.
+   * @param tenantId Tenant to invalidate.
+   */
   invalidate(tenantId: string): Promise<void> {
     return this.aside.invalidate([tenantId, SmokeCacheNamespace.OrdersPart]);
   }

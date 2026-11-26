@@ -18,7 +18,7 @@ export class IdentityPushTargetDirectory extends PushTargetDirectory {
   }
 
   /** @throws IdentityUnavailableError if identity does not respond: delivery is retried later. */
-  async targetsOf(user: UserRef): Promise<readonly PushTarget[]> {
+  override async targetsOf(user: UserRef): Promise<readonly PushTarget[]> {
     const outcome = await this.client.call(
       ListPushTargetsOperation,
       { user },

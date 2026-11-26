@@ -32,6 +32,9 @@ export class ClaimKeeper {
   /**
    * Runs `work` renewing the lease of `claimed` until it finishes. When done it stops renewing and waits for the renewal
    * in flight, so none is left dangling. A failed renewal does not stop the work: the next one tries again.
+   * @param claimed Claimed operation.
+   * @param work Handler work.
+   * @returns What `work` returns.
    */
   async during<T>(
     claimed: ClaimedOperation,

@@ -8,6 +8,11 @@ export class HtmlText {
     "'": '&#39;',
   };
 
+  /**
+   * Escapes the characters HTML gives meaning to, so a parameter never becomes markup.
+   * @param value Raw text.
+   * @returns The escaped text.
+   */
   static escape(value: string): string {
     return value.replace(/[&<>"']/g, (char) => HtmlText.ENTITIES[char] ?? char);
   }

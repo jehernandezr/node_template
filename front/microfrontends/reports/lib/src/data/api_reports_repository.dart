@@ -9,6 +9,7 @@ import 'reports_repository.dart';
 /// [api.ReportsRoutes] and [ApiClient], which validates every request before
 /// it is sent. `REPORTS.RUN.NOT_FOUND` becomes [ReportRunNotFoundException].
 final class ApiReportsRepository implements ReportsRepository {
+  /// Repository over the reports API through [_client].
   ApiReportsRepository({required this._client});
 
   final ApiClient _client;

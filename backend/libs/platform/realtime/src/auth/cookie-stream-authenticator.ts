@@ -14,7 +14,7 @@ export class CookieStreamAuthenticator extends AccessTokenStreamAuthenticator {
     super(verifier);
   }
 
-  protected tokenOf(credentials: StreamCredentials): string {
+  protected override tokenOf(credentials: StreamCredentials): string {
     const prefix = `${this.cookieName}=`;
     const token = (credentials.cookie ?? '')
       .split(';')

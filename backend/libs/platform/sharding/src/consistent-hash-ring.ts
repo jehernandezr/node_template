@@ -48,7 +48,10 @@ export class ConsistentHashRing {
     this.virtualNodes = virtualNodes;
   }
 
-  /** Adds a node. Adding one that already exists does nothing. */
+  /**
+   * Adds a node. Adding one that already exists does nothing.
+   * @param node Node to add.
+   */
   add(node: string): void {
     if (this.members.has(node)) {
       return;
@@ -60,7 +63,10 @@ export class ConsistentHashRing {
     this.points.sort(comparePoints);
   }
 
-  /** Removes a node. Removing an unknown one does nothing. */
+  /**
+   * Removes a node. Removing an unknown one does nothing.
+   * @param node Node to remove.
+   */
   remove(node: string): void {
     if (!this.members.delete(node)) {
       return;
@@ -68,7 +74,11 @@ export class ConsistentHashRing {
     this.points = this.points.filter((point) => point.node !== node);
   }
 
-  /** Returns the node responsible for `key`, or undefined if the ring is empty. */
+  /**
+   * Returns the node responsible for `key`, or undefined if the ring is empty.
+   * @param key Key to place.
+   * @returns The node, or `undefined`.
+   */
   locate(key: string): string | undefined {
     if (this.points.length === 0) {
       return undefined;
@@ -88,7 +98,10 @@ export class ConsistentHashRing {
     return this.points[index].node;
   }
 
-  /** Returns the current nodes, sorted. */
+  /**
+   * Returns the current nodes, sorted.
+   * @returns The nodes.
+   */
   nodes(): string[] {
     return [...this.members].sort();
   }

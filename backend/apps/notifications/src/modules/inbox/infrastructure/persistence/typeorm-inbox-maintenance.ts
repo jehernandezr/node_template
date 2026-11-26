@@ -17,7 +17,7 @@ export class TypeOrmInboxMaintenance extends InboxMaintenance {
     super();
   }
 
-  async purgeReadBefore(cutoff: Date): Promise<number> {
+  override async purgeReadBefore(cutoff: Date): Promise<number> {
     const outcome = await this.shards.run((connection) =>
       TenantMaintenanceSession.run(
         connection.dataSource.manager,

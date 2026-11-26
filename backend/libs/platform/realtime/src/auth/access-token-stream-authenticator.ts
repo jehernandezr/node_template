@@ -13,7 +13,9 @@ export abstract class AccessTokenStreamAuthenticator extends StreamAuthenticator
     super();
   }
 
-  async authenticate(credentials: StreamCredentials): Promise<StreamPrincipal> {
+  override async authenticate(
+    credentials: StreamCredentials,
+  ): Promise<StreamPrincipal> {
     const actor = await this.verifier.verify(this.tokenOf(credentials), {
       audience: TokenAudience.Api,
     });

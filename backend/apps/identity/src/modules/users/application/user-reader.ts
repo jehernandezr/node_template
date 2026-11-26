@@ -21,6 +21,11 @@ export class UserReader {
     private readonly scopes: ShardScopes,
   ) {}
 
+  /**
+   * Looks a user up by email through the catalog index.
+   * @param email Email to find.
+   * @returns The user, or `undefined`.
+   */
   async findByEmail(email: string): Promise<UserSnapshot | undefined> {
     const lookup = await this.directory.findByFingerprint(
       this.fingerprints.fingerprint(normalizeEmail(email)),
@@ -31,7 +36,12 @@ export class UserReader {
     return this.find(lookup);
   }
 
-  /** @throws IdentityError `IDENTITY.USER.NOT_FOUND` if it does not exist. */
+  /**
+   * Reads a user that must exist.
+   * @param ref User to read.
+   * @returns The user.
+   * @throws IdentityError `IDENTITY.USER.NOT_FOUND` if it does not exist.
+   */
   async getByRef(ref: UserRef): Promise<UserSnapshot> {
     const user = await this.find(ref);
     if (user === undefined) {
@@ -40,6 +50,11 @@ export class UserReader {
     return user;
   }
 
+  /**
+   * Finds the home tenant of a user in the catalog.
+   * @param userId User to find.
+   * @returns Its reference, or `undefined`.
+   */
   async refOf(userId: string): Promise<UserRef | undefined> {
     const lookup = await this.directory.findByUserId(userId);
     return lookup === undefined || lookup.status !== LookupStatus.Active
@@ -47,7 +62,12 @@ export class UserReader {
       : { userId: lookup.userId, homeTenantId: lookup.homeTenantId };
   }
 
-  /** @throws IdentityError `IDENTITY.USER.NOT_FOUND` if the user does not exist. */
+  /**
+   * Finds the home tenant of a user that must exist.
+   * @param userId User to find.
+   * @returns Its reference.
+   * @throws IdentityError `IDENTITY.USER.NOT_FOUND` if the user does not exist.
+   */
   async requireRef(userId: string): Promise<UserRef> {
     const ref = await this.refOf(userId);
     if (ref === undefined) {
@@ -65,6 +85,11 @@ export class UserReader {
       : UserReader.snapshotOf(user.snapshot());
   }
 
+  /**
+   * Builds the snapshot other modules read from a user state.
+   * @param state Stored user.
+   * @returns The snapshot.
+   */
   static snapshotOf(state: UserState): UserSnapshot {
     return {
       id: state.id,

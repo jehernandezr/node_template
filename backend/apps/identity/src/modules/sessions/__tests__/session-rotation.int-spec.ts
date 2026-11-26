@@ -60,7 +60,6 @@ runtime.describeIfAvailable(
       };
     };
 
-    /** New users in each case: with an already registered device, the email code is not offered. */
     const openSessionInEachShard = async (
       prefix: string,
     ): Promise<ReadonlyArray<[string, OpenSession]>> =>
@@ -76,7 +75,6 @@ runtime.describeIfAvailable(
         body: { sessionToken },
       });
 
-    /** Rotates twice: the original session token ends up two generations back, outside the grace period. */
     const rotateTwice = async (session: OpenSession): Promise<string> => {
       const second = await refresh(session, session.tokens.sessionToken);
       const third = await refresh(

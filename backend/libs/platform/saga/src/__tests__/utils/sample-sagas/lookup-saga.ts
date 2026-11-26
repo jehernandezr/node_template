@@ -7,7 +7,7 @@ import type { SampleState } from './sample-state.js';
 export class LookupSaga extends SagaDefinition<SampleState> {
   readonly type = 'with-lookup';
 
-  protected define(flow: SagaFlow<SampleState>): void {
+  protected override define(flow: SagaFlow<SampleState>): void {
     flow
       .step(STEP_A)
       .input(() => ({ name: 'a' }))

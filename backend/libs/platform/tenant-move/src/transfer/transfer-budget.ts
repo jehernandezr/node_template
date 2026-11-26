@@ -13,7 +13,11 @@ export class TransferBudget {
     this.endsAt = clock.now().getTime() + budgetMs;
   }
 
-  /** @throws TenantMoveError `RoundPending` if the time ran out: the saga repeats the call. */
+  /**
+   * Checks the time left before the next batch.
+   * @param table Table being copied, for the error.
+   * @throws TenantMoveError `RoundPending` if the time ran out: the saga repeats the call.
+   */
   check(table: string): void {
     if (this.clock.now().getTime() >= this.endsAt) {
       throw new TenantMoveError(

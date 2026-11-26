@@ -20,13 +20,18 @@ export class InProcessJobLock extends JobLock {
     super();
   }
 
-  async tryAcquire(name: string, ttlMs: number): Promise<JobLease | undefined> {
+  /**
+   * The counter prevents two leases with the same bytes from sharing a token.
+   */
+  override async tryAcquire(
+    name: string,
+    ttlMs: number,
+  ): Promise<JobLease | undefined> {
     const current = this.leases.get(name);
     const now = this.clock.now().getTime();
     if (current !== undefined && current.expiresAt > now) {
       return undefined;
     }
-    // The counter prevents two leases with the same bytes from sharing a token.
     this.sequence += 1;
     const random = Buffer.from(this.random.bytes(8)).toString('hex');
     const token = `${random}-${this.sequence}`;
@@ -34,8 +39,23 @@ export class InProcessJobLock extends JobLock {
     return { name, token };
   }
 
-  async release(lease: JobLease): Promise<void> {
-    // Only the current owner releases: an expired lease does not remove the lock from whoever took it later.
+  /**
+   * Only the current owner extends: an expired lease that another runner took stays with that runner.
+   */
+  override async renew(lease: JobLease, ttlMs: number): Promise<boolean> {
+    const current = this.leases.get(lease.name);
+    const now = this.clock.now().getTime();
+    if (current?.token !== lease.token || current.expiresAt <= now) {
+      return false;
+    }
+    this.leases.set(lease.name, { token: lease.token, expiresAt: now + ttlMs });
+    return true;
+  }
+
+  /**
+   * Only the current owner releases: an expired lease does not remove the lock from whoever took it later.
+   */
+  override async release(lease: JobLease): Promise<void> {
     if (this.leases.get(lease.name)?.token === lease.token) {
       this.leases.delete(lease.name);
     }

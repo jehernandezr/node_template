@@ -8,7 +8,7 @@ import { InternalCallAuthenticator } from './internal-call-authenticator.js';
  * accepting everything.
  */
 export class DenyAllInternalCallAuthenticator extends InternalCallAuthenticator {
-  authenticate(): Promise<void> {
+  override authenticate(): Promise<void> {
     return Promise.reject(
       new InternalApiError(
         InternalApiErrorCode.Unauthenticated,

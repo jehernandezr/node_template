@@ -2,6 +2,7 @@ import { FrontPaths } from '../front-paths.mjs';
 import { PatternRule } from './pattern-rule.mjs';
 import { RuleId } from './rule-id.mjs';
 
+/** Rejects physical directions (left, right) in layout: directional alignments, insets and radii keep right-to-left layouts correct. */
 export class PhysicalDirectionRule extends PatternRule {
   constructor() {
     super(
@@ -11,6 +12,7 @@ export class PhysicalDirectionRule extends PatternRule {
     );
   }
 
+  /** @override */
   appliesTo(file) {
     return FrontPaths.isMicrofrontendLib(file);
   }

@@ -25,6 +25,11 @@ import { RealtimeTransports } from './realtime-transports.js';
  */
 @Module({})
 export class RealtimeModule {
+  /**
+   * Registers the real-time transports, stream and presence with their adapters.
+   * @param options Transports, endpoints and adapters.
+   * @returns The module.
+   */
   static forRoot(options: RealtimeModuleOptions): DynamicModule {
     return {
       module: RealtimeModule,

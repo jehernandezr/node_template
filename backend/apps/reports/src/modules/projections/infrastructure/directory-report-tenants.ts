@@ -9,7 +9,7 @@ export class DirectoryReportTenants extends ReportTenants {
     super();
   }
 
-  async active(): Promise<readonly string[]> {
+  override async active(): Promise<readonly string[]> {
     const dataSource = await this.catalog.get();
     const rows: { tenant_id: string }[] = await dataSource.query(
       `SELECT "tenant_id" FROM "shard_directory" WHERE "status" = 'active' ORDER BY "tenant_id"`,

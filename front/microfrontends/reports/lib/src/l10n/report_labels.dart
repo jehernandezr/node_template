@@ -6,10 +6,13 @@ import 'generated/reports_localizations.dart';
 
 /// Texts of the values of the reports contract, in the language of [l10n].
 final class ReportLabels {
+  /// Labels in the language of [l10n].
   const ReportLabels(this.l10n);
 
+  /// Texts of the reports microfrontend.
   final ReportsLocalizations l10n;
 
+  /// Label of a report type.
   String type(ReportType type) => switch (type) {
     ReportType.tasksByStatus => l10n.typeTasksByStatus,
     ReportType.tasksActivity => l10n.typeTasksActivity,
@@ -17,6 +20,7 @@ final class ReportLabels {
     ReportType.notificationsDelivery => l10n.typeNotificationsDelivery,
   };
 
+  /// Label of a run status.
   String status(ReportRunStatus status) => switch (status) {
     ReportRunStatus.queued => l10n.statusQueued,
     ReportRunStatus.running => l10n.statusRunning,
@@ -25,17 +29,20 @@ final class ReportLabels {
     ReportRunStatus.expired => l10n.statusExpired,
   };
 
+  /// Label of a file format.
   String format(ReportFormat format) => switch (format) {
     ReportFormat.json => l10n.formatJson,
     ReportFormat.csv => l10n.formatCsv,
   };
 
+  /// Label of a granularity.
   String granularity(ReportGranularity granularity) => switch (granularity) {
     ReportGranularity.day => l10n.granularityDay,
     ReportGranularity.week => l10n.granularityWeek,
     ReportGranularity.month => l10n.granularityMonth,
   };
 
+  /// Label of a period.
   String period(ReportPeriod period) => switch (period) {
     ReportPeriod.last7Days => l10n.periodLast7Days,
     ReportPeriod.last30Days => l10n.periodLast30Days,

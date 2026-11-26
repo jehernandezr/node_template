@@ -8,6 +8,7 @@ import 'fake_assistant_repository.dart';
 ///
 /// The backend has no assistant contract yet, so only the demo exists.
 abstract final class AssistantData {
+  /// How the assistant repository is created; demo mode only.
   static final RepositoryBinding<AssistantRepository> repository =
       RepositoryBinding<AssistantRepository>.demoOnly(
         demo: (services) => FakeAssistantRepository(

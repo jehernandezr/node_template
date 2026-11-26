@@ -29,6 +29,11 @@ export class ManageRoles {
     private readonly ids: IdGenerator,
   ) {}
 
+  /**
+   * Lists the roles of a tenant.
+   * @param tenantId Tenant to read.
+   * @returns Its roles with their permissions.
+   */
   async list(tenantId: string): Promise<RolePage> {
     const roles = await this.scopes.inTenantShard(tenantId, () =>
       this.tenantAccess.listRoles(),
@@ -36,6 +41,14 @@ export class ManageRoles {
     return { items: roles.map((role) => this.summary(role)), nextCursor: null };
   }
 
+  /**
+   * Creates a role with permissions the actor can grant.
+   * @param tenantId Tenant of the role.
+   * @param name Name of the role.
+   * @param permissions Permissions of the role.
+   * @param granted Permissions of the actor.
+   * @returns The new role.
+   */
   async create(
     tenantId: string,
     name: string,
@@ -57,6 +70,13 @@ export class ManageRoles {
     });
   }
 
+  /**
+   * Renames a role or changes its permissions within the actor's grant ceiling.
+   * @param tenantId Tenant of the role.
+   * @param request Role id, name and permissions.
+   * @param granted Permissions of the actor.
+   * @returns The changed role.
+   */
   async update(
     tenantId: string,
     request: UpdateRoleRequest,
@@ -91,6 +111,12 @@ export class ManageRoles {
     });
   }
 
+  /**
+   * Deletes a role, checking the actor can grant what its holders lose.
+   * @param tenantId Tenant of the role.
+   * @param roleId Role to delete.
+   * @param granted Permissions of the actor.
+   */
   async delete(
     tenantId: string,
     roleId: string,

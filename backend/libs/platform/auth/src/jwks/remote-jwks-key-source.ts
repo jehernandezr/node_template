@@ -31,7 +31,10 @@ export class RemoteJwksKeySource extends JwksKeySource {
     super();
   }
 
-  async keyFor(kid: string): Promise<KeyObject | undefined> {
+  /**
+   * If identity does not respond, the last download keeps being served: the cache covers the outage.
+   */
+  override async keyFor(kid: string): Promise<KeyObject | undefined> {
     const nowMs = this.clock.now().getTime();
     if (!this.loaded) {
       if (
@@ -52,9 +55,7 @@ export class RemoteJwksKeySource extends JwksKeySource {
     if ((stale || unknownKid) && cooledDown) {
       try {
         await this.reload(nowMs);
-      } catch {
-        // If identity does not respond, the last download keeps being served: the cache covers the outage.
-      }
+      } catch {}
     }
     return this.keys.get(kid);
   }
@@ -70,6 +71,9 @@ export class RemoteJwksKeySource extends JwksKeySource {
     return this.inFlight;
   }
 
+  /**
+   * An invalid key must not keep the other keys of the same JWKS from being served.
+   */
   private async download(nowMs: number): Promise<void> {
     this.lastAttemptAtMs = nowMs;
     try {
@@ -88,9 +92,7 @@ export class RemoteJwksKeySource extends JwksKeySource {
         }
         try {
           next.set(kid, JwkCodec.publicKeyFromJwk(entry));
-        } catch {
-          // An invalid key must not keep the other keys of the same JWKS from being served.
-        }
+        } catch {}
       }
       this.keys = next;
       this.loaded = true;

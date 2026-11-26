@@ -19,7 +19,7 @@ export class EphemeralDeviceApprovalStore extends DeviceApprovalStore {
     super();
   }
 
-  async enqueue(
+  override async enqueue(
     deviceId: string,
     approval: DeviceApproval,
     ttlMs: number,
@@ -32,7 +32,7 @@ export class EphemeralDeviceApprovalStore extends DeviceApprovalStore {
     );
   }
 
-  async pending(
+  override async pending(
     deviceId: string,
     now: Date,
   ): Promise<readonly DeviceApproval[]> {
@@ -41,7 +41,7 @@ export class EphemeralDeviceApprovalStore extends DeviceApprovalStore {
     );
   }
 
-  async remove(
+  override async remove(
     deviceId: string,
     challengeId: string,
   ): Promise<DeviceApproval | undefined> {
@@ -62,7 +62,7 @@ export class EphemeralDeviceApprovalStore extends DeviceApprovalStore {
     return removed;
   }
 
-  useNonce(deviceId: string, nonce: string): Promise<boolean> {
+  override useNonce(deviceId: string, nonce: string): Promise<boolean> {
     return this.store.setIfAbsent(
       [IdentityCacheKey.DeviceNonce, deviceId, nonce].join(':'),
       '1',

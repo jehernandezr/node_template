@@ -6,11 +6,14 @@ export class InMemoryApiKeysFacade extends ApiKeysFacade {
   private readonly regions = new Map<string, string>();
   private readonly accounts = new Map<string, readonly Permission[]>();
 
-  async relocateTenant(tenantId: string, region: string): Promise<void> {
+  override async relocateTenant(
+    tenantId: string,
+    region: string,
+  ): Promise<void> {
     this.regions.set(tenantId, region);
   }
 
-  async activeServicePermissions(
+  override async activeServicePermissions(
     tenantId: string,
     serviceAccountId: string,
   ): Promise<readonly Permission[] | undefined> {

@@ -9,7 +9,7 @@ export class FakeAccessGrantSource extends AccessGrantSource {
   private readonly grants = new Map<string, AccessGrant>();
   private fetched = 0;
 
-  async fetch(tenantId: string, userId: string): Promise<AccessGrant> {
+  override async fetch(tenantId: string, userId: string): Promise<AccessGrant> {
     this.fetched += 1;
     if (this.failure !== undefined) {
       throw this.failure;

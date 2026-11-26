@@ -20,6 +20,7 @@ import { ProjectionsModule } from './modules/projections/presentation/projection
 import { RunsModule } from './modules/runs/presentation/runs.module.js';
 // generated:modules:imports
 
+/** Root module of reports: the catalog, the projections of other services' events and the report runs over the platform runtime. */
 @Module({
   imports: [
     RemoteIdentityAuthModule,

@@ -32,6 +32,11 @@ export class DeviceApprovalsUseCase {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Returns the sign-in approvals pending for a device, proved by its signature.
+   * @param request Signed request of the device.
+   * @returns The pending approvals.
+   */
   async pull(request: PullDeviceApprovalsRequest): Promise<DeviceApprovals> {
     const { route } = await this.signed.verify(
       IdentityRoute.PullDeviceApprovals,
@@ -44,13 +49,17 @@ export class DeviceApprovalsUseCase {
     };
   }
 
+  /**
+   * Denies a pending approval of the device.
+   * Only a challenge this device had pending: one device does not cancel another's.
+   * @param request Signed request of the device with the challenge.
+   */
   async deny(request: DenyDeviceApprovalRequest): Promise<void> {
     const { route } = await this.signed.verify(
       IdentityRoute.DenyDeviceApproval,
       request,
       [request.challengeId],
     );
-    // Only a challenge this device had pending: one device does not cancel another's.
     const denied = await this.approvals.remove(
       route.deviceId,
       request.challengeId,

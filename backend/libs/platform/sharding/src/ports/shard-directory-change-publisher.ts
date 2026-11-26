@@ -6,5 +6,9 @@ import type { ShardDirectoryChanged } from '../model/shard-directory-changed.js'
  * and the in-process TTL.
  */
 export abstract class ShardDirectoryChangePublisher {
+  /**
+   * Announces a directory change to every process.
+   * @param event Directory change.
+   */
   abstract publish(event: ShardDirectoryChanged): Promise<void>;
 }

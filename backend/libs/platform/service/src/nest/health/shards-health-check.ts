@@ -21,7 +21,7 @@ export class ShardsHealthCheck extends HealthCheckable {
     super();
   }
 
-  async check(signal?: AbortSignal): Promise<HealthReport> {
+  override async check(signal?: AbortSignal): Promise<HealthReport> {
     signal?.throwIfAborted();
     const locations = await this.lister.list();
     await Promise.all(

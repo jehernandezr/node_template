@@ -18,6 +18,7 @@ import 'widgets/run_status_label.dart';
 /// Route `/reports/runs/:runId`: one run, read again while it is queued or
 /// running, with its result and its download once it is ready.
 class ReportRunScreen extends StatelessWidget {
+  /// Detail of the run [runId], saving its file with [saver].
   const ReportRunScreen({
     super.key,
     required this.repository,
@@ -25,10 +26,16 @@ class ReportRunScreen extends StatelessWidget {
     required this.runId,
   });
 
+  /// Source of the run.
   final ReportsRepository repository;
+
+  /// Saves the downloaded file.
   final ReportFileSaver saver;
+
+  /// Id of the run shown.
   final String runId;
 
+  /// A deep link has nothing to pop: go to the runs.
   @override
   Widget build(BuildContext context) => ControllerBuilder<ReportRunController>(
     key: ValueKey((repository, runId)),
@@ -43,7 +50,6 @@ class ReportRunScreen extends StatelessWidget {
       };
       return AppPage(
         title: l10n.runTitle,
-        // A deep link has nothing to pop: go to the runs.
         onBack: () => context.go(ReportsPaths.runs),
         actions: [
           if (controller.canDownload || controller.isDownloading)

@@ -18,6 +18,9 @@ export class ClientOutcomeChecker {
    * - Business error outside `metadata.allowedErrorCodes()`: `protocol-violation` `undeclared-error` with that code; if allowed, unchanged.
    * - `protocol-violation`, `transient-failure` and `uncertain`: unchanged.
    * - Any other shape: `protocol-violation` `invalid-handler-result`.
+   * @param descriptor Operation descriptor.
+   * @param outcome Outcome of the transport.
+   * @returns The checked outcome.
    */
   settle(
     descriptor: OperationDescriptor,

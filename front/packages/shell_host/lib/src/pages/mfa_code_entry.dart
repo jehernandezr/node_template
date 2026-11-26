@@ -5,6 +5,7 @@ import 'package:ui/ui.dart';
 
 /// Code field and verify button of a challenge.
 class MfaCodeEntry extends StatelessWidget {
+  /// Field of the code of [challenge] with its verify button.
   const MfaCodeEntry({
     super.key,
     required this.fieldKey,
@@ -14,10 +15,19 @@ class MfaCodeEntry extends StatelessWidget {
     required this.onVerify,
   });
 
+  /// Key of the code field, for tests.
   final Key fieldKey;
+
+  /// Controller of the code field.
   final TextEditingController controller;
+
+  /// Challenge whose code is entered.
   final MfaChallenge challenge;
+
+  /// Whether a verification is in flight.
   final bool busy;
+
+  /// Called when the user verifies the code.
   final VoidCallback onVerify;
 
   @override

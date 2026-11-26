@@ -6,11 +6,11 @@ export class StaticAppConfig extends AppConfig {
     super();
   }
 
-  get<T>(): T {
+  override get<T>(): T {
     throw new Error('StaticAppConfig only exposes the root');
   }
 
-  root<T = unknown>(): T {
+  override root<T = unknown>(): T {
     return this.settings as T;
   }
 }

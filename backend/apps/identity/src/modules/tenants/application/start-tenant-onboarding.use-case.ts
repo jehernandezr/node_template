@@ -36,6 +36,9 @@ export class StartTenantOnboarding {
   /**
    * A taken slug is rejected right away; if another creation takes it at the same instant, the saga ends
    * compensated.
+   * @param owner User who creates the tenant.
+   * @param request Name, slug and kind.
+   * @returns The tenant and the saga that finishes it.
    * @throws IdentityError `IDENTITY.TENANT.SLUG_TAKEN` if the slug already belongs to another tenant.
    */
   async execute(

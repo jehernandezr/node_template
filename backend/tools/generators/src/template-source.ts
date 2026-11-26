@@ -15,6 +15,11 @@ export class TemplateSource {
     private readonly templatesRoot: string,
   ) {}
 
+  /**
+   * Loads the templates of a kind.
+   * @param kind `service` or `module`.
+   * @returns The templates.
+   */
   async load(kind: string): Promise<TemplateFile[]> {
     const root = join(this.templatesRoot, kind);
     const paths = (await this.files.listFiles(root)).filter((path) =>

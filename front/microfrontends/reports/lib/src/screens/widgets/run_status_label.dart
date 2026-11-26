@@ -9,8 +9,10 @@ import '../../shared/types/run_progress_of.dart';
 
 /// Status of a run as an icon and its text, colored by how it ended.
 class RunStatusLabel extends StatelessWidget {
+  /// Label of [status].
   const RunStatusLabel({super.key, required this.status});
 
+  /// Status shown.
   final ReportRunStatus status;
 
   @override

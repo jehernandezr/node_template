@@ -35,6 +35,12 @@ export class IssueInvoice {
     this.series = settings.values.BILLING_INVOICE_SERIES;
   }
 
+  /**
+   * Closes the tenant's expired period and issues its invoice with the next number, in one transaction.
+   * @param tenantId Tenant whose period closes.
+   * @param today Closing date, `YYYY-MM-DD` in UTC.
+   * @returns The issued invoice, or `undefined` when nothing was due or the period was a trial.
+   */
   execute(tenantId: string, today: string): Promise<InvoiceState | undefined> {
     return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {

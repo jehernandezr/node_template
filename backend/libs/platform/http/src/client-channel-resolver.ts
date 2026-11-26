@@ -9,6 +9,11 @@ import type { HttpRequestView } from './http-request-view.js';
  * with `X-Session-Transport: bearer`; any other case is web.
  */
 export class ClientChannelResolver {
+  /**
+   * Tells whether the client is the web or a native app, from its headers.
+   * @param headers Request headers.
+   * @returns The channel.
+   */
   static resolve(headers: HttpRequestView['headers']): ClientChannel {
     const token = BearerTokenReader.read(headers[HttpHeader.Authorization]);
     const bearerSession =

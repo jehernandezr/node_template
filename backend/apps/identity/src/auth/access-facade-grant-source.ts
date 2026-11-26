@@ -10,7 +10,7 @@ export class AccessFacadeGrantSource extends AccessGrantSource {
   }
 
   /** The permissions, roles, features, flags and permission version of the user in the tenant. */
-  async fetch(tenantId: string, userId: string): Promise<AccessGrant> {
+  override async fetch(tenantId: string, userId: string): Promise<AccessGrant> {
     const access = await this.access.resolve(userId, tenantId);
     return {
       permissions: [...access.permissions],

@@ -17,6 +17,14 @@ export class TenantMoveCheckpointEntity {
   @Column({ type: 'jsonb', name: 'reconciled_key', nullable: true })
   reconciledKey!: string[] | null;
 
+  /** Key of the last target row checked against the source while pruning, as text per column. */
+  @Column({ type: 'jsonb', name: 'pruned_key', nullable: true })
+  prunedKey!: string[] | null;
+
+  /** Whether every target row the source no longer has was deleted. */
+  @Column({ type: 'boolean', name: 'pruned', default: false })
+  pruned!: boolean;
+
   @Column({ type: 'integer', name: 'verified_rows', nullable: true })
   verifiedRows!: number | null;
 

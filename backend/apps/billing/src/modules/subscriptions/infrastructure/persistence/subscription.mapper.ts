@@ -5,6 +5,11 @@ import { SubscriptionEntity } from './entities/subscription.entity.js';
 
 /** `subscriptions` row and the `Subscription` aggregate, in both directions. Pure utility. */
 export class SubscriptionMapper {
+  /**
+   * Rebuilds a subscription from its row.
+   * @param row Stored row.
+   * @returns The domain subscription.
+   */
   static toDomain(row: SubscriptionEntity): Subscription {
     return Subscription.rehydrate({
       id: row.id,
@@ -18,6 +23,11 @@ export class SubscriptionMapper {
     });
   }
 
+  /**
+   * Turns a subscription into its row.
+   * @param subscription Domain subscription.
+   * @returns The row to store.
+   */
   static toRow(subscription: Subscription): SubscriptionEntity {
     const state = subscription.snapshot();
     return Object.assign(new SubscriptionEntity(), {

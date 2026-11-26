@@ -23,6 +23,11 @@ export class CollectInvoice {
     private readonly logger: LoggerPort,
   ) {}
 
+  /**
+   * Charges an issued invoice, resuming a pending attempt instead of charging twice.
+   * @param tenantId Tenant that owns the invoice.
+   * @param invoiceId Invoice to charge.
+   */
   async execute(tenantId: string, invoiceId: string): Promise<void> {
     const invoice = await this.shard.inTenantShard(tenantId, () =>
       this.invoices.find(invoiceId),

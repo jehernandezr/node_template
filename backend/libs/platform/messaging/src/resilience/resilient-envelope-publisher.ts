@@ -16,7 +16,7 @@ export class ResilientEnvelopePublisher extends EnvelopePublisher {
     super();
   }
 
-  publish(
+  override publish(
     envelope: MessageEnvelope,
     target: OutboundTarget,
     options: PublishOutboxOptions,

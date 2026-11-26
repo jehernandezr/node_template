@@ -40,7 +40,9 @@ export class SigV4Signer extends InternalRequestSigner {
    * temporary credentials, `x-amz-security-token`.
    * @throws InternalApiError `InvalidConfiguration` if the request has no `baseUrl`.
    */
-  async sign(request: SignableRequest): Promise<Record<string, string>> {
+  override async sign(
+    request: SignableRequest,
+  ): Promise<Record<string, string>> {
     if (request.baseUrl === undefined) {
       throw new InternalApiError(
         InternalApiErrorCode.InvalidConfiguration,

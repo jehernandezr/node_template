@@ -7,7 +7,7 @@ export class DirectoryShardLister extends ShardLister {
     super();
   }
 
-  list(): Promise<readonly ShardLocation[]> {
+  override list(): Promise<readonly ShardLocation[]> {
     return this.directory.listShardLocations();
   }
 }

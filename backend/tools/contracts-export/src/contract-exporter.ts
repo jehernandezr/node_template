@@ -19,6 +19,12 @@ export class ContractExporter {
     private readonly paths: ExportPaths,
   ) {}
 
+  /**
+   * Loads the contracts and writes every artifact of the scope.
+   * @param scope Services and artifacts to export.
+   * @param writer Writer of the artifacts.
+   * @returns What was written or found stale.
+   */
   async run(scope: ExportScope, writer: ArtifactWriter): Promise<ExportReport> {
     const contracts = await this.registry.load();
     const topology: Artifact = {

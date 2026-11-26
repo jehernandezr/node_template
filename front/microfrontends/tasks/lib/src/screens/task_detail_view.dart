@@ -26,13 +26,18 @@ class TaskDetailView extends StatelessWidget {
     required this.onDeleted,
   });
 
+  /// Source of the task.
   final TasksRepository repository;
+
+  /// Id of the task shown.
   final String taskId;
+
+  /// Called after the task is deleted.
   final VoidCallback onDeleted;
 
+  /// The repository is part of the key: a new identity gets a new controller.
   @override
   Widget build(BuildContext context) => ControllerBuilder<TaskDetailController>(
-    // The repository is part of the key: a new identity gets a new controller.
     key: ValueKey((repository, taskId)),
     create: (_) => TaskDetailController(repository, taskId: taskId)..start(),
     builder: (context, controller) => switch (controller.state) {

@@ -5,7 +5,7 @@ import type { DeviceRecognition } from '../domain/device-recognition.js';
 import type { DeviceSnapshot } from '../domain/device-snapshot.js';
 import type { RegisterDeviceInput } from '../domain/register-device-input.js';
 
-/** What `devices` offers to the other modules. */
+/** Recognizes, registers and retires the devices of a user and queues their approval for the sign-in flows. */
 export abstract class DevicesFacade {
   /**
    * Recognizes the device of a sign-in from its signature, never from its public id alone.

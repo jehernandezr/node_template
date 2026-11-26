@@ -22,8 +22,18 @@ export abstract class ReportDefinition {
   readonly granularities: readonly ReportGranularity[] =
     Object.values(ReportGranularity);
 
+  /**
+   * Computes the rows of the report for a tenant.
+   * @param tenantId Tenant the report is about.
+   * @param params Range and bucket of the report.
+   * @returns The rows, header first.
+   */
   abstract rows(tenantId: string, params: ReportParams): Promise<ReportRow[]>;
 
+  /**
+   * Describes the report for the catalog.
+   * @returns Its type, title and parameters.
+   */
   entry(): ReportCatalogEntry {
     return {
       type: this.type,

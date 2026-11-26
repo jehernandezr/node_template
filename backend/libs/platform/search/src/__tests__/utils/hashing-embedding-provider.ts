@@ -10,7 +10,7 @@ import { SearchSchema } from '../../search-schema.js';
 export class HashingEmbeddingProvider extends EmbeddingProvider {
   readonly dimensions = SearchSchema.EMBEDDING_DIMENSIONS;
 
-  async embed(text: string): Promise<readonly number[]> {
+  override async embed(text: string): Promise<readonly number[]> {
     const vector = new Array<number>(this.dimensions).fill(0);
     for (const word of HashingEmbeddingProvider.words(text)) {
       const digest = createHash('sha256').update(word).digest();

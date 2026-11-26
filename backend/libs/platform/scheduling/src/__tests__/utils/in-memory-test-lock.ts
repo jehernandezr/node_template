@@ -5,8 +5,10 @@ export class InMemoryTestLock extends JobLock {
   held = false;
   failRelease = false;
   releases = 0;
+  renewals = 0;
+  leaseLost = false;
 
-  async tryAcquire(name: string): Promise<JobLease | undefined> {
+  override async tryAcquire(name: string): Promise<JobLease | undefined> {
     if (this.held) {
       return undefined;
     }
@@ -14,7 +16,12 @@ export class InMemoryTestLock extends JobLock {
     return { name, token: 'test-token' };
   }
 
-  async release(): Promise<void> {
+  override async renew(): Promise<boolean> {
+    this.renewals += 1;
+    return !this.leaseLost;
+  }
+
+  override async release(): Promise<void> {
     this.releases += 1;
     if (this.failRelease) {
       throw new Error('release failed');

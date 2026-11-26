@@ -24,7 +24,7 @@ export class ShardedRelayScopes extends RelayScopes {
   }
 
   /** @throws PersistenceError `PersistenceQueryFailed` if `body` failed or did not finish in time on some shard. */
-  async forEach(body: () => Promise<void>): Promise<void> {
+  override async forEach(body: () => Promise<void>): Promise<void> {
     const outcome = await this.acrossShards.run(
       (connection) => this.binding.run(connection, body),
       {

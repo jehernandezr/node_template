@@ -23,6 +23,11 @@ import { SQS_CLIENT } from './aws.tokens.js';
  * with `useFactory`, like those of `AwsProviders`.
  */
 export class SqsConsumerProviders {
+  /**
+   * Wires the SQS client, the poller and the dispatcher of the consumer for the given queue settings.
+   * @param options Queue and consumer settings.
+   * @returns The providers.
+   */
   static build(options: SqsConsumerModuleOptions): Provider[] {
     const queue = options.topology.queueFor(options.queue);
     if (!queue) {
@@ -127,7 +132,11 @@ export class SqsConsumerProviders {
     return providers;
   }
 
-  /** What the service can inject: the processor and the Lambda handler, and the poller unless `poll: false`. */
+  /**
+   * What the service can inject: the processor and the Lambda handler, and the poller unless `poll: false`.
+   * @param options Queue and consumer settings.
+   * @returns The tokens.
+   */
   static exports(options: SqsConsumerModuleOptions): Array<Type<unknown>> {
     const exported: Array<Type<unknown>> = [
       SqsDeliveryProcessor,

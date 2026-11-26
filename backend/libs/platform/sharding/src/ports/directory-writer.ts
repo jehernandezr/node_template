@@ -20,17 +20,27 @@ import type { TenantPlacement } from '../model/tenant-placement.js';
  * `ShardingEvent.ShardDirectoryChanged` when the router has a publisher.
  */
 export abstract class DirectoryWriter {
-  /** Placement of a tenant read from the primary, the basis of a conditional write. */
+  /**
+   * Placement of a tenant read from the primary, the basis of a conditional write.
+   * @param tenantId Tenant to read.
+   * @returns The placement, or `undefined`.
+   */
   abstract readPlacement(
     tenantId: string,
   ): Promise<TenantPlacement | undefined>;
 
-  /** Placements of a region, the input of a `ShardPlacementPolicy`. */
+  /**
+   * Placements of a region, the input of a `ShardPlacementPolicy`.
+   * @param region Region to read.
+   * @returns The placements.
+   */
   abstract listPlacements(region: string): Promise<readonly TenantPlacement[]>;
 
   /**
+   * Writes a placement only if the stored version is the expected one.
    * @param placement New placement. Its version is 1 for a new tenant and `expectedVersion + 1` otherwise.
    * @param expectedVersion Version the caller read, or `undefined` to create the tenant.
+   * @returns Whether it was written, or the conflict.
    */
   abstract putPlacement(
     placement: TenantPlacement,
@@ -41,6 +51,9 @@ export abstract class DirectoryWriter {
    * Deletes a tenant row only if its stored version is `expectedVersion`. It reverses the sign-up, before
    * the tenant has data.
    * @returns `Written` if it deleted, `VersionConflict` if the row changed or no longer exists.
+   * @param tenantId Tenant to delete.
+   * @param expectedVersion Version it must have.
+   * @returns Whether it was deleted, or the conflict.
    */
   abstract deletePlacement(
     tenantId: string,

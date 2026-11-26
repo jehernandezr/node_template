@@ -54,6 +54,12 @@ export class ClaimTable<R> {
     this.tenantColumn = options.tenantColumn ?? false;
   }
 
+  /**
+   * Claims a key: acquires it, finds its stored result or sees it in progress.
+   * @param key Idempotency key.
+   * @param request Fingerprint, deadline and lease.
+   * @returns The claim result.
+   */
   async claim(key: string, request: ClaimRequest): Promise<ClaimResult<R>> {
     ClaimRules.assertInput(key, request.fingerprint);
     return this.managers.run(ManagerIntent.Write, (manager) =>
@@ -61,6 +67,13 @@ export class ClaimTable<R> {
     );
   }
 
+  /**
+   * Stores the result of a claim that still belongs to the token.
+   * TypeORM types the `jsonb` column as a partial of `unknown` and does not accept `null` there; the `null` is the SQL value.
+   * @param key Idempotency key.
+   * @param claimToken Token of the claim.
+   * @param result Result to store.
+   */
   async complete(key: string, claimToken: string, result: R): Promise<void> {
     const affected = await this.managers.run(
       ManagerIntent.Write,
@@ -70,7 +83,6 @@ export class ClaimTable<R> {
           .update(this.entity)
           .set({
             state: ClaimState.Completed,
-            // TypeORM types the `jsonb` column as a partial of `unknown` and does not accept `null` there; the `null` is the SQL value.
             result: (this.serialize(result) ?? null) as QueryDeepPartialEntity<
               ClaimRecordEntity['result']
             >,
@@ -88,6 +100,11 @@ export class ClaimTable<R> {
     }
   }
 
+  /**
+   * Releases a claim of the token so the key can be claimed again.
+   * @param key Idempotency key.
+   * @param claimToken Token of the claim.
+   */
   async release(key: string, claimToken: string): Promise<void> {
     const affected = await this.managers.run(
       ManagerIntent.Write,
@@ -109,6 +126,10 @@ export class ClaimTable<R> {
   /**
    * Extends to `leaseUntil` the lease of an in-progress claim that still belongs to `claimToken`, never shortening it.
    * Returns `false` if the claim already finished or another attempt took it.
+   * @param key Idempotency key.
+   * @param claimToken Token of the claim.
+   * @param leaseUntil New lease end.
+   * @returns Whether it was renewed.
    */
   async renew(
     key: string,
@@ -141,7 +162,11 @@ export class ClaimTable<R> {
     return owned;
   }
 
-  /** Deletes results completed before `before`; visits all shards if none is pinned. Returns how many it deleted. */
+  /**
+   * Deletes results completed before `before`; visits all shards if none is pinned. Returns how many it deleted.
+   * @param before Instant the completion must predate.
+   * @returns How many were deleted.
+   */
   purgeCompleted(before: Date): Promise<number> {
     return this.managers.sweep(async (manager) => {
       const outcome = await manager
@@ -160,6 +185,9 @@ export class ClaimTable<R> {
   /**
    * Runs entirely inside the manager it receives: the `SELECT` of the live row and the `INSERT` must see the same state
    * and, with the `Write`, end up in the same transaction.
+   * With no time to run the operation, only an already stored result is useful.
+   * TypeORM's `orUpdate` does not accept the conflict WHERE, and Postgres returns no row if that WHERE does not hold. Our own token tells whether the key was taken.
+   * The row was released or expired between the two statements: the caller retries.
    */
   private async claimIn(
     manager: EntityManager,
@@ -168,7 +196,6 @@ export class ClaimTable<R> {
   ): Promise<ClaimResult<R>> {
     const now = this.clock.now();
     if (request.deadline.atMs <= now.getTime()) {
-      // With no time to run the operation, only an already stored result is useful.
       const live = await this.readLive(manager, key, now.getTime());
       if (live !== undefined) {
         return live;
@@ -178,8 +205,6 @@ export class ClaimTable<R> {
     const claimToken = this.ids.next().toString();
     const leaseUntil = ClaimRules.computeLeaseUntil(request, now.getTime());
     const table = this.tableName(manager);
-    // TypeORM's `orUpdate` does not accept the conflict WHERE, and Postgres returns no row if that WHERE does not hold.
-    // Our own token tells whether the key was taken.
     const tenant = this.tenantColumn
       ? { column: ', tenant_id', value: ', $7' }
       : { column: '', value: '' };
@@ -214,7 +239,6 @@ export class ClaimTable<R> {
     if (live !== undefined) {
       return live;
     }
-    // The row was released or expired between the two statements: the caller retries.
     throw new PersistenceError(
       PersistenceErrorCode.Contention,
       'Idempotency key changed while claiming it',

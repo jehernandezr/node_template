@@ -11,6 +11,11 @@ import { ReportRunMaintenance } from '../domain/report-run-maintenance.js';
 export class EraseRequester {
   constructor(private readonly maintenance: ReportRunMaintenance) {}
 
+  /**
+   * Replaces the user as requester of every run of the shard with an anonymous user.
+   * @param user User to erase.
+   * @returns How many runs changed.
+   */
   execute(user: UserRef): Promise<number> {
     return this.maintenance.replaceRequester(
       user.userId,

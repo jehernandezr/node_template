@@ -5,6 +5,7 @@ import 'package:auth/auth.dart';
 /// In-memory session token store that lets you control and count
 /// writes.
 class FakeTokenStore implements TokenStore {
+  /// Store that starts with an optional token, or with the session in a cookie.
   FakeTokenStore([this._sessionToken, this.sessionInCookie = false]);
 
   String? _sessionToken;
@@ -16,6 +17,7 @@ class FakeTokenStore implements TokenStore {
   /// storing. Useful to test what happens while the write is pending.
   Completer<void>? writeGate;
 
+  /// How many writes were requested.
   int writeCount = 0;
 
   /// Stored session token, without going through the async interface.

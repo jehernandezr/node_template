@@ -11,13 +11,18 @@ export class NameForms {
     readonly camel: string,
     /** `ApiKeys`: classes and enums, `__Name__`. */
     readonly pascal: string,
-    /** `API_KEYS`: constantes, `__NAME__`. */
+    /** `API_KEYS`: constants, `__NAME__`. */
     readonly upperSnake: string,
     /** `api_keys`: databases, `__name_snake__`. */
     readonly snake: string,
   ) {}
 
-  /** @throws GeneratorError `InvalidName` if the name is not in kebab-case. */
+  /**
+   * Derives the kebab, camel, Pascal and constant forms of a name.
+   * @param name Name in kebab-case.
+   * @returns Its forms.
+   * @throws GeneratorError `InvalidName` if the name is not in kebab-case.
+   */
   static of(name: string): NameForms {
     if (!NameForms.KEBAB.test(name)) {
       throw new GeneratorError(

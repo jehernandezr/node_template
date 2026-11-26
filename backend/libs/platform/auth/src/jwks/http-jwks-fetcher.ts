@@ -14,13 +14,15 @@ export class HttpJwksFetcher extends JwksFetcher {
     super();
   }
 
-  async fetch(): Promise<unknown> {
+  /**
+   * A redirect could take the download to another host the issuer has not published.
+   */
+  override async fetch(): Promise<unknown> {
     let response: Response;
     try {
       response = await this.fetchFn(this.url, {
         signal: AbortSignal.timeout(this.timeoutMs),
         headers: { accept: 'application/json' },
-        // A redirect could take the download to another host the issuer has not published.
         redirect: 'error',
       });
     } catch (error) {

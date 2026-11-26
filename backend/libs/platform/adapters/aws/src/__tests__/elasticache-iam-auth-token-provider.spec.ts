@@ -3,9 +3,6 @@ import type { AwsCredentials } from '../aws-credentials.js';
 import { ElastiCacheIamAuthTokenProvider } from '../elasticache-iam-auth-token-provider.js';
 import { StaticCredentialsProvider } from './utils/static-credentials-provider.js';
 
-// Obvious test values. The expected signatures come from `SignatureV4.presign`
-// in @smithy/signature-v4 with the same data, so our own signature stays
-// tied to the SDK's.
 const credentials: AwsCredentials = {
   accessKeyId: 'test-access-key',
   secretAccessKey: 'test-secret',

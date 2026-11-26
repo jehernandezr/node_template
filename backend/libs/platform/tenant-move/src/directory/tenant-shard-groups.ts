@@ -18,7 +18,12 @@ export class TenantShardGroups {
     this.prefix = `${service.replaceAll('-', '_')}_`;
   }
 
-  /** The groups of the shards of a placement of this service, in the same order. */
+  /**
+   * The groups of the shards of a placement of this service, in the same order.
+   * @param region Region of the placement.
+   * @param shards Logical shards.
+   * @returns The groups.
+   */
   groupsOf(region: string, shards: readonly string[]): string[] {
     return shards.map(
       (shard) => this.targets.groupOf(region, shard) ?? this.unprefixed(shard),
@@ -27,6 +32,9 @@ export class TenantShardGroups {
 
   /**
    * The logical shard of this service in a group.
+   * @param region Region of the group.
+   * @param group Group name.
+   * @returns The logical shard.
    * @throws TenantMoveError `UnknownTarget` if the group is declared for another region.
    */
   shardOf(region: string, group: string): string {

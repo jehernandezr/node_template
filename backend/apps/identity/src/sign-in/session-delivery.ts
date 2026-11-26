@@ -12,7 +12,12 @@ import { IdentitySettings } from '../config/identity-settings.js';
 export class SessionDelivery {
   constructor(private readonly settings: IdentitySettings) {}
 
-  /** Returns the response to send, moving the session token to the cookie on the web channel. */
+  /**
+   * Returns the response to send, moving the session token to the cookie on the web channel.
+   * @param response Response of the sign-in.
+   * @param exchange Request and response of the exchange.
+   * @returns The response to send.
+   */
   deliver(response: SignInResponse, exchange: HttpExchange): SignInResponse {
     const sessionToken = response.tokens?.sessionToken;
     if (

@@ -22,7 +22,8 @@ export class StartAccountDeletion {
   ) {}
 
   /**
-   * Starts the deletion of an account.
+   * Launches the saga that erases the account in every service, after checking that no tenant is left without an
+   * owner.
    * @param user User whose account is deleted.
    * @returns The saga that deletes it.
    * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if they are the last owner of a tenant with other members.

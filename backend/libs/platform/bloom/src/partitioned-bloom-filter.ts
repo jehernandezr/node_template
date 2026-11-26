@@ -40,11 +40,11 @@ export class PartitionedBloomFilter extends AsyncBloomFilter {
     return this.partitions.length;
   }
 
-  add(item: string): Promise<void> {
+  override add(item: string): Promise<void> {
     return this.partitionFor(item).add(item);
   }
 
-  async addMany(items: readonly string[]): Promise<void> {
+  override async addMany(items: readonly string[]): Promise<void> {
     const batches = new Map<number, string[]>();
     for (const item of items) {
       const index = BloomMath.partitionOf(item, this.partitions.length);
@@ -62,7 +62,7 @@ export class PartitionedBloomFilter extends AsyncBloomFilter {
     );
   }
 
-  mightContain(item: string): Promise<boolean> {
+  override mightContain(item: string): Promise<boolean> {
     return this.partitionFor(item).mightContain(item);
   }
 
@@ -70,6 +70,7 @@ export class PartitionedBloomFilter extends AsyncBloomFilter {
    * Rebuilds each partition from a new source. First checks that all of them can be rebuilt and, if
    * not, throws `InvalidParametersError` without touching any. Then, in sequence, each partition reads the source
    * from the start and keeps only its items, so the whole set is never held in memory.
+   * @param factory Source of each partition.
    */
   async rebuildFrom(factory: BloomRebuildSourceFactory): Promise<void> {
     const rebuildable = this.partitions.filter(RebuildableBloomFilter.is);

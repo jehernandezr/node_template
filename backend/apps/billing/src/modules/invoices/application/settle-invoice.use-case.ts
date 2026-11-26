@@ -30,7 +30,14 @@ export class SettleInvoice {
     private readonly transactions: TransactionManager,
   ) {}
 
-  /** @throws BillingError `BILLING.INVOICE.NOT_FOUND` o `BILLING.INVOICE.INVALID_STATE`. */
+  /**
+   * Marks an invoice paid and reactivates the subscription if it was past due or suspended.
+   * @param tenantId Tenant that owns the invoice.
+   * @param invoiceId Invoice that was paid.
+   * @param paidAt Instant of the payment.
+   * @returns The paid invoice.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` or `BILLING.INVOICE.INVALID_STATE`.
+   */
   paid(
     tenantId: string,
     invoiceId: string,
@@ -61,6 +68,11 @@ export class SettleInvoice {
 
   /**
    * Records the rejection of attempt `attempt`.
+   * @param tenantId Tenant that owns the invoice.
+   * @param invoiceId Invoice whose charge was declined.
+   * @param failedAt Instant of the rejection.
+   * @param attempt Number of the attempt that failed.
+   * @returns The invoice with the failure and its next retry.
    * @throws BillingError `BILLING.INVOICE.NOT_FOUND` or `BILLING.INVOICE.INVALID_STATE`.
    */
   failed(

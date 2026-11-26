@@ -29,6 +29,11 @@ export class ChangePassword {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Changes the user's password after checking the current one, revokes its other sessions and raises an alert.
+   * @param actor Signed-in user.
+   * @param request Current and new password.
+   */
   async execute(
     actor: UserActor,
     request: ChangePasswordRequest,

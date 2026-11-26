@@ -6,6 +6,10 @@ import type { MetricsPort } from './metrics.port.js';
 export class ErrorMetrics {
   constructor(private readonly port: MetricsPort) {}
 
+  /**
+   * Counts an error by its code and name.
+   * @param error Error to count.
+   */
   record(error: unknown): void {
     this.port.increment(PlatformMetric.Errors, ErrorMetricAttributes.of(error));
   }

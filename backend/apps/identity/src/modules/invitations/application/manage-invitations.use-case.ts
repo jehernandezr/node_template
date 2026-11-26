@@ -16,6 +16,11 @@ export class ManageInvitations {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Lists the invitations of a tenant.
+   * @param tenantId Tenant to read.
+   * @returns Its invitations with their status.
+   */
   async list(tenantId: string): Promise<InvitationPage> {
     const invitations = await this.scopes.inTenantShard(tenantId, () =>
       this.invitations.list(),
@@ -29,6 +34,11 @@ export class ManageInvitations {
     };
   }
 
+  /**
+   * Revokes a pending invitation.
+   * @param tenantId Tenant of the invitation.
+   * @param invitationId Invitation to revoke.
+   */
   async revoke(tenantId: string, invitationId: string): Promise<void> {
     await this.scopes.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {

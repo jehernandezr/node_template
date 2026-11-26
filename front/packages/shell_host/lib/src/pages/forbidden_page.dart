@@ -6,6 +6,7 @@ import 'package:ui/ui.dart';
 /// Shown when the signed-in user cannot see the requested page, or has nothing
 /// to show. Offers a way home and a way out, so a user is never stuck here.
 class ForbiddenPage extends StatelessWidget {
+  /// Page shown when the user lacks access; [onSignOut] signs out.
   const ForbiddenPage({super.key, required this.onSignOut});
 
   /// Ends the session and goes to login.

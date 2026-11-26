@@ -44,7 +44,12 @@ export class TenantMoves {
     private readonly listener?: TenantMoveListener,
   ) {}
 
-  /** @throws TenantMoveError `RoundPending` while the copy has not caught up with the source or the tenant has unfinished sagas. */
+  /**
+   * Runs one copy round while the tenant keeps writing.
+   * @param move Tenant and move.
+   * @returns The progress of the round.
+   * @throws TenantMoveError `RoundPending` while the copy has not caught up with the source or the tenant has unfinished sagas.
+   */
   async sync(move: TenantMoveRef): Promise<TenantMoveProgress> {
     const transfer = await this.transferOf(move);
     await this.assertNoOpenWork(
@@ -64,6 +69,9 @@ export class TenantMoves {
   }
 
   /**
+   * Raises the fence, waits for in-flight work and verifies the copy.
+   * @param move Tenant and move.
+   * @returns The verification.
    * @throws TenantMoveError `TenantBusy` if, with the fence raised, the tenant has half-finished sagas on the source.
    * @throws TenantMoveError `VerificationFailed` if the target did not end up equal to the source.
    */
@@ -94,6 +102,8 @@ export class TenantMoves {
   /**
    * Lowers the fence and opens the gate before discarding the copy: the tenant writes to the source again while
    * the target, which no one reads, is purged.
+   * @param move Tenant and move.
+   * @returns The acknowledgment.
    */
   async abort(move: TenantMoveRef): Promise<TenantMoveAck> {
     const transfer = await this.transferOf(move);
@@ -108,6 +118,8 @@ export class TenantMoves {
    * Before opening writes on the target: records the target region in the copy, lowers the fence a
    * previous move may have left on the target (the tenant returns to a shard it left) and marks the source
    * fence as pivoted. Everything is idempotent because the saga repeats the step until it completes.
+   * @param move Tenant and move.
+   * @returns The acknowledgment.
    */
   async switch(move: TenantMoveRef): Promise<TenantMoveAck> {
     const target = this.shards.targetOf(move);
@@ -146,6 +158,8 @@ export class TenantMoves {
    * service's `switch` did not run, the fence is the only thing stopping its writes and the source data is still live.
    * It also does not clean up while another move of the tenant has its fence raised without pivoting: that move may return
    * to one of these shards, which between its `finalize` and its `switch` already holds the good copy.
+   * @param move Tenant and move.
+   * @returns The acknowledgment.
    * @throws TenantMoveError `NotSwitched` if the service directory still routes the tenant to one of those shards.
    * @throws TenantMoveError `MoveInProgress` if another move of the tenant is between `finalize` and `switch`.
    */

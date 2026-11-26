@@ -286,7 +286,6 @@ describe('PersistenceModule', () => {
         strict: false,
       });
 
-      // With the per-user key, a context that only carries a tenant is not enough to choose the shard.
       await expect(
         store.run(
           {

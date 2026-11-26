@@ -8,7 +8,7 @@ export class SqlStateFailureRule extends FailureRule {
   }
 
   /** Returns `Transient` for an error with one of the given SQLSTATEs. */
-  classify(error: object): FailureKind | undefined {
+  override classify(error: object): FailureKind | undefined {
     const code = (error as { code?: unknown }).code;
     return typeof code === 'string' && this.transient.has(code)
       ? FailureKind.Transient

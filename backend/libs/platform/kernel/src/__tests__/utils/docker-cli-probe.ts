@@ -6,7 +6,7 @@ import { ContainerProbe } from './container-probe.js';
  * collection time which suites it registers, before running any test.
  */
 export class DockerCliProbe extends ContainerProbe {
-  isRunning(): boolean {
+  override isRunning(): boolean {
     return (
       spawnSync('docker', ['info', '--format', '{{.ServerVersion}}'], {
         timeout: 10_000,

@@ -32,13 +32,17 @@ export class FakeCachePort extends CachePort {
     this.failure = undefined;
   }
 
-  async get(key: string): Promise<string | undefined> {
+  override async get(key: string): Promise<string | undefined> {
     this.gets += 1;
     this.throwIfFailing();
     return this.live(key)?.value;
   }
 
-  async set(key: string, value: string, ttlMs?: number): Promise<void> {
+  override async set(
+    key: string,
+    value: string,
+    ttlMs?: number,
+  ): Promise<void> {
     this.sets += 1;
     this.throwIfFailing();
     this.entries.set(key, {
@@ -47,7 +51,7 @@ export class FakeCachePort extends CachePort {
     });
   }
 
-  async setIfAbsent(key: string, value: string): Promise<boolean> {
+  override async setIfAbsent(key: string, value: string): Promise<boolean> {
     this.throwIfFailing();
     if (this.live(key) !== undefined) {
       return false;
@@ -56,7 +60,7 @@ export class FakeCachePort extends CachePort {
     return true;
   }
 
-  async delete(key: string): Promise<void> {
+  override async delete(key: string): Promise<void> {
     this.deletes += 1;
     this.throwIfFailing();
     this.entries.delete(key);

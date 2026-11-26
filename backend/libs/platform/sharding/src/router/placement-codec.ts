@@ -27,6 +27,8 @@ export class PlacementCodec {
    * Cache version of a placement. Placements take even numbers
    * (`2 × version`) so that a tombstone falls strictly between two
    * versions: tombstone `2N − 1` rejects every version lower than N and accepts N.
+   * @param version Placement version.
+   * @returns The cache version.
    */
   static cacheVersion(version: number): number {
     return version * 2;
@@ -36,6 +38,10 @@ export class PlacementCodec {
    * Cache version of the tombstone that replaces a placement: above
    * every version this router sees, and at least `2N − 1` when the caller gives
    * the committed version N (rejects below N, accepts N).
+   * @param local In-process placement.
+   * @param shared Shared record.
+   * @param committedVersion Committed placement version.
+   * @returns The tombstone version.
    */
   static tombstoneVersion(
     local: TenantPlacement | undefined,
@@ -62,10 +68,20 @@ export class PlacementCodec {
     return Math.min(Math.max(...candidates), Number.MAX_SAFE_INTEGER);
   }
 
+  /**
+   * Encodes a placement entry for the shared cache.
+   * @param entry Placement with its expiry.
+   * @returns The text.
+   */
   static encodeEntry(entry: SharedPlacementEntry): string {
     return JSON.stringify(entry);
   }
 
+  /**
+   * Encodes a tombstone for the shared cache.
+   * @param tombstone Tombstone with its version.
+   * @returns The text.
+   */
   static encodeTombstone(tombstone: SharedTombstone): string {
     return JSON.stringify({
       tombstone: true,
@@ -77,6 +93,8 @@ export class PlacementCodec {
   /**
    * Parses and validates the content of a shared cache key. Anything
    * malformed returns `undefined`, so the caller treats it as a miss (fails closed).
+   * @param raw Cached text.
+   * @returns The record, or `undefined`.
    */
   static decode(raw: string | undefined): SharedRecord | undefined {
     if (raw === undefined) {

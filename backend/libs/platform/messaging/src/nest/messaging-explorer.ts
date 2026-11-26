@@ -17,8 +17,10 @@ export class MessagingExplorer implements OnApplicationBootstrap {
     private readonly dispatcher: MessageDispatcher,
   ) {}
 
+  /**
+   * The same provider can appear under several tokens (`useExisting`): it is registered once.
+   */
   onApplicationBootstrap(): void {
-    // The same provider can appear under several tokens (`useExisting`): it is registered once.
     const seen = new Set<object>();
     for (const wrapper of this.discovery.getProviders()) {
       const instance: unknown = wrapper.instance;

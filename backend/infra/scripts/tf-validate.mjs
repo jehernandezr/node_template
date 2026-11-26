@@ -1,12 +1,11 @@
-// Validates the Terraform without touching AWS or the backends: init -backend=false, validate and
-// terraform test (mocked providers) in each stack and example; it also checks that
-// variables_common.tf is identical in all stacks and that each environment points to stacks
-// that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/**
+ * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack and example; it also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
+ */
 const terraformRoot = join(
   dirname(fileURLToPath(import.meta.url)),
   '..',
@@ -44,7 +43,9 @@ function check(dir, withTests) {
 const stacksDir = join(terraformRoot, 'stacks');
 const stacks = subdirs(stacksDir);
 
-// variables_common.tf must be the same file in all stacks.
+/**
+ * variables_common.tf must be the same file in all stacks.
+ */
 const commons = stacks.map((stack) => ({
   stack,
   content: readFileSync(join(stacksDir, stack, 'variables_common.tf'), 'utf8'),
@@ -57,7 +58,9 @@ for (const { stack, content } of commons) {
   }
 }
 
-// Each environment uses existing stacks and has its backend.tfvars and its terraform.tfvars.
+/**
+ * Each environment uses existing stacks and has its backend.tfvars and its terraform.tfvars.
+ */
 const environmentsDir = join(terraformRoot, 'environments');
 for (const env of subdirs(environmentsDir)) {
   for (const stack of subdirs(join(environmentsDir, env))) {

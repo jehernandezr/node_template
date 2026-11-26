@@ -14,6 +14,10 @@ export class TtlJitter {
 
   /**
    * Returns an integer TTL in milliseconds within `[base * (1 - ratio), base * (1 + ratio)]`.
+   * A source outside [0, 1) or NaN must not push the TTL out of its bounds.
+   * @param baseMs Base TTL.
+   * @param ratio Spread around the base.
+   * @returns The TTL.
    * @throws CacheInvalidArgumentError when `baseMs` or `ratio` are out of range.
    */
   jitter(baseMs: number, ratio: number = TtlJitter.DEFAULT_RATIO): number {
@@ -27,7 +31,6 @@ export class TtlJitter {
       return Math.round(baseMs);
     }
     const span = high - low;
-    // A source outside [0, 1) or NaN must not push the TTL out of its bounds.
     const sample = this.random.next();
     const bounded = Number.isFinite(sample) && sample > 0 ? sample : 0;
     const offset = Math.min(Math.floor(bounded * (span + 1)), span);

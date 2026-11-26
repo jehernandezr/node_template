@@ -28,6 +28,7 @@ const List<TaskDraft> demoTasks = [
 ///
 /// Each instance keeps its own data: a new identity gets a new repository.
 final class FakeTasksRepository implements TasksRepository {
+  /// Demo repository with sample tasks and the failures of `DemoBehavior`.
   FakeTasksRepository({
     DemoBehavior? behavior,
     UuidV7Generator? ids,

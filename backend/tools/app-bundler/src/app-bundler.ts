@@ -22,10 +22,20 @@ export class AppBundler {
     private readonly plugins: readonly Plugin[],
   ) {}
 
+  /**
+   * Folder where a project's bundle is written.
+   * @param projectName Nx project of the app.
+   * @returns The output folder.
+   */
   outputDir(projectName: string): string {
     return join(this.workspaceRoot, 'backend', 'dist', projectName);
   }
 
+  /**
+   * Bundles an app entry point with esbuild, keeping the decorator metadata.
+   * @param app Project, entry point and output name.
+   * @returns The path of the bundle.
+   */
   async bundle(app: AppBundle): Promise<string> {
     const outdir = this.outputDir(app.projectName);
     await rm(outdir, { recursive: true, force: true });

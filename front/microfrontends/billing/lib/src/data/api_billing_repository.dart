@@ -11,6 +11,7 @@ import 'billing_repository.dart';
 /// it is sent. Problems reach the caller as [api.ApiErrorException], except
 /// `BILLING.INVOICE.NOT_FOUND`, which [invoice] answers as null.
 final class ApiBillingRepository implements BillingRepository {
+  /// Repository over the billing API through [_client].
   ApiBillingRepository({required this._client});
 
   final ApiClient _client;

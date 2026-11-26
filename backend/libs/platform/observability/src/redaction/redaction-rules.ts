@@ -7,15 +7,18 @@ import type { RedactionWordLists } from './redaction-word-lists.js';
 export class RedactionRules {
   constructor(readonly lists: RedactionWordLists) {}
 
-  /** Returns the platform default rules. Each call returns new lists. */
+  /**
+   * Returns the platform default rules. Each call returns new lists.
+   * Words that, as the last word of the key, name the secret itself (`accessToken`, `setCookie`, `userOtp`). `sessions` is not included: a list of sessions carries ids and dates, and the token of each one is hidden by its own key.
+   * Words that, at the start of the key, announce a secret value (`passwordConfirmation`, `secretValue`). `session` and `cookie` are not included: `sessionCount` or `cookieConsent` describe the secret, they do not contain it.
+   * Last words that never carry a secret: ids, instants and counts. With them `sessionId`, `apiKeyId`, `passwordChangedAt` or `tokenCount` stay visible, which is what is needed to diagnose a revocation or a password change.
+   * A hash or digest is as sensitive as what it summarizes when that is a secret (`tokenHash`, `codeHmac`): it can be used to test a guessed value.
+   * Compound names that only make sense together (`privateKey`, `signing_key`).
+   * `code` is sensitive only when qualified by one of these words: the one-time MFA, verification, recovery or reset codes (`mfaCode`, `verificationCode`, `oneTimeCode`, `recovery_codes`). `errorCode`, `statusCode` or `countryCode` stay visible.
+   * @returns The rules.
+   */
   static defaults(): RedactionRules {
     return new RedactionRules({
-      /**
-       * Words that, as the last word of the key, name the secret itself
-       * (`accessToken`, `setCookie`, `userOtp`). `sessions` is not included: a list of
-       * sessions carries ids and dates, and the token of each one is hidden by its own
-       * key.
-       */
       sensitiveLastWords: new Set([
         'token',
         'password',
@@ -40,11 +43,6 @@ export class RedactionRules {
         'cvc',
         'pan',
       ]),
-      /**
-       * Words that, at the start of the key, announce a secret value
-       * (`passwordConfirmation`, `secretValue`). `session` and `cookie` are not included:
-       * `sessionCount` or `cookieConsent` describe the secret, they do not contain it.
-       */
       sensitiveFirstWords: new Set([
         'password',
         'passwd',
@@ -59,17 +57,7 @@ export class RedactionRules {
         'cvv',
         'cvc',
       ]),
-      /**
-       * Last words that never carry a secret: ids, instants and counts.
-       * With them `sessionId`, `apiKeyId`, `passwordChangedAt` or `tokenCount` stay
-       * visible, which is what is needed to diagnose a revocation or a password
-       * change.
-       */
       publicLastWords: new Set(['id', 'ids', 'at', 'count', 'counts']),
-      /**
-       * A hash or digest is as sensitive as what it summarizes when that is a
-       * secret (`tokenHash`, `codeHmac`): it can be used to test a guessed value.
-       */
       digestWords: new Set(['hash', 'hashes', 'hmac', 'digest']),
       digestedSecrets: new Set([
         'token',
@@ -81,7 +69,6 @@ export class RedactionRules {
         'code',
         'key',
       ]),
-      /** Compound names that only make sense together (`privateKey`, `signing_key`). */
       sensitiveCompounds: new Set([
         'apikey',
         'privatekey',
@@ -90,12 +77,6 @@ export class RedactionRules {
         'accesskey',
         'encryptionkey',
       ]),
-      /**
-       * `code` is sensitive only when qualified by one of these words: the one-time
-       * MFA, verification, recovery or reset codes (`mfaCode`,
-       * `verificationCode`, `oneTimeCode`, `recovery_codes`). `errorCode`,
-       * `statusCode` or `countryCode` stay visible.
-       */
       codeWords: new Set(['code', 'codes']),
       secretCodeQualifiers: new Set([
         'mfa',
@@ -128,7 +109,11 @@ export class RedactionRules {
     });
   }
 
-  /** Returns new rules with additional sensitive words (lowercase) as the last word of the key. */
+  /**
+   * Returns new rules with additional sensitive words (lowercase) as the last word of the key.
+   * @param extraSensitiveLastWords Words to add.
+   * @returns The new rules.
+   */
   extend(extraSensitiveLastWords: readonly string[]): RedactionRules {
     return new RedactionRules({
       ...this.lists,

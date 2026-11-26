@@ -61,7 +61,7 @@ class ScriptedCleanup extends OperationHandler<
     return this.calls;
   }
 
-  async handle(
+  override async handle(
     input: TenantMoveRef,
     context: CallMeta,
   ): Promise<HandlerResult<TenantMoveAck>> {
@@ -182,7 +182,6 @@ describe('TenantMoveCleanupJob', () => {
 
     await job.run(context());
 
-    // More calls than the attempts the client makes on its own in a single call.
     expect(handlers[0]?.callCount).toBe(5);
     expect(handlers[0]?.keys.size).toBeGreaterThan(1);
     expect(log.find(OLD_MOVE)?.status).toBe(TenantMoveStatus.CleanedUp);

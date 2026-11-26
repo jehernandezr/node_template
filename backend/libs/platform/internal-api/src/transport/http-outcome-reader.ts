@@ -37,6 +37,8 @@ export class HttpOutcomeReader {
    * - Any other status: `protocol-violation` `unexpected-status`, without a code.
    * On non-200 responses it discards the body to free the connection.
    * It never throws.
+   * @param response HTTP response.
+   * @returns The outcome.
    */
   async read(response: Response): Promise<Outcome<unknown>> {
     if (response.status === HttpOutcomeReader.OK) {
@@ -64,6 +66,9 @@ export class HttpOutcomeReader {
     return CallOutcome.protocolViolation(InternalApiReason.UnexpectedStatus);
   }
 
+  /**
+   * The discriminant was validated above: each result covers the rest of the shape.
+   */
   private async readBody(response: Response): Promise<Outcome<unknown>> {
     let body: unknown;
     try {
@@ -79,18 +84,18 @@ export class HttpOutcomeReader {
         'kind' in outcome &&
         HttpOutcomeReader.KNOWN_KINDS.has(outcome.kind)
       ) {
-        // The discriminant was validated above: each result covers the rest of the shape.
         return outcome as Outcome<unknown>;
       }
     }
     return CallOutcome.protocolViolation(InternalApiReason.InvalidResponse);
   }
 
+  /**
+   * The body of a non-200 response adds nothing; it is only discarded to free the connection.
+   */
   private static async discard(response: Response): Promise<void> {
     try {
       await response.body?.cancel();
-    } catch {
-      // The body of a non-200 response adds nothing; it is only discarded to free the connection.
-    }
+    } catch {}
   }
 }

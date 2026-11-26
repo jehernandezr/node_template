@@ -1,8 +1,8 @@
 import { Clock } from './clock.js';
 
-/** System clock. */
+/** `Clock` over the process time, for production code. */
 export class SystemClock extends Clock {
-  now(): Date {
+  override now(): Date {
     return new Date();
   }
 }

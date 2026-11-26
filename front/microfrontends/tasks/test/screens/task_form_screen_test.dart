@@ -66,7 +66,6 @@ void main() {
     await TasksTestApp.pump(tester, repository, location: '/tasks/$id');
     await tester.pumpAndSettle();
 
-    // The next call fails: the load of the edit form.
     behavior.failNext(ApiErrorException(ProblemFixtures.unavailable()));
     await tester.tap(find.text('Editar'));
     await tester.pumpAndSettle();

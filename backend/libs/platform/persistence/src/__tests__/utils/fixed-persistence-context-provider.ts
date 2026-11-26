@@ -9,7 +9,7 @@ export class FixedPersistenceContextProvider extends PersistenceContextProvider 
     this.context = context;
   }
 
-  current(): PersistenceContext {
+  override current(): PersistenceContext {
     return this.context;
   }
 }

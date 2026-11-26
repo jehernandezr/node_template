@@ -10,6 +10,11 @@ import { TenantDirectory } from '../domain/tenant-directory.js';
 export class RelocateTenant {
   constructor(private readonly directory: TenantDirectory) {}
 
+  /**
+   * Points the catalog indexes of a moved tenant to its new region.
+   * @param tenantId Moved tenant.
+   * @param region New region.
+   */
   async execute(tenantId: string, region: string): Promise<void> {
     await this.directory.relocate(tenantId, region);
   }

@@ -66,7 +66,7 @@ return 1
    * receives it can already confirm the revocation.
    * {@inheritDoc AuthStateWriter.revokeSession}
    */
-  async revokeSession(
+  override async revokeSession(
     sessionId: string,
     ttlMs: number,
     reason: RevocationReason,
@@ -99,7 +99,7 @@ return 1
   }
 
   /** {@inheritDoc AuthStateWriter.setUserEpoch} */
-  async setUserEpoch(userId: string, epoch: Epoch): Promise<void> {
+  override async setUserEpoch(userId: string, epoch: Epoch): Promise<void> {
     await this.executor.run(ValkeyCommand.Set, [
       AuthStateKey.userEpoch(userId),
       ValkeyAuthJson.encode(epoch),
@@ -111,7 +111,7 @@ return 1
    * {@inheritDoc AuthStateWriter.raiseUserRevocation}
    * @throws InvalidArgumentError if `revokedBefore` is not a non-negative safe integer.
    */
-  async raiseUserRevocation(
+  override async raiseUserRevocation(
     userId: string,
     revokedBefore: number,
   ): Promise<void> {
@@ -129,7 +129,7 @@ return 1
   }
 
   /** {@inheritDoc AuthStateWriter.setTenantEpoch} */
-  async setTenantEpoch(tenantId: string, epoch: Epoch): Promise<void> {
+  override async setTenantEpoch(tenantId: string, epoch: Epoch): Promise<void> {
     await this.executor.run(ValkeyCommand.Set, [
       AuthStateKey.tenantEpoch(tenantId),
       ValkeyAuthJson.encode(epoch),
@@ -137,7 +137,7 @@ return 1
   }
 
   /** {@inheritDoc AuthStateWriter.setPermissionVersion} */
-  async setPermissionVersion(
+  override async setPermissionVersion(
     tenantId: string,
     userId: string | undefined,
     version: number,
@@ -157,7 +157,7 @@ return 1
   }
 
   /** {@inheritDoc AuthStateWriter.putAccessGrant} */
-  async putAccessGrant(
+  override async putAccessGrant(
     tenantId: string,
     userId: string,
     grant: AccessGrant,
@@ -171,7 +171,7 @@ return 1
   }
 
   /** {@inheritDoc AuthStateWriter.putApiKey} */
-  async putApiKey(
+  override async putApiKey(
     prefix: string,
     secretHash: string,
     principal: ApiKeyPrincipal,
@@ -189,7 +189,7 @@ return 1
   }
 
   /** {@inheritDoc AuthStateWriter.dropApiKey} */
-  async dropApiKey(prefix: string): Promise<void> {
+  override async dropApiKey(prefix: string): Promise<void> {
     await this.executor.run(ValkeyCommand.Del, [AuthStateKey.apiKey(prefix)]);
   }
 }

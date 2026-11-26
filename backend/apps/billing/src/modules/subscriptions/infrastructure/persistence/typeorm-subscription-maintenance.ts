@@ -25,7 +25,7 @@ export class TypeOrmSubscriptionMaintenance extends SubscriptionMaintenance {
     super();
   }
 
-  dueForClosing(today: string): Promise<readonly string[]> {
+  override dueForClosing(today: string): Promise<readonly string[]> {
     return this.tenantsWhere((manager) =>
       manager
         .createQueryBuilder(SubscriptionEntity, 'subscription')
@@ -39,7 +39,7 @@ export class TypeOrmSubscriptionMaintenance extends SubscriptionMaintenance {
     );
   }
 
-  pastDueBefore(cutoff: Date): Promise<readonly string[]> {
+  override pastDueBefore(cutoff: Date): Promise<readonly string[]> {
     return this.tenantsWhere((manager) =>
       manager
         .createQueryBuilder(SubscriptionEntity, 'subscription')

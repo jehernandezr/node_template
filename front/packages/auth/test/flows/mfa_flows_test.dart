@@ -141,7 +141,6 @@ void main() {
       final flow = SignInFlow(connection);
       await flow.signIn(email: 'ana@example.com', password: 'x');
 
-      // Without a configured challenge the fake answers MFA.TOKEN_INVALID.
       await flow.requestChallenge(MfaFactor.totp);
 
       expect(flow.state.errorCode, IdentityErrorCode.mfaTokenInvalid.code);
@@ -220,7 +219,6 @@ void main() {
       final flow = StepUpFlow(manager);
       await flow.start();
 
-      // Without a configured challenge the fake answers METHOD_UNAVAILABLE.
       await flow.requestChallenge(MfaFactor.emailOtp);
 
       expect(flow.state.errorCode, IdentityErrorCode.mfaMethodUnavailable.code);
@@ -317,7 +315,6 @@ void main() {
       await flow.signIn(email: 'ana@example.com', password: 'x');
       await flow.requestChallenge(MfaFactor.totp);
 
-      // Without a configured verify result the fake answers CODE_INVALID.
       await flow.verify('123456');
 
       final state = flow.state;

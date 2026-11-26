@@ -13,7 +13,7 @@ export class HmacEmailFingerprinter extends EmailFingerprinter {
     this.key = settings.values.IDENTITY_EMAIL_PEPPER.reveal();
   }
 
-  fingerprint(normalizedEmail: string): Buffer {
+  override fingerprint(normalizedEmail: string): Buffer {
     return createHmac('sha256', this.key).update(normalizedEmail).digest();
   }
 }

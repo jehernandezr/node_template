@@ -9,11 +9,20 @@ import type { ShardConnection } from '@platform/persistence';
 export class ShardBinding {
   private readonly storage = new AsyncLocalStorage<ShardConnection>();
 
+  /**
+   * Runs `fn` bound to a fixed shard connection.
+   * @param connection Shard connection.
+   * @param fn Work to run.
+   * @returns What `fn` returns.
+   */
   run<T>(connection: ShardConnection, fn: () => Promise<T>): Promise<T> {
     return this.storage.run(connection, fn);
   }
 
-  /** The fixed shard of the block that wraps the call, or `undefined` if there is none. */
+  /**
+   * The fixed shard of the block that wraps the call, or `undefined` if there is none.
+   * @returns The bound shard, or `undefined`.
+   */
   current(): ShardConnection | undefined {
     return this.storage.getStore();
   }

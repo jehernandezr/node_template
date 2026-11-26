@@ -12,6 +12,8 @@ import { TenantMoveError } from '../../errors/tenant-move.error.js';
 export class ForeignKeyRound {
   /**
    * Runs `work` and returns its result.
+   * @param work Copy round.
+   * @returns What `work` returns.
    * @throws TenantMoveError `RoundPending` when `work` fails with a foreign key violation; any other error as is.
    */
   static async run<T>(work: () => Promise<T>): Promise<T> {

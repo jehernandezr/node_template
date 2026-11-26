@@ -127,18 +127,12 @@ void main() {
         final steps = _Steps(tester);
 
         await steps.demoSignIn('Entrar como administrador del tenant');
-        // Open the list once so its deferred library and seed data are ready.
         host.router.go('/tasks');
         await steps.waitFor(find.text('Revisar facturas de proveedores'));
 
-        // The admin's repository lives in the tasks scope of this identity.
-        // Create the task through that same scope, then check the admin's
-        // list shows it.
         final adminRepository = host.runtime
             .scopeFor(const MicrofrontendId('tasks'))
             .get<TasksRepository>((services) => FakeTasksRepository());
-        // The fake repository waits on a real delay, so run it outside the
-        // fake clock.
         await tester.runAsync(
           () => adminRepository.create(const TaskDraft(title: adminTask)),
         );

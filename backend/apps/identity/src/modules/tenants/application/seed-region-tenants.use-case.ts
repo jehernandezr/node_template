@@ -28,6 +28,7 @@ export class SeedRegionTenants {
     private readonly settings: IdentitySettings,
   ) {}
 
+  /** Creates the fixed tenants of the region when they are missing; a deployment step. */
   async execute(): Promise<void> {
     const region = this.settings.values.IDENTITY_REGION;
     await this.seed(

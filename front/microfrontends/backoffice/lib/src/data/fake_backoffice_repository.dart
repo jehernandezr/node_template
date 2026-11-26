@@ -11,6 +11,7 @@ import 'backoffice_repository.dart';
 /// [DemoBehavior] it receives; each call is tagged with its
 /// [BackofficeOperation] so a failure can target one of them.
 final class FakeBackofficeRepository implements BackofficeRepository {
+  /// Demo repository with sample data and the failures of [_behavior].
   FakeBackofficeRepository({required this._behavior})
     : _tenants = List.of(_seedTenants),
       _tenantAudit = {

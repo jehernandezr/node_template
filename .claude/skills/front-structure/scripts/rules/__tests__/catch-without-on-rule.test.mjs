@@ -78,40 +78,27 @@ describe('CatchWithoutOnRule', () => {
     );
   });
 
-  it('accepts a catch-all marked on the line before', () => {
+  it('accepts a catch-all declared with on Object', () => {
     const rule = new CatchWithoutOnRule();
-    const text = ['// catch-all: reports and continues', '} catch (e) {'].join(
-      '\n',
-    );
     assert.deepEqual(
-      rule.check('front/packages/shell_core/lib/src/a.dart', text),
+      rule.check(
+        'front/packages/shell_core/lib/src/a.dart',
+        '} on Object catch (e) {',
+      ),
       [],
     );
   });
 
-  it('flags a catch-all whose mark has no reason', () => {
+  it('flags a catch-all preceded by a comment', () => {
     const rule = new CatchWithoutOnRule();
-    const text = ['// catch-all:', '} catch (e) {'].join('\n');
+    const text = ['// catch-all: reports and continues', '} catch (e) {'].join(
+      '\n',
+    );
     const [violation, ...rest] = rule.check(
       'front/packages/shell_core/lib/src/a.dart',
       text,
     );
     assert.equal(rest.length, 0);
     assert.equal(violation.line, 2);
-  });
-
-  it('flags a catch-all whose mark is not on the line before', () => {
-    const rule = new CatchWithoutOnRule();
-    const text = [
-      '// catch-all: reports and continues',
-      '',
-      '} catch (e) {',
-    ].join('\n');
-    const [violation, ...rest] = rule.check(
-      'front/packages/shell_core/lib/src/a.dart',
-      text,
-    );
-    assert.equal(rest.length, 0);
-    assert.equal(violation.line, 3);
   });
 });

@@ -39,7 +39,7 @@ export class ConfirmEmailChange {
   ) {}
 
   /**
-   * Confirms an email change.
+   * Moves the account to the new address once the token emailed there comes back from the same user.
    * @param ref User of the session.
    * @param token Token emailed to the new address.
    * @throws IdentityError `IDENTITY.USER.EMAIL_VERIFICATION_INVALID` if the token is not this user's or the

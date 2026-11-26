@@ -12,7 +12,7 @@ export class SignalRecordingHealthCheck extends HealthCheckable {
     super();
   }
 
-  check(signal?: AbortSignal): Promise<HealthReport> {
+  override check(signal?: AbortSignal): Promise<HealthReport> {
     this.received = signal;
     return Promise.resolve({ state: HealthState.Up });
   }

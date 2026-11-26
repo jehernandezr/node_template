@@ -20,11 +20,20 @@ export class RequestContextStore {
 
   constructor(private readonly tracing: Tracing) {}
 
-  /** Opens a context. Validates and normalizes the ids only once; never throws for malformed ids. */
+  /**
+   * Opens a context. Validates and normalizes the ids only once; never throws for malformed ids.
+   * @param init Ids and tenant of the context.
+   * @param fn Work to run inside it.
+   * @returns What `fn` returns.
+   */
   run<T>(init: RequestContextInit, fn: () => T): T {
     return this.storage.run(this.normalize(init), fn);
   }
 
+  /**
+   * Reads the context of the request, message or job in course. When the active span carries a valid trace, the warning about the received trace value no longer applies and is dropped.
+   * @returns The context, or `undefined` outside one.
+   */
   current(): RequestContextData | undefined {
     const stored = this.storage.getStore();
     if (stored === undefined) {
@@ -34,7 +43,6 @@ export class RequestContextStore {
     if (span === undefined) {
       return stored;
     }
-    // The active span carries a valid trace: the warning about the received value no longer applies.
     const withoutInvalidFlag = Object.fromEntries(
       Object.entries(stored).filter(([key]) => key !== 'traceIdInvalid'),
     ) as RequestContextData;

@@ -567,7 +567,6 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     const suspended = await app
       .internal()
       .invoke(SuspendTenantOperation, { tenantId });
-    // Each replica keeps the epochs in memory for a few seconds: the suspension shows once that cache expires.
     await new Promise((resolve) =>
       setTimeout(resolve, AuthModuleRules.DEFAULT_CACHE_TTL_MS + 500),
     );

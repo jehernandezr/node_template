@@ -5,7 +5,7 @@ import type { SecurityAlert } from '../../domain/security-alert.js';
 export class InMemorySecurityAlerts extends SecurityAlerts {
   readonly raised: SecurityAlert[] = [];
 
-  async raise(alert: SecurityAlert): Promise<void> {
+  override async raise(alert: SecurityAlert): Promise<void> {
     this.raised.push(alert);
   }
 }

@@ -34,7 +34,6 @@ void main() {
     expect(seen.body, '{"email":"ana@example.com"}');
     expect(response.statusCode, 201);
     expect(response.headers['content-type'], 'application/json');
-    // UTF-8 even without a charset in the content type.
     expect(response.body, '{"name":"Sesión"}');
   });
 

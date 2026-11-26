@@ -12,7 +12,12 @@ export class LoginAttemptPartitions {
   static readonly MONTHS_AHEAD = 3;
   private static readonly MONTHLY = /^login_attempts_(\d{4})(\d{2})$/;
 
-  /** Creates the missing partitions and drops the expired ones; returns the names of the dropped ones. */
+  /**
+   * Creates the missing partitions and drops the expired ones; returns the names of the dropped ones.
+   * @param manager Entity manager of the shard.
+   * @param now Current instant.
+   * @returns The dropped partitions.
+   */
   async maintain(manager: EntityManager, now: Date): Promise<string[]> {
     await manager.query(`SELECT platform_ensure_partitions($1, 'month', $2)`, [
       LoginAttemptPartitions.TABLE,
@@ -31,7 +36,12 @@ export class LoginAttemptPartitions {
     return expired;
   }
 
-  /** A partition expires when its whole month falls before the retention cutoff. */
+  /**
+   * A partition expires when its whole month falls before the retention cutoff.
+   * @param name Partition name.
+   * @param now Current instant.
+   * @returns `true` when expired.
+   */
   isExpired(name: string, now: Date): boolean {
     const match = LoginAttemptPartitions.MONTHLY.exec(name);
     if (match === null) {

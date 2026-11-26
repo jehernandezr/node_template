@@ -15,7 +15,12 @@ export class TenantReader {
     private readonly scopes: ShardScopes,
   ) {}
 
-  /** @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if it does not exist. */
+  /**
+   * Reads a tenant that must exist.
+   * @param tenantId Tenant to read.
+   * @returns The tenant.
+   * @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if it does not exist.
+   */
   async get(tenantId: string): Promise<TenantSnapshot> {
     const tenant = await this.find(tenantId);
     if (tenant === undefined) {
@@ -24,7 +29,11 @@ export class TenantReader {
     return tenant;
   }
 
-  /** A tenant without a placement in the directory does not exist yet. */
+  /**
+   * A tenant without a placement in the directory does not exist yet.
+   * @param tenantId Tenant to read.
+   * @returns The tenant, or `undefined`.
+   */
   async find(tenantId: string): Promise<TenantSnapshot | undefined> {
     try {
       const tenant = await this.scopes.inTenantShard(tenantId, () =>

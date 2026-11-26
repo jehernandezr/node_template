@@ -32,7 +32,7 @@ return redis.call('ZCARD', KEYS[1])
     super();
   }
 
-  async connected(
+  override async connected(
     channel: string,
     connectionId: string,
     ttlMs: number,
@@ -44,14 +44,17 @@ return redis.call('ZCARD', KEYS[1])
     );
   }
 
-  async disconnected(channel: string, connectionId: string): Promise<void> {
+  override async disconnected(
+    channel: string,
+    connectionId: string,
+  ): Promise<void> {
     await this.executor.run(ValkeyCommand.Zrem, [
       this.key(channel),
       connectionId,
     ]);
   }
 
-  async isOnline(channel: string): Promise<boolean> {
+  override async isOnline(channel: string): Promise<boolean> {
     const reply = await this.executor.script(
       ValkeyPresenceTracker.ONLINE,
       [this.key(channel)],

@@ -14,10 +14,13 @@ import 'widgets/run_status_label.dart';
 /// Route `/reports/runs`: the runs of the tenant, newest first. It keeps
 /// reading them while one is queued or running.
 class ReportRunsScreen extends StatelessWidget {
+  /// List of runs backed by [repository].
   const ReportRunsScreen({super.key, required this.repository});
 
+  /// Source of the runs.
   final ReportsRepository repository;
 
+  /// A deep link has nothing to pop: go to the catalog.
   @override
   Widget build(BuildContext context) => ControllerBuilder<ReportRunsController>(
     key: ObjectKey(repository),
@@ -26,7 +29,6 @@ class ReportRunsScreen extends StatelessWidget {
       final l10n = ReportsLocalizations.of(context);
       return AppPage(
         title: l10n.runsTitle,
-        // A deep link has nothing to pop: go to the catalog.
         onBack: () => context.go(ReportsPaths.catalog),
         body: AsyncValueView<List<ReportRunSummary>>(
           value: controller.runs,

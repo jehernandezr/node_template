@@ -9,9 +9,8 @@ import { DuplicateHealthCheckError } from '../errors/duplicate-health-check.erro
 import type { HealthSummary } from './health-summary.js';
 
 /**
- * Collects the dependencies that report their health. Each network adapter
- * registers itself in its `onModuleInit`; the `/health/live` and `/health/ready` endpoints
- * (from `@platform/http`) query `checkAll`.
+ * Collects the dependencies that report their health. Each network adapter registers itself in its
+ * `onModuleInit`; the service health endpoints query `checkAll`.
  */
 export class HealthRegistry {
   /** Default timeout of each check, in milliseconds. */
@@ -31,7 +30,10 @@ export class HealthRegistry {
     Guard.default.positiveInteger('timeoutMs', timeoutMs);
   }
 
-  /** Adds a dependency. Throws `DuplicateHealthCheckError` if one with that `name` already exists. */
+  /**
+   * Adds a dependency. Throws `DuplicateHealthCheckError` if one with that `name` already exists.
+   * @param check Dependency to add.
+   */
   register(check: HealthCheckable): void {
     if (this.checks.has(check.name)) {
       throw new DuplicateHealthCheckError(check.name);
@@ -43,6 +45,8 @@ export class HealthRegistry {
    * Checks all of them in parallel, each with its timeout and with `signal`.
    * One that throws or times out counts as `Down` and its `detail` is the name of the
    * error, never the message.
+   * @param signal Abort signal of the caller.
+   * @returns The summary of every check.
    */
   async checkAll(signal?: AbortSignal): Promise<HealthSummary> {
     const entries = await Promise.all(

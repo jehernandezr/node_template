@@ -10,7 +10,7 @@ export class InMemoryQuotaChecker extends QuotaChecker {
     this.usage.set(`${tenantId}:${metric}`, { limit, used });
   }
 
-  async check(
+  override async check(
     tenantId: string,
     metric: UsageMetric,
     requested = 1,

@@ -8,7 +8,7 @@ export class RecordingHttpConfigurer extends HttpApplicationConfigurer {
     super();
   }
 
-  configure(app: INestApplication): void {
+  override configure(app: INestApplication): void {
     void app;
     this.steps.push(BootstrapStep.Configure);
   }

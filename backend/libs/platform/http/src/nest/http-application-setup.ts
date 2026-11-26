@@ -18,6 +18,10 @@ export class HttpApplicationSetup {
   /** Nest does not register its parser if one with that name already exists; this one never applies to a request. */
   private static readonly NO_MEDIA_TYPE = (): boolean => false;
 
+  /**
+   * Applies CORS, security headers, body limits and the error filter to the application.
+   * @param app Nest application.
+   */
   configure(app: INestApplication): void {
     if (!HttpApplicationSetup.isExpress(app)) {
       throw new Error('HttpApplicationSetup only supports the Express adapter');

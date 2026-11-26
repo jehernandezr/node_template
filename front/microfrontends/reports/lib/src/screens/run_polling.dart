@@ -5,6 +5,7 @@ import 'dart:async';
 /// The owner calls [follow] after every read with whether something is still
 /// pending, and [dispose] when it goes away: no read starts after that.
 final class RunPolling {
+  /// Reads the run every [interval] until it ends.
   RunPolling({required this.interval, required this._read});
 
   /// Wait between two reads.
@@ -25,6 +26,7 @@ final class RunPolling {
   /// Whether a read is scheduled.
   bool get isScheduled => _timer?.isActive ?? false;
 
+  /// Stops reading.
   void dispose() {
     _disposed = true;
     _timer?.cancel();

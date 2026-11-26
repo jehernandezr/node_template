@@ -43,6 +43,7 @@ export class TenantMoveModule {
    * Registers the move steps of the service over its manifest and exposes its move operations.
    * @param options The contract operations, the manifest class, the optional listener and, in `imports`, the
    *   service modules whose exports the listener injects.
+   * @returns The module.
    */
   static forFeature(options: TenantMoveFeatureOptions): DynamicModule {
     const operations = TenantMoveOperationsFactory.create(options.operations);

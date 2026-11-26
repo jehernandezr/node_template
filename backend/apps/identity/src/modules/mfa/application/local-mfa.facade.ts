@@ -34,17 +34,17 @@ export class LocalMfaFacade extends MfaFacade {
   }
 
   /** {@inheritDoc MfaFacade.startPending} */
-  startPending(input: StartPendingInput): Promise<PendingMfa> {
+  override startPending(input: StartPendingInput): Promise<PendingMfa> {
     return this.start.execute(input);
   }
 
   /** {@inheritDoc MfaFacade.denyChallenge} */
-  async denyChallenge(challengeId: string): Promise<void> {
+  override async denyChallenge(challengeId: string): Promise<void> {
     await this.challenges.consume(challengeId);
   }
 
   /** {@inheritDoc MfaFacade.pending} */
-  async pending(
+  override async pending(
     mfaToken: string,
     purpose: PendingPurpose,
   ): Promise<PendingAuthentication | undefined> {
@@ -53,7 +53,7 @@ export class LocalMfaFacade extends MfaFacade {
   }
 
   /** {@inheritDoc MfaFacade.completeSignIn} */
-  completeSignIn(
+  override completeSignIn(
     mfaToken: string,
     methods: readonly AuthMethodReference[],
     devicePublicKey?: string,
@@ -62,7 +62,7 @@ export class LocalMfaFacade extends MfaFacade {
   }
 
   /** {@inheritDoc MfaFacade.completeStepUp} */
-  completeStepUp(
+  override completeStepUp(
     mfaToken: string,
     method: AuthMethodReference,
   ): Promise<StepUpResult> {
@@ -70,7 +70,7 @@ export class LocalMfaFacade extends MfaFacade {
   }
 
   /** {@inheritDoc MfaFacade.forget} */
-  async forget(ref: UserRef): Promise<void> {
+  override async forget(ref: UserRef): Promise<void> {
     await this.scopes.inUserShard(ref, () => this.factors.forget(ref.userId));
   }
 }

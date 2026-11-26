@@ -16,12 +16,14 @@ import 'widgets/account_widgets.dart';
 
 /// Trusted devices, with the verifier device marked.
 class DevicesScreen extends StatelessWidget {
+  /// Devices screen backed by [repository].
   const DevicesScreen({
     super.key,
     required this.repository,
     required this.requestStepUp,
   });
 
+  /// Source of the devices.
   final AccountRepository repository;
 
   /// The shell's step-up, for removing the trust of a device.

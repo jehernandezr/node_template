@@ -23,6 +23,8 @@ export class SagaFlow<TState> {
    * Adds a step that calls a contract's operation. Its compensation is
    * the contract's `compensatedBy`; `Compensation.None` and read-only
    * operations have none. The input and output types come from their schemas.
+   * @param operation Operation contract.
+   * @returns The step config.
    */
   step<D extends OperationDefinition>(
     operation: D,
@@ -52,6 +54,8 @@ export class SagaFlow<TState> {
    * - a step after the pivot is never compensated and its operation is
    *   idempotent (it is retried until it completes).
    * @internal Called by `SagaDefinition.build()`.
+   * @param type Saga type.
+   * @returns The compiled saga.
    */
   compile(type: string): CompiledSaga<TState> {
     if (this.drafts.length === 0) {

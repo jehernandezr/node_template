@@ -23,6 +23,11 @@ import { SES_CLIENT, SNS_CLIENT, SQS_CLIENT } from './aws.tokens.js';
  * of the library has no decorators; only `AwsLifecycle` is a Nest class.
  */
 export class AwsProviders {
+  /**
+   * Builds the AWS providers of the enabled adapters.
+   * @param options Region, endpoint and adapters to enable.
+   * @returns The providers.
+   */
   static build(options: AwsModuleOptions): Provider[] {
     const providers: Provider[] = [
       { provide: AwsClientFactory, useFactory: () => new AwsClientFactory() },
@@ -121,7 +126,11 @@ export class AwsProviders {
     return providers;
   }
 
-  /** What other modules receive: the clients, the names and the ports that were registered. */
+  /**
+   * What other modules receive: the clients, the names and the ports that were registered.
+   * @param options Region, endpoint and adapters to enable.
+   * @returns The tokens.
+   */
   static exports(
     options: AwsModuleOptions,
   ): Array<symbol | Type<unknown> | Abstract<unknown>> {

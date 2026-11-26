@@ -12,6 +12,11 @@ import { ReportRunEntity } from './entities/report-run.entity.js';
  * `RowReportResultStore`. Pure utility.
  */
 export class ReportRunMapper {
+  /**
+   * Rebuilds a run from its row.
+   * @param row Stored row.
+   * @returns The domain run.
+   */
   static toDomain(row: ReportRunEntity): ReportRun {
     return ReportRun.rehydrate({
       id: row.id,
@@ -32,6 +37,11 @@ export class ReportRunMapper {
     });
   }
 
+  /**
+   * Turns a run into its row.
+   * @param run Domain run.
+   * @returns The row to store.
+   */
   static toRow(run: ReportRun): ReportRunEntity {
     const state = run.snapshot();
     return Object.assign(new ReportRunEntity(), {

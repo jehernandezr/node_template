@@ -2,6 +2,7 @@ import { EmailTemplate as EmailTemplateKey } from '@contracts/notifications';
 import type { EmailCopy } from './email-copy.js';
 import { EmailTemplate } from './email-template.js';
 
+/** Email with a one-time code for the second factor. */
 export class MfaCodeTemplate extends EmailTemplate {
   readonly key = EmailTemplateKey.MfaCode;
   readonly version = 1;

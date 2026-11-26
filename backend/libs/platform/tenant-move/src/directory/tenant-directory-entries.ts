@@ -36,6 +36,9 @@ export class TenantDirectoryEntries {
   ) {}
 
   /**
+   * Records a tenant placement in this service's directory.
+   * @param entry Tenant with its groups.
+   * @returns The acknowledgment.
    * @throws TenantMoveError `UnknownTarget` if a group does not lead to a shard in this service's directory.
    * @throws TenantMoveError `ShardTaken` if the group collides with a dedicated tenant, or the tenant is dedicated and the
    *   shard is occupied.
@@ -77,6 +80,9 @@ export class TenantDirectoryEntries {
   }
 
   /**
+   * Removes a tenant from this service's directory.
+   * @param ref Tenant to remove.
+   * @returns The acknowledgment.
    * @throws TenantMoveError `MoveInProgress` if the tenant has its gate closed by a move.
    * @throws TenantMoveError `TenantHasData` if the tenant already has rows in the service tables.
    */
@@ -103,7 +109,7 @@ export class TenantDirectoryEntries {
     throw TenantDirectoryEntries.contended(ref.tenantId);
   }
 
-  /** @throws TenantMoveError `MoveInProgress` o `TenantHasData`. */
+  /** @throws TenantMoveError `MoveInProgress` or `TenantHasData`. */
   private async assertRemovable(placement: TenantPlacement): Promise<void> {
     if (placement.status === TenantStatus.Migrating) {
       throw new TenantMoveError(

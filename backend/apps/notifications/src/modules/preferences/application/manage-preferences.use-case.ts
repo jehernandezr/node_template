@@ -24,14 +24,19 @@ export class ManagePreferences extends PreferencesFacade {
     super();
   }
 
-  async get(user: UserRef): Promise<NotificationPreferences> {
+  override async get(user: UserRef): Promise<NotificationPreferences> {
     const saved = await this.shard.inUserShard(user, () =>
       this.preferences.find(user.userId),
     );
     return saved ?? NotificationPreferences.of(ManagePreferences.DEFAULTS);
   }
 
-  /** @throws InvalidQuietHoursError if the schedule is not valid; saves nothing. */
+  /**
+   * Saves the user's channels per type and quiet hours.
+   * @param user Owner of the preferences.
+   * @param view Preferences to save.
+   * @throws InvalidQuietHoursError if the schedule is not valid; saves nothing.
+   */
   async save(user: UserRef, view: PreferencesView): Promise<void> {
     const preferences = NotificationPreferences.of(view);
     await this.shard.inUserShard(user, () =>
@@ -39,7 +44,7 @@ export class ManagePreferences extends PreferencesFacade {
     );
   }
 
-  erase(user: UserRef): Promise<number> {
+  override erase(user: UserRef): Promise<number> {
     return this.shard.inUserShard(user, () =>
       this.preferences.erase(user.userId),
     );

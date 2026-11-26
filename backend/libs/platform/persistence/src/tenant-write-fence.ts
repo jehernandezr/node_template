@@ -25,6 +25,7 @@ export class TenantWriteFence {
    * SQL condition that leaves out the rows of the tenants with a barrier on this shard, for maintenance tasks.
    * @param tenantExpression SQL expression with the tenant id of the row, qualified with its table or alias (for
    *   example `"tasks"."tenant_id"`): unqualified, `tenant_id` would be the barrier column.
+   * @returns The SQL condition.
    */
   static unfenced(tenantExpression: string): string {
     return `NOT EXISTS (SELECT 1 FROM tenant_write_fences twf WHERE twf.tenant_id = (${tenantExpression})::text)`;
@@ -32,6 +33,8 @@ export class TenantWriteFence {
 
   /**
    * Takes the tenant's shared lock in the session and checks that the tenant has no barrier.
+   * @param runner Session of the write.
+   * @param tenantId Tenant written.
    * @throws ShardingError `TenantMigrating` if it has one; in that case it has already released the lock.
    */
   async admit(runner: QueryRunner, tenantId: string): Promise<void> {
@@ -52,7 +55,11 @@ export class TenantWriteFence {
     }
   }
 
-  /** Releases the shared lock that `admit` took in the same session. */
+  /**
+   * Releases the shared lock that `admit` took in the same session.
+   * @param runner Session of the write.
+   * @param tenantId Tenant written.
+   */
   async leave(runner: QueryRunner, tenantId: string): Promise<void> {
     await runner.query(
       `SELECT pg_advisory_unlock_shared(${TenantWriteFence.LOCK_KEY})`,
@@ -63,6 +70,7 @@ export class TenantWriteFence {
   /**
    * Inside a maintenance transaction: takes the shard maintenance lock until the end of the
    * transaction and checks that no relocation is halfway through on it.
+   * @param manager Manager of the maintenance transaction.
    * @throws ShardingError `TenantMigrating` if some tenant has an unpivoted barrier; the maintenance is repeated in
    *   the next run.
    */
@@ -83,6 +91,9 @@ export class TenantWriteFence {
    * Raises the tenant barrier for the relocation and waits for the write transactions and the
    * maintenance tasks that had already entered to finish. On return, no write of the tenant can reach this shard.
    * Idempotent; if the tenant had the barrier of a previous relocation, it becomes this one's.
+   * @param dataSource Source shard.
+   * @param tenantId Moving tenant.
+   * @param moveId Relocation.
    */
   async raise(
     dataSource: DataSource,
@@ -110,7 +121,12 @@ export class TenantWriteFence {
     }
   }
 
-  /** Records that the relocation already pivoted: the tenant lives on another shard and its rows here only await cleanup. */
+  /**
+   * Records that the relocation already pivoted: the tenant lives on another shard and its rows here only await cleanup.
+   * @param dataSource Source shard.
+   * @param tenantId Moved tenant.
+   * @param moveId Relocation.
+   */
   async markSwitched(
     dataSource: DataSource,
     tenantId: string,
@@ -122,7 +138,12 @@ export class TenantWriteFence {
     );
   }
 
-  /** Returns the relocation that raised the tenant barrier on this shard, or `undefined` if there is no barrier. */
+  /**
+   * Returns the relocation that raised the tenant barrier on this shard, or `undefined` if there is no barrier.
+   * @param dataSource Shard to read.
+   * @param tenantId Tenant to check.
+   * @returns The move id, or `undefined`.
+   */
   async raisedBy(
     dataSource: DataSource,
     tenantId: string,
@@ -134,7 +155,12 @@ export class TenantWriteFence {
     return rows[0]?.move_id;
   }
 
-  /** Returns the relocation that raised a barrier here and has not pivoted yet, or `undefined` if none is in flight. */
+  /**
+   * Returns the relocation that raised a barrier here and has not pivoted yet, or `undefined` if none is in flight.
+   * @param dataSource Shard to read.
+   * @param tenantId Tenant to check.
+   * @returns The move id, or `undefined`.
+   */
   async unswitchedBy(
     dataSource: DataSource,
     tenantId: string,
@@ -146,7 +172,12 @@ export class TenantWriteFence {
     return rows[0]?.move_id;
   }
 
-  /** Lowers the barrier raised by that relocation, for example when canceling it or cleaning up the source. Idempotent. */
+  /**
+   * Lowers the barrier raised by that relocation, for example when canceling it or cleaning up the source. Idempotent.
+   * @param dataSource Shard of the barrier.
+   * @param tenantId Tenant of the barrier.
+   * @param moveId Relocation that raised it.
+   */
   async lower(
     dataSource: DataSource,
     tenantId: string,
@@ -158,7 +189,11 @@ export class TenantWriteFence {
     );
   }
 
-  /** Lowers any barrier of the tenant, the one from a previous relocation that moved it off this shard to which it now returns. */
+  /**
+   * Lowers any barrier of the tenant, the one from a previous relocation that moved it off this shard to which it now returns.
+   * @param dataSource Shard of the barrier.
+   * @param tenantId Tenant of the barrier.
+   */
   async lowerAny(dataSource: DataSource, tenantId: string): Promise<void> {
     await dataSource.query(
       'DELETE FROM tenant_write_fences WHERE tenant_id = $1',

@@ -28,19 +28,33 @@ export interface PlanState {
 export class Plan {
   private constructor(private readonly state: PlanState) {}
 
+  /**
+   * Rebuilds a plan from its state.
+   * @param state Stored plan.
+   * @returns The plan.
+   */
   static of(state: PlanState): Plan {
     return new Plan(state);
   }
 
+  /** Id of the plan in the catalog. */
   get id(): string {
     return this.state.id;
   }
 
+  /**
+   * Copies the plan state to store or show it.
+   * @returns The plan state.
+   */
   snapshot(): PlanState {
     return this.state;
   }
 
-  /** The metric limit, or `undefined` if the plan does not limit it. */
+  /**
+   * The metric limit, or `undefined` if the plan does not limit it.
+   * @param metric Metric to read.
+   * @returns The limit, or `undefined` when unlimited.
+   */
   limitOf(metric: UsageMetric): number | undefined {
     return this.state.quotas.find((quota) => quota.metric === metric)?.limit;
   }

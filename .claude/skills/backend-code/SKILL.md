@@ -58,6 +58,7 @@ When creating files, folders, libraries or apps, load `backend-structure`; when 
 - Public class: one JSDoc line with its role. Private methods without JSDoc.
 - JSDoc does not narrate implementation or process (plans, waves, task IDs) or repeat the name.
 - Exceptions: `// eslint-disable-next-line <rule> -- <reason>`, `// @ts-expect-error <reason>` and generated code (migrations, `export/`).
+- `comments/no-inline-comments` and `comments/require-public-jsdoc` (`backend/eslint.comments.mjs`, ADR 0038) enforce these rules in `nx lint`. A method that implements or overrides a port member is marked `override` (or implements an `implements` clause member) and is documented on the port.
 - JSDoc, identifiers and docs in English. Spanish JSDoc in a file you touch is translated entirely to English.
 
 ## TypeScript

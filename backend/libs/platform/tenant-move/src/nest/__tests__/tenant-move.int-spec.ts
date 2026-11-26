@@ -252,7 +252,6 @@ runtime.describeIfAvailable(
       const { inA } = await ledger.deploy([tenant]);
       const client = inA.get(InternalClient);
       const requests = inA.get(RequestContextStore);
-      // Without `requireScope` the call's shard comes from the context tenant, as in a tenant request.
       const open = () =>
         requests.run(
           {

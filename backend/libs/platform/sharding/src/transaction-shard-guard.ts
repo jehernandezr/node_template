@@ -22,17 +22,28 @@ export class TransactionShardGuard {
 
   private firstShard: string | undefined;
 
-  /** Runs the body `fn` of a transaction with a new guard visible through {@link TransactionShardGuard.current}. */
+  /**
+   * Runs the body `fn` of a transaction with a new guard visible through {@link TransactionShardGuard.current}.
+   * @param fn Body of the transaction.
+   * @returns What `fn` returns.
+   */
   static run<T>(fn: () => T): T {
     return TransactionShardGuard.storage.run(new TransactionShardGuard(), fn);
   }
 
-  /** The guard of the transaction that wraps the call, or undefined if there is none. */
+  /**
+   * The guard of the transaction that wraps the call, or undefined if there is none.
+   * @returns The guard, or `undefined`.
+   */
   static current(): TransactionShardGuard | undefined {
     return TransactionShardGuard.storage.getStore();
   }
 
-  /** @throws ShardingError with `CrossShardTransaction` when a different shard was already touched. */
+  /**
+   * Records the shard a transaction touches.
+   * @param logicalShard Logical shard.
+   * @throws ShardingError with `CrossShardTransaction` when a different shard was already touched.
+   */
   touch(logicalShard: string): void {
     if (this.firstShard === undefined) {
       this.firstShard = logicalShard;

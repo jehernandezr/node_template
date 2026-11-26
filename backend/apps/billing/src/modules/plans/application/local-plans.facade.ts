@@ -5,22 +5,22 @@ import { PlanCatalog } from '../domain/plan-catalog.js';
 import type { Plan } from '../domain/plan.js';
 import { PlansFacade } from './plans.facade.js';
 
-/** In-process `PlansFacade`. */
+/** Answers the plans on offer and resolves a plan by id or code from the catalog, for subscriptions and invoices. */
 @Injectable()
 export class LocalPlansFacade extends PlansFacade {
   constructor(private readonly catalog: PlanCatalog) {
     super();
   }
 
-  available(): Promise<readonly Plan[]> {
+  override available(): Promise<readonly Plan[]> {
     return this.catalog.available();
   }
 
-  async require(planId: string): Promise<Plan> {
+  override async require(planId: string): Promise<Plan> {
     return LocalPlansFacade.found(await this.catalog.find(planId));
   }
 
-  async requireCode(code: string): Promise<Plan> {
+  override async requireCode(code: string): Promise<Plan> {
     return LocalPlansFacade.found(await this.catalog.findByCode(code));
   }
 

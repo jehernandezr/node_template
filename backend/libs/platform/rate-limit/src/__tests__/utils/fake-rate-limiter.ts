@@ -57,7 +57,7 @@ export class FakeRateLimiter extends RateLimiter {
     return this.calls.filter((call) => call.operation === operation);
   }
 
-  async consume(
+  override async consume(
     key: string,
     rule: RateLimitRule,
     cost = 1,
@@ -68,14 +68,17 @@ export class FakeRateLimiter extends RateLimiter {
       : this.inner.consume(key, rule, cost);
   }
 
-  async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
+  override async peek(
+    key: string,
+    rule: RateLimitRule,
+  ): Promise<RateLimitResult> {
     this.record(RateLimitOperation.Peek, key, rule, 1);
     return this.blocked.has(key)
       ? blockedResult(rule)
       : this.inner.peek(key, rule);
   }
 
-  async reset(key: string, rule: RateLimitRule): Promise<void> {
+  override async reset(key: string, rule: RateLimitRule): Promise<void> {
     this.record(RateLimitOperation.Reset, key, rule, 1);
     await this.inner.reset(key, rule);
   }

@@ -23,7 +23,13 @@ export class CronExpression {
     private readonly daysOfWeek: CronField,
   ) {}
 
-  /** @throws InvalidCronExpressionError when the expression is not valid. */
+  /**
+   * Parses a five or six field cron expression in UTC.
+   * Without seconds, the expression fires at the start of the minute.
+   * @param expression Cron text.
+   * @returns The expression.
+   * @throws InvalidCronExpressionError when the expression is not valid.
+   */
   static parse(expression: string): CronExpression {
     const fields = expression.trim().split(/\s+/);
     if (fields.length !== 5 && fields.length !== 6) {
@@ -32,7 +38,6 @@ export class CronExpression {
         'expected 5 or 6 fields',
       );
     }
-    // Without seconds, the expression fires at the start of the minute.
     const [secondsText, ...rest] =
       fields.length === 6 ? fields : ['0', ...fields];
     const field = (text: string, min: number, max: number, name: string) =>
@@ -50,10 +55,12 @@ export class CronExpression {
 
   /**
    * First instant strictly after `from` that matches the expression, in UTC.
+   * The limit is computed once: without it, an impossible expression such as February 31 would never end.
+   * @param from Instant to start after.
+   * @returns The next instant.
    * @throws InvalidCronExpressionError if there is no date in the next five years.
    */
   nextAfter(from: Date): Date {
-    // The limit is computed once: without it, an impossible expression such as February 31 would never end.
     const limit = Date.UTC(
       from.getUTCFullYear() + SEARCH_YEARS,
       from.getUTCMonth(),

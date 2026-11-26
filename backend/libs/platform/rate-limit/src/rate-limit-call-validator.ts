@@ -8,6 +8,9 @@ export class RateLimitCallValidator {
   /**
    * Validates the key, the rule and the cost. The cost goes from 1 to the limit: a
    * larger one would never fit and reveals a programming error.
+   * @param key Limited key.
+   * @param rule Rule to apply.
+   * @param cost Units of the call.
    * @throws InvalidArgumentError with the first invalid argument.
    */
   static validate(key: string, rule: RateLimitRule, cost = 1): void {

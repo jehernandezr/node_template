@@ -10,8 +10,10 @@ const supportedFormatVersion = 2;
 
 /// Generation error: the contract uses something the generator does not support.
 class GeneratorException implements Exception {
+  /// Failure of the generator with its [message].
   GeneratorException(this.message);
 
+  /// What went wrong.
   final String message;
 
   @override
@@ -20,9 +22,13 @@ class GeneratorException implements Exception {
 
 /// Named schema within a service.
 final class SchemaId {
+  /// Schema [name] of [service].
   const SchemaId(this.service, this.name);
 
+  /// Service that owns the schema.
   final String service;
+
+  /// Name of the schema.
   final String name;
 
   @override
@@ -43,36 +49,52 @@ sealed class DType {
 
 /// `String`, `int`, `double` o `bool`.
 final class DPrimitive extends DType {
+  /// Primitive type written as [dart].
   const DPrimitive(this.dart);
+
+  /// Dart name of the type.
   final String dart;
 }
 
 /// Text with `date-time` format, represented as `DateTime`.
 final class DDateTime extends DType {
+  /// Instant, written as `DateTime`.
   const DDateTime();
 }
 
 /// Enum generado.
 final class DEnum extends DType {
+  /// Enum of the schema [id].
   const DEnum(this.id);
+
+  /// Schema of the enum.
   final SchemaId id;
 }
 
 /// Class generated or written by hand in `core`.
 final class DClass extends DType {
+  /// Class of the schema [id]; [core] when it lives in the hand-written core.
   const DClass(this.id, {this.core = false});
+
+  /// Schema of the class.
   final SchemaId id;
+
+  /// Whether the class lives in the core.
   final bool core;
 }
 
 /// List of another type.
 final class DList extends DType {
+  /// List of [item].
   const DList(this.item);
+
+  /// Type of the items.
   final DType item;
 }
 
 /// Field of a generated class.
 final class FieldSpec {
+  /// Field of a generated class.
   FieldSpec({
     required this.json,
     required this.dart,
@@ -83,12 +105,25 @@ final class FieldSpec {
     this.description,
   });
 
+  /// Name of the field in JSON.
   final String json;
+
+  /// Name of the field in Dart.
   final String dart;
+
+  /// Dart type of the field.
   final DType type;
+
+  /// JSON schema node of the field.
   final Json node;
+
+  /// Whether the field is required.
   final bool required;
+
+  /// Whether the field accepts `null`.
   final bool nullable;
+
+  /// Description of the field, if any.
   final String? description;
 
   /// The field can be null in Dart: it is optional or accepts null.
@@ -97,6 +132,7 @@ final class FieldSpec {
 
 /// Contract object generated as a class and as a validator.
 final class ClassSpec {
+  /// Generated class of a schema.
   ClassSpec({
     required this.id,
     required this.node,
@@ -104,13 +140,25 @@ final class ClassSpec {
     this.description,
   });
 
+  /// Schema of the class.
   final SchemaId id;
+
+  /// JSON schema node of the class.
   final Json node;
+
+  /// Whether the class lives in the core.
   final bool core;
+
+  /// Description of the class, if any.
   final String? description;
+
+  /// Fields of the class.
   final List<FieldSpec> fields = [];
 
+  /// Whether the schema rejects unknown properties.
   bool get closed => node['additionalProperties'] == false;
+
+  /// Dart name of the class.
   String get name => id.name;
 }
 
@@ -122,6 +170,7 @@ final coreClasses = {
 
 /// Contracts loaded from `contract.json`, with reference resolution.
 final class ContractModel {
+  /// Model over the exported contract of each service, in service order.
   ContractModel(Map<String, Json> docs)
     : docs = SplayTreeMap.of(docs, _serviceOrder) {
     for (final entry in this.docs.entries) {
@@ -152,6 +201,7 @@ final class ContractModel {
     return a.compareTo(b);
   }
 
+  /// Exported contracts by service.
   final SplayTreeMap<String, Json> docs;
 
   /// Classes per service, in order of appearance.
@@ -162,22 +212,37 @@ final class ContractModel {
 
   final Map<Json, ClassSpec> _inline = LinkedHashMap.identity();
 
+  /// Names of the services.
   Iterable<String> get services => docs.keys;
 
   Json _section(String service, String key) =>
       (docs[service]?[key] as Map<String, dynamic>?) ?? const {};
 
+  /// Enums of a service.
   Json enumsOf(String service) => _section(service, 'enums');
+
+  /// Constants of a service.
   Json constantsOf(String service) => _section(service, 'constants');
+
+  /// Schemas of a service.
   Json schemasOf(String service) => _section(service, 'schemas');
+
+  /// Error codes of a service.
   Json errorsOf(String service) => _section(service, 'errors');
+
+  /// HTTP routes of a service.
   List<Json> routesOf(String service) => _list(service, 'routes');
+
+  /// Events of a service.
   List<Json> eventsOf(String service) => _list(service, 'events');
+
+  /// Commands of a service.
   List<Json> commandsOf(String service) => _list(service, 'commands');
 
   List<Json> _list(String service, String key) =>
       ((docs[service]?[key] as List<dynamic>?) ?? const []).cast<Json>();
 
+  /// Schema node of [id].
   Json schema(SchemaId id) {
     final schema = schemasOf(id.service)[id.name];
     if (schema is! Map<String, dynamic>) {
@@ -220,14 +285,17 @@ final class ContractModel {
     return (node, false);
   }
 
+  /// Whether a schema node is an object.
   static bool isObject(Json node) => node['type'] == 'object';
 
+  /// Whether a schema node is a string enum.
   static bool isStringEnum(Json node) =>
       node['type'] == 'string' && node['enum'] is List;
 
   /// Class assigned to an anonymous object inside another class.
   ClassSpec? inlineClass(Json node) => _inline[node];
 
+  /// Anonymous objects are appended to the end of the list while it is traversed.
   void _collect() {
     for (final service in services) {
       final list = classes.putIfAbsent(service, () => []);
@@ -262,7 +330,6 @@ final class ContractModel {
           }
         }
       }
-      // Anonymous objects are appended to the end of the list while it is traversed.
       for (var i = 0; i < list.length; i++) {
         _fields(list[i]);
       }

@@ -17,6 +17,10 @@ export class RequestAuthenticator {
   ) {}
 
   /**
+   * Authenticates a request with the methods the route accepts.
+   * @param authorization `Authorization` header.
+   * @param methods Accepted methods.
+   * @returns The actor.
    * @throws AuthenticationError if the token is missing, if it is a session token (which never authenticates a
    *   route), or if the token's method is not among the ones the route accepts.
    */

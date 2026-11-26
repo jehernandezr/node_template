@@ -44,7 +44,11 @@ export class NotifyUser {
     private readonly clock: Clock,
   ) {}
 
-  /** Notifies the user and returns the channels it went out through; empty if the user no longer exists. */
+  /**
+   * Notifies the user and returns the channels it went out through; empty if the user no longer exists.
+   * @param command User, type, parameters and idempotency id.
+   * @returns The channels used.
+   */
   async notify(
     command: NotifyCommand,
   ): Promise<readonly NotificationChannel[]> {

@@ -73,7 +73,6 @@ runtime.describeIfAvailable('TenantMoves back and forth between shards', () => {
       ])) as { id: string }[]
     ).map((row) => row.id);
 
-  /** A tenant saga on the shard, with the given status. */
   const sagaOf = async (
     shard: RehearsalShard,
     tenantId: string,

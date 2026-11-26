@@ -17,12 +17,14 @@ export class LocalDispatchFacade extends DispatchFacade {
   }
 
   /** Notifies the user and returns the channels it went out through. */
-  notify(command: NotifyCommand): Promise<readonly NotificationChannel[]> {
+  override notify(
+    command: NotifyCommand,
+  ): Promise<readonly NotificationChannel[]> {
     return this.notifyUser.notify(command);
   }
 
   /** Deletes the user's deliveries and returns how many there were. */
-  eraseUser(user: UserRef): Promise<number> {
+  override eraseUser(user: UserRef): Promise<number> {
     return this.eraseDeliveries.execute(user);
   }
 }

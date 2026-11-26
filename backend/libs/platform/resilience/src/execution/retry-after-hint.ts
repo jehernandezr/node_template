@@ -11,8 +11,11 @@ export class RetryAfterHint {
   constructor(private readonly clock: Clock) {}
 
   /**
+   * Reads the wait an error asks for, such as a `Retry-After`.
    * @returns the wait in milliseconds, bounded to `[0, maxMs]`, or `undefined`
    *   if the error does not carry a valid hint.
+   * @param error Error of the call.
+   * @param maxMs Largest wait accepted.
    */
   hintMs(
     error: unknown,

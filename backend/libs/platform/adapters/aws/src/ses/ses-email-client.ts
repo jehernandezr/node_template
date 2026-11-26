@@ -13,7 +13,11 @@ export class SesEmailClient {
     private readonly errors: AwsErrorTranslator,
   ) {}
 
-  /** Returns the id SES assigns to the message. */
+  /**
+   * Returns the id SES assigns to the message.
+   * @param email Email to send.
+   * @returns The message id.
+   */
   async send(email: OutboundEmail): Promise<string> {
     try {
       const output = await this.client.send(

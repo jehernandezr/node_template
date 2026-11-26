@@ -27,7 +27,12 @@ export class Deadline {
     this.atMs = atMs ?? clock.now().getTime() + budgetMs;
   }
 
-  /** Returns a deadline at an absolute instant (epoch milliseconds). */
+  /**
+   * Returns a deadline at an absolute instant (epoch milliseconds).
+   * @param atMs Instant in epoch milliseconds.
+   * @param clock Time source.
+   * @returns The deadline.
+   */
   static at(atMs: number, clock: Clock): Deadline {
     if (!Number.isFinite(atMs)) {
       throw new InvalidArgumentError('atMs', 'a finite epoch in milliseconds');
@@ -35,17 +40,28 @@ export class Deadline {
     return new Deadline(0, clock, atMs);
   }
 
-  /** Returns a deadline `budgetMs` milliseconds from now. */
+  /**
+   * Returns a deadline `budgetMs` milliseconds from now.
+   * @param budgetMs Milliseconds from now.
+   * @param clock Time source.
+   * @returns The deadline.
+   */
   static after(budgetMs: number, clock: Clock): Deadline {
     return new Deadline(budgetMs, clock);
   }
 
-  /** Returns the remaining milliseconds; 0 if already expired. */
+  /**
+   * Returns the remaining milliseconds; 0 if already expired.
+   * @returns The remaining milliseconds.
+   */
   remainingMs(): number {
     return Math.max(0, this.atMs - this.clock.now().getTime());
   }
 
-  /** Whether the deadline has already passed. */
+  /**
+   * Whether the deadline has already passed.
+   * @returns `true` when expired.
+   */
   isExpired(): boolean {
     return this.remainingMs() === 0;
   }
@@ -61,6 +77,8 @@ export class Deadline {
    * Returns a deadline for a sub-operation: `budgetMs` from now, capped at its own
    * deadline. Used to reserve time (for example, to compensate) within the
    * parent's budget.
+   * @param budgetMs Budget of the sub-operation.
+   * @returns The child deadline.
    */
   child(budgetMs: number): Deadline {
     PrimitivesGuard.instance.nonNegativeFinite('budgetMs', budgetMs);
@@ -68,7 +86,11 @@ export class Deadline {
     return new Deadline(0, this.clock, Math.min(this.atMs, proposed));
   }
 
-  /** Returns the nearer of the two deadlines. */
+  /**
+   * Returns the nearer of the two deadlines.
+   * @param other Other deadline.
+   * @returns The nearer one.
+   */
   min(other: Deadline): Deadline {
     return other.atMs < this.atMs ? other : this;
   }
@@ -78,6 +100,9 @@ export class Deadline {
    * Rejects with `DeadlineExceededError` on expiry, or with the reason of `signal`
    * if the caller aborts. The work may or may not have applied its effects, so
    * the caller treats those rejections as an uncertain result.
+   * @param work Work that receives the signal.
+   * @param signal Signal of the caller.
+   * @returns What `work` returns.
    */
   async race<T>(
     work: (signal: AbortSignal) => Promise<T>,
@@ -101,12 +126,15 @@ export class Deadline {
   /**
    * Awaits an already created promise with the deadline. If the deadline expires or `signal`
    * aborts first, rejects and the promise is abandoned.
+   * An abandoned promise may reject later: its error has no owner.
+   * @param promise Promise to await.
+   * @param signal Signal of the caller.
+   * @returns What the promise returns.
    */
   wait<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
     try {
       this.assertCanStart(signal);
     } catch (error) {
-      // An abandoned promise may reject later: its error has no owner.
       promise.catch(() => undefined);
       return Promise.reject(error as Error);
     }
@@ -137,7 +165,11 @@ export class Deadline {
     });
   }
 
-  /** Waits `ms` milliseconds; rejects if the deadline expires or `signal` aborts first. */
+  /**
+   * Waits `ms` milliseconds; rejects if the deadline expires or `signal` aborts first.
+   * @param ms Milliseconds to wait.
+   * @param signal Signal of the caller.
+   */
   sleep(ms: number, signal?: AbortSignal): Promise<void> {
     PrimitivesGuard.instance.nonNegativeFinite('ms', ms);
     return this.race(
@@ -161,6 +193,7 @@ export class Deadline {
    * Returns a signal that aborts with `DeadlineExceededError` when the remaining time
    * runs out. If it already expired, the signal is born aborted. The timer does not keep
    * the process alive.
+   * @returns The signal.
    */
   toAbortSignal(): AbortSignal {
     const remaining = this.remainingMs();
@@ -174,6 +207,10 @@ export class Deadline {
     return controller.signal;
   }
 
+  /**
+   * Serializes the deadline as its epoch milliseconds.
+   * @returns The instant.
+   */
   toJSON(): number {
     return this.atMs;
   }

@@ -19,7 +19,7 @@ export class TypeOrmFailedDeliveries extends FailedDeliveries {
     super();
   }
 
-  async due(now: Date, limit: number): Promise<readonly Delivery[]> {
+  override async due(now: Date, limit: number): Promise<readonly Delivery[]> {
     const outcome = await this.shards.run((connection) =>
       TenantMaintenanceSession.run(connection.dataSource.manager, (manager) =>
         manager

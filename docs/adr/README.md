@@ -58,3 +58,4 @@ Numbers are not reused. File names use kebab-case and are in English.
 | 0035   | [End-to-end flow of the platform](0035-end-to-end-platform-flow.md)                                                   | Accepted               |
 | 0036   | [Identity security: factors, access and lifecycle](0036-identity-security-factors-access-lifecycle.md)                | Accepted               |
 | 0037   | [Composition, shared platform pieces and domain events](0037-composition-shared-platform-pieces-and-domain-events.md) | Accepted               |
+| 0038   | [Comment and documentation rules enforced by lint](0038-comment-and-documentation-rules-enforced-by-lint.md)          | Accepted               |

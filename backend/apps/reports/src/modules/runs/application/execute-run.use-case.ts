@@ -40,6 +40,10 @@ export class ExecuteRun {
     this.ttlMs = settings.values.REPORTS_RESULT_TTL_DAYS * ExecuteRun.DAY_MS;
   }
 
+  /**
+   * Computes a queued run, stores its result and marks it ready or failed.
+   * @param command Tenant and run to execute.
+   */
   execute(command: ExecuteRunPayload): Promise<void> {
     return this.shard.inTenantShard(command.tenantId, async () => {
       const pending = await this.runs.find(command.runId);

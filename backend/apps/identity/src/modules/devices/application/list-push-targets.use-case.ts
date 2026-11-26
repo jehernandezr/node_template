@@ -17,6 +17,11 @@ export class ListPushTargets {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Lists the active devices of a user that registered a push token.
+   * @param ref User to read.
+   * @returns Its push targets.
+   */
   async execute(ref: UserRef): Promise<PushTargets> {
     const devices = await this.scopes.inUserShard(ref, () =>
       this.devices.listActive(ref.userId),

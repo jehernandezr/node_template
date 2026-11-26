@@ -17,37 +17,49 @@ export class LocalDevicesFacade extends DevicesFacade {
   }
 
   /** {@inheritDoc DevicesFacade.recognize} */
-  recognize(ref: UserRef, proof?: DeviceProof): Promise<DeviceRecognition> {
+  override recognize(
+    ref: UserRef,
+    proof?: DeviceProof,
+  ): Promise<DeviceRecognition> {
     return this.registry.recognize(ref, proof);
   }
 
   /** {@inheritDoc DevicesFacade.issueDeviceId} */
-  async issueDeviceId(ref: UserRef, deviceId: string): Promise<string> {
+  override async issueDeviceId(
+    ref: UserRef,
+    deviceId: string,
+  ): Promise<string> {
     return new DeviceRoute(ref, deviceId).format();
   }
 
   /** {@inheritDoc DevicesFacade.register} */
-  register(ref: UserRef, input: RegisterDeviceInput): Promise<DeviceSnapshot> {
+  override register(
+    ref: UserRef,
+    input: RegisterDeviceInput,
+  ): Promise<DeviceSnapshot> {
     return this.registry.register(ref, input);
   }
 
   /** {@inheritDoc DevicesFacade.verifiers} */
-  verifiers(ref: UserRef): Promise<readonly DeviceSnapshot[]> {
+  override verifiers(ref: UserRef): Promise<readonly DeviceSnapshot[]> {
     return this.registry.verifiers(ref);
   }
 
   /** {@inheritDoc DevicesFacade.retireVerifiers} */
-  retireVerifiers(ref: UserRef): Promise<void> {
+  override retireVerifiers(ref: UserRef): Promise<void> {
     return this.registry.retireVerifiers(ref);
   }
 
   /** {@inheritDoc DevicesFacade.forget} */
-  forget(ref: UserRef): Promise<void> {
+  override forget(ref: UserRef): Promise<void> {
     return this.registry.forget(ref);
   }
 
   /** {@inheritDoc DevicesFacade.enqueueApproval} */
-  enqueueApproval(deviceId: string, approval: DeviceApproval): Promise<void> {
+  override enqueueApproval(
+    deviceId: string,
+    approval: DeviceApproval,
+  ): Promise<void> {
     return this.registry.enqueueApproval(deviceId, approval);
   }
 }

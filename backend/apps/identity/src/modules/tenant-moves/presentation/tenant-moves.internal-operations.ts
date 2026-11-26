@@ -11,6 +11,11 @@ import { FinishTenantMove } from '../application/finish-tenant-move.use-case.js'
 export class TenantMovesInternalOperations {
   constructor(private readonly finishMove: FinishTenantMove) {}
 
+  /**
+   * Internal operation the move saga calls when the tenant was switched.
+   * @param input Tenant and move.
+   * @returns The acknowledgment.
+   */
   @InternalHandler(FinishTenantMoveOperation)
   async finish(input: TenantMoveRef): Promise<HandlerResult<TenantMoveAck>> {
     return {

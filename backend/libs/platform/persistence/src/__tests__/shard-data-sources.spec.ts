@@ -47,6 +47,39 @@ describe('ShardDataSources', () => {
     });
   });
 
+  describe('when two calls see the shard move to another instance at the same time', () => {
+    it('opens one DataSource on the new instance and leaves none of the others open', async () => {
+      const factory = new FakeDataSourceFactory();
+      const sources = buildSources(new FixedClock(), factory);
+      await sources.get(SHARD_A);
+      const moved = { ...SHARD_A, instance: 'instance-2' };
+
+      const [first, second] = await Promise.all([
+        sources.get(moved),
+        sources.get(moved),
+      ]);
+
+      expect(second).toBe(first);
+      expect(
+        factory.created.filter((source) => source.destroyCalls === 0),
+      ).toHaveLength(1);
+    });
+
+    it('leaves only the DataSource of the last instance requested open when requests for both instances race', async () => {
+      const factory = new FakeDataSourceFactory();
+      const sources = buildSources(new FixedClock(), factory);
+      await sources.get(SHARD_A);
+      const moved = { ...SHARD_A, instance: 'instance-2' };
+
+      await Promise.all([sources.get(moved), sources.get(SHARD_A)]);
+      const current = await sources.get(moved);
+
+      expect(
+        factory.created.filter((source) => source.destroyCalls === 0),
+      ).toEqual([current]);
+    });
+  });
+
   describe('when the shard moves to another instance', () => {
     it('destroys the old DataSource and creates a new one', async () => {
       const factory = new FakeDataSourceFactory();

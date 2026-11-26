@@ -8,6 +8,8 @@ export class ErrorDetail {
   /**
    * A platform error gives its code and message, which by convention do not
    * carry input values; any other error gives its name and message.
+   * @param error Error to describe.
+   * @returns The detail.
    */
   static of(error: unknown): string {
     let text: string;

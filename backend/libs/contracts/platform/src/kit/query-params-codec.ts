@@ -25,6 +25,10 @@ export class QueryParamsCodec {
    * Describes the query fields of a request schema. Each field must be
    * a scalar (string, number, boolean, enum or literal) or a list of
    * scalars; `fail` receives the reason when it is not.
+   * @param shape Fields of the request schema.
+   * @param include Whether a field travels in the query.
+   * @param fail Reports a field that cannot travel in the query.
+   * @returns The query parameters of the route.
    */
   describe(
     shape: Readonly<Record<string, z.ZodType>>,
@@ -61,7 +65,6 @@ export class QueryParamsCodec {
   /**
    * Converts the query strings to the type the contract declares, before
    * validating with `validateContract(route.request, ...)`.
-   *
    * Rules: a number is accepted in JSON notation (`20`, `-1.5`); a boolean only
    * as `true` or `false`; a list accepts the repeated parameter or a single value.
    * Whatever cannot be converted is left as text, so validation responds
@@ -69,6 +72,9 @@ export class QueryParamsCodec {
    * Unknown parameters are kept so a strict schema rejects them
    * with `PLATFORM.VALIDATION.UNKNOWN_FIELD`. Path parameters do not
    * go through here: they arrive as text and are validated as such.
+   * @param route Route with its query parameters.
+   * @param query Raw query values.
+   * @returns The typed values.
    */
   decode(
     route: { readonly queryParams: readonly QueryParam[] },

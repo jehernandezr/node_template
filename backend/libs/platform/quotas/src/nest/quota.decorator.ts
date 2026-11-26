@@ -5,6 +5,11 @@ import { QuotaGuard } from './quota.guard.js';
 
 /** Writes the `@Quota` metadata. */
 export class QuotaDecorator {
+  /**
+   * Builds the decorator that checks a quota before the handler runs.
+   * @param metric Metric the route consumes.
+   * @returns The method decorator.
+   */
   static apply(metric: UsageMetric): MethodDecorator {
     return applyDecorators(
       SetMetadata(QUOTA_METRIC, metric),

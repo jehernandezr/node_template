@@ -216,7 +216,6 @@ describe('session lifecycle routes', () => {
   ] as const)(
     'accepts an empty body or a session token on %s',
     (_name, route) => {
-      // On web the session token travels in the cookie and the body is empty.
       expect(validateContract(route.request, {}).ok).toBe(true);
       expect(validateContract(route.request, { sessionToken: 's1' }).ok).toBe(
         true,
@@ -275,7 +274,6 @@ describe('session lifecycle routes', () => {
         code: '12345678',
       }).ok,
     ).toBe(true);
-    // The additional step does not register devices.
     expect(
       validateContract(VerifyStepUpRoute.request, {
         mfaToken: 't',

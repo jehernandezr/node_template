@@ -9,9 +9,7 @@ import { SagaStatus } from '../../model/saga-status.enum.js';
 class NotRegisteredSaga extends SagaDefinition<object> {
   readonly type = 'not-registered';
 
-  protected define(): void {
-    // No steps: it is never registered in the kit.
-  }
+  protected override define(): void {}
 }
 
 describe('Sagas', () => {

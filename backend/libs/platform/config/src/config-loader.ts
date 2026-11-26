@@ -20,6 +20,11 @@ export class ConfigLoader {
     this.env = normalized;
   }
 
+  /**
+   * Validates the environment against a schema.
+   * @param schema Root schema.
+   * @returns The parsed values.
+   */
   load<T>(schema: z.ZodType<T>): T {
     const result = schema.safeParse(this.env);
     if (!result.success) {
@@ -28,6 +33,11 @@ export class ConfigLoader {
     return result.data;
   }
 
+  /**
+   * Validates the environment against a section.
+   * @param section Section to load.
+   * @returns Its parsed values.
+   */
   loadSection<T>(section: ConfigSection<T>): T {
     return this.load(section.schema);
   }

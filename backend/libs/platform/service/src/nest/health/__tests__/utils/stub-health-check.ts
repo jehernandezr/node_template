@@ -21,7 +21,7 @@ export class StubHealthCheck extends HealthCheckable {
     return new StubHealthCheck(name, () => Promise.reject(error));
   }
 
-  check(): Promise<HealthReport> {
+  override check(): Promise<HealthReport> {
     return this.outcome();
   }
 }

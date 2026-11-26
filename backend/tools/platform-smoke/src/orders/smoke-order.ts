@@ -9,6 +9,11 @@ export class SmokeOrder {
     readonly version: number,
   ) {}
 
+  /**
+   * Copies the order with another status.
+   * @param status New status.
+   * @returns The changed order.
+   */
   withStatus(status: SmokeOrderStatus): SmokeOrder {
     return new SmokeOrder(this.id, this.customer, status, this.version);
   }

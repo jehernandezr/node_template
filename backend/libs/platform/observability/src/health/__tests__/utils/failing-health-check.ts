@@ -9,7 +9,7 @@ export class FailingHealthCheck extends HealthCheckable {
     super();
   }
 
-  check(): Promise<HealthReport> {
+  override check(): Promise<HealthReport> {
     return Promise.reject(this.error);
   }
 }

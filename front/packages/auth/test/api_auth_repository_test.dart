@@ -320,7 +320,6 @@ void main() {
       );
 
     final pending = await withSession.startStepUp();
-    // A method this client does not know yet is dropped, not an error.
     expect(pending.methods, [MfaFactor.deviceOtp]);
     final challenge = await withSession.requestStepUpChallenge(
       MfaChallengeRequest(

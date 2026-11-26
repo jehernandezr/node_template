@@ -25,7 +25,7 @@ class OpenAccountHandler extends OperationHandler<typeof OpenAccount> {
     super();
   }
 
-  handle(input: {
+  override handle(input: {
     owner: string;
   }): Promise<HandlerResult<{ accountId: string }>> {
     this.calls += 1;

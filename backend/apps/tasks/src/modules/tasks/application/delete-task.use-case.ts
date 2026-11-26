@@ -21,7 +21,11 @@ export class DeleteTask {
     private readonly clock: Clock,
   ) {}
 
-  /** @throws TasksError `TASKS.TASK.NOT_FOUND` if it does not exist or was already deleted. */
+  /**
+   * Soft deletes a task, removes it from the search index and publishes `TaskDeleted`.
+   * @param command Tenant, actor and task id.
+   * @throws TasksError `TASKS.TASK.NOT_FOUND` if it does not exist or was already deleted.
+   */
   execute(command: DeleteTaskCommand): Promise<void> {
     return this.shard.inTenantShard(command.tenantId, () =>
       this.transactions.runInTransaction(async () => {

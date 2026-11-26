@@ -10,6 +10,7 @@ import '../../shared/types/assistant_types.dart';
 /// confirm button needs the permission the tool writes with; without it the
 /// user can only cancel.
 class ToolConfirmationCard extends StatelessWidget {
+  /// Card that asks the user to confirm or reject [request].
   const ToolConfirmationCard({
     super.key,
     required this.request,
@@ -17,6 +18,7 @@ class ToolConfirmationCard extends StatelessWidget {
     required this.onDecision,
   });
 
+  /// Tool call to confirm.
   final ToolConfirmationRequest request;
 
   /// Null while the request waits for the user, then the answer given.

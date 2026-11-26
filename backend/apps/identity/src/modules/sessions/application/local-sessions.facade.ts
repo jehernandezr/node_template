@@ -31,12 +31,12 @@ export class LocalSessionsFacade extends SessionsFacade {
   }
 
   /** {@inheritDoc SessionsFacade.createSession} */
-  createSession(input: CreateSessionInput): Promise<IssuedSession> {
+  override createSession(input: CreateSessionInput): Promise<IssuedSession> {
     return this.create.execute(input);
   }
 
   /** {@inheritDoc SessionsFacade.revokeUserSessions} */
-  revokeUserSessions(
+  override revokeUserSessions(
     ref: UserRef,
     reason: RevocationReason,
     options?: { except?: string },
@@ -49,7 +49,7 @@ export class LocalSessionsFacade extends SessionsFacade {
   }
 
   /** {@inheritDoc SessionsFacade.revokeDeviceSessions} */
-  revokeDeviceSessions(
+  override revokeDeviceSessions(
     ref: UserRef,
     deviceId: string,
     reason: RevocationReason,
@@ -58,12 +58,12 @@ export class LocalSessionsFacade extends SessionsFacade {
   }
 
   /** {@inheritDoc SessionsFacade.mfaVerifiedAt} */
-  async mfaVerifiedAt(session: SessionRef): Promise<Date | undefined> {
+  override async mfaVerifiedAt(session: SessionRef): Promise<Date | undefined> {
     return (await this.find.execute(session))?.mfaVerifiedAt;
   }
 
   /** {@inheritDoc SessionsFacade.markMfaVerified} */
-  markMfaVerified(
+  override markMfaVerified(
     session: SessionRef,
     at: Date,
     amr: readonly AuthMethodReference[],
@@ -72,17 +72,19 @@ export class LocalSessionsFacade extends SessionsFacade {
   }
 
   /** {@inheritDoc SessionsFacade.forget} */
-  async forget(ref: UserRef): Promise<void> {
+  override async forget(ref: UserRef): Promise<void> {
     await this.revoke.forget(ref);
   }
 
   /** {@inheritDoc SessionsFacade.replaySessionRevocation} */
-  replaySessionRevocation(event: SessionRevokedPayload): Promise<void> {
+  override replaySessionRevocation(
+    event: SessionRevokedPayload,
+  ): Promise<void> {
     return this.replay.session(event);
   }
 
   /** {@inheritDoc SessionsFacade.replayUserRevocation} */
-  replayUserRevocation(event: TokensRevokedPayload): Promise<void> {
+  override replayUserRevocation(event: TokensRevokedPayload): Promise<void> {
     return this.replay.user(event);
   }
 }

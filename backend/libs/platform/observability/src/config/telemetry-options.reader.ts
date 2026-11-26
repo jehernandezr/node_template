@@ -16,13 +16,22 @@ export class TelemetryOptionsReader {
     telemetryConfigSchema.shape,
   );
 
-  /** Validates `ServiceConfig` and `TelemetryConfig` against `env` and builds the options. */
+  /**
+   * Validates `ServiceConfig` and `TelemetryConfig` against `env` and builds the options.
+   * @param env Environment variables.
+   * @returns The telemetry options.
+   */
   read(env: ConfigEnv): TelemetryOptions {
     const settings = new ConfigLoader(env).load(TelemetryOptionsReader.SCHEMA);
     return this.fromSettings(settings, settings);
   }
 
-  /** Builds the options from already validated values. */
+  /**
+   * Builds the options from already validated values.
+   * @param service Service settings.
+   * @param telemetry Telemetry settings.
+   * @returns The telemetry options.
+   */
   fromSettings(
     service: ServiceSettings,
     telemetry: TelemetrySettings,

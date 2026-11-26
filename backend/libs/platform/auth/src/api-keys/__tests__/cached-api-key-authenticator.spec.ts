@@ -29,7 +29,7 @@ const principal = (
 
 /** Resolver that always fails with an error unrelated to authentication. */
 class ThrowingApiKeyResolver extends ApiKeyResolver {
-  async resolve(): Promise<ApiKeyPrincipal | undefined> {
+  override async resolve(): Promise<ApiKeyPrincipal | undefined> {
     throw new Error('resolver down');
   }
 }

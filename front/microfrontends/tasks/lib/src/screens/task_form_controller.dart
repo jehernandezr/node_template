@@ -55,9 +55,9 @@ final class TaskFormController extends ChangeNotifier {
   /// Creates or updates the task. Goes through [TaskFormSaving] and ends in
   /// [TaskFormSaved], or back in [TaskFormEditing] (with the field errors of a
   /// contract violation) when it fails.
+  ///
+  /// A second press while the first save is in flight, or after it succeeded, must not write the task twice.
   Future<ActionResult<Task>> save(TaskDraft draft) async {
-    // A second press while the first save is in flight, or after it
-    // succeeded, must not write the task twice.
     if (_state is TaskFormSaving || _state is TaskFormSaved) {
       return const ActionSkipped<Task>();
     }

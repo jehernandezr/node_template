@@ -10,6 +10,8 @@ export class ErrorMetricAttributes {
   /**
    * `error.code` if the error carries a valid code (`ErrorDescriptor.codeOf`) and
    * `error.name`. A value that is not an object gives only `error.name` with its `typeof`.
+   * @param error Error to describe.
+   * @returns The attributes.
    */
   static of(error: unknown): MetricAttributes {
     if (typeof error !== 'object' || error === null) {

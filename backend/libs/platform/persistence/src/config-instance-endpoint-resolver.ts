@@ -10,8 +10,10 @@ export class ConfigInstanceEndpointResolver extends InstanceEndpointResolver {
     super();
   }
 
-  resolve(instance: string): InstanceEndpoints {
-    // A name like `constructor` is not a configured instance even if it exists on the prototype.
+  /**
+   * A name like `constructor` is not a configured instance even if it exists on the prototype.
+   */
+  override resolve(instance: string): InstanceEndpoints {
     if (Object.hasOwn(this.instances, instance)) {
       return this.instances[instance];
     }

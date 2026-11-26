@@ -36,6 +36,11 @@ export class ManagePasskeys {
     private readonly settings: IdentitySettings,
   ) {}
 
+  /**
+   * Starts the registration of a passkey for the user.
+   * @param user Signed-in user.
+   * @returns The WebAuthn options with their challenge.
+   */
   async registrationOptions(user: UserRef): Promise<PasskeyOptions> {
     const snapshot = await this.users.getByRef(user);
     const existing = await this.ceremony.userPasskeys(user);
@@ -52,6 +57,12 @@ export class ManagePasskeys {
     );
   }
 
+  /**
+   * Verifies and stores a new passkey of the user.
+   * @param user Signed-in user.
+   * @param request Challenge id and the authenticator response.
+   * @returns The new passkey.
+   */
   async register(
     user: UserRef,
     request: RegisterPasskeyRequest,
@@ -93,6 +104,11 @@ export class ManagePasskeys {
     return ManagePasskeys.summary(passkey);
   }
 
+  /**
+   * Lists the user's passkeys.
+   * @param user Signed-in user.
+   * @returns Its passkeys.
+   */
   async list(user: UserRef): Promise<PasskeyPage> {
     const passkeys = await this.ceremony.userPasskeys(user);
     return {
@@ -101,6 +117,11 @@ export class ManagePasskeys {
     };
   }
 
+  /**
+   * Removes a passkey of the user.
+   * @param user Signed-in user.
+   * @param passkeyId Passkey to remove.
+   */
   async remove(user: UserRef, passkeyId: string): Promise<void> {
     const removed = await this.scopes.inUserShard(user, () =>
       this.transactions.runInTransaction(() =>
@@ -113,6 +134,11 @@ export class ManagePasskeys {
     await this.directory.remove(removed.credentialId);
   }
 
+  /**
+   * Builds the API view of a passkey.
+   * @param passkey Stored passkey.
+   * @returns Its summary.
+   */
   static summary(passkey: Passkey): PasskeySummary {
     return {
       id: passkey.id,

@@ -9,12 +9,21 @@ export class CompensationKey {
   static readonly TOMBSTONE_FINGERPRINT = 'compensated-step-tombstone';
   private static readonly SEPARATOR = ':';
 
-  /** Returns the key of `base` in the given direction. */
+  /**
+   * Returns the key of `base` in the given direction.
+   * @param base Base key of the step.
+   * @param direction Forward or compensation.
+   * @returns The key.
+   */
   static of(base: string, direction: StepKeyDirection): string {
     return `${base}${CompensationKey.SEPARATOR}${direction}`;
   }
 
-  /** Returns the forward key that a compensation key undoes, or `undefined` if it does not follow the convention. */
+  /**
+   * Returns the forward key that a compensation key undoes, or `undefined` if it does not follow the convention.
+   * @param key Compensation key.
+   * @returns The forward key, or `undefined`.
+   */
   static forwardOf(key: string): string | undefined {
     const suffix = `${CompensationKey.SEPARATOR}${StepKeyDirection.Compensate}`;
     if (!key.endsWith(suffix) || key.length === suffix.length) {

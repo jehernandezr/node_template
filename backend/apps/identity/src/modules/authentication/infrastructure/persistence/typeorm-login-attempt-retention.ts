@@ -15,7 +15,7 @@ export class TypeOrmLoginAttemptRetention extends LoginAttemptRetention {
     super();
   }
 
-  async maintain(now: Date): Promise<LoginAttemptRetentionReport> {
+  override async maintain(now: Date): Promise<LoginAttemptRetentionReport> {
     const outcome = await this.shards.run((connection) =>
       connection.dataSource.transaction((manager) =>
         this.partitions.maintain(manager, now),

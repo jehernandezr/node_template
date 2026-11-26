@@ -3,8 +3,10 @@ import 'package:material_ui/material_ui.dart';
 
 /// The rows of a ready run, with numbers aligned to the end.
 class ReportResultTable extends StatelessWidget {
+  /// Table of [result].
   const ReportResultTable({super.key, required this.result});
 
+  /// Rows of the report.
   final ReportResult result;
 
   @override

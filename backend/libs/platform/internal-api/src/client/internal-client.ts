@@ -44,6 +44,12 @@ export class InternalClient {
    * (`UnknownOperation`) does not throw: the `InternalApiError` goes through
    * `translator.translate(error, { started: false })`, which converts it into
    * `protocol-violation` with its code.
+   * The translator converts the contract error into its result; its output does not have the operation type.
+   * The output already went through `descriptor.output`, so its shape matches the operation's.
+   * @param operation Operation contract.
+   * @param input Operation input.
+   * @param options Idempotency key, tenant and deadline.
+   * @returns The outcome.
    */
   async call<S extends OperationDefinition>(
     operation: S,
@@ -54,12 +60,10 @@ export class InternalClient {
     try {
       descriptor = this.descriptorFor(operation);
     } catch (error) {
-      // The translator converts the contract error into its result; its output does not have the operation type.
       return this.collaborators.translator.translate(error, {
         started: false,
       }) as CallOutcome<OperationOutputOf<S>>;
     }
-    // The output already went through `descriptor.output`, so its shape matches the operation's.
     return (await this.callDescriptor(
       descriptor,
       input,
@@ -67,7 +71,13 @@ export class InternalClient {
     )) as CallOutcome<OperationOutputOf<S>>;
   }
 
-  /** Calls a registered operation by its id. Used by generic callers such as the saga engine. */
+  /**
+   * Calls a registered operation by its id. Used by generic callers such as the saga engine.
+   * @param operationId Operation id.
+   * @param input Operation input.
+   * @param options Idempotency key, tenant and deadline.
+   * @returns The outcome.
+   */
   callById(
     operationId: string,
     input: unknown,
@@ -101,6 +111,9 @@ export class InternalClient {
     return registered.descriptor;
   }
 
+  /**
+   * The breaker is per service that owns the operation; the registry decides the retry with `idempotent`.
+   */
   private async callDescriptor(
     descriptor: OperationDescriptor,
     input: unknown,
@@ -150,7 +163,6 @@ export class InternalClient {
         policies.resolve(metadata),
         (signal, current) => attempt.run(signal, current),
         {
-          // The breaker is per service that owns the operation; the registry decides the retry with `idempotent`.
           idempotent: metadata.idempotent,
           deadline,
           dependencyKey: metadata.service(),

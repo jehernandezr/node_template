@@ -7,7 +7,7 @@ import type { SampleState } from './sample-state.js';
 export class CompensationInputSaga extends SagaDefinition<SampleState> {
   readonly type = 'comp-input-throws';
 
-  protected define(flow: SagaFlow<SampleState>): void {
+  protected override define(flow: SagaFlow<SampleState>): void {
     flow
       .step(STEP_A)
       .input(() => ({ name: 'a' }))

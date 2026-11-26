@@ -24,7 +24,7 @@ export class OutboxRetentionJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     await this.store.purge({
       before: new Date(this.clock.now().getTime() - this.retentionMs),
     });

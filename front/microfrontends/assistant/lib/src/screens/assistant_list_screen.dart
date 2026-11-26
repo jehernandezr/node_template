@@ -11,8 +11,10 @@ import 'widgets/conversation_tile.dart';
 
 /// Conversation list with a button to start a new one.
 class AssistantListScreen extends StatelessWidget {
+  /// List of conversations backed by [repository].
   const AssistantListScreen({super.key, required this.repository});
 
+  /// Source of the conversations.
   final AssistantRepository repository;
 
   @override

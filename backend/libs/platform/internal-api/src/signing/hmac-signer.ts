@@ -16,7 +16,7 @@ export class HmacSigner extends InternalRequestSigner {
     this.calculator = new HmacSignatureCalculator(secret);
   }
 
-  sign(request: SignableRequest): Promise<Record<string, string>> {
+  override sign(request: SignableRequest): Promise<Record<string, string>> {
     const timestampMs = this.clock.now().getTime();
     return Promise.resolve({
       [InternalHeader.Timestamp]: String(timestampMs),

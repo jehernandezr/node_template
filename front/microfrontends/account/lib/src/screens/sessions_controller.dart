@@ -9,6 +9,7 @@ import 'step_up_gate.dart';
 
 /// State and actions of the active sessions screen.
 final class SessionsController extends ChangeNotifier {
+  /// Controller over [repository] that asks for a step-up before sensitive changes.
   SessionsController(AccountRepository repository, {required this._stepUp})
     : _repository = repository,
       _loader = AsyncLoader(repository.listSessions),

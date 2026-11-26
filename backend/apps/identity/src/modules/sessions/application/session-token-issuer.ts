@@ -22,13 +22,21 @@ export class SessionTokenIssuer {
     private readonly hasher: SecretHasher,
   ) {}
 
+  /**
+   * Generates the random salt of a new session.
+   * @returns The salt.
+   */
   newSalt(): string {
     return this.generator
       .bytes(SessionTokenIssuer.SALT_BYTES)
       .toString('base64url');
   }
 
-  /** Session token of the session's current generation. */
+  /**
+   * Session token of the session's current generation.
+   * @param session Session to sign.
+   * @returns The session token.
+   */
   sessionToken(session: Session): string {
     const state = session.snapshot();
     return new SessionToken(
@@ -43,7 +51,11 @@ export class SessionTokenIssuer {
     ).format();
   }
 
-  /** The session's access token with its active tenant, its methods and its absolute cap. */
+  /**
+   * The session's access token with its active tenant, its methods and its absolute cap.
+   * @param session Session to sign.
+   * @returns The access token and its expiry.
+   */
   async accessToken(
     session: Session,
   ): Promise<Pick<SessionTokens, 'accessToken'> & { accessExpiresAt: Date }> {
@@ -60,7 +72,13 @@ export class SessionTokenIssuer {
     });
   }
 
-  /** Checks in constant time the presented secret for a generation of the session. */
+  /**
+   * Checks in constant time the presented secret for a generation of the session.
+   * @param session Session to check.
+   * @param generation Presented generation.
+   * @param secret Presented secret.
+   * @returns `true` when it matches.
+   */
   matches(session: Session, generation: number, secret: Buffer): boolean {
     return this.hasher.matches(
       this.material(session.snapshot(), generation),

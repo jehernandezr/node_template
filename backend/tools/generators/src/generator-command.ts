@@ -39,6 +39,11 @@ export class GeneratorCommand {
     private readonly output: GeneratorOutput,
   ) {}
 
+  /**
+   * Runs a generator from its command-line arguments.
+   * @param args Arguments without the node and script paths.
+   * @returns The exit code.
+   */
   async run(args: readonly string[]): Promise<GeneratorExitCode> {
     try {
       return await this.dispatch(args);

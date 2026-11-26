@@ -27,6 +27,11 @@ export class EmailTemplates {
     this.byKey = new Map(templates.map((template) => [template.key, template]));
   }
 
+  /**
+   * Looks a template up by its key.
+   * @param key Template key.
+   * @returns The template, or `undefined` when unknown.
+   */
   find(key: string): EmailTemplate | undefined {
     return this.byKey.get(key);
   }

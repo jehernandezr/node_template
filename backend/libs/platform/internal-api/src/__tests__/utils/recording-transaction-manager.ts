@@ -14,7 +14,9 @@ export class RecordingTransactionManager extends TransactionManager {
   rollbacks = 0;
   private open = false;
 
-  async runInTransaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
+  override async runInTransaction<T>(
+    fn: (uow: UnitOfWork) => Promise<T>,
+  ): Promise<T> {
     this.open = true;
     try {
       const result = await fn({
@@ -32,15 +34,15 @@ export class RecordingTransactionManager extends TransactionManager {
     }
   }
 
-  current(): UnitOfWork | undefined {
+  override current(): UnitOfWork | undefined {
     return undefined;
   }
 
-  isInTransaction(): boolean {
+  override isInTransaction(): boolean {
     return this.open;
   }
 
-  afterCommit(hook: TransactionHook): void {
+  override afterCommit(hook: TransactionHook): void {
     void hook;
   }
 }

@@ -8,7 +8,11 @@ export class SmtpEmailSenderFactory {
     private readonly clock: Clock,
   ) {}
 
-  /** Returns a sender that opens one connection per email to `endpoint`. */
+  /**
+   * Returns a sender that opens one connection per email to `endpoint`.
+   * @param endpoint SMTP host and port.
+   * @returns The sender.
+   */
   create(endpoint: SmtpEndpoint): SmtpEmailSender {
     return new SmtpEmailSender(endpoint, this.ids, this.clock);
   }

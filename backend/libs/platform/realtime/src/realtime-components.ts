@@ -21,6 +21,11 @@ export interface RealtimeEndpoints {
 export class RealtimeComponents {
   constructor(private readonly settings: RealtimeSettings) {}
 
+  /**
+   * Builds the stream authenticator of the configured mode.
+   * @param verifier Access token verifier.
+   * @returns The authenticator.
+   */
   authenticator(verifier: AccessTokenVerifier): StreamAuthenticator {
     switch (this.settings.REALTIME_AUTH) {
       case RealtimeAuthKind.Bearer:
@@ -33,6 +38,13 @@ export class RealtimeComponents {
     }
   }
 
+  /**
+   * Builds the configured transports, SSE and Socket.IO.
+   * @param connections Open connections.
+   * @param authenticator Stream authenticator.
+   * @param endpoints Paths of each transport.
+   * @returns The transports.
+   */
   transports(
     connections: RealtimeConnections,
     authenticator: StreamAuthenticator,

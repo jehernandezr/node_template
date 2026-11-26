@@ -6,14 +6,14 @@ import {
 } from './issue-access-token.use-case.js';
 import { TokensFacade } from './tokens.facade.js';
 
-/** In-process `TokensFacade`: delegates to the `tokens` use cases. */
+/** Signs the access tokens that sessions and API keys hand out, through `IssueAccessToken`. */
 @Injectable()
 export class LocalTokensFacade extends TokensFacade {
   constructor(private readonly issueToken: IssueAccessToken) {
     super();
   }
 
-  issue(input: AccessTokenInput): Promise<IssuedAccessToken> {
+  override issue(input: AccessTokenInput): Promise<IssuedAccessToken> {
     return this.issueToken.execute(input);
   }
 }

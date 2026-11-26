@@ -36,7 +36,7 @@ return 1
     super();
   }
 
-  async get(key: string): Promise<string | undefined> {
+  override async get(key: string): Promise<string | undefined> {
     return this.executor.optionalString(
       ValkeyCommand.Hget,
       await this.executor.run(ValkeyCommand.Hget, [
@@ -50,7 +50,7 @@ return 1
    * @throws ShardingError `InvalidConfiguration` with a version that is not a
    *   non-negative safe integer or a negative or non-finite TTL.
    */
-  async setIfNewer(
+  override async setIfNewer(
     key: string,
     value: string,
     version: number,
@@ -71,7 +71,7 @@ return 1
     return this.executor.integer(ValkeyCommand.EvalSha, reply) === 1;
   }
 
-  async delete(key: string): Promise<void> {
+  override async delete(key: string): Promise<void> {
     await this.executor.run(ValkeyCommand.Del, [this.keyOf(key)]);
   }
 

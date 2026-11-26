@@ -26,6 +26,9 @@ export class RoutingKeyNormalizer {
   }
 
   /**
+   * Validates and lowercases a tenant id.
+   * @param raw Raw tenant id.
+   * @returns The normalized id.
    * @throws ShardingError `KeyMissing` if it is not a non-empty string; `InvalidTenantId` if it exceeds
    *   `TenantId.MAX_LENGTH` or does not match the pattern.
    */
@@ -47,6 +50,10 @@ export class RoutingKeyNormalizer {
   }
 
   /**
+   * Validates and normalizes a routing key of a kind.
+   * @param keyKind Kind of key.
+   * @param raw Raw key.
+   * @returns The normalized key.
    * @throws ShardingError `KeyMissing` if it is not a non-empty string; `InvalidKey` if it exceeds
    *   `maxKeyLength`, before or after lowercasing.
    */

@@ -14,8 +14,6 @@ abstract final class ContrastCheck {
     Widget child,
   ) async {
     for (final theme in [AppTheme.light(), AppTheme.dark()]) {
-      // A new key per theme builds a fresh tree: reusing the old one would
-      // animate the text style and measure a frame halfway between themes.
       await const BillingTestApp().pump(
         tester,
         Theme(

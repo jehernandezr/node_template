@@ -19,7 +19,7 @@ export class LocalUsageFacade extends UsageFacade {
     super();
   }
 
-  levels(
+  override levels(
     tenantId: string,
     from: string,
     to: string,

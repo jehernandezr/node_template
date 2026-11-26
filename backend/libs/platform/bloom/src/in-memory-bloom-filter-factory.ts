@@ -6,7 +6,9 @@ import type { RebuildableBloomFilter } from './rebuildable-bloom-filter.js';
 
 /** Factory of in-process memory filters. */
 export class InMemoryBloomFilterFactory extends BloomFilterFactory {
-  create(definition: ResolvedBloomFilterDefinition): RebuildableBloomFilter {
+  override create(
+    definition: ResolvedBloomFilterDefinition,
+  ): RebuildableBloomFilter {
     return new InMemoryAsyncBloomFilter(
       BloomFilter.create({
         expectedItems: definition.expectedItems,

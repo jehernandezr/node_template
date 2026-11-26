@@ -16,10 +16,16 @@ export class ConsecutiveCircuitBreaker {
 
   constructor(private readonly options: CircuitBreakerOptions) {}
 
+  /** Current state of the breaker. */
   get state(): CircuitState {
     return this.current;
   }
 
+  /**
+   * Runs `fn` unless the circuit is open, counting its failures.
+   * @param fn Work to run.
+   * @returns What `fn` returns.
+   */
   async execute<T>(fn: () => Promise<T>): Promise<T> {
     if (this.current === CircuitState.Open) {
       const elapsed = this.options.clock.now().getTime() - this.openedAtMs;

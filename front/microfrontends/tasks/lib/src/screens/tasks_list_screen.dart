@@ -23,11 +23,12 @@ class TasksListScreen extends StatelessWidget {
   /// Creates the list backed by [repository].
   const TasksListScreen({super.key, required this.repository});
 
+  /// Source of the tasks.
   final TasksRepository repository;
 
+  /// The repository is part of the key: a new identity gets a new controller.
   @override
   Widget build(BuildContext context) => ControllerBuilder<TasksListController>(
-    // The repository is part of the key: a new identity gets a new controller.
     key: ObjectKey(repository),
     create: (_) => TasksListController(repository)..start(),
     builder: (context, controller) => AppPage(
@@ -101,6 +102,7 @@ class _TasksListPane extends StatelessWidget {
   final TasksListController controller;
   final ValueChanged<Task> onOpen;
 
+  /// A width change rebuilds this field from scratch: starting from the current query brings back what the user searched for.
   @override
   Widget build(BuildContext context) {
     final l10n = TasksLocalizations.of(context);
@@ -113,8 +115,6 @@ class _TasksListPane extends StatelessWidget {
             end: AppSpacing.md,
             top: AppSpacing.sm,
           ),
-          // A width change rebuilds this field from scratch: starting from
-          // the current query brings back what the user searched for.
           child: TextFormField(
             initialValue: controller.query,
             onChanged: controller.search,

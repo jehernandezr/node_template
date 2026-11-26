@@ -13,33 +13,35 @@ export class InMemoryTaskRepository extends TaskRepository {
     super();
   }
 
-  async find(taskId: string): Promise<Task | undefined> {
+  override async find(taskId: string): Promise<Task | undefined> {
     const row = this.visible(taskId);
     return row === undefined || row.deletedAt !== undefined
       ? undefined
       : Task.rehydrate(row);
   }
 
-  async findMany(taskIds: readonly string[]): Promise<readonly Task[]> {
+  override async findMany(
+    taskIds: readonly string[],
+  ): Promise<readonly Task[]> {
     const found = await Promise.all(taskIds.map((id) => this.find(id)));
     return found.filter((task): task is Task => task !== undefined);
   }
 
-  async insert(task: Task): Promise<Task> {
+  override async insert(task: Task): Promise<Task> {
     const state = { ...task.snapshot(), version: 1, tenantId: this.tenant() };
     this.rows.set(state.id, state);
     return Task.rehydrate(state);
   }
 
-  async update(task: Task): Promise<Task> {
+  override async update(task: Task): Promise<Task> {
     return this.bump(task);
   }
 
-  async remove(task: Task): Promise<Task> {
+  override async remove(task: Task): Promise<Task> {
     return this.bump(task);
   }
 
-  async page(request: TaskPageRequest): Promise<readonly Task[]> {
+  override async page(request: TaskPageRequest): Promise<readonly Task[]> {
     return this.ofTenant()
       .filter((row) => row.deletedAt === undefined)
       .filter(
@@ -53,7 +55,9 @@ export class InMemoryTaskRepository extends TaskRepository {
       .map((row) => Task.rehydrate(row));
   }
 
-  async changes(request: TaskChangesRequest): Promise<readonly Task[]> {
+  override async changes(
+    request: TaskChangesRequest,
+  ): Promise<readonly Task[]> {
     const key = (row: TaskState): string =>
       `${row.updatedAt.toISOString()}|${row.id}`;
     const after =

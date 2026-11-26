@@ -21,17 +21,11 @@ import { ValkeyRateLimiter } from '../valkey-rate-limiter.js';
 import { valkeyConfigSchema } from '../valkey.config.js';
 import { ValkeyExecutors, ValkeyTestServer } from './utils/index.js';
 
-/**
- * Limiter tests against a real Valkey. Without Docker they are skipped; with
- * `INTEGRATION_TESTS=require` missing Docker is an error.
- */
 jest.setTimeout(60_000);
 
 const PREFIX = 'identity';
 const keyspace = new ValkeyKeyspace(PREFIX);
-// Long enough that no key expires on the server clock while a test runs.
 const RULE: RateLimitRule = { name: 'sign-in.ip', limit: 20, windowMs: 60_000 };
-// One window edge of the rule, to make the elapsed time easy to read.
 const START = new Date('2026-01-01T00:00:00.000Z');
 
 const runtime = new ContainerRuntime(process.env);
@@ -95,8 +89,6 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
       expect(fromModel.some((result) => !result.allowed)).toBe(true);
     });
 
-    // Three calls at the start of the window and then a `peek` at each edge: the
-    // counts of each row are the ones the server must have at that instant.
     it.each([
       [0, 0, 3, false],
       [333, 0, 3, false],
@@ -161,7 +153,6 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
     const rate = limiter(clock);
     await rate.consume('k', RULE, 20);
     expect((await rate.consume('k', RULE)).allowed).toBe(false);
-    // At 30 % of the next window, the previous 20 weigh 14.
     clock.advance(78_000);
     expect(await rate.peek('k', RULE)).toEqual({
       allowed: true,
@@ -246,7 +237,6 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
         results.push(await degrading.consume('k', RULE));
       }
     } finally {
-      // `quit` would wait for a connection that never arrives; the reconnection loop is cut.
       unreachable.disconnect();
     }
     expect(results.filter((r) => r.allowed)).toHaveLength(5);

@@ -14,6 +14,11 @@ import type { FailureClassifier } from './failure/failure-classifier.js';
 export class CallOutcomeFactory {
   constructor(private readonly classifier: FailureClassifier) {}
 
+  /**
+   * Turns a thrown error into a call outcome: business, transient, uncertain or protocol violation.
+   * @param error Error of the call.
+   * @returns The outcome.
+   */
   fromError(error: unknown): CallOutcome<never> {
     if (error instanceof DomainError) {
       return CallOutcomeFactory.fromDomainError(error);
@@ -34,9 +39,11 @@ export class CallOutcomeFactory {
     }
   }
 
+  /**
+   * A retryable conflict is not a final result: it is not stored for idempotency.
+   */
   private static fromDomainError(error: DomainError): CallOutcome<never> {
     if (error.retryable) {
-      // A retryable conflict is not a final result: it is not stored for idempotency.
       return CallOutcome.transientFailure(error.code, { cause: error });
     }
     return CallOutcome.businessError(error.code, {

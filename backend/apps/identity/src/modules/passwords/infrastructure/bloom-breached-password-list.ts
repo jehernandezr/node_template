@@ -22,7 +22,7 @@ export class BloomBreachedPasswordList extends BreachedPasswordList {
     super();
   }
 
-  async contains(password: string): Promise<boolean> {
+  override async contains(password: string): Promise<boolean> {
     await this.loaded();
     return this.filter.mightContain(
       KnownBreachedPasswordsSource.normalize(password),

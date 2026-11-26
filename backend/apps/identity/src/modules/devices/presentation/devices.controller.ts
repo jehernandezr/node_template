@@ -21,6 +21,7 @@ import { IdentityResource } from '../../../shared/enums/identity-resource.enum.j
 import { DeviceApprovalsUseCase } from '../application/device-approvals.use-case.js';
 import { ManageMyDevices } from '../application/manage-my-devices.use-case.js';
 
+/** HTTP routes of the user's devices and of the sign-in approvals a device answers. */
 @Resource(IdentityResource.Devices)
 export class DevicesController {
   constructor(
@@ -28,11 +29,21 @@ export class DevicesController {
     private readonly approvals: DeviceApprovalsUseCase,
   ) {}
 
+  /**
+   * Lists the user's devices.
+   * @param actor Signed-in user.
+   * @returns Its devices.
+   */
   @Endpoint(ListDevicesRoute)
   listDevices(@CurrentActor() actor: Actor | undefined): Promise<DevicePage> {
     return this.mine.list(ActingUser.refOf(ActingUser.of(actor)));
   }
 
+  /**
+   * Removes a device and closes its sessions.
+   * @param input Device id.
+   * @param actor Signed-in user.
+   */
   @Endpoint(RemoveDeviceRoute)
   async removeDevice(
     @Input() input: RemoveDeviceRequest,
@@ -44,6 +55,11 @@ export class DevicesController {
     );
   }
 
+  /**
+   * Stops trusting a device.
+   * @param input Device id.
+   * @param actor Signed-in user.
+   */
   @Endpoint(UntrustDeviceRoute)
   async untrustDevice(
     @Input() input: UntrustDeviceRequest,
@@ -55,7 +71,12 @@ export class DevicesController {
     );
   }
 
-  /** The current device is the session's (`did`); a session without a device has no one to notify. */
+  /**
+   * Registers the push token of the session's device.
+   * The current device is the session's (`did`); a session without a device has no one to notify.
+   * @param input Push token.
+   * @param actor Signed-in user.
+   */
   @Endpoint(UpdatePushTokenRoute)
   async updatePushToken(
     @Input() input: PushTokenRequest,
@@ -72,6 +93,11 @@ export class DevicesController {
     );
   }
 
+  /**
+   * Returns the approvals pending for a device, proved by its signature.
+   * @param input Signed request of the device.
+   * @returns The pending approvals.
+   */
   @Endpoint(PullDeviceApprovalsRoute)
   pullDeviceApprovals(
     @Input() input: PullDeviceApprovalsRequest,
@@ -79,6 +105,10 @@ export class DevicesController {
     return this.approvals.pull(input);
   }
 
+  /**
+   * Denies a pending approval from a device.
+   * @param input Signed request with the challenge.
+   */
   @Endpoint(DenyDeviceApprovalRoute)
   async denyDeviceApproval(
     @Input() input: DenyDeviceApprovalRequest,

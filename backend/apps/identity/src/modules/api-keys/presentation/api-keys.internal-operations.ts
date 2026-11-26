@@ -14,6 +14,11 @@ import { AuthenticateApiKey } from '../application/authenticate-api-key.use-case
 export class ApiKeysInternalOperations {
   constructor(private readonly authenticate: AuthenticateApiKey) {}
 
+  /**
+   * Internal operation that authenticates an API key for another service.
+   * @param input Prefix, secret hash and client IP.
+   * @returns The principal of the key, or the business error.
+   */
   @InternalHandler(AuthenticateApiKeyOperation)
   async authenticateApiKey(
     input: AuthenticateApiKeyInput,

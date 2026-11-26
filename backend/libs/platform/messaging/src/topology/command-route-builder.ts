@@ -16,7 +16,11 @@ export class CommandRouteBuilder {
     this.contract = typeof source === 'string' ? null : source;
   }
 
-  /** Sends this command type to a queue. */
+  /**
+   * Sends this command type to a queue.
+   * @param queue Target queue.
+   * @returns The route.
+   */
   to(queue: QueueDef): RouteDef {
     return new RouteDef(
       MessageKind.Command,

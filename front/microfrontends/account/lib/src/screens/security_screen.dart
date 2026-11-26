@@ -19,12 +19,14 @@ import 'step_up_gate.dart';
 /// MFA, passkeys and recovery codes. Every change asks for a recent second
 /// factor first.
 class SecurityScreen extends StatelessWidget {
+  /// Security screen backed by [repository].
   const SecurityScreen({
     super.key,
     required this.repository,
     required this.requestStepUp,
   });
 
+  /// Source of the security settings.
   final AccountRepository repository;
 
   /// The shell's step-up, for the actions that change the second factor.
@@ -83,6 +85,7 @@ class SecurityScreen extends StatelessWidget {
     );
   }
 
+  /// The codes are shown once, so they open a dialog the user must read.
   Future<void> _regenerate(
     BuildContext context,
     SecurityController controller,
@@ -96,7 +99,6 @@ class SecurityScreen extends StatelessWidget {
       success: l10n.recoveryRegenerated,
       failure: l10n.actionFailed,
     );
-    // The codes are shown once, so they open a dialog the user must read.
     if (result is ActionSucceeded<List<String>>) {
       await context.showLocalizedDialog<void>(
         builder: (dialogContext) => _RecoveryCodesDialog(codes: result.value),

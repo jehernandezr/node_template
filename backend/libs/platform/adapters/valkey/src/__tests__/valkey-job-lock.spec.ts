@@ -42,6 +42,34 @@ describe('ValkeyJobLock commands', () => {
   });
 
   it.each([
+    [1, true],
+    [0, false],
+  ])(
+    'renews with a script that checks the token (reply %p means held: %p)',
+    async (reply, held) => {
+      const runner = new ScriptedValkeyRunner(reply);
+      await expect(
+        lockOver(runner).renew({ name: 'job', token: 'abc' }, 5_000),
+      ).resolves.toBe(held);
+      expect(runner.calls[0]?.[0]).toBe('EVALSHA');
+      expect(runner.calls[0]?.[1].slice(1)).toEqual([
+        1,
+        'svc:joblock:job',
+        'abc',
+        5_000,
+      ]);
+    },
+  );
+
+  it('rejects a renewal ttl that is not a positive integer before calling', async () => {
+    const runner = new ScriptedValkeyRunner();
+    await expect(
+      lockOver(runner).renew({ name: 'job', token: 'abc' }, 0),
+    ).rejects.toThrow();
+    expect(runner.calls).toHaveLength(0);
+  });
+
+  it.each([
     ['', 1_000],
     ['job', 0],
     ['job', 1.5],

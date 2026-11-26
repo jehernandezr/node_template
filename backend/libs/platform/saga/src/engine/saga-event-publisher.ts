@@ -15,7 +15,11 @@ export class SagaEventPublisher {
 
   constructor(private readonly logger?: LoggerPort) {}
 
-  /** Subscribes a listener. Returns the function that removes it. */
+  /**
+   * Subscribes a listener. Returns the function that removes it.
+   * @param listener Event listener.
+   * @returns The unsubscribe function.
+   */
   subscribe(listener: SagaEventListener): () => void {
     this.listeners.add(listener);
     return () => {
@@ -23,7 +27,11 @@ export class SagaEventPublisher {
     };
   }
 
-  /** A listener failure never affects the saga: it is only logged. */
+  /**
+   * A listener failure never affects the saga: it is only logged.
+   * @param kind Event kind.
+   * @param instance Saga instance.
+   */
   publish(kind: SagaEventKind, instance: SagaInstance): void {
     const event: SagaEvent = {
       kind,

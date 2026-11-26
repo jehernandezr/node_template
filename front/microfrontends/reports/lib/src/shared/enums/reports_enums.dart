@@ -1,7 +1,12 @@
 /// Range of days a report covers, ending today.
 enum ReportPeriod {
+  /// The last week.
   last7Days(7),
+
+  /// The last month.
   last30Days(30),
+
+  /// The last quarter.
   last90Days(90);
 
   const ReportPeriod(this.days);
@@ -14,6 +19,8 @@ enum ReportPeriod {
 enum RunProgress {
   /// Queued or running: the screen reads it again until it ends.
   pending,
+
+  /// Finished successfully: its result can be downloaded.
   ready,
 
   /// Failed or expired: there is nothing to download.

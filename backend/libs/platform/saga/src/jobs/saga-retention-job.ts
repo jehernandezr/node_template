@@ -31,7 +31,7 @@ export class SagaRetentionJob extends ScheduledJob {
   }
 
   /** Purges the `Completed` or `Compensated` sagas older than `now - retentionMs`. */
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     await this.store.purge({
       before: new Date(this.clock.now().getTime() - this.settings.retentionMs),
     });

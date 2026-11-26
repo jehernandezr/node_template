@@ -11,16 +11,16 @@ class ListedDevices extends DeviceRepository {
     super();
   }
 
-  listActive(): Promise<readonly Device[]> {
+  override listActive(): Promise<readonly Device[]> {
     return Promise.resolve(this.devices.filter((device) => device.isActive()));
   }
-  insert(): never {
+  override insert(): never {
     throw new Error('not used');
   }
-  find(): never {
+  override find(): never {
     throw new Error('not used');
   }
-  update(): never {
+  override update(): never {
     throw new Error('not used');
   }
 }

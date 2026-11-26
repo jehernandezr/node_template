@@ -13,23 +13,23 @@ const START = new Date('2026-01-15T12:00:00.000Z');
 class RecordingLogger extends LoggerPort {
   readonly warnings: string[] = [];
 
-  debug(): void {
+  override debug(): void {
     return undefined;
   }
 
-  info(): void {
+  override info(): void {
     return undefined;
   }
 
-  warn(message: string): void {
+  override warn(message: string): void {
     this.warnings.push(message);
   }
 
-  error(): void {
+  override error(): void {
     return undefined;
   }
 
-  child(): LoggerPort {
+  override child(): LoggerPort {
     return this;
   }
 }

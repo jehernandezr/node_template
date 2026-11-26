@@ -24,6 +24,8 @@ export class ModuleGenerator {
 
   /**
    * Computes all changes before writing: if a marker is missing or a file already exists, it writes nothing.
+   * @param serviceName Service that receives the module.
+   * @param moduleName Name of the module, in kebab-case.
    * @throws GeneratorError `InvalidName`, `MissingService`, `MissingMarker` or `AlreadyExists`.
    */
   async generate(serviceName: string, moduleName: string): Promise<void> {

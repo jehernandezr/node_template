@@ -9,7 +9,7 @@ export class SmokeTenantVerifier extends TenantVerifier {
     super();
   }
 
-  async verify(tenantId: string | undefined): Promise<boolean> {
+  override async verify(tenantId: string | undefined): Promise<boolean> {
     if (tenantId === undefined) {
       return false;
     }

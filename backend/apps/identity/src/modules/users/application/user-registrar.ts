@@ -34,7 +34,12 @@ export class UserRegistrar {
     private readonly settings: IdentitySettings,
   ) {}
 
-  /** Returns `undefined` if the email already belongs to another user. */
+  /**
+   * Returns `undefined` if the email already belongs to another user.
+   * @param input Email, password, name and home tenant.
+   * @param verifiedAt Instant the email was verified, when already proved.
+   * @returns The new user, or `undefined`.
+   */
   async register(
     input: RegisterUserInput,
     verifiedAt?: Date,

@@ -31,7 +31,6 @@ void main() {
 
       expect(session.userId, '0193f1c2-0000-7000-8000-0000000000a1');
       expect(session.tenantId, '0193f1c2-0000-7000-8000-0000000000b1');
-      // `x:new` is unknown to this client and is dropped.
       expect(session.permissions, {
         Permission.tasksRead,
         Permission.billingRead,

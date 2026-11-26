@@ -23,7 +23,12 @@ export class HmacSignatureCalculator {
 
   constructor(private readonly secret: string) {}
 
-  /** Returns the hexadecimal signature of `request` for the instant `timestampMs`. */
+  /**
+   * Returns the hexadecimal signature of `request` for the instant `timestampMs`.
+   * @param request Method, path, body and headers to sign.
+   * @param timestampMs Instant of the signature.
+   * @returns The signature.
+   */
   sign(request: SignableRequest, timestampMs: number): string {
     return createHmac('sha256', this.secret)
       .update(this.signedText(request, timestampMs))

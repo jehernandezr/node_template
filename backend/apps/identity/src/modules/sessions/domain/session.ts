@@ -49,26 +49,50 @@ export class Session {
 
   private constructor(private state: SessionState) {}
 
+  /**
+   * Starts a session at its first generation, with the expiries and methods of the sign-in that opened it.
+   * @param state Session data.
+   * @returns The session.
+   */
   static open(state: SessionState): Session {
     return new Session(state);
   }
 
+  /**
+   * Rebuilds a session from its state.
+   * @param state Stored session.
+   * @returns The session.
+   */
   static rehydrate(state: SessionState): Session {
     return new Session(state);
   }
 
+  /** UUIDv7 that identifies the session; the session token carries it. */
   get id(): string {
     return this.state.id;
   }
 
+  /**
+   * Copies the session state.
+   * @returns The session state.
+   */
   snapshot(): SessionState {
     return this.state;
   }
 
+  /**
+   * Tells whether the session was revoked.
+   * @returns `true` when revoked.
+   */
   isRevoked(): boolean {
     return this.state.revokedAt !== undefined;
   }
 
+  /**
+   * Tells whether the session's inactivity or absolute cap passed.
+   * @param now Instant to check.
+   * @returns `true` when expired.
+   */
   isExpired(now: Date): boolean {
     return (
       now.getTime() >= this.state.idleExpiresAt.getTime() ||
@@ -81,6 +105,10 @@ export class Session {
    * compares it in constant time; the session does not know it. Only a real secret counts as reuse: the
    * token's route comes from the claims of any access token, so an old generation with a forged
    * secret must not be able to revoke someone else's session.
+   * @param generation Presented generation.
+   * @param secretMatches Checks the secret of a generation.
+   * @param now Current instant.
+   * @returns Whether it is the current generation, the previous one in grace, or theft.
    */
   classify(
     generation: number,
@@ -107,6 +135,9 @@ export class Session {
 
   /**
    * Bumps the generation, opens the grace period of the previous one and extends inactivity without exceeding the absolute cap.
+   * @param now Instant of the rotation.
+   * @param graceMs Grace of the previous generation.
+   * @param idleMs Inactivity lifetime.
    */
   rotate(now: Date, graceMs: number, idleMs: number): void {
     this.state = {
@@ -123,6 +154,12 @@ export class Session {
     };
   }
 
+  /**
+   * Revokes the session.
+   * @param reason Why it is revoked.
+   * @param now Instant of the revocation.
+   * @returns Whether it was still active.
+   */
   revoke(reason: RevocationReason, now: Date): boolean {
     if (this.isRevoked()) {
       return false;
@@ -131,6 +168,11 @@ export class Session {
     return true;
   }
 
+  /**
+   * Records a verified second factor and the methods used.
+   * @param at Instant of the verification.
+   * @param amr Methods used.
+   */
   markMfaVerified(at: Date, amr: readonly AuthMethodReference[]): void {
     this.state = {
       ...this.state,
@@ -140,6 +182,10 @@ export class Session {
     };
   }
 
+  /**
+   * Changes the active tenant of the session.
+   * @param tenantId New active tenant.
+   */
   switchTenant(tenantId: string): void {
     this.state = { ...this.state, activeTenantId: tenantId };
   }

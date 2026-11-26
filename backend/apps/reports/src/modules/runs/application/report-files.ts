@@ -8,6 +8,12 @@ import { CsvWriter } from './csv-writer.js';
 
 /** The download file of a ready run, in its format. Pure utility. */
 export class ReportFiles {
+  /**
+   * Builds the download of a ready run in its format.
+   * @param run Ready run.
+   * @param result Stored result.
+   * @returns The file name, type and content.
+   */
   static of(run: ReportRunState, result: ReportResult): ReportDownload {
     const name = `${run.type}-${run.params.from}-${run.params.to}`;
     if (run.format === ReportFormat.Csv) {

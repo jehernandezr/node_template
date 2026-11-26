@@ -10,12 +10,17 @@ export class OperationRoute {
     readonly allowedCodes: ReadonlySet<string>,
   ) {}
 
-  /** Binds an already resolved descriptor to the handler that serves it. */
+  /**
+   * Binds an already resolved descriptor to the handler that serves it.
+   * The router only hands the handler input parsed with `descriptor.input`, the schema of `S`.
+   * @param descriptor Resolved descriptor.
+   * @param handler Handler.
+   * @returns The route.
+   */
   static bind<S extends OperationDefinition>(
     descriptor: OperationDescriptor,
     handler: OperationHandler<S>,
   ): OperationRoute {
-    // The router only hands the handler input parsed with `descriptor.input`, the schema of `S`.
     return new OperationRoute(
       descriptor,
       handler as OperationHandler,

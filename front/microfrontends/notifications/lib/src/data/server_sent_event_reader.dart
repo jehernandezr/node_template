@@ -1,5 +1,6 @@
 /// One event of a `text/event-stream`.
 final class ServerSentEvent {
+  /// Event of [type] with its [data] and optional [id].
   const ServerSentEvent({required this.type, required this.data, this.id});
 
   /// Value of `event:`, or `message` when the server sent none.

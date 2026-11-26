@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// PreToolUse for Write and Edit: rejects writes that break the repository structure before
-// they happen. Exits with 2 and the reason on stderr so the agent can fix it.
+/**
+ * PreToolUse for Write and Edit: rejects writes that break the repository structure before
+ * they happen. Exits with 2 and the reason on stderr so the agent can fix it.
+ */
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';

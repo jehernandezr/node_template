@@ -16,24 +16,40 @@ export class InvalidationLog {
     });
   }
 
-  /** Current sequence: that of the last invalidation logged in this log. */
+  /**
+   * Current sequence: that of the last invalidation logged in this log.
+   * @returns The sequence.
+   */
   current(): number {
     return this.sequence;
   }
 
-  /** Logs an invalidation of `key` and returns its sequence. */
+  /**
+   * Logs an invalidation of `key` and returns its sequence.
+   * @param key Invalidated key.
+   * @returns The sequence.
+   */
   mark(key: string): number {
     this.sequence += 1;
     this.last.set(key, this.sequence);
     return this.sequence;
   }
 
-  /** Sequence of the last invalidation of `key`, or an upper bound if it was forgotten. */
+  /**
+   * Sequence of the last invalidation of `key`, or an upper bound if it was forgotten.
+   * @param key Key to read.
+   * @returns The sequence.
+   */
   lastFor(key: string): number {
     return this.last.peek(key) ?? this.floor;
   }
 
-  /** `true` when no invalidation of `key` was logged after `sequence`. */
+  /**
+   * `true` when no invalidation of `key` was logged after `sequence`.
+   * @param key Key to check.
+   * @param sequence Sequence of the read.
+   * @returns `true` when still current.
+   */
   isCurrent(key: string, sequence: number): boolean {
     return this.lastFor(key) <= sequence;
   }

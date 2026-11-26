@@ -10,7 +10,7 @@ import type { CreateSessionInput } from '../domain/create-session-input.js';
 import type { IssuedSession } from '../domain/issued-session.js';
 import type { SessionRef } from '../domain/session-ref.js';
 
-/** What `sessions` offers to the other modules. */
+/** Opens and revokes sessions, records their second factor and replays revocations for the other modules. */
 export abstract class SessionsFacade {
   /**
    * Opens a session.

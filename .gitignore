@@ -1,7 +1,7 @@
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# compiled output: solo las apps se empaquetan, en backend/dist/<app>/ (esbuild).
-# Las librerías no compilan, así que un dist/ en otra carpeta queda a la vista en git status.
+# compiled output: only the apps are bundled, in backend/dist/<app>/ (esbuild).
+# Libraries do not compile, so a dist/ in any other folder shows up in git status.
 /backend/dist/
 tmp
 
@@ -70,5 +70,5 @@ front/**/build/
 *.iml
 .flutter-plugins-dependencies
 
-# salidas del pipeline de despliegue
+# deployment pipeline outputs
 .artifacts/

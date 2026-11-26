@@ -12,10 +12,21 @@ export class RealtimePublisher {
     private readonly presence: PresenceTracker,
   ) {}
 
+  /**
+   * Publishes a frame to a user's channel.
+   * @param userId Recipient.
+   * @param frame Frame to publish.
+   * @returns The id of the frame.
+   */
   publish(userId: string, frame: RealtimeFrame): Promise<string> {
     return this.stream.append(userId, frame);
   }
 
+  /**
+   * Tells whether a user has an open connection.
+   * @param userId User to check.
+   * @returns `true` when online.
+   */
   isOnline(userId: string): Promise<boolean> {
     return this.presence.isOnline(userId);
   }

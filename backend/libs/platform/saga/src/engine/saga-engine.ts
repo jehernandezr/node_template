@@ -48,7 +48,11 @@ export interface SagaEngineDeps {
 export class SagaEngine {
   constructor(private readonly deps: SagaEngineDeps) {}
 
-  /** Subscribes an event listener. Returns the function that removes it. */
+  /**
+   * Subscribes an event listener. Returns the function that removes it.
+   * @param listener Event listener.
+   * @returns The unsubscribe function.
+   */
   onEvent(listener: SagaEventListener): () => void {
     return this.deps.events.subscribe(listener);
   }
@@ -56,10 +60,15 @@ export class SagaEngine {
   /**
    * Creates an instance and runs it until it pauses or finishes. The lease already
    * belongs to this run. With an existing `idempotencyKey` it returns that instance.
-   * Inside an open transaction the instance is created with it and
-   * returned in `Running`: the steps run after the commit, because a remote call
-   * made inside a transaction that is later rolled back would leave effects
-   * without a log to compensate them. If the transaction rolls back, the saga does not exist.
+   * Inside an open transaction the instance is created with it and returned in `Running`, and the steps run in an
+   * `afterCommit` hook, because a remote call made inside a transaction that is later rolled back would leave effects
+   * without a log to compensate them. The transaction manager awaits that hook, so the caller's transaction returns
+   * only once the saga pauses or finishes. If the transaction rolls back, the saga does not exist.
+   * If the run fails after the commit, the lease expires and `SagaRecoveryJob` resumes it.
+   * @param type Saga type.
+   * @param initialState Initial state.
+   * @param options Idempotency key, context and deadline.
+   * @returns The instance.
    * @throws SagaError `UnknownDefinition`, `InvalidState` (non-JSON state), `IdempotencyKeyConflict`.
    */
   async start(
@@ -112,7 +121,6 @@ export class SagaEngine {
     }
     const transactions = this.deps.transactions;
     if (transactions?.isInTransaction() === true) {
-      // If the run fails after the commit, the lease expires and `SagaRecoveryJob` resumes it.
       transactions.afterCommit(async () => {
         await this.execute(run);
       });
@@ -121,13 +129,20 @@ export class SagaEngine {
     return this.execute(run);
   }
 
-  /** Continues a saga from its log. @throws SagaError `NotFound`, `LeaseNotAcquired`, `LeaseLost`. */
+  /**
+   * Continues a saga from its log. @throws SagaError `NotFound`, `LeaseNotAcquired`, `LeaseLost`.
+   * @param sagaId Saga to resume.
+   * @returns The instance after the run.
+   */
   async resume(sagaId: string): Promise<SagaInstance> {
     const run = this.deps.leases.newRun(sagaId);
     await this.deps.leases.acquire(run);
     return this.execute(run);
   }
 
+  /**
+   * Only a state change made by this run is announced; a resume with no effect is silent.
+   */
   private async execute(run: SagaRun): Promise<SagaInstance> {
     const before = await this.load(run.sagaId);
     try {
@@ -138,7 +153,6 @@ export class SagaEngine {
     }
     await this.deps.leases.release(run);
     const final = await this.load(run.sagaId);
-    // Only a state change made by this run is announced; a resume with no effect is silent.
     const kind = SagaEventKinds.of(final.status);
     if (kind !== undefined && final.status !== before.status) {
       this.deps.events.publish(kind, final);
@@ -146,13 +160,14 @@ export class SagaEngine {
     return final;
   }
 
+  /**
+   * A `Suspended` instance is retried only by the first attempt; the following ones stop at the next pause so the caller decides when to come back.
+   */
   private async drive(run: SagaRun): Promise<void> {
     const { store, registry, executor, compensations } = this.deps;
     let instance = await this.load(run.sagaId);
     const compiled = registry.get(instance.type);
     let firstAttempt = true;
-    // A `Suspended` instance is retried only by the first attempt; the
-    // following ones stop at the next pause so the caller decides when to come back.
     while (
       !instance.isFinished() &&
       (instance.status !== SagaStatus.Suspended || firstAttempt)

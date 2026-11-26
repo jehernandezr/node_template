@@ -18,6 +18,7 @@ import 'notifications_stream.dart';
 /// instead, and so does every read mark made here. A count that cannot be
 /// read is skipped: the next attempt reads it again.
 final class ApiNotificationsRepository implements NotificationsRepository {
+  /// Repository over the notifications API through [_client] and its real-time [_stream].
   ApiNotificationsRepository({required this._client, required this._stream});
 
   final ApiClient _client;
@@ -43,6 +44,7 @@ final class ApiNotificationsRepository implements NotificationsRepository {
     const api.Empty(),
   )).count;
 
+  /// Offline or refused: the next reconnection or read mark tries again.
   @override
   Stream<int> watchUnreadCount() {
     if (_disposed) return const Stream<int>.empty();
@@ -56,7 +58,7 @@ final class ApiNotificationsRepository implements NotificationsRepository {
         final count = await unreadCount();
         if (read == latestRead && !counts.isClosed) counts.add(count);
       } on Exception {
-        // Offline or refused: the next reconnection or read mark tries again.
+        return;
       }
     }
 

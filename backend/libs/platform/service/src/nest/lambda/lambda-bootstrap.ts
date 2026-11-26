@@ -17,6 +17,9 @@ export class LambdaBootstrap {
   /**
    * Returns the function `handler`. The startup happens on the first
    * invocation and is retried if it fails.
+   * @param definition Service definition.
+   * @param options Bootstrap options.
+   * @returns The Lambda handler.
    */
   static http(
     definition: ServiceDefinition,

@@ -62,8 +62,6 @@ void main() {
       secondGate.complete();
       await second;
 
-      // The older call reads the inbox after this change, so its answer is
-      // different from the one on screen.
       await fake.markAsRead('n-3');
       firstGate.complete();
       await first;

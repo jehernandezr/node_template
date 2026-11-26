@@ -15,7 +15,11 @@ export class BufferedUsageRecorder extends UsageRecorder {
     super();
   }
 
-  record(tenantId: string, metric: UsageMetric, quantity = 1): Promise<void> {
+  override record(
+    tenantId: string,
+    metric: UsageMetric,
+    quantity = 1,
+  ): Promise<void> {
     return this.counters.add(
       this.windows.current(),
       tenantId,

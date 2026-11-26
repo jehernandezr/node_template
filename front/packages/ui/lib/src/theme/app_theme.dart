@@ -4,9 +4,9 @@ import 'package:tokens/tokens.dart';
 import 'status_colors.dart';
 
 /// Material 3 themes built from the design tokens in `package:tokens`.
+///
+/// Every button and field gets the same 48 logical pixel minimum, so a thumb hits any control on a phone without guessing its size.
 abstract final class AppTheme {
-  // Every button and field gets the same 48 logical pixel minimum, so a
-  // thumb hits any control on a phone without guessing its size.
   static const double _minTapTarget = 48;
 
   /// Light theme built from [AppColors.light].

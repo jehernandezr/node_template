@@ -11,7 +11,7 @@ export class TypeOrmSagaDirectory extends SagaDirectory {
     super();
   }
 
-  async record(entry: SagaEntry): Promise<void> {
+  override async record(entry: SagaEntry): Promise<void> {
     const dataSource = await this.catalog.get();
     await dataSource
       .createQueryBuilder()
@@ -22,7 +22,7 @@ export class TypeOrmSagaDirectory extends SagaDirectory {
       .execute();
   }
 
-  async find(sagaId: string): Promise<SagaEntry | undefined> {
+  override async find(sagaId: string): Promise<SagaEntry | undefined> {
     const dataSource = await this.catalog.get();
     const runner = dataSource.createQueryRunner('master');
     try {

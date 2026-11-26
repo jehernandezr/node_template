@@ -15,6 +15,11 @@ export class ListTaskChanges {
     private readonly cursors: TaskCursors,
   ) {}
 
+  /**
+   * Lists the task changes of a tenant after a cursor, deleted tasks included.
+   * @param query Tenant, cursor and page size.
+   * @returns One page of changes in write order.
+   */
   execute(query: ListTaskChangesInput): Promise<TaskChangePage> {
     const limit = query.limit ?? TasksDefaults.pageSize;
     return this.shard.inTenantShard(query.tenantId, async () => {

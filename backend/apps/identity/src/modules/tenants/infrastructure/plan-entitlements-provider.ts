@@ -17,7 +17,7 @@ export class PlanEntitlementsProvider extends EntitlementsProvider {
     [TenantKind.Platform]: Object.values(PlanFeature),
   };
 
-  features(tenant: TenantSnapshot): readonly PlanFeature[] {
+  override features(tenant: TenantSnapshot): readonly PlanFeature[] {
     return tenant.planFeatures ?? PlanEntitlementsProvider.BY_KIND[tenant.kind];
   }
 }

@@ -7,6 +7,7 @@ import 'mfa_method_labels.dart';
 
 /// One button per offered method. Disabled while [busy].
 class MfaMethodPicker extends StatelessWidget {
+  /// List of [methods] the user picks from with [onPick].
   const MfaMethodPicker({
     super.key,
     required this.methods,
@@ -14,8 +15,13 @@ class MfaMethodPicker extends StatelessWidget {
     required this.onPick,
   });
 
+  /// Methods on offer.
   final List<MfaFactor> methods;
+
+  /// Whether a request is in flight.
   final bool busy;
+
+  /// Called with the picked method.
   final ValueChanged<MfaFactor> onPick;
 
   @override

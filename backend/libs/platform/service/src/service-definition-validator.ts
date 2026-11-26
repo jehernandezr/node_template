@@ -13,6 +13,8 @@ export class ServiceDefinitionValidator {
     'the internal HTTP API needs the http option';
 
   /**
+   * Validates a service definition before it starts.
+   * @param definition Service definition.
    * @throws InvalidServiceDefinitionError when the name is empty or does not match `contract.service`,
    * when `rootModule` is not a class or when the HTTP internal API does not declare its configuration.
    */

@@ -10,7 +10,7 @@ import {
 export class __Name__TenantMoveManifest extends TenantMoveManifest {
   private static readonly TABLES: readonly TenantMoveTable[] = [];
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return __Name__TenantMoveManifest.TABLES;
   }
 }

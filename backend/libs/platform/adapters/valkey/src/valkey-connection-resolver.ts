@@ -10,6 +10,11 @@ import type { ValkeySettings } from './valkey.config.js';
 /** Converts the configuration into connection data and checks what a flat schema cannot. */
 export class ValkeyConnectionResolver {
   /**
+   * Resolves the connection settings from the configuration: URL locally, host, TLS and IAM in AWS.
+   * @param settings Valkey configuration.
+   * @param runtime Runtime overrides.
+   * @param authToken Provider of IAM tokens.
+   * @returns The connection settings.
    * @throws ConfigValidationError listing each inconsistent variable: `VALKEY_URL` and `VALKEY_HOST`
    *   both or neither, or an IAM mode without host, user, cache name, TLS or token provider.
    */

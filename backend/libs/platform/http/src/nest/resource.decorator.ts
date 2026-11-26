@@ -7,6 +7,9 @@ import type { ResourceMetadata } from './resource-metadata.js';
 export class ResourceDecorator {
   /**
    * `@Controller()` without a prefix plus the resource metadata. `name` is a value of a service enum.
+   * @param name Resource name.
+   * @param options Base path and auth options.
+   * @returns The class decorator.
    */
   static apply(name: string, options: ResourceOptions = {}): ClassDecorator {
     const metadata: ResourceMetadata = { name, options };

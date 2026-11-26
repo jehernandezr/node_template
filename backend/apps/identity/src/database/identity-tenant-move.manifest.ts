@@ -170,7 +170,7 @@ export class IdentityTenantMoveManifest extends TenantMoveManifest {
     },
   ];
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return IdentityTenantMoveManifest.TABLES;
   }
 }

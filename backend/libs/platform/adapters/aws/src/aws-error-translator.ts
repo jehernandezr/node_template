@@ -20,7 +20,7 @@ interface SdkErrorShape {
  */
 export class AwsErrorTranslator extends FailureRule {
   /** Transient or permanent for an SDK error; `undefined` for anything else. */
-  classify(error: object): FailureKind | undefined {
+  override classify(error: object): FailureKind | undefined {
     if (!AwsErrorTranslator.isSdkError(error)) {
       return undefined;
     }
@@ -33,6 +33,8 @@ export class AwsErrorTranslator extends FailureRule {
    * Whether retrying can help: server faults, throttling and network
    * errors (without `$fault`). A client error (permission, nonexistent resource,
    * invalid parameter) does not change on retry.
+   * @param error AWS error.
+   * @returns `true` when retryable.
    */
   isRetryable(error: unknown): boolean {
     const shape = (error ?? {}) as SdkErrorShape;
@@ -42,7 +44,13 @@ export class AwsErrorTranslator extends FailureRule {
     return shape.$fault !== 'client';
   }
 
-  /** An already translated `MessagingError` passes through unchanged. */
+  /**
+   * An already translated `MessagingError` passes through unchanged.
+   * @param operation Operation that failed.
+   * @param error AWS error.
+   * @param target Topic or queue of the call.
+   * @returns The messaging error.
+   */
   translate(
     operation: AwsOperation,
     error: unknown,

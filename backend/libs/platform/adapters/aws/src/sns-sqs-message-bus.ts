@@ -41,7 +41,7 @@ export class SnsSqsMessageBus extends MessageBus {
     this.publisher = options.publisher;
   }
 
-  async publish<M extends EventDefinition>(
+  override async publish<M extends EventDefinition>(
     event: M,
     data: MessageInput<M>,
     options?: PublishOptions,
@@ -49,7 +49,7 @@ export class SnsSqsMessageBus extends MessageBus {
     return this.deliver(this.factory.event(event, data, options));
   }
 
-  async send<M extends CommandDefinition>(
+  override async send<M extends CommandDefinition>(
     command: M,
     data: MessageInput<M>,
     options?: SendOptions,

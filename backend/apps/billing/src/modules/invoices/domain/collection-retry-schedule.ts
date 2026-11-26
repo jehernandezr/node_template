@@ -9,7 +9,12 @@ export class CollectionRetrySchedule {
 
   constructor(private readonly delaysDays: readonly number[]) {}
 
-  /** The next charge after rejection number `failedAttempts`, or `undefined` if no retries remain. */
+  /**
+   * The next charge after rejection number `failedAttempts`, or `undefined` if no retries remain.
+   * @param failedAttempts Rejections so far.
+   * @param failedAt Instant of the last rejection.
+   * @returns When to charge again, or `undefined` when the retries ran out.
+   */
   nextAfter(failedAttempts: number, failedAt: Date): Date | undefined {
     const days = this.delaysDays[failedAttempts - 1];
     return days === undefined

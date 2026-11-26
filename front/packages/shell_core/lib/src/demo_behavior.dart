@@ -26,10 +26,11 @@ final class DemoBehavior {
   /// [compute]. [operation] tags the call (an enum value of the fake) so a
   /// failure can target one operation. After [dispose] it throws
   /// [DemoDisposedException].
+  ///
+  /// Disposal can happen while the response is still waiting.
   Future<T> respond<T>(T Function() compute, {Object? operation}) async {
     _ensureServing();
     if (delay > Duration.zero) await Future<void>.delayed(delay);
-    // Disposal can happen while the response is still waiting.
     _ensureServing();
     final applies = _failures.where((f) => f.appliesTo(operation));
     if (applies.isNotEmpty) {

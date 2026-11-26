@@ -17,7 +17,7 @@ export class EphemeralApiKeyUsageBuffer extends ApiKeyUsageBuffer {
     super();
   }
 
-  async record(usage: ApiKeyUsage): Promise<void> {
+  override async record(usage: ApiKeyUsage): Promise<void> {
     await this.store.putField(
       IdentityCacheKey.ApiKeyUsage,
       [usage.tenantId, usage.apiKeyId].join(
@@ -28,7 +28,7 @@ export class EphemeralApiKeyUsageBuffer extends ApiKeyUsageBuffer {
     );
   }
 
-  async drain(): Promise<readonly ApiKeyUsage[]> {
+  override async drain(): Promise<readonly ApiKeyUsage[]> {
     const fields = await this.store.takeFields(IdentityCacheKey.ApiKeyUsage);
     return [...fields].flatMap(([field, value]) => {
       const [tenantId, apiKeyId] = field.split(

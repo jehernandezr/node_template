@@ -18,7 +18,9 @@ export class ValkeyBloomFilterFactory extends BloomFilterFactory {
     super();
   }
 
-  create(definition: ResolvedBloomFilterDefinition): RebuildableBloomFilter {
+  override create(
+    definition: ResolvedBloomFilterDefinition,
+  ): RebuildableBloomFilter {
     return new ValkeyBloomFilter(this.executor, {
       name: definition.name,
       expectedItems: definition.expectedItems,

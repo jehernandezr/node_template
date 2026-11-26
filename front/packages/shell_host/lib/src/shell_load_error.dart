@@ -4,6 +4,7 @@ import 'package:ui/ui.dart';
 
 /// Localized error of a deferred library that failed to load, with a retry.
 class ShellLoadError extends StatelessWidget {
+  /// Error shown when the shell could not start; [retry] tries again.
   const ShellLoadError({super.key, required this.retry});
 
   /// Matches `DeferredLibraryLoader.errorBuilder`; the raw error is never
@@ -11,6 +12,7 @@ class ShellLoadError extends StatelessWidget {
   static Widget builder(Object error, VoidCallback retry) =>
       ShellLoadError(retry: retry);
 
+  /// Called when the user retries.
   final VoidCallback retry;
 
   @override

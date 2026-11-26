@@ -38,6 +38,13 @@ export class InviteUser {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Invites an email to the tenant with groups the actor can grant, and emails the link.
+   * @param tenantId Tenant that invites.
+   * @param actor Actor that invites.
+   * @param request Email and groups.
+   * @returns The new invitation.
+   */
   async execute(
     tenantId: string,
     actor: Actor | undefined,

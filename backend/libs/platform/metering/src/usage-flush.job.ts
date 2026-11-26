@@ -49,7 +49,7 @@ export class UsageFlushJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     const { counters, windows } = this.collaborators;
     for (const window of await counters.pending(windows.closedBefore())) {
       if (await this.flush(window)) {

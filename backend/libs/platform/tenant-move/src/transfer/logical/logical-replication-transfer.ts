@@ -57,7 +57,11 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   private static readonly LOCK_NOT_AVAILABLE = '55P03';
   private readonly tables: readonly ReplicatedTable[];
 
-  /** Whether the manifest can be copied with logical replication: all its tables have a tenant column. */
+  /**
+   * Whether the manifest can be copied with logical replication: all its tables have a tenant column.
+   * @param manifest Manifest to check.
+   * @returns `true` when supported.
+   */
   static supports(manifest: TenantMoveManifest): boolean {
     return manifest
       .tables()
@@ -88,7 +92,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     });
   }
 
-  async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
+  override async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
     const transfer = await this.connections.connect(move);
     const name = ReplicationNames.of(transfer.moveId);
     await this.publish(transfer.source, transfer.tenantId, name);
@@ -106,7 +110,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   }
 
   /** Waits for the subscription to receive all the WAL of the frozen source, drops it and verifies like the batch copy. */
-  async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
+  override async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
     const transfer = await this.connections.connect(move);
     const name = ReplicationNames.of(transfer.moveId);
     const budget = transfer.budget ?? this.newBudget();
@@ -121,7 +125,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     return this.batch.verify({ ...move, budget });
   }
 
-  async abort(move: TenantTransfer): Promise<void> {
+  override async abort(move: TenantTransfer): Promise<void> {
     const transfer = await this.connections.connect(move);
     const budget = transfer.budget ?? this.newBudget();
     await this.unsubscribe(
@@ -133,7 +137,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     await this.batch.abort({ ...move, budget });
   }
 
-  async cleanup(
+  override async cleanup(
     tenantId: string,
     source: ShardLocation,
     budget?: TransferBudget,
@@ -141,7 +145,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     await this.batch.cleanup(tenantId, source, budget);
   }
 
-  async assignRegion(
+  override async assignRegion(
     tenantId: string,
     target: ShardLocation,
     region: string,
@@ -309,12 +313,14 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     return cause?.code === LogicalReplicationTransfer.LOCK_NOT_AVAILABLE;
   }
 
+  /**
+   * pg_subscription is a server-wide catalog: without the filter it would see subscriptions from other databases.
+   */
   private async isSubscribed(
     target: DataSource,
     name: string,
   ): Promise<boolean> {
     const rows: unknown[] = await target.query(
-      // pg_subscription is a server-wide catalog: without the filter it would see subscriptions from other databases.
       `SELECT 1 FROM pg_subscription
         WHERE subname = $1 AND subdbid = (SELECT oid FROM pg_database WHERE datname = current_database())`,
       [name],

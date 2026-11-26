@@ -6,7 +6,5 @@ import { UserRegisteredV1 } from './user-registered.contract.js';
 @Injectable()
 export class SecondUserConsumer {
   @Subscribe(UserRegisteredV1)
-  handle(): void {
-    // Only the decorator matters: the conflict happens at registration.
-  }
+  handle(): void {}
 }

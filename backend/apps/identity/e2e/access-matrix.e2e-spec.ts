@@ -75,7 +75,6 @@ runtime.describeIfAvailable('identity access matrix', () => {
   const member = new IdentityJourney(app, 'mario.member@example.com');
   let withMfa: SessionTokensBody;
   let withoutMfa: SessionTokensBody;
-  /** Owner of an organization with a session without a recent second factor. */
   let ownerWithoutMfa: string;
 
   beforeAll(async () => {

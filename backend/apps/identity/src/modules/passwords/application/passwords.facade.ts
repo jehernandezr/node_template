@@ -1,6 +1,6 @@
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 
-/** What `passwords` offers to the other modules. */
+/** Password checks and credential setup that sign-in, registration and account erasure use from `passwords`. */
 export abstract class PasswordsFacade {
   /**
    * Verifies a password. Without `ref` (a user that does not exist) it compares against a fixed hash, so the

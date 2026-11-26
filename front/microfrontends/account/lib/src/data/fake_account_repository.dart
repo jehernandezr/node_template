@@ -9,6 +9,7 @@ import 'account_repository.dart';
 /// every capability. Latency, programmed failures and the clock come from
 /// [DemoBehavior].
 class FakeAccountRepository implements AccountRepository {
+  /// Demo repository with sample data and the failures of `DemoBehavior`.
   FakeAccountRepository({
     DemoBehavior? behavior,
     AccountProfile? profile,

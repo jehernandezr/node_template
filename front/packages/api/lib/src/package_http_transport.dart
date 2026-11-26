@@ -32,6 +32,7 @@ final class PackageHttpTransport implements HttpTransport {
 
   final http.Client _client;
 
+  /// JSON is UTF-8 even when the response does not declare a charset.
   @override
   Future<TransportResponse> send(TransportRequest request) async {
     final outgoing = http.Request(request.method, request.uri)
@@ -60,7 +61,6 @@ final class PackageHttpTransport implements HttpTransport {
         for (final entry in response.headers.entries)
           entry.key.toLowerCase(): entry.value,
       },
-      // JSON is UTF-8 even when the response does not declare a charset.
       body: utf8.decode(response.bodyBytes, allowMalformed: true),
     );
   }

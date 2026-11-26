@@ -23,6 +23,11 @@ export class CreateTask {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Creates a task in the actor's tenant, indexes it and publishes `TaskCreated`.
+   * @param command Tenant, author and task fields.
+   * @returns The created task.
+   */
   execute(command: CreateTaskCommand): Promise<TaskView> {
     return this.shard.inTenantShard(command.tenantId, () =>
       this.transactions.runInTransaction(async () => {

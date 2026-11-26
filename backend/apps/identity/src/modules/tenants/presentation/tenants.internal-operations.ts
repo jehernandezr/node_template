@@ -17,7 +17,7 @@ import {
 import { ChangeTenantStatus } from '../application/change-tenant-status.use-case.js';
 import { ProvisionTenant } from '../application/provision-tenant.use-case.js';
 
-/** Internal operations of tenants. */
+/** Internal operations the tenant sagas call to create, discard, suspend, reactivate and activate tenants. */
 @Injectable()
 export class TenantsInternalOperations {
   constructor(
@@ -25,6 +25,11 @@ export class TenantsInternalOperations {
     private readonly status: ChangeTenantStatus,
   ) {}
 
+  /**
+   * Internal operation that provisions a tenant.
+   * @param input Tenant data and owner.
+   * @returns The new tenant.
+   */
   @InternalHandler(CreateTenantOperation)
   async createTenant(
     input: CreateTenantInput,
@@ -34,6 +39,11 @@ export class TenantsInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that discards a tenant still provisioning, the compensation of creating it.
+   * @param input Tenant to discard.
+   * @returns The outcome.
+   */
   @InternalHandler(DiscardTenantOperation)
   async discardTenant(
     input: TenantRefInput,
@@ -43,6 +53,12 @@ export class TenantsInternalOperations {
     };
   }
 
+  /**
+   * Blocks a tenant on behalf of another service: announces it and raises the tenant epoch, so the access tokens
+   * issued before stop working.
+   * @param input Tenant and reason.
+   * @returns The outcome.
+   */
   @InternalHandler(SuspendTenantOperation)
   async suspendTenant(
     input: SuspendTenantInput,
@@ -52,6 +68,11 @@ export class TenantsInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that reactivates a suspended tenant.
+   * @param input Tenant to reactivate.
+   * @returns The outcome.
+   */
   @InternalHandler(ReactivateTenantOperation)
   async reactivateTenant(
     input: TenantRefInput,
@@ -63,6 +84,11 @@ export class TenantsInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that activates a provisioned tenant.
+   * @param input Tenant to activate.
+   * @returns The outcome.
+   */
   @InternalHandler(ActivateTenantOperation)
   async activateTenant(
     input: TenantRefInput,

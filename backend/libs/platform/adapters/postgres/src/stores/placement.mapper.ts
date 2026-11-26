@@ -7,7 +7,12 @@ export class PlacementMapper {
   private static readonly STATUSES: readonly string[] =
     Object.values(TenantStatus);
 
-  /** @throws PersistenceError `PersistenceCorruptRow` if the row does not have the shape of a placement. */
+  /**
+   * Rebuilds a placement from its directory row.
+   * @param entity Stored row.
+   * @returns The placement.
+   * @throws PersistenceError `PersistenceCorruptRow` if the row does not have the shape of a placement.
+   */
   static toPlacement(entity: ShardDirectoryEntity): TenantPlacement {
     if (!PlacementMapper.isWellFormed(entity)) {
       throw new PersistenceError(

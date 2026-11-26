@@ -24,27 +24,27 @@ export class RendezvousInvoiceRepository extends InvoiceRepository {
   }
 
   /** Inserts into the real repository. */
-  insert(invoice: Invoice): Promise<void> {
+  override insert(invoice: Invoice): Promise<void> {
     return this.inner.insert(invoice);
   }
 
   /** Finds in the real repository. */
-  find(invoiceId: string): Promise<Invoice | undefined> {
+  override find(invoiceId: string): Promise<Invoice | undefined> {
     return this.inner.find(invoiceId);
   }
 
   /** Updates in the real repository. */
-  update(invoice: Invoice): Promise<void> {
+  override update(invoice: Invoice): Promise<void> {
     return this.inner.update(invoice);
   }
 
   /** Pages through the real repository. */
-  page(request: InvoicePageRequest): Promise<readonly Invoice[]> {
+  override page(request: InvoicePageRequest): Promise<readonly Invoice[]> {
     return this.inner.page(request);
   }
 
   /** Waits for the other transactions, or for the patience to run out, and queries the real repository. */
-  async any(status?: InvoiceStatus): Promise<boolean> {
+  override async any(status?: InvoiceStatus): Promise<boolean> {
     this.arrived += 1;
     if (this.arrived >= this.parties) {
       this.release();

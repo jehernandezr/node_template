@@ -24,7 +24,7 @@ export class FixedPreferences extends PreferencesFacade {
     this.byUser.set(userId, view);
   }
 
-  async get(user: UserRef): Promise<NotificationPreferences> {
+  override async get(user: UserRef): Promise<NotificationPreferences> {
     return NotificationPreferences.of(
       this.byUser.get(user.userId) ?? {
         enabled: [],
@@ -35,7 +35,7 @@ export class FixedPreferences extends PreferencesFacade {
     );
   }
 
-  async erase(user: UserRef): Promise<number> {
+  override async erase(user: UserRef): Promise<number> {
     return this.byUser.delete(user.userId) ? 1 : 0;
   }
 }
@@ -44,7 +44,7 @@ export class FixedPreferences extends PreferencesFacade {
 export class InMemoryInbox extends InboxFacade {
   readonly stored = new Map<string, NotificationState>();
 
-  async add(
+  override async add(
     _user: UserRef,
     notification: NotificationState,
   ): Promise<AppNotification> {
@@ -60,12 +60,12 @@ export class InMemoryInbox extends InboxFacade {
     };
   }
 
-  async unreadCount(user: UserRef): Promise<number> {
+  override async unreadCount(user: UserRef): Promise<number> {
     return [...this.stored.values()].filter((n) => n.userId === user.userId)
       .length;
   }
 
-  async erase(user: UserRef): Promise<number> {
+  override async erase(user: UserRef): Promise<number> {
     const mine = [...this.stored.values()].filter(
       (n) => n.userId === user.userId,
     );
@@ -79,7 +79,7 @@ export class RecordingRealtime extends RealtimeFacade {
   readonly frames: Array<{ userId: string; kind: string; data: unknown }> = [];
   online = false;
 
-  async notification(
+  override async notification(
     user: UserRef,
     notification: AppNotification,
   ): Promise<void> {
@@ -90,7 +90,7 @@ export class RecordingRealtime extends RealtimeFacade {
     });
   }
 
-  async unreadCount(user: UserRef, count: number): Promise<void> {
+  override async unreadCount(user: UserRef, count: number): Promise<void> {
     this.frames.push({
       userId: user.userId,
       kind: 'unread-count',
@@ -98,15 +98,18 @@ export class RecordingRealtime extends RealtimeFacade {
     });
   }
 
-  async closeSession(userId: string, sessionId: string): Promise<void> {
+  override async closeSession(
+    userId: string,
+    sessionId: string,
+  ): Promise<void> {
     this.frames.push({ userId, kind: 'session-closed', data: sessionId });
   }
 
-  async closeAllSessions(userId: string): Promise<void> {
+  override async closeAllSessions(userId: string): Promise<void> {
     this.frames.push({ userId, kind: 'all-sessions-closed', data: null });
   }
 
-  async isOnline(): Promise<boolean> {
+  override async isOnline(): Promise<boolean> {
     return this.online;
   }
 }
@@ -114,17 +117,19 @@ export class RecordingRealtime extends RealtimeFacade {
 export class InMemoryDeliveries extends DeliveryRepository {
   readonly byId = new Map<string, Delivery>();
 
-  async save(delivery: Delivery): Promise<void> {
+  override async save(delivery: Delivery): Promise<void> {
     this.byId.set(delivery.id, delivery);
   }
 
-  async ofNotification(notificationId: string): Promise<readonly Delivery[]> {
+  override async ofNotification(
+    notificationId: string,
+  ): Promise<readonly Delivery[]> {
     return [...this.byId.values()].filter(
       (d) => d.notificationId === notificationId,
     );
   }
 
-  async erase(userId: string): Promise<number> {
+  override async erase(userId: string): Promise<number> {
     const mine = [...this.byId.values()].filter((d) => d.userId === userId);
     mine.forEach((d) => this.byId.delete(d.id));
     return mine.length;
@@ -143,7 +148,7 @@ export class StaticRecipients extends RecipientDirectory {
     return this;
   }
 
-  async find(userId: string): Promise<Recipient | undefined> {
+  override async find(userId: string): Promise<Recipient | undefined> {
     return this.byId.get(userId);
   }
 }

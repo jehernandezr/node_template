@@ -71,17 +71,27 @@ export class OperationMetadata {
     Object.freeze(this);
   }
 
-  /** Returns the service that owns an operation: the first segment of its id (`service.entity.operation.vN`). */
+  /**
+   * Returns the service that owns an operation: the first segment of its id (`service.entity.operation.vN`).
+   * @param operationId Operation id.
+   * @returns The service name.
+   */
   static serviceOf(operationId: string): string {
     return operationId.split('.')[0];
   }
 
-  /** Service that owns this operation. */
+  /**
+   * Service that owns this operation.
+   * @returns The service name.
+   */
   service(): string {
     return OperationMetadata.serviceOf(this.id);
   }
 
-  /** Effective retries: what the operation declares on top of the defaults. */
+  /**
+   * Effective retries: what the operation declares on top of the defaults.
+   * @returns The retry policy.
+   */
   retryPolicy(): RetryPolicy {
     const base = OperationMetadata.DEFAULT_RETRY_POLICY;
     return new RetryPolicy(
@@ -92,12 +102,18 @@ export class OperationMetadata {
     );
   }
 
-  /** Time of each attempt. */
+  /**
+   * Time of each attempt.
+   * @returns The timeout in milliseconds.
+   */
   attemptTimeoutMs(): number {
     return this.timeoutMs ?? OperationMetadata.DEFAULT_TIMEOUT_MS;
   }
 
-  /** Attempts the client can make. A non-idempotent operation has exactly one. */
+  /**
+   * Attempts the client can make. A non-idempotent operation has exactly one.
+   * @returns The number of attempts.
+   */
   attempts(): number {
     return this.idempotent ? Math.max(1, this.retryPolicy().maxAttempts) : 1;
   }
@@ -105,6 +121,7 @@ export class OperationMetadata {
   /**
    * Default budget of a full call: all attempts plus the
    * longest wait between them. Used when the caller does not pass a `Deadline`.
+   * @returns The budget in milliseconds.
    */
   callBudgetMs(): number {
     const attempts = this.attempts();
@@ -117,6 +134,7 @@ export class OperationMetadata {
   /**
    * Id of the operation that reverts this one, or `null` if it has none: a
    * read-only operation or one declared with `Compensation.None`.
+   * @returns The compensation id, or `null`.
    */
   compensation(): string | null {
     if (!this.mutating || this.compensatedBy === undefined) {
@@ -125,7 +143,10 @@ export class OperationMetadata {
     return this.compensatedBy === Compensation.None ? null : this.compensatedBy;
   }
 
-  /** Business codes a handler or a transport can return for this operation. */
+  /**
+   * Business codes a handler or a transport can return for this operation.
+   * @returns The codes.
+   */
   allowedErrorCodes(): ReadonlySet<string> {
     return new Set([...this.errors, OperationMetadata.INVALID_INPUT_CODE]);
   }

@@ -13,7 +13,11 @@ export interface ErrorDescription {
  * message dispatcher share it.
  */
 export class ErrorDescriptor {
-  /** Returns the name, valid code and message of `error`; a value that is not an `Error` is converted to text. */
+  /**
+   * Returns the name, valid code and message of `error`; a value that is not an `Error` is converted to text.
+   * @param error Error to describe.
+   * @returns The description.
+   */
   static describe(error: unknown): ErrorDescription {
     if (error instanceof Error) {
       const code = ErrorDescriptor.codeOf(error);
@@ -24,7 +28,11 @@ export class ErrorDescriptor {
     return { name: typeof error, message: String(error) };
   }
 
-  /** Returns the error `code` only if it satisfies `ErrorCode.isValid`; otherwise, `undefined`. */
+  /**
+   * Returns the error `code` only if it satisfies `ErrorCode.isValid`; otherwise, `undefined`.
+   * @param error Error to read.
+   * @returns The code, or `undefined`.
+   */
   static codeOf(error: unknown): string | undefined {
     if (typeof error !== 'object' || error === null) {
       return undefined;

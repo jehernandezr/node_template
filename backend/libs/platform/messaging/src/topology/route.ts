@@ -14,12 +14,18 @@ export class Route {
    * Starts the route of an event from the contracts kit (`defineEvent`). Accepts
    * the type as text for validation tests; the validation then asks
    * for its contract in `ValidateOptions.contracts`.
+   * @param source Event contract or type.
+   * @returns The builder.
    */
   static event(source: string | EventDefinition): EventRouteBuilder {
     return new EventRouteBuilder(source);
   }
 
-  /** Starts the route of a command from the contracts kit (`defineCommand`). */
+  /**
+   * Starts the route of a command from the contracts kit (`defineCommand`).
+   * @param source Command contract or type.
+   * @returns The builder.
+   */
   static command(source: string | CommandDefinition): CommandRouteBuilder {
     return new CommandRouteBuilder(source);
   }

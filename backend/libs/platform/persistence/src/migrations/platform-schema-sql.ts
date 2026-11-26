@@ -12,14 +12,14 @@ export class PlatformSchemaSql {
    *   a trigger (audit). Everything else uses the `IdGenerator` port.
    * - `platform_uuid_v7_lower_bound(ts)`: smallest UUIDv7 of an instant, for the
    *   bounds of range partitions on `id`.
-   * - `platform_ensure_partitions(table, interval, ahead)`: creates the
-   *   partitions of the current interval and the following ones. Called by a job.
-   * - `platform_detach_partitions_before(table, interval, cutoff)`: detaches the
-   *   expired partitions to archive them (retention).
-   * - `platform_reject_mutation(name)`: trigger that makes a table insert-only.
-   *   The argument names the table in the error (in a partitioned
-   *   table, `TG_TABLE_NAME` would be the partition).
-   * - `platform_audit_row()`: audit trigger (see `auditTriggerSql`).
+   * - `platform_ensure_partitions(parent, step, ahead)`: creates the partitions of `parent` for the current
+   *   `step` (`day` or `month`) and the `ahead` following ones. Called by a job.
+   * - `platform_detach_partitions_before(parent, step, cutoff)`: detaches the partitions of `parent` whose
+   *   `step` ends before `cutoff`, to archive them (retention).
+   * - `platform_reject_mutation()`: trigger that makes a table insert-only. Its optional trigger argument
+   *   names the table in the error (in a partitioned table, `TG_TABLE_NAME` would be the partition).
+   * - `platform_audit_row()`: audit trigger whose arguments are the id column and the excluded columns (see
+   *   `auditTriggerSql`).
    */
   static readonly functionsUp: readonly string[] = [
     `CREATE OR REPLACE FUNCTION platform_uuid_v7() RETURNS uuid

@@ -9,7 +9,12 @@ export interface SchemaOwner {
 
 /** Determines which contract each named schema belongs to. */
 export class SchemaOwnership {
-  /** Fails if the same schema is registered under two names. */
+  /**
+   * Maps each schema to the service and name that own it.
+   * Fails if the same schema is registered under two names.
+   * @param contracts Contracts of every service.
+   * @returns The owner of each schema.
+   */
   of(contracts: readonly ServiceContract[]): Map<z.ZodType, SchemaOwner> {
     const owners = new Map<z.ZodType, SchemaOwner>();
     for (const contract of contracts) {

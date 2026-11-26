@@ -16,6 +16,7 @@ import 'overview_controller.dart';
 ///
 /// The saga and dead-letter cards appear only for the roles that can open them.
 class OverviewScreen extends StatelessWidget {
+  /// Overview of the backoffice backed by [repository].
   const OverviewScreen({super.key, required this.repository});
 
   /// Data source of the screen.

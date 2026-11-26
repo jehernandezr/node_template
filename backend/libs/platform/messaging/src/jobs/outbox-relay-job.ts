@@ -36,7 +36,7 @@ export class OutboxRelayJob extends ScheduledJob {
   }
 
   /** One relay pass per partition, with its report in metrics. */
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     await this.scopes.forEach(async () => {
       this.report(await this.relay.relayOnce());
     });

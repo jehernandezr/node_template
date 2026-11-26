@@ -73,7 +73,13 @@ export class OutboundMessageFactory {
     this.envelopes = new EnvelopeFactory(this.clock, this.ids);
   }
 
-  /** Validates and builds an event. */
+  /**
+   * Validates and builds an event.
+   * @param event Event contract.
+   * @param data Payload.
+   * @param options Tenant, group and deduplication.
+   * @returns The outbound message.
+   */
   event<M extends EventDefinition>(
     event: M,
     data: MessageInput<M>,
@@ -82,7 +88,13 @@ export class OutboundMessageFactory {
     return this.build(event, data, options, undefined);
   }
 
-  /** Validates and builds a command. */
+  /**
+   * Validates and builds a command.
+   * @param command Command contract.
+   * @param data Payload.
+   * @param options Tenant, group and deduplication.
+   * @returns The outbound message.
+   */
   command<M extends CommandDefinition>(
     command: M,
     data: MessageInput<M>,

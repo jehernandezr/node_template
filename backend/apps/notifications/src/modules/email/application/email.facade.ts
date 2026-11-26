@@ -4,6 +4,8 @@ import type { EmailRequest } from './email-request.js';
 export abstract class EmailFacade {
   /**
    * Sends the email only once per `messageId` and returns the provider's id.
+   * @param request Template, recipient, parameters and `messageId`.
+   * @returns The provider id of the email.
    * @throws RecipientSuppressedError, TemplateUnknownError, TemplateParameterMissingError or EmailInProgressError.
    */
   abstract send(request: EmailRequest): Promise<string>;

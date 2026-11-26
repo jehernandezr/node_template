@@ -25,7 +25,7 @@ class QuotaLedger extends OperationHandler<typeof CheckQuotaOperation> {
   answered = 0;
   suspended = false;
 
-  async handle(
+  override async handle(
     input: CheckQuotaInput,
   ): Promise<HandlerResult<BillingQuotaCheck>> {
     if (input.tenantId === UNSUBSCRIBED) {

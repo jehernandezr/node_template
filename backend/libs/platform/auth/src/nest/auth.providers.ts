@@ -35,6 +35,9 @@ import { AUTH_OPTIONS, AUTH_STATE_SOURCE } from './auth.tokens.js';
  */
 export class AuthProviders {
   /**
+   * Builds the providers of the token verifier and the access resolution with their adapters.
+   * @param extras Key source, revocation feed and access grants.
+   * @returns The providers.
    * @throws ConfigValidationError if `source`, `feed` or `accessGrants` is missing: the
    *   `forRoot` type marks them optional because the Nest module builder requires it.
    */
@@ -152,7 +155,10 @@ export class AuthProviders {
     ];
   }
 
-  /** What other modules receive. */
+  /**
+   * What other modules receive.
+   * @returns The exported tokens.
+   */
   static exports(): Array<symbol | Type<unknown> | Abstract<unknown>> {
     return [
       AuthStateReader,

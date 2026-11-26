@@ -89,7 +89,6 @@ void main() {
           tester,
           _Setups.of(_Sessions.client(), initialLocation: ScenarioProbe.home),
           (host) async {
-            // Let the page transition finish so the top bar is on screen.
             await tester.pump(const Duration(seconds: 1));
 
             expect(find.text(ScenarioProbe.homeTitle), findsOneWidget);
@@ -150,7 +149,6 @@ void main() {
         tester,
         _Setups.of(_Sessions.client(), initialLocation: ScenarioProbe.home),
         (host) async {
-          // Let the page transition finish so the top bar is on screen.
           await tester.pump(const Duration(seconds: 1));
 
           await tester.tap(find.byIcon(Icons.logout));

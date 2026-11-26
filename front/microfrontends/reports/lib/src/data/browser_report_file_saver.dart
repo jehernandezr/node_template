@@ -8,6 +8,7 @@ import 'report_file_saver.dart';
 
 /// [ReportFileSaver] in the browser: the file downloads with its own name.
 final class PlatformReportFileSaver implements ReportFileSaver {
+  /// Saver that downloads the file in the browser.
   const PlatformReportFileSaver();
 
   @override

@@ -14,6 +14,10 @@ export class NodeSha256 {
     this.digester = this.create();
   }
 
+  /**
+   * Adds data to the hash.
+   * @param data Data to hash.
+   */
   update(data: SourceData): void {
     this.digester.update(
       typeof data === 'string'
@@ -26,10 +30,15 @@ export class NodeSha256 {
     );
   }
 
+  /**
+   * Finishes the hash.
+   * @returns The digest.
+   */
   digest(): Promise<Uint8Array> {
     return Promise.resolve(new Uint8Array(this.digester.digest()));
   }
 
+  /** Starts the hash again. */
   reset(): void {
     this.digester = this.create();
   }

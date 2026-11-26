@@ -35,6 +35,11 @@ export class HttpProblemError extends PlatformError {
     this.retryAfterSeconds = options.retryAfterSeconds;
   }
 
+  /**
+   * The input does not match the contract.
+   * @param errors Field errors.
+   * @returns The error.
+   */
   static invalidInput(errors: FieldError[]): HttpProblemError {
     return new HttpProblemError(
       'Request input does not match the contract',
@@ -43,6 +48,10 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The body exceeds the limit.
+   * @returns The error.
+   */
   static payloadTooLarge(): HttpProblemError {
     return new HttpProblemError(
       'Request body exceeds the allowed size',
@@ -50,6 +59,10 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The body is not JSON.
+   * @returns The error.
+   */
   static unsupportedMediaType(): HttpProblemError {
     return new HttpProblemError(
       'Request body media type is not supported',
@@ -57,6 +70,10 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The body is not valid JSON.
+   * @returns The error.
+   */
   static malformedBody(): HttpProblemError {
     return new HttpProblemError(
       'Request body is not valid JSON',
@@ -64,6 +81,10 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The `Origin` is not allowed.
+   * @returns The error.
+   */
   static originRejected(): HttpProblemError {
     return new HttpProblemError(
       'Request origin is not allowed',
@@ -71,6 +92,11 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The requested API version is not supported.
+   * @param version Requested version.
+   * @returns The error.
+   */
   static unsupportedVersion(version: string): HttpProblemError {
     return new HttpProblemError(
       'API version is not supported',
@@ -79,6 +105,11 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The route version reached its sunset.
+   * @param routeId Route id.
+   * @returns The error.
+   */
   static versionSunset(routeId: string): HttpProblemError {
     return new HttpProblemError(
       'API route is no longer available',
@@ -87,6 +118,10 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The resource does not exist or is not visible.
+   * @returns The error.
+   */
   static notFound(): HttpProblemError {
     return new HttpProblemError(
       'Resource not found',
@@ -94,6 +129,11 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The actor lacks permissions.
+   * @param missing Missing permissions.
+   * @returns The error.
+   */
   static forbidden(missing: readonly string[]): HttpProblemError {
     return new HttpProblemError(
       'Access denied',
@@ -104,6 +144,11 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The plan does not include a feature.
+   * @param missing Missing features.
+   * @returns The error.
+   */
   static featureNotIncluded(missing: readonly string[]): HttpProblemError {
     return new HttpProblemError(
       'The plan does not include this feature',
@@ -112,7 +157,10 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
-  /** A disabled flag responds like a nonexistent route: it does not reveal that the feature exists. */
+  /**
+   * A disabled flag responds like a nonexistent route: it does not reveal that the feature exists.
+   * @returns The error.
+   */
   static flagDisabled(): HttpProblemError {
     return new HttpProblemError(
       'Not found',
@@ -120,6 +168,10 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The route needs a recent second factor.
+   * @returns The error.
+   */
   static stepUpRequired(): HttpProblemError {
     return new HttpProblemError(
       'Recent multi-factor authentication is required',
@@ -127,6 +179,11 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The rate limit was exceeded.
+   * @param retryAfterSeconds Seconds to wait.
+   * @returns The error.
+   */
   static rateLimited(retryAfterSeconds: number): HttpProblemError {
     return new HttpProblemError(
       'Rate limit exceeded',
@@ -135,6 +192,10 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  /**
+   * The request exceeded its deadline.
+   * @returns The error.
+   */
   static timeout(): HttpProblemError {
     return new HttpProblemError(
       'Request handler exceeded its time limit',

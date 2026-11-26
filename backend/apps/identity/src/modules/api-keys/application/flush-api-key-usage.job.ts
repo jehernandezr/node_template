@@ -29,7 +29,7 @@ export class FlushApiKeyUsageJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     for (const usage of await this.buffer.drain()) {
       await this.scopes.inTenantShard(usage.tenantId, () =>
         this.repository.touchLastUsed(usage.apiKeyId, usage.lastUsedAt),

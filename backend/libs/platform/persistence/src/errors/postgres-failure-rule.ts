@@ -13,7 +13,7 @@ export class PostgresFailureRule extends FailureRule {
    * @param error Error to classify.
    * @returns The transient failure kind, or `undefined` so the other rules decide.
    */
-  classify(error: object): FailureKind | undefined {
+  override classify(error: object): FailureKind | undefined {
     return PostgresFailureClassifier.transientKindOf(error);
   }
 }

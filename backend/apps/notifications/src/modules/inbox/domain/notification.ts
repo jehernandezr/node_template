@@ -17,6 +17,11 @@ export interface NotificationState {
 
 /** How an inbox notification goes out through the contract. Pure utility. */
 export class NotificationViews {
+  /**
+   * Builds the API view of a notification.
+   * @param state Stored notification.
+   * @returns The notification as the API returns it.
+   */
   static of(state: NotificationState): AppNotification {
     return {
       id: state.id,

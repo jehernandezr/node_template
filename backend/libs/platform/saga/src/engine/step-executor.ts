@@ -45,6 +45,13 @@ export class StepExecutor {
    * and the step is before the pivot, it does not dispatch: it starts compensating (including
    * the step if its entry is `Dispatched` or `Uncertain`) with `DeadlineExceeded`.
    * Returns the written instance.
+   * Nothing is dispatched after the deadline, but an uncertain step must still be undone.
+   * The clock is read after the call: a step that used up its deadline must see the saga deadline already expired and measure the backoff from that moment.
+   * @param run Run that holds the lease.
+   * @param instance Saga instance.
+   * @param compiled Compiled saga.
+   * @param steps Step log.
+   * @returns The instance after the step.
    */
   async run(
     run: SagaRun,
@@ -57,7 +64,6 @@ export class StepExecutor {
     const entry = steps.find(index, StepDirection.Forward);
     const before = this.deps.clock.now();
     if (index < compiled.pivotIndex && instance.deadlinePassed(before)) {
-      // Nothing is dispatched after the deadline, but an uncertain step must still be undone.
       const uncertain =
         entry?.status === StepStatus.Dispatched ||
         entry?.status === StepStatus.Uncertain;
@@ -83,8 +89,6 @@ export class StepExecutor {
     if (call.result === StepCallResult.Halted) {
       return call.instance;
     }
-    // The clock is read after the call: a step that used up its deadline must
-    // see the saga deadline already expired and measure the backoff from that moment.
     const now = this.deps.clock.now();
     return this.settle(run, compiled, steps, call.attempt, now);
   }

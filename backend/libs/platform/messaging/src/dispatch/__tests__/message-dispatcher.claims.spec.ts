@@ -84,7 +84,6 @@ describe('MessageDispatcher three-state claims', () => {
       receiveCount: 1,
       retryPolicy: policy,
     });
-    // Lets the first delivery take the claim and enter the handler.
     await flush();
 
     const redelivery = await dispatcher.dispatch(raw, {
@@ -174,7 +173,6 @@ describe('MessageDispatcher three-state claims', () => {
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), { receiveCount: 1 });
     expect(store.claims[0]).toMatchObject({ minLeaseMs: 120_000 });
 
-    // The delivery reports a longer extended visibility timeout.
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), {
       receiveCount: 1,
       visibilityTimeoutMs: 600_000,
@@ -217,7 +215,6 @@ describe('MessageDispatcher three-state claims', () => {
     dispatcher.register(TaskUpdated, handler.handle);
     const raw = envelopeFor({ id: 't1' });
 
-    // A consumer took the claim with the same content and died without completing it.
     const crashed = new MessageDispatcher(
       {
         consumer: 'notifications',
@@ -248,7 +245,6 @@ describe('MessageDispatcher three-state claims', () => {
   it('completes with the claim token: a handler that outlived its lease cannot complete', async () => {
     const { dispatcher, clock } = setup(1_000);
     const slow = gate();
-    // The first call waits for `slow`; the second finishes immediately.
     dispatcher.register(
       TaskUpdated,
       new RecordingMessageHandler({ gates: [slow.promise] }).handle,
@@ -261,7 +257,6 @@ describe('MessageDispatcher three-state claims', () => {
     });
     await flush();
 
-    // The lease expires; a redelivery takes the claim and finishes first.
     clock.advance(10_000);
     expect(
       (await dispatcher.dispatch(raw, { receiveCount: 2, retryPolicy: policy }))
@@ -269,8 +264,6 @@ describe('MessageDispatcher three-state claims', () => {
     ).toBe(DispatchOutcome.Processed);
 
     slow.open();
-    // The expired completion is rejected and reported for redelivery, which
-    // then sees the completed claim.
     expect(await first).toMatchObject({
       outcome: DispatchOutcome.RetryLater,
       code: 'PLATFORM.PRIMITIVES.STALE_CLAIM',

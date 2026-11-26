@@ -54,19 +54,32 @@ export class QueueDef {
     this.name = name;
   }
 
-  /** Subscribes the queue to a topic, optionally only for some message types. */
+  /**
+   * Subscribes the queue to a topic, optionally only for some message types.
+   * @param topic Topic to subscribe to.
+   * @param options Message types to filter.
+   * @returns The queue.
+   */
   subscribesTo(topic: TopicDef, options: SubscriptionOptions = {}): this {
     this.subs.push({ topic, filterTypes: [...(options.types ?? [])] });
     return this;
   }
 
-  /** Sets the retry policy used when a handler fails transiently. */
+  /**
+   * Sets the retry policy used when a handler fails transiently.
+   * @param policy Retry policy.
+   * @returns The queue.
+   */
   retry(policy: RetryPolicy): this {
     this.policy = policy;
     return this;
   }
 
-  /** Configures the dead-letter queue (`<name>-dlq`). */
+  /**
+   * Configures the dead-letter queue (`<name>-dlq`).
+   * @param options Dead-letter settings.
+   * @returns The queue.
+   */
   deadLetter(options: DeadLetterOptions): this {
     if (
       !Number.isInteger(options.maxReceiveCount) ||
@@ -84,13 +97,20 @@ export class QueueDef {
     return this;
   }
 
-  /** Marks the queue as ordered (FIFO). */
+  /**
+   * Marks the queue as ordered (FIFO).
+   * @returns The queue.
+   */
   fifo(): this {
     this.fifoEnabled = true;
     return this;
   }
 
-  /** Sets the visibility timeout in seconds. The range is checked by the topology validation. */
+  /**
+   * Sets the visibility timeout in seconds. The range is checked by the topology validation.
+   * @param seconds Visibility timeout.
+   * @returns The queue.
+   */
   visibilityTimeout(seconds: number): this {
     if (!(seconds > 0) || !Number.isFinite(seconds)) {
       throw new MessagingError(
@@ -102,10 +122,12 @@ export class QueueDef {
     return this;
   }
 
+  /** Whether the queue is FIFO. */
   get isFifo(): boolean {
     return this.fifoEnabled;
   }
 
+  /** Seconds a received message stays hidden from other consumers before SQS delivers it again. */
   get visibilityTimeoutSeconds(): number {
     return this.visibilitySeconds;
   }
@@ -125,6 +147,7 @@ export class QueueDef {
     return `${this.name}-dlq`;
   }
 
+  /** Topics the queue subscribes to. */
   get subscriptions(): readonly Subscription[] {
     return this.subs;
   }

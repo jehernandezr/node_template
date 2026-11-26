@@ -37,7 +37,7 @@ export class CachedAuthStateReader extends AuthStateReader {
     this.versions = new TtlLruCache(options.maxEntries);
   }
 
-  async isSessionRevoked(sessionId: string): Promise<boolean> {
+  override async isSessionRevoked(sessionId: string): Promise<boolean> {
     if (
       this.revoked.isWarm() &&
       !(await this.revoked.mightContain(sessionId))
@@ -51,23 +51,25 @@ export class CachedAuthStateReader extends AuthStateReader {
     }
   }
 
-  revokedSessionIds(signal?: AbortSignal): AsyncIterable<readonly string[]> {
+  override revokedSessionIds(
+    signal?: AbortSignal,
+  ): AsyncIterable<readonly string[]> {
     return this.source.revokedSessionIds(signal);
   }
 
-  userEpoch(userId: string): Promise<Epoch | undefined> {
+  override userEpoch(userId: string): Promise<Epoch | undefined> {
     return this.cached(this.userEpochs, userId, () =>
       this.source.userEpoch(userId),
     );
   }
 
-  tenantEpoch(tenantId: string): Promise<Epoch | undefined> {
+  override tenantEpoch(tenantId: string): Promise<Epoch | undefined> {
     return this.cached(this.tenantEpochs, tenantId, () =>
       this.source.tenantEpoch(tenantId),
     );
   }
 
-  permissionVersion(
+  override permissionVersion(
     tenantId: string,
     userId: string,
   ): Promise<PermissionVersion | undefined> {
@@ -76,14 +78,14 @@ export class CachedAuthStateReader extends AuthStateReader {
     );
   }
 
-  accessGrant(
+  override accessGrant(
     tenantId: string,
     userId: string,
   ): Promise<AccessGrant | undefined> {
     return this.source.accessGrant(tenantId, userId);
   }
 
-  apiKey(
+  override apiKey(
     prefix: string,
     secretHash: string,
   ): Promise<ApiKeyPrincipal | undefined> {

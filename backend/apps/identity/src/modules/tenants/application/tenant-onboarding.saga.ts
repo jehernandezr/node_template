@@ -37,7 +37,7 @@ export interface TenantOnboardingState {
 export class TenantOnboardingSaga extends SagaDefinition<TenantOnboardingState> {
   readonly type = IdentitySaga.TenantOnboarding;
 
-  protected define(flow: SagaFlow<TenantOnboardingState>): void {
+  protected override define(flow: SagaFlow<TenantOnboardingState>): void {
     flow
       .step(CreateTenantOperation)
       .input((state) => ({

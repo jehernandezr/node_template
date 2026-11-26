@@ -5,11 +5,13 @@ import 'dart:async';
 /// Microfrontends never import each other; they share event types declared
 /// in `front/packages` and talk through [ShellEventBus].
 abstract class ShellEvent {
+  /// Base constructor of the shell events.
   const ShellEvent();
 }
 
 /// Event whose latest instance per type is kept, so late listeners can replay it.
 abstract class ReplayableShellEvent extends ShellEvent {
+  /// Base constructor of the events a late subscriber still receives.
   const ReplayableShellEvent();
 }
 

@@ -12,10 +12,17 @@ import {
 import { BillingResource } from '../../../shared/enums/billing-resource.enum.js';
 import { InvoiceQueries } from '../application/invoice-queries.js';
 
+/** HTTP routes of the invoices of the actor's tenant. */
 @Resource(BillingResource.Invoices)
 export class InvoicesController {
   constructor(private readonly queries: InvoiceQueries) {}
 
+  /**
+   * Lists the invoices of the actor's tenant.
+   * @param input Cursor and page size.
+   * @param actor Signed-in actor; its tenant is read.
+   * @returns One page of invoices.
+   */
   @Endpoint(ListInvoicesRoute)
   list(
     @Input() input: ListInvoicesRequest,
@@ -24,6 +31,12 @@ export class InvoicesController {
     return this.queries.list(ActingMember.of(actor).tenantId, input);
   }
 
+  /**
+   * Reads one invoice of the actor's tenant.
+   * @param input Invoice id.
+   * @param actor Signed-in actor; its tenant is read.
+   * @returns The invoice with its lines.
+   */
   @Endpoint(GetInvoiceRoute)
   get(
     @Input() input: GetInvoiceRequest,

@@ -28,7 +28,7 @@ export class SweepReservedLookupsJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     await this.directory.sweepReserved(
       new Date(
         this.clock.now().getTime() - IdentityDefaults.reservedLookupMaxAgeMs,

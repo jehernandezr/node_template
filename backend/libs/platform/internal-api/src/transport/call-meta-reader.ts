@@ -8,6 +8,8 @@ export class CallMetaReader {
   /**
    * Returns the headers with lowercase names and a single value per header: from an
    * array it takes the first and discards anything that is not text.
+   * @param raw Raw headers.
+   * @returns The normalized headers.
    */
   normalize(
     raw: Readonly<Record<string, string | string[] | undefined>>,
@@ -26,6 +28,8 @@ export class CallMetaReader {
    * Reads `idempotencyKey` from `x-idempotency-key` (required), `deadline` from `x-call-deadline` and
    * `timeoutMs` from `x-call-timeout-ms` (finite numbers, required), and `traceparent`,
    * `tenantId` and `actorId` if present. It does not set `signal`.
+   * @param headers Normalized headers.
+   * @returns The call metadata.
    * @throws InternalApiError `InvalidRequest` if a required header is missing or a number is not finite.
    */
   read(headers: Readonly<Record<string, string | undefined>>): CallMeta {

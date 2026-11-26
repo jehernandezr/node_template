@@ -10,7 +10,7 @@ import { GetTask } from './get-task.query.js';
 import { ListTaskChanges } from './list-task-changes.query.js';
 import { TasksFacade } from './tasks.facade.js';
 
-/** In-process `TasksFacade`. */
+/** Serves the internal operations of tasks: a task by id, its pages of changes and the anonymization of a user. */
 @Injectable()
 export class LocalTasksFacade extends TasksFacade {
   constructor(
@@ -21,15 +21,15 @@ export class LocalTasksFacade extends TasksFacade {
     super();
   }
 
-  get(tenantId: string, taskId: string): Promise<Task> {
+  override get(tenantId: string, taskId: string): Promise<Task> {
     return this.getTask.execute(tenantId, taskId);
   }
 
-  anonymizeUser(userId: string): Promise<number> {
+  override anonymizeUser(userId: string): Promise<number> {
     return this.maintenance.replaceAuthor(userId, TasksDefaults.erasedAuthor);
   }
 
-  listChanges(query: ListTaskChangesInput): Promise<TaskChangePage> {
+  override listChanges(query: ListTaskChangesInput): Promise<TaskChangePage> {
     return this.changes.execute(query);
   }
 }

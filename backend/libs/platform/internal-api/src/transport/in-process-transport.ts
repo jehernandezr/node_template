@@ -9,7 +9,7 @@ export class InProcessTransport extends Transport {
     super();
   }
 
-  invoke(
+  override invoke(
     operationId: string,
     input: unknown,
     meta: CallMeta,

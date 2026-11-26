@@ -19,7 +19,6 @@ describe('BloomMath.murmur3', () => {
 });
 
 describe('BloomMath.positions', () => {
-  // Pinned output of the double hashing scheme: any change must break this test.
   it('pins the exact bit positions for a fixed input and parameters', () => {
     expect(BloomMath.positions('pinned-item', 1000, 5)).toEqual([
       5, 568, 131, 695, 261,

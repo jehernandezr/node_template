@@ -25,7 +25,6 @@ describe('RequestContextInterceptor', () => {
     ),
     new DebugSampler(0, new FixedRandomSource()),
   );
-  // The interceptor does not read the Nest execution context.
   const executionContext = {} as ExecutionContext;
 
   it('opens a new request context for the handler when there is none', async () => {

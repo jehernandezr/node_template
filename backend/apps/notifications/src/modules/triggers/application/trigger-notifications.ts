@@ -25,7 +25,12 @@ export class TriggerNotifications {
     private readonly members: TenantMembers,
   ) {}
 
-  /** A security alert belongs to the account, not a tenant: the notice stays in the user's home tenant. */
+  /**
+   * Notifies the user of a security alert of its account.
+   * A security alert belongs to the account, not a tenant: the notice stays in the user's home tenant.
+   * @param messageId Id of the event.
+   * @param alert Alert payload.
+   */
   async securityAlert(
     messageId: string,
     alert: SecurityAlertRaisedPayload,
@@ -42,7 +47,12 @@ export class TriggerNotifications {
     }
   }
 
-  /** Only notifies the author when another person changed their task. */
+  /**
+   * Notifies the author of a task that another person changed it.
+   * Only notifies the author when another person changed their task.
+   * @param messageId Id of the event.
+   * @param task Change payload.
+   */
   async taskUpdated(
     messageId: string,
     task: TaskUpdatedPayload,
@@ -59,6 +69,11 @@ export class TriggerNotifications {
     );
   }
 
+  /**
+   * Notifies the billing managers of the tenant that an invoice was issued.
+   * @param messageId Id of the event.
+   * @param invoice Invoice payload.
+   */
   async invoiceIssued(
     messageId: string,
     invoice: InvoiceIssuedPayload,
@@ -77,6 +92,11 @@ export class TriggerNotifications {
     }
   }
 
+  /**
+   * Notifies a user who joined a tenant or whose roles changed.
+   * @param messageId Id of the event.
+   * @param change Membership payload.
+   */
   async membershipChanged(
     messageId: string,
     change: MembershipChangedPayload,
@@ -90,6 +110,11 @@ export class TriggerNotifications {
     );
   }
 
+  /**
+   * Notifies the requester that its report is ready or failed.
+   * @param messageId Id of the event.
+   * @param run Run payload.
+   */
   async reportCompleted(
     messageId: string,
     run: RunCompletedPayload,

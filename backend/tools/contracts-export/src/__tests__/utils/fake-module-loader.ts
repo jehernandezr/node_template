@@ -10,7 +10,7 @@ export class FakeModuleLoader extends ModuleLoader {
     super();
   }
 
-  load(path: string): Promise<Readonly<Record<string, unknown>>> {
+  override load(path: string): Promise<Readonly<Record<string, unknown>>> {
     const found = this.modules[path];
     return found
       ? Promise.resolve(found)

@@ -29,6 +29,11 @@ class RealtimeAuthSourceModule {}
 /** The `apps/realtime` process: verifies tokens, reads each user's stream and serves SSE and Socket.IO. */
 @Module({})
 export class RealtimeAppModule {
+  /**
+   * Composes the realtime service from the environment.
+   * @param env Environment variables.
+   * @returns The root module.
+   */
   static forEnv(env: ConfigEnv): DynamicModule {
     return {
       module: RealtimeAppModule,

@@ -3,7 +3,7 @@ import { CommandRunner, type CommandRun } from './command-runner.js';
 
 /** Runs the command with the output on the console of whoever launched it. */
 export class NodeCommandRunner extends CommandRunner {
-  run(run: CommandRun): Promise<number> {
+  override run(run: CommandRun): Promise<number> {
     const env: NodeJS.ProcessEnv = { ...process.env, ...run.env };
     for (const name of run.unset ?? []) {
       delete env[name];

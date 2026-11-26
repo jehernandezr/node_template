@@ -6,10 +6,9 @@ import type { Plugin, PluginBuild } from 'esbuild';
  * esbuild does not emit `emitDecoratorMetadata`, and NestJS injection reads the
  * constructor types from that metadata. This plugin compiles our own TypeScript with SWC (the same
  * decorator configuration the tests use) and leaves only bundling to esbuild.
+ * With `packages: 'external'` esbuild loads nothing from node_modules: only the repository TypeScript reaches this point.
  */
 export class DecoratorMetadataPlugin {
-  // With `packages: 'external'` esbuild loads nothing from node_modules: only the
-  // repository TypeScript reaches this point.
   private static readonly TYPESCRIPT = /\.ts$/;
 
   private readonly swcOptions: Options = {
@@ -24,6 +23,10 @@ export class DecoratorMetadataPlugin {
     module: { type: 'es6' },
   };
 
+  /**
+   * Builds the esbuild plugin that compiles decorated files with SWC so their metadata survives.
+   * @returns The plugin.
+   */
   toPlugin(): Plugin {
     return {
       name: 'decorator-metadata',

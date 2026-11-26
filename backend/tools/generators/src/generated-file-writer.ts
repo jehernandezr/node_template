@@ -17,7 +17,11 @@ export class GeneratedFileWriter {
     private readonly backendRoot: string,
   ) {}
 
-  /** @throws GeneratorError `AlreadyExists` if any of the files already exists. */
+  /**
+   * Writes new files, all or none.
+   * @param generated Files to write.
+   * @throws GeneratorError `AlreadyExists` if any of the files already exists.
+   */
   async writeNew(generated: readonly GeneratedFile[]): Promise<void> {
     for (const file of generated) {
       if (await this.files.exists(this.absolute(file.path))) {
@@ -32,6 +36,10 @@ export class GeneratedFileWriter {
     }
   }
 
+  /**
+   * Rewrites an existing file.
+   * @param file File with its new content.
+   */
   async overwrite(file: GeneratedFile): Promise<void> {
     const path = this.absolute(file.path);
     await this.files.write(
@@ -40,10 +48,20 @@ export class GeneratedFileWriter {
     );
   }
 
+  /**
+   * Reads a file of the workspace.
+   * @param path File to read.
+   * @returns Its content.
+   */
   read(path: string): Promise<string> {
     return this.files.read(this.absolute(path));
   }
 
+  /**
+   * Tells whether a workspace path exists.
+   * @param path Path to check.
+   * @returns `true` when it exists.
+   */
   exists(path: string): Promise<boolean> {
     return this.files.exists(this.absolute(path));
   }

@@ -33,7 +33,6 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   jest.setTimeout(180_000);
 
   const app = new IdentityTestApp();
-  /** Each organization with its owner; the owners live in different shards. */
   const organizations: Array<{ tenantId: string; owner: UserRef }> = [];
 
   beforeAll(async () => {
@@ -47,7 +46,6 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
     }
   });
 
-  /** An organization with two owners and the owners group, in its shard. */
   const organizationWithTwoOwners = async (slug: string) => {
     const users = new ShardedUsers(app);
     const firstOwner = await users.register(`first.${slug}@example.com`);
@@ -65,7 +63,6 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
     return { tenantId, shard, firstOwner, secondOwner };
   };
 
-  /** Creates and activates an organization with its owner. */
   const createOrganization = async (
     slug: string,
     owner: UserRef,

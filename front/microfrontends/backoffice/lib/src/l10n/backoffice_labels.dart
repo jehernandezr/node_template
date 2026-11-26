@@ -5,6 +5,7 @@ library;
 import '../shared/enums/backoffice_enums.dart';
 import 'generated/backoffice_localizations.dart';
 
+/// Label of a tenant status in the user's language.
 String tenantStatusLabel(BackofficeLocalizations l10n, TenantStatus status) =>
     switch (status) {
       TenantStatus.active => l10n.tenantStatusActive,
@@ -13,6 +14,7 @@ String tenantStatusLabel(BackofficeLocalizations l10n, TenantStatus status) =>
       TenantStatus.deleting => l10n.tenantStatusDeleting,
     };
 
+/// Label of a region in the user's language.
 String regionLabel(BackofficeLocalizations l10n, TenantRegion region) =>
     switch (region) {
       TenantRegion.euWest => l10n.regionEuWest,
@@ -20,6 +22,7 @@ String regionLabel(BackofficeLocalizations l10n, TenantRegion region) =>
       TenantRegion.saEast => l10n.regionSaEast,
     };
 
+/// Label of a saga status in the user's language.
 String sagaStatusLabel(BackofficeLocalizations l10n, SagaStatus status) =>
     switch (status) {
       SagaStatus.running => l10n.sagaStatusRunning,
@@ -32,6 +35,7 @@ String sagaStatusLabel(BackofficeLocalizations l10n, SagaStatus status) =>
       SagaStatus.requiresIntervention => l10n.sagaStatusRequiresIntervention,
     };
 
+/// Label of a step direction in the user's language.
 String sagaDirectionLabel(
   BackofficeLocalizations l10n,
   SagaDirection direction,
@@ -40,6 +44,7 @@ String sagaDirectionLabel(
   SagaDirection.compensation => l10n.sagaDirectionCompensation,
 };
 
+/// Label of a step status in the user's language.
 String stepStatusLabel(BackofficeLocalizations l10n, SagaStepStatus status) =>
     switch (status) {
       SagaStepStatus.dispatched => l10n.stepStatusDispatched,
@@ -47,6 +52,7 @@ String stepStatusLabel(BackofficeLocalizations l10n, SagaStepStatus status) =>
       SagaStepStatus.failed => l10n.stepStatusFailed,
     };
 
+/// Label of a manual saga action in the user's language.
 String manualActionLabel(
   BackofficeLocalizations l10n,
   SagaManualAction action,

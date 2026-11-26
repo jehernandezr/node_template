@@ -2,6 +2,7 @@ export * from './cron/cron-expression.js';
 export * from './errors/duplicate-job.error.js';
 export * from './errors/invalid-cron-expression.error.js';
 export * from './errors/invalid-job-schedule.error.js';
+export * from './errors/job-lease-lost.error.js';
 export * from './errors/scheduling-error-catalog.js';
 export * from './errors/scheduling-error-code.enum.js';
 export * from './errors/unknown-job.error.js';

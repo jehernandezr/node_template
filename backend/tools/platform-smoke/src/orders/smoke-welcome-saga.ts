@@ -11,7 +11,7 @@ export interface SmokeWelcomeState {
 export class SmokeWelcomeSaga extends SagaDefinition<SmokeWelcomeState> {
   readonly type = 'smoke-welcome';
 
-  protected define(flow: SagaFlow<SmokeWelcomeState>): void {
+  protected override define(flow: SagaFlow<SmokeWelcomeState>): void {
     flow
       .step(SmokeOperations.Reserve)
       .input((state) => ({ orderId: state.orderId }))

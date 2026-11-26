@@ -518,7 +518,6 @@ void main() {
           expect(tester.takeException(), isNull);
         },
       );
-      // The wide window is the one where the limit has to hold the text back.
       expect(
         tester.getSize(find.byType(Card)).width,
         AssistantLayout.bubbleMaxWidth,

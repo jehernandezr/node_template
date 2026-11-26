@@ -18,19 +18,30 @@ export abstract class OutboxStore {
    * to the newest, and marks them with `lease` until `now + leaseMs`. A
    * record is due when it is Pending or Failed, `nextAttemptAt <= now` and it has
    * no active lease.
-   *
    * FIFO per `groupId`: when a Pending or Failed record of a group is not
    * due (scheduled later, or leased by another), no later one of that
    * group is returned. Published and Dead records do not block their group.
+   * @param request Limit, lease and worker.
+   * @returns The claimed records.
    */
   abstract claimPending(request: ClaimOutboxRequest): Promise<OutboxRecord[]>;
 
-  /** Marks a record as published and clears its lease. `false` if the lease is no longer its own. */
+  /**
+   * Marks a record as published and clears its lease. `false` if the lease is no longer its own.
+   * @param id Record id.
+   * @param lease Lease of the record.
+   * @returns Whether it was marked.
+   */
   abstract markPublished(id: string, lease: OutboxLease): Promise<boolean>;
 
   /**
    * Stores the failure, adds an attempt, schedules the next one and clears the lease.
    * `false` if the lease is no longer its own.
+   * @param id Record id.
+   * @param lease Lease of the record.
+   * @param error Failure.
+   * @param nextAttemptAt When to retry.
+   * @returns Whether it was marked.
    */
   abstract markFailed(
     id: string,
@@ -39,7 +50,13 @@ export abstract class OutboxStore {
     nextAttemptAt: Date,
   ): Promise<boolean>;
 
-  /** Saves a terminal failure, adds an attempt and clears the lease. `false` if the lease is no longer its own. */
+  /**
+   * Saves a terminal failure, adds an attempt and clears the lease. `false` if the lease is no longer its own.
+   * @param id Record id.
+   * @param lease Lease of the record.
+   * @param error Failure.
+   * @returns Whether it was marked.
+   */
   abstract markDead(
     id: string,
     lease: OutboxLease,
@@ -50,6 +67,9 @@ export abstract class OutboxStore {
    * Clears the lease without counting an attempt, so the record is due immediately.
    * Used with the records of a group blocked in this pass. `false` if
    * the lease is no longer its own.
+   * @param id Record id.
+   * @param lease Lease of the record.
+   * @returns Whether it was released.
    */
   abstract releaseLease(id: string, lease: OutboxLease): Promise<boolean>;
 
@@ -57,6 +77,8 @@ export abstract class OutboxStore {
    * Retention: deletes the published ones (and, with `includeDead`, the dead ones) whose
    * last change is before `before`. Never touches pending or failed ones.
    * Returns how many it deleted.
+   * @param options Cutoff and whether dead records go too.
+   * @returns How many were deleted.
    */
   abstract purge(options: PurgeOutboxOptions): Promise<number>;
 }

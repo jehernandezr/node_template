@@ -9,7 +9,7 @@ import type { PendingAuthentication } from '../../../shared/types/pending-authen
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { StartPendingInput } from '../domain/start-pending-input.js';
 
-/** What `mfa` offers to the other modules. */
+/** Starts and completes the second factor challenges of sign-in and step-up for the other modules. */
 export abstract class MfaFacade {
   /**
    * Stores the pending authentication.

@@ -23,6 +23,7 @@ UsageLevel usageLevelFor(int used, int limit) {
 
 /// Calendar range of a billing period, by date, both ends included.
 final class BillingPeriod {
+  /// Period from [start] to [end], both included.
   const BillingPeriod({required this.start, required this.end});
 
   /// First day of the period.
@@ -34,6 +35,7 @@ final class BillingPeriod {
 
 /// A metered limit included in a plan.
 final class Quota {
+  /// Quota [key] with its [limit].
   const Quota({required this.key, required this.limit});
 
   /// Which limit this is. Matches usage with the quota and picks the label.
@@ -45,6 +47,7 @@ final class Quota {
 
 /// A catalog plan.
 final class Plan {
+  /// Plan with its price, periodicity and quotas.
   const Plan({
     required this.id,
     required this.name,
@@ -71,6 +74,7 @@ final class Plan {
 
 /// Consumption of one quota in the current period.
 final class QuotaUsage {
+  /// Usage of [quota], [used] units so far.
   const QuotaUsage({required this.quota, required this.used});
 
   /// The quota being measured.
@@ -88,6 +92,7 @@ final class QuotaUsage {
 
 /// The tenant's subscription to a plan.
 final class Subscription {
+  /// Subscription with its plan, status and period.
   const Subscription({
     required this.id,
     required this.plan,
@@ -110,6 +115,7 @@ final class Subscription {
 
 /// One charge on an invoice.
 final class InvoiceLine {
+  /// Line of an invoice.
   const InvoiceLine({
     required this.kind,
     required this.description,
@@ -128,6 +134,7 @@ final class InvoiceLine {
 
 /// What the invoice list shows of an invoice: no lines, only its total.
 final class InvoiceSummary {
+  /// Row of the invoice list.
   const InvoiceSummary({
     required this.id,
     required this.number,
@@ -154,6 +161,7 @@ final class InvoiceSummary {
 
 /// A billing document for one period.
 final class Invoice {
+  /// Invoice with its lines and totals.
   const Invoice({
     required this.id,
     required this.number,
@@ -199,6 +207,7 @@ final class Invoice {
 
 /// What the plan page shows: the subscription and the usage of each quota.
 final class PlanOverview {
+  /// Subscription and usage shown on the plan screen.
   const PlanOverview({required this.subscription, required this.usage});
 
   /// Subscription of the tenant.

@@ -9,6 +9,7 @@ import 'step_up_gate.dart';
 
 /// State and actions of the security screen. Every action asks for a step-up.
 final class SecurityController extends ChangeNotifier {
+  /// Controller over [repository] that asks for a step-up before sensitive changes.
   SecurityController(AccountRepository repository, {required this._stepUp})
     : _repository = repository,
       _loader = AsyncLoader(repository.loadSecurity),

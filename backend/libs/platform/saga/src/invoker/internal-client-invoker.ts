@@ -27,7 +27,7 @@ export class InternalClientInvoker extends OperationInvoker {
     return this.client.contracts;
   }
 
-  invoke(
+  override invoke(
     operationId: string,
     input: unknown,
     idempotencyKey: string,

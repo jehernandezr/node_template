@@ -13,7 +13,7 @@ export class HmacRecipientFingerprint extends RecipientFingerprint {
     this.pepper = settings.values.NOTIFICATIONS_EMAIL_PEPPER.reveal();
   }
 
-  of(address: string): string {
+  override of(address: string): string {
     return createHmac('sha256', this.pepper)
       .update(address.trim().toLowerCase())
       .digest('hex');

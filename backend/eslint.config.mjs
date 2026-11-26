@@ -1,4 +1,5 @@
 import nx from '@nx/eslint-plugin';
+import { commentsPlugin } from './eslint.comments.mjs';
 
 const awsSdkPattern = {
   group: ['@aws-sdk/*'],
@@ -6,7 +7,7 @@ const awsSdkPattern = {
     '@aws-sdk/* is only imported inside backend/libs/platform/adapters/aws (ADR 0002).',
 };
 
-// No infrastructure or framework enters the domain.
+/** No infrastructure or framework enters the domain. */
 const domainPatterns = [
   awsSdkPattern,
   {
@@ -67,14 +68,13 @@ const nestBoundaryRule = {
 const layoutPlugin = {
   rules: {
     'no-nest-outside-nest-folder': nestBoundaryRule,
-    // Jest only runs tests in __tests__ folders (jest.preset.js): a
-    // test outside them would never run.
+    /** Jest only runs tests in __tests__ folders (jest.preset.js): a test outside them would never run. */
     'tests-in-tests-folder': fileRule(
       'Tests go in the __tests__ folder of the folder holding the code they test.',
       (file) =>
         /\.(int-)?spec\.ts$/.test(file) && !file.includes('/__tests__/'),
     ),
-    // What tests share (fakes, builders, containers) lives in __tests__/utils.
+    /** What tests share (fakes, builders, containers) lives in __tests__/utils. */
     'test-utils-in-tests-folder': fileRule(
       'Test utilities go in __tests__/utils, not in a separate testing folder.',
       (file) =>
@@ -88,7 +88,12 @@ const layoutPlugin = {
   },
 };
 
-// Dependency rules between projects from ADR 0015.
+/**
+ * Dependency rules between projects from ADR 0015. Per service, a service's internal code is private: from another
+ * service only its `@contracts/<service>` package is imported (`type:contracts`), so a new service adds its
+ * `scope:<service>` with the same shape as `scope:identity`. The end-to-end test of the platform flow reads contracts
+ * and libraries, and enters the apps through the `allowAppImports` exception.
+ */
 const depConstraints = [
   {
     sourceTag: 'type:contracts',
@@ -115,17 +120,13 @@ const depConstraints = [
       'type:contracts',
     ],
   },
-  // Per-service rules: a service's internal code is private.
-  // From another service only its `@contracts/<service>` package is imported
-  // (`type:contracts`). When creating a service, add its `scope:<service>` here
-  // with the same shape as `scope:identity`.
   {
     sourceTag: 'scope:platform',
     onlyDependOnLibsWithTags: ['scope:platform', 'scope:shared'],
   },
   {
     sourceTag: 'scope:shared',
-    // The shared tools read the contracts of all services.
+    /** The shared tools read the contracts of all services. */
     onlyDependOnLibsWithTags: [
       'scope:shared',
       'scope:platform',
@@ -141,8 +142,6 @@ const depConstraints = [
       'type:contracts',
     ],
   },
-  // The end-to-end test of the platform flow: reads contracts and libraries, and enters the apps through the
-  // `allowAppImports` exception.
   {
     sourceTag: 'type:e2e',
     onlyDependOnLibsWithTags: [
@@ -204,6 +203,7 @@ const allowServiceContracts = (scopes) => (files) => ({
   },
 });
 
+/** The auth exception, also declared with paths from backend/ for when ESLint runs from that folder. */
 const allowIdentityContracts = allowServiceContracts(['scope:identity']);
 const allowBillingContracts = allowServiceContracts([
   'scope:billing',
@@ -246,6 +246,38 @@ export default [
     ignores: ['**/dist'],
   },
   {
+    files: ['**/*.ts', '**/*.js', '**/*.mjs', '**/*.cjs'],
+    plugins: { comments: commentsPlugin },
+    rules: {
+      'comments/no-inline-comments': 'error',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      '@typescript-eslint/no-empty-function': [
+        'error',
+        { allow: ['overrideMethods'] },
+      ],
+    },
+  },
+  {
+    files: ['**/*.ts'],
+    ignores: [
+      '**/__tests__/**',
+      '**/*.spec.ts',
+      '**/*.int-spec.ts',
+      '**/*.e2e-spec.ts',
+      '**/migrations/**',
+    ],
+    languageOptions: { parserOptions: { projectService: true } },
+    rules: { 'comments/require-public-jsdoc': 'error' },
+  },
+  {
+    files: ['**/migrations/**/*.ts'],
+    rules: { 'comments/no-inline-comments': 'off' },
+  },
+  {
+    files: ['**/__tests__/**/*.ts'],
+    rules: { '@typescript-eslint/no-empty-function': 'off' },
+  },
+  {
     files: ['**/*.ts'],
     plugins: { layout: layoutPlugin },
     rules: {
@@ -263,30 +295,26 @@ export default [
         {
           enforceBuildableLibDependency: true,
           allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
-          // Dependency rules between projects from ADR 0015.
+          /** Dependency rules between projects from ADR 0015. */
           depConstraints,
         },
       ],
     },
   },
   {
-    // The AWS SDK only lives in libs/platform/adapters/aws. The `files` paths are
-    // relative to the project that loads this configuration, so that library turns off
-    // the rule in its own eslint.config.mjs (`'no-restricted-imports': 'off'`).
+    /** The AWS SDK only lives in libs/platform/adapters/aws. The `files` paths are relative to the project that loads this configuration, so that library turns off the rule in its own eslint.config.mjs (`'no-restricted-imports': 'off'`). */
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [awsSdkPattern] }],
     },
   },
   {
-    // When ESLint runs from backend/ (git hooks), paths are relative to this
-    // folder and the AWS adapter exception is declared here.
+    /** When ESLint runs from backend/ (git hooks), paths are relative to this folder and the AWS adapter exception is declared here. */
     files: ['libs/platform/adapters/aws/**/*.ts'],
     rules: {
       'no-restricted-imports': 'off',
     },
   },
-  // When ESLint runs from backend/, the auth and http exception is declared with paths from this folder.
   allowIdentityContracts([
     'libs/platform/auth/**/*.ts',
     'libs/platform/http/**/*.ts',
@@ -317,7 +345,6 @@ export default [
       '**/*.cjs',
       '**/*.mjs',
     ],
-    // Override or add rules here
     rules: {},
   },
 ];

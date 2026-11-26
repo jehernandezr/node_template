@@ -9,11 +9,16 @@ import {
 } from '@contracts/identity';
 import { ListPushTargets } from '../application/list-push-targets.use-case.js';
 
-/** Internal operations of devices. */
+/** Internal operation notifications calls to find the push targets of a user. */
 @Injectable()
 export class DevicesInternalOperations {
   constructor(private readonly pushTargets: ListPushTargets) {}
 
+  /**
+   * Internal operation that lists the push targets of a user.
+   * @param input User to read.
+   * @returns Its push targets.
+   */
   @InternalHandler(ListPushTargetsOperation)
   async listPushTargets(
     input: ListPushTargetsInput,

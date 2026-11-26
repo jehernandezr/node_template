@@ -21,7 +21,10 @@ export class CachedApiKeyAuthenticator extends ApiKeyAuthenticator {
     super();
   }
 
-  async authenticate(rawKey: string): Promise<ServiceAccountActor> {
+  /**
+   * The Valkey copy is not the source of truth: if it does not respond, the resolver decides.
+   */
+  override async authenticate(rawKey: string): Promise<ServiceAccountActor> {
     const parsed = ApiKeyFormat.parse(rawKey);
     if (parsed === undefined) {
       throw AuthenticationError.unauthenticated('malformed api key');
@@ -32,7 +35,6 @@ export class CachedApiKeyAuthenticator extends ApiKeyAuthenticator {
     try {
       principal = await this.state.apiKey(parsed.prefix, hash);
     } catch {
-      // The Valkey copy is not the source of truth: if it does not respond, the resolver decides.
       principal = undefined;
     }
     if (principal === undefined) {

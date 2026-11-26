@@ -1,6 +1,8 @@
 import 'scaffold_exception.dart';
 
 /// Every spelling of the new microfrontend that the templates use.
+///
+/// The backslash goes first so the escapes added below are not doubled.
 final class ScaffoldNames {
   /// Validates the input. Throws [ScaffoldException] when [id] is not one
   /// lowercase word (`^[a-z][a-z0-9]{1,23}$`), or when a label is blank, has
@@ -64,7 +66,6 @@ final class ScaffoldNames {
     }
   }
 
-  // The backslash goes first so the escapes added below are not doubled.
   static String _escapeDart(String text) => text
       .replaceAll(r'\', r'\\')
       .replaceAll("'", r"\'")

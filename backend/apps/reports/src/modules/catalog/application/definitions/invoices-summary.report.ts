@@ -29,7 +29,10 @@ export class InvoicesSummaryReport extends ReportDefinition {
     super();
   }
 
-  async rows(tenantId: string, params: ReportParams): Promise<ReportRow[]> {
+  override async rows(
+    tenantId: string,
+    params: ReportParams,
+  ): Promise<ReportRow[]> {
     const points = await this.projections.invoiceSummary(tenantId, params);
     return points.map((point) => ({
       cells: [

@@ -33,6 +33,9 @@ export class PlacementLoader {
   ) {}
 
   /**
+   * Loads a placement, joining a load already in flight for the same tenant.
+   * @param tenantId Tenant to load.
+   * @returns The placement.
    * @throws ShardingError `UnknownTenant` if the directory does not have the tenant.
    */
   loadOrJoin(tenantId: string): Promise<TenantPlacement> {
@@ -58,6 +61,9 @@ export class PlacementLoader {
     return promise;
   }
 
+  /**
+   * Invalidated while the directory was being read, or a replica lagging behind a version this process already saw: answer the caller without caching.
+   */
   private async loadPlacement(
     tenantId: string,
     sequence: number,
@@ -89,8 +95,6 @@ export class PlacementLoader {
       !this.invalidations.isCurrent(tenantId, sequence) ||
       this.cache.isOutdated(tenantId, placement.version)
     ) {
-      // Invalidated while the directory was being read, or a replica lagging behind
-      // a version this process already saw: answer the caller without caching.
       return placement;
     }
     const sharedExpiresAt = this.cache.sharedExpiry();

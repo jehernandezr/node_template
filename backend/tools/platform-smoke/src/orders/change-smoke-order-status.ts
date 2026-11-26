@@ -18,6 +18,10 @@ export class ChangeSmokeOrderStatus {
     private readonly scopes: ShardScopes,
   ) {}
 
+  /**
+   * Changes the status of an order and invalidates its cache.
+   * @param input Tenant, order and status.
+   */
   async execute(input: {
     readonly tenantId: string;
     readonly orderId: string;

@@ -6,6 +6,7 @@ import '../l10n/generated/backoffice_localizations.dart';
 /// Sliver for an [AsyncValue]: a loading or error view while there is no data
 /// (the error view offers [onRetry]) and the slivers of [data] once there is.
 class AsyncSliver<T> extends StatelessWidget {
+  /// Sliver that shows [value] loading, failed with a retry, or loaded.
   const AsyncSliver({
     super.key,
     required this.value,
@@ -13,11 +14,13 @@ class AsyncSliver<T> extends StatelessWidget {
     this.onRetry,
   });
 
+  /// State of the data shown.
   final AsyncValue<T> value;
 
   /// Slivers shown for the loaded value.
   final List<Widget> Function(T value) data;
 
+  /// Called to retry after a failure, if retrying is possible.
   final VoidCallback? onRetry;
 
   @override

@@ -6,6 +6,7 @@ import '../../l10n/generated/assistant_localizations.dart';
 /// Text field and send button at the foot of the chat. While an answer
 /// arrives the button stops it instead.
 class ChatComposer extends StatefulWidget {
+  /// Field to write a message, with send and stop buttons.
   const ChatComposer({
     super.key,
     required this.isStreaming,
@@ -13,8 +14,13 @@ class ChatComposer extends StatefulWidget {
     required this.onStop,
   });
 
+  /// Whether an answer is being streamed.
   final bool isStreaming;
+
+  /// Called with the text to send.
   final ValueChanged<String> onSend;
+
+  /// Called to stop the answer in course.
   final VoidCallback onStop;
 
   @override

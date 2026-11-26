@@ -5,7 +5,12 @@ import type { StreamPrincipal } from './stream-principal.js';
  * as a frame; that of a tenant names no users, so each connection checks it on its heartbeat.
  */
 export abstract class StreamRevocations {
-  /** `true` if the token's tenant was revoked or suspended after `openedAt`. */
+  /**
+   * `true` if the token's tenant was revoked or suspended after `openedAt`.
+   * @param principal Principal of the stream.
+   * @param openedAt Instant the stream opened.
+   * @returns `true` when revoked.
+   */
   abstract revokedSince(
     principal: StreamPrincipal,
     openedAt: Date,

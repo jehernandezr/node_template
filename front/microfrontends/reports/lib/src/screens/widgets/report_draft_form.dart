@@ -9,13 +9,17 @@ import '../report_catalog_controller.dart';
 
 /// The parameters of the prepared report: period, grouping and format.
 class ReportDraftForm extends StatelessWidget {
+  /// Form of [draft] that edits it through [controller].
   const ReportDraftForm({
     super.key,
     required this.draft,
     required this.controller,
   });
 
+  /// Draft shown.
   final ReportDraft draft;
+
+  /// Controller that changes the draft.
   final ReportCatalogController controller;
 
   @override

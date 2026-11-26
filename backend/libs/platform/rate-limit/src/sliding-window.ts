@@ -3,28 +3,30 @@ import type { RateLimitRule } from './rate-limit-rule.js';
 import type { WindowCounts } from './window-counts.js';
 import type { WindowPosition } from './window-position.js';
 
-/*
- * Approximate sliding window with two fixed windows: what was counted in the
- * previous window weighs in proportion to the part of it that still falls
- * inside the sliding window.
- *
- *   estimate = previous * (W - elapsed) / W + current
- *
- * The counts are multiplied by W to work only with integers.
- * With the rule caps (limit of 10^6 and window of 30 days) all the
- * products stay below 2^53, so the decision is exact here and
- * in the Valkey Lua script, which repeats it.
+/**
+ * Sliding window arithmetic. Everything is static and stateless.
+ * Approximate sliding window with two fixed windows: what was counted in the previous window weighs in proportion to the part of it that still falls inside the sliding window. estimate = previous * (W - elapsed) / W + current The counts are multiplied by W to work only with integers. With the rule caps (limit of 10^6 and window of 30 days) all the products stay below 2^53, so the decision is exact here and in the Valkey Lua script, which repeats it.
  */
-
-/** Sliding window arithmetic. Everything is static and stateless. */
 export class SlidingWindow {
-  /** Fixed window that `nowMs` falls in, with integer epoch milliseconds. */
+  /**
+   * Fixed window that `nowMs` falls in, with integer epoch milliseconds.
+   * @param nowMs Current instant.
+   * @param windowMs Window length.
+   * @returns The window position.
+   */
   static position(nowMs: number, windowMs: number): WindowPosition {
     const index = Math.floor(nowMs / windowMs);
     return { index, elapsedMs: nowMs - index * windowMs };
   }
 
-  /** Whether `cost` more units fit in the rule's limit. */
+  /**
+   * Whether `cost` more units fit in the rule's limit.
+   * @param counts Counts of the current and previous windows.
+   * @param position Window position.
+   * @param rule Rule to apply.
+   * @param cost Units requested.
+   * @returns `true` when they fit.
+   */
   static admits(
     counts: WindowCounts,
     position: WindowPosition,
@@ -42,6 +44,10 @@ export class SlidingWindow {
    * Response for the counts at an instant.
    * @param counts Counts after counting, if the operation was accepted.
    * @param cost Cost used to compute the wait if it was rejected.
+   * @param position Window position.
+   * @param rule Rule applied.
+   * @param allowed Whether the call was allowed.
+   * @returns The result.
    */
   static result(
     counts: WindowCounts,
@@ -95,6 +101,8 @@ export class SlidingWindow {
   /**
    * Minimum wait for `cost` units to fit if no more traffic arrives.
    * Only meaningful when they do not fit now.
+   * It fits in this same window once the previous one weighs enough less.
+   * It must wait for the next window, where the current one becomes the previous one.
    */
   private static waitMs(
     counts: WindowCounts,
@@ -105,14 +113,12 @@ export class SlidingWindow {
     const windowMs = rule.windowMs;
     const room = rule.limit - cost - counts.current;
     if (room >= 0) {
-      // It fits in this same window once the previous one weighs enough less.
       return (
         windowMs -
         SlidingWindow.floorDiv(room * windowMs, counts.previous) -
         position.elapsedMs
       );
     }
-    // It must wait for the next window, where the current one becomes the previous one.
     return (
       windowMs -
       position.elapsedMs +

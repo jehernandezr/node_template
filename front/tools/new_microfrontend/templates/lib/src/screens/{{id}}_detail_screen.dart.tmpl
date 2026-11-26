@@ -23,6 +23,7 @@ class {{Pascal}}DetailScreen extends StatelessWidget {
   /// Id of the item shown.
   final String itemId;
 
+  /// A deep link has nothing to pop, so going back goes to the list.
   @override
   Widget build(BuildContext context) =>
       ControllerBuilder<{{Pascal}}DetailController>(
@@ -34,7 +35,6 @@ class {{Pascal}}DetailScreen extends StatelessWidget {
           final theme = Theme.of(context);
           return AppPage(
             title: l10n.detailTitle,
-            // A deep link has nothing to pop: go to the list.
             onBack: () => context.go({{Pascal}}Paths.list),
             body: AsyncValueView<{{Pascal}}Item>(
               value: controller.value,

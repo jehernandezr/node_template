@@ -17,6 +17,8 @@ export class ActingMember {
 
   /**
    * The member behind an authenticated route that works on a tenant.
+   * @param actor Actor of the request.
+   * @returns The acting member.
    * @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` if the actor is neither a user nor a service account.
    */
   static of(actor: Actor | undefined): ActingMember {

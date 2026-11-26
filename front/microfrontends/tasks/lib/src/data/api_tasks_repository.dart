@@ -15,6 +15,7 @@ import 'tasks_repository.dart';
 /// reaches the caller as [api.ApiErrorException]. [changes] emits after each
 /// write made through this repository.
 final class ApiTasksRepository implements TasksRepository {
+  /// Repository over the tasks API through [_client].
   ApiTasksRepository({required this._client});
 
   final ApiClient _client;

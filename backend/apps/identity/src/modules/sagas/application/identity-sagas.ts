@@ -68,6 +68,7 @@ export class IdentitySagas {
   /**
    * It is registered before starting it: if the process crashes between the two writes, the requester never received its
    * id, and the entry without an instance responds the same as a saga that does not exist.
+   * @param start Type, state, requester and options of the saga.
    */
   async start<TState>(start: IdentitySagaStart<TState>): Promise<void> {
     await this.directory.record({
@@ -91,6 +92,8 @@ export class IdentitySagas {
   /**
    * Whether the saga can still change something: it runs, waits for a retry, compensates or asks for intervention. A saga that
    * never got to start is not in progress.
+   * @param sagaId Saga to check.
+   * @returns `true` when in progress.
    */
   async isUnsettled(sagaId: string): Promise<boolean> {
     const entry = await this.directory.find(sagaId);
@@ -103,7 +106,13 @@ export class IdentitySagas {
     return instance !== null && !IdentitySagas.SETTLED.has(instance.status);
   }
 
-  /** @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` if the saga does not exist or another person requested it. */
+  /**
+   * Reads the state of a saga for the person who requested it.
+   * @param sagaId Saga to read.
+   * @param userId Requester.
+   * @returns The saga summary.
+   * @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` if the saga does not exist or another person requested it.
+   */
   async summary(sagaId: string, userId: string): Promise<SagaSummary> {
     const entry = await this.directory.find(sagaId);
     if (entry === undefined || entry.requestedBy !== userId) {

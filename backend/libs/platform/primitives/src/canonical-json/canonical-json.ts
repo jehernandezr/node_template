@@ -22,6 +22,8 @@ export class CanonicalJson {
    * undefined (except as a property value, which is omitted), functions,
    * symbols, bigint, NaN, Infinity, class instances (Date, Map, Set,
    * Buffer...), cycles and nesting greater than `MAX_DEPTH`.
+   * @param value Value to copy.
+   * @returns The canonical copy.
    */
   static canonicalize(value: unknown): CanonicalJsonValue {
     return CanonicalJson.canonicalizeAt(value, '$', new Set());
@@ -31,12 +33,18 @@ export class CanonicalJson {
    * Returns deterministic JSON text: keys sorted by UTF-16 code unit at
    * all levels and without whitespace. Two structurally equal values
    * produce the same text regardless of insertion order.
+   * @param value Value to serialize.
+   * @returns The JSON text.
    */
   static stringify(value: unknown): string {
     return CanonicalJson.serialize(CanonicalJson.canonicalize(value));
   }
 
-  /** Returns the SHA-256 fingerprint in hexadecimal (64 characters) of the canonical text of `value`. */
+  /**
+   * Returns the SHA-256 fingerprint in hexadecimal (64 characters) of the canonical text of `value`.
+   * @param value Value to fingerprint.
+   * @returns The hex digest.
+   */
   static digest(value: unknown): string {
     return createHash('sha256')
       .update(CanonicalJson.stringify(value))
@@ -68,6 +76,12 @@ export class CanonicalJson {
       : `${path}[${JSON.stringify(key)}]`;
   }
 
+  /**
+   * JSON does not distinguish -0 from 0.
+   * The holes of a sparse array arrive as undefined and are rejected.
+   * No prototype: a `__proto__` or `constructor` key stays as own data.
+   * Same as JSON.stringify: an undefined property is equivalent to not having it.
+   */
   private static canonicalizeAt(
     value: unknown,
     path: string,
@@ -81,7 +95,6 @@ export class CanonicalJson {
         if (!Number.isFinite(value)) {
           throw new NonJsonValueError(path, 'non-finite number');
         }
-        // JSON does not distinguish -0 from 0.
         return value === 0 ? 0 : value;
       case 'object':
         break;
@@ -106,7 +119,6 @@ export class CanonicalJson {
       if (Array.isArray(value)) {
         const items: CanonicalJsonValue[] = [];
         for (let index = 0; index < value.length; index += 1) {
-          // The holes of a sparse array arrive as undefined and are rejected.
           items.push(
             CanonicalJson.canonicalizeAt(
               (value as unknown[])[index],
@@ -121,11 +133,9 @@ export class CanonicalJson {
         throw new NonJsonValueError(path, CanonicalJson.describe(value));
       }
       const source = value as Record<string, unknown>;
-      // No prototype: a `__proto__` or `constructor` key stays as own data.
       const sorted = Object.create(null) as Record<string, CanonicalJsonValue>;
       for (const key of Object.keys(source).sort()) {
         const child = source[key];
-        // Same as JSON.stringify: an undefined property is equivalent to not having it.
         if (child !== undefined) {
           sorted[key] = CanonicalJson.canonicalizeAt(
             child,

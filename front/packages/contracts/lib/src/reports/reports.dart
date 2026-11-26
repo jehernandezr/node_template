@@ -1,6 +1,7 @@
 // GENERATED, do not edit.
 // Source: backend/libs/contracts/*/export/contract.json.
 // Regenerate: cd front && dart run contracts_gen
+// ignore_for_file: public_member_api_docs
 
 /// Generated `reports` contract.
 library;

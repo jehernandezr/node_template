@@ -77,7 +77,6 @@ describe('CacheAside.getOrLoad', () => {
     await harness.settle();
     const key = await harness.keyspace.key(ORDERS, PARAMS);
 
-    // With sample 0.5 the TTL is exactly 1000 ms.
     harness.clock.advance(999);
     await expect(harness.cache.get(key)).resolves.toBeDefined();
     harness.clock.advance(1);

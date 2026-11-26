@@ -19,7 +19,11 @@ export class MigrationGenerator {
     private readonly renderer: MigrationSourceRenderer,
   ) {}
 
-  /** @returns the path of the written file, or `null` if the entities already match the migrations. */
+  /**
+   * Writes a migration with the difference between the entities and the migrated schema.
+   * @returns the path of the written file, or `null` if the entities already match the migrations.
+   * @param request Project, data set and name.
+   */
   async generate(request: MigrationGenerateRequest): Promise<string | null> {
     if (!MigrationGenerator.NAME_PATTERN.test(request.name)) {
       throw PersistenceError.invalidConfiguration(

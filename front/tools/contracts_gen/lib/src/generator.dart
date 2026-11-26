@@ -10,7 +10,25 @@ const generatedHeader = '// GENERATED, do not edit.';
 const generatedBarrel = 'generated_contracts.dart';
 
 /// Folders of each service.
-enum Folder { enums, constants, types, schemas, http, messages }
+enum Folder {
+  /// Enums of the service.
+  enums,
+
+  /// Constants of the service.
+  constants,
+
+  /// Types of the request and response bodies.
+  types,
+
+  /// Validation schemas.
+  schemas,
+
+  /// HTTP routes.
+  http,
+
+  /// Events and commands.
+  messages,
+}
 
 String _fileName(String service, Folder folder) => switch (folder) {
   Folder.enums => '${snake(service)}_enums.dart',
@@ -54,6 +72,7 @@ Map<String, String> generate(ContractModel model) {
         '$generatedHeader\n'
         '// Source: backend/libs/contracts/*/export/contract.json.\n'
         '// Regenerate: cd front && dart run contracts_gen\n'
+        '// ignore_for_file: public_member_api_docs\n'
         '$library'
         '$body';
     files[path] = _format(source, path);
@@ -127,6 +146,7 @@ String generateErrorMessages(ContractModel model) {
     ..writeln(generatedHeader)
     ..writeln('// Source: backend/libs/contracts/*/export/contract.json.')
     ..writeln('// Regenerate: cd front && dart run contracts_gen')
+    ..writeln('// ignore_for_file: public_member_api_docs')
     ..writeln()
     ..writeln('/// Messages for the public error codes of the contracts.')
     ..writeln('library;')
@@ -160,9 +180,6 @@ String _format(String source, String path) {
     throw GeneratorException('Invalid Dart in $path: ${error.message()}');
   }
 }
-
-// ---------------------------------------------------------------------------
-// Enums
 
 (_Imports, String) _enums(ContractModel model, String service) {
   final out = StringBuffer();
@@ -306,9 +323,6 @@ void _errorEnum(
     ..writeln();
 }
 
-// ---------------------------------------------------------------------------
-// Constantes
-
 (_Imports, String) _constants(ContractModel model, String service) {
   final out = StringBuffer();
   for (final entry in model.constantsOf(service).entries) {
@@ -343,9 +357,6 @@ String _literal(Object? value) => switch (value) {
   List() => '[${value.map(_literal).join(', ')}]',
   _ => throw GeneratorException('unsupported constant $value'),
 };
-
-// ---------------------------------------------------------------------------
-// Tipos
 
 String _dartType(DType type) => switch (type) {
   DPrimitive(:final dart) => dart,
@@ -542,9 +553,6 @@ String _fieldEncode(FieldSpec field) {
   }
   return (imports, out.toString());
 }
-
-// ---------------------------------------------------------------------------
-// Validadores
 
 /// Condition `length < min`, with `isEmpty` when the minimum is 1.
 String _shorter(String value, int min) =>
@@ -846,9 +854,6 @@ final class _Validators {
   return (imports, '$patterns${validators.out}');
 }
 
-// ---------------------------------------------------------------------------
-// Rutas
-
 /// Generated class [ref] points to; adds its imports.
 SchemaId _generatedClassOf(
   ContractModel model,
@@ -1023,9 +1028,6 @@ void _checkKeys(String where, Json json, Set<String> known) {
   out.writeln('}');
   return (imports, out.toString());
 }
-
-// ---------------------------------------------------------------------------
-// Messages (events and commands)
 
 (_Imports, String) _messages(ContractModel model, String service) {
   final imports = _Imports();

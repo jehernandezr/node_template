@@ -66,6 +66,11 @@ import type { SmokeEnvironment } from './smoke-environment.js';
  */
 @Module({})
 export class SmokeAppModule {
+  /**
+   * Composes the smoke app for an environment.
+   * @param environment Database, Valkey and messaging settings.
+   * @returns The root module.
+   */
   static register(environment: SmokeEnvironment): DynamicModule {
     return {
       module: SmokeAppModule,

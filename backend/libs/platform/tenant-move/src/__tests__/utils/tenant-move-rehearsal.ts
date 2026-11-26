@@ -10,6 +10,8 @@ import {
 import { platformSagaShardMigrations } from '@platform/adapters-postgres';
 import { TenantWriteFence, type MigrationClass } from '@platform/persistence';
 import { SagaStatus } from '@platform/saga';
+import { ManifestRowWriter } from './manifest-row-writer.js';
+import { PendingRounds } from './pending-rounds.js';
 import { ShardedTestDatabase } from '@platform/persistence/test-utils';
 import {
   DirectoryWriteGate,
@@ -23,7 +25,6 @@ import { PooledShardConnections } from '../../transfer/typeorm/pooled-shard-conn
 import { OpenSagaActivity } from '../../activity/open-saga-activity.js';
 import { TenantMoveShards } from '../../application/tenant-move-shards.js';
 import { TenantMoves } from '../../application/tenant-moves.js';
-import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import { MergedTenantMoveManifest } from '../../manifest/merged-tenant-move-manifest.js';
 import { PlatformTenantMoveManifest } from '../../manifest/platform-tenant-move-manifest.js';
 import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
@@ -85,12 +86,34 @@ export interface RehearsalReport {
   readonly neighbourAfter: ManifestChecksums;
 }
 
+/** What a rehearsal with writes during the copy leaves: what the move froze and copied, and what the writers did. */
+export interface WritesRehearsalReport {
+  readonly verified: boolean;
+  /** What `finalize` compared on each side, with the source frozen. */
+  readonly verifiedSource: ManifestChecksums;
+  readonly verifiedTarget: ManifestChecksums;
+  /** The source once the move switched: equal to what was verified unless a write got past the freeze. */
+  readonly sourceAfterSwitch: ManifestChecksums;
+  /** Writes that committed before the freeze, and writes the fence turned away after it. */
+  readonly acked: number;
+  readonly rejected: number;
+}
+
 /**
  * Move rehearsal of a service on its real migrations: a PostgreSQL with two shards and `TenantMoves`
  * wired without NestJS, with the directory in memory and the fence in the shards. Each shard is a target group with
  * its own region, so each move changes shard and region.
  */
 export class TenantMoveRehearsal {
+  /**
+   * Rows a sync round may still copy and count as caught up. The writers of `rehearseUnderWrites` change hundreds of
+   * rows per round; the freeze and `verify` take over what the last round leaves.
+   */
+  static readonly CAUGHT_UP_ROWS = 1_000;
+
+  /** Pause of each writer between two writes, so the copy rounds keep up with them. */
+  static readonly WRITE_PAUSE_MS = 20;
+
   static readonly REGIONS: Readonly<Record<RehearsalShard, string>> = {
     [RehearsalShard.A]: 'rehearsal-a',
     [RehearsalShard.B]: 'rehearsal-b',
@@ -173,7 +196,7 @@ export class TenantMoveRehearsal {
           batchSize: this.options.batchSize ?? 500,
           callBudgetMs: 4_000,
           deltaMarginMs: 60_000,
-          caughtUpRows: 0,
+          caughtUpRows: TenantMoveRehearsal.CAUGHT_UP_ROWS,
         },
       ),
       gate: new DirectoryWriteGate(this.db.router, transition),
@@ -205,18 +228,8 @@ export class TenantMoveRehearsal {
     return {
       tenantId,
       seeded,
-      verifiedSource: Object.fromEntries(
-        verification.tables.map((check) => [
-          check.table,
-          { rows: check.sourceRows, checksum: check.sourceChecksum },
-        ]),
-      ),
-      verifiedTarget: Object.fromEntries(
-        verification.tables.map((check) => [
-          check.table,
-          { rows: check.targetRows, checksum: check.targetChecksum },
-        ]),
-      ),
+      verifiedSource: TenantMoveRehearsal.sidesOf(verification).source,
+      verifiedTarget: TenantMoveRehearsal.sidesOf(verification).target,
       verified: verification.verified,
       movedRows,
       leftInSource: TenantMoveRehearsal.rowsOf(
@@ -225,6 +238,57 @@ export class TenantMoveRehearsal {
       neighbourBefore,
       neighbourAfter: await this.checksums(RehearsalShard.A, neighbour),
     };
+  }
+
+  /**
+   * Moves a tenant while two writers keep changing it, as its service would: each write touches every tenant row and,
+   * with `inserts`, adds a row to each table. The writers run until the fence freezes the tenant; the report compares
+   * the frozen source with the copy.
+   * @param rowsPerTable Rows seeded in each table before the move.
+   * @param inserts Whether each write also adds rows; off for services that allow one row per tenant in a table.
+   * @returns What the move froze and copied, and how many writes committed and were turned away.
+   */
+  async rehearseUnderWrites(
+    rowsPerTable = 2,
+    inserts = true,
+  ): Promise<WritesRehearsalReport> {
+    const tenantId = this.ids.next().toString();
+    await this.seed(tenantId, RehearsalShard.A, rowsPerTable);
+    const source = await this.shard(RehearsalShard.A);
+    const writers = Array.from(
+      { length: 2 },
+      () =>
+        new ManifestRowWriter(
+          source,
+          tenantId,
+          this.manifest,
+          this.filter,
+          this.seeder,
+          inserts,
+        ),
+    );
+    let writing = true;
+    const running = writers.map(async (writer) => {
+      while (writing && (await writer.writeOnce())) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, TenantMoveRehearsal.WRITE_PAUSE_MS),
+        );
+      }
+    });
+    try {
+      const { verification } = await this.move(tenantId, RehearsalShard.B);
+      return {
+        verified: verification.verified,
+        verifiedSource: TenantMoveRehearsal.sidesOf(verification).source,
+        verifiedTarget: TenantMoveRehearsal.sidesOf(verification).target,
+        sourceAfterSwitch: await this.checksums(RehearsalShard.A, tenantId),
+        acked: writers.reduce((sum, writer) => sum + writer.acked(), 0),
+        rejected: writers.reduce((sum, writer) => sum + writer.rejected(), 0),
+      };
+    } finally {
+      writing = false;
+      await Promise.all(running);
+    }
   }
 
   /** The same rows in each manifest table, to compare with a report. */
@@ -265,8 +329,8 @@ export class TenantMoveRehearsal {
   }> {
     const moves = this.started();
     const ref = this.refTo(tenantId, to);
-    await TenantMoveRehearsal.untilDone(() => moves.sync(ref));
-    const verification = await TenantMoveRehearsal.untilDone(() =>
+    await PendingRounds.untilDone(() => moves.sync(ref));
+    const verification = await PendingRounds.untilDone(() =>
       moves.finalize(ref),
     );
     await moves.switch(ref);
@@ -299,7 +363,7 @@ export class TenantMoveRehearsal {
   }
 
   async cleanup(ref: TenantMoveRef): Promise<void> {
-    await TenantMoveRehearsal.untilDone(() => this.started().cleanup(ref));
+    await PendingRounds.untilDone(() => this.started().cleanup(ref));
   }
 
   placement(tenantId: string): Promise<TenantPlacement> {
@@ -378,6 +442,26 @@ export class TenantMoveRehearsal {
     return this.moves;
   }
 
+  private static sidesOf(verification: TenantMoveVerification): {
+    readonly source: ManifestChecksums;
+    readonly target: ManifestChecksums;
+  } {
+    return {
+      source: Object.fromEntries(
+        verification.tables.map((check) => [
+          check.table,
+          { rows: check.sourceRows, checksum: check.sourceChecksum },
+        ]),
+      ),
+      target: Object.fromEntries(
+        verification.tables.map((check) => [
+          check.table,
+          { rows: check.targetRows, checksum: check.targetChecksum },
+        ]),
+      ),
+    };
+  }
+
   private static rowsOf(checksums: ManifestChecksums): ManifestRows {
     return Object.fromEntries(
       Object.entries(checksums).map(([table, checksum]) => [
@@ -385,20 +469,5 @@ export class TenantMoveRehearsal {
         checksum.rows,
       ]),
     );
-  }
-
-  private static async untilDone<T>(step: () => Promise<T>): Promise<T> {
-    for (;;) {
-      try {
-        return await step();
-      } catch (error) {
-        if (
-          (error as { code?: unknown }).code !==
-          TenantMoveErrorCode.RoundPending
-        ) {
-          throw error;
-        }
-      }
-    }
   }
 }

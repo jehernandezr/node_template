@@ -12,6 +12,9 @@ export class PasswordAcceptance {
   constructor(private readonly breached: BreachedPasswordList) {}
 
   /**
+   * Checks the policy and the breached list.
+   * @param password Candidate password.
+   * @param email Email of the user, which the password must not contain.
    * @throws IdentityError `IDENTITY.PASSWORD.POLICY_VIOLATION` with `details.violations`, or
    * `IDENTITY.PASSWORD.BREACHED`.
    */

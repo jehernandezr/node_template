@@ -19,6 +19,11 @@ import { BillingAccounts } from '../application/billing-accounts.js';
 export class AccountsInternalOperations {
   constructor(private readonly accounts: BillingAccounts) {}
 
+  /**
+   * Internal operation that opens the billing account of a tenant.
+   * @param input Tenant whose account opens.
+   * @returns The opened account, or the business error.
+   */
   @InternalHandler(OpenAccountOperation)
   async openAccount(
     input: OpenBillingAccountInput,
@@ -28,6 +33,11 @@ export class AccountsInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that closes the billing account of a tenant, the compensation of opening it.
+   * @param input Tenant whose account closes.
+   * @returns The closed account, or the business error.
+   */
   @InternalHandler(CloseAccountOperation)
   async closeAccount(
     input: CloseBillingAccountInput,

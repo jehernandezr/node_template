@@ -16,22 +16,22 @@ export class DelegatingTransfer extends TenantDataTransfer {
   }
 
   /** Delegates to the real copy. */
-  sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
+  override sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
     return this.inner.sync(transfer);
   }
 
   /** Delegates to the real copy. */
-  verify(transfer: TenantTransfer): Promise<TenantMoveVerification> {
+  override verify(transfer: TenantTransfer): Promise<TenantMoveVerification> {
     return this.inner.verify(transfer);
   }
 
   /** Delegates to the real copy. */
-  abort(transfer: TenantTransfer): Promise<void> {
+  override abort(transfer: TenantTransfer): Promise<void> {
     return this.inner.abort(transfer);
   }
 
   /** Delegates to the real copy. */
-  cleanup(
+  override cleanup(
     tenantId: string,
     source: ShardLocation,
     budget?: TransferBudget,
@@ -40,7 +40,7 @@ export class DelegatingTransfer extends TenantDataTransfer {
   }
 
   /** Delegates to the real copy. */
-  assignRegion(
+  override assignRegion(
     tenantId: string,
     target: ShardLocation,
     region: string,

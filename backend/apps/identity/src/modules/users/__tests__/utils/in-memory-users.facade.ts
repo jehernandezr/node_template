@@ -22,14 +22,14 @@ export class InMemoryUsersFacade extends UsersFacade {
     return this;
   }
 
-  async findByEmail(email: string): Promise<UserSnapshot | undefined> {
+  override async findByEmail(email: string): Promise<UserSnapshot | undefined> {
     const normalized = normalizeEmail(email);
     return [...this.users.values()].find(
       (user) => normalizeEmail(user.email) === normalized,
     );
   }
 
-  async getByRef(ref: UserRef): Promise<UserSnapshot> {
+  override async getByRef(ref: UserRef): Promise<UserSnapshot> {
     const user = this.users.get(ref.userId);
     if (user === undefined) {
       throw new Error('User not found');
@@ -37,14 +37,14 @@ export class InMemoryUsersFacade extends UsersFacade {
     return user;
   }
 
-  async refOf(userId: string): Promise<UserRef | undefined> {
+  override async refOf(userId: string): Promise<UserRef | undefined> {
     const user = this.users.get(userId);
     return user === undefined
       ? undefined
       : { userId: user.id, homeTenantId: user.homeTenantId };
   }
 
-  async register(input: RegisterUserInput): Promise<UserRef> {
+  override async register(input: RegisterUserInput): Promise<UserRef> {
     const email = normalizeEmail(input.email);
     if ((await this.findByEmail(email)) !== undefined) {
       throw new Error('Email already registered');
@@ -62,7 +62,7 @@ export class InMemoryUsersFacade extends UsersFacade {
     return { userId: id, homeTenantId: input.homeTenantId };
   }
 
-  async setLastTenant(ref: UserRef, tenantId: string): Promise<void> {
+  override async setLastTenant(ref: UserRef, tenantId: string): Promise<void> {
     const user = this.users.get(ref.userId);
     if (user === undefined) {
       throw new Error('User not found');
@@ -70,7 +70,7 @@ export class InMemoryUsersFacade extends UsersFacade {
     this.users.set(ref.userId, { ...user, lastTenantId: tenantId });
   }
 
-  async relocateHomeTenant(
+  override async relocateHomeTenant(
     homeTenantId: string,
     region: string,
   ): Promise<void> {

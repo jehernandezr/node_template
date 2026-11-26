@@ -5,7 +5,7 @@ import { ServiceTestServers } from './utils/service-test-servers.js';
 import type { TestServer } from './utils/test-server.js';
 
 class NoHttpSetup extends HttpApplicationConfigurer {
-  configure(): Promise<void> {
+  override configure(): Promise<void> {
     return Promise.resolve();
   }
 }

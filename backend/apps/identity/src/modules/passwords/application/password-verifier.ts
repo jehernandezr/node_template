@@ -21,6 +21,12 @@ export class PasswordVerifier {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Checks a password, against a dummy hash when there is no user.
+   * @param ref User, or `undefined` when the email is unknown.
+   * @param password Presented password.
+   * @returns `true` when it matches.
+   */
   async verify(ref: UserRef | undefined, password: string): Promise<boolean> {
     if (ref === undefined) {
       await this.hasher.verify(password, await this.decoyHash());
@@ -44,7 +50,11 @@ export class PasswordVerifier {
     });
   }
 
-  /** Saves the new password in the transaction and shard the caller already opened. */
+  /**
+   * Saves the new password in the transaction and shard the caller already opened.
+   * @param ref Owner of the password.
+   * @param password New password.
+   */
   async store(ref: UserRef, password: string): Promise<void> {
     const existing = await this.credentials.find(ref.userId);
     await this.credentials.save({

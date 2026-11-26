@@ -33,10 +33,13 @@ export class SingleFlight {
   /**
    * Runs `fn` unless one is already running with the same key, in which case
    * it shares its promise. The key is released when it finishes, with success or error.
-   *
    * `options` only bounds the caller's wait: if it aborts or its deadline expires,
    * that caller rejects while the shared execution continues for the others.
    * An already cancelled caller does not start `fn`.
+   * @param key Key of the work.
+   * @param fn Work to run.
+   * @param options Signal and deadline of the caller.
+   * @returns What `fn` returns.
    * @throws CacheKeyTooLongError when the key exceeds `maxKeyLength`.
    */
   run<T>(

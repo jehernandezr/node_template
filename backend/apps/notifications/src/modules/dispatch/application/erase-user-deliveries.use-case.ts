@@ -11,7 +11,12 @@ export class EraseUserDeliveries {
     private readonly shard: ShardScopes,
   ) {}
 
-  /** The number of deliveries deleted; repeating it deletes nothing. */
+  /**
+   * Deletes the deliveries of a user.
+   * The number of deliveries deleted; repeating it deletes nothing.
+   * @param user User to erase.
+   * @returns How many were deleted.
+   */
   execute(user: UserRef): Promise<number> {
     return this.shard.inUserShard(user, () =>
       this.deliveries.erase(user.userId),

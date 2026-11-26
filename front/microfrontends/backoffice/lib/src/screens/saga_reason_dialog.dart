@@ -9,6 +9,7 @@ import '../shared/enums/backoffice_enums.dart';
 /// Asks for the reason of a manual saga action. Pops with the trimmed reason,
 /// or with null when the operator cancels.
 class SagaReasonDialog extends StatefulWidget {
+  /// Dialog that asks for the reason of [action].
   const SagaReasonDialog({super.key, required this.action});
 
   /// Action the reason is given for.

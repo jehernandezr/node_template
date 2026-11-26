@@ -22,26 +22,44 @@ export class User {
 
   private constructor(private state: UserState) {}
 
-  /** Newly registered user: waits for their email verification. */
+  /**
+   * Newly registered user: waits for their email verification.
+   * @param state User data.
+   * @returns The user.
+   */
   static register(
     state: Omit<UserState, 'status' | 'emailVerifiedAt' | 'version'>,
   ): User {
     return new User({ ...state, status: UserStatus.PendingVerification });
   }
 
+  /**
+   * Rebuilds a user from its state.
+   * @param state Stored user.
+   * @returns The user.
+   */
   static rehydrate(state: UserState): User {
     return new User(state);
   }
 
+  /** UUIDv7 that identifies the user, together with the home tenant the key its shard routes by. */
   get id(): string {
     return this.state.id;
   }
 
+  /**
+   * Copies the user state.
+   * @returns The user state.
+   */
   snapshot(): UserState {
     return this.state;
   }
 
-  /** Verifies the email and activates the account if it was waiting for verification. Returns `false` if it was already verified. */
+  /**
+   * Verifies the email and activates the account if it was waiting for verification. Returns `false` if it was already verified.
+   * @param now Instant of the verification.
+   * @returns Whether it changed.
+   */
   verifyEmail(now: Date): boolean {
     if (this.state.emailVerifiedAt !== undefined) {
       return false;
@@ -57,7 +75,11 @@ export class User {
     return true;
   }
 
-  /** Returns `false` if it was already suspended: the operation is idempotent. */
+  /**
+   * Suspends the user.
+   * Returns `false` if it was already suspended: the operation is idempotent.
+   * @returns Whether it changed.
+   */
   suspend(): boolean {
     if (this.state.status === UserStatus.Suspended) {
       return false;
@@ -66,7 +88,10 @@ export class User {
     return true;
   }
 
-  /** Returns to active, or to pending if the email was never verified. Returns `false` if it was not suspended. */
+  /**
+   * Returns to active, or to pending if the email was never verified. Returns `false` if it was not suspended.
+   * @returns Whether it changed.
+   */
   reactivate(): boolean {
     if (this.state.status !== UserStatus.Suspended) {
       return false;
@@ -81,6 +106,10 @@ export class User {
     return true;
   }
 
+  /**
+   * Changes the display name or locale.
+   * @param changes New values.
+   */
   updateProfile(changes: { displayName?: string; locale?: string }): void {
     this.state = {
       ...this.state,
@@ -91,7 +120,12 @@ export class User {
     };
   }
 
-  /** The new email arrives already verified: the user confirmed with the token sent to them. */
+  /**
+   * The new email arrives already verified: the user confirmed with the token sent to them.
+   * @param email New email.
+   * @param fingerprint Fingerprint of the new email.
+   * @param now Instant of the change.
+   */
   changeEmail(email: string, fingerprint: Buffer, now: Date): void {
     this.state = {
       ...this.state,
@@ -101,6 +135,10 @@ export class User {
     };
   }
 
+  /**
+   * Records the last tenant the user worked in.
+   * @param tenantId Last tenant.
+   */
   setLastTenant(tenantId: string): void {
     this.state = { ...this.state, lastTenantId: tenantId };
   }
@@ -108,6 +146,7 @@ export class User {
   /**
    * Deletes the personal data: a `Deleted` row remains without real email or name, so that what
    * references it in other tenants does not point to nothing. Returns `false` if it was already deleted.
+   * @returns Whether it changed.
    */
   erase(): boolean {
     if (this.state.status === UserStatus.Deleted) {

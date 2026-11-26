@@ -38,7 +38,7 @@ export class SocketIoTransport extends RealtimeTransport {
     super();
   }
 
-  attach(host: RealtimeHost): void {
+  override attach(host: RealtimeHost): void {
     this.server = new Server(host.server, {
       transports: ['websocket'],
       serveClient: false,
@@ -62,7 +62,7 @@ export class SocketIoTransport extends RealtimeTransport {
     });
   }
 
-  async close(): Promise<void> {
+  override async close(): Promise<void> {
     await this.connections.closeAll();
     this.server?.disconnectSockets(true);
     this.server?.engine.close();
@@ -84,6 +84,9 @@ export class SocketIoTransport extends RealtimeTransport {
     });
   }
 
+  /**
+   * A client that disconnected during the catch-up will no longer emit `disconnect`.
+   */
   private async serve(socket: Socket): Promise<void> {
     const auth = socket.handshake.auth as HandshakeAuth;
     const connection = await this.connections.connect(
@@ -91,7 +94,6 @@ export class SocketIoTransport extends RealtimeTransport {
       new SocketSink(socket),
       typeof auth.lastEventId === 'string' ? auth.lastEventId : undefined,
     );
-    // A client that disconnected during the catch-up will no longer emit `disconnect`.
     if (socket.disconnected) {
       await connection.close();
       return;

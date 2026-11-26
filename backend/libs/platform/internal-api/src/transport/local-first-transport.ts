@@ -15,7 +15,7 @@ export class LocalFirstTransport extends Transport {
     super();
   }
 
-  invoke(
+  override invoke(
     operationId: string,
     input: unknown,
     meta: CallMeta,

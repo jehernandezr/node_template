@@ -8,6 +8,8 @@ export class PayloadLimit {
   /**
    * Returns the size in bytes of the JSON text of `value`, or `undefined` if it cannot be
    * serialized (cycles, bigint). `undefined` counts as zero bytes.
+   * @param value Value to measure.
+   * @returns The size, or `undefined`.
    */
   static byteLength(value: unknown): number | undefined {
     try {
@@ -18,7 +20,11 @@ export class PayloadLimit {
     }
   }
 
-  /** Whether `value` serializes within the cap. */
+  /**
+   * Whether `value` serializes within the cap.
+   * @param value Value to check.
+   * @returns `true` when it fits.
+   */
   fits(value: unknown): boolean {
     const size = PayloadLimit.byteLength(value);
     return size !== undefined && size <= this.maxBytes;

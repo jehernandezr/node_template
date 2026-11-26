@@ -35,7 +35,11 @@ export class SqsPoller {
     private readonly clock: Clock,
   ) {}
 
-  /** One round of long polling: receives, processes and deletes the acknowledged ones. */
+  /**
+   * One round of long polling: receives, processes and deletes the acknowledged ones.
+   * @param signal Abort signal.
+   * @returns The poll report.
+   */
   async pollOnce(signal?: AbortSignal): Promise<PollReport> {
     const queueUrl = await this.names.queueUrl(
       this.names.queueName(this.queue.name, this.queue.isFifo),
@@ -94,6 +98,9 @@ export class SqsPoller {
     this.abort = undefined;
   }
 
+  /**
+   * Waits before retrying. The timeout is generous: only the pause matters, and cancellation arrives through `signal`.
+   */
   private async run(signal: AbortSignal): Promise<void> {
     while (!signal.aborted) {
       try {
@@ -101,8 +108,6 @@ export class SqsPoller {
       } catch (err) {
         if (signal.aborted) return;
         this.reportFailure(err);
-        // Waits before retrying. The timeout is generous: only the pause matters,
-        // and cancellation arrives through `signal`.
         await Deadline.after(this.config.errorDelayMs * 2 + 1_000, this.clock)
           .sleep(this.config.errorDelayMs, signal)
           .catch(() => undefined);
@@ -110,18 +115,22 @@ export class SqsPoller {
     }
   }
 
+  /**
+   * A logger failure cannot end the consumption loop.
+   */
   private reportFailure(err: unknown): void {
     try {
       this.logger.error('sqs polling failed', {
         error_code: ErrorDescriptor.codeOf(err),
         error: err,
       });
-    } catch {
-      // A logger failure cannot end the consumption loop.
-    }
+    } catch {}
   }
 
-  /** Deletes the acknowledged ones in batches of up to 10; a failure is not rethrown, the message comes back later. */
+  /**
+   * Deletes the acknowledged ones in batches of up to 10; a failure is not rethrown, the message comes back later.
+   * Messages that come back are absorbed by the processed message registry.
+   */
   private async delete(
     queueUrl: string,
     deliveries: readonly SqsDelivery[],
@@ -153,7 +162,6 @@ export class SqsPoller {
           });
         }
       } catch (err) {
-        // Messages that come back are absorbed by the processed message registry.
         const error = this.errors.translate(
           AwsOperation.DeleteMessageBatch,
           err,

@@ -64,7 +64,7 @@ class ContainerEndpointResolver extends InstanceEndpointResolver {
     super();
   }
 
-  resolve(instance: string): InstanceEndpoints {
+  override resolve(instance: string): InstanceEndpoints {
     if (instance !== this.instance) {
       throw new PersistenceError(
         PersistenceErrorCode.InvalidConfig,

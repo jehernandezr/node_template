@@ -13,7 +13,7 @@ export interface RecordedDegradation {
 export class RecordingDegradationReporter extends RateLimitDegradationReporter {
   readonly degradations: RecordedDegradation[] = [];
 
-  degraded(
+  override degraded(
     operation: RateLimitOperation,
     rule: RateLimitRule,
     error: unknown,

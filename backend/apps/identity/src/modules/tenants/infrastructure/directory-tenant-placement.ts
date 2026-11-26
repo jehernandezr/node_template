@@ -24,7 +24,7 @@ export class DirectoryTenantPlacement extends TenantPlacement {
     super();
   }
 
-  async place(
+  override async place(
     tenantId: string,
     region: string,
     spread: boolean,

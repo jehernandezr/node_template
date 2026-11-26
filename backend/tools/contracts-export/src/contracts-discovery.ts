@@ -32,7 +32,7 @@ export class ContractsDiscovery extends ContractRegistry {
     super();
   }
 
-  async load(): Promise<readonly ServiceContract[]> {
+  override async load(): Promise<readonly ServiceContract[]> {
     const names = await this.fileSystem.listDirectories(
       this.paths.contractsDir,
     );

@@ -9,7 +9,12 @@ export class SharedFileEdits {
   /** The list of services that share the same boundaries rule in `eslint.config.mjs`. */
   private static readonly SERVICE_SCOPES = /\.\.\.\[([^\]]*)\]\.map\(/;
 
-  /** `tsconfig.base.json` with the `@contracts/<service>` alias. */
+  /**
+   * `tsconfig.base.json` with the `@contracts/<service>` alias.
+   * @param tsconfig Current `tsconfig.base.json`.
+   * @param service Forms of the service name.
+   * @returns The edited text.
+   */
   static withContractAlias(tsconfig: string, service: NameForms): string {
     const config = JSON.parse(tsconfig) as {
       compilerOptions?: { paths?: Record<string, string[]> };
@@ -26,6 +31,9 @@ export class SharedFileEdits {
 
   /**
    * `eslint.config.mjs` with the service in the list of those that follow the service boundaries rule.
+   * @param eslintConfig Current `eslint.config.mjs`.
+   * @param service Forms of the service name.
+   * @returns The edited text.
    * @throws GeneratorError `MissingMarker` if the list is missing.
    */
   static withServiceScope(eslintConfig: string, service: NameForms): string {

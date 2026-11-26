@@ -85,7 +85,6 @@ void main() {
     });
 
     test('all requires at least one nested rule', () {
-      // An empty list would allow everyone, anonymous visitors included.
       expect(() => AccessRule.all([]), throwsA(isA<AssertionError>()));
     });
   });

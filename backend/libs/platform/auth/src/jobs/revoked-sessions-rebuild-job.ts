@@ -35,7 +35,7 @@ export class RevokedSessionsRebuildJob extends ScheduledJob {
   }
 
   /** @throws the index read error; the registry keeps the previous filter. */
-  async run(context: JobContext): Promise<void> {
+  override async run(context: JobContext): Promise<void> {
     await this.registry.rebuild(this.source.revokedSessionIds(context.signal));
   }
 }

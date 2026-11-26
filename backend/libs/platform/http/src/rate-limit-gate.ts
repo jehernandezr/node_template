@@ -12,7 +12,12 @@ export class RateLimitGate {
     private readonly rules: RateLimitTierRules,
   ) {}
 
-  /** @throws HttpProblemError (`PLATFORM.RATE_LIMIT.EXCEEDED`) with the wait time. */
+  /**
+   * Consumes one unit of the tier for the key.
+   * @param tier Rate limit tier.
+   * @param key Limited key.
+   * @throws HttpProblemError (`PLATFORM.RATE_LIMIT.EXCEEDED`) with the wait time.
+   */
   async check(tier: RateLimitTier, key: string): Promise<void> {
     const result = await this.limiter.consume(key, this.rules.ruleFor(tier));
     if (!result.allowed) {
@@ -24,6 +29,10 @@ export class RateLimitGate {
 
   /**
    * Returns the limit key: by IP in the auth tier or without an actor; by actor in the others.
+   * @param tier Rate limit tier.
+   * @param client Client of the request.
+   * @param actor Actor of the request.
+   * @returns The key.
    */
   static keyFor(
     tier: RateLimitTier,

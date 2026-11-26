@@ -17,6 +17,7 @@ export class TenantWriteWaiter {
 
   /**
    * Returns as soon as the gate is open.
+   * @param tenantId Tenant to wait for.
    * @throws ShardingError `TenantMigrating`, with `retryAfterSeconds`, if it is still closed when the wait expires.
    */
   async awaitOpen(tenantId: string): Promise<void> {

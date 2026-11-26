@@ -71,6 +71,8 @@ final class ShellRouterFactory {
   /// scope, and returns the router. Throws [StateError] when a shell page of
   /// the paths belongs to a microfrontend segment or a manifest route lies
   /// outside its microfrontend's segment.
+  ///
+  /// go_router rejects an empty ShellRoute: a shell may register no screens.
   GoRouter build({
     required List<RouteBase> routes,
     required ShellRouteBuilder shellBuilder,
@@ -80,7 +82,6 @@ final class ShellRouterFactory {
     return GoRouter(
       routes: [
         ...routes,
-        // go_router rejects an empty ShellRoute: a shell may register no screens.
         if (microfrontendRoutes.isNotEmpty)
           ShellRoute(builder: shellBuilder, routes: microfrontendRoutes),
       ],
@@ -105,6 +106,8 @@ final class ShellRouterFactory {
 
   /// The routes of every manifest, validated, and wrapped for the manifests
   /// of this platform.
+  ///
+  /// `buildRoutes` keeps the order of `screens`, children included.
   List<GoRoute> _microfrontendRoutes() {
     final environment = ShellAccessEnvironment(
       session: _runtime.session,
@@ -120,7 +123,6 @@ final class ShellRouterFactory {
       _validateSegment(manifest, built);
       if (!manifest.platforms.contains(_platform)) continue;
       final wrapper = _PageWrapper(_runtime, environment, manifest, _platform);
-      // `buildRoutes` keeps the order of `screens`, children included.
       for (var i = 0; i < built.length; i++) {
         wrapped.add(wrapper.wrap(built[i], manifest.screens[i], const []));
       }
@@ -192,6 +194,7 @@ final class _PageWrapper {
   GoRouterRedirect _redirect(GoRouterRedirect redirect) =>
       (context, state) => environment.run(() => redirect(context, state));
 
+  /// After a sign-out or a switch to a user without access, the page is still mounted until the redirect (or its exit transition) removes it: never build it for an identity that cannot use it.
   Widget _page(
     List<AccessRule> rules,
     GoRouterState state,
@@ -203,9 +206,6 @@ final class _PageWrapper {
     child: ValueListenableBuilder<int>(
       valueListenable: runtime.identityEpoch,
       builder: (context, epoch, _) {
-        // After a sign-out or a switch to a user without access, the page
-        // is still mounted until the redirect (or its exit transition)
-        // removes it: never build it for an identity that cannot use it.
         final session = runtime.session.value;
         final now = environment.clock();
         if (!manifest.isReachableBy(session, platform, now: now) ||

@@ -14,7 +14,7 @@ export class TypeOrmInboxRepository extends InboxRepository {
     super();
   }
 
-  async add(
+  override async add(
     owner: UserRef,
     notification: NotificationState,
   ): Promise<NotificationState> {
@@ -43,7 +43,7 @@ export class TypeOrmInboxRepository extends InboxRepository {
     });
   }
 
-  async page(
+  override async page(
     userId: string,
     beforeId: string | undefined,
     limit: number,
@@ -62,13 +62,13 @@ export class TypeOrmInboxRepository extends InboxRepository {
     return rows.map((row) => TypeOrmInboxRepository.stateOf(row));
   }
 
-  unreadCount(userId: string): Promise<number> {
+  override unreadCount(userId: string): Promise<number> {
     return this.read((manager) =>
       manager.countBy(NotificationEntity, { userId, readAt: IsNull() }),
     );
   }
 
-  async markRead(
+  override async markRead(
     userId: string,
     notificationId: string,
     at: Date,
@@ -89,7 +89,7 @@ export class TypeOrmInboxRepository extends InboxRepository {
     });
   }
 
-  async markAllRead(userId: string, at: Date): Promise<void> {
+  override async markAllRead(userId: string, at: Date): Promise<void> {
     await this.write((manager) =>
       manager.update(
         NotificationEntity,
@@ -99,7 +99,7 @@ export class TypeOrmInboxRepository extends InboxRepository {
     );
   }
 
-  async erase(userId: string): Promise<number> {
+  override async erase(userId: string): Promise<number> {
     const result = await this.write((manager) =>
       manager.delete(NotificationEntity, { userId }),
     );

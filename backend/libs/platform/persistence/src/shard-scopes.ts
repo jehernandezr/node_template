@@ -17,6 +17,9 @@ export class ShardScopes {
    * Runs the block in the tenant's shard with that tenant in the request context. Persistence sets it in
    * `app.tenant_id`, and the RLS policies of tenant tables show no row without it, so the block works on the given
    * tenant even when the caller's session belongs to another one.
+   * @param tenantId Tenant of the block.
+   * @param fn Work to run.
+   * @returns What `fn` returns.
    * @throws ShardingError `CrossShardTransaction` if a transaction is open on another shard.
    */
   inTenantShard<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
@@ -28,6 +31,9 @@ export class ShardScopes {
   /**
    * Runs the block in the user's shard, which is the shard of their home tenant. The request context is left as
    * it is: user data has no tenant column.
+   * @param user User of the block.
+   * @param fn Work to run.
+   * @returns What `fn` returns.
    * @throws ShardingError `CrossShardTransaction` if a transaction is open on another shard.
    */
   inUserShard<T>(user: UserRef, fn: () => Promise<T>): Promise<T> {

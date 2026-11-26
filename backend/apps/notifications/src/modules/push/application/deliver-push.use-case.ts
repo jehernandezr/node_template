@@ -15,7 +15,7 @@ export class DeliverPush extends PushFacade {
     super();
   }
 
-  async deliver(user: UserRef, message: PushMessage): Promise<number> {
+  override async deliver(user: UserRef, message: PushMessage): Promise<number> {
     const targets = await this.targets.targetsOf(user);
     await Promise.all(
       targets.map((target) => this.sender.send(target, message)),

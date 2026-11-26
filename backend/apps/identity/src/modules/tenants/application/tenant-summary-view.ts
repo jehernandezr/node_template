@@ -4,6 +4,11 @@ import type { TenantSnapshot } from '../domain/tenant-snapshot.js';
 
 /** The view of a tenant that the facade and the contract return. */
 export class TenantSummaryView {
+  /**
+   * Builds the snapshot other modules read from a tenant state.
+   * @param state Stored tenant.
+   * @returns The snapshot.
+   */
   static snapshot(state: TenantState): TenantSnapshot {
     return {
       id: state.id,
@@ -21,6 +26,11 @@ export class TenantSummaryView {
     };
   }
 
+  /**
+   * Builds the API view of a tenant.
+   * @param state Tenant snapshot.
+   * @returns Its summary.
+   */
   static summary(state: TenantSnapshot): TenantSummary {
     return {
       id: state.id,

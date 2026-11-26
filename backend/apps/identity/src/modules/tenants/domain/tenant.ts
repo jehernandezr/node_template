@@ -24,19 +24,33 @@ export interface TenantState {
 export class Tenant {
   private constructor(private state: TenantState) {}
 
-  /** Newly created tenant, in provisioning until it is activated. */
+  /**
+   * Newly created tenant, in provisioning until it is activated.
+   * @param state Tenant data.
+   * @returns The tenant.
+   */
   static provision(state: Omit<TenantState, 'status' | 'version'>): Tenant {
     return new Tenant({ ...state, status: TenantLifecycle.Provisioning });
   }
 
+  /**
+   * Rebuilds a tenant from its state.
+   * @param state Stored tenant.
+   * @returns The tenant.
+   */
   static rehydrate(state: TenantState): Tenant {
     return new Tenant(state);
   }
 
+  /** UUIDv7 that identifies the tenant, the key every shard routes by. */
   get id(): string {
     return this.state.id;
   }
 
+  /**
+   * Copies the tenant state.
+   * @returns The tenant state.
+   */
   snapshot(): TenantState {
     return this.state;
   }
@@ -44,6 +58,9 @@ export class Tenant {
   /**
    * Saves the features billing decided at `changedAt`. Returns `false` if it already has a later
    * decision; repeating the same decision applies it again, so whoever retries it completes its effect.
+   * @param features Features of the plan.
+   * @param changedAt Instant of the decision.
+   * @returns Whether it applied.
    */
   applyPlan(features: readonly PlanFeature[], changedAt: Date): boolean {
     const current = this.state.planChangedAt;
@@ -58,30 +75,53 @@ export class Tenant {
     return true;
   }
 
+  /**
+   * Tells whether the tenant is active.
+   * @returns `true` when active.
+   */
   isActive(): boolean {
     return this.state.status === TenantLifecycle.Active;
   }
 
-  /** Returns `false` if it was not in provisioning. */
+  /**
+   * Activates a provisioned tenant.
+   * Returns `false` if it was not in provisioning.
+   * @returns Whether it changed.
+   */
   activate(): boolean {
     return this.move(TenantLifecycle.Provisioning, TenantLifecycle.Active);
   }
 
-  /** Returns `false` if it was not active: the operation is idempotent. */
+  /**
+   * Suspends the tenant.
+   * Returns `false` if it was not active: the operation is idempotent.
+   * @returns Whether it changed.
+   */
   suspend(): boolean {
     return this.move(TenantLifecycle.Active, TenantLifecycle.Suspended);
   }
 
-  /** Returns `false` if it was not suspended. */
+  /**
+   * Reactivates a suspended tenant.
+   * Returns `false` if it was not suspended.
+   * @returns Whether it changed.
+   */
   reactivate(): boolean {
     return this.move(TenantLifecycle.Suspended, TenantLifecycle.Active);
   }
 
-  /** Only a tenant being provisioned can be discarded: it has no business data. */
+  /**
+   * Only a tenant being provisioned can be discarded: it has no business data.
+   * @returns `true` while provisioning.
+   */
   canBeDiscarded(): boolean {
     return this.state.status === TenantLifecycle.Provisioning;
   }
 
+  /**
+   * Renames the tenant.
+   * @param name New name.
+   */
   rename(name: string): void {
     this.state = { ...this.state, name };
   }

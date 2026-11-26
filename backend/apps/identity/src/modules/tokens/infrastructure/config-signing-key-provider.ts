@@ -45,7 +45,7 @@ export class ConfigSigningKeyProvider extends SigningKeyProvider {
     );
   }
 
-  ring(): SigningKeyRing {
+  override ring(): SigningKeyRing {
     return this.keys;
   }
 }

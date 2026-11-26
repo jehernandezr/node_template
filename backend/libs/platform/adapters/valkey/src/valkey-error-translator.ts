@@ -26,7 +26,7 @@ export class ValkeyErrorTranslator extends FailureRule {
   private static readonly COMMAND_TIMEOUT_MESSAGE = 'Command timed out';
 
   /** Only judges a server reply error; the rest is left to the classifier. */
-  classify(error: object): FailureKind | undefined {
+  override classify(error: object): FailureKind | undefined {
     return this.isReplyError(error) ? this.kindOf(error) : undefined;
   }
 
@@ -35,6 +35,8 @@ export class ValkeyErrorTranslator extends FailureRule {
    * - an error reply is transient only with the prefixes of a server that is loading, busy or in failover;
    * - the iovalkey `commandTimeout` is a timeout;
    * - anything else (connection refused or closed, retries exhausted, queue without connection) is transient.
+   * @param error Client error.
+   * @returns Its failure kind.
    */
   kindOf(error: unknown): FailureKind {
     if (this.isReplyError(error)) {
@@ -52,7 +54,12 @@ export class ValkeyErrorTranslator extends FailureRule {
     return FailureKind.Transient;
   }
 
-  /** Wraps a client error in a {@link ValkeyCommandError}. Platform errors pass through unchanged. */
+  /**
+   * Wraps a client error in a {@link ValkeyCommandError}. Platform errors pass through unchanged.
+   * @param error Client error.
+   * @param command Command that failed.
+   * @returns The platform error.
+   */
   translate(error: unknown, command: string): PlatformError {
     if (error instanceof PlatformError) {
       return error;
@@ -60,7 +67,11 @@ export class ValkeyErrorTranslator extends FailureRule {
     return new ValkeyCommandError(command, this.kindOf(error), error);
   }
 
-  /** `true` for a server error reply (not a connection or client failure). */
+  /**
+   * `true` for a server error reply (not a connection or client failure).
+   * @param error Error to check.
+   * @returns `true` for a reply error.
+   */
   isReplyError(error: unknown): boolean {
     return (
       typeof error === 'object' &&
@@ -69,7 +80,11 @@ export class ValkeyErrorTranslator extends FailureRule {
     );
   }
 
-  /** Returns the first word of an error reply, such as `WRONGTYPE` or `NOSCRIPT`. */
+  /**
+   * Returns the first word of an error reply, such as `WRONGTYPE` or `NOSCRIPT`.
+   * @param error Reply error.
+   * @returns The prefix.
+   */
   replyPrefix(error: unknown): string {
     return this.messageOf(error).split(' ', 1)[0] ?? '';
   }

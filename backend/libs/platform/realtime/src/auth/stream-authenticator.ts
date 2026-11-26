@@ -3,7 +3,12 @@ import type { StreamPrincipal } from './stream-principal.js';
 
 /** Authenticates a realtime connection. */
 export abstract class StreamAuthenticator {
-  /** @throws AuthenticationError if the credentials are missing or not valid. */
+  /**
+   * Authenticates a stream from its token or cookie.
+   * @param credentials Token or cookie of the request.
+   * @returns The principal of the stream.
+   * @throws AuthenticationError if the credentials are missing or not valid.
+   */
   abstract authenticate(
     credentials: StreamCredentials,
   ): Promise<StreamPrincipal>;

@@ -11,23 +11,19 @@ export class RecordingLogger extends LoggerPort {
   readonly errors: RecordedLog[] = [];
   readonly warnings: RecordedLog[] = [];
 
-  debug(): void {
-    // Tests do not look at the low levels.
-  }
+  override debug(): void {}
 
-  info(): void {
-    // Tests do not look at the low levels.
-  }
+  override info(): void {}
 
-  warn(message: string, fields?: Record<string, unknown>): void {
+  override warn(message: string, fields?: Record<string, unknown>): void {
     this.warnings.push({ message, fields });
   }
 
-  error(message: string, fields?: Record<string, unknown>): void {
+  override error(message: string, fields?: Record<string, unknown>): void {
     this.errors.push({ message, fields });
   }
 
-  child(): LoggerPort {
+  override child(): LoggerPort {
     return this;
   }
 }

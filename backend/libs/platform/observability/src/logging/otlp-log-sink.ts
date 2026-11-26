@@ -31,10 +31,12 @@ export class OtlpLogSink extends LogSink {
     super();
   }
 
-  write(record: LogRecord): void {
+  /**
+   * trace_id and span_id travel in the OTel record context, not as attributes.
+   */
+  override write(record: LogRecord): void {
     const attributes: Attributes = {};
     for (const [key, value] of Object.entries(record.fields)) {
-      // trace_id and span_id travel in the OTel record context, not as attributes.
       if (key === LogField.TraceId || key === LogField.SpanId) {
         continue;
       }

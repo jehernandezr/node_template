@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tokens/tokens.dart';
 
 /// Success, warning and info color roles, as a theme extension.
+///
+/// Blending the base color at this strength over the raised surface keeps the container tinted but leaves the text on it above the contrast minimum.
 @immutable
 final class StatusColors extends ThemeExtension<StatusColors> {
   /// Creates the roles. Every one is required so a set cannot be partial.
@@ -20,8 +22,6 @@ final class StatusColors extends ThemeExtension<StatusColors> {
     required this.onInfoContainer,
   });
 
-  // Blending the base color at this strength over the raised surface keeps the
-  // container tinted but leaves the text on it above the contrast minimum.
   static const double _containerAlpha = 0.16;
 
   /// Builds the roles from [palette]. Containers are the base color blended

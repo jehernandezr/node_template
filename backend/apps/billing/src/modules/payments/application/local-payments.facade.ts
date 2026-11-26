@@ -22,7 +22,7 @@ export class LocalPaymentsFacade extends PaymentsFacade {
    * @param request Invoice, attempt number and amount to charge.
    * @returns The provider's answer, or `Requested` if another run has the attempt in flight.
    */
-  charge(request: ChargeRequest): Promise<PaymentResult> {
+  override charge(request: ChargeRequest): Promise<PaymentResult> {
     return this.chargeInvoice.execute(request);
   }
 
@@ -34,7 +34,7 @@ export class LocalPaymentsFacade extends PaymentsFacade {
    *   `BILLING.INVOICE.INVALID_STATE` if the notice contradicts the result already recorded for its attempt or the
    *   attempt it would take is open on behalf of another charge.
    */
-  record(notice: PaymentNotice): Promise<number> {
+  override record(notice: PaymentNotice): Promise<number> {
     return this.recordResult.execute(notice);
   }
 }

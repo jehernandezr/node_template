@@ -9,6 +9,8 @@ export abstract class InternalRequestSigner {
   /**
    * Returns the headers, with lowercase names, added to the call to
    * authenticate it. It does not repeat those in `request.headers`.
+   * @param request Request to sign.
+   * @returns The headers.
    */
   abstract sign(request: SignableRequest): Promise<Record<string, string>>;
 }

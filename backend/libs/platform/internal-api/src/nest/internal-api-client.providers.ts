@@ -30,6 +30,11 @@ import { InternalTransportKind } from './internal-transport-kind.enum.js';
 
 /** Client-side providers: the `InternalClient` and the transport the service chose. */
 export class InternalApiClientProviders {
+  /**
+   * Builds the providers of the internal client and its transport.
+   * @param transport In-process or HTTP.
+   * @returns The providers.
+   */
   static build(transport: InternalTransportKind): Provider[] {
     return [
       ...InternalApiClientProviders.client(),

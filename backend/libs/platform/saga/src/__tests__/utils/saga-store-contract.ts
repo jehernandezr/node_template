@@ -25,7 +25,6 @@ export function runSagaStoreContract(
     const inStore = <T>(body: () => Promise<T>): Promise<T> =>
       harness.within(body);
     const saga = (n: number) => SagaInstanceBuilder.aSaga().with({ id: id(n) });
-    /** Creates an instance with the `TOKEN` lease until `until`. */
     const createLeased = async (n: number, until = at(60_000)) => {
       await harness.store.create(saga(n).build());
       await harness.store.tryAcquireLease(id(n), TOKEN, until, NOW);
@@ -45,7 +44,6 @@ export function runSagaStoreContract(
             .with({
               idempotencyKey: 'key-1',
               state: { name: 'acme', nested: { list: [1, 2] } },
-              // Without tenant: a sharded store requires it to be the one of the current scope.
               context: {
                 actorId: 'actor-1',
                 traceparent:

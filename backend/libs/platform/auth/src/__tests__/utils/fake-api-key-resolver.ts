@@ -6,7 +6,7 @@ export class FakeApiKeyResolver extends ApiKeyResolver {
   private readonly principals = new Map<string, ApiKeyPrincipal>();
   private resolved = 0;
 
-  async resolve(
+  override async resolve(
     prefix: string,
     secretHash: string,
   ): Promise<ApiKeyPrincipal | undefined> {

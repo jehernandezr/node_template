@@ -55,7 +55,12 @@ export class AuthenticateApiKey {
     private readonly clock: Clock,
   ) {}
 
-  /** With the full key, as the internal operation receives it. */
+  /**
+   * With the full key, as the internal operation receives it.
+   * @param rawKey Full key as the client sent it.
+   * @param clientIp IP of the client, when known.
+   * @returns The principal of the key.
+   */
   async execute(rawKey: string, clientIp?: string): Promise<ApiKeyPrincipal> {
     const parsed = ApiKeyFormat.parse(rawKey);
     if (parsed === undefined) {
@@ -70,8 +75,13 @@ export class AuthenticateApiKey {
 
   /**
    * With the prefix and the SHA-256 of the secret, as `@platform/auth` resolves it.
+   * Without an IP, failures count only for the prefix: they do not share a counter with other clients without an IP.
+   * @param prefix Public prefix of the key.
+   * @param secretSha256 SHA-256 of the secret part.
+   * @param clientIp IP of the client, when known.
+   * @returns The principal of the key.
    * @throws IdentityError `IDENTITY.API_KEY.INVALID` with `Retry-After` while the prefix is locked
-   *   from that IP, even if the secret is correct.
+   * from that IP, even if the secret is correct.
    */
   async resolve(
     prefix: string,
@@ -79,7 +89,6 @@ export class AuthenticateApiKey {
     clientIp?: string,
   ): Promise<ApiKeyPrincipal> {
     const account = this.lockoutKeys.apiKey(prefix);
-    // Without an IP, failures count only for the prefix: they do not share a counter with other clients without an IP.
     const ip = clientIp ?? account;
     const locked = await this.lockout.remainingLockMs(account, ip);
     if (locked !== undefined) {
@@ -108,6 +117,9 @@ export class AuthenticateApiKey {
     return verified.principal;
   }
 
+  /**
+   * Without an IP there is no way to prove the call comes from an allowed range: the key is not valid.
+   */
   private async verify(
     prefix: string,
     secretSha256: string,
@@ -133,7 +145,6 @@ export class AuthenticateApiKey {
       if (!key.isUsable(now)) {
         throw new IdentityError(IdentityErrorCode.ApiKeyInvalid);
       }
-      // Without an IP there is no way to prove the call comes from an allowed range: the key is not valid.
       if (
         state.allowedCidrs.length > 0 &&
         (clientIp === undefined || !isIpInAnyCidr(clientIp, state.allowedCidrs))

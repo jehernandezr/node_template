@@ -263,7 +263,6 @@ void main() {
         operation: NotificationsOperation.markAsRead,
       );
       await tester.tap(find.text('Título a'));
-      // Another identity replaces the screen before the error arrives.
       showScreen.value = false;
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));

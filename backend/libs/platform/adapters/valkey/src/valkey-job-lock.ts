@@ -26,6 +26,14 @@ end
 return 0
 `);
 
+  /** KEYS[1] lock key; ARGV[1] token; ARGV[2] ttl in ms. Extends only if the token matches. */
+  private static readonly RENEW = new LuaScript(`
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('PEXPIRE', KEYS[1], ARGV[2])
+end
+return 0
+`);
+
   constructor(
     private readonly executor: ValkeyCommandExecutor,
     private readonly keyspace: ValkeyKeyspace,
@@ -35,7 +43,10 @@ return 0
   }
 
   /** @throws GuardViolationError with an empty name or a `ttlMs` that is not a positive integer. */
-  async tryAcquire(name: string, ttlMs: number): Promise<JobLease | undefined> {
+  override async tryAcquire(
+    name: string,
+    ttlMs: number,
+  ): Promise<JobLease | undefined> {
     Guard.default.nonEmpty('name', name);
     Guard.default.positiveInteger('ttlMs', ttlMs);
     const token = Buffer.from(
@@ -51,7 +62,22 @@ return 0
     return reply === 'OK' ? { name, token } : undefined;
   }
 
-  async release(lease: JobLease): Promise<void> {
+  /**
+   * Extends the key's expiry with a compare-and-expire script, so a lease that expired and was taken by
+   * another process is never extended.
+   * @throws GuardViolationError with a `ttlMs` that is not a positive integer.
+   */
+  override async renew(lease: JobLease, ttlMs: number): Promise<boolean> {
+    Guard.default.positiveInteger('ttlMs', ttlMs);
+    const reply = await this.executor.script(
+      ValkeyJobLock.RENEW,
+      [this.keyOf(lease.name)],
+      [lease.token, ttlMs],
+    );
+    return reply === 1;
+  }
+
+  override async release(lease: JobLease): Promise<void> {
     await this.executor.script(
       ValkeyJobLock.RELEASE,
       [this.keyOf(lease.name)],

@@ -6,6 +6,7 @@ import 'package:contracts/contracts.dart';
 /// [ApiErrorException] with their contract code, and a request that does not
 /// meet the contract as [ContractViolationException].
 final class SignedOutException implements Exception {
+  /// Signals that there is no session to act on.
   const SignedOutException();
 
   @override

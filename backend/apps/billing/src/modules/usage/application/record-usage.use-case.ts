@@ -17,6 +17,11 @@ export class RecordUsage {
     private readonly ids: IdGenerator,
   ) {}
 
+  /**
+   * Records a batch of metered usage, ignoring records whose key was already stored.
+   * @param batch Usage records of one tenant.
+   * @returns How many records were new.
+   */
   execute(batch: RecordUsagePayload): Promise<number> {
     return this.shard.inTenantShard(batch.tenantId, () =>
       this.transactions.runInTransaction(async () => {

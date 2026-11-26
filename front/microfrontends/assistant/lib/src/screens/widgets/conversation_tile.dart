@@ -7,8 +7,10 @@ import '../../shared/utils/assistant_paths.dart';
 
 /// One conversation of the list. Tapping it opens the chat.
 class ConversationTile extends StatelessWidget {
+  /// Row of [conversation] in the list.
   const ConversationTile({super.key, required this.conversation});
 
+  /// Conversation shown.
   final Conversation conversation;
 
   @override

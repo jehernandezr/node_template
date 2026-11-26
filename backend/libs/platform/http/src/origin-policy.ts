@@ -9,7 +9,12 @@ export class OriginPolicy {
     this.allowed = new Set(normalized);
   }
 
-  /** Without `Origin` the request does not come from a browser and is accepted. */
+  /**
+   * Tells whether a browser origin may call the API.
+   * Without `Origin` the request does not come from a browser and is accepted.
+   * @param origin `Origin` header.
+   * @returns `true` when allowed.
+   */
   isAllowed(origin: string | undefined): boolean {
     if (origin === undefined) {
       return true;

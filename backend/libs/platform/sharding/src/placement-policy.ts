@@ -21,6 +21,13 @@ export interface AvailableShard {
  * take the same shard.
  */
 export abstract class ShardPlacementPolicy {
+  /**
+   * Chooses the shards of a new tenant from the current placements and the available shards.
+   * @param request Tenant, region and group.
+   * @param current Placements of the region.
+   * @param availableShards Shards that accept tenants.
+   * @returns The placement.
+   */
   abstract place(
     request: PlacementRequest,
     current: readonly TenantPlacement[],

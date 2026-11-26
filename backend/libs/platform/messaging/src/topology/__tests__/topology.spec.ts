@@ -166,7 +166,6 @@ describe('Topology.validate', () => {
   });
 
   it('requires maxReceiveCount to be at least the retry maxAttempts', () => {
-    // The default policy has 5 attempts.
     expect(
       kindsOf(
         singleQueue(new QueueDef('queue-a').deadLetter({ maxReceiveCount: 4 })),
@@ -242,7 +241,6 @@ describe('Topology.validate', () => {
   });
 
   it('limits queue names to 80 characters including -dlq and .fifo', () => {
-    // 76 + "-dlq" = 80: accepted. 77 + "-dlq" = 81: rejected.
     expect(
       kindsOf(
         singleQueue(
@@ -257,7 +255,6 @@ describe('Topology.validate', () => {
         ),
       ),
     ).toEqual([TopologyIssueKind.NameTooLong]);
-    // A FIFO queue adds ".fifo" (5 characters) to the longest name: 71 + 4 + 5 = 80 is accepted, 72 is rejected.
     expect(
       kindsOf(
         singleQueue(

@@ -66,8 +66,6 @@ final class WebShellFixture implements ShellFixture {
     expect(idle, isTrue, reason: 'the runtime never got idle');
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
-    // The scopes of the identity hold live connections that close only when
-    // the disposal of the host finishes.
     final disposed = await const RuntimeSettler().settle(
       tester,
       () => host.whenDisposed,

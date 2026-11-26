@@ -14,7 +14,11 @@ export class SmokeOrderRepository extends TenantIsolatedRepository {
     super(kit);
   }
 
-  /** The order, or `null` if the tenant has none with that id. */
+  /**
+   * The order, or `null` if the tenant has none with that id.
+   * @param orderId Order to read.
+   * @returns The order, or `null`.
+   */
   async findById(orderId: string): Promise<SmokeOrder | null> {
     const tenantId = this.tenantId();
     const entity = await this.read((manager) =>
@@ -25,6 +29,8 @@ export class SmokeOrderRepository extends TenantIsolatedRepository {
 
   /**
    * Inserts an order without a version and updates one with a version, then reads it back from the primary.
+   * @param order Order to store.
+   * @returns The stored order.
    * @throws OptimisticLockError if the version is no longer the stored one.
    */
   async save(order: SmokeOrder): Promise<SmokeOrder> {

@@ -21,7 +21,10 @@ export class LocalPasswordsFacade extends PasswordsFacade {
   }
 
   /** {@inheritDoc PasswordsFacade.verify} */
-  verify(ref: UserRef | undefined, password: string): Promise<boolean> {
+  override verify(
+    ref: UserRef | undefined,
+    password: string,
+  ): Promise<boolean> {
     return this.verifier.verify(ref, password);
   }
 
@@ -29,7 +32,7 @@ export class LocalPasswordsFacade extends PasswordsFacade {
    * Joins the transaction of the user shard if the caller already opened it, as the registration does.
    * {@inheritDoc PasswordsFacade.setInitial}
    */
-  async setInitial(ref: UserRef, password: string): Promise<void> {
+  override async setInitial(ref: UserRef, password: string): Promise<void> {
     await this.scopes.inUserShard(ref, () =>
       this.transactions.runInTransaction(() =>
         this.verifier.store(ref, password),
@@ -38,12 +41,12 @@ export class LocalPasswordsFacade extends PasswordsFacade {
   }
 
   /** {@inheritDoc PasswordsFacade.assertAcceptable} */
-  assertAcceptable(password: string, email: string): Promise<void> {
+  override assertAcceptable(password: string, email: string): Promise<void> {
     return this.acceptance.assert(password, email);
   }
 
   /** {@inheritDoc PasswordsFacade.forget} */
-  async forget(ref: UserRef): Promise<void> {
+  override async forget(ref: UserRef): Promise<void> {
     await this.scopes.inUserShard(ref, () =>
       this.transactions.runInTransaction(() =>
         this.credentials.delete(ref.userId),

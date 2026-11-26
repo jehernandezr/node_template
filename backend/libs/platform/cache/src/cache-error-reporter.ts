@@ -3,5 +3,9 @@
  * service connects them to its metrics or its logs.
  */
 export abstract class CacheErrorReporter {
+  /**
+   * Reports a cache failure that was absorbed.
+   * @param error Failure.
+   */
   abstract report(error: unknown): void;
 }

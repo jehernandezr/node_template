@@ -6,6 +6,7 @@ import '../shared/types/billing_types.dart';
 
 /// State of the invoice list.
 final class InvoicesController extends ChangeNotifier {
+  /// Controller over [repository]; call `start` once.
   InvoicesController(BillingRepository repository)
     : _loader = AsyncLoader<List<InvoiceSummary>>(repository.invoices) {
     _loader.addListener(notifyListeners);

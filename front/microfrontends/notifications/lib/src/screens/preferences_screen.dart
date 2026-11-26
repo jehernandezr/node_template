@@ -10,8 +10,10 @@ import 'preferences_controller.dart';
 /// Preferences: a matrix of types by channels and the quiet hours. The screen
 /// only builds the view; [PreferencesController] holds the state.
 class NotificationsPreferencesScreen extends StatelessWidget {
+  /// Preferences screen backed by [repository].
   const NotificationsPreferencesScreen({super.key, required this.repository});
 
+  /// Source of the preferences.
   final NotificationsRepository repository;
 
   @override
@@ -36,15 +38,16 @@ class NotificationsPreferencesScreen extends StatelessWidget {
       );
 }
 
+/// Fits the longest channel name and a switch side by side.
 final class _PreferencesForm extends StatelessWidget {
   const _PreferencesForm({required this.preferences, required this.controller});
 
-  // Fits the longest channel name and a switch side by side.
   static const double _channelColumnWidth = 72;
 
   final NotificationPreferences preferences;
   final PreferencesController controller;
 
+  /// Switch has no label of its own: the type and the channel name it, so a screen reader tells them apart.
   @override
   Widget build(BuildContext context) {
     final l10n = NotificationsLocalizations.of(context);
@@ -91,8 +94,6 @@ final class _PreferencesForm extends StatelessWidget {
                   SizedBox(
                     width: _channelColumnWidth,
                     child: Center(
-                      // Switch has no label of its own: the type and the
-                      // channel name it, so a screen reader tells them apart.
                       child: MergeSemantics(
                         child: Semantics(
                           label: l10n.preferenceSwitchLabel(

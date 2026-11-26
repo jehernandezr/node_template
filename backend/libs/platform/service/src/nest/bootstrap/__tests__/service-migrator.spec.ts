@@ -1,9 +1,9 @@
-import { NestFactory } from '@nestjs/core';
 import { StaticShardLister } from '@platform/persistence/test-utils';
 import { ServiceErrorCode } from '../../../errors/service-error-code.enum.js';
 import { MigrationTarget } from '../../../migration-target.enum.js';
 import { ServiceDefinitionBuilder } from '../../../__tests__/utils/service-definition.builder.js';
 import { ServiceMigrator } from '../service-migrator.js';
+import { FixedContextFactory } from './utils/fixed-context-factory.js';
 import { FakeMigrationApp } from './utils/fake-migration-app.js';
 import { FakeMigrationRunner } from './utils/fake-migration-runner.js';
 import { MigrationRunnerCall } from './utils/migration-runner-call.enum.js';
@@ -23,18 +23,12 @@ describe('ServiceMigrator', () => {
     ServiceDefinitionBuilder.aDefinition('migrator-probe').build();
   let runner: FakeMigrationRunner;
   let app: FakeMigrationApp;
-  let createContext: jest.SpyInstance;
+  let contexts: FixedContextFactory;
 
   beforeEach(() => {
     runner = new FakeMigrationRunner(CATALOG_REPORT, SHARD_REPORTS);
     app = new FakeMigrationApp(runner, new StaticShardLister(SHARD_LOCATIONS));
-    createContext = jest
-      .spyOn(NestFactory, 'createApplicationContext')
-      .mockResolvedValue(app.asApplicationContext());
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
+    contexts = new FixedContextFactory(app.asApplicationContext());
   });
 
   it.each([
@@ -55,7 +49,7 @@ describe('ServiceMigrator', () => {
     ],
   ])('returns the reports of the %s target', async (target, expected) => {
     await expect(
-      new ServiceMigrator().run(definition, target, { env: {} }),
+      new ServiceMigrator(contexts).run(definition, target, { env: {} }),
     ).resolves.toEqual(expected);
   });
 
@@ -72,7 +66,7 @@ describe('ServiceMigrator', () => {
   ])(
     'asks the runner only for the %s databases, in directory order',
     async (target, expectedCalls) => {
-      await new ServiceMigrator().run(definition, target, { env: {} });
+      await new ServiceMigrator(contexts).run(definition, target, { env: {} });
 
       expect(runner.calls).toEqual(expectedCalls);
     },
@@ -89,14 +83,14 @@ describe('ServiceMigrator', () => {
       runner.failWith(failure);
 
       await expect(
-        new ServiceMigrator().run(definition, target, { env: {} }),
+        new ServiceMigrator(contexts).run(definition, target, { env: {} }),
       ).rejects.toBe(failure);
       expect(app.closeCount).toBe(1);
     },
   );
 
   it('closes the application once after a successful run', async () => {
-    await new ServiceMigrator().run(definition, MigrationTarget.All, {
+    await new ServiceMigrator(contexts).run(definition, MigrationTarget.All, {
       env: {},
     });
 
@@ -109,8 +103,10 @@ describe('ServiceMigrator', () => {
       .build();
 
     await expect(
-      new ServiceMigrator().run(invalid, MigrationTarget.Catalog, { env: {} }),
+      new ServiceMigrator(contexts).run(invalid, MigrationTarget.Catalog, {
+        env: {},
+      }),
     ).rejects.toMatchObject({ code: ServiceErrorCode.InvalidDefinition });
-    expect(createContext).not.toHaveBeenCalled();
+    expect(contexts.created).toBe(0);
   });
 });

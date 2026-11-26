@@ -10,7 +10,7 @@ class SampleJob extends ScheduledJob {
   };
   runs = 0;
 
-  run(): Promise<void> {
+  override run(): Promise<void> {
     this.runs += 1;
     return Promise.resolve();
   }

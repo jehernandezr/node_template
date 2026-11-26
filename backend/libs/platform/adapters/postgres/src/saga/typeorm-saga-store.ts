@@ -90,7 +90,7 @@ export class TypeOrmSagaStore extends SagaStore {
    * @throws SagaError `DuplicateSaga` if the id or the key already exist.
    * @throws PersistenceError `PersistenceTenantMismatch` if the instance belongs to another tenant.
    */
-  async create(instance: SagaInstance): Promise<void> {
+  override async create(instance: SagaInstance): Promise<void> {
     const tenantId = this.tenantId();
     if (instance.tenantId !== null && instance.tenantId !== tenantId) {
       throw new PersistenceError(
@@ -117,7 +117,7 @@ export class TypeOrmSagaStore extends SagaStore {
     });
   }
 
-  async get(id: string): Promise<SagaInstance | null> {
+  override async get(id: string): Promise<SagaInstance | null> {
     const tenantId = this.tenantId();
     const entity = await this.read((manager) =>
       manager.findOneBy(SagaInstanceEntity, { id, tenantId }),
@@ -125,7 +125,9 @@ export class TypeOrmSagaStore extends SagaStore {
     return entity === null ? null : this.deps.instances.toDomain(entity);
   }
 
-  async findByIdempotencyKey(key: string): Promise<SagaInstance | null> {
+  override async findByIdempotencyKey(
+    key: string,
+  ): Promise<SagaInstance | null> {
     const tenantId = this.tenantId();
     const entity = await this.read((manager) =>
       manager.findOneBy(SagaInstanceEntity, { idempotencyKey: key, tenantId }),
@@ -133,12 +135,12 @@ export class TypeOrmSagaStore extends SagaStore {
     return entity === null ? null : this.deps.instances.toDomain(entity);
   }
 
-  commitStep(write: FencedWrite): Promise<SagaInstance> {
+  override commitStep(write: FencedWrite): Promise<SagaInstance> {
     return this.fencedWrite(write);
   }
 
   /** @throws SagaError `InvalidState` if the entry is not in `Dispatched`. */
-  dispatchStep(write: DispatchWrite): Promise<SagaInstance> {
+  override dispatchStep(write: DispatchWrite): Promise<SagaInstance> {
     if (write.step.status !== StepStatus.Dispatched) {
       return Promise.reject(
         new SagaError(
@@ -154,7 +156,7 @@ export class TypeOrmSagaStore extends SagaStore {
    * Returns the saga log. As text, `forward` sorts after `compensate`:
    * ordering `direction` descending puts forward first.
    */
-  async steps(sagaId: string): Promise<StepLogEntry[]> {
+  override async steps(sagaId: string): Promise<StepLogEntry[]> {
     const tenantId = this.tenantId();
     const rows = await this.read((manager) =>
       manager
@@ -176,7 +178,10 @@ export class TypeOrmSagaStore extends SagaStore {
    * queried in its own transaction with `FOR UPDATE SKIP LOCKED`: rows that
    * another node already took are skipped. There is no request, so it does not use the context tenant.
    */
-  async findRecoverable(now: Date, limit: number): Promise<SagaInstance[]> {
+  override async findRecoverable(
+    now: Date,
+    limit: number,
+  ): Promise<SagaInstance[]> {
     const result = await this.deps.acrossShards.run(({ dataSource }) =>
       dataSource.transaction((manager) =>
         manager
@@ -213,7 +218,7 @@ export class TypeOrmSagaStore extends SagaStore {
     return rows.map((row) => this.recoverable(row));
   }
 
-  tryAcquireLease(
+  override tryAcquireLease(
     id: string,
     token: string,
     until: Date,
@@ -234,7 +239,11 @@ export class TypeOrmSagaStore extends SagaStore {
     });
   }
 
-  renewLease(id: string, token: string, until: Date): Promise<boolean> {
+  override renewLease(
+    id: string,
+    token: string,
+    until: Date,
+  ): Promise<boolean> {
     const tenantId = this.tenantId();
     return this.write(async (manager) => {
       const result = await manager
@@ -254,7 +263,7 @@ export class TypeOrmSagaStore extends SagaStore {
     });
   }
 
-  async releaseLease(id: string, token: string): Promise<void> {
+  override async releaseLease(id: string, token: string): Promise<void> {
     const tenantId = this.tenantId();
     await this.write((manager) =>
       manager
@@ -277,7 +286,7 @@ export class TypeOrmSagaStore extends SagaStore {
    * Deletes old sagas finished successfully, with their log, across all
    * shards. `limit` is per shard: each shard deletes at most that number in one pass.
    */
-  async purge(options: SagaPurge): Promise<number> {
+  override async purge(options: SagaPurge): Promise<number> {
     const limit = options.limit ?? SagaStore.DEFAULT_PURGE_LIMIT;
     const result = await this.deps.acrossShards.run(({ dataSource }) =>
       dataSource.transaction(async (manager) => {
@@ -427,14 +436,15 @@ export class TypeOrmSagaStore extends SagaStore {
       .execute();
   }
 
-  /** Returns the instance that is a candidate for a run. If its context had no tenant, the row's tenant completes it for routing. */
+  /**
+   * Returns the instance that is a candidate for a run. If its context had no tenant, the row's tenant completes it for routing.
+   * This candidate only serves so `SagaScopes` routes it to the shard. The engine reads the instance again with `get`, which keeps the original context.
+   */
   private recoverable(row: SagaInstanceEntity): SagaInstance {
     const instance = this.deps.instances.toDomain(row);
     if (instance.tenantId !== null) {
       return instance;
     }
-    // This candidate only serves so `SagaScopes` routes it to the shard. The engine
-    // reads the instance again with `get`, which keeps the original context.
     return SagaInstance.rehydrate({
       ...instance.toProps(),
       context: { ...(instance.context ?? {}), tenantId: row.tenantId },

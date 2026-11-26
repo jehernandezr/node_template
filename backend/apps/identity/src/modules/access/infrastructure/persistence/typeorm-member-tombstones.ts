@@ -18,7 +18,7 @@ export class TypeOrmMemberTombstones extends MemberTombstones {
   }
 
   /** {@inheritDoc MemberTombstones.forget} */
-  async forget(userId: string): Promise<void> {
+  override async forget(userId: string): Promise<void> {
     const outcome = await this.shards.run((connection) =>
       TenantMaintenanceSession.run(connection.dataSource.manager, (manager) =>
         manager.query(

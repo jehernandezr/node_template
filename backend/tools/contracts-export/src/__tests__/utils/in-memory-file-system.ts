@@ -11,29 +11,28 @@ export class InMemoryFileSystem extends FileSystem {
     }
   }
 
-  exists(path: string): Promise<boolean> {
+  override exists(path: string): Promise<boolean> {
     return Promise.resolve(this.files.has(path));
   }
 
-  read(path: string): Promise<string> {
+  override read(path: string): Promise<string> {
     const content = this.files.get(path);
     return content === undefined
       ? Promise.reject(new Error(`${path} does not exist`))
       : Promise.resolve(content);
   }
 
-  write(path: string, content: string): Promise<void> {
+  override write(path: string, content: string): Promise<void> {
     this.files.set(path, content);
     return Promise.resolve();
   }
 
-  listDirectories(path: string): Promise<string[]> {
+  override listDirectories(path: string): Promise<string[]> {
     const prefix = `${path}/`;
     const names = new Set<string>();
     for (const file of this.files.keys()) {
       const rest = file.startsWith(prefix) ? file.slice(prefix.length) : '';
       const slash = rest.indexOf('/');
-      // A file directly in the folder is not a subdirectory.
       if (slash > 0) names.add(rest.slice(0, slash));
     }
     return Promise.resolve([...names].sort());

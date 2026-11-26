@@ -8,6 +8,7 @@ import '../shared/types/account_types.dart';
 
 /// State and actions of the agreements screen.
 final class AgreementsController extends ChangeNotifier {
+  /// Controller over [repository]; call `start` once.
   AgreementsController(AccountRepository repository)
     : _repository = repository,
       _loader = AsyncLoader(() => _fetch(repository)),
@@ -38,9 +39,8 @@ final class AgreementsController extends ChangeNotifier {
     return result;
   }
 
+  /// Future.wait rethrows the original exception, which the loader turns into an error state; a record `.wait` would wrap it in an Error.
   static Future<AgreementsOverview> _fetch(AccountRepository repository) async {
-    // Future.wait rethrows the original exception, which the loader turns
-    // into an error state; a record `.wait` would wrap it in an Error.
     final [pending, accepted] = await Future.wait([
       repository.listPendingAgreements(),
       repository.listAcceptedAgreements(),

@@ -8,15 +8,15 @@ import { TenantWriteWaiter } from '../tenant-write-waiter.js';
 class InMemoryWriteGate extends TenantWriteGate {
   private readonly closed = new Set<string>();
 
-  async isClosed(tenantId: string): Promise<boolean> {
+  override async isClosed(tenantId: string): Promise<boolean> {
     return this.closed.has(tenantId);
   }
 
-  async close(tenantId: string): Promise<void> {
+  override async close(tenantId: string): Promise<void> {
     this.closed.add(tenantId);
   }
 
-  async open(tenantId: string): Promise<void> {
+  override async open(tenantId: string): Promise<void> {
     this.closed.delete(tenantId);
   }
 }

@@ -21,7 +21,7 @@ export class IdentityRecipientDirectory extends RecipientDirectory {
   }
 
   /** @throws IdentityUnavailableError if identity does not respond. */
-  async find(userId: string): Promise<Recipient | undefined> {
+  override async find(userId: string): Promise<Recipient | undefined> {
     const outcome = await this.client.call(
       GetUserProfileOperation,
       { userId },

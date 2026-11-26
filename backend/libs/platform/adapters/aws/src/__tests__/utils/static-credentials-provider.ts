@@ -7,7 +7,7 @@ export class StaticCredentialsProvider extends AwsCredentialsProvider {
     super();
   }
 
-  async resolve(): Promise<AwsCredentials> {
+  override async resolve(): Promise<AwsCredentials> {
     return this.credentials;
   }
 }

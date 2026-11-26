@@ -187,11 +187,9 @@ describe('OutboxRelay', () => {
       nextAttemptAt: at(1_000),
     });
 
-    // Not due yet.
     clock.set(at(999));
     expect(await instance.relayOnce()).toEqual(NO_RECORDS);
 
-    // The second failure doubles the wait.
     clock.set(at(1_000));
     expect(await instance.relayOnce()).toEqual({
       ...NO_RECORDS,

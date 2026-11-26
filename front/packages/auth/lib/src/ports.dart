@@ -55,14 +55,20 @@ abstract interface class TokenStore {
   /// [readSessionToken] returns null.
   bool get sessionInCookie;
 
+  /// Reads the stored session token, or `null` when there is none.
   Future<String?> readSessionToken();
+
+  /// Stores [sessionToken] for the next start.
   Future<void> writeSessionToken(String sessionToken);
+
+  /// Forgets the stored session token.
   Future<void> clear();
 }
 
 /// Web [TokenStore]: the session token is an httpOnly cookie managed by
 /// the browser, so there is nothing to read or write.
 final class CookieTokenStore implements TokenStore {
+  /// Store of the web, where the session token lives in an httpOnly cookie the code cannot read.
   const CookieTokenStore();
 
   @override

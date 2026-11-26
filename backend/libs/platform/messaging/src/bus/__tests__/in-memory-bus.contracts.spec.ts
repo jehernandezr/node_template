@@ -144,7 +144,6 @@ describe('InMemoryBus with contracts of the kit', () => {
     const { bus, dispatcher } = setup();
     const received: unknown[] = [];
     dispatcher.register(SessionRevoked, (data) => {
-      // `data` has the contract output type: the default value is applied.
       received.push(data.reason);
     });
 
@@ -174,7 +173,6 @@ describe('InMemoryBus with contracts of the kit', () => {
       retried: 1,
     });
     advance(1_000);
-    // The contract sets `maxAttempts` to 2: the second failure goes to the dead-letter queue.
     expect(await bus.drain('gateway-inbox', dispatcher)).toMatchObject({
       deadLettered: 1,
     });

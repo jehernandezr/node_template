@@ -38,7 +38,6 @@ export class PlatformEnvironment {
           ...this.identityBase,
           ...shared,
           SERVICE_NAME: PlatformService.Identity,
-          // Each test user declares its IP in `X-Forwarded-For`, so the per-IP limit is not shared among all of them.
           TRUST_PROXY_HOPS: '1',
           FEATURE_FLAGS: JSON.stringify([
             {

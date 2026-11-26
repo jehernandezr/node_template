@@ -20,12 +20,18 @@ export class TypeOrmUnitOfWork implements UnitOfWork {
     this.rollbackHooks.push(hook);
   }
 
-  /** Returns and clears the after-commit effects, in registration order. */
+  /**
+   * Returns and clears the after-commit effects, in registration order.
+   * @returns The hooks.
+   */
   takeCommitHooks(): readonly TransactionHook[] {
     return this.commitHooks.splice(0);
   }
 
-  /** Returns and clears the after-rollback effects, in registration order. */
+  /**
+   * Returns and clears the after-rollback effects, in registration order.
+   * @returns The hooks.
+   */
   takeRollbackHooks(): readonly TransactionHook[] {
     return this.rollbackHooks.splice(0);
   }

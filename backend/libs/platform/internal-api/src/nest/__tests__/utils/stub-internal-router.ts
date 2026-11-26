@@ -16,7 +16,6 @@ export class StubInternalRouter extends InternalRouter {
   private result: Outcome<unknown> = CallOutcome.success(null);
 
   constructor() {
-    // The router constructor only stores its dependencies, which this double does not use.
     super(
       new OperationResolver(),
       undefined as never,

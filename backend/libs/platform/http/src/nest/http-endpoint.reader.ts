@@ -9,6 +9,11 @@ import type { ResourceMetadata } from './resource-metadata.js';
 export class HttpEndpointReader {
   constructor(private readonly reflector: Reflector) {}
 
+  /**
+   * Reads the endpoint and resource metadata of the handler in course.
+   * @param context Execution context.
+   * @returns The metadata, or `undefined` outside a contract route.
+   */
   read(
     context: ExecutionContext,
   ): { endpoint: EndpointMetadata; resource: ResourceMetadata } | undefined {

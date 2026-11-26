@@ -7,7 +7,7 @@ import type { SampleState } from './sample-state.js';
 export class ThrowingInputSaga extends SagaDefinition<SampleState> {
   readonly type = 'input-throws';
 
-  protected define(flow: SagaFlow<SampleState>): void {
+  protected override define(flow: SagaFlow<SampleState>): void {
     flow.step(LOOSE_A).input(() => {
       throw new Error('cannot build');
     });

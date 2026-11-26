@@ -30,7 +30,7 @@ export class NotificationsTenantMoveManifest extends TenantMoveManifest {
     },
   ];
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return NotificationsTenantMoveManifest.TABLES;
   }
 }

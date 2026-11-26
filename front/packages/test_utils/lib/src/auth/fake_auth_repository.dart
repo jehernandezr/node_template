@@ -28,14 +28,25 @@ class FakeAuthRepository implements AuthRepository {
   /// If not null, [refresh] waits for it to complete before responding.
   Completer<void>? refreshGate;
 
+  /// How many sign-ins were requested.
   int signInCount = 0;
+
+  /// How many refreshes were requested.
   int refreshCount = 0;
+
+  /// How many logouts were requested.
   int logoutCount = 0;
 
   /// Session token received in the last [refresh].
   String? lastRefreshSessionToken;
+
+  /// Last sign-in request received.
   SignInRequest? lastSignIn;
+
+  /// Last challenge request received.
   MfaChallengeRequest? lastChallengeRequest;
+
+  /// Last verification request received.
   MfaVerifyRequest? lastVerify;
 
   @override
@@ -94,8 +105,13 @@ class FakeAuthRepository implements AuthRepository {
   /// `IDENTITY.MFA.CODE_INVALID`.
   StepUpResult? stepUpVerifyResult;
 
+  /// How many step-ups were started.
   int startStepUpCount = 0;
+
+  /// Last step-up challenge request received.
   MfaChallengeRequest? lastStepUpChallengeRequest;
+
+  /// Last step-up verification received.
   StepUpVerifyRequest? lastStepUpVerify;
 
   /// Session token received in the last [logout].

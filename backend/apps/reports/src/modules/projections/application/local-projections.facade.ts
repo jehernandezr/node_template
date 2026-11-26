@@ -11,7 +11,7 @@ import type { BucketedRange, ReportRange } from '../domain/report-range.js';
 import { TaskProjection } from '../domain/task-projection.js';
 import { ProjectionsFacade } from './projections.facade.js';
 
-/** In-process `ProjectionsFacade`. */
+/** Gives the report definitions the task, invoice and delivery figures of a tenant, read from the projections of its shard. */
 @Injectable()
 export class LocalProjectionsFacade extends ProjectionsFacade {
   constructor(
@@ -22,7 +22,7 @@ export class LocalProjectionsFacade extends ProjectionsFacade {
     super();
   }
 
-  taskStatusCounts(
+  override taskStatusCounts(
     tenantId: string,
     range: ReportRange,
   ): Promise<readonly StatusCount[]> {
@@ -31,14 +31,14 @@ export class LocalProjectionsFacade extends ProjectionsFacade {
     );
   }
 
-  taskActivity(
+  override taskActivity(
     tenantId: string,
     range: BucketedRange,
   ): Promise<readonly ActivityPoint[]> {
     return this.shard.inTenantShard(tenantId, () => this.tasks.activity(range));
   }
 
-  invoiceSummary(
+  override invoiceSummary(
     tenantId: string,
     range: BucketedRange,
   ): Promise<readonly InvoicePoint[]> {
@@ -47,7 +47,7 @@ export class LocalProjectionsFacade extends ProjectionsFacade {
     );
   }
 
-  deliverySummary(
+  override deliverySummary(
     tenantId: string,
     range: BucketedRange,
   ): Promise<readonly DeliveryPoint[]> {

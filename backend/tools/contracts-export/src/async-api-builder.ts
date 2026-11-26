@@ -32,8 +32,12 @@ export class AsyncApiBuilder {
     private readonly topology: TopologyBuilder,
   ) {}
 
+  /**
+   * Validates the full topology before documenting it.
+   * @param contracts Contracts of every service.
+   * @returns The AsyncAPI document.
+   */
   build(contracts: readonly ServiceContract[]): JsonObject {
-    // Validates the full topology before documenting it.
     this.topology.build(contracts);
     const senders = this.sendersOf(contracts);
     const channels: JsonObject = {};

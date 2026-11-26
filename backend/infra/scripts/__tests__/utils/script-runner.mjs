@@ -8,8 +8,6 @@ const SCRIPTS_DIR = join(REPO_ROOT, 'backend', 'infra', 'scripts');
 const FIXTURE_TERRAFORM_ROOT = join(UTILS_DIR, 'fixtures', 'terraform');
 const DRY_RUN_PREFIX = '+ ';
 
-// Runs a backend/infra/scripts script in dry-run mode. The environment does not inherit the test
-// process's: AWS credentials never reach the scripts.
 export class ScriptRunner {
   static fixtureTerraformRoot = FIXTURE_TERRAFORM_ROOT;
   static scriptsDir = SCRIPTS_DIR;

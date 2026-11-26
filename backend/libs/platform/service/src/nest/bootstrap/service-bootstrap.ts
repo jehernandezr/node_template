@@ -16,7 +16,12 @@ export class ServiceBootstrap {
     logger: ['error', 'warn'],
   };
 
-  /** Process with an HTTP server: creates the application with `ServiceHostModule`, enables the shutdown hooks and listens. */
+  /**
+   * Process with an HTTP server: creates the application with `ServiceHostModule`, enables the shutdown hooks and listens.
+   * @param definition Service definition.
+   * @param options HTTP and shutdown options.
+   * @returns The running service.
+   */
   static async http(
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions = {},
@@ -32,7 +37,6 @@ export class ServiceBootstrap {
             ServiceBootstrap.NEST_OPTIONS,
           );
     await options.http?.configurer?.configure(app);
-    // With the hooks, SIGTERM calls app.close(), which stops accepting and waits; no custom handler is needed.
     app.enableShutdownHooks();
     await app.listen(
       options.http?.port ?? ServiceBootstrap.DEFAULT_PORT,
@@ -46,7 +50,12 @@ export class ServiceBootstrap {
     );
   }
 
-  /** Process without an HTTP server: jobs and consumers. */
+  /**
+   * Process without an HTTP server: jobs and consumers.
+   * @param definition Service definition.
+   * @param options Shutdown options.
+   * @returns The running service.
+   */
   static async worker(
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions = {},
@@ -55,7 +64,6 @@ export class ServiceBootstrap {
       ServiceBootstrap.host(definition, options),
       ServiceBootstrap.NEST_OPTIONS,
     );
-    // As with HTTP, the shutdown hooks are enough for SIGTERM.
     app.enableShutdownHooks();
     return new RunningService(
       definition.name,

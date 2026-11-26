@@ -21,6 +21,8 @@ export class ResilienceModule extends ResilienceConfigurableModule {
   /**
    * Registers a service's policy. Registration happens when the
    * module is created, so a misconfigured policy fails at startup.
+   * @param feature Policy name and configuration.
+   * @returns The module.
    */
   static forFeature(feature: ResilienceFeatureOptions): DynamicModule {
     const token = policyRegistrationToken(feature.name);

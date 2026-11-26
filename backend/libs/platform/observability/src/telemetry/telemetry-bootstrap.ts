@@ -64,7 +64,12 @@ export class TelemetryBootstrap extends TelemetryHandle {
     super();
   }
 
-  /** Reads the environment (`ServiceConfig` and `TelemetryConfig`) and starts. `overrides` wins over what was read. */
+  /**
+   * Reads the environment (`ServiceConfig` and `TelemetryConfig`) and starts. `overrides` wins over what was read.
+   * @param env Environment variables.
+   * @param overrides Options a test replaces.
+   * @returns The started telemetry.
+   */
   static start(
     env: Readonly<Record<string, string | undefined>>,
     overrides: Partial<TelemetryOptions> = {},
@@ -75,7 +80,11 @@ export class TelemetryBootstrap extends TelemetryHandle {
     });
   }
 
-  /** Starts with already built options. */
+  /**
+   * Starts with already built options.
+   * @param options Telemetry options.
+   * @returns The started telemetry.
+   */
   static startWith(options: TelemetryOptions): TelemetryBootstrap {
     if (options.disabled === true) {
       return new TelemetryBootstrap(
@@ -159,12 +168,12 @@ export class TelemetryBootstrap extends TelemetryHandle {
    * Exports pending spans, logs and metrics without shutting down the SDK. In Lambda it is
    * called at the end of each invocation, before the environment freezes.
    */
-  forceFlush(): Promise<void> {
+  override forceFlush(): Promise<void> {
     return this.flush();
   }
 
   /** Exports what is pending and shuts down the SDK. */
-  shutdown(): Promise<void> {
+  override shutdown(): Promise<void> {
     return this.stop();
   }
 }

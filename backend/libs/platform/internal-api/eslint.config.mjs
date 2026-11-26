@@ -22,7 +22,7 @@ export default [
     },
   },
   {
-    // The codes are declared here: it is the only place where they go as text.
+    /** The codes are declared here: it is the only place where they go as text. */
     files: ['src/errors/internal-api-error-code.enum.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },

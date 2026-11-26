@@ -3,7 +3,10 @@ import {
   SystemClock,
   SystemRandomSource,
 } from '@platform/kernel';
-import type { DataSource } from 'typeorm';
+import type { DataSource, QueryRunner } from 'typeorm';
+
+/** What the seeder queries through: a pool, or a connection inside the caller's transaction. */
+type Queryable = Pick<DataSource, 'query'> | Pick<QueryRunner, 'query'>;
 import { TenantMoveSelectorKind } from '../../manifest/tenant-move-selector-kind.enum.js';
 import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
 import { SqlIdentifier } from '../../transfer/batch/sql-identifier.js';
@@ -49,7 +52,7 @@ export class ManifestRowSeeder {
 
   /** Seeds `rowsPerTable` tenant rows in each table, in manifest order. */
   async seed(
-    dataSource: DataSource,
+    dataSource: Queryable,
     tenantId: string,
     rowsPerTable: number,
   ): Promise<void> {
@@ -94,7 +97,7 @@ export class ManifestRowSeeder {
   }
 
   private async insert(
-    dataSource: DataSource,
+    dataSource: Queryable,
     table: string,
     row: Record<string, unknown>,
   ): Promise<void> {
@@ -161,7 +164,7 @@ export class ManifestRowSeeder {
   }
 
   private async columns(
-    dataSource: DataSource,
+    dataSource: Queryable,
     table: string,
   ): Promise<ColumnInfo[]> {
     const rows: {
@@ -190,7 +193,7 @@ export class ManifestRowSeeder {
 
   /** Foreign keys of the table: each column with the table and column it points to. */
   private async references(
-    dataSource: DataSource,
+    dataSource: Queryable,
     table: string,
   ): Promise<Map<string, { table: string; column: string }>> {
     const rows: { name: string; ref_table: string; ref_column: string }[] =
@@ -216,7 +219,7 @@ export class ManifestRowSeeder {
 
   /** A valid value for the columns of a single-column CHECK with literals, and for enum columns. */
   private async choices(
-    dataSource: DataSource,
+    dataSource: Queryable,
     table: string,
     columns: readonly ColumnInfo[],
   ): Promise<Map<string, string>> {

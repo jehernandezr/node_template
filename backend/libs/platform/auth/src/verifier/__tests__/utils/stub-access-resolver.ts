@@ -6,7 +6,7 @@ export class StubAccessResolver extends AccessResolver {
   grant: AccessGrant | undefined;
   failure: Error | undefined;
 
-  async resolve(): Promise<AccessGrant> {
+  override async resolve(): Promise<AccessGrant> {
     if (this.failure !== undefined) {
       throw this.failure;
     }

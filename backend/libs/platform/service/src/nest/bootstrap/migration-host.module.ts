@@ -21,6 +21,13 @@ import { KernelModule } from '@platform/kernel/nest';
  */
 @Module({})
 export class MigrationHostModule {
+  /**
+   * Composes the minimal module that runs the migrations of a service.
+   * @param definition Service definition.
+   * @param env Environment variables.
+   * @param telemetry Telemetry handle, disabled for the migrator.
+   * @returns The module.
+   */
   static forService(
     definition: ServiceDefinition,
     env: ConfigEnv,

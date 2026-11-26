@@ -27,6 +27,8 @@ export class ValkeyClientFactory {
    * pub/sub subscriber, which cannot share it. An IAM token lives 15
    * minutes and is only checked on `AUTH`; that is why each connection requests its own and
    * `client.duplicate()` is not used, since it would copy the token but not what renews it.
+   * The first connection starts here with the token in hand; failures surface in the commands and the client keeps reconnecting.
+   * @returns The connected client.
    * @throws ConfigValidationError listing each inconsistent variable.
    */
   async create(): Promise<Valkey> {
@@ -40,8 +42,6 @@ export class ValkeyClientFactory {
       return client;
     }
     client.options.password = await auth.provider.token(auth.request);
-    // The first connection starts here with the token in hand; failures surface in the commands
-    // and the client keeps reconnecting.
     client.connect().catch(() => undefined);
     this.renewOnReconnect(client, auth);
     return client;

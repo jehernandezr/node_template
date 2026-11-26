@@ -82,14 +82,17 @@ export class StepCaller {
    * - A first attempt builds its input with `target.buildInput` on a copy of the state; if it is not built or is not JSON, it writes `RequiresIntervention` with `InputBuildFailed` and returns `Halted`.
    * - Before calling, it renews the lease past the step `Deadline` (`settings.maxStepDurationMs`); the call runs in a `SagaSpan.Step` span that is a child of the trace saved in the entry or, if there is none, of the instance trace.
    * - If the deadline expires, the signal is aborted and the result is `uncertain` with the reason `timed out after N ms`; a thrown error is classified with `outcomes.fromError`; a result that is not a `CallOutcome` is `protocolViolation` with the reason `invalid-invoker-result`.
+   * The span inherits the trace in which the step was first dispatched, so a retry from another node lands in the same trace.
+   * @param run Run that holds the lease.
+   * @param instance Saga instance.
+   * @param target Step and direction.
+   * @returns The call.
    */
   call(
     run: SagaRun,
     instance: SagaInstance,
     target: StepTarget,
   ): Promise<StepCall> {
-    // The span inherits the trace in which the step was first dispatched, so
-    // a retry from another node lands in the same trace.
     const parent =
       target.entry?.traceparent ?? instance.context?.traceparent ?? undefined;
     return otelContext.with(
@@ -118,7 +121,13 @@ export class StepCaller {
     );
   }
 
-  /** Guarded write of a transition, with its journal entry if any. Returns the saved instance. */
+  /**
+   * Guarded write of a transition, with its journal entry if any. Returns the saved instance.
+   * @param run Run that holds the lease.
+   * @param instance Saga instance.
+   * @param step Log entry to write.
+   * @returns The stored instance.
+   */
   commit(
     run: SagaRun,
     instance: SagaInstance,
@@ -132,7 +141,14 @@ export class StepCaller {
     });
   }
 
-  /** The entry with its result: status, error code, output and `finishedAt` from the clock. */
+  /**
+   * The entry with its result: status, error code, output and `finishedAt` from the clock.
+   * @param dispatched Dispatched entry.
+   * @param status Final status.
+   * @param errorCode Error code.
+   * @param output Output of the step.
+   * @returns The finished entry.
+   */
   finish(
     dispatched: StepLogEntry,
     status: StepStatus,

@@ -29,6 +29,12 @@ export class Guard {
       new GuardViolationError(violation.name, violation.expectation),
   ) {}
 
+  /**
+   * Checks that a value is an integer greater than zero.
+   * @param name Name used in the error.
+   * @param value Value to check.
+   * @returns The value.
+   */
   positiveInteger(name: string, value: number): number {
     return this.require(
       Number.isInteger(value) && value > 0,
@@ -38,6 +44,12 @@ export class Guard {
     );
   }
 
+  /**
+   * Checks that a value is an integer of zero or more.
+   * @param name Name used in the error.
+   * @param value Value to check.
+   * @returns The value.
+   */
   nonNegativeInteger(name: string, value: number): number {
     return this.require(
       Number.isInteger(value) && value >= 0,
@@ -47,6 +59,12 @@ export class Guard {
     );
   }
 
+  /**
+   * Checks that a value is finite and not negative.
+   * @param name Name used in the error.
+   * @param value Value to check.
+   * @returns The value.
+   */
   nonNegativeFinite(name: string, value: number): number {
     return this.require(
       Number.isFinite(value) && value >= 0,
@@ -56,6 +74,14 @@ export class Guard {
     );
   }
 
+  /**
+   * Checks that a value is an integer within `[min, max]`.
+   * @param name Name used in the error.
+   * @param value Value to check.
+   * @param min Smallest allowed value.
+   * @param max Largest allowed value.
+   * @returns The value.
+   */
   integerInRange(
     name: string,
     value: number,
@@ -70,6 +96,12 @@ export class Guard {
     );
   }
 
+  /**
+   * Checks that a text is not blank.
+   * @param name Name used in the error.
+   * @param value Value to check.
+   * @returns The value.
+   */
   nonEmpty(name: string, value: string): string {
     return this.require(
       typeof value === 'string' && value.length > 0,
@@ -79,6 +111,13 @@ export class Guard {
     );
   }
 
+  /**
+   * Checks that a text matches a pattern.
+   * @param name Name used in the error.
+   * @param value Value to check.
+   * @param pattern Required pattern.
+   * @returns The value.
+   */
   matches(name: string, value: string, pattern: RegExp): string {
     return this.require(
       typeof value === 'string' && pattern.test(value),

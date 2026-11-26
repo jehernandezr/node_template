@@ -11,6 +11,7 @@ export class BloomMath {
    * MurmurHash3 (x86, 32 bits) over the UTF-8 bytes of `input`.
    * @param seed optional unsigned 32-bit seed; defaults to 0.
    * @returns an unsigned 32-bit integer.
+   * @param input Text to hash.
    */
   static murmur3(input: string, seed = 0): number {
     const bytes = BloomMath.ENCODER.encode(input);
@@ -66,6 +67,10 @@ export class BloomMath {
    * a = h1 mod m, b = h2 mod m, then for i in 0..k-1: pos = a; a = (a + b) mod m; b = (b + i) mod m.
    * h1 is 32-bit FNV-1a and h2 is 32-bit MurmurHash3 (seed 0) over the UTF-8 bytes.
    * @returns `hashes` positions, each in `[0, bits)`.
+   * @param item Item to place.
+   * @param bits Size of the bit array.
+   * @param hashes Number of hash functions.
+   * @returns The positions.
    */
   static positions(item: string, bits: number, hashes: number): number[] {
     let a = Hashes.fnv1a32(item) % bits;
@@ -79,7 +84,12 @@ export class BloomMath {
     return positions;
   }
 
-  /** Returns the partition of an item among `partitions`: MurmurHash3 with `PARTITION_HASH_SEED`, modulo the number of partitions. */
+  /**
+   * Returns the partition of an item among `partitions`: MurmurHash3 with `PARTITION_HASH_SEED`, modulo the number of partitions.
+   * @param item Item to place.
+   * @param partitions Number of partitions.
+   * @returns The partition.
+   */
   static partitionOf(item: string, partitions: number): number {
     return BloomMath.murmur3(item, BloomMath.PARTITION_HASH_SEED) % partitions;
   }

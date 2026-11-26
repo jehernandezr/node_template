@@ -9,7 +9,12 @@ export class EnvelopeFactory {
     private readonly ids: IdGenerator,
   ) {}
 
-  /** Optional attributes without a value are omitted. */
+  /**
+   * Builds an envelope.
+   * Optional attributes without a value are omitted.
+   * @param input Type, data and attributes.
+   * @returns The envelope.
+   */
   create<T>(input: CreateEnvelopeInput<T>): MessageEnvelope<T> {
     return {
       specversion: '1.0',

@@ -6,6 +6,11 @@ import { InMemoryFlagStore } from './in-memory-flag-store.js';
 
 /** Builds the `FlagStore` requested by `FLAGS_STORE`, seeded with the rules from `FEATURE_FLAGS`. */
 export class FlagStoreSelector {
+  /**
+   * Picks the flag store of the configured kind.
+   * @param settings Flags configuration.
+   * @returns The store to inject.
+   */
   select(settings: FlagsSettings): FlagStore {
     switch (settings.FLAGS_STORE) {
       case FlagStoreKind.Config:

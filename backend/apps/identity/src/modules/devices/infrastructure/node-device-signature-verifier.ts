@@ -9,13 +9,17 @@ import { DeviceSignatureVerifier } from '../domain/device-signature-verifier.js'
 export class NodeDeviceSignatureVerifier extends DeviceSignatureVerifier {
   private static readonly P1363_BYTES = 64;
 
-  assertValidKey(publicKey: string): void {
+  override assertValidKey(publicKey: string): void {
     if (this.keyOf(publicKey) === undefined) {
       throw new IdentityError(IdentityErrorCode.DeviceKeyInvalid);
     }
   }
 
-  verify(publicKey: string, message: string, signature: string): boolean {
+  override verify(
+    publicKey: string,
+    message: string,
+    signature: string,
+  ): boolean {
     const key = this.keyOf(publicKey);
     if (key === undefined) {
       return false;

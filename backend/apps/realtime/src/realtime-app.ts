@@ -6,6 +6,12 @@ import { RealtimeAppModule } from './realtime-app.module.js';
 
 /** Starts `apps/realtime` listening on `PORT` and returns the app so it can be closed. */
 export class RealtimeApp {
+  /**
+   * Starts the realtime HTTP server.
+   * @param env Environment variables.
+   * @param host Host to listen on; all interfaces when omitted.
+   * @returns The running application.
+   */
   static async start(env: ConfigEnv, host?: string): Promise<INestApplication> {
     const app = await NestFactory.create(RealtimeAppModule.forEnv(env), {
       abortOnError: false,

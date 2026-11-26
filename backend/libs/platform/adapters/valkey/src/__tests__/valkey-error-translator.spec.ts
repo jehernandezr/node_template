@@ -35,7 +35,6 @@ describe('ValkeyErrorTranslator', () => {
     ],
   ])('classifies %p', (error, kind) => {
     expect(translator.kindOf(error)).toBe(kind);
-    // The wrapped error carries the class, so the resilience breaker reads it.
     expect(
       new FailureClassifier().classify(
         new ValkeyCommandError('GET', kind, error),

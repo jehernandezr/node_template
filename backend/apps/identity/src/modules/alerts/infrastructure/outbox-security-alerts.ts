@@ -22,7 +22,10 @@ export class OutboxSecurityAlerts extends SecurityAlerts {
     super();
   }
 
-  async raise(alert: SecurityAlert): Promise<void> {
+  /**
+   * Published outside a tenant request (at sign-in, for example): the envelope tenant is the user's home tenant, which is where the alert consumers locate them.
+   */
+  override async raise(alert: SecurityAlert): Promise<void> {
     await this.scopes.inUserShard(alert.user, () =>
       this.transactions.runInTransaction(async () => {
         await this.bus.publish(
@@ -33,8 +36,6 @@ export class OutboxSecurityAlerts extends SecurityAlerts {
             type: alert.type,
             raisedAt: this.clock.now().toISOString(),
           },
-          // Published outside a tenant request (at sign-in, for example): the envelope tenant is the user's
-          // home tenant, which is where the alert consumers locate them.
           { tenantId: alert.user.homeTenantId },
         );
       }),

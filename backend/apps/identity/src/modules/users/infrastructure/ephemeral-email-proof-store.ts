@@ -30,7 +30,7 @@ export class EphemeralEmailProofStore extends EmailProofStore {
     super();
   }
 
-  async issue(
+  override async issue(
     purpose: EmailProofPurpose,
     proof: PendingEmailProof,
   ): Promise<string> {
@@ -45,7 +45,7 @@ export class EphemeralEmailProofStore extends EmailProofStore {
     return token;
   }
 
-  async consume(
+  override async consume(
     purpose: EmailProofPurpose,
     token: string,
   ): Promise<PendingEmailProof | undefined> {

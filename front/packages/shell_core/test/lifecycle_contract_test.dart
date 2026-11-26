@@ -108,7 +108,6 @@ void main() {
         final previous = created.single.context!;
 
         session.value = _user('u2');
-        // Cancelled synchronously, before any queued sync runs.
         expect(previous.isDisposed, isTrue);
 
         previous.emit(const CountChanged(9));

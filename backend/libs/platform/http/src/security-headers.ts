@@ -3,6 +3,11 @@ import { HttpLimits } from './http-limits.js';
 
 /** Security headers of every response. Auth routes are also never cached. */
 export class SecurityHeaders {
+  /**
+   * Builds the security headers of a path; documentation paths get a looser policy.
+   * @param path Request path.
+   * @returns The headers.
+   */
   static forPath(path: string): Record<string, string> {
     const headers: Record<string, string> = {
       [HttpHeader.StrictTransportSecurity]:

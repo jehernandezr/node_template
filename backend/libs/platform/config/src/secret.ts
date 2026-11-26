@@ -16,24 +16,43 @@ export class Secret {
     this.#value = value;
   }
 
-  /** Returns the raw value. Never log or serialize it. */
+  /**
+   * Returns the raw value. Never log or serialize it.
+   * @returns The secret value.
+   */
   reveal(): string {
     return this.#value;
   }
 
+  /**
+   * Hides the value when converted to text.
+   * @returns A redacted placeholder.
+   */
   toString(): string {
     return SECRET_PLACEHOLDER;
   }
 
+  /**
+   * Hides the value when serialized.
+   * @returns A redacted placeholder.
+   */
   toJSON(): string {
     return SECRET_PLACEHOLDER;
   }
 
+  /**
+   * Hides the value when inspected by Node.
+   * @returns A redacted placeholder.
+   */
   [inspect.custom](): string {
     return `Secret(${SECRET_PLACEHOLDER})`;
   }
 
-  /** Whether `value` is a `Secret`. */
+  /**
+   * Whether `value` is a `Secret`.
+   * @param value Value to check.
+   * @returns `true` for a secret.
+   */
   static is(value: unknown): value is Secret {
     return value instanceof Secret;
   }

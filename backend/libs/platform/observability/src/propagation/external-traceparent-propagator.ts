@@ -36,7 +36,11 @@ export class ExternalTraceparentPropagator implements TextMapPropagator {
     this.isTrusted = options.isTrusted ?? (() => false);
   }
 
-  /** External trace id stored in `context` (the active one by default), if any. */
+  /**
+   * External trace id stored in `context` (the active one by default), if any.
+   * @param context Context to read.
+   * @returns The trace id, or `undefined`.
+   */
   static externalTraceIdFrom(
     context: Context = otelContext.active(),
   ): string | undefined {

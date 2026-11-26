@@ -34,6 +34,14 @@ export interface ErrorSpec {
  * reach the client and `internal` for those that never leave the backend.
  */
 export class ErrorSpecs {
+  /**
+   * Spec of a public error, whose code and listed details reach the client.
+   * @param httpStatus HTTP status of the answer.
+   * @param retryable Whether the client may retry.
+   * @param description What the error means.
+   * @param publicDetails Details that may be shown to the client.
+   * @returns The error spec.
+   */
   static pub(
     httpStatus: number,
     retryable: boolean,
@@ -49,6 +57,13 @@ export class ErrorSpecs {
     };
   }
 
+  /**
+   * Spec of an internal error, answered as a generic one.
+   * @param httpStatus HTTP status of the answer.
+   * @param retryable Whether the client may retry.
+   * @param description What the error means.
+   * @returns The error spec.
+   */
   static internal(
     httpStatus: number,
     retryable: boolean,
@@ -106,11 +121,11 @@ export class ErrorCatalog {
   /**
    * Registers entries. Validates all of them before storing any, so an invalid
    * batch does not leave the catalog half-written.
-   *
    * Libraries repeat the public codes of the central catalog to be
    * self-contained, and the service registers the central one and that of each library it uses.
    * That is why a repeated entry is valid if it defines the same thing, and it is only
    * rejected when the HTTP status, the retry or the audience changes.
+   * @param entries Entries to register.
    */
   register(entries: readonly ErrorCatalogEntry[]): void {
     const batch = new Map<string, ErrorCatalogEntry>();
@@ -145,10 +160,19 @@ export class ErrorCatalog {
     );
   }
 
+  /**
+   * Reads the entry of a code.
+   * @param code Error code.
+   * @returns The entry, or `undefined` when unregistered.
+   */
   get(code: string): ErrorCatalogEntry | undefined {
     return this.entries.get(code);
   }
 
+  /**
+   * Lists every registered entry.
+   * @returns The entries.
+   */
   all(): ErrorCatalogEntry[] {
     return [...this.entries.values()];
   }

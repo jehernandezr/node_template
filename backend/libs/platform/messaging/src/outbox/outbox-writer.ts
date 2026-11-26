@@ -7,5 +7,9 @@ import type { OutboxAppend } from './outbox.js';
  * `TransactionManager`. Used through `OutboxMessageBus`.
  */
 export abstract class OutboxWriter {
+  /**
+   * Appends a message to the outbox in the open transaction.
+   * @param record Envelope and target.
+   */
   abstract append(record: OutboxAppend): Promise<void>;
 }

@@ -9,6 +9,7 @@ export class SagaPayload {
    * `CanonicalJson`: functions, symbols, bigints, non-finite numbers, cycles,
    * `undefined` inside arrays and any object that is not plain (Map, Set,
    * Date, class instances). A top-level `undefined` is accepted.
+   * @param value Value to check.
    * @throws SagaError `InvalidState`
    */
   static assertSerializable(value: unknown): void {
@@ -29,7 +30,11 @@ export class SagaPayload {
     }
   }
 
-  /** Deep copy through JSON, the only representation that survives the store. */
+  /**
+   * Deep copy through JSON, the only representation that survives the store.
+   * @param value Value to copy.
+   * @returns The copy.
+   */
   static clone<T>(value: T): T {
     if (value === undefined) {
       return value;
@@ -38,7 +43,11 @@ export class SagaPayload {
     return text === undefined ? (undefined as T) : (JSON.parse(text) as T);
   }
 
-  /** Stable fingerprint of the value, to compare initial states. */
+  /**
+   * Stable fingerprint of the value, to compare initial states.
+   * @param value Value to fingerprint.
+   * @returns The fingerprint.
+   */
   static digest(value: unknown): string {
     return CanonicalJson.digest(value ?? null);
   }

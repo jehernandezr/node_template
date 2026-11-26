@@ -26,6 +26,11 @@ export class PasswordResetTokens {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Issues a reset token for a user.
+   * @param user Owner of the token.
+   * @returns The token text for the link.
+   */
   async issue(user: UserRef): Promise<string> {
     const secret = this.generator.bytes(PasswordResetTokens.SECRET_BYTES);
     const reset = PasswordReset.issue({
@@ -45,7 +50,11 @@ export class PasswordResetTokens {
     ).format();
   }
 
-  /** The user that owns the token if it is well formed; does not say whether it is valid. */
+  /**
+   * The user that owns the token if it is well formed; does not say whether it is valid.
+   * @param text Token text.
+   * @returns The owner, or `undefined`.
+   */
   ownerOf(text: string): UserRef | undefined {
     const token = PasswordResetToken.parse(text);
     return token === undefined
@@ -57,6 +66,7 @@ export class PasswordResetTokens {
    * Marks the token as used if it is valid. Runs inside the transaction the caller opens in the user's
    * shard, so the redemption and its effect commit or roll back together.
    * @returns `false` if the token is malformed, does not exist, expired, was already used or its secret does not match.
+   * @param text Token text.
    */
   async redeem(text: string): Promise<boolean> {
     const token = PasswordResetToken.parse(text);

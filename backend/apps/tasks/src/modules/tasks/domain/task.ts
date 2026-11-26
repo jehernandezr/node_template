@@ -18,6 +18,11 @@ export interface NewTask {
 export class Task {
   private constructor(private state: TaskState) {}
 
+  /**
+   * Starts a new task in version 1.
+   * @param task Id, author, fields and creation instant.
+   * @returns The task.
+   */
   static create(task: NewTask): Task {
     return new Task({
       id: task.id,
@@ -30,14 +35,24 @@ export class Task {
     });
   }
 
+  /**
+   * Rebuilds a task from its state.
+   * @param state Stored task.
+   * @returns The task.
+   */
   static rehydrate(state: TaskState): Task {
     return new Task(state);
   }
 
+  /** UUIDv7 that identifies the task within its tenant. */
   get id(): string {
     return this.state.id;
   }
 
+  /**
+   * Copies the task state to store or show it.
+   * @returns The task state.
+   */
   snapshot(): TaskState {
     return this.state;
   }
@@ -45,6 +60,10 @@ export class Task {
   /**
    * Applies the requested changes. Returns `undefined` if no field changes value: repeating a change does not
    * generate another version or another event.
+   * @param changes Fields to change.
+   * @param expectedVersion Version the client read; not checked when omitted.
+   * @param now Instant of the change.
+   * @returns The changed fields, or `undefined`.
    * @throws TasksError `TASKS.TASK.VERSION_CONFLICT` if `expectedVersion` is not the current version.
    */
   change(
@@ -71,6 +90,10 @@ export class Task {
     return { changedFields, statusBefore, statusAfter: this.state.status };
   }
 
+  /**
+   * Marks the task deleted.
+   * @param now Instant of the deletion.
+   */
   delete(now: Date): void {
     this.state = { ...this.state, deletedAt: now, updatedAt: now };
   }

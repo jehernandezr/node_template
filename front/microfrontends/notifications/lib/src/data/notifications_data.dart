@@ -11,6 +11,7 @@ import 'sse_notifications_stream.dart';
 /// lifecycle and the screens resolve the same binding, so they share one
 /// instance, and one connection, per identity.
 abstract final class NotificationsData {
+  /// How the notifications repository is created in each shell mode.
   static final RepositoryBinding<NotificationsRepository> repository =
       RepositoryBinding<NotificationsRepository>(
         demo: (services) =>

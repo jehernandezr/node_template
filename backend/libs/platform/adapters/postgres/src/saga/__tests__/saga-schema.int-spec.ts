@@ -28,7 +28,6 @@ new ContainerRuntime(process.env).describeIfAvailable(
       await saga.db.stop();
     });
 
-    /** Direct connection to shard A, with the saga entities. */
     async function shardA(): Promise<DataSource> {
       return saga.db.sources.get(location);
     }

@@ -22,7 +22,13 @@ export class RealtimeConnections {
     private readonly heartbeatMs: number,
   ) {}
 
-  /** Delivers what is pending since `lastEventId` and leaves the connection listening until the session expires. */
+  /**
+   * Delivers what is pending since `lastEventId` and leaves the connection listening until the session expires.
+   * @param principal Principal of the stream.
+   * @param sink Where frames are written.
+   * @param lastEventId Last frame the client received.
+   * @returns The open connection.
+   */
   async connect(
     principal: StreamPrincipal,
     sink: FrameSink,
@@ -51,10 +57,12 @@ export class RealtimeConnections {
     return connection;
   }
 
+  /** Number of open connections. */
   get size(): number {
     return this.open.size;
   }
 
+  /** Closes every open connection, on shutdown. */
   async closeAll(): Promise<void> {
     await Promise.all([...this.open.values()].map((c) => c.close()));
   }

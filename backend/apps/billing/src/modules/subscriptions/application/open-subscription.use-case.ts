@@ -26,7 +26,12 @@ export class OpenSubscription {
     private readonly settings: BillingSettings,
   ) {}
 
-  /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` if the trial plan is not in the catalog. */
+  /**
+   * Opens the trial subscription of a tenant; if it already exists, returns it unchanged.
+   * @param tenantId Tenant whose subscription opens.
+   * @returns The current subscription.
+   * @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` if the trial plan is not in the catalog.
+   */
   execute(tenantId: string): Promise<CurrentSubscription> {
     return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {

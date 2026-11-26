@@ -41,7 +41,10 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
     super();
   }
 
-  registrationOptions(input: {
+  /**
+   * In bytes: with a string the library would encode its UTF-8 bytes and the challenge would no longer match.
+   */
+  override registrationOptions(input: {
     challenge: string;
     userId: string;
     userName: string;
@@ -52,7 +55,6 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
       rpID: this.settings.values.WEBAUTHN_RP_ID,
       userName: input.userName,
       userID: Buffer.from(input.userId),
-      // In bytes: with a string the library would encode its UTF-8 bytes and the challenge would no longer match.
       challenge: Buffer.from(input.challenge, 'base64url'),
       attestationType: 'none',
       excludeCredentials: input.exclude.map((passkey) => ({
@@ -66,7 +68,7 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
     });
   }
 
-  authenticationOptions(input: {
+  override authenticationOptions(input: {
     challenge: string;
     allow: readonly Passkey[];
   }): Promise<unknown> {
@@ -81,7 +83,7 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
     });
   }
 
-  async verifyRegistration(
+  override async verifyRegistration(
     response: unknown,
     challenge: string,
   ): Promise<VerifiedRegistration | undefined> {
@@ -113,7 +115,7 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
     }
   }
 
-  async verifyAuthentication(
+  override async verifyAuthentication(
     response: unknown,
     challenge: string,
     passkey: Passkey,
@@ -146,7 +148,7 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
     }
   }
 
-  credentialIdOf(response: unknown): string | undefined {
+  override credentialIdOf(response: unknown): string | undefined {
     const parsed = CredentialSchema.safeParse(response);
     return parsed.success ? parsed.data.id : undefined;
   }

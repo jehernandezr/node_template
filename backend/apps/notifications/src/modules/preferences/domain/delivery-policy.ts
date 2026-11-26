@@ -24,6 +24,11 @@ export class DeliveryPolicy {
   private static readonly ALL: readonly NotificationChannel[] =
     Object.values(NotificationChannel);
 
+  /**
+   * Decides the channels of one notification from its type, the preferences, the quiet hours and whether the user is online.
+   * @param context Type, preferences, instant and presence.
+   * @returns The channels to use.
+   */
   channels(context: DeliveryContext): readonly NotificationChannel[] {
     if (
       (

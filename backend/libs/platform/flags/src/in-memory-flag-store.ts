@@ -10,15 +10,23 @@ export class InMemoryFlagStore extends FlagStore {
     initial.forEach((rule) => this.put(rule));
   }
 
+  /**
+   * Adds or replaces the rule of a flag.
+   * @param rule Rule to store.
+   */
   put(rule: FlagRule): void {
     this.byFlag.set(rule.flag, rule);
   }
 
+  /**
+   * Deletes the rule of a flag.
+   * @param flag Flag name.
+   */
   remove(flag: string): void {
     this.byFlag.delete(flag);
   }
 
-  async rules(): Promise<readonly FlagRule[]> {
+  override async rules(): Promise<readonly FlagRule[]> {
     return [...this.byFlag.values()];
   }
 }

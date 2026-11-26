@@ -7,6 +7,11 @@ export class ShardDirectoryChangeCodec {
   /** Maximum length of an id in a change message. Ids are UUIDv7 or shard names. */
   private static readonly MAX_ID_LENGTH = 256;
 
+  /**
+   * Encodes a directory change for a channel.
+   * @param event Directory change.
+   * @returns The text.
+   */
   static encode(event: ShardDirectoryChanged): string {
     return JSON.stringify(event);
   }
@@ -14,6 +19,8 @@ export class ShardDirectoryChangeCodec {
   /**
    * Parses and validates a change received from a channel. Anything malformed
    * returns `undefined`, so a bad message is ignored instead of invalidating the wrong tenant.
+   * @param raw Text from the channel.
+   * @returns The change, or `undefined`.
    */
   static decode(raw: string): ShardDirectoryChanged | undefined {
     let data: unknown;

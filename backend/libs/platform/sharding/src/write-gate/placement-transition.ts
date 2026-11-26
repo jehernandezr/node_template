@@ -26,7 +26,10 @@ export class PlacementTransition {
   ) {}
 
   /**
+   * Changes a tenant placement under the write gate.
    * @returns the current placement when done.
+   * @param tenantId Tenant to change.
+   * @param change Status, shards or region.
    * @throws ShardingError `UnknownTenant` if the directory does not have the tenant; `InvalidConfiguration` if
    *   other writes win every attempt or the new group collides with a dedicated shard.
    */

@@ -35,7 +35,6 @@ export class FakeSesClient extends SESv2Client {
     return this;
   }
 
-  // Same reason as `FakeSqsClient.send`: the only cast in the class.
   override send = (async (command: SdkCommand) => {
     const answer = this.table.respond(command);
     this.requests += 1;

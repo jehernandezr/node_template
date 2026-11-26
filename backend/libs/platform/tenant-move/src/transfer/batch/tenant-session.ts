@@ -7,6 +7,13 @@ import type { DataSource, QueryRunner } from 'typeorm';
 export class TenantSession {
   private static readonly TENANT_SETTING = 'app.tenant_id';
 
+  /**
+   * Runs `fn` on a connection with the tenant set in `app.tenant_id` and the session released afterwards.
+   * @param dataSource Shard connection.
+   * @param tenantId Tenant of the session.
+   * @param fn Work with the runner.
+   * @returns What `fn` returns.
+   */
   async run<T>(
     dataSource: DataSource,
     tenantId: string,

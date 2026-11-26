@@ -3,11 +3,11 @@ import { Currency } from '@contracts/billing';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import type { PaymentAttempts } from '../../domain/payment-attempts.js';
 import { PaymentStatus } from '../../domain/payment-status.enum.js';
+import { ApprovingPaymentProvider } from '../../../../__tests__/utils/approving-payment-provider.js';
 import {
-  ApprovingPaymentProvider,
   CrashingAfterChargeAttempts,
   InMemoryPaymentAttempts,
-} from '../../__tests__/utils/index.js';
+} from '../../../../__tests__/utils/in-memory-payment-attempts.js';
 import { ChargeInvoice } from '../charge-invoice.use-case.js';
 
 const REQUEST = {

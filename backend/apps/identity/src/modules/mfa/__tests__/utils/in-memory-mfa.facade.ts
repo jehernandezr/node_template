@@ -20,13 +20,13 @@ export class InMemoryMfaFacade extends MfaFacade {
   readonly denied: string[] = [];
   private counter = 0;
 
-  async startPending(input: StartPendingInput): Promise<PendingMfa> {
+  override async startPending(input: StartPendingInput): Promise<PendingMfa> {
     this.started.push(input);
     this.counter += 1;
     return { mfaToken: `mfa-${this.counter}`, methods: [...this.methods] };
   }
 
-  async denyChallenge(challengeId: string): Promise<void> {
+  override async denyChallenge(challengeId: string): Promise<void> {
     this.denied.push(challengeId);
   }
 
@@ -37,7 +37,7 @@ export class InMemoryMfaFacade extends MfaFacade {
     methods: readonly AuthMethodReference[];
   }> = [];
 
-  async pending(
+  override async pending(
     mfaToken: string,
     purpose: PendingPurpose,
   ): Promise<PendingAuthentication | undefined> {
@@ -45,7 +45,7 @@ export class InMemoryMfaFacade extends MfaFacade {
     return found?.purpose === purpose ? found : undefined;
   }
 
-  async completeSignIn(
+  override async completeSignIn(
     mfaToken: string,
     methods: readonly AuthMethodReference[],
   ): Promise<SignInResponse> {
@@ -53,7 +53,7 @@ export class InMemoryMfaFacade extends MfaFacade {
     return { status: SignInStatus.Authenticated };
   }
 
-  async completeStepUp(
+  override async completeStepUp(
     mfaToken: string,
     method: AuthMethodReference,
   ): Promise<StepUpResult> {
@@ -69,7 +69,7 @@ export class InMemoryMfaFacade extends MfaFacade {
 
   readonly forgotten: UserRef[] = [];
 
-  async forget(ref: UserRef): Promise<void> {
+  override async forget(ref: UserRef): Promise<void> {
     this.forgotten.push(ref);
   }
 }
