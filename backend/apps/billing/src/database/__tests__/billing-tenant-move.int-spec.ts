@@ -35,4 +35,14 @@ runtime.describeIfAvailable('billing tenant move over its migrations', () => {
     expect(report.leftInSource).toEqual(rehearsal.everyTable(0));
     expect(report.neighbourAfter).toEqual(report.neighbourBefore);
   });
+
+  it('moves a tenant whose service keeps writing during the copy, without losing or changing a committed write', async () => {
+    const report = await rehearsal.rehearseUnderWrites(ROWS_PER_TABLE, false);
+
+    expect(report.verified).toBe(true);
+    expect(report.acked).toBeGreaterThan(0);
+    expect(report.rejected).toBeGreaterThan(0);
+    expect(report.verifiedTarget).toEqual(report.verifiedSource);
+    expect(report.sourceAfterSwitch).toEqual(report.verifiedSource);
+  });
 });

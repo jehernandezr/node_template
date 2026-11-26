@@ -10,3 +10,4 @@ export * from './delegating-transfer.js';
 export * from './assigned-shard-connections.js';
 export * from './recording-budget.js';
 export * from './pending-rounds.js';
+export * from './manifest-row-writer.js';
