@@ -1,6 +1,6 @@
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 
-/** What `passkeys` offers to the other modules. */
+/** Tells whether a user has passkeys, forgets them on erasure and follows a home tenant relocation. */
 export abstract class PasskeysFacade {
   /** Whether the user has any passkey: if so, `mfa` offers it as a second factor. */
   abstract hasPasskeys(user: UserRef): Promise<boolean>;

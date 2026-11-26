@@ -10,7 +10,7 @@ import { GetTask } from './get-task.query.js';
 import { ListTaskChanges } from './list-task-changes.query.js';
 import { TasksFacade } from './tasks.facade.js';
 
-/** In-process `TasksFacade`. */
+/** `TasksFacade` for callers in the same process: each method runs the module's use case or repository. */
 @Injectable()
 export class LocalTasksFacade extends TasksFacade {
   constructor(

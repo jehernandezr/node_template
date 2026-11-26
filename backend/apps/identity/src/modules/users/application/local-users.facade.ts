@@ -10,7 +10,7 @@ import { UsersFacade } from './users.facade.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityErrorCode } from '@contracts/identity';
 
-/** In-process `UsersFacade`. */
+/** `UsersFacade` for callers in the same process: each method runs the module's use case or repository. */
 @Injectable()
 export class LocalUsersFacade extends UsersFacade {
   constructor(

@@ -19,7 +19,10 @@ export interface MessageDispatcherOptions {
    * the one of `FailureClassifier` (see `DeliveryClassifier.disposition`).
    */
   readonly isPermanent?: PermanenceCheck;
-  /** Wraps the claim and the handler, for example to open a transaction or a tenant context. */
+  /**
+   * Wraps the claim, the handler and the `complete`, for example to set the shard and tenant of the envelope. It
+   * opens no transaction: the handler commits its effects on its own.
+   */
   readonly runInContext?: (
     envelope: MessageEnvelope,
     fn: () => Promise<void>,

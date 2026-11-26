@@ -1,6 +1,6 @@
 import type { Permission } from '@contracts/identity';
 
-/** What `api-keys` offers to the other modules. */
+/** Relocates the API keys of a tenant and reads the permissions of its active service accounts. */
 export abstract class ApiKeysFacade {
   /**
    * Points the prefix index of the tenant to `region` after relocating it. It is idempotent.

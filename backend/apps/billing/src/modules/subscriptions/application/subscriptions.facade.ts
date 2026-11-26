@@ -4,7 +4,7 @@ import type {
   CurrentSubscription,
 } from './current-subscription.js';
 
-/** What `subscriptions` offers to the other modules. */
+/** Opens, reads, closes and settles tenant subscriptions for invoices, payments and usage. */
 export abstract class SubscriptionsFacade {
   /** Opens the subscription on trial; if it already exists, returns it unchanged. */
   abstract open(tenantId: string): Promise<CurrentSubscription>;

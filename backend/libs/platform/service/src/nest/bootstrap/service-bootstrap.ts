@@ -32,7 +32,6 @@ export class ServiceBootstrap {
             ServiceBootstrap.NEST_OPTIONS,
           );
     await options.http?.configurer?.configure(app);
-    // With the hooks, SIGTERM calls app.close(), which stops accepting and waits; no custom handler is needed.
     app.enableShutdownHooks();
     await app.listen(
       options.http?.port ?? ServiceBootstrap.DEFAULT_PORT,
@@ -55,7 +54,6 @@ export class ServiceBootstrap {
       ServiceBootstrap.host(definition, options),
       ServiceBootstrap.NEST_OPTIONS,
     );
-    // As with HTTP, the shutdown hooks are enough for SIGTERM.
     app.enableShutdownHooks();
     return new RunningService(
       definition.name,

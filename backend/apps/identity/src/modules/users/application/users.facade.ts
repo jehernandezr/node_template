@@ -2,7 +2,7 @@ import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { RegisterUserInput } from '../domain/register-user-input.js';
 import type { UserSnapshot } from '../domain/user-snapshot.js';
 
-/** What `users` offers to the other modules. */
+/** Looks users up and registers them, and records their last and home tenant for the other modules. */
 export abstract class UsersFacade {
   /** Looks up by email in the catalog. `undefined` if it does not exist. */
   abstract findByEmail(email: string): Promise<UserSnapshot | undefined>;

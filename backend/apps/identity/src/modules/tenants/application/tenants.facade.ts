@@ -1,6 +1,6 @@
 import type { TenantSnapshot } from '../domain/tenant-snapshot.js';
 
-/** What `tenants` offers to the other modules. */
+/** Reads tenants, checks that one is active and relocates one for the other modules. */
 export abstract class TenantsFacade {
   /** @throws DomainError `IDENTITY.TENANT.NOT_FOUND` if it does not exist. */
   abstract get(tenantId: string): Promise<TenantSnapshot>;

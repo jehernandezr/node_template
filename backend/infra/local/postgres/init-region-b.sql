@@ -1,6 +1,6 @@
--- Inicialización local de la región B simulada (postgres-b).
--- Solo shards: el catálogo vive en la región principal (postgres). Se ejecuta solo cuando el volumen
--- postgres-b-data está vacío.
+-- Local initialization of the simulated region B (postgres-b).
+-- Shards only: the catalog lives in the main region (postgres). It runs only when the
+-- postgres-b-data volume is empty.
 
 CREATE DATABASE identity_shard_b0;
 \c identity_shard_b0

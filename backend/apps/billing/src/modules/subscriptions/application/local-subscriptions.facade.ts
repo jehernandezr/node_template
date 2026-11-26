@@ -16,7 +16,7 @@ import { OpenSubscription } from './open-subscription.use-case.js';
 import { SubscriptionStanding } from './subscription-standing.js';
 import { SubscriptionsFacade } from './subscriptions.facade.js';
 
-/** In-process `SubscriptionsFacade`. */
+/** `SubscriptionsFacade` for callers in the same process: each method runs the module's use case or repository. */
 @Injectable()
 export class LocalSubscriptionsFacade extends SubscriptionsFacade {
   constructor(

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "private": true,
-  "description": "Dependencias externas del backend. Las librerías, apps y herramientas de backend/ no tienen package.json propio: se importan por alias de TypeScript.",
+  "description": "External dependencies of the backend. The libraries, apps and tools in backend/ have no package.json of their own: they are imported through TypeScript aliases.",
   "type": "module",
   "dependencies": {
     "@aws-sdk/client-sesv2": "3.1160.0",

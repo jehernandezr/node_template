@@ -125,7 +125,7 @@ export class PlatformApp {
     const lost = this.platformBus.deadLetters();
     if (lost.length > 0) {
       throw new Error(
-        `Messages in the dead-letter queue: ${lost.map((entry) => `${entry.envelope.type} del tenant ${String(entry.envelope.tenantid)} (${entry.error})`).join(', ')}`,
+        `Messages in the dead-letter queue: ${lost.map((entry) => `${entry.envelope.type} of tenant ${String(entry.envelope.tenantid)} (${entry.error})`).join(', ')}`,
       );
     }
   }

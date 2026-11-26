@@ -56,10 +56,10 @@ export class SagaEngine {
   /**
    * Creates an instance and runs it until it pauses or finishes. The lease already
    * belongs to this run. With an existing `idempotencyKey` it returns that instance.
-   * Inside an open transaction the instance is created with it and
-   * returned in `Running`: the steps run after the commit, because a remote call
-   * made inside a transaction that is later rolled back would leave effects
-   * without a log to compensate them. If the transaction rolls back, the saga does not exist.
+   * Inside an open transaction the instance is created with it and returned in `Running`, and the steps run in an
+   * `afterCommit` hook, because a remote call made inside a transaction that is later rolled back would leave effects
+   * without a log to compensate them. The transaction manager awaits that hook, so the caller's transaction returns
+   * only once the saga pauses or finishes. If the transaction rolls back, the saga does not exist.
    * @throws SagaError `UnknownDefinition`, `InvalidState` (non-JSON state), `IdempotencyKeyConflict`.
    */
   async start(

@@ -1,22 +1,22 @@
 # mf_{{id}}
 
-Microfrontend {{Pascal}}. Exporta `{{id}}Manifest` y todas sus rutas viven bajo `/{{id}}` (`{{Pascal}}Paths`). Solo modo demo: los datos vienen de `Fake{{Pascal}}Repository`.
+Microfrontend {{Pascal}}. It exports `{{id}}Manifest`, and all its routes live under `/{{id}}` (`{{Pascal}}Paths`). Demo mode only: the data comes from `Fake{{Pascal}}Repository`.
 
-## Rutas
+## Routes
 
-- `/{{id}}`: lista de elementos. Cada elemento abre su detalle.
-- `/{{id}}/:id`: detalle de un elemento, hijo de la lista para que tenga botón atrás.
+- `/{{id}}`: list of items. Each item opens its detail.
+- `/{{id}}/:id`: detail of one item, a child of the list so it has a back button.
 
-Cada pantalla es un `StatelessWidget` que obtiene su controlador con `ControllerBuilder`. Las pantallas se reúnen en `lib/src/screens/{{id}}_screens.dart` (`{{Pascal}}Screens.list` y `{{Pascal}}Screens.detail`), que el manifiesto llama desde la biblioteca diferida. Cada una toma su repositorio del `MicrofrontendScope` de la identidad actual, a través de `{{Pascal}}Data`.
+Each screen is a `StatelessWidget` that gets its controller with `ControllerBuilder`. The screens are gathered in `lib/src/screens/{{id}}_screens.dart` (`{{Pascal}}Screens.list` and `{{Pascal}}Screens.detail`), which the manifest calls from the deferred library. Each one takes its repository from the `MicrofrontendScope` of the current identity, through `{{Pascal}}Data`.
 
-## Por escribir
+## To write
 
-- El dominio: el puerto `{{Pascal}}Repository`, sus tipos y los datos de demostración.
-- Los textos propios en `lib/src/l10n/app_es.arb` y `app_en.arb`.
-- Los permisos en `lib/src/shared/constants/{{id}}_access.dart`, cuando el dominio tenga los suyos.
-- El manifiesto en las apps `apps/web` y `apps/mobile`.
+- The domain: the `{{Pascal}}Repository` port, its types and the demo data.
+- The microfrontend's own texts in `lib/src/l10n/app_es.arb` and `app_en.arb`.
+- The permissions in `lib/src/shared/constants/{{id}}_access.dart`, once the domain has its own.
+- The manifest in the `apps/web` and `apps/mobile` apps.
 
-## Pruebas
+## Tests
 
 ```sh
 flutter analyze

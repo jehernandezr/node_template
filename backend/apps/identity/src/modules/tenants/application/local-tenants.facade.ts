@@ -6,7 +6,7 @@ import { RelocateTenant } from './relocate-tenant.use-case.js';
 import { TenantReader } from './tenant-reader.js';
 import { TenantsFacade } from './tenants.facade.js';
 
-/** In-process `TenantsFacade`. */
+/** `TenantsFacade` for callers in the same process: each method runs the module's use case or repository. */
 @Injectable()
 export class LocalTenantsFacade extends TenantsFacade {
   constructor(

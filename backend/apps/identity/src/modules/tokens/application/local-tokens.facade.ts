@@ -6,7 +6,7 @@ import {
 } from './issue-access-token.use-case.js';
 import { TokensFacade } from './tokens.facade.js';
 
-/** In-process `TokensFacade`: delegates to the `tokens` use cases. */
+/** `TokensFacade` for callers in the same process: each method runs the module's use case or repository. */
 @Injectable()
 export class LocalTokensFacade extends TokensFacade {
   constructor(private readonly issueToken: IssueAccessToken) {

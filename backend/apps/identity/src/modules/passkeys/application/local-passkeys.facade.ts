@@ -9,7 +9,7 @@ import {
 import { PasskeyCeremony } from './passkey-ceremony.js';
 import { PasskeysFacade } from './passkeys.facade.js';
 
-/** In-process `PasskeysFacade`. */
+/** `PasskeysFacade` for callers in the same process: each method runs the module's use case or repository. */
 @Injectable()
 export class LocalPasskeysFacade extends PasskeysFacade {
   constructor(

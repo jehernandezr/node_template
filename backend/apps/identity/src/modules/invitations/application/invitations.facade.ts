@@ -1,7 +1,7 @@
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { InvitationPreview } from '../domain/invitation-preview.js';
 
-/** What `invitations` offers to the other modules. */
+/** Lets registration preview an invitation, accept it for a new user and check that its tenant has room. */
 export abstract class InvitationsFacade {
   /** The token's valid invitation, or `undefined` if it does not exist, expired or was already used. */
   abstract preview(token: string): Promise<InvitationPreview | undefined>;

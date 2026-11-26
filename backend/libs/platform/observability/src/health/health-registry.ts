@@ -9,9 +9,8 @@ import { DuplicateHealthCheckError } from '../errors/duplicate-health-check.erro
 import type { HealthSummary } from './health-summary.js';
 
 /**
- * Collects the dependencies that report their health. Each network adapter
- * registers itself in its `onModuleInit`; the `/health/live` and `/health/ready` endpoints
- * (from `@platform/http`) query `checkAll`.
+ * Collects the dependencies that report their health. Each network adapter registers itself in its
+ * `onModuleInit`; the service health endpoints query `checkAll`.
  */
 export class HealthRegistry {
   /** Default timeout of each check, in milliseconds. */

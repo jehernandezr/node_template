@@ -7,7 +7,7 @@ import type { Actor } from '@platform/auth';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { UserTenant } from '../domain/user-tenant.js';
 
-/** What `access` offers to the other modules. */
+/** Memberships, permissions and tenant access setup that the other identity modules read and change. */
 export abstract class AccessFacade {
   /**
    * Resolves the effective access of a user in a tenant.

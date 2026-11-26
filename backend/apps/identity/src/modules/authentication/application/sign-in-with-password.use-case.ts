@@ -41,11 +41,11 @@ export interface SignInCommand {
 }
 
 /**
- * Password sign-in: checks the lockouts, verifies the password (also without a user, at the same cost),
+ * Password sign-in: checks the lockouts, verifies the password (against a dummy hash when there is no user),
  * recognizes the device by its signature and decides whether a second factor is needed. A failure counts
  * for the origin, the account and the IP, and is recorded as an attempt; an unknown email is recorded too,
- * without a user and in the shard of the default tenant, so a failure costs the same whether or not the
- * account exists.
+ * without a user and in the shard of the default tenant, so both paths do the same kinds of work. The lookup of
+ * the user and the shard of the attempt still differ, so their timing is not guaranteed to match.
  */
 @Injectable()
 export class SignInWithPassword {

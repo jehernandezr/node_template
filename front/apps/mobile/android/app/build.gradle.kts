@@ -49,7 +49,7 @@ android {
 
     buildTypes {
         release {
-            // Sin android/key.properties (local o en CI sin secretos) se firma con la clave de debug.
+            // Without android/key.properties (locally, or in CI without secrets) the build is signed with the debug key.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
