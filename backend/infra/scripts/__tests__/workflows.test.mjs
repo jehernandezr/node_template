@@ -124,4 +124,20 @@ describe('deployment workflows', () => {
       [...indexes].sort((a, b) => a - b),
     );
   });
+
+  it('the ci.yml terraform filter covers the infrastructure, every workflow and .nvmrc', () => {
+    const ci = read('ci.yml');
+    const filter =
+      ci.split('\n            terraform:\n')[1]?.split(/\n {12}\S/)[0] ?? '';
+    for (const path of [
+      "'backend/infra/**'",
+      "'.github/workflows/**'",
+      "'.nvmrc'",
+    ]) {
+      assert.ok(
+        filter.includes(`- ${path}`),
+        `terraform filter misses ${path}`,
+      );
+    }
+  });
 });
