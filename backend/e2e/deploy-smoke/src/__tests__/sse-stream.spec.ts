@@ -57,16 +57,27 @@ describe('SseStream', () => {
     }
   });
 
-  it('fails when the stream ends before a match', async () => {
+  it('reconnects from the last event when the server ends the stream', async () => {
+    let connections = 0;
     api.answer((_, response) => {
+      connections += 1;
       response.writeHead(200, { 'content-type': 'text/event-stream' });
-      response.end('data: {}\n\n');
+      if (connections === 1) {
+        response.end('id: 7-0\nevent: session-closed\ndata: {}\n\n');
+        return;
+      }
+      response.write('id: 8-0\nevent: notification\ndata: {"n":8}\n\n');
     });
     const stream = await SseStream.open(new URL('/stream', base), 'access');
 
-    await expect(stream.waitFor(() => false, 2_000)).rejects.toThrow(
-      'The event stream ended',
-    );
+    try {
+      await expect(
+        stream.waitFor((frame) => frame.event === 'notification', 2_000),
+      ).resolves.toEqual({ id: '8-0', event: 'notification', data: { n: 8 } });
+    } finally {
+      stream.close();
+    }
+    expect(api.received.at(-1)?.headers['last-event-id']).toBe('7-0');
   });
 
   it('refuses an answer that is not an event stream', async () => {

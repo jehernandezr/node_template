@@ -1,5 +1,6 @@
-/** One server-sent event: its name and its JSON data. */
+/** One server-sent event: its id when the server sends one, its name and its JSON data. */
 export interface SseEvent {
+  readonly id?: string;
   readonly event: string;
   readonly data: unknown;
 }
@@ -29,13 +30,15 @@ export class SseFrameParser {
 
   private static parse(block: string): SseEvent | undefined {
     let event = 'message';
+    let id: string | undefined;
     const data: string[] = [];
     for (const line of block.split('\n')) {
+      if (line.startsWith('id:')) id = line.slice(3).trim();
       if (line.startsWith('event:')) event = line.slice(6).trim();
       if (line.startsWith('data:')) data.push(line.slice(5).trimStart());
     }
-    return data.length === 0
-      ? undefined
-      : { event, data: JSON.parse(data.join('\n')) };
+    if (data.length === 0) return undefined;
+    const parsed = { event, data: JSON.parse(data.join('\n')) as unknown };
+    return id === undefined ? parsed : { id, ...parsed };
   }
 }

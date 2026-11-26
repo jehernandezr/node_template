@@ -13,7 +13,7 @@ describe('SseFrameParser', () => {
 
     expect(first).toEqual([]);
     expect(second).toEqual([
-      { event: 'notification', data: { type: 'security_alert' } },
+      { id: '1-0', event: 'notification', data: { type: 'security_alert' } },
     ]);
   });
 
