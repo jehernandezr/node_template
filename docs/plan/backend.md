@@ -293,11 +293,15 @@ A single variable, `INTEGRATION_TESTS=skip|require`, and the four copies and the
 ```ts
 // @platform/cache/src/errors/cache-error-catalog.ts
 export const cacheErrorCatalog = defineErrorCatalog(CacheErrorCode, {
-  [CacheErrorCode.Unavailable]: internal(503, true, 'El caché no responde.'),
+  [CacheErrorCode.Unavailable]: internal(
+    503,
+    true,
+    'The cache does not respond.',
+  ),
   [CacheErrorCode.ValueTooLarge]: internal(
     413,
     false,
-    'El valor supera el máximo.',
+    'The value exceeds the maximum.',
   ),
 });
 ```
@@ -751,7 +755,7 @@ Summary of what does not need its own signature, with its owner:
 
 ### 3.1 Common rules
 
-**How a squad works.** As the [plan](README.md#how-a-wave-runs) says. In the backend, the skeletons are abstract classes and signatures with a `throw new NotImplementedError()` body.
+**How a squad works.** As the [plan](README.md#how-a-wave-ran) says. In the backend, the skeletons are abstract classes and signatures with a `throw new NotImplementedError()` body.
 
 **Shared files.** `backend/tsconfig.base.json`, `backend/package.json` (with `pnpm-lock.yaml`) and the `@contracts/platform` error catalog are touched by a single squad per wave:
 

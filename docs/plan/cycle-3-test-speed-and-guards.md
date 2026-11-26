@@ -1,6 +1,6 @@
 # Cycle 3: test speed and rule guards
 
-Runs after correction cycle 2b and before F12; the decisions are in [ADR 0039](../adr/0039-shared-test-servers-rule-guards-and-impact-review.md). Two goals:
+Runs after correction cycle 2b and before F12; the decisions are in [ADR 0047](../adr/0047-shared-test-servers-rule-guards-and-impact-review.md). Two goals:
 
 - every cycle gets faster to verify, with less load on the build machine;
 - a rule that was fixed once cannot silently come back.

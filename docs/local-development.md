@@ -87,16 +87,16 @@ Ports are published only on `127.0.0.1`: nothing is exposed to the local network
 
 ## Services and URLs
 
-| Service                 | Port          | Access                                                                                                                                                                                  |
-| ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL              | 5432          | Image with pgvector. Development credentials in `backend/docker-compose.yml`. Databases: `catalog`, `identity_shard_0`, `identity_shard_1`, `tasks_shard_0`                             |
-| Valkey                  | 6379          | `redis://localhost:6379`, with the Valkey modules (includes the Bloom `BF.*` commands). It has no web interface                                                                         |
-| LocalStack              | 4566          | http://localhost:4566. Status: http://localhost:4566/_localstack/health. Services: SQS, SNS, S3, Scheduler, SES and Secrets Manager                                                     |
-| Mailpit                 | 1025 and 8025 | SMTP on `localhost:1025`. Mail interface: http://localhost:8025                                                                                                                         |
-| OpenObserve             | 5080          | http://localhost:5080. Development user and password in `backend/docker-compose.yml`                                                                                                    |
-| OpenTelemetry Collector | 4317 and 4318 | OTLP gRPC and HTTP. Services send to `http://localhost:4318`. It keeps every trace with an error and `OTEL_SAMPLING_PERCENT` (10 % by default) of the rest, and forwards to OpenObserve |
+| Service                 | Port          | Access                                                                                                                                                                                                                           |
+| ----------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL              | 5432          | Image with pgvector. Development credentials in `backend/docker-compose.yml`. Databases: `catalog` and two shards per service (`<service>_shard_0`, `<service>_shard_1`) for identity, tasks, notifications, reports and billing |
+| Valkey                  | 6379          | `redis://localhost:6379`, with the Valkey modules (includes the Bloom `BF.*` commands). It has no web interface                                                                                                                  |
+| LocalStack              | 4566          | http://localhost:4566. Status: http://localhost:4566/_localstack/health. Services: SQS, SNS, S3, Scheduler, SES and Secrets Manager                                                                                              |
+| Mailpit                 | 1025 and 8025 | SMTP on `localhost:1025`. Mail interface: http://localhost:8025                                                                                                                                                                  |
+| OpenObserve             | 5080          | http://localhost:5080. Development user and password in `backend/docker-compose.yml`                                                                                                                                             |
+| OpenTelemetry Collector | 4317 and 4318 | OTLP gRPC and HTTP. Services send to `http://localhost:4318`. It keeps every trace with an error and `OTEL_SAMPLING_PERCENT` (10 % by default) of the rest, and forwards to OpenObserve                                          |
 
-The two databases `identity_shard_0` and `identity_shard_1` are intentional. They are used to test shard routing locally. With persistence on TypeORM, the next phase, each service's migrations add the `saga` schema of the saga log to each shard database and the `saga_directory` table to the catalog ([ADR 0024](adr/0024-typeorm-persistence-sharding-persistent-sagas.md)).
+Two shards per service are intentional: they test shard routing locally. Each service's migrations add the `saga` schema of the saga log to each of its shard databases ([ADR 0024](adr/0024-typeorm-persistence-sharding-persistent-sagas.md)); identity also adds `identity_sagas` to the catalog ([ADR 0031](adr/0031-reports-billing-identity-sagas.md)).
 
 On startup, LocalStack runs `backend/infra/local/localstack/init-aws.sh`, which creates the `platform-files-local` bucket and the messaging topology from `backend/infra/terraform/topology.json` (topics, queues, DLQs and filtered subscriptions), with the `local` prefix from `MESSAGING_NAME_PREFIX`.
 
@@ -104,10 +104,10 @@ LocalStack is pinned to a version that runs without a token. Dated versions (202
 
 ## Run identity
 
-With the infrastructure up and `backend/.env` copied from `backend/.env.example` (with your own keys and peppers instead of the `CAMBIAR_...` values):
+With the infrastructure up and `backend/.env` copied from `backend/.env.example` (with your own keys and peppers instead of the `CHANGE_ME_...` values):
 
 ```sh
-pnpm nx run identity:migrate --args="--target=all"   # the catalog and then the shards its directory lists
+pnpm nx run identity:migrate --args="--target=all"   # the catalog and then the shards its directory lists; also catalog or shards
 pnpm nx run identity:seed      # the region's fixed tenants: the platform one and the shared customer one
 pnpm nx run identity:serve     # API at http://localhost:3000
 pnpm nx run identity:worker    # outbox relay, consumers and jobs

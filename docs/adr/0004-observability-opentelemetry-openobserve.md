@@ -1,6 +1,6 @@
 # 0004. Observability with OpenTelemetry and OpenObserve
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0046](0046-providers-and-telemetry-per-environment.md) (no Collector in AWS: each process exports OTLP/HTTP to OpenObserve with head sampling)
 - Date: 2026-11-11
 
 ## Context

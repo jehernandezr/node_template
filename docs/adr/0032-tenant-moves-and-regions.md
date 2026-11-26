@@ -1,6 +1,6 @@
 # 0032. Tenant moves and regions
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0041](0041-secrets-and-database-credentials.md) (`TENANT_MOVE_STRATEGY=logical` stays local) and [ADR 0042](0042-region-and-catalog-model.md) (internal API keys live in each service's catalog, one per region)
 - Date: 2026-11-24
 - Related: [ADR 0010](0010-logical-sharding-region-residency.md), [ADR 0023](0023-identity-data-routing.md), [ADR 0024](0024-typeorm-persistence-sharding-persistent-sagas.md), [ADR 0031](0031-reports-billing-identity-sagas.md)
 

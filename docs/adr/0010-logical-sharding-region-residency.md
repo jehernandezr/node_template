@@ -1,6 +1,6 @@
 # 0010. Logical sharding by groups and residency by region
 
-- Status: Accepted, amended by [ADR 0023](0023-identity-data-routing.md), [ADR 0024](0024-typeorm-persistence-sharding-persistent-sagas.md) and [ADR 0032](0032-tenant-moves-and-regions.md)
+- Status: Accepted, amended by [ADR 0023](0023-identity-data-routing.md), [ADR 0024](0024-typeorm-persistence-sharding-persistent-sagas.md), [ADR 0032](0032-tenant-moves-and-regions.md) and [ADR 0042](0042-region-and-catalog-model.md) (one catalog per service and region, one region per environment in F12)
 - Date: 2026-11-11
 
 ## Context

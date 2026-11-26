@@ -1,6 +1,6 @@
 # 0027. Screen patterns and shared front tests
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0038](0038-comment-and-documentation-rules-enforced-by-lint.md) (the `// catch-all:` marker is replaced by `on Object catch` explained in `///`)
 - Date: 2026-11-14
 - Related: [ADR 0012](0012-front-flutter-shells-microfrontends.md), [ADR 0015](0015-repository-structure-and-shared-code.md), [ADR 0018](0018-microfrontend-contract.md)
 

@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-12
+- Revision: 2026-11-26 (`staging` also uses `per_az_nat`, as its tfvars and ARCHITECTURE say)
 
 ## Context
 
@@ -15,7 +16,7 @@ The VPC has three subnet tiers in two availability zones: public, private (appli
 | ------------ | -------------------- | ----------------------------------- |
 | `none`       | None                 | Environments without external calls |
 | `single_nat` | One, in the first AZ | dev                                 |
-| `per_az_nat` | One per AZ           | prod                                |
+| `per_az_nat` | One per AZ           | staging and prod                    |
 
 - The private subnets have one route table per AZ with a `0.0.0.0/0` route to the NAT. With `single_nat` both use the same one.
 - The data subnets (RDS, RDS Proxy, Valkey and the database administration lambdas) have no default route. They reach AWS only through endpoints.

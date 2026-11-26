@@ -2,6 +2,8 @@
 
 This document describes what the platform is and how it is built. The phases, their status, the execution order and the decision log are in the [plan](plan/README.md).
 
+It describes what is built unless a section says **Planned, not built**. Decisions live in the [ADRs](adr/README.md); where a section and an ADR differ, the ADR wins.
+
 ## Summary
 
 The platform is a reusable monorepo for building microservice backends in NestJS with TypeORM on PostgreSQL, hexagonal architecture and deployment on AWS. It replaces the `node_template` repository and serves as the starting point for any new product: you clone it, rename it and add services with a generator.
@@ -28,21 +30,25 @@ backend/                       backend: all its external dependencies in backend
   dist/<app>/                  each app's bundle, built with esbuild (not committed)
   libs/
     contracts/platform/        @contracts/platform: contract kit and cross-cutting pieces
-    contracts/identity/        @contracts/identity: contract of the identity service
+    contracts/<service>/       identity, tasks, notifications, reports and billing contracts
     platform/                  kernel, primitives, config, observability, persistence, criteria,
                                sharding, cache, bloom, resilience, rate-limit, messaging,
-                               internal-api, saga
+                               internal-api, saga, scheduling, auth, http, service, flags,
+                               search, realtime, quotas, metering and tenant-move
     platform/adapters/         aws, postgres and valkey: one adapter per provider
-    shared/utils/              @shared/utils: pure functions over the contract types
+  apps/<service>/              identity, tasks, notifications, reports, billing and realtime
+  e2e/platform-flow/           the five services in one process (platform-flow:e2e)
   tools/contracts-export/      exports the contracts to JSON (Nx project contracts-export)
   tools/app-bundler/           bundles the apps with esbuild into backend/dist/<app>/
+  tools/generators/            service and module generators (ADR 0033)
+  tools/platform-smoke/        smoke application of the platform libraries
   infra/terraform/             AWS modules, stacks and environments (ADR 0020)
   infra/scripts/               deploy-aws.sh, local.sh, tf-validate.mjs and utilities
   infra/local/                 startup of PostgreSQL, LocalStack and the OpenTelemetry Collector
   docker-compose.yml           local stack
 front/                         Flutter pub workspace
   apps/{web,mobile}/           shells
-  microfrontends/              account, assistant, backoffice, billing, notifications, tasks, verifier
+  microfrontends/              account, assistant, backoffice, billing, notifications, reports, tasks, verifier
   packages/                    api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
   tools/                       contracts_gen, new_microfrontend, nx-plugin, check_deferred_chunks.dart and check_microfrontend_boundaries.dart
 docs/                          architecture, plan (plan/), ADRs, per-phase designs (design/) and audits (audits/)
@@ -63,7 +69,7 @@ nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.jso
 
 **Services**
 
-Each microservice will be an app in `backend/apps/<service>` (an Nx project with `project.json`, without `package.json`) with its domain, its database, its migrations and its deployment. The planned services are `identity`, `tasks`, `reports`, `notifications`, `realtime`, `billing`, `files`, `agreements`, `assistant` and `backoffice-api`. The first is `identity`, with its design in [`docs/design/f4-identity.md`](design/f4-identity.md).
+Each microservice is an app in `backend/apps/<service>` (an Nx project with `project.json`, without `package.json`) with its domain, its database, its migrations and its deployment. Built: `identity`, `tasks`, `notifications`, `reports`, `billing` and `realtime`. Planned, not built: `files`, `agreements`, `assistant` and `backoffice-api`. The identity design is in [`docs/design/f4-identity.md`](design/f4-identity.md).
 
 **Structure of each library**
 
@@ -102,7 +108,7 @@ backend/apps/<service>/migrations/{shard,catalog}/   TypeORM migrations
 
 - Between projects, the `@nx/enforce-module-boundaries` rule in `backend/eslint.config.mjs` rules, by tags: `type:contracts` depends only on `type:contracts`; `type:util` on `type:util` and `type:contracts`; `type:platform` on `type:platform`, `type:util` and `type:contracts`; `type:tool` on contracts, utilities and platform. `pnpm nx affected -t lint` checks it.
 - A service app (`type:app`) imports from another service only its `@contracts/<service>` package, never its internal code.
-- Inside a module, `domain` depends only on `kernel`; `application` depends on `domain`; `infrastructure` and `presentation` depend on both. These layers are checked in CI with `dependency-cruiser` once the first service, `identity`, arrives (ADR 0020).
+- Inside a module, `domain` depends only on `kernel`; `application` depends on `domain`; `infrastructure` and `presentation` depend on both. These layers are checked by the backend `check-structure.mjs`, which runs in CI.
 - `@aws-sdk/*` only appears in `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); a `no-restricted-imports` rule blocks it everywhere else. It provides `SnsSqsEnvelopePublisher` (used by the outbox relay), `SnsSqsMessageBus`, `SqsPoller` (long polling, inside `SqsConsumerModule`, which is not global so it closes before `AwsModule`) and `SqsLambdaHandler` (Lambda with partial batch failures). Both use `SqsDeliveryProcessor`, which applies `ChangeMessageVisibility` and sends permanent failures to the DLQ. The runtime topology comes from the contracts with `topologyFromContracts`.
 - The transaction ports (`TransactionManager`, `UnitOfWork`) and the idempotency port (`IdempotencyStore`) live in `@platform/kernel`, so `messaging` and `internal-api` use the transaction without depending on `@platform/persistence`.
 - The PostgreSQL adapters for other libraries' ports live in `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `TypeOrmOutboxStore` writes the outbox in the same transaction as the business change and claims it with `FOR UPDATE SKIP LOCKED`, a lease with fencing and FIFO order per group; `TypeOrmProcessedMessageStore` stores consumer idempotency in `processed_messages`; `TypeOrmIdempotencyStore` stores the internal API's and `TypeOrmDirectoryStore` the shard directory. Their tables are TypeORM entities and migrations (`platformShardEntities`, `platformCatalogEntities` and their migrations), together with the saga log ([persistence design](design/typeorm-persistence-and-sagas.md)).
@@ -124,6 +130,7 @@ backend/apps/<service>/migrations/{shard,catalog}/   TypeORM migrations
 | `tasks`         | Yes | Yes    | Sample CRUD                                          |
 | `notifications` | Yes | Yes    | Inbox and preferences                                |
 | `assistant`     | Yes | Yes    | Conversation list and chat with the AI assistant     |
+| `reports`       | Yes | Yes    | Report runs and their results                        |
 | `billing`       | Yes | No     | Plan, invoices and invoice detail                    |
 | `backoffice`    | Yes | No     | Tenants, sagas and DLQ                               |
 | `verifier`      | No  | Yes    | Verification on the registered device                |
@@ -179,7 +186,7 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
 - **Layout:** each screen owns its single top bar with `AppPage` from `ui`. The shell uses `ShellChrome`.
 - **States and errors:** each screen has a controller (`ChangeNotifier`) tested without widgets. Loading is composed by an `AsyncLoader` and actions by an `ActionRunner`; the screen is a `StatelessWidget` that creates the controller with `ControllerBuilder`. An action's errors are shown with `showActionResult`.
 
-All seven manifests use `screens:`, and `notifications` creates its lifecycle with `lifecycleFactory`. The previous APIs (`routes:`, `lifecycle:`, `ShellContext.eventBus` and `AdaptiveScaffold.compactActions`) were removed.
+All eight manifests use `screens:`, and `notifications` creates its lifecycle with `lifecycleFactory`. The previous APIs (`routes:`, `lifecycle:`, `ShellContext.eventBus` and `AdaptiveScaffold.compactActions`) were removed.
 
 **Deferred loading**
 
@@ -227,21 +234,21 @@ The `notifications` lifecycle ships in the initial bundle with the manifest, so 
 
 Each external capability is a port in the platform library that uses it (for example `CachePort` in `@platform/cache` or `RateLimiter` in `@platform/rate-limit`), with one adapter per provider in `backend/libs/platform/adapters/<provider>` (today `aws`, `postgres` and `valkey`). Business code talks to the port; each service's module picks the adapter by configuration. Changing clouds means writing new adapters and different Terraform.
 
-| Capability                 | Port                                | AWS adapter                              | Local adapter and alternatives                          |
-| -------------------------- | ----------------------------------- | ---------------------------------------- | ------------------------------------------------------- |
-| Topics (pub/sub)           | `TopicPublisher`                    | SNS                                      | In memory; Google Pub/Sub, Kafka                        |
-| Queues                     | `QueueSender`, `QueueConsumer`      | SQS                                      | In memory, BullMQ on Valkey; RabbitMQ                   |
-| Files                      | `FileStorage`                       | S3                                       | Local file system, MinIO; GCS, Azure Blob               |
-| Scheduled jobs             | `JobScheduler`                      | EventBridge Scheduler                    | `node-cron`; Cloud Scheduler, Kubernetes CronJob        |
-| Cache and short-lived data | `Cache`, `KeyValueStore`            | ElastiCache for Valkey                   | Valkey in Docker; any Redis-compatible server           |
-| Email                      | `EmailSender`                       | SES                                      | SMTP with Mailpit                                       |
-| Push                       | `PushSender`                        | APNs, FCM and Web Push directly          | Same on any cloud                                       |
-| Secrets                    | `SecretsProvider`                   | Secrets Manager                          | Environment variables; Vault                            |
-| Feature flags              | OpenFeature                         | Own provider on DB + Valkey              | flagd; AppConfig                                        |
-| Real time                  | `RealtimeGateway`                   | Socket.IO and SSE in NestJS on Fargate   | The same gateways locally or on Kubernetes              |
-| Signatures and encryption  | `Signer`, `KeyManagement`           | KMS                                      | Local keys                                              |
-| Compute entry point        | `main.ts`, `lambda.ts`, `worker.ts` | Lambda, Fargate                          | Any container                                           |
-| Observability              | OpenTelemetry                       | ADOT Collector to OpenObserve on Fargate | OpenObserve in a container; any OTel-compatible backend |
+| Capability                 | Port                                | AWS adapter                                                  | Local adapter and alternatives                                         |
+| -------------------------- | ----------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Topics (pub/sub)           | `TopicPublisher`                    | SNS                                                          | In memory; Google Pub/Sub, Kafka                                       |
+| Queues                     | `QueueSender`, `QueueConsumer`      | SQS                                                          | In memory, BullMQ on Valkey; RabbitMQ                                  |
+| Files                      | `FileStorage`                       | S3                                                           | Local file system, MinIO; GCS, Azure Blob                              |
+| Scheduled jobs             | `ScheduledJob`, `JobLock`           | `@platform/scheduling` in the Fargate worker, lock in Valkey | The same in any process; Kubernetes CronJob                            |
+| Cache and short-lived data | `Cache`, `KeyValueStore`            | ElastiCache for Valkey                                       | Valkey in Docker; any Redis-compatible server                          |
+| Email                      | `EmailSender`                       | SES                                                          | SMTP with Mailpit                                                      |
+| Push                       | `PushSender`                        | APNs, FCM and Web Push directly                              | Same on any cloud                                                      |
+| Secrets                    | `SecretSource`                      | Secrets Manager                                              | Environment variables; Vault                                           |
+| Feature flags              | OpenFeature                         | Own provider on DB + Valkey                                  | flagd; AppConfig                                                       |
+| Real time                  | `RealtimePublisher`                 | Socket.IO and SSE in NestJS on Fargate                       | The same gateways locally or on Kubernetes                             |
+| Signatures and encryption  | `Signer`, `KeyManagement`           | KMS                                                          | Local keys                                                             |
+| Compute entry point        | `main.ts`, `lambda.ts`, `worker.ts` | Lambda, Fargate                                              | Any container                                                          |
+| Observability              | OpenTelemetry                       | Direct OTLP/HTTP export to OpenObserve on Fargate            | OpenObserve and a Collector in containers; any OTel-compatible backend |
 
 The messaging topology, the jobs and the buckets are declared in code in an abstract way (topic, queue, job). The AWS Terraform reads those declarations; another provider would have its own module reading the same ones.
 
@@ -253,7 +260,6 @@ Endpoints, event handlers, jobs, internal operations and real-time messages are 
 | ---------------------------- | ----------------------------------------------------------------------------- |
 | Lambda with HTTP API Gateway | `lambda.ts` turns the event into a NestJS request                             |
 | Lambda with SQS              | Turns the batch into messages for `@Subscribe` and reports partial failures   |
-| EventBridge Scheduler        | Turns the trigger into the run of its `@ScheduledJob`                         |
 | Real-time container          | NestJS `@WebSocketGateway` (Socket.IO) and `@Sse()` call `@RealtimeHandler`   |
 | Fargate, Kubernetes or local | `main.ts` and `worker.ts`: HTTP server, long polling consumers, cron and `ws` |
 
@@ -283,7 +289,7 @@ OpenTelemetry (OTel) is the open instrumentation standard: it produces logs, tra
 - Automatic instrumentation of HTTP, NestJS, `pg`, the Valkey client, the AWS SDK and `fetch`. Custom spans in use cases, saga steps, message handlers and jobs.
 - Logs: the `LoggerPort` writes JSON with `trace_id` and `span_id` and exports it as OTel logs, so each log opens its full trace. Fields such as `password`, `token` and `authorization` are hidden automatically.
 - Metrics: latency per endpoint, errors per code, queue depth and age, retries, stalled sagas, cache hits and usage per tenant.
-- An OpenTelemetry Collector receives everything and forwards it: in Lambda as a layer (ADOT, the AWS distribution), in Fargate as a sidecar and locally inside `docker-compose`. Changing backend means changing the Collector configuration.
+- In AWS each process exports OTLP/HTTP straight to OpenObserve, in Fargate and Lambda, with no Collector. Locally an OpenTelemetry Collector inside `docker-compose` receives everything and forwards it ([ADR 0046](adr/0046-providers-and-telemetry-per-environment.md)).
 
 A single tool gathers logs, metrics, traces, dashboards and alerts in every environment: **OpenObserve**.
 
@@ -302,7 +308,7 @@ A single tool gathers logs, metrics, traces, dashboards and alerts in every envi
 | `DB_LOG_QUERIES`, `DB_SLOW_QUERY_MS`           | SQL off by default, slow queries always logged                               |
 | Feature flag `log-level`                       | Hot level change, without redeploy                                           |
 
-Trace sampling is configured in the Collector (every trace with an error and a percentage of the rest). Retention is 14 days in dev and 30 in prod.
+In AWS traces use head sampling per environment (`OTEL_TRACES_SAMPLER_ARG`: 1.0 in dev, 0.2 in staging, 0.05 in prod); the local Collector keeps every trace with an error and a percentage of the rest. Retention is 14 days in dev and 30 in prod.
 
 ## Errors
 
@@ -494,10 +500,10 @@ Tenant tables extend `TenantIsolatedRepository` instead: each query filters by `
 
 - The base entities (`AuditedEntity`, `VersionedEntity`) come with a uuid `id`, auditing, version and soft delete in `timestamptz`. The `id` is a UUIDv7 generated by the app.
 - Each module's shard key is declared in `forFeature`, not in decorators on the entity.
-- Each service keeps its migrations in `migrations/shard` and `migrations/catalog`. The library provides `pnpm nx run platform-persistence:migration-generate --name=<Nombre> --definition=<modulo> --out=<carpeta>`, which generates the migration by comparing the entities with a temporary database. Each service will have its own target on top of that CLI. `migration-run` and `migration-revert` use the same `DataSource` objects. `synchronize` is always off.
+- Each service keeps its migrations in `migrations/shard` and `migrations/catalog`. The library provides `pnpm nx run platform-persistence:migration-generate --name=<Name> --definition=<module> --out=<folder>`, which generates the migration by comparing the entities with a temporary database. Each service will have its own target on top of that CLI. `migration-run` and `migration-revert` use the same `DataSource` objects; `migration-revert` is for local work only, and no down migration runs in a deploy ([ADR 0043](adr/0043-deploy-migrations-and-rollback.md)). `synchronize` is always off.
 - The platform tables (outbox, processed messages, idempotency, shard directory and saga log) bring their entities and migrations from `@platform/adapters-postgres`.
 
-**Current code.** The persistence core on TypeORM is built. The old code on `pg` was isolated in `src/legacy/` and is re-exported until the platform tables migrate to TypeORM. ADR 0009 remains superseded.
+**Current code.** Persistence and the platform tables run on TypeORM; the old `pg` code is gone. ADR 0009 remains superseded.
 
 **Partitioning**
 
@@ -527,14 +533,14 @@ Tenant tables extend `TenantIsolatedRepository` instead: each query filters by `
 
 Each query reaches its shard without the business code asking for it: the repository takes the key from the context, the router resolves the shard and the layer picks primary or replica. The template starts with one shard and grows to N with the same code.
 
-| Concept           | What it is                                                                                                                                      |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Logical shard     | A PostgreSQL database with the service's complete schema. Several logical shards live together on one physical instance                         |
-| Physical instance | An RDS server with its RDS Proxy and its replicas; it hosts one or more logical shards                                                          |
-| Shard group       | The logical shards assigned to a tenant within its region: one for a small tenant, several for a large one                                      |
-| Shard key         | The value that picks the shard within the group. Each service or entity declares its own according to how its data is queried                   |
-| Region            | Country or region where the tenant's information lives, chosen by the tenant                                                                    |
-| Catalog           | Small global database with the tenant → region → group directory, the logical shard → instance map, the global indexes and the reference tables |
+| Concept           | What it is                                                                                                                                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logical shard     | A PostgreSQL database with the service's complete schema. Several logical shards live together on one physical instance                                                                                                            |
+| Physical instance | An RDS server with its RDS Proxy and its replicas; it hosts one or more logical shards                                                                                                                                             |
+| Shard group       | The logical shards assigned to a tenant within its region: one for a small tenant, several for a large one                                                                                                                         |
+| Shard key         | The value that picks the shard within the group. Each service or entity declares its own according to how its data is queried                                                                                                      |
+| Region            | Country or region where the tenant's information lives, chosen by the tenant                                                                                                                                                       |
+| Catalog           | One database per service and region (`<service>_catalog`) with its tenant → region → group directory and logical shard → instance map; identity's also holds the global indexes ([ADR 0042](adr/0042-region-and-catalog-model.md)) |
 
 The routing chain is **tenant → region → shard group → logical shard → physical instance**. Tenants and shards are independent: growing means adding logical shards to a group or moving logical shards to new instances, without touching tenants one by one.
 
@@ -566,7 +572,7 @@ PersistenceModule.forFeature({
 
 When the key is not the tenant, the router first locates the tenant's group and then picks the logical shard with consistent hashing over the key. This way a shared tenant with millions of customers is spread across several shards without creating a hot shard.
 
-**Global indexes.** Queries that arrive without the key use an index in the catalog. Login by email queries `identity_lookup`, which stores the HMAC of the email with the `userId`, the region and the shard: routing data, with no personal data in clear text.
+**Global indexes.** Queries that arrive without the key use an index in identity's catalog. Login by email queries `identity_lookup`, which stores the HMAC of the email with the `userId`, the region and the shard: routing data, with no personal data in clear text.
 
 **First implementation: identity.** Sharding debuts in `identity` (users, credentials, sessions, devices) with one logical shard per region in production and two locally and in tests. The other services use the same code with a single shard and turn on more when their traffic calls for it, through configuration.
 
@@ -604,27 +610,28 @@ New tenants get a shard through a `ShardPlacementPolicy` during the onboarding s
 
 **Transactions.** A transaction lives inside one shard. Touching two shards in the same transaction responds `PLATFORM.SHARDING.CROSS_SHARD_TX`; that case is solved with a saga.
 
-**Migrations.** Each app's `migrate` binary uses `ShardedMigrationRunner`: it migrates the catalog and each logical shard, each one under `pg_advisory_lock`, so two tasks that start at the same time do not apply the same migration. If a shard fails, the service deployment stops.
+**Migrations.** Each app's `migrate` binary uses `ShardedMigrationRunner`: it migrates the catalog and each logical shard, each one under `pg_advisory_lock`, so two tasks that start at the same time do not apply the same migration. If a shard fails, the service deployment stops; migrations are expand-only, so the shards already migrated keep serving the old code ([ADR 0043](adr/0043-deploy-migrations-and-rollback.md)).
 
-**Moving data without downtime** (`SagaType.MoveShard` takes a logical shard to another instance; `SagaType.MoveTenant` takes a tenant to another group or region)
+**Moving a tenant without downtime** (`SagaType.MoveTenant`, [ADR 0032](adr/0032-tenant-moves-and-regions.md))
 
-1. **Initial copy**: snapshot of the tenant's rows, or of the whole logical database, at the destination.
-2. **Continuous sync**: PostgreSQL logical replication with a `tenant_id` filter (row filters available since PostgreSQL 15) keeps the destination up to date. The source keeps serving reads and writes.
-3. **Verification**: counts and checksums per table while the replication lag drops to zero.
-4. **Cutover**: a per-tenant lock in Valkey holds new writes for an instant (target: under one second). Requests wait, none fail. With zero lag the directory is switched and `PlatformEvent.ShardDirectoryChanged` is published.
-5. **Close**: writes continue against the destination. The source is kept for a grace period to roll back if needed, and then cleaned up.
+1. **Copy**: `sync` rounds copy the tenant's rows to the target, by batches (default) or with logical replication filtered by tenant. The source keeps serving.
+2. **Freeze**: `finalize` raises the shard fence and closes the write gate; the last round copies everything committed and verifies counts and checksums per table.
+3. **Pivot and switch**: each of the five services points its own directory to the target with `switch`, then `FinishTenantMove` marks the move as switched.
+4. **Cleanup**: `TenantMoveCleanupJob` deletes the source after `TENANT_MOVE_GRACE_DAYS`, never while the source is still routed.
+5. **Rollback**: before the pivot, `abort` reopens the source; after it, another `MoveTenant` back.
+
+Moving a whole logical shard to another instance (`MoveShard`) is planned, not built.
 
 **Data residency by region**
 
 - Each tenant chooses a country or region when it is created; the directory stores it and the onboarding saga places it in a shard group of that region.
-- Each service has its own directory in its catalog. Identity picks the tenant's region and shard group, and the onboarding saga records it in tasks, notifications, reports and billing with `<service>.tenant-directory.place.v1` before opening its billing account, with `<service>.tenant-directory.remove.v1` as the reverse; the identity seed does the same with the region's fixed tenants. A group is the one declared in `TENANT_MOVE_TARGETS` or, without it, the shard name without the service prefix ([ADR 0032](adr/0032-tenant-moves-and-regions.md)).
+- Each service has its own directory in its own catalog. Identity picks the tenant's region and shard group, and the onboarding saga records it in tasks, notifications, reports and billing with `<service>.tenant-directory.place.v1` before opening its billing account, with `<service>.tenant-directory.remove.v1` as the reverse; the identity seed does the same with the region's fixed tenants. A group is the one declared in `TENANT_MOVE_TARGETS` or, without it, the shard name without the service prefix ([ADR 0032](adr/0032-tenant-moves-and-regions.md)).
 - Each region deploys its own stack: services, shards, Valkey, queues and file storage. The tenant's data stays in its region.
-- The global catalog stores only routing data (ids, region, shard and email HMAC). It lives in the main region with read replicas in the others.
-- Login queries the catalog and returns the regional URL (for example `co.api.<domain>`). The JWT carries the region (`rgn`) and the client SDK uses that URL. A request that arrives at another region receives a redirect.
-- Changing region is a `MoveTenant` between regions, with the same zero-downtime move.
-- The first version deploys one region; adding another means deploying its stack with Terraform.
+- Sign-in answers with the tenant's region and its `apiBaseUrl` (for example `co.api.<domain>`). The JWT carries the region (`rgn`) and the client uses that URL. A request that arrives at another region answers 421 `PLATFORM.SHARDING.WRONG_REGION` with `details.apiBaseUrl`, and the client repeats it once there ([ADR 0034](adr/0034-live-front-repositories-sse-region.md)).
+- Changing region is a `MoveTenant` between regions.
+- F12 deploys one region per environment. What a second region needs (global indexes across regions, cross-region writes, revocation and bus propagation) is decided when it is added ([ADR 0042](adr/0042-region-and-catalog-model.md)).
 
-**Sharding operations as code.** Shards are declared in each service's versioned configuration and in Terraform. Adding a shard or moving a tenant is a change in the repository that follows the normal cycle: PR, review and pipeline. The pipeline applies the infrastructure, runs the migrations and, when the change includes moves, launches the `SagaType.MoveShard` saga. Each run is recorded in the audit with the commit that originated it.
+**Sharding operations as code.** Shards are declared once, in `db_services` of the `data` stack, and reach each service as `DB_DATABASES`. Adding a shard is a PR that the pipeline applies and migrates. Moving a tenant is an operator command (`nx run identity:tenant-move`, [runbook](runbooks/tenant-move.md)); the pipeline launches no saga.
 
 **Operation.** Each span carries `db.shard`; there are per-shard metrics (connections, latency, size, tenants) and an imbalance alarm. Locally and in integration tests two shards run, so routing is exercised from day one.
 
@@ -657,7 +664,7 @@ const results = await this.taskSearch.search({
 
 ## AI module
 
-`backend/libs/platform/ai` gives any service AI capabilities with the same rules as the rest of the platform: ports, tenant, permissions, auditing, costs and traces. The sample service `backend/apps/assistant` is an assistant with search over the tenant's data and tools that run use cases.
+**Planned, not built.** `backend/libs/platform/ai` gives any service AI capabilities with the same rules as the rest of the platform: ports, tenant, permissions, auditing, costs and traces. The sample service `backend/apps/assistant` is an assistant with search over the tenant's data and tools that run use cases.
 
 **Providers**
 
@@ -746,9 +753,9 @@ Retries only apply to operations marked as idempotent, and each dependency has i
 | Fallback                                  | Responds degraded: previous cache, alternate provider or default value       | Reads, AI, feature flags         |
 | Load shedding                             | Responds 503 with `Retry-After` when load exceeds a threshold                | HTTP gateway and real time       |
 
-- **Graceful degradation**: if Valkey fails, the cache is skipped and reads go to the database, rate limiting switches to local limits and feature flags use the last known value.
-- In-house liveness and readiness **health checks**, without `@nestjs/terminus` (F4 design, section 9); an instance without its critical dependencies leaves the load balancer.
-- **Infrastructure**: RDS and Valkey in Multi-AZ with automatic failover.
+- **Valkey failure**: caches, routing, Bloom filters, rate limiting and flags degrade (database reads, local limits, last known value); revocation, replay, lockout and the write gate fail closed with a retryable 503. Valkey is required outside `local` ([ADR 0044](adr/0044-valkey-failure-policy.md)).
+- In-house liveness and readiness **health checks**, without `@nestjs/terminus` (F4 design, section 9); an instance without its critical dependencies leaves the load balancer. Valkey is not one of them ([ADR 0044](adr/0044-valkey-failure-policy.md)).
+- **Infrastructure**: RDS and Valkey in Multi-AZ with automatic failover in staging and prod.
 - Each policy emits metrics and spans (circuit state, retries, rejections).
 - **Failure tests**: in integration, Toxiproxy injects latency and outages between the services and their dependencies.
 
@@ -885,14 +892,14 @@ MFA protects two moments: the registration of each new device, mandatory for eve
 **Backoffice with profiles**
 
 - Platform roles are independent of tenant roles: `PlatformRole.SuperAdmin`, `Support`, `Finance`, `ReadOnly`, extensible.
-- `backend/apps/backoffice-api` is a BFF with its own audience (`aud: backoffice`) that calls each service's internal API.
+- Planned, not built: `backend/apps/backoffice-api` is a BFF with its own audience (`aud: backoffice`) that calls each service's internal API.
 - Access with mandatory MFA (passkey recommended) and an optional IP list.
 - Impersonation ("view as") with a reason, limited duration, full auditing and a notice to the user.
 - Initial views: tenants and users, sessions and devices, audit history, sagas and DLQs, billing and usage, feature flags, deprecations.
 
 ## Agreements: terms, consents and signed documents
 
-The `backend/apps/agreements` service is generic: it handles any document that a user or a tenant must accept or sign, with versions, audiences, evidence and effects on permissions.
+**Planned, not built.** The `backend/apps/agreements` service is generic: it handles any document that a user or a tenant must accept or sign, with versions, audiences, evidence and effects on permissions.
 
 | Concept        | What it is                                                                                                                                   |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -913,7 +920,7 @@ The `backend/apps/agreements` service is generic: it handles any document that a
 **Use in endpoints**
 
 ```ts
-@Endpoint.post('/reports', { ..., agreements: [AgreementType.DataProcessingConsent] })
+@Endpoint(CreateReportRoute, { agreements: [AgreementType.DataProcessingConsent] })
 ```
 
 If an acceptance is missing, the response is `LEGAL.AGREEMENT.ACCEPTANCE_REQUIRED` with the list of documents to accept, and the frontend shows them so they can be accepted.
@@ -951,7 +958,7 @@ backend/libs/contracts/
     export/contract.json generated, committed to git
 ```
 
-Today `platform` and `identity` exist. The projects carry the tags `type:contracts` and `scope:<service>`.
+Contracts exist for `platform`, `identity`, `tasks`, `notifications`, `reports` and `billing`. The projects carry the tags `type:contracts` and `scope:<service>`.
 
 **`@contracts/platform` kit**
 
@@ -1017,7 +1024,7 @@ const outcome = await client.call(RevokeUserSessionsOperation, input, {
 - Before running a saga compensation, `CompensationTombstones` leaves a tombstone on the key of the step it undoes (`ADR 0008`): a late delivery of the step no longer applies its effect.
 - An error thrown by the handler is classified with the service's `FailureClassifier` (`PlatformFailureClassifier`, with the Postgres, AWS and Valkey rules): a database failover is `transient-failure` and the client retries.
 
-Today the in-process transport exists (`InProcessTransport`). The HTTP transport, `POST /internal/operations/:operationId`, is added to `@platform/internal-api` with `HttpTransport` and `InternalApiController` (work package WP-08 of the [backend plan](plan/backend.md)), with HMAC signing locally and SigV4 on AWS with phase F12.
+Two transports exist: `InProcessTransport` and the HTTP one, `POST /internal/operations/:operationId`, with `HttpTransport` and `InternalApiController`. Locally calls are signed with HMAC; on AWS they go through VPC Lattice with SigV4 and IAM auth policies, which F12 builds ([ADR 0040](adr/0040-internal-routing-and-authentication.md)). `/internal` is never on the public API.
 
 **Contract rules**
 
@@ -1132,12 +1139,18 @@ export class TenantOnboardingSaga extends SagaDefinition<TenantOnboardingState> 
         s.tenantId = out.tenantId;
       })
       .compensationInput((s) => ({ tenantId: s.tenantId! }))
+      .step(TasksTenantDirectoryPlaceOperation)
+      .input((s) => ({
+        tenantId: s.tenantId!,
+        region: s.region,
+        group: s.group,
+      }))
       .step(OpenBillingAccountOperation)
       .input((s) => ({ tenantId: s.tenantId!, plan: s.plan }))
-      .step(AssignShardOperation)
-      .input((s) => ({ tenantId: s.tenantId! }))
       .pivot()
-      .step(SendWelcomeEmailOperation)
+      .step(ActivateTenantOperation)
+      .input((s) => ({ tenantId: s.tenantId! }))
+      .step(NotifyOwnerOperation)
       .input((s) => ({ tenantId: s.tenantId!, ownerId: s.ownerId }));
   }
 }
@@ -1146,7 +1159,7 @@ export class TenantOnboardingSaga extends SagaDefinition<TenantOnboardingState> 
 await this.sagas.start(TenantOnboardingSaga, state, { idempotencyKey });
 ```
 
-Each step receives the `defineOperation` descriptor that the owning service publishes in `@contracts/<service>`. The input and output types come from its zod schemas, and the compensation comes from its `compensatedBy`, so the saga uses the reverse operations that service already declares. Renaming an operation breaks the build.
+The real saga places the tenant in tasks, notifications, reports and billing before opening the billing account; the example shows one of the four placements, and the names are illustrative. Each step receives the `defineOperation` descriptor that the owning service publishes in `@contracts/<service>`. The input and output types come from its zod schemas, and the compensation comes from its `compensatedBy`, so the saga uses the reverse operations that service already declares. Renaming an operation breaks the build.
 
 **Startup validations**
 
@@ -1158,11 +1171,11 @@ Each step receives the `defineOperation` descriptor that the owning service publ
 
 Each service that orchestrates stores its log in a `saga` schema inside its shard database, with its own migrations and permissions ([ADR 0024](adr/0024-typeorm-persistence-sharding-persistent-sagas.md)). That way the saga starts in the same transaction as the local change that triggers it, and its data stays in the tenant's region. A database shared by every service would couple them and would be a single point of failure.
 
-| Table                      | Content                                                                                                                                                                                            |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `saga.instances`           | Saga type, status, `state`, current step, direction, `version`, lease, `next_attempt_at`, deadline, tenant, actor and home tenant, `traceparent`, idempotency key and reply channel                |
-| `saga.step_log`            | One record per step attempt: operation, direction (forward or compensation), status, key `sagaId:step:direction`, input and output (encrypted when they carry personal data), error code and dates |
-| `saga_directory` (catalog) | Where each saga lives: service, tenant, region, logical shard, type and status. No payloads. Support, the backoffice and the status query find any saga by its id without walking shards           |
+| Table                                 | Content                                                                                                                                                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `saga.instances`                      | Saga type, status, `state`, current step, direction, `version`, lease, `next_attempt_at`, deadline, tenant, actor and home tenant, `traceparent`, idempotency key and reply channel                       |
+| `saga.step_log`                       | One record per step attempt: operation, direction (forward or compensation), status, key `sagaId:step:direction`, input and output (encrypted when they carry personal data), error code and dates        |
+| `identity_sagas` (identity's catalog) | Where each identity saga lives: saga id, type, tenant and requester. No payloads. The status query finds a saga by its id without walking shards ([ADR 0031](adr/0031-reports-billing-identity-sagas.md)) |
 
 `TypeOrmSagaStore` from `@platform/adapters-postgres` implements the `SagaStore` port: it stores the instance and its step in the same transaction, and each guarded write is an `UPDATE ... WHERE version = :v AND lease_token = :t`. A saga's result goes out through the outbox as an event (`SagaCompleted`, `SagaCompensated`) or through `GET /v1/sagas/{sagaId}`. A job purges finished sagas after the retention period, and a large payload is stored by reference.
 
@@ -1177,7 +1190,7 @@ If the process dies between step 1 and step 3, the record stays in `Dispatched`.
 **Recovery**
 
 - Whoever runs a saga takes a lease (`lease_owner`, `lease_until` = now + 30 s) and renews it while working.
-- `SagaRecoveryJob` runs every minute and when each instance starts, scheduled with EventBridge on AWS and with cron locally. It walks the shards with `AcrossShards`, takes with `FOR UPDATE SKIP LOCKED` the active sagas with an expired lease or a due `next_attempt_at` and resumes them from the log. The owning service resumes it, without depending on whoever invoked it.
+- `SagaRecoveryJob` runs every 5 seconds ([ADR 0008](adr/0008-orchestrated-sagas-persistent-log.md), [ADR 0026](adr/0026-scheduled-jobs-scheduledjob-joblock.md)) and when each instance starts, as a `ScheduledJob` in the worker in every environment ([ADR 0039](adr/0039-runtime-matrix-per-service.md)). It walks the shards with `AcrossShards`, takes with `FOR UPDATE SKIP LOCKED` the active sagas with an expired lease or a due `next_attempt_at` and resumes them from the log. The owning service resumes it, without depending on whoever invoked it.
 - Asynchronous steps (reply through a queue) stay in `WaitingReply`, correlated by the key. If the reply takes longer than the contract declares, recovery resends the command with the same key.
 
 **How it reacts to each result**
@@ -1205,11 +1218,11 @@ A step has an uncertain outcome when the call exceeds `maxStepDurationMs` or end
 
 Simple flows, with no need to undo, remain as event choreography.
 
-**Current code.** Today `@platform/saga` provides the complete protocol (write-ahead, lease, pivot, uncertain outcome, recovery) on the `SagaStore` port, with `InMemorySagaStore` and the `CrashingSagaStore` test double from its tests. The redesigned engine is in [section 5 of the persistence design](design/typeorm-persistence-and-sagas.md#5-sagas), and when it gets built, in the [plan](plan/README.md#execution-order-by-waves).
+**Current code.** `@platform/saga` provides the complete protocol (write-ahead, lease, pivot, uncertain outcome, recovery) on the `SagaStore` port, persisted by `TypeOrmSagaStore` in the shard's `saga` schema; `CrashingSagaStore` tests recovery ([persistence design, section 5](design/typeorm-persistence-and-sagas.md#5-sagas)).
 
 ## Shared capabilities
 
-**Files**
+**Files** (planned, not built; the `files_access` permission and the bucket exist in Terraform)
 
 The `FileStorage` port offers `put`, `get` (stream), `head`, `delete`, `createUploadUrl`, `createDownloadUrl` and multipart upload. The `files` service stores the metadata and exposes the flow.
 
@@ -1232,7 +1245,7 @@ export class PurgeLoginAttemptsJob implements JobHandler { ... }
 await this.scheduler.scheduleOnce(JobId.ExpireTrial, at, { tenantId });
 ```
 
-- The `JobScheduler` port covers recurring and one-off jobs. On AWS, EventBridge Scheduler publishes to a queue; locally, `node-cron`.
+- Jobs are `ScheduledJob` classes run by `@platform/scheduling` inside the worker, in AWS (always-on Fargate worker, [ADR 0039](adr/0039-runtime-matrix-per-service.md)) and locally.
 - A distributed lock in Valkey prevents double runs.
 - `job_runs` table: status, duration, error and `traceId`. View and manual run in the backoffice.
 - Included jobs: future partitions, retention purge, billing period close, saga recovery, outbox sweep, deprecation notices.
@@ -1272,7 +1285,7 @@ The `notifications` service handles every channel with a single entry point: `no
 
 Each record stores tenant, user, template and version, recipient, provider id, `traceId` and the dates of each event. When an email is closed is outside what an email client reports. Retention is configurable.
 
-**Push from our own server**
+**Push from our own server** (planned, not built: today only the in-memory `PushSender` exists, and deployed environments use the `none` sender)
 
 - Direct connection to APNs (iOS, `.p8` token), FCM HTTP v1 (Android) and Web Push with VAPID (browsers). No intermediaries such as OneSignal.
 - On mobile, the operating system requires going through APNs or FCM. With the app open, WebSocket is used.
@@ -1282,17 +1295,17 @@ Each record stores tenant, user, template and version, recipient, provider id, `
 
 **Real time: Socket.IO and SSE**
 
-`backend/apps/realtime` is a NestJS gateway on Fargate, behind an ALB, with two channels fed by the same message source:
+Real time runs on Fargate behind CloudFront and its WAF ([ADR 0045](adr/0045-edge-domains-and-real-time.md)). In deployed environments the `realtime` component of `notifications` serves it (`REALTIME_HOST=service`); `backend/apps/realtime` is the alternative that scales it apart. Two channels are fed by the same per-user Valkey stream ([ADR 0028](adr/0028-real-time-one-stream-per-user.md)):
 
 | Channel                         | Direction        | Use                                                                                                   |
 | ------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
 | Socket.IO (`@WebSocketGateway`) | Bidirectional    | Screens that send and receive: collaboration in tasks, confirmations, presence                        |
 | SSE (`@Sse()`)                  | Server to client | Notifications, job status, MFA code. It is plain HTTP, goes through proxies and reconnects on its own |
 
-- Authentication with the JWT in the Socket.IO handshake and with the session cookie in SSE. Rooms per user, tenant and resource.
-- Horizontal scaling with the Socket.IO adapter on Valkey. The transport is WebSocket only, so the load balancer does not need sticky sessions.
-- Recovery after an outage: Socket.IO uses _connection state recovery_ and SSE uses `Last-Event-ID`. Both replay the messages of the last few minutes from a Valkey Stream, so an MFA code arrives even if the connection dropped.
-- `notifications` decides what to send; `realtime` only delivers. Business code uses the `RealtimeGateway` port.
+- Authentication with the bearer token in both: the Socket.IO handshake and the SSE request (`GET /v1/notifications/stream`, which the front reads with `package:http`).
+- Horizontal scaling through the per-user stream, not the Socket.IO adapter. The transport is WebSocket only, so the load balancer does not need sticky sessions.
+- Recovery after an outage: SSE with `Last-Event-ID` and Socket.IO with `auth.lastEventId` replay the latest frames of the stream, so an MFA code arrives even if the connection dropped.
+- `notifications` decides what to send; `realtime` only delivers. Business code publishes through `RealtimePublisher`.
 
 **Push inside and outside the app**
 
@@ -1310,14 +1323,14 @@ Security alerts go out on every channel at once. Each notification stays in the 
 
 The `billing` service computes what each tenant must pay and tracks the status of each invoice. Collection is a separate process that connects through a port and moves those statuses.
 
-| Component     | What it does                                                                                                                                            |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plans         | Versioned catalog with price, billing period, included features (`Feature`) and limits (`Quota`)                                                        |
-| Subscriptions | Tenant, plan, current period and status (`Trialing`, `Active`, `PastDue`, `Suspended`, `Canceled`)                                                      |
-| Metering      | Services publish `BillingEvent.UsageRecorded` with metric, quantity and idempotency key; `billing` aggregates per tenant and period                     |
-| Entitlements  | `@Endpoint({ entitlement: Feature.Webhooks })` and quota checks with a cache in Valkey; when the limit is exceeded it responds `BILLING.QUOTA.EXCEEDED` |
-| Invoices      | A job closes each period and generates the invoice (`Draft`, `Issued`, `Paid`, `Failed`, `Void`) with its fixed charge and usage lines                  |
-| Collection    | `PaymentProvider` port and internal operations `BillingOperation.MarkInvoicePaid` and `MarkInvoiceFailed`, so the external process reports results      |
+| Component     | What it does                                                                                                                                                                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plans         | Versioned catalog with price, billing period, included features (`Feature`) and limits (`Quota`)                                                                                                                                                                                                                                |
+| Subscriptions | Tenant, plan, current period and status (`Trialing`, `Active`, `PastDue`, `Suspended`, `Canceled`)                                                                                                                                                                                                                              |
+| Metering      | Services publish `BillingEvent.UsageRecorded` with metric, quantity and idempotency key; `billing` aggregates per tenant and period                                                                                                                                                                                             |
+| Entitlements  | `@Endpoint({ entitlement: Feature.Webhooks })` and quota checks with a cache in Valkey; when the limit is exceeded it responds `BILLING.QUOTA.EXCEEDED`                                                                                                                                                                         |
+| Invoices      | A job closes each period and generates the invoice (`Draft`, `Issued`, `Paid`, `Failed`, `Void`) with its fixed charge and usage lines                                                                                                                                                                                          |
+| Collection    | `PaymentProvider` port and internal operations `BillingOperation.MarkInvoicePaid` and `MarkInvoiceFailed`, so the external process reports results. Until a real provider lands, `staging` and `prod` use the `none` provider, which leaves invoices `Issued` ([ADR 0046](adr/0046-providers-and-telemetry-per-environment.md)) |
 
 - Money as integers of the smallest unit with its currency.
 - Delinquency cycle: `Failed` takes the subscription to `PastDue`; after the grace period, to `Suspended`, which publishes an event and `identity` suspends the tenant.
@@ -1328,27 +1341,30 @@ The `billing` service computes what each tenant must pay and tracks the status o
 
 The infrastructure lives in `backend/infra/terraform` and is organized in reusable modules, stacks with their own state and per-environment values ([ADR 0020](adr/0020-terraform-stacks-and-runtime-per-service.md)). The details of variables, outputs and commands are in the [Terraform README](../backend/infra/terraform/README.md).
 
-| Stack                       | Resources                                                                                                                                                                         |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `network`                   | VPC with public, private and data subnets, NAT according to `egress`, VPC endpoints and flow logs                                                                                 |
-| `platform`                  | Alarm topic and budget; ECS cluster; OpenObserve; HTTP API Gateway with its origin authorizer; internal ALB for Fargate APIs and VPC link; public real-time ALB; file bucket; SES |
-| `data`                      | RDS PostgreSQL with RDS Proxy and replicas, one database per shard of each service and the catalog; Valkey; client security group                                                 |
-| `messaging`                 | Topics, queues and DLQs read from `topology.json`, and the SES events queue                                                                                                       |
-| `edge`                      | CloudFront with WAF for the Flutter web app and the API, and the DNS records                                                                                                      |
-| `service` (one per service) | API (Lambda or Fargate) and its routes, real time, Fargate workers, Lambda consumers, IAM derived from the topology, logs and alarms                                              |
+| Stack                            | Resources                                                                                                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `global`                         | One per account: GitHub OIDC provider and roles, ECR repositories, the artifacts bucket, the environment hosted zone and the CloudFront certificate (F12, [ADR 0042](adr/0042-region-and-catalog-model.md))                                             |
+| `network`                        | VPC with public, private and data subnets, NAT according to `egress`, VPC endpoints and flow logs                                                                                                                                                       |
+| `platform`                       | Alarm topic and budget; ECS cluster; OpenObserve; HTTP API Gateway with its origin authorizer; internal ALB for Fargate APIs and VPC link; real-time ALB; VPC Lattice service network (F12); file bucket; SES                                           |
+| `data`                           | RDS PostgreSQL with RDS Proxy and replicas, one database per shard and one catalog per service; Valkey; client security group                                                                                                                           |
+| `messaging`                      | Topics, queues and DLQs read from `topology.json`, and the SES events queue                                                                                                                                                                             |
+| `edge`                           | CloudFront with WAF for the Flutter web app and the API, and the DNS records                                                                                                                                                                            |
+| `service-base` (one per service) | Roles, log groups, security groups, the service's secrets, its shared environment and its one-off tasks (`migrate`, and for identity `signing-keys` and `seed`), applied before `service` (F12, [ADR 0043](adr/0043-deploy-migrations-and-rollback.md)) |
+| `service` (one per service)      | API (Lambda or Fargate) and its routes, real time, Fargate workers, Lambda consumers, IAM derived from the topology, logs and alarms                                                                                                                    |
 
 **Stacks and environments**
 
-- Each stack has its `config.tf` with an empty S3 backend, its `remote_state.tf` to read the previous ones and the same `variables_common.tf`. The values live in `environments/<environment>/<stack>/{backend.tfvars,terraform.tfvars}`; a service's, in `environments/<environment>/services/<service>/`.
-- The deployment order is network, platform, data, messaging, edge and then each service. Deploying a service neither plans nor applies the network, the database or the platform.
-- Environments `local` (LocalStack), `dev`, `staging` and `prod`. The key of each state is `<region>/<stack>/terraform.tfstate`: another region is another set of states with the same code.
-- `backend/infra/scripts/deploy-aws.sh` runs plan, apply or destroy per stack or per service; `local.sh` starts Docker and applies the local environment.
+- Each stack has its `config.tf` with an empty S3 backend, its `remote_state.tf` to read the previous ones and the same `variables_common.tf`. The values live in `environments/<environment>/<stack>/{backend.tfvars,terraform.tfvars}`; a service's, in `environments/<environment>/services/<service>/` for `service` and `environments/<environment>/services/<service>/base/` for `service-base`.
+- The deployment order is global, network, platform, data, messaging, edge and then, per service, `service-base`, its one-off tasks and `service`. Deploying a service neither plans nor applies the network, the database or the platform.
+- Environments `local` (LocalStack), `dev`, `staging` and `prod`. The key of each state is `<region>/<stack>/terraform.tfstate`, `<region>/services/<service>/terraform.tfstate` and `<region>/services/<service>/base/terraform.tfstate` for a service's two stacks, and `global/terraform.tfstate` for the `global` stack of each account: another region is another set of states with the same code.
+- `backend/infra/scripts/deploy-aws.sh` runs plan, apply or destroy per stack or per service, with `environments/<env>/common.tfvars` before the stack's own values (F12); `local.sh` starts Docker and applies the local environment.
 - Terraform `>= 1.11` and AWS provider `>= 6.0, < 7.0`. CI uses the version in `.terraform-version` and tflint the one in `.tflint-version`.
 
 **Runtime per service**
 
 - Each service's API picks `runtime = "lambda"` (HTTP API Gateway) or `"fargate"` (internal ALB behind the VPC link). In both cases it comes in through the same HTTP API, behind CloudFront and its WAF, and an authorizer requires the `X-Origin-Verify` header that only CloudFront knows. Changing runtime means changing that field and the artifact.
-- Real time (Socket.IO and SSE) always runs on Fargate behind the public ALB, because HTTP API Gateway cuts off at 30 seconds.
+- Real time (Socket.IO and SSE) always runs on Fargate behind its ALB, because HTTP API Gateway cuts off at 30 seconds. F12 puts that ALB behind CloudFront ([ADR 0045](adr/0045-edge-domains-and-real-time.md)).
+- Which component runs where (API, worker with relay and jobs, Lambda consumers, migrate task) is the runtime matrix of [ADR 0039](adr/0039-runtime-matrix-per-service.md).
 - Messaging permissions come from `producers` and `consumer` in the exported topology: the service's `tfvars` does not repeat topics or queues.
 
 **Network and Internet egress**
@@ -1357,8 +1373,8 @@ The `egress` variable of the `network` stack decides the egress of the private s
 
 **Data**
 
-- One RDS instance per region with one database per logical shard of each service (`<service>_shard_<n>`) and the `catalog` database ([ADR 0010](adr/0010-logical-sharding-region-residency.md)), the same as `backend/infra/local/postgres/init.sql`. A bootstrap Lambda inside the VPC creates roles, databases with their owner and the `vector` extension; it never deletes.
-- Apps never use the master user. Each service has its role, owner of its shards, and a secret with rotation. The catalog belongs to `catalog_owner`; services with `catalog = "owner"` migrate it and those with `"read"` query it through `catalog_reader`.
+- One RDS instance per region with one database per logical shard of each service (`<service>_shard_<n>`) and one catalog per service (`<service>_catalog`, [ADR 0042](adr/0042-region-and-catalog-model.md); F12 replaces today's shared `catalog`), the same as `backend/infra/local/postgres/init.sql`. A bootstrap Lambda inside the VPC creates roles, databases with their owner and the `vector` extension; it never deletes.
+- Apps never use the master user. F12 gives each service three roles: `<svc>_owner` for migrations, `<svc>_app` for the runtime (no DDL, RLS always applies) and `<svc>_reader` for the replicas, with IAM authentication to RDS Proxy and the replicas ([ADR 0041](adr/0041-secrets-and-database-credentials.md)).
 - Each service receives `DB_DATABASES` with the map of its databases, writes through `DB_PROXY_HOST` (RDS Proxy) and reads from `DB_READER_HOSTS`, directly to the replicas: outside Aurora, RDS Proxy only supports the writer instance.
 - The parameter group turns on `rds.logical_replication`, which enables zero-downtime shard moves.
 - Valkey authenticates through IAM with one user per service limited to `~<service>:*`; the cache prefixes its keys with the service name. With F4, the ACL adds the shared `auth:*` space: identity writes it and the other services read it (ADR 0022).
@@ -1374,18 +1390,13 @@ The `terraform` job in `ci.yml` runs when `backend/infra/**` changes: `terraform
 
 **Deployment pipeline**
 
-The deployment pipeline runs on GitHub Actions with OIDC to AWS, on top of `deploy-aws.sh`. It is built in F12 ([plan](plan/README.md#phases)):
-
-1. `terraform plan` of the affected stacks and services as a comment on the PR.
-2. On merge, migrations of each affected service on all its shards, as a one-off Fargate task.
-3. `terraform apply` of the service's stack with its image or its bundle (`TF_VAR_image`, `TF_VAR_lambda_package`).
-4. Smoke tests against the environment and promotion from `staging` to `prod` with manual approval.
+`deploy.yml` runs on GitHub Actions with OIDC to AWS, on top of `deploy-aws.sh`. Today it plans and applies in one job; F12 rebuilds it as [ADR 0043](adr/0043-deploy-migrations-and-rollback.md) sets: one artifact per commit promoted by digest, a preview and one approval per environment, then each stack planned and applied in order, migrations as a one-off Fargate task, rollback by digest and smoke tests after each deploy. The cycles are in the [F12 plan](plan/f12-infra-and-deployment.md).
 
 **Local development**
 
-`backend/docker-compose.yml` starts PostgreSQL with pgvector (databases `catalog`, `identity_shard_0`, `identity_shard_1` and `tasks_shard_0`), Valkey with its modules (Bloom), LocalStack, Mailpit, OpenObserve and an OpenTelemetry Collector with tail sampling. Images are pinned by digest and ports are only published on `127.0.0.1`. At startup, LocalStack creates the queues, DLQs, topics and subscriptions from `topology.json` with the `local` prefix. The guide is in [Local development](local-development.md).
+`backend/docker-compose.yml` starts PostgreSQL with pgvector (the shards of the five services and the catalog, from `infra/local/postgres/init.sql`), Valkey with its modules (Bloom), LocalStack, Mailpit, OpenObserve and an OpenTelemetry Collector with tail sampling. Images are pinned by digest and ports are only published on `127.0.0.1`. At startup, LocalStack creates the queues, DLQs, topics and subscriptions from `topology.json` with the `local` prefix. The guide is in [Local development](local-development.md).
 
-With the adapters for each capability, the next step is two execution modes:
+Two execution modes exist:
 
 | Mode         | Adapters                                                 | What for                                     |
 | ------------ | -------------------------------------------------------- | -------------------------------------------- |
@@ -1576,7 +1587,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
   subgraph Onboarding["TenantOnboarding"]
-    A1["create tenant"] --> A2["open billing account"] --> AP(("pivot")) --> A3["activate tenant"] --> A4["notify the owner"]
+    A1["create tenant"] --> A0["place in tasks, notifications, reports and billing"] --> A2["open billing account"] --> AP(("pivot")) --> A3["activate tenant"] --> A4["notify the owner"]
   end
   subgraph Deletion["DeleteAccount"]
     D1["suspend user"] --> DP(("pivot")) --> D2["delete in tasks, notifications and reports"] --> D3["delete in identity"]

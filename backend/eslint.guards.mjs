@@ -213,7 +213,7 @@ class NoGlobalModuleRule {
 }
 
 /**
- * Rejects a test harness that starts its own PostgreSQL or Valkey container (ADR 0039): suites share the servers the
+ * Rejects a test harness that starts its own PostgreSQL or Valkey container (ADR 0047): suites share the servers the
  * Jest global setup starts and create their own databases on them. Only the hosts of a test that needs servers that do
  * not see each other start one.
  */

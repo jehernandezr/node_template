@@ -1,6 +1,6 @@
 # 0011. Real time with Socket.IO and SSE
 
-- Status: Accepted, amended by [ADR 0028](0028-real-time-one-stream-per-user.md) and [ADR 0034](0034-live-front-repositories-sse-region.md)
+- Status: Accepted, amended by [ADR 0028](0028-real-time-one-stream-per-user.md), [ADR 0034](0034-live-front-repositories-sse-region.md) and [ADR 0045](0045-edge-domains-and-real-time.md) (`notifications` serves real time behind CloudFront with bearer auth; `apps/realtime` is the alternative)
 - Updated: 2026-11-24 (the front's SSE client)
 - Date: 2026-11-11
 

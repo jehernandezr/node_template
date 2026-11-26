@@ -53,7 +53,7 @@ U1, U2, U3, U5, U7, T1, I1, I2, I3, I4, SC1, SC2, SC3, SH1, SH2, A1, TU1, TU2, T
 
 ### 2.1 Troop rules
 
-A troop's way of working is the one in the [plan](README.md#how-a-wave-runs). In the front, also:
+A troop's way of working is the one in the [plan](README.md#how-a-wave-ran). In the front, also:
 
 - Barrel files (`lib/<package>.dart`) and `pubspec.yaml` files are edited only by the lead. The Haikus ask the lead in writing for the export line they need.
 - Skeletons carry this plan's signatures with `throw UnimplementedError()` bodies. The lead reviews the full diff and runs the acceptance commands before handing over.
@@ -1358,7 +1358,7 @@ The three packages are additive (except `AccessRule`, see 2.2) and have disjoint
 
 ## 5. Order and troops
 
-There are at most three front troops per wave. The composition of each troop and the rule for advancing between waves are in the [plan](README.md#how-a-wave-runs).
+There are at most three front troops per wave. The composition of each troop and the rule for advancing between waves are in the [plan](README.md#how-a-wave-ran).
 
 | Wave | Troops               | Critical path          | Total effort |
 | ---- | -------------------- | ---------------------- | ------------ |

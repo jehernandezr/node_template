@@ -1,6 +1,6 @@
 # 0008. Orchestrated sagas with a persistent log
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0031](0031-reports-billing-identity-sagas.md) (identity records its sagas in `identity_sagas`; there is no platform `saga_directory`)
 - Date: 2026-11-11
 - Revised: 2026-11-14 (the log lives in the `saga.instances` and `saga.step_log` tables of the shard's `saga` schema, with `TypeOrmSagaStore`, and the service's catalog keeps a saga directory; see [ADR 0024](0024-typeorm-persistence-sharding-persistent-sagas.md). `OperationRef` was removed: each step receives the descriptor from `defineOperation`)
 - Updated: 2026-11-14 (TypeORM store, `SagaRecoveryJob` as a `ScheduledJob` and the kernel's transaction; see [ADR 0024](0024-typeorm-persistence-sharding-persistent-sagas.md) and [ADR 0026](0026-scheduled-jobs-scheduledjob-joblock.md))

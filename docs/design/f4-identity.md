@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-13
+- Historical design: where it differs, the ADRs from 0030 on and the [F12 plan](../plan/f12-infra-and-deployment.md) win. In particular `TRUST_PROXY_HOPS` is replaced by `CloudFront-Viewer-Address` ([ADR 0045](../adr/0045-edge-domains-and-real-time.md)), readiness does not include Valkey ([ADR 0044](../adr/0044-valkey-failure-policy.md)), `DB_CREDENTIALS` is replaced by IAM database auth ([ADR 0041](../adr/0041-secrets-and-database-credentials.md)) and the mailer is gated by `DEPLOY_ENVIRONMENT`, not `NODE_ENV` ([ADR 0046](../adr/0046-providers-and-telemetry-per-environment.md)).
 - Working branch: `feat/f4-identity`
 - Related ADRs: [0005](../adr/0005-authentication-sessions-jwt.md), [0006](../adr/0006-mfa-registered-device-passkeys.md), [0010](../adr/0010-logical-sharding-region-residency.md), [0015](../adr/0015-repository-structure-and-shared-code.md), [0021](../adr/0021-valkey-adapter.md), [0022](../adr/0022-token-verification-shared-revocation-state.md) and [0023](../adr/0023-identity-data-routing.md)
 

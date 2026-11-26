@@ -6,9 +6,9 @@ Moves a tenant to another shard group, in the same region or in another one, wit
 
 1. The target group is in `TENANT_MOVE_TARGETS` of the five services, with the region and logical shard of each one, and that shard is registered in the service's directory (`shard_instances`).
 2. If the target is another region: `REGIONS` lists both regions in every service, each process declares its `SERVICE_REGION`, and its `AUTH_ISSUER` is the `issuer` of its region. Identity does not start if `REGIONS` declares regions and `SERVICE_REGION` is missing.
-3. Migrations are applied on the target shards (`pnpm nx run <service>:migrate -- shards`).
+3. Migrations are applied on the target shards (`pnpm nx run <service>:migrate --args="--target=shards"`; inside a deployed image, `node migrate.mjs shards`).
 4. The tenant has no sagas in progress: `sync` waits for them to finish and `finalize` fails with `PLATFORM.TENANT_MOVE.TENANT_BUSY` if one shows up.
-5. With `TENANT_MOVE_STRATEGY=logical`, the source has `wal_level=logical`, the service role can create subscriptions on the target, and the target can reach the source over the network (`TENANT_MOVE_REPLICATION_HOST` and `_PORT` if it is not the same address).
+5. With `TENANT_MOVE_STRATEGY=logical` (local only; deployed environments use `batch`, [ADR 0041](../adr/0041-secrets-and-database-credentials.md)), the source has `wal_level=logical`, the subscription role, locally the image's superuser `platform`, which bypasses RLS, can create subscriptions on the target, and the target can reach the source over the network (`TENANT_MOVE_REPLICATION_HOST` and `_PORT` if it is not the same address).
 
 ## Launch
 

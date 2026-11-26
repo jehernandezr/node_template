@@ -85,7 +85,7 @@ Also verify: 400 with `application/problem+json` and `code` on invalid input, 40
 ## Testcontainers
 
 The Jest global setup (`backend/jest.servers.cjs`) starts one PostgreSQL and one Valkey per run, and the suites share
-them one at a time ([ADR 0039](../../../../docs/adr/0039-shared-test-servers-rule-guards-and-impact-review.md)). A
+them one at a time ([ADR 0047](../../../../docs/adr/0047-shared-test-servers-rule-guards-and-impact-review.md)). A
 harness never starts its own container: it creates its own databases on the shared server and drops them when it
 stops. The lint rule `guards/no-own-test-server` rejects `new PostgreSqlContainer` and a `GenericContainer` of a
 PostgreSQL or Valkey image outside the hosts that need servers of their own.

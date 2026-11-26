@@ -1,6 +1,6 @@
 # 0021. Valkey as the adapter for cache, routing, Bloom and invalidation
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0044](0044-valkey-failure-policy.md) (Valkey required outside `local`, failure policy per use) and [ADR 0040](0040-internal-routing-and-authentication.md) (the IAM token is signed with `@smithy/signature-v4`)
 - Date: 2026-11-13
 - Revision: 2026-11-14 (`ValkeyRateLimiter` implements the `@platform/rate-limit` port; the shared `auth:*` space from [ADR 0022](0022-token-verification-shared-revocation-state.md) extends the per-service prefix rule)
 

@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-14
+- Historical design: where it differs, the ADRs from 0030 on and the [F12 plan](../plan/f12-infra-and-deployment.md) win. In particular saga recovery runs as a `ScheduledJob` in the worker, not from EventBridge ([ADR 0039](../adr/0039-runtime-matrix-per-service.md)); each service has its own catalog per region instead of a global one, and identity's saga directory is `identity_sagas` ([ADR 0042](../adr/0042-region-and-catalog-model.md), [ADR 0031](../adr/0031-reports-billing-identity-sagas.md)); and `migration-revert` never runs in a deploy ([ADR 0043](../adr/0043-deploy-migrations-and-rollback.md)).
 - Replaces: the custom layer on top of `pg` from ADR 0009 (revision of November 14) and the current engine of `@platform/saga`
 - Related ADRs: [0008](../adr/0008-orchestrated-sagas-persistent-log.md), [0009](../adr/0009-rds-postgresql-in-house-persistence-layer.md), [0010](../adr/0010-logical-sharding-region-residency.md) and [0023](../adr/0023-identity-data-routing.md)
 
