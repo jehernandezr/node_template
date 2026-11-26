@@ -76,6 +76,23 @@
     "name": "backend-tooling",
     "tags": [
       "type:tooling"
-    ]
+    ],
+    "targets": {
+      "lint": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "eslint --config eslint.tooling.config.mjs .claude/skills .claude/hooks front/tools --ignore-pattern \"**/build/**\"",
+          "cwd": "{workspaceRoot}"
+        },
+        "cache": true,
+        "inputs": [
+          "{workspaceRoot}/eslint.tooling.config.mjs",
+          "{workspaceRoot}/backend/eslint.comments.mjs",
+          "{workspaceRoot}/.claude/skills/**/*",
+          "{workspaceRoot}/.claude/hooks/**/*",
+          "{workspaceRoot}/front/tools/**/*"
+        ]
+      }
+    }
   }
 }

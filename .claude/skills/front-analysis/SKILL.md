@@ -16,7 +16,7 @@ Example in `references/examples.md`, section "Current state and goal".
 
 - `flutter_lints` already brings `avoid_print`, `prefer_const_constructors` and `use_build_context_synchronously`; the list above adds what it lacks. With `include`, a list of rules in `linter.rules` adds; to turn one off, use the map format (`rule: false`). Do not mix list and map in the same block.
 - `public_member_api_docs` applies to the shared packages (`front/packages`) and is left out of a microfrontend's private screens.
-- No `// ignore:` without a line explaining why, and always for the specific code (`// ignore: use_build_context_synchronously`), never `ignore_for_file: type=lint`. Generated code is excluded in `analyzer.exclude`.
+- No `// ignore:` without its reason on the same line, and always for the specific code (`// ignore: use_build_context_synchronously -- the dialog checks mounted first`), never `ignore_for_file: type=lint`. The analyzer reads the codes before `--` and the structure check requires the reason after it. Generated code is excluded in `analyzer.exclude`.
 
 ## Before calling a change done
 

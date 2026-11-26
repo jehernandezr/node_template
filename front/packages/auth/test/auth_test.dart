@@ -44,7 +44,6 @@ void main() {
     );
   });
 
-  /// Opens the session with [initial] through the sign-in flow.
   Future<void> signIn(SessionTokens initial) async {
     repo.signInResult = authenticated(initial);
     await manager.signIn(credentials);

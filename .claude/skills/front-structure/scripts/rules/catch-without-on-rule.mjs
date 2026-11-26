@@ -2,6 +2,7 @@ import { FrontPaths } from '../front-paths.mjs';
 import { Rule } from './rule.mjs';
 import { RuleId } from './rule-id.mjs';
 
+/** Rejects a `catch` without an `on` type in library code: a failure is caught by its type, or `on Object` where it is reported. */
 export class CatchWithoutOnRule extends Rule {
   static CATCH = /\bcatch\s*\(/;
   static ON_TYPE = /\bon\s+[\w.<>?,\s]+$/;
@@ -13,6 +14,7 @@ export class CatchWithoutOnRule extends Rule {
     );
   }
 
+  /** @override */
   appliesTo(file) {
     return (
       FrontPaths.isDartLib(file) &&
@@ -20,6 +22,7 @@ export class CatchWithoutOnRule extends Rule {
     );
   }
 
+  /** @override */
   check(file, text) {
     const violations = [];
     const lines = text.split('\n');

@@ -2,6 +2,7 @@ import { FrontPaths } from '../front-paths.mjs';
 import { Rule } from './rule.mjs';
 import { RuleId } from './rule-id.mjs';
 
+/** Rejects `print()` in library code: failures go through the error channel of the shell. */
 export class PrintRule extends Rule {
   constructor() {
     super(
@@ -10,10 +11,12 @@ export class PrintRule extends Rule {
     );
   }
 
+  /** @override */
   appliesTo(file) {
     return FrontPaths.isDartLib(file);
   }
 
+  /** @override */
   check(file, text) {
     return /^\s*print\(/m.test(text) ? [this.violation(file)] : [];
   }

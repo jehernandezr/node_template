@@ -1,4 +1,6 @@
-// Rule identifiers. They appear in square brackets at the end of each violation in the report.
+/**
+ * Rule identifiers. They appear in square brackets at the end of each violation in the report.
+ */
 export class RuleId {
   static TEST_HELPERS_FOLDER = 'test-helpers-folder';
   static LIB_TESTING = 'lib-testing';

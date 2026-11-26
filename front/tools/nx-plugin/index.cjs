@@ -1,18 +1,20 @@
-// Nx plugin that registers each member of the front/ pub workspace as a project.
-//
-// - Reads the `workspace:` list of front/pubspec.yaml; only those packages are projects.
-// - Each project is called `front-<pubspec name>` and has the tasks
-//   `analyze`, `format-check` and, if it has a test/ folder, `test`. All of them use the cache.
-// - In the microfrontends, `analyze` also runs
-//   `tools/check_microfrontend_boundaries.dart`: it fails if the microfrontend
-//   declares or imports another `mf_*`, if its manifest loads without `deferred` anything
-//   that is not a constant, enum or lifecycle, or if its `shared` folders
-//   do not follow the order enums, constants, types, utils.
-// - The dependencies between packages come from `dependencies` and `dev_dependencies`.
-// - `front-contracts` depends on the contract packages of the backend
-//   (backend/libs/contracts/*), because its Dart is generated from them.
-//
-// Requires `flutter pub get` in front/ before running the tasks.
+/**
+ * Nx plugin that registers each member of the front/ pub workspace as a project.
+ *
+ * - Reads the `workspace:` list of front/pubspec.yaml; only those packages are projects.
+ * - Each project is called `front-<pubspec name>` and has the tasks
+ *   `analyze`, `format-check` and, if it has a test/ folder, `test`. All of them use the cache.
+ * - In the microfrontends, `analyze` also runs
+ *   `tools/check_microfrontend_boundaries.dart`: it fails if the microfrontend
+ *   declares or imports another `mf_*`, if its manifest loads without `deferred` anything
+ *   that is not a constant, enum or lifecycle, or if its `shared` folders
+ *   do not follow the order enums, constants, types, utils.
+ * - The dependencies between packages come from `dependencies` and `dev_dependencies`.
+ * - `front-contracts` depends on the contract packages of the backend
+ *   (backend/libs/contracts/*), because its Dart is generated from them.
+ *
+ * Requires `flutter pub get` in front/ before running the tasks.
+ */
 'use strict';
 
 const { existsSync, readFileSync } = require('node:fs');
@@ -71,12 +73,11 @@ const sharedInputs = [
 function targetsFor(workspaceRoot, projectRoot, kind) {
   const inputs = ['default', '^default', ...sharedInputs];
   const isMicrofrontend = kind === MICROFRONTENDS_KIND;
-  // Path of the script relative to the project folder (front/microfrontends/<mf>).
-  const boundaries = relative(join(workspaceRoot, projectRoot), join(workspaceRoot, BOUNDARIES_SCRIPT));
+  const boundariesFromProject = relative(join(workspaceRoot, projectRoot), join(workspaceRoot, BOUNDARIES_SCRIPT));
   const targets = {
     analyze: {
       command: isMicrofrontend
-        ? `flutter analyze --no-pub && dart run ${boundaries}`
+        ? `flutter analyze --no-pub && dart run ${boundariesFromProject}`
         : 'flutter analyze --no-pub',
       options: { cwd: projectRoot },
       cache: true,
@@ -110,7 +111,7 @@ const createNodes = [
       const { name } = readPubspec(context.workspaceRoot, file);
       if (!name) continue;
       const root = dirname(file);
-      const kind = root.split('/')[1]; // apps, microfrontends, packages or tools
+      const kind = root.split('/')[1];
       results.push([
         file,
         {

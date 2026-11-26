@@ -1,5 +1,7 @@
-// Tests for check-structure.mjs: each rule has a passing case and a failing case.
-// Run with `node --test .claude/skills/backend-structure/scripts/*.test.mjs`.
+/**
+ * Tests for check-structure.mjs: each rule has a passing case and a failing case.
+ * Run with `node --test .claude/skills/backend-structure/scripts/*.test.mjs`.
+ */
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';

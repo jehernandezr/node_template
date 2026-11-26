@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// PostToolUse for Write and Edit: formats the file just written with the repository tool
-// (Prettier or dart format). Never blocks: without a formatter it does nothing.
+/**
+ * PostToolUse for Write and Edit: formats the file just written with the repository tool
+ * (Prettier or dart format). Never blocks: without a formatter it does nothing.
+ */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';

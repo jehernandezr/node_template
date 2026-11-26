@@ -1,5 +1,7 @@
-// Test for the layout/no-nest-outside-nest-folder rule in backend/eslint.config.mjs.
-// Run with `node --test .claude/skills/backend-structure/scripts/*.test.mjs`.
+/**
+ * Test for the layout/no-nest-outside-nest-folder rule in backend/eslint.config.mjs.
+ * Run with `node --test .claude/skills/backend-structure/scripts/*.test.mjs`.
+ */
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';

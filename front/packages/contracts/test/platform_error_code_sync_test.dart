@@ -11,11 +11,9 @@ void main() {
   const arbEs = '../i18n/lib/l10n/app_es.arb';
   const arbEn = '../i18n/lib/l10n/app_en.arb';
 
-  /// Same transformation the backend uses for `messageKey`.
   String messageKeyFor(String code) =>
       'error_${code.toLowerCase().replaceAll('.', '_').replaceAll('-', '_')}';
 
-  /// Error catalog entries of every exported contract.
   List<Map<String, dynamic>> catalogEntries() {
     final entries = <Map<String, dynamic>>[];
     for (final dir in Directory(

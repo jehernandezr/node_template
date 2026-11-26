@@ -39,11 +39,8 @@ const functionTypes = new Set([
   'ClassExpression',
 ]);
 
-const declaresTopLevelOrFunction = (node) =>
-  ['Program', 'ExportNamedDeclaration'].includes(node.parent?.type) ||
-  node.declarations.every((declarator) =>
-    functionTypes.has(declarator.init?.type),
-  );
+const declaresTopLevel = (node) =>
+  ['Program', 'ExportNamedDeclaration'].includes(node.parent?.type);
 
 const insideFunction = (node) => {
   for (let parent = node.parent; parent; parent = parent.parent) {
@@ -59,7 +56,35 @@ const insideFunction = (node) => {
 
 const startsAt = (node, offset) => node.range[0] === offset;
 
+const isInsideFunctionBody = (sourceCode, comment) => {
+  for (
+    let node = sourceCode.getNodeByRangeIndex(comment.range[0]);
+    node;
+    node = node.parent
+  ) {
+    if (node.type === 'StaticBlock') return true;
+    if (functionTypes.has(node.type) || node.type === 'FunctionDeclaration') {
+      if (node.type === 'ClassExpression') return false;
+      return node.body !== null && comment.range[0] >= node.body.range[0];
+    }
+  }
+  return false;
+};
+
+const isFileOverview = (sourceCode, comment) =>
+  sourceCode.getTokenBefore(comment) === null &&
+  sourceCode
+    .getAllComments()
+    .every(
+      (other) =>
+        other === comment ||
+        other.type === 'Shebang' ||
+        other.range[0] > comment.range[0],
+    );
+
 const documentsDeclaration = (sourceCode, comment) => {
+  if (isFileOverview(sourceCode, comment)) return true;
+  if (isInsideFunctionBody(sourceCode, comment)) return false;
   const next = sourceCode.getTokenAfter(comment);
   if (!next) return false;
   if (next.value === '@') return true;
@@ -74,10 +99,7 @@ const documentsDeclaration = (sourceCode, comment) => {
     ) {
       return true;
     }
-    if (
-      node.type === 'VariableDeclaration' &&
-      declaresTopLevelOrFunction(node)
-    ) {
+    if (node.type === 'VariableDeclaration' && declaresTopLevel(node)) {
       return true;
     }
     node = node.parent;
@@ -158,12 +180,50 @@ const parameterName = (parameter) => {
 const voidReturn =
   /^(void|undefined|never|Promise<\s*void\s*>|void\s*\|\s*Promise<\s*void\s*>)$/;
 
-const returnsValue = (sourceCode, method) => {
-  const annotation = method.value.returnType?.typeAnnotation;
-  if (annotation)
-    return !voidReturn.test(sourceCode.getText(annotation).trim());
-  return false;
+const nestedFunctionTypes = new Set([
+  'ArrowFunctionExpression',
+  'FunctionExpression',
+  'FunctionDeclaration',
+  'ClassDeclaration',
+  'ClassExpression',
+]);
+
+const returnsSomething = (node) => {
+  if (!node || typeof node.type !== 'string') return false;
+  if (node.type === 'ReturnStatement') return node.argument !== null;
+  if (nestedFunctionTypes.has(node.type)) return false;
+  return Object.entries(node).some(([key, child]) => {
+    if (key === 'parent') return false;
+    if (Array.isArray(child)) return child.some(returnsSomething);
+    return child && typeof child === 'object' && returnsSomething(child);
+  });
 };
+
+const returnsValue = (sourceCode, fn, checker, services) => {
+  const annotation = fn.returnType?.typeAnnotation;
+  if (annotation) {
+    return !voidReturn.test(sourceCode.getText(annotation).trim());
+  }
+  if (checker && services?.esTreeNodeToTSNodeMap) {
+    const signature = checker.getSignatureFromDeclaration(
+      services.esTreeNodeToTSNodeMap.get(fn),
+    );
+    if (signature) {
+      const returned = checker.typeToString(
+        checker.getReturnTypeOfSignature(signature),
+      );
+      return !voidReturn.test(returned.trim());
+    }
+  }
+  if (fn.type === 'ArrowFunctionExpression' && fn.expression) return true;
+  return returnsSomething(fn.body);
+};
+
+const functionValued = (member) =>
+  member.type === 'PropertyDefinition' &&
+  ['ArrowFunctionExpression', 'FunctionExpression'].includes(
+    member.value?.type,
+  );
 
 const jsDocOf = (sourceCode, node) => {
   const target = node.decorators?.length > 0 ? node.decorators[0] : node;
@@ -203,10 +263,37 @@ const wordsOf = (text) =>
     .filter((word) => word.length > 0)
     .map((word) => word.replace(/(ies|es|s)$/, ''));
 
+const vagueWords = new Set(
+  'do does doing done work works handle handles handling process processes processing perform performs run runs execute executes thing things stuff logic helper helpers util utils utility something operation operations task tasks job jobs data info information item items given some stuff needed necessary required relevant appropriate accordingly properly correctly etc'.split(
+    ' ',
+  ),
+);
+
+const isVague = (summary) => {
+  const said = wordsOf(summary).filter((word) => !fillerWords.has(word));
+  return said.length === 0 || said.every((word) => vagueWords.has(word));
+};
+
 const repeatsName = (summary, name) => {
   const named = new Set(wordsOf(name));
   const said = wordsOf(summary).filter((word) => !fillerWords.has(word));
   return said.length > 0 && said.every((word) => named.has(word));
+};
+
+const ownerName = (member) => {
+  for (let node = member.parent; node; node = node.parent) {
+    if (
+      [
+        'ClassDeclaration',
+        'ClassExpression',
+        'TSInterfaceDeclaration',
+      ].includes(node.type)
+    ) {
+      return node.id?.name ?? '';
+    }
+    if (node.type === 'TSTypeAliasDeclaration') return node.id.name;
+  }
+  return '';
 };
 
 const isPublicMember = (member) =>
@@ -230,6 +317,10 @@ const requirePublicJsDoc = {
       summaryMissing: 'The JSDoc of `{{name}}` needs a summary sentence.',
       summaryRepeatsName:
         'The JSDoc of `{{name}}` only repeats its name: say what it does, for whom or why.',
+      summaryVague:
+        'The JSDoc of `{{name}}` says nothing specific: say what it does, for whom or why.',
+      fieldRepeatsName:
+        'The JSDoc of `{{name}}` only repeats its name: say something the name does not, or delete it.',
       paramMissing: 'The JSDoc of `{{name}}` needs `@param {{param}}`.',
       returnsMissing: 'The JSDoc of `{{name}}` needs `@returns`.',
     },
@@ -238,6 +329,7 @@ const requirePublicJsDoc = {
     const sourceCode = context.sourceCode;
     const services = sourceCode.parserServices;
     const checker = services?.program?.getTypeChecker();
+    const javaScript = /\.[cm]?js$/.test(context.filename);
     let names = new Set();
     const implementsMember = (member) => {
       const owner = member.parent.parent;
@@ -259,8 +351,10 @@ const requirePublicJsDoc = {
       if (!isPublicMember(member)) return;
       if (member.kind === 'constructor' || member.kind === 'set') return;
       if (member.override || implementsMember(member)) return;
+      const fn = member.value;
       const name = methodLabel(sourceCode, member);
       const comment = jsDocOf(sourceCode, member);
+      if (javaScript && comment && /@override\b/.test(comment.value)) return;
       if (!comment) {
         context.report({
           node: member.key,
@@ -276,15 +370,21 @@ const requirePublicJsDoc = {
           messageId: 'summaryMissing',
           data: { name },
         });
-      } else if (repeatsName(summary, name)) {
+      } else if (repeatsName(summary, `${name} ${ownerName(member)}`)) {
         context.report({
           node: member.key,
           messageId: 'summaryRepeatsName',
           data: { name },
         });
+      } else if (isVague(summary)) {
+        context.report({
+          node: member.key,
+          messageId: 'summaryVague',
+          data: { name },
+        });
       }
       const documented = documentedParameters(comment);
-      for (const parameter of member.value.params) {
+      for (const parameter of fn.params) {
         const param = parameterName(parameter);
         if (param && !param.startsWith('_') && !documented.has(param)) {
           context.report({
@@ -295,13 +395,35 @@ const requirePublicJsDoc = {
         }
       }
       if (
-        member.kind === 'method' &&
-        returnsValue(sourceCode, member) &&
+        member.kind !== 'get' &&
+        returnsValue(sourceCode, fn, checker, services) &&
         !/@returns?\b/.test(comment.value)
       ) {
         context.report({
           node: member.key,
           messageId: 'returnsMissing',
+          data: { name },
+        });
+      }
+    };
+    const checkField = (member) => {
+      const comment = jsDocOf(sourceCode, member);
+      const key = member.key ?? member.parameter;
+      if (!comment || !key) return;
+      const name =
+        key.type === 'Identifier'
+          ? key.name
+          : key.type === 'AssignmentPattern' && key.left.type === 'Identifier'
+            ? key.left.name
+            : sourceCode.getText(key);
+      const summary = summaryOf(comment);
+      if (
+        summary.length > 0 &&
+        repeatsName(summary, `${name} ${ownerName(member)}`)
+      ) {
+        context.report({
+          node: key,
+          messageId: 'fieldRepeatsName',
           data: { name },
         });
       }
@@ -332,9 +454,15 @@ const requirePublicJsDoc = {
       for (const member of node.body.body) {
         if (
           member.type === 'MethodDefinition' ||
-          member.type === 'TSAbstractMethodDefinition'
+          member.type === 'TSAbstractMethodDefinition' ||
+          functionValued(member)
         ) {
           checkMethod(member);
+        } else if (
+          member.type === 'PropertyDefinition' ||
+          member.type === 'TSAbstractPropertyDefinition'
+        ) {
+          checkField(member);
         }
       }
     };
@@ -343,6 +471,8 @@ const requirePublicJsDoc = {
         names = exportedNames(program);
       },
       ClassDeclaration: checkClass,
+      TSPropertySignature: checkField,
+      TSParameterProperty: checkField,
     };
   },
 };

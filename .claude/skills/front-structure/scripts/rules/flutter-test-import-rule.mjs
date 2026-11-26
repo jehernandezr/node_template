@@ -2,6 +2,7 @@ import { FrontPaths } from '../front-paths.mjs';
 import { Rule } from './rule.mjs';
 import { RuleId } from './rule-id.mjs';
 
+/** Rejects importing `flutter_test` from library code other than the `test_utils` package. */
 export class FlutterTestImportRule extends Rule {
   constructor() {
     super(
@@ -10,6 +11,7 @@ export class FlutterTestImportRule extends Rule {
     );
   }
 
+  /** @override */
   appliesTo(file) {
     return (
       FrontPaths.isDartLib(file) &&
@@ -17,6 +19,7 @@ export class FlutterTestImportRule extends Rule {
     );
   }
 
+  /** @override */
   check(file, text) {
     return /import\s+'package:flutter_test\//.test(text)
       ? [this.violation(file)]

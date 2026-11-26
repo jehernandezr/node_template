@@ -14,7 +14,12 @@ import { TextLiteralRule } from './text-literal-rule.mjs';
 import { TopLevelMutableRule } from './top-level-mutable-rule.mjs';
 import { WidgetRepositoryRule } from './widget-repository-rule.mjs';
 
+/** The rules the front structure check runs, in the order of the report. */
 export class RuleSet {
+  /**
+   * Builds one instance of every front rule.
+   * @returns {import('./rule.mjs').Rule[]} The rules.
+   */
   static createDefault() {
     return [
       new TestHelpersFolderRule(),

@@ -4,18 +4,19 @@ import { Rule } from './rule.mjs';
 import { RuleId } from './rule-id.mjs';
 
 /**
- * The code explains itself: a Dart file has no comments other than `///` documentation and the analyzer
- * `// ignore:` and `// ignore_for_file:` directives. Generated files are skipped.
+ * The code explains itself: a Dart file has no comments other than `///` documentation of a declaration and the
+ * analyzer `// ignore: <codes> -- <reason>` and `// ignore_for_file: <codes> -- <reason>` directives. A `///` inside
+ * a function body or any other block of code documents nothing, so it counts as an inline comment. Generated files
+ * are recognized by their path, by `FrontPaths.isGenerated`, never by a header the file could carry.
  */
 export class InlineCommentRule extends Rule {
   static DOC = /^\/\/\/(?!\/)/;
-  static DIRECTIVE = /^\/\/ ?ignore(_for_file)?: \S/;
-  static GENERATED_HEADER = /^\/\/ GENERATED/;
+  static DIRECTIVE = /^\/\/ ?ignore(_for_file)?: [\w=]+(, ?[\w=]+)* -- \S/;
 
   constructor() {
     super(
       RuleId.INLINE_COMMENT,
-      'no inline comments: rename or extract; only /// docs and // ignore: directives are allowed',
+      'no inline comments: rename or extract; only /// docs of declarations and `// ignore: <codes> -- <reason>` directives are allowed',
     );
     this.scanner = new DartCommentScanner();
   }
@@ -36,18 +37,15 @@ export class InlineCommentRule extends Rule {
    * @returns {import('../violation.mjs').Violation[]} One violation per offending comment.
    */
   check(file, text) {
-    if (InlineCommentRule.GENERATED_HEADER.test(text)) return [];
     return this.scanner
       .scan(text)
-      .filter((comment) => !this.isAllowed(comment))
+      .filter((comment) => !this.#isAllowed(comment))
       .map((comment) => this.violation(file, comment.line));
   }
 
-  isAllowed(comment) {
-    return (
-      !comment.block &&
-      (InlineCommentRule.DOC.test(comment.text) ||
-        InlineCommentRule.DIRECTIVE.test(comment.text))
-    );
+  #isAllowed(comment) {
+    if (comment.block) return false;
+    if (InlineCommentRule.DIRECTIVE.test(comment.text)) return true;
+    return InlineCommentRule.DOC.test(comment.text) && !comment.inCode;
   }
 }
