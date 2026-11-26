@@ -31,7 +31,12 @@ export class ManagePreferences extends PreferencesFacade {
     return saved ?? NotificationPreferences.of(ManagePreferences.DEFAULTS);
   }
 
-  /** @throws InvalidQuietHoursError if the schedule is not valid; saves nothing. */
+  /**
+   * Saves the user's channels per type and quiet hours.
+   * @param user Owner of the preferences.
+   * @param view Preferences to save.
+   * @throws InvalidQuietHoursError if the schedule is not valid; saves nothing.
+   */
   async save(user: UserRef, view: PreferencesView): Promise<void> {
     const preferences = NotificationPreferences.of(view);
     await this.shard.inUserShard(user, () =>

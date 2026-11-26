@@ -24,7 +24,11 @@ export abstract class EmailTemplate {
     EmailTemplate.NONE;
 
   /**
+   * Renders the subject, text and HTML of the email in a locale.
    * `parameters` goes by name: those of `TemplateParameter` and, in custom templates, their own.
+   * @param parameters Values by name.
+   * @param locale Locale of the recipient.
+   * @returns The rendered email.
    * @throws TemplateParameterMissingError if a value the template does not declare optional is missing.
    */
   render(

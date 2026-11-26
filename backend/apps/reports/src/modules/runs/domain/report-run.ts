@@ -31,6 +31,11 @@ export interface ReportRunState {
 export class ReportRun {
   private constructor(private state: ReportRunState) {}
 
+  /**
+   * Queues a new run.
+   * @param input Id, type, format, parameters, requester and instant.
+   * @returns The queued run.
+   */
   static request(input: {
     readonly id: string;
     readonly type: ReportType;
@@ -50,15 +55,27 @@ export class ReportRun {
     });
   }
 
+  /**
+   * Rebuilds a run from its state.
+   * @param state Stored run.
+   * @returns The run.
+   */
   static rehydrate(state: ReportRunState): ReportRun {
     return new ReportRun(state);
   }
 
+  /**
+   * Copies the run state to store or show it.
+   * @returns The run state.
+   */
   snapshot(): ReportRunState {
     return this.state;
   }
 
-  /** Queued or running: a worker can pick it up, also if it died halfway through the computation. */
+  /**
+   * Queued or running: a worker can pick it up, also if it died halfway through the computation.
+   * @returns `true` while queued or running.
+   */
   isPending(): boolean {
     return (
       this.state.status === ReportRunStatus.Queued ||
@@ -66,10 +83,17 @@ export class ReportRun {
     );
   }
 
+  /** Marks the run as running. */
   start(): void {
     this.state = { ...this.state, status: ReportRunStatus.Running };
   }
 
+  /**
+   * Marks the run ready with a result that expires after `ttlMs`.
+   * @param resultBytes Size of the result.
+   * @param now Instant it finished.
+   * @param ttlMs How long the result is kept.
+   */
   complete(resultBytes: number, now: Date, ttlMs: number): void {
     this.state = {
       ...this.state,
@@ -80,6 +104,11 @@ export class ReportRun {
     };
   }
 
+  /**
+   * Marks the run failed.
+   * @param code Error code of the failure.
+   * @param now Instant it failed.
+   */
   fail(code: string, now: Date): void {
     this.state = {
       ...this.state,
@@ -91,6 +120,7 @@ export class ReportRun {
 
   /**
    * Ensures the run is ready and its result is current.
+   * @param now Current instant.
    * @throws ReportsError `REPORTS.RUN.EXPIRED` if it expired, or `REPORTS.RUN.NOT_READY` if it did not finish successfully.
    */
   assertReady(now: Date): void {
@@ -106,6 +136,10 @@ export class ReportRun {
     }
   }
 
+  /**
+   * Tells whether the run finished successfully.
+   * @returns `true` when ready.
+   */
   isReady(): boolean {
     return this.state.status === ReportRunStatus.Ready;
   }

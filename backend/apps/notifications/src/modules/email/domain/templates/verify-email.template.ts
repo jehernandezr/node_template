@@ -5,6 +5,7 @@ import {
 import type { EmailCopy } from './email-copy.js';
 import { EmailTemplate } from './email-template.js';
 
+/** Email with the address verification link. */
 export class VerifyEmailTemplate extends EmailTemplate {
   readonly key = EmailTemplateKey.VerifyEmail;
   readonly version = 1;

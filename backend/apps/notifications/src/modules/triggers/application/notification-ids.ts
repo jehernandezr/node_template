@@ -8,6 +8,12 @@ import { createHash } from 'node:crypto';
 export class NotificationIds {
   private static readonly TIMESTAMP_HEX = 12;
 
+  /**
+   * Derives the notification id from the event and the user, so a redelivered event creates the same notification.
+   * @param messageId Id of the event.
+   * @param userId Recipient.
+   * @returns A deterministic UUID.
+   */
   static derive(messageId: string, userId: string): string {
     const timestamp = messageId
       .replace(/-/g, '')

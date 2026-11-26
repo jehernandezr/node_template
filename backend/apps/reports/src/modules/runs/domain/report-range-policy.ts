@@ -9,7 +9,11 @@ import { ReportsError } from '../../../shared/errors/reports.error.js';
 export class ReportRangePolicy {
   private static readonly DAY_MS = 86_400_000;
 
-  /** @throws ReportsError `REPORTS.PARAMS.INVALID_RANGE`. */
+  /**
+   * Checks that the range is ordered and not longer than allowed.
+   * @param params Report parameters.
+   * @throws ReportsError `REPORTS.PARAMS.INVALID_RANGE`.
+   */
   static assertValid(params: ReportParams): void {
     const days =
       (Date.parse(`${params.to}T00:00:00.000Z`) -

@@ -31,36 +31,64 @@ export class ProjectionsConsumer {
     private readonly finance: ProjectFinanceEvents,
   ) {}
 
+  /**
+   * Projects `TaskCreated`.
+   * @param data Event payload.
+   */
   @Subscribe(TaskCreatedEvent)
   onTaskCreated(data: TaskCreatedPayload): Promise<void> {
     return this.tasks.created(data);
   }
 
+  /**
+   * Projects `TaskUpdated`.
+   * @param data Event payload.
+   */
   @Subscribe(TaskUpdatedEvent)
   onTaskUpdated(data: TaskUpdatedPayload): Promise<void> {
     return this.tasks.updated(data);
   }
 
+  /**
+   * Projects `TaskDeleted`.
+   * @param data Event payload.
+   */
   @Subscribe(TaskDeletedEvent)
   onTaskDeleted(data: TaskDeletedPayload): Promise<void> {
     return this.tasks.deleted(data);
   }
 
+  /**
+   * Projects `InvoiceIssued`.
+   * @param data Event payload.
+   */
   @Subscribe(InvoiceIssuedEvent)
   onInvoiceIssued(data: InvoiceIssuedPayload): Promise<void> {
     return this.finance.invoiceIssued(data);
   }
 
+  /**
+   * Projects `InvoicePaid`.
+   * @param data Event payload.
+   */
   @Subscribe(InvoicePaidEvent)
   onInvoicePaid(data: InvoicePaidPayload): Promise<void> {
     return this.finance.invoicePaid(data);
   }
 
+  /**
+   * Projects `InvoiceFailed`.
+   * @param data Event payload.
+   */
   @Subscribe(InvoiceFailedEvent)
   onInvoiceFailed(data: InvoiceFailedPayload): Promise<void> {
     return this.finance.invoiceFailed(data);
   }
 
+  /**
+   * Projects `NotificationCreated`.
+   * @param data Event payload.
+   */
   @Subscribe(NotificationCreatedEvent)
   onNotificationCreated(data: NotificationCreatedPayload): Promise<void> {
     return this.finance.notificationCreated(data);

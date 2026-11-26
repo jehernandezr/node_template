@@ -20,10 +20,22 @@ export interface TaskSearchResult {
 
 /** Search index of the tasks of the tenant of the open `ShardScope`. */
 export abstract class TaskSearch {
+  /**
+   * Adds or refreshes a task in the search index.
+   * @param task Current task.
+   */
   abstract index(task: Task): Promise<void>;
 
+  /**
+   * Removes a task from the search index.
+   * @param taskId Deleted task.
+   */
   abstract remove(taskId: string): Promise<void>;
 
-  /** The most relevant current tasks first, only those of the requested status if one is given. */
+  /**
+   * The most relevant current tasks first, only those of the requested status if one is given.
+   * @param query Text, status, offset and page size.
+   * @returns The ids of the page and whether more follow.
+   */
   abstract search(query: TaskSearchQuery): Promise<TaskSearchResult>;
 }

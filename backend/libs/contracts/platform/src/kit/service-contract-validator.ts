@@ -19,6 +19,10 @@ enum PlacementKind {
  * violation.
  */
 export class ServiceContractValidator {
+  /**
+   * Checks the contract's routes, operations and error codes before it is used.
+   * @param contract Service contract.
+   */
   validate(contract: ServiceContract): void {
     if (!SERVICE.test(contract.service)) {
       throw new ContractDefinitionError(`Invalid service: ${contract.service}`);
@@ -31,7 +35,11 @@ export class ServiceContractValidator {
     this.checkErrorCatalogs(contract);
   }
 
-  /** Prefix of a service's error codes: `IDENTITY.` for `identity`. */
+  /**
+   * Prefix of a service's error codes: `IDENTITY.` for `identity`.
+   * @param service Service name.
+   * @returns The prefix.
+   */
   errorCodePrefixOf(service: string): string {
     return `${service.toUpperCase().replace(/-/g, '_')}.`;
   }

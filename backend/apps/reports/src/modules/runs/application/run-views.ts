@@ -7,6 +7,11 @@ import type { ReportRunState } from '../domain/report-run.js';
 
 /** The run as the contract publishes it. Pure utility. */
 export class RunViews {
+  /**
+   * Builds the list row of a run.
+   * @param state Stored run.
+   * @returns The summary.
+   */
   static summary(state: ReportRunState): ReportRunSummary {
     return {
       id: state.id,
@@ -21,6 +26,12 @@ export class RunViews {
     };
   }
 
+  /**
+   * Builds the detail of a run.
+   * @param state Stored run.
+   * @param result Its result when ready.
+   * @returns The detail.
+   */
   static detail(
     state: ReportRunState,
     result: ReportResult | undefined,

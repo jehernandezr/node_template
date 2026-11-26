@@ -17,6 +17,11 @@ import { EntitlementQueries } from '../application/entitlement-queries.js';
 export class EntitlementsInternalOperations {
   constructor(private readonly queries: EntitlementQueries) {}
 
+  /**
+   * Internal operation that returns the entitlements of a tenant.
+   * @param input Tenant to read.
+   * @returns The entitlements, or the business error.
+   */
   @InternalHandler(GetEntitlementsOperation)
   async getEntitlements(
     input: GetEntitlementsInput,
@@ -26,6 +31,11 @@ export class EntitlementsInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that checks a quota before consuming it.
+   * @param input Tenant, metric and requested units.
+   * @returns The quota check, or the business error.
+   */
   @InternalHandler(CheckQuotaOperation)
   async checkQuota(input: CheckQuotaInput): Promise<HandlerResult<QuotaCheck>> {
     return {

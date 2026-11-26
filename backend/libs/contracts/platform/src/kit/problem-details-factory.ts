@@ -26,6 +26,11 @@ export class ProblemDetailsFactory {
     private readonly unexpected: ErrorCatalogEntry = UNEXPECTED,
   ) {}
 
+  /**
+   * Builds the Problem Details body of an error, keeping only the public details its catalog entry allows.
+   * @param input Code, status, message and details.
+   * @returns The body to answer with.
+   */
   create(input: ProblemDetailsInput): ProblemDetails {
     const { instance, traceId } = input;
     const internal = input.entry.audience === ErrorAudience.Internal;

@@ -24,6 +24,7 @@ import { GetTask } from '../application/get-task.query.js';
 import { ListTasks } from '../application/list-tasks.query.js';
 import { UpdateTask } from '../application/update-task.use-case.js';
 
+/** HTTP routes of the tasks of the actor's tenant. */
 @Resource(TasksResource.Tasks)
 export class TasksController {
   constructor(
@@ -34,6 +35,12 @@ export class TasksController {
     private readonly deleteTask: DeleteTask,
   ) {}
 
+  /**
+   * Lists or searches the tasks of the actor's tenant.
+   * @param input Filters, search text, cursor and page size.
+   * @param actor Signed-in actor; its tenant is read.
+   * @returns One page of tasks.
+   */
   @Endpoint(ListTasksRoute)
   @Quota(UsageMetric.ApiCalls)
   list(
@@ -43,6 +50,12 @@ export class TasksController {
     return this.listTasks.execute(ActingMember.of(actor).tenantId, input);
   }
 
+  /**
+   * Reads one task of the actor's tenant.
+   * @param input Task id.
+   * @param actor Signed-in actor.
+   * @returns The task.
+   */
   @Endpoint(GetTaskRoute)
   @Quota(UsageMetric.ApiCalls)
   get(
@@ -52,6 +65,12 @@ export class TasksController {
     return this.getTask.execute(ActingMember.of(actor).tenantId, input.taskId);
   }
 
+  /**
+   * Creates a task in the actor's tenant.
+   * @param input Task fields.
+   * @param actor Signed-in actor, its author.
+   * @returns The created task.
+   */
   @Endpoint(CreateTaskRoute)
   @Quota(UsageMetric.ApiCalls)
   create(
@@ -67,6 +86,12 @@ export class TasksController {
     });
   }
 
+  /**
+   * Changes a task of the actor's tenant.
+   * @param input Task id, expected version and changes.
+   * @param actor Signed-in actor, its editor.
+   * @returns The task after the change.
+   */
   @Endpoint(UpdateTaskRoute)
   @Quota(UsageMetric.ApiCalls)
   update(
@@ -87,6 +112,11 @@ export class TasksController {
     });
   }
 
+  /**
+   * Deletes a task of the actor's tenant.
+   * @param input Task id.
+   * @param actor Signed-in actor.
+   */
   @Endpoint(DeleteTaskRoute)
   @Quota(UsageMetric.ApiCalls)
   async delete(

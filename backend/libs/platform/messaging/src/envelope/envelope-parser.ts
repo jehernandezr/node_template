@@ -11,7 +11,7 @@ import type { MessageEnvelope } from './message-envelope.js';
 export class EnvelopeParser {
   constructor(private readonly validator: EnvelopeValidator) {}
 
-  /** @throws MessagingError `PayloadTooLarge` o `InvalidEnvelope`. */
+  /** @throws MessagingError `PayloadTooLarge` or `InvalidEnvelope`. */
   parse(raw: unknown): MessageEnvelope {
     return this.validator.validate(this.decode(raw));
   }

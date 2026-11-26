@@ -14,6 +14,11 @@ import { DispatchFacade } from '../application/dispatch.facade.js';
 export class DispatchInternalOperations {
   constructor(private readonly dispatch: DispatchFacade) {}
 
+  /**
+   * Internal operation that notifies a user through the channels its preferences allow.
+   * @param input User, type, parameters and idempotency id.
+   * @returns The channels used.
+   */
   @InternalHandler(NotifyUserOperation)
   async notify(
     input: NotifyUserInput,

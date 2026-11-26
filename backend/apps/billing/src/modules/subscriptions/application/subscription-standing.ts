@@ -26,6 +26,10 @@ export class SubscriptionStanding {
     this.graceDays = settings.values.BILLING_GRACE_DAYS;
   }
 
+  /**
+   * Marks the active subscription past due after a failed charge.
+   * @param tenantId Tenant whose charge failed.
+   */
   markPastDue(tenantId: string): Promise<void> {
     return this.change(tenantId, async (subscription) => {
       if (subscription.markPastDue(this.clock.now())) {
@@ -34,6 +38,10 @@ export class SubscriptionStanding {
     });
   }
 
+  /**
+   * Suspends the subscription when its grace period as past due ended.
+   * @param tenantId Tenant to check.
+   */
   suspendIfOverdue(tenantId: string): Promise<void> {
     return this.change(tenantId, async (subscription) => {
       if (subscription.suspendIfOverdue(this.clock.now(), this.graceDays)) {
@@ -47,6 +55,10 @@ export class SubscriptionStanding {
     });
   }
 
+  /**
+   * Reactivates a past-due or suspended subscription after a payment, locking it against a concurrent settle.
+   * @param tenantId Tenant that paid.
+   */
   settle(tenantId: string): Promise<void> {
     return this.change(tenantId, async (subscription) => {
       const plan = await this.plans.require(subscription.snapshot().planId);
@@ -64,7 +76,10 @@ export class SubscriptionStanding {
     });
   }
 
-  /** The grace period of a past-due subscription: past due before this instant means it is suspended. */
+  /**
+   * The grace period of a past-due subscription: past due before this instant means it is suspended.
+   * @returns The instant before which a past-due subscription is suspended.
+   */
   overdueCutoff(): Date {
     return new Date(this.clock.now().getTime() - this.graceDays * 86_400_000);
   }

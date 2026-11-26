@@ -19,11 +19,19 @@ export class UsageConsumer {
     private readonly membership: TrackMembership,
   ) {}
 
+  /**
+   * Records the usage batch of a service.
+   * @param data Usage records.
+   */
   @Subscribe(RecordUsageCommand)
   async onUsage(data: RecordUsagePayload): Promise<void> {
     await this.usage.execute(data);
   }
 
+  /**
+   * Updates the member roster after a membership change in identity.
+   * @param data Member who joined or left.
+   */
   @Subscribe(MembershipChangedEvent)
   onMembershipChanged(data: MembershipChangedPayload): Promise<void> {
     return this.membership.execute(data);

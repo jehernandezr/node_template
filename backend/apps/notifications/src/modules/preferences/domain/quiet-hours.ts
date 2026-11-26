@@ -11,7 +11,13 @@ export class QuietHours {
     readonly timezone: string,
   ) {}
 
-  /** `undefined` if any time is not `HH:mm` or the zone is not IANA. */
+  /**
+   * `undefined` if any time is not `HH:mm` or the zone is not IANA.
+   * @param start Start time, `HH:mm`.
+   * @param end End time, `HH:mm`.
+   * @param timezone IANA zone.
+   * @returns The quiet hours, or `undefined`.
+   */
   static parse(
     start: string,
     end: string,
@@ -29,6 +35,11 @@ export class QuietHours {
     return new QuietHours(startMinute, endMinute, timezone);
   }
 
+  /**
+   * Tells whether an instant falls inside the quiet hours in their zone.
+   * @param instant Instant to check.
+   * @returns `true` when quiet.
+   */
   contains(instant: Date): boolean {
     const minute = this.localMinute(instant);
     if (this.startMinute === this.endMinute) {

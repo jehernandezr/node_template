@@ -7,6 +7,11 @@ export class CsvWriter {
   private static readonly NEEDS_QUOTES = /[",\r\n]/;
   private static readonly FORMULA = /^[=+\-@]/;
 
+  /**
+   * Writes rows as CSV, quoting the fields that need it.
+   * @param lines Rows of fields.
+   * @returns The CSV text.
+   */
   static write(lines: readonly (readonly string[])[]): string {
     return lines
       .map((cells) => cells.map((cell) => CsvWriter.cell(cell)).join(','))

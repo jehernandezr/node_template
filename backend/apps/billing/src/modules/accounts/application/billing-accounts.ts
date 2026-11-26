@@ -16,7 +16,12 @@ export class BillingAccounts {
     private readonly invoices: InvoicesFacade,
   ) {}
 
-  /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` if the trial plan is not in the catalog. */
+  /**
+   * Opens the billing account of a new tenant: its trial subscription.
+   * @param tenantId Tenant whose account opens.
+   * @returns The opened account with its subscription.
+   * @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` if the trial plan is not in the catalog.
+   */
   async open(tenantId: string): Promise<BillingAccountResult> {
     const { subscription } = await this.subscriptions.open(tenantId);
     return {
@@ -26,7 +31,12 @@ export class BillingAccounts {
     };
   }
 
-  /** @throws BillingError `BILLING.INVOICE.INVALID_STATE` if the tenant already has invoices. */
+  /**
+   * Closes the billing account of a tenant whose creation is compensated, deleting its subscription.
+   * @param tenantId Tenant whose account closes.
+   * @returns Whether a subscription was deleted.
+   * @throws BillingError `BILLING.INVOICE.INVALID_STATE` if the tenant already has invoices.
+   */
   async close(tenantId: string): Promise<BillingAccountClosed> {
     if (await this.invoices.hasInvoices(tenantId)) {
       throw new BillingError(BillingErrorCode.InvoiceInvalidState);

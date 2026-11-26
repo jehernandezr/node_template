@@ -7,6 +7,14 @@ import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 export class MimeMessage {
   private static readonly LINE = 76;
 
+  /**
+   * Builds the multipart text and HTML MIME message of an email.
+   * @param email Rendered email.
+   * @param messageId Message id header.
+   * @param date Date header.
+   * @param boundary Multipart boundary.
+   * @returns The message in CRLF lines.
+   */
   static build(
     email: OutgoingEmail,
     messageId: string,

@@ -48,7 +48,11 @@ export class Subscription {
 
   private constructor(private state: SubscriptionState) {}
 
-  /** Opens the account on trial for `trialDays`; without trial days, already active with its first period, charged at closing. */
+  /**
+   * Opens the account on trial for `trialDays`; without trial days, already active with its first period, charged at closing.
+   * @param input Id, plan, opening date and trial days.
+   * @returns The new subscription.
+   */
   static open(input: {
     readonly id: string;
     readonly plan: SubscribedPlan;
@@ -68,15 +72,27 @@ export class Subscription {
     });
   }
 
+  /**
+   * Rebuilds a subscription from its state.
+   * @param state Stored subscription.
+   * @returns The subscription.
+   */
   static rehydrate(state: SubscriptionState): Subscription {
     return new Subscription(state);
   }
 
+  /**
+   * Copies the subscription state to store or show it.
+   * @returns The subscription state.
+   */
   snapshot(): SubscriptionState {
     return this.state;
   }
 
-  /** Suspended or canceled: no plan features. */
+  /**
+   * Suspended or canceled: no plan features.
+   * @returns `true` while suspended or canceled.
+   */
   isBlocked(): boolean {
     return !Subscription.CHANGEABLE.has(this.state.status);
   }
@@ -87,6 +103,10 @@ export class Subscription {
    * remaining days, so its invoice charges only what was used in its currency, and the next one starts today with the new
    * plan; if the period started today, nothing was used and it starts again with the new plan. A period that already
    * ended and awaits its closing is not adjusted: the new plan applies from the next period.
+   * @param from Plan left.
+   * @param to Plan moved to.
+   * @param today Day of the change.
+   * @returns `true` when the plan changed.
    * @throws BillingError `BILLING.SUBSCRIPTION.NOT_CHANGEABLE` if it is suspended or canceled.
    */
   changePlan(from: SubscribedPlan, to: SubscribedPlan, today: string): boolean {
@@ -138,6 +158,11 @@ export class Subscription {
     return true;
   }
 
+  /**
+   * Tells whether the period ended before `today` and the subscription is neither suspended nor canceled.
+   * @param today Date to compare.
+   * @returns `true` when it must be closed.
+   */
   isDueForClosing(today: string): boolean {
     return !this.isBlocked() && this.state.period.hasEndedBy(today);
   }
@@ -145,6 +170,8 @@ export class Subscription {
   /**
    * Moves to the next period. An ending trial activates the subscription without an invoice (`undefined`); a
    * paid period returns what its invoice charges.
+   * @param plan Current plan.
+   * @returns What the invoice charges, or `undefined` for a trial.
    */
   closePeriod(plan: SubscribedPlan): ClosedPeriod | undefined {
     const closing = this.state;
@@ -167,6 +194,11 @@ export class Subscription {
         };
   }
 
+  /**
+   * Marks an active subscription past due after a failed charge.
+   * @param now Instant of the failure.
+   * @returns `true` when the status changed.
+   */
   markPastDue(now: Date): boolean {
     if (this.state.status !== SubscriptionStatus.Active) {
       return false;
@@ -179,7 +211,12 @@ export class Subscription {
     return true;
   }
 
-  /** Suspends a past-due subscription whose grace period ended at `now`. */
+  /**
+   * Suspends a past-due subscription whose grace period ended at `now`.
+   * @param now Current instant.
+   * @param graceDays Days of grace after becoming past due.
+   * @returns `true` when it was suspended.
+   */
   suspendIfOverdue(now: Date, graceDays: number): boolean {
     const since = this.state.pastDueSince;
     if (
@@ -197,6 +234,9 @@ export class Subscription {
    * Returns to active after a payment. Returns the state it left, or `undefined` if it was already current. A past-due
    * subscription keeps its period, because it kept using the plan. A suspended one starts a new period today with the current
    * plan: the months of suspension were not used and are not charged, and neither is the period the suspension left open.
+   * @param plan Current plan.
+   * @param today Day of the payment.
+   * @returns The status it left, or `undefined`.
    */
   settle(plan: SubscribedPlan, today: string): SubscriptionStatus | undefined {
     const previous = this.state.status;

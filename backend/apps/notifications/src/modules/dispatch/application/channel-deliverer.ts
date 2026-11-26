@@ -20,6 +20,12 @@ export class ChannelDeliverer {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Sends one delivery through its channel and records the outcome on it.
+   * @param delivery Delivery to send.
+   * @param recipient User it goes to.
+   * @returns The delivery with its new status.
+   */
   async deliver(delivery: Delivery, recipient: Recipient): Promise<Delivery> {
     const attempts = delivery.attempts + 1;
     try {

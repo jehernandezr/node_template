@@ -24,6 +24,7 @@ import { SubscriptionsModule } from './modules/subscriptions/presentation/subscr
 import { UsageModule } from './modules/usage/presentation/usage.module.js';
 // generated:modules:imports
 
+/** Root module of billing: plans, subscriptions, usage, invoices, payments and entitlements over the platform runtime. */
 @Module({
   imports: [
     RemoteIdentityAuthModule,

@@ -21,6 +21,7 @@ import { PrivacyModule } from './modules/privacy/module.js';
 import { TasksModule } from './modules/tasks/presentation/tasks.module.js';
 // generated:modules:imports
 
+/** Root module of tasks: the tasks of each tenant, their search and the privacy operations over the platform runtime. */
 @Module({
   imports: [
     RemoteIdentityAuthModule,

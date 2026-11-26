@@ -2,6 +2,7 @@ import { EmailTemplate as EmailTemplateKey } from '@contracts/notifications';
 import type { EmailCopy } from './email-copy.js';
 import { EmailTemplate } from './email-template.js';
 
+/** Email that confirms the recovery of the second factor. */
 export class MfaRecoveryTemplate extends EmailTemplate {
   readonly key = EmailTemplateKey.MfaRecovery;
   readonly version = 1;

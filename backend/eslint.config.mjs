@@ -266,6 +266,7 @@ export default [
       '**/*.e2e-spec.ts',
       '**/migrations/**',
     ],
+    languageOptions: { parserOptions: { projectService: true } },
     rules: { 'comments/require-public-jsdoc': 'warn' },
   },
   {

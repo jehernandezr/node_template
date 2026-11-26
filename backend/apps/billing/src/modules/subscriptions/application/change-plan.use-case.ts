@@ -25,8 +25,12 @@ export class ChangePlan {
   ) {}
 
   /**
+   * Moves the tenant to another plan, prorating the rest of the period.
+   * @param tenantId Tenant that changes plan.
+   * @param planId Plan to move to.
+   * @returns The subscription after the change.
    * @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND`, `BILLING.PLAN.NOT_AVAILABLE`,
-   *   `BILLING.SUBSCRIPTION.NOT_CHANGEABLE` o `BILLING.PLAN.USAGE_EXCEEDS_LIMIT`.
+   *   `BILLING.SUBSCRIPTION.NOT_CHANGEABLE` or `BILLING.PLAN.USAGE_EXCEEDS_LIMIT`.
    */
   execute(tenantId: string, planId: string): Promise<CurrentSubscription> {
     return this.shard.inTenantShard(tenantId, () =>

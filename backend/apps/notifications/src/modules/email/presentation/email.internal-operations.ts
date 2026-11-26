@@ -15,6 +15,11 @@ import { EmailFacade } from '../application/email.facade.js';
 export class EmailInternalOperations {
   constructor(private readonly email: EmailFacade) {}
 
+  /**
+   * Internal operation that sends a transactional email once per `messageId`.
+   * @param input Template, recipient and parameters.
+   * @returns The provider id, or the business error.
+   */
   @InternalHandler(SendEmailOperation)
   async send(input: SendEmailInput): Promise<HandlerResult<SendEmailResult>> {
     await this.email.send({

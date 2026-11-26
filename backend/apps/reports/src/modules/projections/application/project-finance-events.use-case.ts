@@ -24,6 +24,10 @@ export class ProjectFinanceEvents {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Projects an issued invoice into the finance projection of its tenant.
+   * @param event `InvoiceIssued` payload.
+   */
   invoiceIssued(event: InvoiceIssuedPayload): Promise<void> {
     return this.invoice(event.tenantId, {
       invoiceId: event.invoiceId,
@@ -35,6 +39,10 @@ export class ProjectFinanceEvents {
     });
   }
 
+  /**
+   * Projects a paid invoice into the finance projection of its tenant.
+   * @param event `InvoicePaid` payload.
+   */
   invoicePaid(event: InvoicePaidPayload): Promise<void> {
     return this.invoice(event.tenantId, {
       invoiceId: event.invoiceId,
@@ -46,6 +54,10 @@ export class ProjectFinanceEvents {
     });
   }
 
+  /**
+   * Projects a failed charge into the finance projection of its tenant.
+   * @param event `InvoiceFailed` payload.
+   */
   invoiceFailed(event: InvoiceFailedPayload): Promise<void> {
     return this.invoice(event.tenantId, {
       invoiceId: event.invoiceId,
@@ -57,6 +69,10 @@ export class ProjectFinanceEvents {
     });
   }
 
+  /**
+   * Projects a created notification into the delivery projection of its tenant.
+   * @param event `NotificationCreated` payload.
+   */
   notificationCreated(event: NotificationCreatedPayload): Promise<void> {
     return this.shard.inTenantShard(event.tenantId, () =>
       this.transactions.runInTransaction(() =>

@@ -26,7 +26,10 @@ export class UpdateTask {
   ) {}
 
   /**
-   * @throws TasksError `TASKS.TASK.NOT_FOUND` o `TASKS.TASK.VERSION_CONFLICT`.
+   * Applies the requested changes to a task and publishes `TaskUpdated` when a field changed.
+   * @param command Tenant, actor, task id, expected version and changes.
+   * @returns The task after the change.
+   * @throws TasksError `TASKS.TASK.NOT_FOUND` or `TASKS.TASK.VERSION_CONFLICT`.
    */
   execute(command: UpdateTaskCommand): Promise<TaskView> {
     return this.shard.inTenantShard(command.tenantId, () =>

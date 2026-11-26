@@ -5,6 +5,7 @@ import {
 import type { EmailCopy } from './email-copy.js';
 import { EmailTemplate } from './email-template.js';
 
+/** Email with the password reset link. */
 export class PasswordResetTemplate extends EmailTemplate {
   readonly key = EmailTemplateKey.PasswordReset;
   readonly version = 1;

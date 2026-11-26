@@ -23,7 +23,13 @@ export class ListTasks {
     private readonly cursors: TaskCursors,
   ) {}
 
-  /** @throws TasksError `TASKS.SEARCH.QUERY_TOO_SHORT` if `q` does not reach the minimum. */
+  /**
+   * Lists the tenant tasks, or searches them when `q` is given.
+   * @param tenantId Tenant whose tasks are listed.
+   * @param request Filters, search text, cursor and page size.
+   * @returns One page of tasks.
+   * @throws TasksError `TASKS.SEARCH.QUERY_TOO_SHORT` if `q` does not reach the minimum.
+   */
   execute(tenantId: string, request: ListTasksRequest): Promise<TaskPage> {
     const limit = request.limit ?? TasksDefaults.pageSize;
     return this.shard.inTenantShard(tenantId, () =>

@@ -16,7 +16,12 @@ export class NotificationPreferences {
     readonly quietHours: QuietHours,
   ) {}
 
-  /** @throws InvalidQuietHoursError if the hours or the zone are not valid. */
+  /**
+   * Validates and builds the preferences from their view.
+   * @param view Preferences as the API sends them.
+   * @returns The preferences.
+   * @throws InvalidQuietHoursError if the hours or the zone are not valid.
+   */
   static of(view: PreferencesView): NotificationPreferences {
     const quietHours = QuietHours.parse(
       view.quietStart,
@@ -29,13 +34,21 @@ export class NotificationPreferences {
     return new NotificationPreferences(view, quietHours);
   }
 
-  /** The channels the user chose for the type, or `undefined` if they did not configure it. */
+  /**
+   * The channels the user chose for the type, or `undefined` if they did not configure it.
+   * @param type Notification type.
+   * @returns The chosen channels, or `undefined`.
+   */
   channelsFor(
     type: NotificationType,
   ): readonly NotificationChannel[] | undefined {
     return this.view.enabled.find((entry) => entry.type === type)?.channels;
   }
 
+  /**
+   * Turns the preferences into their API view.
+   * @returns The view.
+   */
   toView(): PreferencesView {
     return this.view;
   }

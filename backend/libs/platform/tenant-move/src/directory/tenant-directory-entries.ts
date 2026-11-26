@@ -103,7 +103,7 @@ export class TenantDirectoryEntries {
     throw TenantDirectoryEntries.contended(ref.tenantId);
   }
 
-  /** @throws TenantMoveError `MoveInProgress` o `TenantHasData`. */
+  /** @throws TenantMoveError `MoveInProgress` or `TenantHasData`. */
   private async assertRemovable(placement: TenantPlacement): Promise<void> {
     if (placement.status === TenantStatus.Migrating) {
       throw new TenantMoveError(

@@ -28,6 +28,8 @@ export class EmailSenderSelector {
 
   /**
    * The sender of the configured kind.
+   * @param settings Sender kind and SMTP URL from the configuration.
+   * @returns The sender to inject.
    * @throws ConfigValidationError with SES when the AWS adapter is not enabled.
    */
   select(

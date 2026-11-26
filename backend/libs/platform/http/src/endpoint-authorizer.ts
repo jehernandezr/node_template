@@ -20,7 +20,7 @@ export class EndpointAuthorizer {
 
   /**
    * @throws HttpProblemError (`PLATFORM.AUTH.FORBIDDEN`, `PLATFORM.ACCESS.FEATURE_NOT_INCLUDED`,
-   * `PLATFORM.ACCESS.FLAG_DISABLED` o `IDENTITY.MFA.STEP_UP_REQUIRED`).
+   * `PLATFORM.ACCESS.FLAG_DISABLED` or `IDENTITY.MFA.STEP_UP_REQUIRED`).
    */
   async authorize(route: RouteDefinition, actor: Actor): Promise<void> {
     if (route.access.kind === AccessKind.Public) {

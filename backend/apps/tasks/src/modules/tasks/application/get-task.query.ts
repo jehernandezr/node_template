@@ -13,7 +13,13 @@ export class GetTask {
     private readonly shard: ShardScopes,
   ) {}
 
-  /** @throws TasksError `TASKS.TASK.NOT_FOUND`. */
+  /**
+   * Reads one current task of the tenant.
+   * @param tenantId Tenant that owns the task.
+   * @param taskId Task to read.
+   * @returns The task view.
+   * @throws TasksError `TASKS.TASK.NOT_FOUND`.
+   */
   execute(tenantId: string, taskId: string): Promise<TaskView> {
     return this.shard.inTenantShard(tenantId, async () => {
       const task = await this.tasks.find(taskId);

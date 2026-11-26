@@ -5,7 +5,11 @@ import type { ReportResultStore } from '../domain/report-result-store.js';
 export class ReportResultStoreSelector {
   constructor(private readonly row: ReportResultStore) {}
 
-  /** The store of the configured kind. */
+  /**
+   * The store of the configured kind.
+   * @param kind Configured store kind.
+   * @returns The store to inject.
+   */
   select(kind: ReportResultStoreKind): ReportResultStore {
     switch (kind) {
       case ReportResultStoreKind.Row:

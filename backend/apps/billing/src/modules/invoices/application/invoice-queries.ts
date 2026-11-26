@@ -30,6 +30,12 @@ export class InvoiceQueries extends InvoicesFacade {
     super();
   }
 
+  /**
+   * Lists the tenant invoices, newest first, one page at a time.
+   * @param tenantId Tenant whose invoices are listed.
+   * @param request Cursor and page size.
+   * @returns One page of invoice summaries.
+   */
   async list(
     tenantId: string,
     request: ListInvoicesRequest,
@@ -41,6 +47,11 @@ export class InvoiceQueries extends InvoicesFacade {
     };
   }
 
+  /**
+   * Lists the invoice changes after a cursor, for the reports projection.
+   * @param input Tenant, cursor and page size.
+   * @returns One page of invoice changes in write order.
+   */
   async changes(input: ListInvoiceChangesInput): Promise<InvoiceChangePage> {
     const page = await this.page(input.tenantId, input);
     return {
@@ -49,7 +60,13 @@ export class InvoiceQueries extends InvoicesFacade {
     };
   }
 
-  /** @throws BillingError `BILLING.INVOICE.NOT_FOUND` if the invoice does not belong to the tenant. */
+  /**
+   * Reads one invoice with its lines.
+   * @param tenantId Tenant that must own the invoice.
+   * @param invoiceId Invoice to read.
+   * @returns The invoice view.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` if the invoice does not belong to the tenant.
+   */
   get(tenantId: string, invoiceId: string): Promise<Invoice> {
     return this.shard.inTenantShard(tenantId, async () => {
       const invoice = await this.invoices.find(invoiceId);

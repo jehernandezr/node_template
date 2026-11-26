@@ -5,6 +5,7 @@ import {
 import type { EmailCopy } from './email-copy.js';
 import { EmailTemplate } from './email-template.js';
 
+/** Email that invites someone to a tenant with its acceptance link. */
 export class InvitationTemplate extends EmailTemplate {
   readonly key = EmailTemplateKey.Invitation;
   readonly version = 1;

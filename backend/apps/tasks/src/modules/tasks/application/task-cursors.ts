@@ -14,26 +14,38 @@ export class TaskCursors {
     private readonly codec: CursorCodec,
   ) {}
 
-  /** The cursor of the list page that starts after this task. */
+  /**
+   * The cursor of the list page that starts after this task.
+   * @param taskId Last task of the page.
+   * @returns The opaque cursor.
+   */
   afterTask(taskId: string): string {
     return this.ids.after(taskId);
   }
 
   /**
    * The task a list cursor points after, or `undefined` for the first page.
+   * @param cursor Cursor sent by the client.
+   * @returns The task id, or `undefined`.
    * @throws CriteriaError `InvalidValue` if the cursor is malformed.
    */
   taskOf(cursor: string | undefined): string | undefined {
     return this.ids.idOf(cursor);
   }
 
-  /** The cursor of the search page that starts at this position of the ranking. */
+  /**
+   * The cursor of the search page that starts at this position of the ranking.
+   * @param offset Position of the first task of the next page.
+   * @returns The opaque cursor.
+   */
   afterPosition(offset: number): string {
     return this.codec.encode({ id: TaskCursors.SEARCH, values: [offset] });
   }
 
   /**
    * The ranking position a search cursor points to, or 0 for the first page.
+   * @param cursor Cursor sent by the client.
+   * @returns The ranking position.
    * @throws CriteriaError `InvalidValue` if the cursor is malformed.
    */
   positionOf(cursor: string | undefined): number {
@@ -44,13 +56,20 @@ export class TaskCursors {
     return typeof offset === 'number' ? offset : 0;
   }
 
-  /** The cursor of the changes page that starts after this change. */
+  /**
+   * The cursor of the changes page that starts after this change.
+   * @param updatedAt Instant of the last change of the page.
+   * @param taskId Task of that change.
+   * @returns The opaque cursor.
+   */
   afterChange(updatedAt: Date, taskId: string): string {
     return this.codec.encode({ id: taskId, values: [updatedAt.toISOString()] });
   }
 
   /**
    * The change a changes cursor points after, or `undefined` for the first page.
+   * @param cursor Cursor sent by the client.
+   * @returns The change position, or `undefined`.
    * @throws CriteriaError `InvalidValue` if the cursor is malformed.
    */
   changeOf(

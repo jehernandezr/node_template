@@ -28,7 +28,12 @@ export class EntitlementQueries {
     private readonly usage: UsageFacade,
   ) {}
 
-  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription. */
+  /**
+   * Reads the plan features and quotas the tenant is entitled to now.
+   * @param tenantId Tenant to read.
+   * @returns The entitlements of its current plan.
+   * @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription.
+   */
   async snapshot(tenantId: string): Promise<Entitlements> {
     const entitlements = await this.subscriptions.entitlements(tenantId);
     return {
@@ -39,7 +44,14 @@ export class EntitlementQueries {
     };
   }
 
-  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription. */
+  /**
+   * Checks whether the tenant may consume `requested` more units of a metric in its current period.
+   * @param tenantId Tenant that consumes.
+   * @param metric Metric being consumed.
+   * @param requested Units about to be consumed.
+   * @returns Whether it is allowed, with the limit and the current usage.
+   * @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription.
+   */
   async check(
     tenantId: string,
     metric: UsageMetric,
@@ -61,7 +73,12 @@ export class EntitlementQueries {
     };
   }
 
-  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription. */
+  /**
+   * Reads the usage of the current period against the plan limits.
+   * @param tenantId Tenant to read.
+   * @returns The usage of each metric with its limit.
+   * @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription.
+   */
   async overview(tenantId: string): Promise<UsageOverview> {
     const current = await this.subscriptions.current(tenantId);
     const levels = await this.levelsOf(tenantId, current);

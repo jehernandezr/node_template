@@ -235,11 +235,29 @@ const requirePublicJsDoc = {
   },
   create: (context) => {
     const sourceCode = context.sourceCode;
+    const services = sourceCode.parserServices;
+    const checker = services?.program?.getTypeChecker();
     let names = new Set();
+    const implementsMember = (member) => {
+      const owner = member.parent.parent;
+      if (!checker || !owner.implements?.length || member.static) return false;
+      const name =
+        member.key.type === 'Identifier' ? member.key.name : undefined;
+      if (name === undefined) return false;
+      return owner.implements.some((clause) => {
+        const type = checker.getTypeAtLocation(
+          services.esTreeNodeToTSNodeMap.get(clause.expression),
+        );
+        const declared = type.getSymbol()
+          ? checker.getDeclaredTypeOfSymbol(type.getSymbol())
+          : type;
+        return declared.getProperty(name) !== undefined;
+      });
+    };
     const checkMethod = (member) => {
       if (!isPublicMember(member)) return;
       if (member.kind === 'constructor' || member.kind === 'set') return;
-      if (member.override) return;
+      if (member.override || implementsMember(member)) return;
       const name = methodLabel(sourceCode, member);
       const comment = jsDocOf(sourceCode, member);
       if (!comment) {

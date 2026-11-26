@@ -9,6 +9,12 @@ import { InvoiceEntity } from './entities/invoice.entity.js';
 
 /** Rows of `invoices` and `invoice_lines` and the `Invoice` aggregate, in both directions. Pure utility. */
 export class InvoiceMapper {
+  /**
+   * Rebuilds an invoice from its row and lines.
+   * @param row Stored invoice row.
+   * @param lines Stored lines of the invoice.
+   * @returns The domain invoice.
+   */
   static toDomain(
     row: InvoiceEntity,
     lines: readonly InvoiceLineEntity[],
@@ -38,6 +44,11 @@ export class InvoiceMapper {
     });
   }
 
+  /**
+   * Turns an invoice into its row, without the lines.
+   * @param invoice Domain invoice.
+   * @returns The row to store.
+   */
   static toRow(invoice: Invoice): InvoiceEntity {
     const state = invoice.snapshot();
     return Object.assign(new InvoiceEntity(), {

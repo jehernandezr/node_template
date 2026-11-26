@@ -19,6 +19,13 @@ export class SubscriptionEvents {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Publishes that the tenant changed plan.
+   * @param tenantId Tenant that changed plan.
+   * @param subscription Subscription after the change.
+   * @param previousPlanId Plan it left, or `null` when it is new.
+   * @param plan Plan it moved to.
+   */
   async planChanged(
     tenantId: string,
     subscription: Subscription,
@@ -40,6 +47,12 @@ export class SubscriptionEvents {
     await this.entitlementsChanged(tenantId, subscription, plan);
   }
 
+  /**
+   * Publishes that the subscription was suspended for lack of payment.
+   * @param tenantId Suspended tenant.
+   * @param subscription Suspended subscription.
+   * @param plan Its plan.
+   */
   async suspended(
     tenantId: string,
     subscription: Subscription,
@@ -57,6 +70,12 @@ export class SubscriptionEvents {
     await this.entitlementsChanged(tenantId, subscription, plan);
   }
 
+  /**
+   * Publishes that a suspended or past-due subscription is active again.
+   * @param tenantId Reactivated tenant.
+   * @param subscription Active subscription.
+   * @param plan Its plan.
+   */
   async reactivated(
     tenantId: string,
     subscription: Subscription,

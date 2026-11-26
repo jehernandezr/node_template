@@ -36,6 +36,10 @@ export class CreateRun {
   ) {}
 
   /**
+   * Queues a report run for the member's tenant and sends the command that executes it.
+   * @param member Member who requests it.
+   * @param request Type, format and parameters.
+   * @returns The queued run.
    * @throws ReportsError `REPORTS.TYPE.UNKNOWN`, `REPORTS.PARAMS.INVALID_RANGE` o
    *   `PLATFORM.ACCESS.FEATURE_NOT_INCLUDED`.
    */

@@ -33,6 +33,11 @@ export interface BilledPeriod {
  * and one line for each metric the plan charges per unit. Pure utility.
  */
 export class InvoiceComposer {
+  /**
+   * Composes the invoice lines of a billed period: the plan, the extra users and the accumulated adjustments.
+   * @param period Period being invoiced.
+   * @returns The lines, in the order the invoice shows them.
+   */
   static lines(period: BilledPeriod): InvoiceLineState[] {
     const lines: InvoiceLineState[] = [
       {

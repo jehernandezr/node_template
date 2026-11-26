@@ -5,6 +5,7 @@ import {
 import type { EmailCopy } from './email-copy.js';
 import { EmailTemplate } from './email-template.js';
 
+/** Email that confirms a change of address with its link. */
 export class EmailChangeTemplate extends EmailTemplate {
   readonly key = EmailTemplateKey.EmailChange;
   readonly version = 1;

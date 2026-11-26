@@ -4,6 +4,11 @@ import type { CurrentSubscription } from './current-subscription.js';
 
 /** The subscription as the contract publishes it. Pure utility. */
 export class SubscriptionViews {
+  /**
+   * Builds the API view of the current subscription.
+   * @param current Subscription with its plan.
+   * @returns The subscription as the API returns it.
+   */
   static of(current: CurrentSubscription): SubscriptionView {
     const state = current.subscription;
     return {

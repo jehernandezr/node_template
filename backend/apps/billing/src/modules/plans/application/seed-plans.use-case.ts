@@ -12,6 +12,10 @@ export class SeedPlans {
     private readonly ids: IdGenerator,
   ) {}
 
+  /**
+   * Creates or updates the configured plans in the catalog; a deployment step.
+   * @returns The stored plans.
+   */
   async execute(): Promise<readonly Plan[]> {
     const saved: Plan[] = [];
     for (const plan of SEED_PLANS) {

@@ -17,7 +17,12 @@ import { TasksFacade } from '../../tasks/index.js';
 export class PrivacyInternalOperations {
   constructor(private readonly tasks: TasksFacade) {}
 
-  /** Repeating it changes nothing: the user no longer appears in any task. */
+  /**
+   * Internal operation that removes a user from every task of the shard as author or editor.
+   * Repeating it changes nothing: the user no longer appears in any task.
+   * @param input User to erase.
+   * @returns How many tasks changed.
+   */
   @InternalHandler(EraseTasksUserDataOperation)
   async eraseUserData(
     input: EraseTasksUserInput,
@@ -28,6 +33,11 @@ export class PrivacyInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that lists task changes after a cursor, for the reports projection.
+   * @param input Tenant, cursor and page size.
+   * @returns One page of task changes.
+   */
   @InternalHandler(ListTaskChangesOperation)
   async listChanges(
     input: ListTaskChangesInput,

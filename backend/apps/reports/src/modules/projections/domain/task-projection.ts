@@ -19,6 +19,11 @@ export interface TaskProjectionChange {
 
 /** Which status counts as a completed task in the reports. Pure utility. */
 export class TaskCompletion {
+  /**
+   * Tells whether a task status counts as done.
+   * @param status Task status.
+   * @returns `true` when done.
+   */
   static isDone(status: TaskStatus): boolean {
     return status === TaskStatus.Done;
   }
@@ -26,8 +31,21 @@ export class TaskCompletion {
 
 /** Projection of the tasks of the tenant of the open `ShardScope`. */
 export abstract class TaskProjection {
-  /** Applies the change without going backwards: an old message that arrives late does not overwrite a newer version. */
+  /**
+   * Applies the change without going backwards: an old message that arrives late does not overwrite a newer version.
+   * @param change Task change.
+   */
   abstract apply(change: TaskProjectionChange): Promise<void>;
+  /**
+   * Counts the tasks by status in the range.
+   * @param range Report range.
+   * @returns One count per status.
+   */
   abstract statusCounts(range: ReportRange): Promise<readonly StatusCount[]>;
+  /**
+   * Counts the tasks created and done per bucket.
+   * @param range Report range with its bucket.
+   * @returns One point per bucket.
+   */
   abstract activity(range: BucketedRange): Promise<readonly ActivityPoint[]>;
 }

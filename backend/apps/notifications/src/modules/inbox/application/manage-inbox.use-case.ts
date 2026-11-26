@@ -43,6 +43,12 @@ export class ManageInbox extends InboxFacade {
     return NotificationViews.of(stored);
   }
 
+  /**
+   * Lists the user's notifications, newest first.
+   * @param user Owner of the inbox.
+   * @param query Cursor and page size.
+   * @returns One page of notifications.
+   */
   list(user: UserRef, query: PageQuery): Promise<NotificationPage> {
     const limit = query.limit ?? NotificationsDefaults.pageSize;
     const beforeId = this.cursors.idOf(query.after);
@@ -66,7 +72,12 @@ export class ManageInbox extends InboxFacade {
     );
   }
 
-  /** @throws NotificationNotFoundError if it is not in the user's inbox. */
+  /**
+   * Marks one notification read and publishes the new unread count.
+   * @param user Owner of the inbox.
+   * @param notificationId Notification to mark.
+   * @throws NotificationNotFoundError if it is not in the user's inbox.
+   */
   async markRead(user: UserRef, notificationId: string): Promise<void> {
     const unread = await this.shard.inUserShard(user, async () => {
       if (
@@ -83,6 +94,10 @@ export class ManageInbox extends InboxFacade {
     await this.realtime.unreadCount(user, unread);
   }
 
+  /**
+   * Marks every notification of the user read and publishes the new unread count.
+   * @param user Owner of the inbox.
+   */
   async markAllRead(user: UserRef): Promise<void> {
     await this.shard.inUserShard(user, () =>
       this.inbox.markAllRead(user.userId, this.clock.now()),

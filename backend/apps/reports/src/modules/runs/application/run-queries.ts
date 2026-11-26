@@ -29,6 +29,12 @@ export class RunQueries {
     private readonly cursors: IdCursor,
   ) {}
 
+  /**
+   * Lists the tenant runs, newest first.
+   * @param tenantId Tenant whose runs are listed.
+   * @param request Cursor and page size.
+   * @returns One page of runs.
+   */
   list(
     tenantId: string,
     request: ListReportRunsRequest,
@@ -53,7 +59,13 @@ export class RunQueries {
     });
   }
 
-  /** @throws ReportsError `REPORTS.RUN.NOT_FOUND`. */
+  /**
+   * Reads one run with its result when ready.
+   * @param tenantId Tenant that owns the run.
+   * @param runId Run to read.
+   * @returns The run detail.
+   * @throws ReportsError `REPORTS.RUN.NOT_FOUND`.
+   */
   get(tenantId: string, runId: string): Promise<ReportRunDetail> {
     return this.shard.inTenantShard(tenantId, async () => {
       const run = await this.require(runId);
@@ -62,7 +74,13 @@ export class RunQueries {
     });
   }
 
-  /** @throws ReportsError `REPORTS.RUN.NOT_FOUND`, `REPORTS.RUN.NOT_READY` o `REPORTS.RUN.EXPIRED`. */
+  /**
+   * Reads the file of a ready run.
+   * @param tenantId Tenant that owns the run.
+   * @param runId Run to download.
+   * @returns The file.
+   * @throws ReportsError `REPORTS.RUN.NOT_FOUND`, `REPORTS.RUN.NOT_READY` or `REPORTS.RUN.EXPIRED`.
+   */
   download(tenantId: string, runId: string): Promise<ReportDownload> {
     return this.shard.inTenantShard(tenantId, async () => {
       const run = await this.require(runId);

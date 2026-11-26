@@ -53,6 +53,13 @@ export class NotificationTexts {
     },
   };
 
+  /**
+   * Renders the title and body of a notification type in a locale.
+   * @param type Notification type.
+   * @param locale Locale of the user; Spanish when unsupported.
+   * @param parameters Values the text interpolates.
+   * @returns The title and body.
+   */
   static of(
     type: NotificationType,
     locale: string,

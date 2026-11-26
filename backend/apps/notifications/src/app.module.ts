@@ -25,6 +25,7 @@ import { NotificationsRealtimeModule } from './modules/realtime/presentation/not
 import { TriggersModule } from './modules/triggers/presentation/triggers.module.js';
 // generated:modules:imports
 
+/** Root module of notifications: dispatch, email, push, inbox, preferences, real-time fan-out and the event triggers. */
 @Module({
   imports: [
     RemoteIdentityAuthModule,

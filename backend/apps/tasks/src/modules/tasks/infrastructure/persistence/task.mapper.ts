@@ -5,6 +5,11 @@ import { TaskEntity } from './entities/task.entity.js';
 
 /** `tasks` row and `Task` aggregate, in both directions. Pure utility. */
 export class TaskMapper {
+  /**
+   * Rebuilds a task from its row.
+   * @param row Stored row.
+   * @returns The domain task.
+   */
   static toDomain(row: TaskEntity): Task {
     return Task.rehydrate({
       id: row.id,
@@ -24,6 +29,13 @@ export class TaskMapper {
     });
   }
 
+  /**
+   * Turns a task into its row.
+   * @param task Domain task.
+   * @param tenantId Tenant that owns it.
+   * @param editor User who writes it.
+   * @returns The row to store.
+   */
   static toRow(task: Task, tenantId: string, editor: UserRef): TaskEntity {
     const state = task.snapshot();
     const row = new TaskEntity();
