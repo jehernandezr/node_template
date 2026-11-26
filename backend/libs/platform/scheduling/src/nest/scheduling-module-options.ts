@@ -19,10 +19,10 @@ export interface SchedulingModuleOptions {
  * instance, and are fixed when composing the module: they are the same in `forRoot` and in `forRootAsync`.
  */
 export interface SchedulingModuleExtras {
-  /** Required: `LoggerPort` implementation provided by the service observability. */
-  readonly logger?: Type<LoggerPort> | Abstract<LoggerPort>;
+  /** `LoggerPort` implementation provided by the service observability. */
+  readonly logger: Type<LoggerPort> | Abstract<LoggerPort>;
   /** `InProcessJobLock` by default; with several processes, `ValkeyJobLock`. */
   readonly lock?: Type<JobLock> | Abstract<JobLock>;
-  /** Required: `MetricsPort` implementation provided by the service observability. */
-  readonly metrics?: Type<MetricsPort> | Abstract<MetricsPort>;
+  /** `MetricsPort` implementation provided by the service observability. */
+  readonly metrics: Type<MetricsPort> | Abstract<MetricsPort>;
 }

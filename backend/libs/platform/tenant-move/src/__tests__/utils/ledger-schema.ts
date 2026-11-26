@@ -4,7 +4,8 @@ export class LedgerSchema {
   static readonly PLATFORM: readonly string[] = [
     'CREATE TABLE tenant_write_fences (tenant_id text PRIMARY KEY, move_id text NOT NULL, created_at timestamptz NOT NULL, switched_at timestamptz)',
     `CREATE TABLE tenant_move_checkpoints (
-       move_id text NOT NULL, table_name text NOT NULL, reconciled_key jsonb, verified_rows integer, verified_checksum text,
+       move_id text NOT NULL, table_name text NOT NULL, reconciled_key jsonb, pruned_key jsonb, pruned boolean NOT NULL DEFAULT false,
+       verified_rows integer, verified_checksum text,
        updated_at timestamptz NOT NULL, PRIMARY KEY (move_id, table_name))`,
   ];
 

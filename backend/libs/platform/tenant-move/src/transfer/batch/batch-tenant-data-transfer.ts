@@ -14,7 +14,6 @@ import type { ShardConnections } from '../typeorm/shard-connections.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 import { TransferBudget } from '../transfer-budget.js';
 import type { BatchTransferOptions } from './batch-transfer-options.js';
-import type { KeyRange } from './key-range.js';
 import type { RowPage } from './row-page.js';
 import { ForeignKeyRound } from './foreign-key-round.js';
 import { TableCopier } from './table-copier.js';
@@ -32,9 +31,11 @@ import { TransferCheckpoints } from './transfer-checkpoints.js';
  *
  * A table without `updated_at` only copies its new rows in the `sync` rounds. Its changes, hard deletes and
  * transactions that commit later than the margin are not seen by the delta rounds: they are
- * fixed by `verify`, which with the tenant frozen compares count and sum of each table and, if they differ, reconciles it in
- * ranges of `batchSize` rows: it compares each range and only rewrites those that differ. Progress is stored in
- * `tenant_move_checkpoints` on the target, so a table that does not fit in one call's deadline continues on the next.
+ * fixed by `verify`, which with the tenant frozen first deletes, children first, the target rows the source no longer
+ * has, so a parent is never deleted while a child still references it, and then compares count and sum of each table
+ * and, if they differ, reconciles it in ranges of `batchSize` rows: it compares each range and only rewrites those
+ * that differ. Progress is stored in `tenant_move_checkpoints` on the target, so a table that does not fit in one
+ * call's deadline continues on the next.
  */
 export class BatchTenantDataTransfer extends TenantDataTransfer {
   private readonly filter: TenantRowFilter;
@@ -91,8 +92,12 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   ): Promise<TenantMoveVerification> {
     const transfer = await this.connections.connect(move);
     const budget = transfer.budget ?? this.newBudget();
+    const copiers = await this.copiers(transfer.source);
+    for (const { table, copier } of [...copiers].reverse()) {
+      await this.prune(transfer, table, copier, budget);
+    }
     const tables: TenantMoveTableCheck[] = [];
-    for (const { table, copier } of await this.copiers(transfer.source)) {
+    for (const { table, copier } of copiers) {
       tables.push(await this.verifyTable(transfer, table, copier, budget));
     }
     const verified = tables.every((check) =>
@@ -332,9 +337,8 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   /**
-   * Walks the table in ranges of `batchSize` source rows from `from`. In each range that differs it deletes from the
-   * target the rows the source no longer has and rewrites the source ones; the last range has no upper bound,
-   * so it also deletes target rows left after the last source row.
+   * Walks the table in ranges of `batchSize` source rows from `from` and rewrites the source rows of each range that
+   * differs. The target rows the source no longer has were already deleted by `prune`.
    */
   private async reconcile(
     transfer: ConnectedTransfer,
@@ -362,7 +366,6 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
           BatchTenantDataTransfer.checkOf(table, source, target),
         )
       ) {
-        await this.deleteGone(transfer, table, copier, budget, range);
         const page = await this.onSource(transfer, (runner) =>
           copier.readAfterKey(
             runner,
@@ -386,15 +389,23 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     }
   }
 
-  /** Deletes from the target the range rows the source no longer has. */
-  private async deleteGone(
+  /**
+   * Deletes from the target, in pages of `batchSize` keys from the last checkpoint, the rows the frozen source no
+   * longer has. It runs children first, so the foreign key of a child never blocks deleting its parent.
+   */
+  private async prune(
     transfer: ConnectedTransfer,
     table: string,
     copier: TableCopier,
     budget: TransferBudget,
-    range: KeyRange,
   ): Promise<void> {
-    let after = range.after;
+    const checkpoint = await this.onTarget(transfer, (runner) =>
+      this.checkpoints.read(runner, transfer.moveId, table),
+    );
+    if (checkpoint.verified !== undefined || checkpoint.pruned === true) {
+      return;
+    }
+    let after = checkpoint.prunedKey;
     for (;;) {
       budget.check(table);
       const cursor = after;
@@ -402,21 +413,26 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
         copier.keysIn(
           runner,
           transfer.tenantId,
-          { after: cursor, upTo: range.upTo },
+          { after: cursor, upTo: undefined },
           this.options.batchSize,
         ),
       );
-      if (keys === undefined) {
+      if (keys !== undefined) {
+        const present = await this.onSource(transfer, (runner) =>
+          copier.existing(runner, transfer.tenantId, keys.ids),
+        );
+        const gone = keys.ids.filter((id) => !present.has(id));
+        await this.onTarget(transfer, (runner) =>
+          copier.deleteKeys(runner, transfer.tenantId, gone),
+        );
+      }
+      after = keys?.lastKey;
+      await this.onTarget(transfer, (runner) =>
+        this.checkpoints.prunedUpTo(runner, transfer.moveId, table, after),
+      );
+      if (after === undefined) {
         return;
       }
-      const present = await this.onSource(transfer, (runner) =>
-        copier.existing(runner, transfer.tenantId, keys.ids),
-      );
-      const gone = keys.ids.filter((id) => !present.has(id));
-      await this.onTarget(transfer, (runner) =>
-        copier.deleteKeys(runner, transfer.tenantId, gone),
-      );
-      after = keys.lastKey;
     }
   }
 

@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { JobScheduleKind, JobLock, type JobLease } from '@platform/kernel';
-import { PrimitivesErrorCode } from '@platform/primitives';
 import { JobRunner } from '../../job-runner.js';
 import { InProcessJobLock } from '../../locks/in-process-job-lock.js';
 import { SchedulingMode } from '../../scheduling-mode.enum.js';
@@ -253,27 +252,6 @@ describe('SchedulingModule', () => {
 
       expect(job.runs).toBe(1);
       expect(moduleRef.get(JobLock)).toBeInstanceOf(TestJobLock);
-    });
-  });
-
-  describe('when the logger is missing', () => {
-    it('rejects the module definition', () => {
-      expect(() =>
-        SchedulingModule.forRoot({ metrics: RecordingMetrics }),
-      ).toThrow(
-        expect.objectContaining({ code: PrimitivesErrorCode.InvalidArgument }),
-      );
-    });
-  });
-
-  describe('when the metrics are missing', () => {
-    it('rejects the module definition', () => {
-      expect(() => SchedulingModule.forRoot({ logger: FakeLogger })).toThrow(
-        expect.objectContaining({
-          code: PrimitivesErrorCode.InvalidArgument,
-          message: expect.stringContaining('metrics'),
-        }),
-      );
     });
   });
 

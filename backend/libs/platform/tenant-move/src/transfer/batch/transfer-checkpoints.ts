@@ -5,6 +5,10 @@ import type { TableChecksum } from './table-checksum.js';
 export interface TableCheckpoint {
   /** Key of the last reconciled row; the next call continues after it. */
   readonly reconciledKey?: readonly string[];
+  /** Key of the last target row checked while pruning; the next call continues after it. */
+  readonly prunedKey?: readonly string[];
+  /** Whether every target row the source no longer has was already deleted. */
+  readonly pruned?: boolean;
   /** Count and sum with which the table matched the frozen source; with it the table is not checked again. */
   readonly verified?: TableChecksum;
 }
@@ -22,10 +26,12 @@ export class TransferCheckpoints {
   ): Promise<TableCheckpoint> {
     const rows: {
       reconciled_key: string[] | null;
+      pruned_key: string[] | null;
+      pruned: boolean;
       verified_rows: number | null;
       verified_checksum: string | null;
     }[] = await runner.query(
-      'SELECT reconciled_key, verified_rows, verified_checksum FROM tenant_move_checkpoints WHERE move_id = $1 AND table_name = $2',
+      'SELECT reconciled_key, pruned_key, pruned, verified_rows, verified_checksum FROM tenant_move_checkpoints WHERE move_id = $1 AND table_name = $2',
       [moveId, table],
     );
     const [row] = rows;
@@ -34,6 +40,8 @@ export class TransferCheckpoints {
     }
     return {
       ...(row.reconciled_key !== null && { reconciledKey: row.reconciled_key }),
+      ...(row.pruned_key !== null && { prunedKey: row.pruned_key }),
+      ...(row.pruned && { pruned: true }),
       ...(row.verified_rows !== null &&
         row.verified_checksum !== null && {
           verified: {
@@ -55,6 +63,31 @@ export class TransferCheckpoints {
       `INSERT INTO tenant_move_checkpoints (move_id, table_name, reconciled_key, updated_at) VALUES ($1, $2, $3::jsonb, now())
          ON CONFLICT (move_id, table_name) DO UPDATE SET reconciled_key = EXCLUDED.reconciled_key, updated_at = now()`,
       [moveId, table, key === undefined ? null : JSON.stringify(key)],
+    );
+  }
+
+  /**
+   * Records up to which key the target rows of the table were pruned, or that pruning finished.
+   * @param runner Connection to the target shard.
+   * @param moveId Move whose progress is recorded.
+   * @param table Table being pruned.
+   * @param key Last target key checked against the source; `undefined` once the whole table was pruned.
+   */
+  async prunedUpTo(
+    runner: QueryRunner,
+    moveId: string,
+    table: string,
+    key: readonly string[] | undefined,
+  ): Promise<void> {
+    await runner.query(
+      `INSERT INTO tenant_move_checkpoints (move_id, table_name, pruned_key, pruned, updated_at) VALUES ($1, $2, $3::jsonb, $4, now())
+         ON CONFLICT (move_id, table_name) DO UPDATE SET pruned_key = EXCLUDED.pruned_key, pruned = EXCLUDED.pruned, updated_at = now()`,
+      [
+        moveId,
+        table,
+        key === undefined ? null : JSON.stringify(key),
+        key === undefined,
+      ],
     );
   }
 

@@ -71,14 +71,21 @@ async function snapshot(
   };
 }
 
-/** Repeats the call while the round does not finish within its deadline, as the saga does. */
+const ROUND_LIMIT = 20;
+
+/**
+ * Repeats the call while the round does not finish within its deadline, as the saga does, up to the saga's limit of
+ * pending rounds: a round that never ends fails the test instead of hanging it.
+ */
 async function untilRoundEnds<T>(call: () => Promise<T>): Promise<T> {
-  for (;;) {
+  for (let round = 1; ; round++) {
     try {
       return await call();
     } catch (error) {
       if (
-        (error as { code?: unknown }).code !== TenantMoveErrorCode.RoundPending
+        (error as { code?: unknown }).code !==
+          TenantMoveErrorCode.RoundPending ||
+        round >= ROUND_LIMIT
       ) {
         throw error;
       }
@@ -381,6 +388,40 @@ new ContainerRuntime(process.env).describeIfAvailable(
           'SELECT p.ledger_id FROM postings p JOIN ledgers l ON l.id = p.ledger_id',
         ),
       ).resolves.toEqual([{ ledger_id: lateLedger }]);
+    });
+
+    it('verifies a copy whose source hard-deleted a parent together with the children that reference it', async () => {
+      const withPostings = new BatchTenantDataTransfer(
+        new LedgerWithPostingsManifest(),
+        connections,
+        new SystemClock(),
+        OPTIONS,
+      );
+      const kept = await seedLedger(source, tenantId, '1', []);
+      const removed = await seedLedger(source, tenantId, '2', []);
+      for (const ledger of [kept, removed, removed]) {
+        await sourceAdmin.query(
+          'INSERT INTO postings (id, ledger_id, amount) VALUES ($1, $2, 5)',
+          [newId(), ledger],
+        );
+      }
+      await withPostings.sync(move);
+      await sourceAdmin.query('DELETE FROM postings WHERE ledger_id = $1', [
+        removed,
+      ]);
+      await sourceAdmin.query('DELETE FROM ledgers WHERE id = $1', [removed]);
+
+      const verification = await untilRoundEnds(() =>
+        withPostings.verify(move),
+      );
+
+      expect(verification.verified).toBe(true);
+      await expect(
+        targetAdmin.query('SELECT ledger_id FROM postings'),
+      ).resolves.toEqual([{ ledger_id: kept }]);
+      await expect(
+        targetAdmin.query('SELECT id FROM ledgers'),
+      ).resolves.toEqual([{ id: kept }]);
     });
 
     it('neither loses nor duplicates any row written while the tenant moves', async () => {
