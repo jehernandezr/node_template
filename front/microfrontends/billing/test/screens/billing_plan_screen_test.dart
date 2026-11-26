@@ -96,7 +96,6 @@ void main() {
           .pump(tester, BillingPlanScreen(repository: FakeBillingRepository()));
       await tester.pumpAndSettle();
       expect(find.text(_es.changePlan), findsNothing);
-      // The read-only content still renders.
       expect(find.text('Pro'), findsOneWidget);
     });
 

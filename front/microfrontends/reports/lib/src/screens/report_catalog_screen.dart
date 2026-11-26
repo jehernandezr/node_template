@@ -15,15 +15,16 @@ import 'widgets/report_draft_form.dart';
 /// Route `/reports`: the reports of the tenant. Choosing one shows its
 /// parameters, and generating it opens the new run.
 class ReportCatalogScreen extends StatelessWidget {
+  /// Report catalog backed by [repository].
   const ReportCatalogScreen({super.key, required this.repository});
 
+  /// Source of the catalog.
   final ReportsRepository repository;
 
+  /// The repository is part of the key: a new identity gets a new controller.
   @override
   Widget build(BuildContext context) =>
       ControllerBuilder<ReportCatalogController>(
-        // The repository is part of the key: a new identity gets a new
-        // controller.
         key: ObjectKey(repository),
         create: (_) => ReportCatalogController(repository)..start(),
         builder: (context, controller) {

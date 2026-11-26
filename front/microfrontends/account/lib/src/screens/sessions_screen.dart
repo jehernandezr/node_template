@@ -16,12 +16,14 @@ import 'widgets/account_widgets.dart';
 
 /// Active sessions with remote sign-out.
 class SessionsScreen extends StatelessWidget {
+  /// Sessions screen backed by [repository].
   const SessionsScreen({
     super.key,
     required this.repository,
     required this.requestStepUp,
   });
 
+  /// Source of the sessions.
   final AccountRepository repository;
 
   /// The shell's step-up, for closing every other session.

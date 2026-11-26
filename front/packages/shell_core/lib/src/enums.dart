@@ -33,8 +33,14 @@ final class MicrofrontendId {
   String toString() => 'MicrofrontendId($name)';
 }
 
-/// Shell platforms a microfrontend can run on.
-enum AppPlatform { web, mobile }
+/// Platform the shell runs on.
+enum AppPlatform {
+  /// The browser shell.
+  web,
+
+  /// The Android and iOS shell.
+  mobile,
+}
 
 /// Where a shell gets its data from. Chosen once, when the shell starts.
 enum ShellMode {

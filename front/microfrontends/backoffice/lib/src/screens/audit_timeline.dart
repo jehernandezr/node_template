@@ -8,8 +8,10 @@ import '../shared/types/backoffice_types.dart';
 /// Audit entries as a sliver, most recent first as given, with the reason of
 /// manual actions. Rows are built lazily.
 class AuditTimeline extends StatelessWidget {
+  /// Timeline of [entries], newest first.
   const AuditTimeline({super.key, required this.entries});
 
+  /// Audit entries shown.
   final List<AuditEntry> entries;
 
   @override

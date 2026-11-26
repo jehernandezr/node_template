@@ -23,6 +23,7 @@ import 'sessions_screen.dart';
 /// Builds each account screen for a [MicrofrontendScope]. The repository is
 /// the scope's, so every identity has its own and releases it on close.
 abstract final class AccountScreens {
+  /// Route `/account`.
   static Widget overview(MicrofrontendScope scope) => _withAccountTexts(
     AccountOverviewScreen(
       repository: scope.repository(AccountData.repository),
@@ -30,6 +31,7 @@ abstract final class AccountScreens {
     ),
   );
 
+  /// Route `/account/sessions`.
   static Widget sessions(MicrofrontendScope scope) => _withAccountTexts(
     SessionsScreen(
       repository: scope.repository(AccountData.repository),
@@ -37,6 +39,7 @@ abstract final class AccountScreens {
     ),
   );
 
+  /// Route `/account/devices`.
   static Widget devices(MicrofrontendScope scope) => _withAccountTexts(
     DevicesScreen(
       repository: scope.repository(AccountData.repository),
@@ -44,6 +47,7 @@ abstract final class AccountScreens {
     ),
   );
 
+  /// Route `/account/security`.
   static Widget security(MicrofrontendScope scope) {
     final repository = scope.repository(AccountData.repository);
     return _withAccountTexts(
@@ -59,6 +63,7 @@ abstract final class AccountScreens {
     );
   }
 
+  /// Route `/account/agreements`.
   static Widget agreements(MicrofrontendScope scope) {
     final repository = scope.repository(AccountData.repository);
     return _withAccountTexts(

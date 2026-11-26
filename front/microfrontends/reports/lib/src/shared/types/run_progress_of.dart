@@ -4,6 +4,7 @@ import '../enums/reports_enums.dart';
 
 /// [RunProgress] of a contract [ReportRunStatus].
 extension RunProgressOf on ReportRunStatus {
+  /// Progress of the run as the screen shows it.
   RunProgress get progress => switch (this) {
     ReportRunStatus.queued || ReportRunStatus.running => RunProgress.pending,
     ReportRunStatus.ready => RunProgress.ready,

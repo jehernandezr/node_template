@@ -5,6 +5,7 @@ import '../shared/types/types.dart';
 /// Converts between the types of the notifications contract and the ones the
 /// screens use.
 abstract final class NotificationsMapper {
+  /// Maps the contract notification to the UI one.
   static AppNotification notification(api.AppNotification notification) =>
       AppNotification(
         id: notification.id,
@@ -28,6 +29,7 @@ abstract final class NotificationsMapper {
     timezone: preferences.timezone,
   );
 
+  /// Maps the UI preferences to the contract request.
   static api.NotificationPreferences preferencesRequest(
     NotificationPreferences preferences,
   ) => api.NotificationPreferences(

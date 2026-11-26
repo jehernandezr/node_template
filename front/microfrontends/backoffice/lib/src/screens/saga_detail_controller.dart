@@ -49,8 +49,8 @@ final class SagaDetailController extends ChangeNotifier {
     return result;
   }
 
+  /// Both calls start before either is awaited, so they run in parallel.
   Future<SagaWithAudit> _fetch() async {
-    // Both calls start before either is awaited, so they run in parallel.
     final saga = _repository.saga(_sagaId);
     final audit = _repository.sagaAudit(_sagaId);
     await Future.wait<Object?>([saga, audit]);

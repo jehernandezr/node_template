@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 /// none. The label names the filter for screen readers even after a value is
 /// chosen.
 class EnumFilter<T extends Enum> extends StatelessWidget {
+  /// Chips that filter a list by one value of an enum.
   const EnumFilter({
     super.key,
     required this.label,

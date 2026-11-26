@@ -13,6 +13,7 @@ import 'tenant_detail_controller.dart';
 
 /// Tenant detail: plan, region, shard group, users count and the audit timeline.
 class TenantDetailScreen extends StatelessWidget {
+  /// Detail of one tenant with its audit.
   const TenantDetailScreen({
     super.key,
     required this.repository,

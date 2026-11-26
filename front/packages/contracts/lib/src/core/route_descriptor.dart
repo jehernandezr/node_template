@@ -69,6 +69,7 @@ final class RouteDescriptor<Req, Res> {
   /// Stable id, for example `identity.auth.sign-in`.
   final String id;
 
+  /// HTTP method of the route.
   final HttpMethod method;
 
   /// Path with params in braces, for example `/v1/me/sessions/{sessionId}`.
@@ -80,6 +81,7 @@ final class RouteDescriptor<Req, Res> {
   /// Request fields that go in [path].
   final List<String> pathParams;
 
+  /// Where the request travels: path, query or body.
   final RequestLocation requestLocation;
 
   /// Status of a successful answer. 204 has no body.

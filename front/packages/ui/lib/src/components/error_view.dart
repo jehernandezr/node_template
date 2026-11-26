@@ -57,6 +57,7 @@ class ErrorView extends StatelessWidget {
 
   final Object? _error;
 
+  /// A SelectionArea keeps the lines copyable without the per-line long-press target of SelectableText, which is shorter than the minimum tap target.
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -93,9 +94,6 @@ class ErrorView extends StatelessWidget {
               ),
             ),
             if (errorCode != null || errorTraceId != null)
-              // A SelectionArea keeps the lines copyable without the
-              // per-line long-press target of SelectableText, which is
-              // shorter than the minimum tap target.
               SelectionArea(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

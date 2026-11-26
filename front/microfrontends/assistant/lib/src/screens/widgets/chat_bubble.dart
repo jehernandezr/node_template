@@ -11,12 +11,14 @@ import 'tool_confirmation_card.dart';
 /// One message of the conversation: the user's as a bubble at the end, the
 /// assistant's as a card with its tool confirmation, sources and usage.
 class ChatBubble extends StatelessWidget {
+  /// Bubble of [message].
   const ChatBubble({
     super.key,
     required this.message,
     required this.onToolDecision,
   });
 
+  /// Message shown.
   final ChatMessage message;
 
   /// Called with true when the user confirms the tool and false when the user

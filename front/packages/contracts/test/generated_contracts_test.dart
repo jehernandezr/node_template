@@ -85,7 +85,6 @@ void main() {
     });
 
     test('match the field errors the server returns', () {
-      // Same case as backend/libs/contracts/identity/src/contract.spec.ts.
       expect(
         _pairs(
           SignInRequestSchema.validate({
@@ -269,7 +268,6 @@ void main() {
       expect(access.platformRoles, [PlatformRole.support]);
       expect(access.features, [PlanFeature.billing]);
       expect(access.flags, isEmpty);
-      // The strict validator still flags them.
       expect(_pairs(SessionAccessSchema.validate(json)), [
         ('permissions.1', PlatformErrorCode.validationInvalidEnum.code),
         ('platformRoles.1', PlatformErrorCode.validationInvalidEnum.code),
@@ -294,7 +292,6 @@ void main() {
       expect(_pairs(SessionAccessSchema.validateIncoming(json)), [
         ('permissions.0', PlatformErrorCode.validationInvalidEnum.code),
       ]);
-      // A single enum has no Dart value for an unknown wire code.
       expect(
         _pairs(
           IdentityRoutes.requestMfaChallenge.validateResponse!({
@@ -305,8 +302,6 @@ void main() {
         ),
         [('method', PlatformErrorCode.validationInvalidEnum.code)],
       );
-      // Nested objects inherit the leniency: a page of sessions is fine
-      // with a new MFA method in a nested list.
       expect(
         IdentityRoutes.signIn.validateResponse!({
           'status': 'mfa_required',

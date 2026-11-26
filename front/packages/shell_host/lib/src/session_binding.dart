@@ -7,6 +7,7 @@ import 'package:shell_core/shell_core.dart';
 /// Follows the access of a real connection: the session mirrors it, and when
 /// identity closes the session the user goes back to sign-in.
 final class SessionBinding {
+  /// Binds the session manager to the router and the shell events.
   SessionBinding({
     required this._connection,
     required this._session,

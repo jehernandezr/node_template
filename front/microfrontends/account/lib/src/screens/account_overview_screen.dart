@@ -14,12 +14,14 @@ import 'widgets/account_widgets.dart';
 /// Profile summary with links to the account sections and sign-out. The
 /// profile and the sections the repository does not serve are left out.
 class AccountOverviewScreen extends StatelessWidget {
+  /// Overview of the account backed by [repository].
   const AccountOverviewScreen({
     super.key,
     required this.repository,
     required this.onSignOut,
   });
 
+  /// Source of the profile.
   final AccountRepository repository;
 
   /// Signs the user out. The shell implements it.

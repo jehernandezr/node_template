@@ -9,6 +9,8 @@ import '../../shared/types/billing_types.dart';
 
 /// Progress of one quota: label, `used / limit` and a bar that turns
 /// warning from 80% and danger from 100%.
+///
+/// Thick enough to read the fill at a glance, thin enough to stay secondary to the numbers above it.
 class UsageMeter extends StatelessWidget {
   /// Creates a meter for [usage].
   const UsageMeter({super.key, required this.usage});
@@ -16,8 +18,6 @@ class UsageMeter extends StatelessWidget {
   /// Usage to display.
   final QuotaUsage usage;
 
-  // Thick enough to read the fill at a glance, thin enough to stay secondary
-  // to the numbers above it.
   static const double _barHeight = 8;
 
   @override

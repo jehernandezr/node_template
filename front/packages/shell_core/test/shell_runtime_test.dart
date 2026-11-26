@@ -107,7 +107,6 @@ void main() {
     FlutterError.onError = errors.add;
     addTearDown(() => FlutterError.onError = previous);
 
-    // Queue a start and an identity change, then dispose before they drain.
     unawaited(runtime.start());
     session.value = _user('u2', 't1', permissions: {Permission.tasksRead});
     await runtime.dispose();
@@ -168,11 +167,7 @@ void main() {
 
   test('a session that changes only features does not re-initialize', () async {
     await runtime.start();
-    session.value = _user(
-      'u1',
-      't1',
-      permissions: {Permission.tasksRead},
-    ); // equal: no notification
+    session.value = _user('u1', 't1', permissions: {Permission.tasksRead});
     session.value = UserSession(
       userId: 'u1',
       tenantId: 't1',
@@ -191,7 +186,6 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(tasksProbe.pings, 1);
 
-      // Same instance is re-initialized after a user switch, adding a new subscription.
       session.value = _user('u2', 't1', permissions: {Permission.tasksRead});
       await runtime.whenIdle();
       runtime.eventBus.emit(const _Ping());

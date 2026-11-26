@@ -4,6 +4,7 @@ import '../shared/types/billing_types.dart';
 
 /// Converts the types of the billing contract into the ones the screens use.
 abstract final class BillingMapper {
+  /// Maps the contract subscription to the UI one.
   static Subscription subscription(api.Subscription subscription) =>
       Subscription(
         id: subscription.id,
@@ -12,6 +13,7 @@ abstract final class BillingMapper {
         period: _period(subscription.period),
       );
 
+  /// Maps the contract plan to the UI one.
   static Plan plan(api.Plan plan) => Plan(
     id: plan.id,
     name: plan.name,
@@ -23,11 +25,13 @@ abstract final class BillingMapper {
     ],
   );
 
+  /// Maps the contract usage of a metric to the UI one.
   static QuotaUsage usage(api.QuotaUsage usage) => QuotaUsage(
     quota: Quota(key: usage.metric, limit: usage.limit),
     used: usage.used,
   );
 
+  /// Maps the contract invoice to the UI one.
   static Invoice invoice(api.Invoice invoice) => Invoice(
     id: invoice.id,
     number: invoice.number,
@@ -44,6 +48,7 @@ abstract final class BillingMapper {
     ],
   );
 
+  /// Maps the contract invoice summary to the UI one.
   static InvoiceSummary invoiceSummary(api.InvoiceSummary invoice) =>
       InvoiceSummary(
         id: invoice.id,

@@ -13,14 +13,15 @@ import 'unread_counts.dart';
 /// emits with [ShellContext.emit], so a value that arrives after the identity
 /// changed is dropped.
 final class NotificationsLifecycle extends Microfrontend {
+  /// Lifecycle without a connection until the session starts.
   NotificationsLifecycle();
 
   StreamSubscription<int>? _subscription;
 
+  /// The identity may have changed while the data library loaded.
   @override
   Future<void> initialize(ShellContext context) async {
     final counts = await UnreadCounts.load(context.scope);
-    // The identity may have changed while the data library loaded.
     if (counts == null || context.isDisposed) return;
     _subscription = counts.listen(
       (count) => context.emit(UnreadCountChanged(count)),

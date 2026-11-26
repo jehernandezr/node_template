@@ -9,6 +9,7 @@ import 'package:ui/ui.dart';
 /// session can see, with sign-out and the badges the microfrontends publish.
 /// Screens own the only top bar ([AppPage]); the shell never draws one.
 class WebShellScaffold extends StatelessWidget {
+  /// Scaffold of the web shell over [host].
   const WebShellScaffold({
     super.key,
     required this.host,
@@ -16,6 +17,7 @@ class WebShellScaffold extends StatelessWidget {
     required this.child,
   });
 
+  /// Host whose menu and router the scaffold shows.
   final ShellHost host;
 
   /// Current path, used to select the destination.
@@ -24,6 +26,9 @@ class WebShellScaffold extends StatelessWidget {
   /// The microfrontend page.
   final Widget child;
 
+  /// The web rail shows every entry: there is no "More" slot.
+  ///
+  /// No top bar here: each screen draws its own with AppPage, and gets the sign-out action from ShellChrome where the rail is not shown.
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -31,7 +36,6 @@ class WebShellScaffold extends StatelessWidget {
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
         final entries = host.menu;
-        // The web rail shows every entry: there is no "More" slot.
         final menu = ShellMenuModel(
           entries: entries,
           location: location,
@@ -39,8 +43,6 @@ class WebShellScaffold extends StatelessWidget {
           badgeFor: host.badgeFor,
           maxPrimary: entries.length,
         );
-        // No top bar here: each screen draws its own with AppPage, and gets
-        // the sign-out action from ShellChrome where the rail is not shown.
         return ShellChrome(
           selectedIndex: menu.selectedIndex < 0 ? 0 : menu.selectedIndex,
           onSelected: (index) {

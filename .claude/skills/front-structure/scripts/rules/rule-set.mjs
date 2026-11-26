@@ -2,6 +2,7 @@ import { CatchWithoutOnRule } from './catch-without-on-rule.mjs';
 import { DatetimeNowRule } from './datetime-now-rule.mjs';
 import { FlutterTestImportRule } from './flutter-test-import-rule.mjs';
 import { HardcodedColorRule } from './hardcoded-color-rule.mjs';
+import { InlineCommentRule } from './inline-comment-rule.mjs';
 import { L10nInterpolationRule } from './l10n-interpolation-rule.mjs';
 import { LibTestingRule } from './lib-testing-rule.mjs';
 import { PhysicalDirectionRule } from './physical-direction-rule.mjs';
@@ -30,6 +31,7 @@ export class RuleSet {
       new CatchWithoutOnRule(),
       new DatetimeNowRule(),
       new PubspecCaretVersionRule(),
+      new InlineCommentRule(),
     ];
   }
 }

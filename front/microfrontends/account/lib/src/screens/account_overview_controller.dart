@@ -7,6 +7,7 @@ import '../shared/types/account_types.dart';
 
 /// State of the account overview: the profile, when the repository serves it.
 final class AccountOverviewController extends ChangeNotifier {
+  /// Controller over [repository]; call `start` once.
   AccountOverviewController(AccountRepository repository)
     : _repository = repository,
       _loader = AsyncLoader(() => _fetch(repository)) {

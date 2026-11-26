@@ -7,7 +7,12 @@ import 'notifications_repository.dart';
 
 /// In-memory repository for the demo mode and the tests. [push] simulates a
 /// notification that arrives while the app is open.
+///
+/// Fires on every change of the inbox: a live arrival or a read mark.
+///
+/// Open streams from [watchUnreadCount], closed by [dispose].
 final class FakeNotificationsRepository implements NotificationsRepository {
+  /// Demo repository with sample notifications and the failures of `DemoBehavior`.
   FakeNotificationsRepository({
     List<AppNotification>? seed,
     NotificationPreferences? preferences,
@@ -21,9 +26,7 @@ final class FakeNotificationsRepository implements NotificationsRepository {
   NotificationPreferences _preferences;
   final StreamController<AppNotification> _live =
       StreamController<AppNotification>.broadcast();
-  // Fires on every change of the inbox: a live arrival or a read mark.
   final StreamController<void> _changes = StreamController<void>.broadcast();
-  // Open streams from [watchUnreadCount], closed by [dispose].
   final Set<StreamController<int>> _counts = {};
 
   /// Whether [dispose] already ran.
@@ -40,13 +43,14 @@ final class FakeNotificationsRepository implements NotificationsRepository {
 
   /// Closes [live], [watchUnreadCount] and their internal subscriptions. The
   /// identity scope calls it; calling it again does nothing.
+  ///
+  /// Not waiting for the listeners: a stream with no subscriber never ends.
   @override
   Future<void> dispose() async {
     if (_behavior.isDisposed) return;
     _behavior.dispose();
     final counts = List.of(_counts);
     _counts.clear();
-    // Not waiting for the listeners: a stream with no subscriber never ends.
     for (final controller in counts) {
       unawaited(controller.close());
     }

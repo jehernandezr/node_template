@@ -11,8 +11,10 @@ import 'inbox_controller.dart';
 /// Inbox: unread and read notifications, marked on tap, with live arrivals on
 /// top. The screen only builds the view; [InboxController] holds the state.
 class NotificationsInboxScreen extends StatelessWidget {
+  /// Inbox backed by [repository].
   const NotificationsInboxScreen({super.key, required this.repository});
 
+  /// Source of the notifications.
   final NotificationsRepository repository;
 
   @override

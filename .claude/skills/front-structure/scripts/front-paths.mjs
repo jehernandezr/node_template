@@ -1,6 +1,7 @@
 // Predicates over paths relative to the repository root ("/" separator).
 export class FrontPaths {
-  static GENERATED = /\/(l10n\/generated|contracts\/lib\/src\/(?!core\/))/;
+  static GENERATED =
+    /\/(l10n\/generated|lib\/src\/generated|contracts\/lib\/src\/(?!core\/))/;
 
   static isGenerated(file) {
     return FrontPaths.GENERATED.test(file);

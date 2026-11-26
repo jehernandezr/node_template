@@ -7,6 +7,7 @@ import 'fake_billing_repository.dart';
 /// How the billing repository is created for each shell mode: in memory in
 /// demo, over the billing API in live.
 abstract final class BillingData {
+  /// How the billing repository is created in each shell mode.
   static final RepositoryBinding<BillingRepository> repository =
       RepositoryBinding<BillingRepository>(
         demo: (services) => FakeBillingRepository(behavior: DemoBehavior()),

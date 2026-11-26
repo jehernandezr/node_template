@@ -13,6 +13,7 @@ typedef AccessTokenProvider = Future<String?> Function();
 /// The client knows no service: the owner of the session decides which
 /// problems mean "the token is valid but out of date".
 final class SessionRefreshPolicy {
+  /// Refreshes the session with [refresh] for the requests [appliesTo] accepts.
   const SessionRefreshPolicy({required this.appliesTo, required this.refresh});
 
   /// Whether [ProblemDetails] of a failed authenticated route asks for a
@@ -44,6 +45,7 @@ final class SessionRefreshPolicy {
 /// route is logged once per client so the migration does not wait for the
 /// sunset.
 class ApiClient {
+  /// Client over [HttpTransport] that validates each request against its contract and refreshes the session when needed.
   ApiClient({
     required this.transport,
     required this._baseUri,
@@ -79,6 +81,8 @@ class ApiClient {
   ///
   /// Throws [ContractViolationException] when the request or the response
   /// break the contract, and [ApiErrorException] when the API answers an error.
+  ///
+  /// Routes without a body are `RouteDescriptor<Req, void>`.
   Future<Res> send<Req, Res>(
     RouteDescriptor<Req, Res> route,
     Req request, {
@@ -121,7 +125,6 @@ class ApiClient {
       );
     }
     final decode = route.decodeResponse;
-    // Routes without a body are `RouteDescriptor<Req, void>`.
     if (decode == null) return null as Res;
 
     final Object? decoded;
@@ -217,6 +220,7 @@ class ApiClient {
   static bool _isSuccess(TransportResponse response) =>
       response.statusCode >= 200 && response.statusCode <= 299;
 
+  /// The contract's canonical form: numbers in JSON notation, booleans as true/false and lists as a repeated parameter.
   void _reportDeprecation<Req, Res>(RouteDescriptor<Req, Res> route) {
     final deprecation = route.deprecated;
     if (deprecation == null || !_reportedDeprecations.add(route.id)) return;
@@ -247,8 +251,6 @@ class ApiClient {
     if (route.requestLocation == RequestLocation.body) {
       return (base.replace(path: '$basePath$path'), jsonEncode(rest));
     }
-    // The contract's canonical form: numbers in JSON notation, booleans as
-    // true/false and lists as a repeated parameter.
     final query = encodeQuery(rest);
     return (
       base.replace(
@@ -259,6 +261,7 @@ class ApiClient {
     );
   }
 
+  /// Not a problem document: fall through to a generic one.
   ProblemDetails _problemOf(TransportResponse response) {
     try {
       final decoded = jsonDecode(response.body);
@@ -267,8 +270,12 @@ class ApiClient {
         return ProblemDetails.fromJson(decoded);
       }
     } on FormatException {
-      // Not a problem document: fall through to a generic one.
+      return _genericProblem(response);
     }
+    return _genericProblem(response);
+  }
+
+  ProblemDetails _genericProblem(TransportResponse response) {
     return ProblemDetails(
       type: 'about:blank',
       title: 'HTTP ${response.statusCode}',

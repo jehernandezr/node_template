@@ -7,6 +7,7 @@ import '../shared/types/backoffice_types.dart';
 /// State of the dead-letter queues: the list of queues and, when one is
 /// selected, its messages.
 final class DlqController extends ChangeNotifier {
+  /// Controller over [repository], starting on [queue] when given.
   DlqController(BackofficeRepository repository, {String? queue})
     : _repository = repository,
       _queue = queue,
@@ -55,12 +56,12 @@ final class DlqController extends ChangeNotifier {
   /// Moves every message of [queue] back to its source queue and, on success,
   /// reloads the queues and the messages. Returns how many moved, or
   /// [ActionSkipped] when there is no selected queue.
+  ///
+  /// Reloads keep the current lists on screen, so the spinner does not replace the rows that were just redriven.
   Future<ActionResult<int>> redrive() async {
     final selected = _queue;
     if (selected == null) return const ActionSkipped<int>();
     final result = await _runner.run(() => _repository.redrive(selected));
-    // Reloads keep the current lists on screen, so the spinner does not
-    // replace the rows that were just redriven.
     if (result is ActionSucceeded<int>) await _loadAll(keepCurrent: true);
     return result;
   }

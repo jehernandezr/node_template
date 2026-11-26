@@ -19,13 +19,17 @@ import 'widgets/chat_message_list.dart';
 
 /// Chat with streaming answers, citations, tool confirmations and errors.
 class AssistantChatScreen extends StatelessWidget {
+  /// Chat of [conversationId] backed by [repository].
   const AssistantChatScreen({
     super.key,
     required this.conversationId,
     required this.repository,
   });
 
+  /// Id of the conversation shown.
   final String conversationId;
+
+  /// Source of the messages.
   final AssistantRepository repository;
 
   @override
@@ -80,6 +84,10 @@ class AssistantChatScreen extends StatelessWidget {
 
   /// Shows the failure and announces the finished answer once each. Both
   /// are taken from the controller, so a rebuild never repeats them.
+  ///
+  /// The text is decided while the state still holds the failure kind.
+  ///
+  /// Captured now: the announcement runs after the frame, when the context may no longer be usable for lookups.
   static void _scheduleEffects(
     BuildContext context,
     AssistantChatController controller,
@@ -87,7 +95,6 @@ class AssistantChatScreen extends StatelessWidget {
     final error = controller.takeError();
     if (error != null) {
       final l10n = AssistantLocalizations.of(context);
-      // The text is decided while the state still holds the failure kind.
       final isQuota = switch (controller.state) {
         ChatReady(answer: AnswerFailed(kind: ChatFailureKind.quotaExceeded)) =>
           true,
@@ -101,8 +108,6 @@ class AssistantChatScreen extends StatelessWidget {
 
     final done = controller.takeFinishedAnswer();
     if (done != null) {
-      // Captured now: the announcement runs after the frame, when the
-      // context may no longer be usable for lookups.
       final view = View.of(context);
       final direction = Directionality.of(context);
       WidgetsBinding.instance.addPostFrameCallback((_) {

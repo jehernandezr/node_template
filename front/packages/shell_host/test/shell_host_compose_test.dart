@@ -74,7 +74,6 @@ void main() {
     });
 
     test('compose wires the pieces and follows the connection', () async {
-      // The host disposes the connection, so the harness is not disposed here.
       final harness = FlowHarness();
       final registry = MicrofrontendRegistry()
         ..register(ProbeManifest.build('alpha'));

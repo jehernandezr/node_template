@@ -14,6 +14,7 @@ abstract interface class AccountRepository implements ScopedResource {
   /// Capabilities this repository actually serves.
   Set<AccountCapability> get capabilities;
 
+  /// Loads the name, email and organization of the user.
   Future<AccountProfile> loadProfile();
 
   /// Active sessions, the current one included.
@@ -25,11 +26,13 @@ abstract interface class AccountRepository implements ScopedResource {
   /// Closes every session but the current one. Returns how many it closed.
   Future<int> revokeOtherSessions();
 
+  /// Lists the devices of the user.
   Future<List<DeviceSummary>> listDevices();
 
   /// Withdraws the trust of a device.
   Future<void> removeDeviceTrust(String deviceId);
 
+  /// Loads the second factor and passkeys of the user.
   Future<SecurityOverview> loadSecurity();
 
   /// Registers a new passkey.
@@ -38,9 +41,12 @@ abstract interface class AccountRepository implements ScopedResource {
   /// Generates new recovery codes; the previous ones stop working.
   Future<List<String>> regenerateRecoveryCodes();
 
+  /// Lists the agreements the user still has to accept.
   Future<List<Agreement>> listPendingAgreements();
 
+  /// Lists the agreements the user already accepted.
   Future<List<Agreement>> listAcceptedAgreements();
 
+  /// Accepts the agreement [agreementId].
   Future<void> acceptAgreement(String agreementId);
 }

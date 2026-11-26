@@ -5,7 +5,10 @@ import '../data/backoffice_repository.dart';
 import '../shared/types/backoffice_types.dart';
 
 /// State of the tenant detail: the tenant and its audit log.
+///
+/// Future.wait keeps the original error; a record of futures would wrap it in a ParallelWaitError, which is an Error and escapes the loader.
 final class TenantDetailController extends ChangeNotifier {
+  /// Controller of one tenant over [repository].
   TenantDetailController(
     BackofficeRepository repository, {
     required String tenantId,
@@ -23,8 +26,6 @@ final class TenantDetailController extends ChangeNotifier {
   /// Loads both in parallel; also the retry.
   Future<void> start() => _loader.load();
 
-  // Future.wait keeps the original error; a record of futures would wrap it
-  // in a ParallelWaitError, which is an Error and escapes the loader.
   Future<TenantWithAudit> _fetch(String tenantId) async {
     final tenant = _repository.tenant(tenantId);
     final audit = _repository.tenantAudit(tenantId);

@@ -15,8 +15,10 @@ import 'widgets/account_widgets.dart';
 
 /// Agreements still to accept, and the history of the accepted ones.
 class AgreementsScreen extends StatelessWidget {
+  /// Agreements screen backed by [repository].
   const AgreementsScreen({super.key, required this.repository});
 
+  /// Source of the agreements.
   final AccountRepository repository;
 
   @override

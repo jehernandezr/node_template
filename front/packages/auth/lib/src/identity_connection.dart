@@ -36,6 +36,8 @@ final class IdentityConnection {
   /// (cookie on the web, bearer in the native app); the rest, including the
   /// step-up, use [apiClient], which takes the token from [sessionManager] and
   /// notifies it when the API rejects that token with an invalidation code.
+  ///
+  /// The session client and the SessionManager depend on each other.
   factory IdentityConnection({
     required HttpTransport transport,
     required Uri baseUri,
@@ -43,7 +45,6 @@ final class IdentityConnection {
     DeviceKeyPort? deviceKeys,
     Map<String, String> defaultHeaders = const {},
   }) {
-    // The session client and the SessionManager depend on each other.
     late final SessionManager sessionManager;
     final apiClient = ApiClient(
       transport: SessionInvalidationTransport(
@@ -174,10 +175,11 @@ final class IdentityConnection {
   /// the step-up page decides when the shell session changes: it first closes
   /// the page and then publishes, because the router recomputes on that
   /// change.
+  ///
+  /// Through JSON, so a field the contract adds later is not lost.
   void markMfaVerified(DateTime at) {
     final current = _access.value;
     if (current == null || sessionManager.state == AuthState.signedOut) return;
-    // Through JSON, so a field the contract adds later is not lost.
     _access.value = SessionAccess.fromJson({
       ...current.toJson(),
       'mfaVerifiedAt': at.toUtc().toIso8601String(),
@@ -196,6 +198,7 @@ final class IdentityConnection {
     _transport?.close();
   }
 
+  /// A refresh may bring new permissions. If the load fails because of the network or the API, the previous access is kept and the next refresh tries again; a programming error propagates to the zone.
   void _onState(AuthState state) {
     final previous = _lastState;
     _lastState = state;
@@ -204,9 +207,6 @@ final class IdentityConnection {
       _access.value = null;
     } else if (state == AuthState.signedIn &&
         previous == AuthState.refreshing) {
-      // A refresh may bring new permissions. If the load fails because of the
-      // network or the API, the previous access is kept and the next refresh
-      // tries again; a programming error propagates to the zone.
       unawaited(
         reloadAccess().then<void>(
           (_) {},
@@ -233,9 +233,13 @@ typedef RejectedTokenHandler = Future<bool> Function(
 /// microfrontend makes the call. The response passes unchanged to
 /// `ApiClient`, which turns it into an `ApiErrorException`.
 final class SessionInvalidationTransport implements HttpTransport {
+  /// Wraps [inner] and calls [onRejected] when the server rejects the session.
   SessionInvalidationTransport(this.inner, {required this.onRejected});
 
+  /// Transport that sends the requests.
   final HttpTransport inner;
+
+  /// Called when the server answers that the session is no longer valid.
   final RejectedTokenHandler onRejected;
 
   static const _bearer = 'Bearer ';
@@ -259,6 +263,7 @@ final class SessionInvalidationTransport implements HttpTransport {
     return response;
   }
 
+  /// Not a problem document: there is no code to inspect.
   static String? _problemCode(String body) {
     try {
       final decoded = jsonDecode(body);
@@ -266,7 +271,7 @@ final class SessionInvalidationTransport implements HttpTransport {
         return decoded['code'] as String;
       }
     } on FormatException {
-      // Not a problem document: there is no code to inspect.
+      return null;
     }
     return null;
   }

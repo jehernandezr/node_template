@@ -10,6 +10,7 @@ import '../enums/reports_enums.dart';
 
 /// The parameters of a report the user is about to generate.
 final class ReportDraft {
+  /// Report the user is about to request.
   const ReportDraft({
     required this.entry,
     required this.format,
@@ -31,10 +32,17 @@ final class ReportDraft {
 
   /// The report of the catalog, with the formats and groupings it allows.
   final ReportCatalogEntry entry;
+
+  /// File format.
   final ReportFormat format;
+
+  /// Granularity of the rows.
   final ReportGranularity granularity;
+
+  /// Range of days.
   final ReportPeriod period;
 
+  /// Copies the draft with the given fields changed.
   ReportDraft copyWith({
     ReportFormat? format,
     ReportGranularity? granularity,

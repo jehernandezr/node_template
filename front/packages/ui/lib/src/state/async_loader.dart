@@ -23,13 +23,14 @@ final class AsyncLoader<T> extends ChangeNotifier {
   /// Fetches again. The answer of an older call is dropped. With
   /// [keepCurrent] and data on screen, the data stays until the new one
   /// arrives instead of going back to loading.
+  ///
+  /// An Error from the fetch is a bug and escapes through this future.
   Future<void> load({bool keepCurrent = false}) async {
     if (_disposed) return;
     final id = ++_requestId;
     if (!(keepCurrent && _value is AsyncData<T>)) {
       _emit(AsyncValue<T>.loading());
     }
-    // An Error from the fetch is a bug and escapes through this future.
     final result = await AsyncValue.guard(_fetch);
     if (_disposed || id != _requestId) return;
     _emit(result);

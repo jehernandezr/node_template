@@ -20,6 +20,7 @@ import 'sliver_gap.dart';
 /// the source queue after confirmation, and only `superAdmin` and `support`
 /// see it.
 class DlqScreen extends StatelessWidget {
+  /// Dead-letter queues screen backed by [repository], opened on [queue] when given.
   const DlqScreen({super.key, required this.repository, this.queue});
 
   /// Data source of the screen.

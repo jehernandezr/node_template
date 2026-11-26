@@ -22,6 +22,7 @@ import 'server_sent_event_reader.dart';
 /// frame whose id already arrived is dropped, so nothing is lost or repeated.
 /// A `session-closed` frame ends the reconnections: that session is over.
 final class SseNotificationsStream implements NotificationsStream {
+  /// Stream of notifications over server-sent events that reconnects on its own.
   SseNotificationsStream({
     required this._client,
     required this._httpClient,
@@ -73,20 +74,27 @@ final class SseNotificationsStream implements NotificationsStream {
     unawaited(_connectAndWatch());
   }
 
+  /// Only the status matters: the body of a refusal is not read.
+  ///
+  /// A network failure is a dropped connection: the stream retries below.
   Future<void> _connectAndWatch() async {
     final reader = ServerSentEventReader();
     try {
       final response = await _httpClient.send(await _request());
       if (response.statusCode != 200 || _closed) {
-        // Only the status matters: the body of a refusal is not read.
         unawaited(response.stream.listen(null).cancel());
       } else {
         _delay = reconnectDelay;
         await _watch(response.stream, reader);
       }
     } on Exception {
-      // A network failure is a dropped connection: the stream retries below.
+      _retryAfterDrop(reader);
+      return;
     }
+    _retryAfterDrop(reader);
+  }
+
+  void _retryAfterDrop(ServerSentEventReader reader) {
     final retry = reader.retry;
     if (retry != null) _delay = retry;
     _scheduleReconnect();

@@ -16,13 +16,16 @@ class TaskDetailScreen extends StatelessWidget {
     required this.taskId,
   });
 
+  /// Source of the task.
   final TasksRepository repository;
+
+  /// Id of the task shown.
   final String taskId;
 
+  /// A deep link has nothing to pop: go to the list.
   @override
   Widget build(BuildContext context) => AppPage(
     title: TasksLocalizations.of(context).detailTitle,
-    // A deep link has nothing to pop: go to the list.
     onBack: () => context.go(TasksPaths.list),
     body: TaskDetailView(
       repository: repository,

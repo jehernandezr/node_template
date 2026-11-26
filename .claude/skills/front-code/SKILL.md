@@ -37,7 +37,7 @@ Details, signatures and examples in [references/state-and-errors.md](references/
 - Only logic that does not fit in an `AsyncLoader` (search with filters and pagination, like `TasksListController.reload`) has its own `_requestId`.
 - The controller exposes immutable state. It changes state by assigning a new value and calling `notifyListeners`, never by mutating a list it already handed out.
 - In a widget, after every `await`, check `context.mounted` before using the `context`. Action results are shown with `showActionResult`.
-- `AsyncValue.guard` and `ActionRunner` catch only `Exception`: an `Error` is a bug and escapes. A `catch` without `on` is only written with the `// catch-all: <reason>` mark on the line before, at a point that reports the failure.
+- `AsyncValue.guard` and `ActionRunner` catch only `Exception`: an `Error` is a bug and escapes. A catch-all is written as `on Object catch`, only at a point that reports the failure, and the method's `///` says why.
 - Expected failures are typed exceptions (`ApiErrorException` with its contract code, `SignedOutException`). A server error text is never shown: it is translated with `ErrorPresenter` from `i18n`.
 - Timers, subscriptions and `StreamController` are cancelled in `dispose`. A per-identity resource implements `ScopedResource`.
 

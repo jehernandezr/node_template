@@ -21,7 +21,6 @@ void main() {
         addTearDown(bus.dispose);
         final scope = NotificationsScopes.create(bus: bus);
         addTearDown(scope.dispose);
-        // One scope for the lifecycle and the screen: they share a repository.
         final repo = scope.get<NotificationsRepository>(
           (_) => FakeNotificationsRepository(
             seed: [
@@ -39,8 +38,6 @@ void main() {
 
         final lifecycle = NotificationsLifecycle();
         addTearDown(lifecycle.dispose);
-        // initialize loads the deferred data library: it ends while the test
-        // clock advances, so it is awaited after pumping.
         final initialized = lifecycle.initialize(
           ShellContext(
             eventBus: bus,

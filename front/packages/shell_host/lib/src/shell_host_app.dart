@@ -10,8 +10,10 @@ import 'shell_host.dart';
 /// Root widget of a shell: starts [host] when mounted and disposes it when
 /// removed.
 class ShellHostApp extends StatefulWidget {
+  /// App widget of [host].
   const ShellHostApp({super.key, required this.host});
 
+  /// Host whose router and theme the app uses.
   final ShellHost host;
 
   @override
@@ -31,6 +33,7 @@ class _ShellHostAppState extends State<ShellHostApp> {
     super.dispose();
   }
 
+  /// Lets the shell frame use AccessGate and context.can as well.
   @override
   Widget build(BuildContext context) {
     final host = widget.host;
@@ -45,7 +48,6 @@ class _ShellHostAppState extends State<ShellHostApp> {
       supportedLocales: supportedLocales,
       routerConfig: host.router,
       scaffoldMessengerKey: host.scaffoldMessengerKey,
-      // Lets the shell frame use AccessGate and context.can as well.
       builder: (context, child) => ShellAccessScope(
         session: host.session,
         clock: host.runtime.clock,

@@ -11,6 +11,7 @@ import 'mfa_state.dart';
 /// The forms only draw [state] and call the actions. Which step each error
 /// resets lives here, so it is tested without mounting widgets.
 abstract base class MfaFlow extends ChangeNotifier {
+  /// Starts the flow in [initial], idle by default.
   MfaFlow({MfaState initial = const MfaIdle()}) : _state = initial;
 
   MfaState _state;
@@ -42,6 +43,10 @@ abstract base class MfaFlow extends ChangeNotifier {
   ///
   /// Only exceptions are caught: a programming error (`TypeError`,
   /// `StateError`) escapes as is, after the flow leaves [MfaBusy].
+  ///
+  /// Network, timeout or closed session: a generic message, never the text of the exception.
+  ///
+  /// Still busy here only when an error escaped the handlers above.
   Future<T?> _run<T>(
     Future<T> Function(void Function(MfaStep next) advance) call,
   ) async {
@@ -59,11 +64,8 @@ abstract base class MfaFlow extends ChangeNotifier {
     } on ContractViolationException {
       _emit(MfaFailed(PlatformErrorCode.validationInvalidInput.code, from));
     } on Exception {
-      // Network, timeout or closed session: a generic message, never the
-      // text of the exception.
       _emit(MfaFailed(PlatformErrorCode.internalUnexpected.code, from));
     } finally {
-      // Still busy here only when an error escaped the handlers above.
       if (identical(_state, busy)) _emit(from);
     }
     return null;
@@ -97,6 +99,7 @@ abstract base class MfaFlow extends ChangeNotifier {
 /// ([verify]). Once the session is open it loads its access, and the action
 /// returns true.
 final class SignInFlow extends MfaFlow {
+  /// Sign-in flow over [_connection].
   SignInFlow(this._connection);
 
   final IdentityConnection _connection;
@@ -174,6 +177,7 @@ final class SignInFlow extends MfaFlow {
 ///
 /// Starts busy because whoever creates it calls [start] right away.
 final class StepUpFlow extends MfaFlow {
+  /// Step-up flow of the session that [_manager] holds.
   StepUpFlow(this._manager) : super(initial: const MfaBusy(MfaIdle()));
 
   final SessionManager _manager;

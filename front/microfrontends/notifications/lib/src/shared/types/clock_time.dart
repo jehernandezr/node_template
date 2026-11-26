@@ -1,6 +1,7 @@
 /// Time of day without date or zone, such as 22:00 for the start of the
 /// quiet hours.
 final class ClockTime {
+  /// Time of day [hour]:[minute].
   const ClockTime(this.hour, this.minute)
     : assert(hour >= 0 && hour < 24),
       assert(minute >= 0 && minute < 60);
@@ -16,7 +17,10 @@ final class ClockTime {
 
   static final RegExp _pattern = RegExp(r'^([01]\d|2[0-3]):([0-5]\d)$');
 
+  /// Hour, from 0 to 23.
   final int hour;
+
+  /// Minute, from 0 to 59.
   final int minute;
 
   @override

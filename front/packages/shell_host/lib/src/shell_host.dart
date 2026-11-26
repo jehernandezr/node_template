@@ -61,6 +61,8 @@ final class ShellHost {
   /// (its services need sign-out and step-up, which reach the host through
   /// [host] once it exists), then the routes and the router, and last the
   /// pieces that need the router.
+  ///
+  /// Read only after the host exists: the callbacks run on user actions.
   factory ShellHost({
     required AppPlatform platform,
     required List<MicrofrontendManifest> manifests,
@@ -84,7 +86,6 @@ final class ShellHost {
       clock: clock,
     );
     final stepUp = StepUpRequests(path: paths.stepUp!);
-    // Read only after the host exists: the callbacks run on user actions.
     late final ShellHost host;
     final api = connection?.apiClient;
     final runtime = ShellRuntime(
@@ -167,7 +168,10 @@ final class ShellHost {
   /// Current user. Anonymous until a sign-in, and again after a sign-out.
   final ValueNotifier<UserSession> session;
 
+  /// Runtime with the manifests, session and services of the shell.
   final ShellRuntime runtime;
+
+  /// Router of the shell.
   final GoRouter router;
 
   /// Where the shell sends the user: home, landing and sign-out.
@@ -225,6 +229,8 @@ final class ShellHost {
   ///
   /// Without network the user stays on the sign-in page. Any other failure
   /// is reported too, because it is not something the user can fix.
+  ///
+  /// Any other restore failure is reported and the user stays on sign-in.
   Future<void> start() async {
     await runtime.start();
     final connection = this.connection;
@@ -233,8 +239,7 @@ final class ShellHost {
       if (!await connection.restore()) return;
     } on TransportException {
       return;
-      // catch-all: any other restore failure is reported and the user stays on sign-in
-    } catch (error, stack) {
+    } on Object catch (error, stack) {
       FlutterError.reportError(
         FlutterErrorDetails(
           exception: error,
@@ -256,11 +261,13 @@ final class ShellHost {
   Future<void> get whenDisposed => _disposed.future;
   final Completer<void> _disposed = Completer<void>();
 
+  /// Releases the session, the router and the runtime.
+  ///
+  /// The badges stop listening before the bus closes, or its close waits.
   Future<void> dispose() async {
     binding?.stop();
     runtime.identityEpoch.removeListener(_onIdentityChanged);
     stepUp.dispose();
-    // The badges stop listening before the bus closes, or its close waits.
     await menuBadges.dispose();
     router.dispose();
     await runtime.dispose();

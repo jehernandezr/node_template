@@ -7,6 +7,7 @@ import 'report_file_saver.dart';
 /// [ReportFileSaver] outside the browser: the app has no folder of its own to
 /// save into, so the content goes to the clipboard.
 final class PlatformReportFileSaver implements ReportFileSaver {
+  /// Saver that copies the file content to the clipboard.
   const PlatformReportFileSaver();
 
   @override

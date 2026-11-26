@@ -56,7 +56,6 @@ void main() {
       expect(find.text(_es.currentPlanBadge), findsOneWidget);
       expect(find.text(_es.prorationNote), findsNothing);
 
-      // The current plan cannot be selected.
       await tester.tap(find.text('Pro'));
       await tester.pumpAndSettle();
       expect(find.text(_es.prorationNote), findsNothing);

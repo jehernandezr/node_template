@@ -6,6 +6,7 @@ import 'package:auth/auth.dart';
 /// It only exists next to the demo repository: no real server ever receives
 /// a signature from it.
 final class DemoDeviceKey implements DeviceKeyPort {
+  /// Device key of the demo, with fixed bytes.
   const DemoDeviceKey();
 
   @override

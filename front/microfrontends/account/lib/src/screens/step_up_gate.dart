@@ -9,6 +9,7 @@ import 'package:utils/utils.dart';
 /// updates `UserSession.mfaVerifiedAt`, so after a yes the [rule] passes and
 /// the API stops answering `IDENTITY.MFA.STEP_UP_REQUIRED`.
 final class StepUpGate {
+  /// Gate that decides when a sensitive action needs a fresh second factor.
   StepUpGate({
     required this._rule,
     required this._session,

@@ -5,7 +5,10 @@ import '../data/billing_repository.dart';
 import '../shared/types/billing_types.dart';
 
 /// State of the plan page: subscription and usage, loaded together.
+///
+/// Future.wait keeps the original error; a record of futures would wrap it in a ParallelWaitError, which is an Error and escapes the loader.
 final class BillingPlanController extends ChangeNotifier {
+  /// Controller over [repository]; call `start` once.
   BillingPlanController(BillingRepository repository)
     : _loader = AsyncLoader<PlanOverview>(() => _fetch(repository)) {
     _loader.addListener(notifyListeners);
@@ -20,8 +23,6 @@ final class BillingPlanController extends ChangeNotifier {
   /// reloads.
   Future<void> start() => _loader.load();
 
-  // Future.wait keeps the original error; a record of futures would wrap it
-  // in a ParallelWaitError, which is an Error and escapes the loader.
   static Future<PlanOverview> _fetch(BillingRepository repository) async {
     final subscription = repository.currentSubscription();
     final usage = repository.currentUsage();

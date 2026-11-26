@@ -7,8 +7,17 @@ import 'package:utils/utils.dart';
 import 'auth_errors.dart';
 import 'ports.dart';
 
-/// Observable session state.
-enum AuthState { signedOut, signedIn, refreshing }
+/// Whether there is a session and whether it is being refreshed.
+enum AuthState {
+  /// There is no session.
+  signedOut,
+
+  /// There is a valid session.
+  signedIn,
+
+  /// The session is being refreshed.
+  refreshing,
+}
 
 /// Maintains the session: stores the session token, refreshes the access token before
 /// it expires and closes the session when the server invalidates it.
@@ -25,6 +34,7 @@ enum AuthState { signedOut, signedIn, refreshing }
 /// deletes are applied in the order they are requested, so the
 /// delete of a logout always wins over a write that started earlier.
 class SessionManager {
+  /// Manager over the auth repository, its token store and clock.
   SessionManager({
     required this._repository,
     required this._tokenStore,
@@ -62,6 +72,7 @@ class SessionManager {
   /// Queue of operations on [_tokenStore], to apply them in order.
   Future<void> _storeQueue = Future<void>.value();
 
+  /// Current state of the session.
   AuthState get state => _state;
 
   /// Whether [verifyMfa] can register this device, because there is a
@@ -182,10 +193,10 @@ class SessionManager {
   ///
   /// Sends the stored session token (on web the cookie travels). Without a session
   /// token or cookie there is nothing to revoke and only the local session is closed.
+  ///
+  /// Read outside the store queue: waiting behind a pending write would let that write open the session before the sign-out.
   Future<void> logout() async {
     try {
-      // Read outside the store queue: waiting behind a pending write
-      // would let that write open the session before the sign-out.
       final sessionToken =
           _sessionToken ?? await _tokenStore.readSessionToken();
       if (sessionToken != null || _tokenStore.sessionInCookie) {
@@ -266,6 +277,7 @@ class SessionManager {
     return true;
   }
 
+  /// Closes the stream of states.
   Future<void> dispose() => _states.close();
 
   /// A single in-flight refresh: concurrent calls receive the same result.
@@ -281,6 +293,9 @@ class SessionManager {
     return future;
   }
 
+  /// After a logout the state is already signedOut and is not touched.
+  ///
+  /// Any other failure, including a programming error that passes through, returns the state the refresh found.
   Future<SessionTokens> _doRefresh() async {
     final generation = _generation;
     _setState(AuthState.refreshing);
@@ -289,14 +304,11 @@ class SessionManager {
       await _adopt(fresh, generation: generation);
       return fresh;
     } on ApiErrorException catch (error) {
-      // After a logout the state is already signedOut and is not touched.
       if (generation == _generation && _endsSession(error)) {
         await _clearLocal();
       }
       rethrow;
     } finally {
-      // Any other failure, including a programming error that passes
-      // through, returns the state the refresh found.
       if (generation == _generation && _state == AuthState.refreshing) {
         _setState(_tokens == null ? AuthState.signedOut : AuthState.signedIn);
       }
@@ -355,9 +367,10 @@ class SessionManager {
   }
 
   /// Runs [operation] on the store after the ones already requested.
+  ///
+  /// The queue continues even if an operation fails; the error reaches whoever requested it.
   Future<T> _serialized<T>(Future<T> Function() operation) {
     final result = _storeQueue.then((_) => operation());
-    // The queue continues even if an operation fails; the error reaches whoever requested it.
     _storeQueue = result.then<void>((_) {}, onError: (Object _) {});
     return result;
   }

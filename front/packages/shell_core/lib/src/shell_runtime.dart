@@ -46,6 +46,8 @@ Duration defaultLifecycleRetryDelay(int failures) {
 /// manifest's `lifecycleFactory`. A lifecycle whose `initialize` throws is
 /// disposed and retried after [lifecycleRetryDelay]. Errors from hooks are
 /// reported with [FlutterError.reportError].
+///
+/// Not disposed: pages may still remove their listeners after the runtime.
 final class ShellRuntime {
   /// Creates a runtime for [platform] that follows [session].
   ShellRuntime({
@@ -89,7 +91,6 @@ final class ShellRuntime {
   /// `ShellRouterFactory` keys each microfrontend page with it, so mounted
   /// screens build their state again for the new identity.
   ValueListenable<int> get identityEpoch => _identityEpoch;
-  // Not disposed: pages may still remove their listeners after the runtime.
   final ValueNotifier<int> _identityEpoch = ValueNotifier<int>(0);
 
   final Map<MicrofrontendId, _Active> _active = {};
@@ -187,13 +188,16 @@ final class ShellRuntime {
     return _queue;
   }
 
+  /// A sync queued before dispose must not touch scopes or lifecycles after it.
+  ///
+  /// The identity this sync works for. If it changes while a lifecycle initializes, the rest of the list belongs to the previous identity: the sync queued by that change does the work for the new one.
+  ///
+  /// A failing hook is reported and retried; it must not stop the other microfrontends.
+  ///
+  /// A context cancelled meanwhile means the identity changed or the runtime was disposed: the failure belongs to an abandoned start.
   Future<void> _sync() async {
-    // A sync queued before dispose must not touch scopes or lifecycles after it.
     if (_disposed) return;
     final current = session.value;
-    // The identity this sync works for. If it changes while a lifecycle
-    // initializes, the rest of the list belongs to the previous identity: the
-    // sync queued by that change does the work for the new one.
     final startEpoch = _identityEpoch.value;
     final identityChanged = _identityChanged;
     _identityChanged = false;
@@ -230,10 +234,7 @@ final class ShellRuntime {
       try {
         await lifecycle.initialize(context);
         if (epoch == _identityEpoch.value) _retries.remove(id);
-        // catch-all: a failing hook is reported and retried; it must not stop the other microfrontends
-      } catch (error, stack) {
-        // A context cancelled meanwhile means the identity changed or the
-        // runtime was disposed: the failure belongs to an abandoned start.
+      } on Object catch (error, stack) {
         if (!context.isDisposed) _report(error, stack);
         if (identical(_active[id]?.context, context)) _active.remove(id);
         await _release(_Active(lifecycle, context));
@@ -266,11 +267,11 @@ final class ShellRuntime {
     }
   }
 
+  /// A failing dispose is reported so the remaining lifecycles still close.
   Future<void> _release(_Active active) async {
     try {
       await active.lifecycle.dispose();
-      // catch-all: a failing dispose is reported so the remaining lifecycles still close
-    } catch (error, stack) {
+    } on Object catch (error, stack) {
       _report(error, stack);
     }
     await active.context.dispose();

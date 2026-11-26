@@ -20,12 +20,17 @@ class TaskFormScreen extends StatelessWidget {
   /// Creates the form. A null [taskId] creates a new task.
   const TaskFormScreen({super.key, required this.repository, this.taskId});
 
+  /// Source of the task.
   final TasksRepository repository;
+
+  /// Task being edited, or `null` to create one.
   final String? taskId;
 
+  /// The repository is part of the key: a new identity gets a new controller.
+  ///
+  /// The same widget at the same place for the three states, so the text typed before a save survives it.
   @override
   Widget build(BuildContext context) => ControllerBuilder<TaskFormController>(
-    // The repository is part of the key: a new identity gets a new controller.
     key: ValueKey((repository, taskId)),
     create: (_) => TaskFormController(repository, taskId: taskId)..start(),
     builder: (context, controller) {
@@ -57,8 +62,6 @@ class TaskFormScreen extends StatelessWidget {
                 : l10n.detailError,
             onRetry: error is TaskNotFoundException ? null : controller.start,
           ),
-          // The same widget at the same place for the three states, so the
-          // text typed before a save survives it.
           TaskFormEditing(:final task, :final fieldErrors) => TaskFormFields(
             key: const ValueKey('task-form-fields'),
             task: task,

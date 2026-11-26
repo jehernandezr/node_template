@@ -94,7 +94,6 @@ void main() {
         );
         await pumpEventQueue();
 
-        // The second save waits for the first one to end.
         expect(repo.saved, hasLength(1));
 
         gate.complete();
@@ -248,7 +247,6 @@ void main() {
           enabled: true,
         );
         await pumpEventQueue();
-        // The second save starts after the first one ends, so it waits here.
         final secondGate = Completer<void>();
         repo.saveGate = secondGate;
         firstGate.complete();

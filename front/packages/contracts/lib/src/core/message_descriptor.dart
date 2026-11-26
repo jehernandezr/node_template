@@ -19,6 +19,7 @@ final class MessageDescriptor<P> {
   /// CloudEvents type with the version suffix, e.g. `identity.session.revoked.v1`.
   final String type;
 
+  /// Whether the message is an event or a command.
   final MessageKind kind;
 
   /// Payload version, the `.vN` suffix of [type].

@@ -14,4 +14,5 @@ export class RuleId {
   static CATCH_WITHOUT_ON = 'catch-without-on';
   static DATETIME_NOW = 'datetime-now';
   static PUBSPEC_CARET_VERSION = 'pubspec-caret-version';
+  static INLINE_COMMENT = 'inline-comment';
 }

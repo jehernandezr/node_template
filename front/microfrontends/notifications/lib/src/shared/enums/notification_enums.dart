@@ -13,10 +13,21 @@ extension NotificationTypeRules on NotificationType {
 /// Operations of the notifications repository. The demo repository tags each
 /// call with one so a test can make a single operation fail.
 enum NotificationsOperation {
+  /// Loading the inbox.
   fetchInbox,
+
+  /// Reading the unread count.
   unreadCount,
+
+  /// Marking one notification read.
   markAsRead,
+
+  /// Marking every notification read.
   markAllAsRead,
+
+  /// Loading the preferences.
   fetchPreferences,
+
+  /// Saving the preferences.
   savePreferences,
 }

@@ -194,7 +194,6 @@ void main() {
         links.resolveDeepLink(['billing', '1'], const {}, AppPlatform.mobile),
         isNull,
       );
-      // A location outside the microfrontend's own routes is refused.
       expect(
         links.resolveDeepLink(
           ['tasks', 'escape'],

@@ -20,7 +20,10 @@ import 'assistant_repository.dart';
 /// Latency of list, create, history and the start of an answer, and the
 /// failures a test programs, come from [DemoBehavior]; [chunkDelay] only
 /// paces the chunks of an answer.
+///
+/// Scripted server content, kept here because it simulates what the API sends.
 base class FakeAssistantRepository implements AssistantRepository {
+  /// Demo repository with sample conversations and the failures of `DemoBehavior`.
   FakeAssistantRepository({
     DemoBehavior? behavior,
     this.chunkDelay = const Duration(milliseconds: 60),
@@ -61,7 +64,6 @@ base class FakeAssistantRepository implements AssistantRepository {
   final Set<_ActiveAnswer> _active = {};
   int _nextConversation = 3;
 
-  // Scripted server content, kept here because it simulates what the API sends.
   static const String _toolLead = 'Voy a preparar la tarea para ti. ';
   static const String _toolSummary =
       'Crear una tarea nueva en tu lista de pendientes.';
@@ -210,8 +212,8 @@ final class _ActiveAnswer {
     if (!_out.isClosed) unawaited(_out.close());
   }
 
+  /// Unblock the script if it waits for a tool answer nobody will give.
   Future<void> _stopSource() {
-    // Unblock the script if it waits for a tool answer nobody will give.
     final pending = _pending;
     if (pending != null && !pending.isResolved) pending.reject();
     return _subscription?.cancel() ?? Future<void>.value();

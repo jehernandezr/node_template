@@ -43,6 +43,7 @@ class AppButton extends StatelessWidget {
   /// Shows a spinner in place of the label content and disables the button.
   final bool loading;
 
+  /// Flexible lets a long label wrap instead of overflowing a narrow button (small phones, large text scale).
   @override
   Widget build(BuildContext context) {
     final loadingLabel = Localizations.of<AppLocalizations>(
@@ -70,8 +71,6 @@ class AppButton extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
-        // Flexible lets a long label wrap instead of overflowing a narrow
-        // button (small phones, large text scale).
         Flexible(child: Text(label, textAlign: TextAlign.center)),
       ],
     );

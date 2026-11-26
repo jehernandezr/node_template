@@ -1,2 +1,8 @@
 /// Author of a message in a conversation.
-enum AssistantRole { user, assistant }
+enum AssistantRole {
+  /// The person who asks.
+  user,
+
+  /// The assistant that answers.
+  assistant,
+}

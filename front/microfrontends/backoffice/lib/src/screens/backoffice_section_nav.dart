@@ -12,6 +12,7 @@ import '../shared/enums/backoffice_enums.dart';
 /// and a detail route (`/backoffice/sagas/s-1`) selects its list; a sibling
 /// that only shares a prefix (`/backoffice/sagas2`) does not.
 class BackofficeSectionNav extends StatelessWidget {
+  /// Navigation between the backoffice sections.
   const BackofficeSectionNav({super.key});
 
   @override

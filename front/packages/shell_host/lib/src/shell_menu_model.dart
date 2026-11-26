@@ -9,6 +9,7 @@ import 'shell_destination.dart';
 /// location on a segment boundary (`/tasks2` does not select `/tasks`, and
 /// `/tasks/42` does).
 final class ShellMenuModel {
+  /// Model of the menu over the destinations the user may see.
   ShellMenuModel({
     required List<MenuEntry> entries,
     required String location,
@@ -64,8 +65,13 @@ final class ShellMenuModel {
   late final List<ShellDestination> _overflow;
   late final int _selectedIndex;
 
+  /// Destinations shown in the main navigation.
   List<ShellDestination> get primary => _primary;
+
+  /// Destinations that go under the overflow entry.
   List<ShellDestination> get overflow => _overflow;
+
+  /// Whether there are destinations under the overflow entry.
   bool get hasOverflow => _overflow.isNotEmpty;
 
   /// Index in [primary]; `primary.length` (the "More" slot) when the selection

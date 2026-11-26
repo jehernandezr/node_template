@@ -245,7 +245,6 @@ void main() {
         palette,
         contains('check(json, path, errors, acceptUnknownEnums: true);'),
       );
-      // The list item checks the flag; the single enum ignores it.
       final listCheck = RegExp(
         r"\(!acceptUnknownEnums &&\s+!const <String>\{'dark-red', 'blue'\}",
       );
@@ -254,7 +253,6 @@ void main() {
         r"is! String \|\|\s+!const <String>\{'dark-red', 'blue'\}",
       );
       expect(singleCheck.allMatches(palette), hasLength(1));
-      // Nested objects get the same flag.
       expect(palette, contains('acceptUnknownEnums: acceptUnknownEnums'));
     });
 
@@ -382,7 +380,6 @@ void main() {
       expect(routes, contains('mfaMaxAgeMinutes: 10,'));
       expect(routes, contains('deprecated: RouteDeprecation('));
       expect(routes, contains("replacement: 'sample.items.put2',"));
-      // The request is validated strictly before calling.
       expect(routes, contains('validateRequest: ItemSchema.validate,'));
     });
 

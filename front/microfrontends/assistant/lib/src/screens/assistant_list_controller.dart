@@ -6,6 +6,7 @@ import '../shared/types/assistant_types.dart';
 
 /// State and actions of the conversation list.
 final class AssistantListController extends ChangeNotifier {
+  /// Controller over [repository]; call `start` once.
   AssistantListController(AssistantRepository repository)
     : _repository = repository,
       _loader = AsyncLoader(repository.listConversations),

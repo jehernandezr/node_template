@@ -130,8 +130,6 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(counts, [4]);
 
-    // The runtime disposes the context before it releases the lifecycle: a
-    // value that arrives in between must not reach the bus.
     await context.dispose();
     repo.counts.add(7);
     await Future<void>.delayed(Duration.zero);
@@ -193,7 +191,6 @@ void main() {
       expect(await replayedCounts(), [3]);
 
       session.value = _user('u2');
-      // The rotation is synchronous: the scope and the replay of u1 are gone.
       final second = seedFor(const []);
       expect(identical(first, second), isFalse);
       expect(first.isDisposed, isTrue);
@@ -202,7 +199,6 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(await replayedCounts(), [0]);
 
-      // The closed repository of u1 can no longer move the count of u2.
       first.push(NotificationFixtures.item('late'));
       await Future<void>.delayed(Duration.zero);
       expect(await replayedCounts(), [0]);

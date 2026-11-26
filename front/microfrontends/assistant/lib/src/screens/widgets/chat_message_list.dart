@@ -10,12 +10,14 @@ import 'chat_bubble.dart';
 /// while the user is already at the end, so reading older messages is never
 /// interrupted.
 class ChatMessageList extends StatefulWidget {
+  /// List of [messages], newest at the bottom.
   const ChatMessageList({
     super.key,
     required this.messages,
     required this.onToolDecision,
   });
 
+  /// Messages shown.
   final List<ChatMessage> messages;
 
   /// Called with the id of the message and the user's answer to its tool.
@@ -34,17 +36,16 @@ class _ChatMessageListState extends State<ChatMessageList> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToEnd());
   }
 
+  /// Read the position before the new items lay out, so the check reflects where the user was.
+  ///
+  /// A send adds the user's message and the empty answer together, so the user message may sit anywhere among the new items.
   @override
   void didUpdateWidget(ChatMessageList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Read the position before the new items lay out, so the check reflects
-    // where the user was.
     final wasAtEnd =
         !_scroll.hasClients ||
         _scroll.position.pixels >=
             _scroll.position.maxScrollExtent - AssistantLayout.followTolerance;
-    // A send adds the user's message and the empty answer together, so the
-    // user message may sit anywhere among the new items.
     final userSent = widget.messages
         .skip(oldWidget.messages.length)
         .any((message) => message.role == AssistantRole.user);
@@ -59,12 +60,10 @@ class _ChatMessageListState extends State<ChatMessageList> {
     super.dispose();
   }
 
+  /// The items that were just added are measured in the frame after the jump, which can extend the list, so the jump is repeated until the end stops moving.
   void _jumpToEnd() {
     if (mounted && _scroll.hasClients) {
       _scroll.jumpTo(_scroll.position.maxScrollExtent);
-      // The items that were just added are measured in the frame after the
-      // jump, which can extend the list, so the jump is repeated until the
-      // end stops moving.
       WidgetsBinding.instance.addPostFrameCallback((_) => _settleAtEnd());
     }
   }

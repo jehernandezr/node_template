@@ -12,12 +12,14 @@ import 'mfa_state_step.dart';
 /// [StepUpFlow], which opens as soon as the form shows; [onVerified] gets the
 /// new `mfaVerifiedAt`.
 class StepUpForm extends StatefulWidget {
+  /// Form that verifies a second factor through [connection].
   const StepUpForm({
     super.key,
     required this.connection,
     required this.onVerified,
   });
 
+  /// Connection that verifies the second factor.
   final IdentityConnection connection;
 
   /// Runs once the second factor is verified, with the new `mfaVerifiedAt`.
@@ -32,11 +34,10 @@ class _StepUpFormState extends State<StepUpForm> {
   late final StepUpFlow _flow = StepUpFlow(widget.connection.sessionManager)
     ..addListener(_clearDeadCode);
 
+  /// After the first frame: starting notifies listeners, which must not happen while the tree builds.
   @override
   void initState() {
     super.initState();
-    // After the first frame: starting notifies listeners, which must not
-    // happen while the tree builds.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _flow.start();
     });

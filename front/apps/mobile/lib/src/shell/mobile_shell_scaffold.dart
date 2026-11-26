@@ -21,6 +21,7 @@ class MobileShellScaffold extends StatelessWidget {
   /// "Más".
   static const int maxPrimaryDestinations = 5;
 
+  /// Host whose menu and router the scaffold shows.
   final ShellHost host;
 
   /// Current path, used to select the destination.
@@ -29,6 +30,9 @@ class MobileShellScaffold extends StatelessWidget {
   /// Page of the matched microfrontend route.
   final Widget child;
 
+  /// The "More" slot takes one place of the bar, so a longer menu keeps one entry fewer in the bar. A shorter one fills the bar as it is.
+  ///
+  /// No top bar here: each screen draws its own with AppPage, which shows the sign-out action that ShellChrome publishes on compact widths.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -36,8 +40,6 @@ class MobileShellScaffold extends StatelessWidget {
       listenable: Listenable.merge([host.session, host.badges]),
       builder: (context, _) {
         final entries = host.menu;
-        // The "More" slot takes one place of the bar, so a longer menu keeps
-        // one entry fewer in the bar. A shorter one fills the bar as it is.
         final menu = ShellMenuModel(
           entries: entries,
           location: location,
@@ -48,8 +50,6 @@ class MobileShellScaffold extends StatelessWidget {
               : maxPrimaryDestinations,
         );
 
-        // No top bar here: each screen draws its own with AppPage, which shows
-        // the sign-out action that ShellChrome publishes on compact widths.
         return ShellChrome(
           destinations: [
             for (final destination in menu.primary)

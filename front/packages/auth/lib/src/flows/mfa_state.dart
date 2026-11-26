@@ -31,6 +31,7 @@ sealed class MfaStep extends MfaState {
 
 /// Credentials step, or nothing pending.
 final class MfaIdle extends MfaStep {
+  /// No second factor in course.
   const MfaIdle();
 
   @override
@@ -42,6 +43,7 @@ final class MfaIdle extends MfaStep {
 
 /// The server asked for a second factor; the user picks a method.
 final class MfaAwaitingMethod extends MfaStep {
+  /// Waits for the user to pick a method of [pending].
   const MfaAwaitingMethod(this.pending);
 
   @override
@@ -53,6 +55,7 @@ final class MfaAwaitingMethod extends MfaStep {
 
 /// A challenge is active; the user types the code.
 final class MfaAwaitingCode extends MfaStep {
+  /// Waits for the code of [challenge] of [pending].
   const MfaAwaitingCode(this.pending, this.challenge);
 
   @override
@@ -64,6 +67,7 @@ final class MfaAwaitingCode extends MfaStep {
 
 /// A call is in flight; [step] is where the flow was.
 final class MfaBusy extends MfaState {
+  /// A request of [step] is in flight.
   const MfaBusy(this.step);
 
   /// Step the flow was at when the call started.
@@ -84,6 +88,7 @@ final class MfaBusy extends MfaState {
 
 /// The last call failed with [code]; [step] is where the flow goes back to.
 final class MfaFailed extends MfaState {
+  /// The [step] failed with the error [code].
   const MfaFailed(this.code, this.step);
 
   /// Public error code, for `errorMessage`.

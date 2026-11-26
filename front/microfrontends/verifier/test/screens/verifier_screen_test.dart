@@ -117,7 +117,6 @@ void main() {
       await tester.pump(verifierTick);
       expect(find.text(_es.expiresIn('02:29')), findsOneWidget);
 
-      // The rest of the challenge's validity, from the fixture.
       final rest = VerifierTestApp.loginChallenge.validFor - verifierTick;
       clock.advance(rest);
       await tester.pump(rest);

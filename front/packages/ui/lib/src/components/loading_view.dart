@@ -13,6 +13,7 @@ class LoadingView extends StatelessWidget {
   /// Text shown under the spinner.
   final String? message;
 
+  /// The label comes from the indicator; repeating it here would be read twice. `container` keeps the live region to this view instead of the whole page.
   @override
   Widget build(BuildContext context) {
     final text = message;
@@ -20,9 +21,6 @@ class LoadingView extends StatelessWidget {
       context,
       AppLocalizations,
     )?.loading;
-    // The label comes from the indicator; repeating it here would be read
-    // twice. `container` keeps the live region to this view instead of the
-    // whole page.
     return Semantics(
       container: true,
       liveRegion: true,

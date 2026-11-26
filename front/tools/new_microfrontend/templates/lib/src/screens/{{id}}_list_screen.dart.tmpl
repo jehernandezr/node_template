@@ -16,11 +16,11 @@ class {{Pascal}}ListScreen extends StatelessWidget {
   /// Source of the items.
   final {{Pascal}}Repository repository;
 
+  /// The repository is part of the key: a new identity gets a new controller.
   @override
   Widget build(
     BuildContext context,
   ) => ControllerBuilder<{{Pascal}}ListController>(
-    // The repository is part of the key: a new identity gets a new controller.
     key: ObjectKey(repository),
     create: (_) => {{Pascal}}ListController(repository)..start(),
     builder: (context, controller) {

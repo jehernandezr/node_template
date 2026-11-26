@@ -101,10 +101,6 @@ final class BackofficeHarness {
     if (settle) {
       await tester.pumpAndSettle();
     } else {
-      // A deferred load completes on the real event loop, which the fake zone
-      // of the test never runs; yielding to it once per frame lets the load
-      // finish. It must finish here: the VM keeps the future of a deferred
-      // load, and one left pending would never complete for the next tests.
       for (var i = 0; i < 20 && find.byType(AppPage).evaluate().isEmpty; i++) {
         await tester.runAsync(() => Future<void>.delayed(Duration.zero));
         await tester.pump(const Duration(milliseconds: 16));
@@ -141,8 +137,6 @@ final class BackofficeHarness {
     ).build(routes: ShellPages.routes(), shellBuilder: (_, _, child) => child);
     addTearDown(() {
       router.dispose();
-      // Not awaited: closing the event bus waits for listeners that a widget
-      // test never attaches, so awaiting it would hang the test.
       unawaited(runtime.dispose());
     });
     await tester.pumpWidget(TestApp(clock: clock.now).wrapRouter(router));

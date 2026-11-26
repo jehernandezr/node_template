@@ -13,10 +13,13 @@ import '../shared/types/assistant_types.dart';
 /// must cancel every answer in progress, so nothing of one user reaches the
 /// next one.
 abstract interface class AssistantRepository implements ScopedResource {
+  /// Lists the conversations of the user.
   Future<List<Conversation>> listConversations();
 
+  /// Starts a new conversation.
   Future<Conversation> createConversation();
 
+  /// Loads the messages of [conversationId].
   Future<List<ChatMessage>> loadMessages(String conversationId);
 
   /// Streams the answer to [message]. Errors are emitted as

@@ -1,29 +1,30 @@
-// Checks the import boundaries of a microfrontend (ADR 0015 and 0018).
-//
-// - It does not depend on another microfrontend: they depend only on `front/packages`. With
-//   pub workspaces an `import 'package:mf_x/...'` compiles even if not
-//   declared, so it is checked in the code and in the pubspec.
-// - The manifest (`lib/<name>.dart`) only reaches without `deferred` the
-//   folders that can go in the initial bundle: `src/shared/constants`,
-//   `src/shared/enums` and `src/lifecycle`. It is the same rule that
-//   `check_deferred_chunks.dart` checks on the web build, here without building.
-// - Inside `src/shared`, each folder imports only the previous ones:
-//   `enums` none, `constants` enums, `types` enums and constants, `utils`
-//   all three.
-//
-// Runs from a microfrontend folder (the Nx `analyze` task of
-// the `type:front-microfrontends` projects does it):
-//
-//   dart run ../../tools/check_microfrontend_boundaries.dart
-//
-// or for all of them, from `front/`:
-//
-//   dart run tools/check_microfrontend_boundaries.dart --all
-//
-// It is a standalone script (no pubspec): it only uses `dart:*`. Fails with code
-// 1 on any violation and exits with code 2 if it does not find the
-// pubspec or the requested folder. A conditional import is followed through its default
-// URI, the one the web compiles.
+/// Checks the import boundaries of a microfrontend (ADR 0015 and 0018).
+///
+/// - It does not depend on another microfrontend: they depend only on `front/packages`. With
+/// pub workspaces an `import 'package:mf_x/...'` compiles even if not
+/// declared, so it is checked in the code and in the pubspec.
+/// - The manifest (`lib/<name>.dart`) only reaches without `deferred` the
+/// folders that can go in the initial bundle: `src/shared/constants`,
+/// `src/shared/enums` and `src/lifecycle`. It is the same rule that
+/// `check_deferred_chunks.dart` checks on the web build, here without building.
+/// - Inside `src/shared`, each folder imports only the previous ones:
+/// `enums` none, `constants` enums, `types` enums and constants, `utils`
+/// all three.
+///
+/// Runs from a microfrontend folder (the Nx `analyze` task of
+/// the `type:front-microfrontends` projects does it):
+///
+/// dart run ../../tools/check_microfrontend_boundaries.dart
+///
+/// or for all of them, from `front/`:
+///
+/// dart run tools/check_microfrontend_boundaries.dart --all
+///
+/// It is a standalone script (no pubspec): it only uses `dart:*`. Fails with code
+/// 1 on any violation and exits with code 2 if it does not find the
+/// pubspec or the requested folder. A conditional import is followed through its default
+/// URI, the one the web compiles.
+library;
 
 import 'dart:io';
 

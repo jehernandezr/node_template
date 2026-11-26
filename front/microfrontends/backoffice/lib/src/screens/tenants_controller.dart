@@ -7,6 +7,7 @@ import '../shared/types/backoffice_types.dart';
 
 /// State of the tenant list: the search text, the filters and the result.
 final class TenantsController extends ChangeNotifier {
+  /// Controller over [repository]; call `start` once.
   TenantsController(BackofficeRepository repository)
     : _repository = repository {
     _loader = AsyncLoader<List<Tenant>>(

@@ -3,6 +3,7 @@ import 'package:auth/auth.dart';
 
 /// Builds the real identity connection of a shell, or none in demo mode.
 final class IdentityConnectionFactory {
+  /// Factory of the identity connection of each shell mode.
   const IdentityConnectionFactory({
     required this.baseUrl,
     required this.transport,

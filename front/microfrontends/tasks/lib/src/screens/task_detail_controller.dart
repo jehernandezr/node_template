@@ -39,9 +39,9 @@ final class TaskDetailController extends ChangeNotifier {
 
   /// Loads the task and starts listening to the repository. Also the retry
   /// of a failed load.
+  ///
+  /// Changes that arrive during a delete belong to that delete: reloading here would bring back the task being removed.
   Future<void> start() async {
-    // Changes that arrive during a delete belong to that delete: reloading
-    // here would bring back the task being removed.
     _changes ??= _repository.changes().listen((_) {
       if (_phase == _DetailPhase.showing) {
         unawaited(_loader.load(keepCurrent: true));

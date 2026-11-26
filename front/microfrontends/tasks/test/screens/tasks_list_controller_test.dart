@@ -52,7 +52,6 @@ void main() {
     expect(list.status, TaskStatus.done);
   });
 
-  // testWidgets for its fake clock: the debounce is a timer.
   testWidgets('searches only after the user stops typing', (tester) async {
     final debounced = TasksListController(repository);
     addTearDown(debounced.dispose);

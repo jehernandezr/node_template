@@ -29,6 +29,7 @@ import 'reports_repository.dart';
 /// A run it queues moves one step on every read (queued, running, ready), as
 /// a worker would, so the polling of the screens has something to follow.
 final class FakeReportsRepository implements ReportsRepository {
+  /// Demo repository with the [seed] runs and the failures of [behavior].
   FakeReportsRepository({DemoBehavior? behavior, List<ReportRunDetail>? seed})
     : _behavior = behavior ?? DemoBehavior(),
       _runs = List.of(seed ?? demoRuns);

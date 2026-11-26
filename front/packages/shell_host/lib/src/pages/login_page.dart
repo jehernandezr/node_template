@@ -14,6 +14,7 @@ import 'sign_in_form.dart';
 /// With a [connection] it is the real sign-in against identity. Without one
 /// it is the demo sign-in, which only picks one of [demoProfiles].
 class LoginPage extends StatelessWidget {
+  /// Login page over the identity connection.
   const LoginPage({
     super.key,
     required this.session,

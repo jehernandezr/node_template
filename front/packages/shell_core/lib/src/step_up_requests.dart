@@ -90,10 +90,10 @@ final class StepUpRequests {
     cancel();
   }
 
+  /// The top page, pushed ones included (`uri` keeps the base location).
   void _onLocationChanged() {
     final router = _router;
     if (router == null || _pending == null) return;
-    // The top page, pushed ones included (`uri` keeps the base location).
     final top = router.routerDelegate.currentConfiguration.lastOrNull;
     final onPage = top?.matchedLocation == path;
     if (onPage) {

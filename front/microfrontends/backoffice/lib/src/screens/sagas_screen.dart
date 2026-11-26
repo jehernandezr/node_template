@@ -16,6 +16,7 @@ import 'sliver_gap.dart';
 
 /// Saga list with a status filter. Sagas that need a person are highlighted.
 class SagasScreen extends StatelessWidget {
+  /// Sagas screen backed by [repository].
   const SagasScreen({super.key, required this.repository});
 
   /// Data source of the screen.

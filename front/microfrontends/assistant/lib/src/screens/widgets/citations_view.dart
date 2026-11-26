@@ -6,8 +6,10 @@ import '../../shared/types/assistant_types.dart';
 
 /// Sources an answer was built from, one chip per citation.
 class CitationsView extends StatelessWidget {
+  /// Sources an answer cites.
   const CitationsView({super.key, required this.citations});
 
+  /// Citations shown.
   final List<Citation> citations;
 
   @override

@@ -31,6 +31,7 @@ abstract interface class TasksRepository implements ScopedResource {
   /// Throws [TaskNotFoundException] when the id is unknown.
   Future<Task> get(String id);
 
+  /// Creates a task from [draft].
   Future<Task> create(TaskDraft draft);
 
   /// Throws [TaskNotFoundException] when the id is unknown.

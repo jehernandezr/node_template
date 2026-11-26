@@ -20,6 +20,7 @@ import 'sliver_gap.dart';
 ///
 /// The manual actions appear only for `superAdmin` and `support`.
 class SagaDetailScreen extends StatelessWidget {
+  /// Detail of one saga with its steps, audit and manual actions.
   const SagaDetailScreen({
     super.key,
     required this.repository,

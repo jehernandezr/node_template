@@ -1,29 +1,30 @@
-// Checks that deferred microfrontends do not ship in the initial bundle.
-//
-// Runs after `flutter build web --release --source-maps`, from
-// `front/apps/web`:
-//
-//   dart run tools/check_deferred_chunks.dart
-//
-// It is a standalone script (no pubspec): it only uses `dart:*`. Fails with
-// code 1 when:
-//   1. `main.dart.js.map` lists sources from `microfrontends/<mf>/lib/src/`
-//      outside the folders the manifest can load eagerly
-//      (`shared/constants`, `shared/enums` and `lifecycle`). Everything else
-//      (screens, data, texts, widgets, utilities) must live only in
-//      deferred chunks, even if it is in a new folder.
-//   2. some text from the backoffice ARB files appears in `main.dart.js`.
-//
-// Options:
-//   --build-dir=<path>   Build output. Defaults to `build/web`.
-//   --front-root=<path>  Root of `front/`. Defaults to the one containing
-//                        `microfrontends/` going up from the current directory
-//                        or from this script.
-//   --arb-mf=<name>      Microfrontend whose ARB files cannot be in the initial
-//                        bundle. Repeatable. Defaults to `backoffice`.
-//   --min-length=<n>     Minimum length of an ARB text to check it
-//                        (avoids false positives with single words).
-//                        Defaults to 12.
+/// Checks that deferred microfrontends do not ship in the initial bundle.
+///
+/// Runs after `flutter build web --release --source-maps`, from
+/// `front/apps/web`:
+///
+/// dart run tools/check_deferred_chunks.dart
+///
+/// It is a standalone script (no pubspec): it only uses `dart:*`. Fails with
+/// code 1 when:
+/// 1. `main.dart.js.map` lists sources from `microfrontends/<mf>/lib/src/`
+/// outside the folders the manifest can load eagerly
+/// (`shared/constants`, `shared/enums` and `lifecycle`). Everything else
+/// (screens, data, texts, widgets, utilities) must live only in
+/// deferred chunks, even if it is in a new folder.
+/// 2. some text from the backoffice ARB files appears in `main.dart.js`.
+///
+/// Options:
+/// --build-dir=<path>   Build output. Defaults to `build/web`.
+/// --front-root=<path>  Root of `front/`. Defaults to the one containing
+/// `microfrontends/` going up from the current directory
+/// or from this script.
+/// --arb-mf=<name>      Microfrontend whose ARB files cannot be in the initial
+/// bundle. Repeatable. Defaults to `backoffice`.
+/// --min-length=<n>     Minimum length of an ARB text to check it
+/// (avoids false positives with single words).
+/// Defaults to 12.
+library;
 
 import 'dart:convert';
 import 'dart:io';
@@ -116,8 +117,7 @@ List<String> _checkSourceMap(File mapFile) {
   return found;
 }
 
-// Covers relative paths (`../../microfrontends/x/lib/src/data/a.dart`) and
-// `package:mf_x/src/data/a.dart`.
+/// Covers relative paths (`../../microfrontends/x/lib/src/data/a.dart`) and `package:mf_x/src/data/a.dart`.
 final _byPath = RegExp(r'microfrontends/[^/]+/lib/src/(.+)$');
 final _byPackage = RegExp(r'package:mf_[^/]+/src/(.+)$');
 

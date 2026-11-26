@@ -73,7 +73,6 @@ final class _Transport implements HttpTransport {
 IdentityConnection _connection(_Transport transport) => IdentityConnection(
   transport: transport,
   baseUri: Uri.parse('https://api.example.com'),
-  // A stored session token makes `restore` try a refresh.
   tokenStore: FakeTokenStore('session-1'),
 );
 

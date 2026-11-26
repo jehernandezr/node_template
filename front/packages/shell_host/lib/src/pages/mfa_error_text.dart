@@ -5,9 +5,13 @@ import 'package:ui/ui.dart';
 /// Message of the last error of a flow, or nothing. Announced as it appears,
 /// so a failed code is heard without moving focus.
 class MfaErrorText extends StatelessWidget {
+  /// Shows the message of the error [code], if any.
   const MfaErrorText({super.key, required this.textKey, required this.code});
 
+  /// Key of the text, for tests.
   final Key textKey;
+
+  /// Error code to explain, or `null` for none.
   final String? code;
 
   @override

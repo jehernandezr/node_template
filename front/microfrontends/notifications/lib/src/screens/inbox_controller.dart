@@ -11,14 +11,18 @@ import '../shared/types/types.dart';
 /// Live arrivals that come before the first load ends wait in the controller
 /// and join the list when it loads. A failed save reverts only the `read` flag
 /// of the affected ids, never the list.
+///
+/// Arrivals received while the inbox has no data, newest first.
+///
+/// Reverts from the current list, never from a copy taken before the save: an arrival that came in while saving must survive a failure.
 final class InboxController extends ChangeNotifier {
+  /// Controller over [_repository]; call `start` once.
   InboxController(this._repository);
 
   final NotificationsRepository _repository;
   final ActionRunner _runner = ActionRunner(
     concurrency: ActionConcurrency.parallel,
   );
-  // Arrivals received while the inbox has no data, newest first.
   final List<AppNotification> _arrivals = [];
 
   AsyncValue<List<AppNotification>> _inbox = const AsyncValue.loading();
@@ -112,8 +116,6 @@ final class InboxController extends ChangeNotifier {
     return result;
   }
 
-  // Reverts from the current list, never from a copy taken before the save:
-  // an arrival that came in while saving must survive a failure.
   void _setRead(Set<String> ids, {required bool read}) {
     final items = _inbox.valueOrNull;
     if (items == null) return;

@@ -27,13 +27,13 @@ final class DeferredLibraryLoader {
 
   /// Loads a library once per instance. A failed load is forgotten so it can
   /// be retried.
+  ///
+  /// The failure stays on [future] for the callers that await it; this only forgets it so the next request starts a new load.
   Future<void> load(Future<void> Function() loadLibrary) {
     final existing = _loads[loadLibrary];
     if (existing != null) return existing;
     final future = loadLibrary();
     _loads[loadLibrary] = future;
-    // The failure stays on [future] for the callers that await it; this only
-    // forgets it so the next request starts a new load.
     future.catchError((Object _) {
       if (identical(_loads[loadLibrary], future)) _loads.remove(loadLibrary);
     });

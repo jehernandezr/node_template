@@ -10,7 +10,12 @@ import '../shared/types/types.dart';
 /// carrying the whole preferences. If a save fails and no newer change exists,
 /// the preferences go back to the last saved ones; if a newer change exists,
 /// its save carries the failed change along and nothing is undone.
+///
+/// Last preferences loaded or saved successfully.
+///
+/// Counts every change; a failed save compares it to know it is the newest.
 final class PreferencesController extends ChangeNotifier {
+  /// Controller over [repository]; call `start` once.
   PreferencesController(NotificationsRepository repository)
     : _repository = repository,
       _loader = AsyncLoader<NotificationPreferences>(
@@ -25,9 +30,7 @@ final class PreferencesController extends ChangeNotifier {
     concurrency: ActionConcurrency.serial,
   );
 
-  // Last preferences loaded or saved successfully.
   NotificationPreferences? _confirmed;
-  // Counts every change; a failed save compares it to know it is the newest.
   int _version = 0;
   bool _disposed = false;
 
@@ -35,10 +38,11 @@ final class PreferencesController extends ChangeNotifier {
   AsyncValue<NotificationPreferences> get preferences => _loader.value;
 
   /// Loads the preferences. Calling it again reloads.
+  ///
+  /// A change made while loading is not a saved value.
   Future<void> start() async {
     final version = _version;
     await _loader.load();
-    // A change made while loading is not a saved value.
     if (_disposed || version != _version) return;
     _confirmed = _loader.value.valueOrNull ?? _confirmed;
   }
@@ -67,13 +71,15 @@ final class PreferencesController extends ChangeNotifier {
     super.dispose();
   }
 
+  /// The model returns the same object for a mandatory combination.
+  ///
+  /// A newer save carries this change too, so reverting would undo it.
   Future<ActionResult<void>> _change(
     NotificationPreferences Function(NotificationPreferences current) edit,
   ) async {
     final current = _loader.value.valueOrNull;
     if (current == null) return const ActionSkipped<void>();
     final next = edit(current);
-    // The model returns the same object for a mandatory combination.
     if (identical(next, current)) return const ActionSkipped<void>();
     final version = ++_version;
     _loader.setData(next);
@@ -84,7 +90,6 @@ final class PreferencesController extends ChangeNotifier {
         _confirmed = next;
         return result;
       case ActionFailed<void>() when version != _version:
-        // A newer save carries this change too, so reverting would undo it.
         return const ActionSkipped<void>();
       case ActionFailed<void>():
         _loader.setData(_confirmed ?? current);

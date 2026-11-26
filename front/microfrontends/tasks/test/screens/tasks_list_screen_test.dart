@@ -32,7 +32,6 @@ void main() {
         seed: _seed,
       ),
     );
-    // The deferred library loads on a zero-duration timer.
     await tester.pump(const Duration(milliseconds: 1));
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -93,7 +92,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Creada desde fuera'), findsNothing);
 
-    // Another screen (here, the test) changes the data.
     final created = repository.create(
       const TaskDraft(title: 'Creada desde fuera'),
     );
@@ -186,7 +184,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SnackBar), findsOneWidget);
-    // The button is back: the list is not stuck loading.
     expect(find.text('Cargar más'), findsOneWidget);
   });
 
