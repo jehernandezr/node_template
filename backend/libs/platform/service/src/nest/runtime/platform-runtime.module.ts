@@ -97,6 +97,7 @@ import type {
   PlatformRuntimeOptions,
   RuntimeAdapters,
 } from './platform-runtime-options.js';
+import { ConsumedQueueSelector } from './consumed-queue-selector.js';
 import { RuntimeAdapterSelector } from './runtime-adapter-selector.js';
 
 /** Environment variables the runtime reads in addition to those of the service schema. */
@@ -218,6 +219,7 @@ export class PlatformRuntimeModule {
         ...PlatformRuntimeModule.queueConsumers(
           definition,
           topology,
+          options.env,
           adapters.aws && options.consumeQueues === true,
         ),
         HealthModule,
@@ -306,20 +308,24 @@ export class PlatformRuntimeModule {
   }
 
   /**
-   * One SQS poller per queue of the service's contract. They are imported after the modules that generate work and
-   * before health, so on shutdown they stop before the AWS clients and the databases close.
+   * One SQS poller per queue the worker consumes: the queue of `QUEUE_URL`, or every queue of the contract without it.
+   * They are imported after the modules that generate work and before health, so on shutdown they stop before the AWS
+   * clients and the databases close.
    */
   private static queueConsumers(
     definition: ServiceDefinition,
     topology: Topology,
+    env: ConfigEnv,
     consume: boolean,
   ): DynamicModule[] {
     if (!consume) {
       return [];
     }
-    return Object.values(definition.contract.queues).map((queue) =>
-      SqsConsumerModule.forRoot({ topology, queue: queue.name }),
-    );
+    return new ConsumedQueueSelector()
+      .select(definition.name, definition.contract.queues, env)
+      .map((queue) =>
+        SqsConsumerModule.forRoot({ topology, queue: queue.name }),
+      );
   }
 
   private static regionsProvider(): Provider {

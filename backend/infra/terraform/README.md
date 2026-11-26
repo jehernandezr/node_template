@@ -74,7 +74,7 @@ Environment variables: they are the contract with the `@platform/*` configuratio
 | `VALKEY_AUTH`, `VALKEY_CACHE_NAME`                                              | `valkey_access`          | `iam-serverless`: the client signs an IAM token (SigV4, 15 minutes) for the `VALKEY_CACHE_NAME` cache.  |
 | `VALKEY_KEY_PREFIX`                                                             | `valkey_access`          | Service name. The adapters write `<prefix>:...` in keys and channels, the only thing the ACL allows.    |
 | `FILES_BUCKET`                                                                  | `files_access` of a part | Files bucket.                                                                                           |
-| `QUEUE_URL`                                                                     | workers                  | URL of its queue.                                                                                       |
+| `QUEUE_URL`                                                                     | workers                  | URL of its queue. The worker polls only that contract queue; without it, every queue of the contract.   |
 
 `environment_variables` adds custom variables, without being able to replace the ones in the table. The pipeline passes the artifacts with `TF_VAR_image` and `TF_VAR_lambda_package`. Lambdas use the runtime of the major version in `.nvmrc` (`nodejs24.x`); `service-lambda` rejects any other in the plan.
 

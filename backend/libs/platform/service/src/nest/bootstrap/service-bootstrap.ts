@@ -7,7 +7,7 @@ import { RunningService, type ServiceAddress } from './running-service.js';
 import type { ServiceApplicationFactory } from './service-application-factory.js';
 import type { ServiceBootstrapOptions } from './service-bootstrap-options.js';
 
-/** Startup of a service process. `main.ts` calls `http`; `worker.ts` calls `worker`. */
+/** Startup of a service process. `main.ts` calls `http`, `worker.ts` calls `worker` and a one-off entry calls `task`. */
 export class ServiceBootstrap {
   private static readonly DEFAULT_PORT = 3000;
   private static readonly DEFAULT_HOST = '0.0.0.0';
@@ -48,21 +48,38 @@ export class ServiceBootstrap {
   }
 
   /**
-   * Process without an HTTP server: jobs and consumers. It polls the queues of the service unless
-   * `consumeQueues: false`, which a one-off task such as a seed passes.
+   * Long-running process without an HTTP server: jobs and the consumers of the queues of the service.
    * @param definition Service definition.
    * @param options Shutdown options.
    * @returns The running service.
    */
-  static async worker(
+  static worker(
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions = {},
   ): Promise<RunningService> {
+    return ServiceBootstrap.withoutHttp(definition, options, true);
+  }
+
+  /**
+   * One-off process without an HTTP server, such as a seed or a tenant move: it never polls the queues of the service.
+   * @param definition Service definition.
+   * @param options Shutdown options.
+   * @returns The running service.
+   */
+  static task(
+    definition: ServiceDefinition,
+    options: ServiceBootstrapOptions = {},
+  ): Promise<RunningService> {
+    return ServiceBootstrap.withoutHttp(definition, options, false);
+  }
+
+  private static async withoutHttp(
+    definition: ServiceDefinition,
+    options: ServiceBootstrapOptions,
+    consumeQueues: boolean,
+  ): Promise<RunningService> {
     const app = await ServiceBootstrap.applications(options).worker(
-      ServiceBootstrap.host(definition, {
-        ...options,
-        consumeQueues: options.consumeQueues ?? true,
-      }),
+      ServiceBootstrap.host(definition, options, consumeQueues),
       ServiceBootstrap.NEST_OPTIONS,
     );
     app.enableShutdownHooks();
@@ -82,6 +99,7 @@ export class ServiceBootstrap {
   private static host(
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions,
+    consumeQueues = false,
   ): DynamicModule {
     new ServiceDefinitionValidator().validate(definition);
     return ServiceHostModule.forService(definition, {
@@ -96,9 +114,7 @@ export class ServiceBootstrap {
       ...(options.schedulingMode === undefined
         ? {}
         : { schedulingMode: options.schedulingMode }),
-      ...(options.consumeQueues === undefined
-        ? {}
-        : { consumeQueues: options.consumeQueues }),
+      consumeQueues,
       ...(options.overrides === undefined
         ? {}
         : { overrides: options.overrides }),

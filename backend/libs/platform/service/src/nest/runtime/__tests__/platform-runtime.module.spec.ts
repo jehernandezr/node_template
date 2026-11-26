@@ -142,10 +142,14 @@ describe('PlatformRuntimeModule', () => {
           }),
         })
         .build();
-      const consumersOf = (aws: boolean, consumeQueues?: boolean) =>
+      const consumersOf = (
+        aws: boolean,
+        consumeQueues?: boolean,
+        env: Record<string, string> = {},
+      ) =>
         ImportedModules.of(
           PlatformRuntimeModule.forService(definition, {
-            env: {},
+            env,
             adapters: { valkey: false, aws },
             ...(consumeQueues === undefined ? {} : { consumeQueues }),
           }),
@@ -164,6 +168,18 @@ describe('PlatformRuntimeModule', () => {
         expect(Math.max(...consumers)).toBeLessThan(
           modules.indexOf(HealthModule),
         );
+      });
+
+      it('polls only the queue of QUEUE_URL, as a deployed worker per queue does', () => {
+        const modules = consumersOf(true, true, {
+          QUEUE_URL:
+            'https://sqs.us-east-1.amazonaws.com/123456789012/dev-runtime-probe-second',
+          MESSAGING_NAME_PREFIX: 'dev',
+        });
+
+        expect(
+          modules.filter((module) => module === SqsConsumerModule),
+        ).toHaveLength(1);
       });
 
       it.each([

@@ -147,9 +147,13 @@ describe('ServiceBootstrap', () => {
     });
 
     it.each([
-      ['polls the queues of its contract by default', {}, true],
-      ['polls nothing for a one-off task', { consumeQueues: false }, false],
-    ])('%s', async (_, options, consumes) => {
+      [
+        'a worker polls the queues of its contract',
+        ServiceBootstrap.worker,
+        true,
+      ],
+      ['a one-off task polls nothing', ServiceBootstrap.task, false],
+    ])('%s', async (_, start, consumes) => {
       const topic = defineTopic({
         name: 'identity-probe-events',
         events: [ProbeRecorded],
@@ -176,10 +180,9 @@ describe('ServiceBootstrap', () => {
         new FakeNestApplication(steps, undefined),
       );
 
-      await ServiceBootstrap.worker(withQueue, {
+      await start(withQueue, {
         env: { ...env, AWS_REGION: 'us-east-1' },
         applications,
-        ...options,
       });
 
       expect(
