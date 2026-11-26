@@ -35,7 +35,7 @@ module "events_kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-ses-events"
-  description = "Cifrado del tópico de eventos de SES de ${var.name_prefix}"
+  description = "Encryption of the SES events topic of ${var.name_prefix}"
   service_principals = [
     { sid = "AllowSesUse", services = ["ses.amazonaws.com"] },
     { sid = "AllowSnsUse", services = ["sns.amazonaws.com"] },

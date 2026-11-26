@@ -106,7 +106,7 @@ resource "aws_s3_bucket_policy" "logs" {
 
 resource "aws_security_group" "this" {
   name        = local.base_name
-  description = "ALB ${var.internal ? "interno" : "público"} ${local.base_name}"
+  description = "${var.internal ? "Internal" : "Public"} ALB ${local.base_name}"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = local.base_name })
@@ -121,7 +121,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_ipv4" {
   from_port         = local.listener_port
   to_port           = local.listener_port
   ip_protocol       = "tcp"
-  description       = local.tls ? "HTTPS" : "HTTP dentro de la VPC"
+  description       = local.tls ? "HTTPS" : "HTTP inside the VPC"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "http_ipv4" {
@@ -132,7 +132,7 @@ resource "aws_vpc_security_group_ingress_rule" "http_ipv4" {
   from_port         = 80
   to_port           = 80
   ip_protocol       = "tcp"
-  description       = "HTTP, solo para la redirección a HTTPS"
+  description       = "HTTP, only for the redirect to HTTPS"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "https_ipv6" {
@@ -143,7 +143,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_ipv6" {
   from_port         = local.listener_port
   to_port           = local.listener_port
   ip_protocol       = "tcp"
-  description       = local.tls ? "HTTPS" : "HTTP dentro de la VPC"
+  description       = local.tls ? "HTTPS" : "HTTP inside the VPC"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "http_ipv6" {
@@ -154,7 +154,7 @@ resource "aws_vpc_security_group_ingress_rule" "http_ipv6" {
   from_port         = 80
   to_port           = 80
   ip_protocol       = "tcp"
-  description       = "HTTP, solo para la redirección a HTTPS"
+  description       = "HTTP, only for the redirect to HTTPS"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "https_prefix_list" {
@@ -165,7 +165,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_prefix_list" {
   from_port         = local.listener_port
   to_port           = local.listener_port
   ip_protocol       = "tcp"
-  description       = "Entrada desde una prefix list"
+  description       = "Ingress from a prefix list"
 }
 
 # Ingress from other security groups, for example the API Gateway VPC link to an internal ALB.
@@ -177,7 +177,7 @@ resource "aws_vpc_security_group_ingress_rule" "from_security_group" {
   from_port                    = local.listener_port
   to_port                      = local.listener_port
   ip_protocol                  = "tcp"
-  description                  = "Entrada desde un security group autorizado"
+  description                  = "Ingress from an authorized security group"
 }
 
 # The public ALB is the entry point for real-time traffic (Socket.IO and SSE). The internal one is only

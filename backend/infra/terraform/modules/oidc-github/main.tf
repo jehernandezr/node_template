@@ -89,7 +89,7 @@ module "artifacts_kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-artifacts"
-  description = "Cifrado del bucket de artefactos del despliegue de ${var.name_prefix}"
+  description = "Encryption of the deploy artifacts bucket of ${var.name_prefix}"
   tags        = var.tags
 }
 
@@ -158,7 +158,7 @@ resource "aws_s3_bucket_policy" "artifacts" {
 
 resource "aws_iam_role" "deploy" {
   name                 = "${var.name_prefix}-github-deploy"
-  description          = "Despliegue con Terraform desde GitHub Actions (${var.github_environment})"
+  description          = "Terraform deploy from GitHub Actions (${var.github_environment})"
   assume_role_policy   = data.aws_iam_policy_document.trust.json
   max_session_duration = 3600
 
@@ -208,7 +208,7 @@ resource "aws_iam_role_policy_attachment" "deploy" {
 
 resource "aws_iam_role" "publish" {
   name                 = "${var.name_prefix}-github-publish"
-  description          = "Publicación de imágenes y artefactos desde GitHub Actions (${var.github_environment})"
+  description          = "Image and artifact publishing from GitHub Actions (${var.github_environment})"
   assume_role_policy   = data.aws_iam_policy_document.trust.json
   max_session_duration = 3600
 
@@ -268,7 +268,7 @@ resource "aws_iam_role_policy" "publish" {
 
 resource "aws_iam_role" "web" {
   name                 = "${var.name_prefix}-github-web"
-  description          = "Publicación de la web desde GitHub Actions (${var.github_environment})"
+  description          = "Web publishing from GitHub Actions (${var.github_environment})"
   assume_role_policy   = data.aws_iam_policy_document.trust.json
   max_session_duration = 3600
 

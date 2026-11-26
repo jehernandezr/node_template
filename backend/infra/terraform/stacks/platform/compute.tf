@@ -17,7 +17,7 @@ module "compute_logs_kms" {
   source = "../../modules/kms-key"
 
   alias       = "${var.name_prefix}-compute-logs"
-  description = "Cifrado de logs, variables de entorno y DLQ del cómputo de ${var.name_prefix}"
+  description = "Encryption of the compute logs, environment variables and DLQ of ${var.name_prefix}"
   log_group_arns = [
     "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.name_prefix}/*",
     "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.name_prefix}-*",
@@ -95,7 +95,7 @@ resource "aws_vpc_security_group_egress_rule" "vpc_link_to_api_alb" {
   from_port                    = module.api_alb[0].listener_port
   to_port                      = module.api_alb[0].listener_port
   ip_protocol                  = "tcp"
-  description                  = "VPC link hacia el ALB interno de las APIs"
+  description                  = "VPC link to the internal ALB of the APIs"
 }
 
 # --- Realtime ------------------------------------------------------------------

@@ -157,7 +157,7 @@ module "logs_kms" {
   source = "../kms-key"
 
   alias          = "${local.full_name}-logs"
-  description    = "Cifrado de logs de ${local.full_name}"
+  description    = "Encryption of the logs of ${local.full_name}"
   log_group_arns = ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"]
   tags           = var.tags
 }
@@ -274,7 +274,7 @@ resource "aws_iam_role_policy" "exec" {
 
 resource "aws_security_group" "this" {
   name        = local.full_name
-  description = "Tareas de ${local.full_name}"
+  description = "Tasks of ${local.full_name}"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = local.full_name })
@@ -288,7 +288,7 @@ resource "aws_vpc_security_group_ingress_rule" "from_alb" {
   from_port                    = var.container_port
   to_port                      = var.container_port
   ip_protocol                  = "tcp"
-  description                  = "Tráfico del ALB"
+  description                  = "Traffic from the ALB"
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_service" {
@@ -299,7 +299,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_service" {
   from_port                    = var.container_port
   to_port                      = var.container_port
   ip_protocol                  = "tcp"
-  description                  = "ALB hacia ${local.full_name}"
+  description                  = "ALB to ${local.full_name}"
 }
 
 # Outbound HTTPS through NAT or VPC endpoints (ADR 0016).
@@ -310,7 +310,7 @@ resource "aws_vpc_security_group_egress_rule" "https" {
   from_port         = 443
   to_port           = 443
   ip_protocol       = "tcp"
-  description       = "HTTPS hacia endpoints de VPC y servicios externos"
+  description       = "HTTPS to VPC endpoints and external services"
 }
 
 resource "aws_lb_target_group" "this" {
@@ -557,7 +557,7 @@ resource "aws_cloudwatch_metric_alarm" "sqs_backlog_high" {
   count = var.sqs_scaling == null ? 0 : 1
 
   alarm_name          = "${local.full_name}-sqs-backlog-high"
-  alarm_description   = "Hay mensajes esperando en ${var.sqs_scaling.queue_name}: sube las tareas de ${local.full_name}"
+  alarm_description   = "Messages are waiting in ${var.sqs_scaling.queue_name}: scale up the tasks of ${local.full_name}"
   namespace           = "AWS/SQS"
   metric_name         = "ApproximateNumberOfMessagesVisible"
   statistic           = "Maximum"
@@ -580,7 +580,7 @@ resource "aws_cloudwatch_metric_alarm" "sqs_backlog_empty" {
   count = var.sqs_scaling == null ? 0 : 1
 
   alarm_name          = "${local.full_name}-sqs-backlog-empty"
-  alarm_description   = "${var.sqs_scaling.queue_name} está vacía y sin mensajes en proceso: baja ${local.full_name} al mínimo"
+  alarm_description   = "${var.sqs_scaling.queue_name} is empty with no messages in flight: scale ${local.full_name} down to the minimum"
   threshold           = 0
   evaluation_periods  = var.sqs_scaling.scale_in_periods
   comparison_operator = "LessThanOrEqualToThreshold"
@@ -589,7 +589,7 @@ resource "aws_cloudwatch_metric_alarm" "sqs_backlog_empty" {
   metric_query {
     id          = "total"
     expression  = "visible + inflight"
-    label       = "Mensajes pendientes y en proceso"
+    label       = "Pending and in-flight messages"
     return_data = true
   }
 

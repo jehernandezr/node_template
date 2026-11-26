@@ -45,7 +45,7 @@ module "kms" {
   source = "../kms-key"
 
   alias          = local.name
-  description    = "Cifrado de OpenObserve de ${var.name_prefix}: bucket, EFS, secreto y logs"
+  description    = "Encryption of OpenObserve of ${var.name_prefix}: bucket, EFS, secret and logs"
   log_group_arns = ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"]
   tags           = var.tags
 }
@@ -126,7 +126,7 @@ resource "aws_s3_bucket_policy" "storage" {
 # EFS keeps it across deployments; telemetry data goes to S3.
 resource "aws_security_group" "efs" {
   name        = "${local.name}-efs"
-  description = "EFS de OpenObserve, solo desde sus tareas"
+  description = "OpenObserve EFS, only from its tasks"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${local.name}-efs" })
@@ -138,7 +138,7 @@ resource "aws_vpc_security_group_ingress_rule" "efs_from_tasks" {
   from_port                    = 2049
   to_port                      = 2049
   ip_protocol                  = "tcp"
-  description                  = "NFS desde las tareas de OpenObserve"
+  description                  = "NFS from the OpenObserve tasks"
 }
 
 resource "aws_efs_file_system" "this" {
@@ -197,7 +197,7 @@ resource "random_password" "root" {
 
 resource "aws_secretsmanager_secret" "root" {
   name                    = "${local.name}-root"
-  description             = "Usuario raíz de OpenObserve y cabecera de autorización OTLP"
+  description             = "OpenObserve root user and OTLP authorization header"
   kms_key_id              = module.kms.arn
   recovery_window_in_days = var.secret_recovery_window_days
 
@@ -322,7 +322,7 @@ resource "aws_iam_role_policy" "task" {
 
 resource "aws_security_group" "service" {
   name        = local.name
-  description = "Tareas de OpenObserve"
+  description = "OpenObserve tasks"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = local.name })
@@ -334,7 +334,7 @@ resource "aws_vpc_security_group_ingress_rule" "service_from_alb" {
   from_port                    = 5080
   to_port                      = 5080
   ip_protocol                  = "tcp"
-  description                  = "Tráfico del ALB"
+  description                  = "Traffic from the ALB"
 }
 
 # Outbound HTTPS through NAT or VPC endpoints (ADR 0016).
@@ -345,7 +345,7 @@ resource "aws_vpc_security_group_egress_rule" "service_https" {
   from_port         = 443
   to_port           = 443
   ip_protocol       = "tcp"
-  description       = "HTTPS hacia S3, KMS y Secrets Manager por endpoints de VPC"
+  description       = "HTTPS to S3, KMS and Secrets Manager through VPC endpoints"
 }
 
 resource "aws_vpc_security_group_egress_rule" "service_vpc" {
@@ -354,14 +354,14 @@ resource "aws_vpc_security_group_egress_rule" "service_vpc" {
   from_port         = 2049
   to_port           = 2049
   ip_protocol       = "tcp"
-  description       = "NFS hacia EFS"
+  description       = "NFS to EFS"
 }
 
 resource "aws_security_group" "alb" {
   count = local.internal_alb
 
   name        = "${local.name}-alb"
-  description = "ALB interno de OpenObserve"
+  description = "Internal ALB of OpenObserve"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${local.name}-alb" })
@@ -375,7 +375,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_clients" {
   from_port         = local.tls_internal ? 443 : 80
   to_port           = local.tls_internal ? 443 : 80
   ip_protocol       = "tcp"
-  description       = "Clientes de telemetría y consola"
+  description       = "Telemetry and console clients"
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_service" {
@@ -384,7 +384,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_service" {
   from_port                    = 5080
   to_port                      = 5080
   ip_protocol                  = "tcp"
-  description                  = "ALB hacia OpenObserve"
+  description                  = "ALB to OpenObserve"
 }
 
 resource "aws_lb" "internal" {

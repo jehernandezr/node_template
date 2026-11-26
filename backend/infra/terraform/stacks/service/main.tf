@@ -209,7 +209,7 @@ module "api_lambda" {
 
   name_prefix   = var.name_prefix
   function_name = "${local.name}-api"
-  description   = "API de ${local.svc}"
+  description   = "API of ${local.svc}"
   environment   = var.environment
 
   handler                        = var.api.handler
@@ -421,7 +421,7 @@ module "consumer" {
 
   name_prefix   = var.name_prefix
   function_name = "${local.name}-${replace(each.key, "_", "-")}"
-  description   = "Consumidor ${each.key} de ${local.svc}"
+  description   = "Consumer ${each.key} of ${local.svc}"
   environment   = var.environment
 
   handler           = each.value.handler

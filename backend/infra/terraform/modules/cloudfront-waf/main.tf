@@ -41,7 +41,7 @@ module "web_kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-web"
-  description = "Cifrado del bucket web de ${var.name_prefix}"
+  description = "Encryption of the web bucket of ${var.name_prefix}"
   # Scoped by account, not by distribution, to avoid a circular dependency.
   service_principals = [{ sid = "AllowCloudFrontDecrypt", services = ["cloudfront.amazonaws.com"] }]
   tags               = var.tags
@@ -145,7 +145,7 @@ resource "aws_s3_bucket_policy" "web" {
 
 resource "aws_cloudfront_origin_access_control" "web" {
   name                              = "${var.name_prefix}-web"
-  description                       = "OAC del bucket web de ${var.name_prefix}"
+  description                       = "OAC of the web bucket of ${var.name_prefix}"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
@@ -153,7 +153,7 @@ resource "aws_cloudfront_origin_access_control" "web" {
 
 resource "aws_cloudfront_response_headers_policy" "security" {
   name    = "${var.name_prefix}-security-headers"
-  comment = "Cabeceras de seguridad de ${var.name_prefix}"
+  comment = "Security headers of ${var.name_prefix}"
 
   security_headers_config {
     strict_transport_security {
@@ -208,7 +208,7 @@ resource "aws_cloudfront_origin_request_policy" "api" {
   count = var.api_origin_forward_host_header ? 1 : 0
 
   name    = "${var.name_prefix}-api"
-  comment = "Cabeceras, cookies y query strings hacia la API con geolocalización"
+  comment = "Headers, cookies and query strings to the API, with geolocation"
 
   headers_config {
     header_behavior = "allViewerAndWhitelistCloudFront"
@@ -381,7 +381,7 @@ resource "aws_wafv2_web_acl" "this" {
   provider = aws.us_east_1
 
   name        = "${var.name_prefix}-cloudfront"
-  description = "WAF de CloudFront de ${var.name_prefix}"
+  description = "CloudFront WAF of ${var.name_prefix}"
   scope       = "CLOUDFRONT"
 
   default_action {
@@ -511,7 +511,7 @@ module "waf_logs_kms" {
   providers = { aws = aws.us_east_1 }
 
   alias          = "${var.name_prefix}-waf-logs"
-  description    = "Cifrado de logs de WAF de ${var.name_prefix}"
+  description    = "Encryption of the WAF logs of ${var.name_prefix}"
   log_group_arns = ["arn:${local.partition}:logs:us-east-1:${local.account_id}:log-group:${local.waf_log_name}"]
   tags           = var.tags
 }

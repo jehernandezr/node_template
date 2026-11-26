@@ -11,7 +11,7 @@ module "kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-files"
-  description = "Cifrado del bucket de archivos de ${var.name_prefix}"
+  description = "Encryption of the files bucket of ${var.name_prefix}"
   tags        = var.tags
 }
 

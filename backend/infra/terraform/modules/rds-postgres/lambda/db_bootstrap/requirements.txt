@@ -1,12 +1,12 @@
-# Dependencias de la Lambda de bootstrap, copiadas en vendor/ (Lambda solo carga /var/task).
-# boto3 viene en el runtime de Lambda y no se empaqueta.
-# tzdata (que pide python-dateutil 4) no se empaqueta: el handler no usa zonas horarias.
-# Para regenerar vendor/ desde esta carpeta, con Python 3.13 como el runtime:
+# Dependencies of the bootstrap Lambda, copied into vendor/ (Lambda only loads /var/task).
+# boto3 comes with the Lambda runtime and is not packaged.
+# tzdata (which python-dateutil 4 asks for) is not packaged: the handler uses no time zones.
+# To regenerate vendor/ from this folder, with Python 3.13 as the runtime:
 #   rm -rf vendor && pip install --no-deps --only-binary=:all: --target vendor -r requirements.txt
-# OSV-Scanner lee este archivo y Renovate (pip_requirements) propone las subidas. Lo que se
-# despliega es vendor/: CI (backend/infra/scripts/check_vendor.py) falla si no coinciden, así
-# que una subida incluye vendor/ regenerado. Confirma también los RECORD que escribe pip:
-# con ellos la comprobación verifica el hash de cada archivo.
+# OSV-Scanner reads this file and Renovate (pip_requirements) proposes the upgrades. What is
+# deployed is vendor/: CI (backend/infra/scripts/check_vendor.py) fails if they do not match, so
+# an upgrade includes a regenerated vendor/. Commit the RECORD files pip writes as well: with
+# them the check verifies the hash of each file.
 pg8000==1.31.6
 scramp==1.5.0
 asn1crypto==1.5.1

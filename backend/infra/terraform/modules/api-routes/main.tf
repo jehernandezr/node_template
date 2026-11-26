@@ -28,7 +28,7 @@ resource "terraform_data" "input_check" {
 
 resource "aws_apigatewayv2_integration" "this" {
   api_id      = var.api_id
-  description = "API de ${var.name}"
+  description = "API of ${var.name}"
 
   integration_type       = local.is_lambda ? "AWS_PROXY" : "HTTP_PROXY"
   integration_method     = local.is_lambda ? "POST" : "ANY"

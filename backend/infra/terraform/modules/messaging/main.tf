@@ -98,7 +98,7 @@ module "kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-messaging"
-  description = "Cifrado de tópicos y colas de ${var.name_prefix}"
+  description = "Encryption of the topics and queues of ${var.name_prefix}"
   service_principals = [
     { sid = "AllowSnsUse", services = ["sns.amazonaws.com"] },
     { sid = "AllowSqsUse", services = ["sqs.amazonaws.com"] },

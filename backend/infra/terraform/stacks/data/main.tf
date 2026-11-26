@@ -74,7 +74,7 @@ locals {
 
 resource "aws_security_group" "clients" {
   name        = "${var.name_prefix}-data-clients"
-  description = "Clientes de datos: servicios que usan RDS Proxy, las réplicas, Valkey y OpenObserve"
+  description = "Data clients: services that use RDS Proxy, the replicas, Valkey and OpenObserve"
   vpc_id      = local.network.vpc_id
 
   tags = { Name = "${var.name_prefix}-data-clients" }
@@ -86,7 +86,7 @@ resource "aws_vpc_security_group_egress_rule" "clients_to_proxy" {
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
-  description                  = "Hacia RDS Proxy (escritura)"
+  description                  = "To RDS Proxy (writes)"
 }
 
 resource "aws_vpc_security_group_egress_rule" "clients_to_replicas" {
@@ -97,7 +97,7 @@ resource "aws_vpc_security_group_egress_rule" "clients_to_replicas" {
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
-  description                  = "Hacia las réplicas de lectura"
+  description                  = "To the read replicas"
 }
 
 resource "aws_vpc_security_group_egress_rule" "clients_to_valkey" {
@@ -106,7 +106,7 @@ resource "aws_vpc_security_group_egress_rule" "clients_to_valkey" {
   from_port                    = 6379
   to_port                      = 6380
   ip_protocol                  = "tcp"
-  description                  = "Hacia Valkey"
+  description                  = "To Valkey"
 }
 
 resource "aws_vpc_security_group_egress_rule" "clients_to_observability" {
@@ -117,7 +117,7 @@ resource "aws_vpc_security_group_egress_rule" "clients_to_observability" {
   from_port                    = local.observability.alb_port
   to_port                      = local.observability.alb_port
   ip_protocol                  = "tcp"
-  description                  = "Hacia OpenObserve (OTLP)"
+  description                  = "To OpenObserve (OTLP)"
 }
 
 module "rds" {

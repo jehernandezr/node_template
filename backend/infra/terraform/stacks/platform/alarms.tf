@@ -29,7 +29,7 @@ module "alarms_kms" {
   source = "../../modules/kms-key"
 
   alias       = "${var.name_prefix}-alarms"
-  description = "Cifrado del tópico de alarmas de ${var.name_prefix}"
+  description = "Encryption of the alarms topic of ${var.name_prefix}"
   service_principals = [{
     sid      = "AllowAlarmPublishers"
     services = ["cloudwatch.amazonaws.com", "budgets.amazonaws.com"]
