@@ -13,6 +13,12 @@ export class Bulkhead {
 
   constructor(private readonly options: BulkheadOptions) {}
 
+  /**
+   * Runs `fn` when a slot is free, queuing it otherwise and rejecting when the queue is full.
+   * @param fn Work to run.
+   * @param signal Abort signal of the caller.
+   * @returns What `fn` returns.
+   */
   async execute<T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
     if (this.active < this.options.limit) {
       this.active += 1;

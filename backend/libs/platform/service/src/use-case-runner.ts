@@ -20,6 +20,13 @@ export class UseCaseRunner {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Runs a use case with its deadline and context, outside an HTTP request.
+   * @param useCase Use case to run.
+   * @param input Its input.
+   * @param options Deadline and context.
+   * @returns What the use case returns.
+   */
   run<TInput, TOutput>(
     useCase: UseCase<TInput, TOutput>,
     input: TInput,

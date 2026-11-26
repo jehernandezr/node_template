@@ -12,7 +12,11 @@ export class PolicyName {
   static readonly Cache = new PolicyName('cache');
   static readonly Database = new PolicyName('database');
 
-  /** The service's own policy. Two names with the same `value` are the same policy. */
+  /**
+   * The service's own policy. Two names with the same `value` are the same policy.
+   * @param value Name of the policy.
+   * @returns The policy name.
+   */
   static of(value: string): PolicyName {
     return new PolicyName(
       ResilienceGuard.instance.matches('name', value, PolicyName.PATTERN),
@@ -21,6 +25,10 @@ export class PolicyName {
 
   private constructor(readonly value: string) {}
 
+  /**
+   * Text of the name.
+   * @returns The name.
+   */
   toString(): string {
     return this.value;
   }

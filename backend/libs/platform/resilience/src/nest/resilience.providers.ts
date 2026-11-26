@@ -13,6 +13,11 @@ import type {
 
 /** Providers of the resilience module. */
 export class ResilienceProviders {
+  /**
+   * Builds the providers of the resilience registry with its adapters.
+   * @param extras Metrics and logger adapters.
+   * @returns The providers.
+   */
   static build(extras: ResilienceModuleExtras): Provider[] {
     const providers: Provider[] = [
       { provide: FailureClassifier, useFactory: () => new FailureClassifier() },

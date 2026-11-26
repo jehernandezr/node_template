@@ -20,6 +20,10 @@ import type { ServiceMigratorOptions } from './service-migrator-options.js';
 export class ServiceMigrator {
   /**
    * The migrator does not export telemetry: starting it disabled keeps the process from waiting for a collector.
+   * @param definition Service definition.
+   * @param target Shards, catalog or both.
+   * @param options Environment and logger.
+   * @returns What was migrated.
    */
   async run(
     definition: ServiceDefinition,

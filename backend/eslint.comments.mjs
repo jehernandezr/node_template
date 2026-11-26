@@ -155,7 +155,8 @@ const parameterName = (parameter) => {
   return undefined;
 };
 
-const voidReturn = /^(void|undefined|never|Promise<\s*void\s*>)$/;
+const voidReturn =
+  /^(void|undefined|never|Promise<\s*void\s*>|void\s*\|\s*Promise<\s*void\s*>)$/;
 
 const returnsValue = (sourceCode, method) => {
   const annotation = method.value.returnType?.typeAnnotation;

@@ -27,6 +27,9 @@ return 1
    * Returns the key of a filter, `<prefix>:bloom:{name}`. The name goes in a hash
    * tag, so the live key and the rebuild keys share a slot in a cluster
    * and the swap script can touch both.
+   * @param keyspace Service keyspace.
+   * @param name Filter name.
+   * @returns The key.
    * @throws InvalidParametersError with an empty name, with characters outside `[A-Za-z0-9._:-]` or longer than 128.
    */
   static filter(keyspace: ValkeyKeyspace, name: string): string {
@@ -38,12 +41,22 @@ return 1
     return keyspace.key('bloom', `{${name}}`);
   }
 
-  /** Returns the temporary key that a rebuild fills before the swap. */
+  /**
+   * Returns the temporary key that a rebuild fills before the swap.
+   * @param liveKey Key of the live filter.
+   * @param ids Generator of the rebuild id.
+   * @returns The temporary key.
+   */
   static rebuild(liveKey: string, ids: IdGenerator): string {
     return `${liveKey}:rebuild:${ids.next().toString()}`;
   }
 
-  /** Splits the items into batches the size of one command. */
+  /**
+   * Splits the items into batches the size of one command.
+   * @param items Items to split.
+   * @param size Batch size.
+   * @returns The batches.
+   */
   static *batches<T>(
     items: readonly T[],
     size: number = BloomKeys.BATCH_SIZE,

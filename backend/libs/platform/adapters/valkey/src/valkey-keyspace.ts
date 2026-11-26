@@ -33,6 +33,9 @@ export class ValkeyKeyspace {
   /**
    * Returns the service key namespace: `VALKEY_KEY_PREFIX` if defined, or the
    * service name.
+   * @param valkey Valkey configuration.
+   * @param serviceName Service name.
+   * @returns The keyspace.
    * @throws ConfigValidationError if the chosen prefix does not match {@link ValkeyKeyspace.PREFIX_PATTERN}.
    */
   static fromSettings(
@@ -45,7 +48,11 @@ export class ValkeyKeyspace {
       : new ValkeyKeyspace(explicit, 'VALKEY_KEY_PREFIX');
   }
 
-  /** `<prefijo>:<parte>:<parte>...` */
+  /**
+   * Joins the parts under the prefix: `<prefix>:<part>:<part>...`.
+   * @param parts Parts of the key.
+   * @returns The key.
+   */
   key(...parts: readonly string[]): string {
     return [this.prefix, ...parts].join(':');
   }

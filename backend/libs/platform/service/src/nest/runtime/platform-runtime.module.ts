@@ -118,6 +118,12 @@ export class PlatformRuntimeModule {
   /** How often a waiting write checks the gate again. */
   private static readonly WRITE_GATE_POLL_MS = 100;
 
+  /**
+   * Composes the platform runtime of a service: configuration, observability, persistence, messaging, sagas and jobs.
+   * @param definition Service definition.
+   * @param options Environment and adapter overrides.
+   * @returns The module.
+   */
   static forService(
     definition: ServiceDefinition,
     options: PlatformRuntimeOptions,

@@ -16,6 +16,7 @@ export class ValkeySubscriberSource {
   /**
    * Returns the same connection on each call.
    * If opening fails, the next attempt opens again instead of repeating the error.
+   * @returns The subscriber connection.
    */
   connection(): Promise<ValkeySubscriberConnection> {
     if (this.opened === undefined) {

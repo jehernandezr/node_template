@@ -16,7 +16,11 @@ export class ResilienceEventBus {
 
   constructor(private readonly clock: Clock) {}
 
-  /** @returns function that removes the subscriber. */
+  /**
+   * Adds a subscriber of the policy events.
+   * @returns function that removes the subscriber.
+   * @param listener Subscriber.
+   */
   subscribe(listener: ResilienceEventListener): () => void {
     this.listeners.add(listener);
     return () => {
@@ -25,7 +29,12 @@ export class ResilienceEventBus {
   }
 
   /**
+   * Sends an event to every subscriber.
    * A failing subscriber must not break the protected call.
+   * @param policy Policy name.
+   * @param dependencyKey Dependency the event is about.
+   * @param kind Kind of event.
+   * @param detail Error and timing of the event.
    */
   publish(
     policy: string,

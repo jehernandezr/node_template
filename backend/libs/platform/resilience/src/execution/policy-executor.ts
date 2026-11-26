@@ -51,6 +51,11 @@ export class PolicyExecutor {
     private readonly retryAfter: RetryAfterHint,
   ) {}
 
+  /**
+   * Runs a call with timeout, retries, breaker and bulkhead of its policy.
+   * @param call Operation and its policy.
+   * @returns What the operation returns.
+   */
   async run<T>(call: PolicyCall<T>): Promise<T> {
     const { options, config } = call;
     const callerSignal = options.signal;

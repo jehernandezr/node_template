@@ -38,6 +38,11 @@ import { VALKEY_CLIENT, VALKEY_MODULE_OPTIONS } from './valkey.tokens.js';
  * Nest class.
  */
 export class ValkeyProviders {
+  /**
+   * Builds the client and the Valkey adapters with their extras.
+   * @param extras Auth token provider and runtime options.
+   * @returns The providers.
+   */
   static build(extras: ValkeyModuleExtras): Provider[] {
     return [
       ...(extras.authToken === undefined
@@ -204,7 +209,10 @@ export class ValkeyProviders {
     ];
   }
 
-  /** What other modules receive: the client, the adapters by class and the health indicator. */
+  /**
+   * What other modules receive: the client, the adapters by class and the health indicator.
+   * @returns The exported tokens.
+   */
   static exports(): Array<symbol | Type<unknown>> {
     return [
       VALKEY_CLIENT,

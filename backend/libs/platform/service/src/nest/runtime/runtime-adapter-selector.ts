@@ -14,6 +14,12 @@ enum RuntimeAdapterVariable {
  * options win over what the environment infers.
  */
 export class RuntimeAdapterSelector {
+  /**
+   * Picks the routing cache and directory channel adapters from the environment.
+   * @param env Environment variables.
+   * @param overrides Adapters a test replaces.
+   * @returns The adapters.
+   */
   select(
     env: ConfigEnv,
     overrides: Partial<RuntimeAdapters> = {},

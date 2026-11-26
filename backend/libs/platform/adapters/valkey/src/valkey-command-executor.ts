@@ -16,7 +16,12 @@ export class ValkeyCommandExecutor {
     private readonly errors: ValkeyErrorTranslator,
   ) {}
 
-  /** Sends a command. */
+  /**
+   * Sends a command.
+   * @param command Command name.
+   * @param args Its arguments.
+   * @returns The raw reply.
+   */
   async run(command: ValkeyCommand, args: ValkeyArgument[]): Promise<unknown> {
     try {
       return await this.client.call(command, args);
@@ -28,6 +33,10 @@ export class ValkeyCommandExecutor {
   /**
    * Runs a script with `EVALSHA` and, if the server does not have it cached
    * (`NOSCRIPT`, for example after a restart or a failover), with `EVAL`.
+   * @param script Lua script.
+   * @param keys Keys it touches.
+   * @param args Its arguments.
+   * @returns The raw reply.
    */
   async script(
     script: LuaScript,
@@ -51,7 +60,12 @@ export class ValkeyCommandExecutor {
     }
   }
 
-  /** Reads an integer reply. */
+  /**
+   * Reads an integer reply.
+   * @param command Command that replied.
+   * @param reply Raw reply.
+   * @returns The integer.
+   */
   integer(command: ValkeyCommand, reply: unknown): number {
     if (typeof reply !== 'number' || !Number.isSafeInteger(reply)) {
       throw new ValkeyUnexpectedReplyError(command, 'an integer');
@@ -59,7 +73,12 @@ export class ValkeyCommandExecutor {
     return reply;
   }
 
-  /** Reads a text reply that may be null. */
+  /**
+   * Reads a text reply that may be null.
+   * @param command Command that replied.
+   * @param reply Raw reply.
+   * @returns The text, or `undefined`.
+   */
   optionalString(command: ValkeyCommand, reply: unknown): string | undefined {
     if (reply === null) {
       return undefined;

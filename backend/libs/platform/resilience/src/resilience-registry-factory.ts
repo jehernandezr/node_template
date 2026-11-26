@@ -12,6 +12,7 @@ export class ResilienceRegistryFactory {
    * Builds the registry with the base policies merged with `overrides`.
    * @param overrides Overrides by name over the base policies.
    * @param options The clock, the randomness and the failure classifier.
+   * @returns The registry.
    * @throws InvalidPolicyError if a merged policy is not valid.
    */
   create(

@@ -21,7 +21,10 @@ export class DefaultPolicies {
     circuitBreaker: { consecutiveFailures: 5, halfOpenAfterMs: 10_000 },
   };
 
-  /** Policies by name. The references are the same as the constants above. */
+  /**
+   * Policies by name. The references are the same as the constants above.
+   * @returns The policies.
+   */
   static all(): ReadonlyMap<string, ResiliencePolicyConfig> {
     return new Map<string, ResiliencePolicyConfig>([
       [PolicyName.Cache.value, DefaultPolicies.cache],

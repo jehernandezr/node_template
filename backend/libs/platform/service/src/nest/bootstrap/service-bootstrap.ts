@@ -16,7 +16,12 @@ export class ServiceBootstrap {
     logger: ['error', 'warn'],
   };
 
-  /** Process with an HTTP server: creates the application with `ServiceHostModule`, enables the shutdown hooks and listens. */
+  /**
+   * Process with an HTTP server: creates the application with `ServiceHostModule`, enables the shutdown hooks and listens.
+   * @param definition Service definition.
+   * @param options HTTP and shutdown options.
+   * @returns The running service.
+   */
   static async http(
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions = {},
@@ -45,7 +50,12 @@ export class ServiceBootstrap {
     );
   }
 
-  /** Process without an HTTP server: jobs and consumers. */
+  /**
+   * Process without an HTTP server: jobs and consumers.
+   * @param definition Service definition.
+   * @param options Shutdown options.
+   * @returns The running service.
+   */
   static async worker(
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions = {},

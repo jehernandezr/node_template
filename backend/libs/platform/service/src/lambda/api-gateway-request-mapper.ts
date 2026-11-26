@@ -16,6 +16,9 @@ export class ApiGatewayRequestMapper {
   /**
    * Destination URL, headers and `fetch` init. Redirects are manual so
    * that the response reaches the client that called the function as is.
+   * @param event API Gateway event.
+   * @param baseUrl Loopback URL of the server.
+   * @returns The URL and the request init.
    */
   toRequest(
     event: ApiGatewayHttpEvent,

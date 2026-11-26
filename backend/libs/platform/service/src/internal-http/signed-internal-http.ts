@@ -19,6 +19,10 @@ export class SignedInternalHttp {
   constructor(private readonly callees: readonly string[] = []) {}
 
   /**
+   * Builds the signed internal HTTP settings of the service: its URLs, signer and callees.
+   * @param config Service configuration.
+   * @param context Service name and callees.
+   * @returns The settings.
    * @throws Error if the URL of a service in `callees` is missing, so the service does not start without being able to
    *   call it, or with SigV4 without the AWS adapter: there are no credentials to sign with.
    */

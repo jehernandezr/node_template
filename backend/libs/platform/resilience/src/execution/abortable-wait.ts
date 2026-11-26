@@ -6,6 +6,9 @@ export class AbortableWait {
    * Runs `work` until it finishes or until `signal` aborts, whichever happens
    * first. If it aborts, rejects with the reason even if `work` keeps running; its
    * late rejection is discarded. If the signal is already aborted, it does not run `work`.
+   * @param work Work to wait for.
+   * @param signal Abort signal.
+   * @returns What `work` returns.
    */
   static until<T>(work: () => Promise<T>, signal: AbortSignal): Promise<T> {
     if (signal.aborted) {
@@ -28,6 +31,8 @@ export class AbortableWait {
   /**
    * Waits `ms` milliseconds. If the signal aborts first, cancels the timer
    * and rejects with the signal's reason.
+   * @param ms Milliseconds to wait.
+   * @param signal Abort signal.
    */
   static sleep(ms: number, signal: AbortSignal): Promise<void> {
     if (signal.aborted) {

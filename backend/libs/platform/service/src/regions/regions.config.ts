@@ -84,21 +84,36 @@ export const RegionsConfig = new ConfigSection<RegionsSettings>(
 export class ServiceRegions {
   constructor(private readonly settings: RegionsSettings) {}
 
-  /** The region of this process, or `undefined` if the deployment does not declare one. */
+  /**
+   * The region of this process, or `undefined` if the deployment does not declare one.
+   * @returns The region code, or `undefined`.
+   */
   current(): string | undefined {
     return this.settings.SERVICE_REGION;
   }
 
-  /** The token issuer of a region, or `undefined` if it is not in `REGIONS`. */
+  /**
+   * The token issuer of a region, or `undefined` if it is not in `REGIONS`.
+   * @param code Region code.
+   * @returns The issuer, or `undefined`.
+   */
   issuerOf(code: string): string | undefined {
     return this.settings.REGIONS.find((region) => region.code === code)?.issuer;
   }
 
+  /**
+   * Lists every declared region.
+   * @returns The regions.
+   */
   all(): readonly Region[] {
     return this.settings.REGIONS;
   }
 
-  /** The API URL of a region, or `undefined` if it is not in `REGIONS`. */
+  /**
+   * The API URL of a region, or `undefined` if it is not in `REGIONS`.
+   * @param code Region code.
+   * @returns The URL, or `undefined`.
+   */
   apiBaseUrlOf(code: string): string | undefined {
     return this.settings.REGIONS.find((region) => region.code === code)
       ?.apiBaseUrl;

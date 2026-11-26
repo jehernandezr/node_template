@@ -31,6 +31,7 @@ export class RealtimeSession {
     private readonly logger: LoggerPort,
   ) {}
 
+  /** Channel the session reads. */
   get channel(): string {
     return this.principal.userId;
   }
@@ -56,6 +57,7 @@ export class RealtimeSession {
       .catch((error: unknown) => this.fail(error));
   }
 
+  /** Unsubscribes from the stream. */
   async close(): Promise<void> {
     if (this.closed) {
       return;

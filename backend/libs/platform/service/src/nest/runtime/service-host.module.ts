@@ -9,6 +9,9 @@ import type { ServiceHostOptions } from './service-host-options.js';
 export class ServiceHostModule {
   /**
    * The core declares `rootModule` with its own type to avoid importing NestJS. Here it is already a Nest module class.
+   * @param definition Service definition.
+   * @param options Environment and overrides.
+   * @returns The host module.
    */
   static forService(
     definition: ServiceDefinition,

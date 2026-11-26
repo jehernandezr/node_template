@@ -8,6 +8,10 @@ import { ResilienceMetricName } from './resilience-metric-name.enum.js';
 export class ResilienceMetricsListener {
   constructor(private readonly metrics: MetricsPort) {}
 
+  /**
+   * Turns a policy event into metrics.
+   * @param event Policy event.
+   */
   handle(event: ResilienceEvent): void {
     const code = event.detail?.errorCode ?? event.detail?.errorName;
     const attributes: Record<string, string> = {
@@ -28,7 +32,10 @@ export class ResilienceMetricsListener {
     }
   }
 
-  /** Subscribes the listener to the registry. @returns function that removes it. */
+  /**
+   * Subscribes the listener to the registry. @returns function that removes it.
+   * @param source Registry to listen to.
+   */
   attach(source: Pick<ResilienceRegistry, 'subscribe'>): () => void {
     return source.subscribe((event) => {
       this.handle(event);

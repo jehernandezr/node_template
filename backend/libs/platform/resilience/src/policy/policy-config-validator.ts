@@ -7,6 +7,7 @@ export class PolicyConfigValidator {
   /**
    * Validated when building the registry, so a bad override fails at startup
    * and not on the first retry.
+   * @param config Policy to check.
    * @throws InvalidPolicyError
    */
   static validate(config: ResiliencePolicyConfig): void {

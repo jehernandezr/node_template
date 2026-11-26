@@ -16,6 +16,11 @@ export class LoopbackForwarder {
     private readonly fetcher: typeof fetch,
   ) {}
 
+  /**
+   * Forwards an API Gateway event to the in-process HTTP server and maps its answer back.
+   * @param event API Gateway event.
+   * @returns The API Gateway response.
+   */
   async forward(event: ApiGatewayHttpEvent): Promise<ApiGatewayHttpResponse> {
     const { url, init } = this.requests.toRequest(event, this.baseUrl);
     const response = await this.fetcher(url, init);

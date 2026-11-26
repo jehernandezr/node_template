@@ -13,7 +13,11 @@ export class ApiGatewayResponseMapper {
     suffixes: ['+json', '+xml'],
   } as const;
 
-  /** Reads the whole body; the `set-cookie` headers go separately because they cannot be joined with a comma. */
+  /**
+   * Reads the whole body; the `set-cookie` headers go separately because they cannot be joined with a comma.
+   * @param response Loopback response.
+   * @returns The API Gateway response.
+   */
   async fromResponse(response: Response): Promise<ApiGatewayHttpResponse> {
     const headers: Record<string, string> = {};
     response.headers.forEach((value, name) => {

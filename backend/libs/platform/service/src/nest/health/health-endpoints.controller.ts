@@ -11,13 +11,19 @@ import { HealthRoute } from './health-route.enum.js';
 export class HealthEndpoints {
   constructor(private readonly registry: HealthRegistry) {}
 
-  /** Responds while the process is alive; does not query dependencies. */
+  /**
+   * Responds while the process is alive; does not query dependencies.
+   * @returns The liveness report.
+   */
   @Get(HealthRoute.Live)
   live(): HealthReport {
     return { state: HealthState.Up };
   }
 
-  /** `Down` responds 503 with the summary as the body, so the load balancer stops sending traffic. */
+  /**
+   * `Down` responds 503 with the summary as the body, so the load balancer stops sending traffic.
+   * @returns The readiness summary.
+   */
   @Get(HealthRoute.Ready)
   async ready(): Promise<HealthSummary> {
     const summary = await this.registry.checkAll();
