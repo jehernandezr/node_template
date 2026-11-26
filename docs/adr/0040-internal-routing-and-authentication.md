@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-26
-- Related: [ADR 0020](0020-terraform-stacks-and-runtime-per-service.md), [ADR 0039](0039-runtime-matrix-per-service.md)
+- Related: [ADR 0020](0020-terraform-stacks-and-runtime-per-service.md), [ADR 0021](0021-valkey-adapter.md), [ADR 0039](0039-runtime-matrix-per-service.md)
 
 ## Context
 
@@ -19,6 +19,7 @@ Services call each other through `POST /internal/operations/:operationId` and re
 - **Locally and outside AWS: HMAC.** `INTERNAL_API_AUTH=hmac` keeps the shared secret. The verifier accepts `INTERNAL_API_SHARED_SECRET` and an optional `INTERNAL_API_SHARED_SECRET_PREVIOUS`, so a rotation overlaps. With `iam`, the shared secret is not required.
 - **Never public.** The HTTP API only gets the `route_prefixes` of each service; a validation in the `service` stack rejects any prefix under `/internal`, and the internal ALB rules only match public prefixes.
 - **Cross region.** F12 is single region ([ADR 0042](0042-region-and-catalog-model.md)). Calls to another region go, when a second region exists, to that region's HTTP API with an `AWS_IAM` route and `SigV4Service.ExecuteApi`; that is decided with the second region.
+- **One SigV4 implementation.** `SigV4Signer` on `@smithy/signature-v4` signs every request; the hand-written signing of `ElastiCacheIamAuthTokenProvider` moves onto its `presign`.
 - **Per-operation authorization** (which caller may call which operation) is not in F12. Lattice enforces service to service; the operation allowlist is a backlog item.
 
 ## Consequences

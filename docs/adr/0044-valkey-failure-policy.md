@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-26
-- Related: [ADR 0021](0021-valkey-adapter.md), [ADR 0022](0022-token-verification-shared-revocation-state.md), [ADR 0032](0032-tenant-moves-and-regions.md)
+- Related: [ADR 0021](0021-valkey-adapter.md), [ADR 0026](0026-scheduled-jobs-scheduledjob-joblock.md), [ADR 0022](0022-token-verification-shared-revocation-state.md), [ADR 0032](0032-tenant-moves-and-regions.md)
 
 ## Context
 
@@ -10,20 +10,22 @@ ARCHITECTURE promises graceful degradation when Valkey fails, the general review
 
 ## Decision
 
-- **Configuration.** `DEPLOY_ENVIRONMENT` (`local`, `dev`, `staging`, `prod`) is the only source of environment safeguards. `NODE_ENV` is always `production` in images and decides nothing else. Outside `local`, `VALKEY_HOST` is required and the in-memory and null adapters are rejected at start-up.
+- **Configuration.** `DEPLOY_ENVIRONMENT` (`local`, `dev`, `staging`, `prod`) is the only source of environment safeguards. `NODE_ENV` is always `production` in images and decides nothing else. Outside `local`, `VALKEY_HOST` is required and the in-memory and null Valkey adapters (`NullRoutingCache`, the in-process directory channel) are rejected at start-up. Business providers follow [ADR 0046](0046-providers-and-telemetry-per-environment.md): `dev` still allows the fake payment provider and the in-memory push sender.
 - **Readiness** does not include Valkey, so a Valkey outage does not take every target out of the load balancer. `HealthRoute.Ready` reports it as `degraded`.
 - **At runtime, per check:**
 
-| Use                                                 | When Valkey fails                                                                          |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Token revocation (`auth:*`), permission version     | Closed: 503 `PLATFORM.DEPENDENCY.UNAVAILABLE` (added to `platformErrorCatalog`), retryable |
-| Replay nonce, MFA attempt counters, account lockout | Closed: 503, retryable                                                                     |
-| Tenant write gate with `TENANT_WRITE_GATE=valkey`   | Closed: the write waits and then answers `TENANT_MIGRATING`                                |
-| Real-time authentication                            | Closed: 503, never 401, so the client keeps its session                                    |
-| Cache, routing cache, Bloom filters                 | Open: read from the database                                                               |
-| Rate limiting                                       | Open: per-process limits, behind a circuit breaker                                         |
-| Feature flags                                       | Open: last known value                                                                     |
-| Real-time stream and presence                       | Open: no live frames; the inbox still has every notification                               |
+| Use                                                                                     | When Valkey fails                                                                                                     |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Token revocation (`auth:*`), permission version                                         | Closed: 503 `PLATFORM.DEPENDENCY.UNAVAILABLE` (added to `platformErrorCatalog`), retryable                            |
+| Replay nonce, MFA attempt counters, account lockout                                     | Closed: 503, retryable                                                                                                |
+| Tenant write gate with `TENANT_WRITE_GATE=valkey`                                       | Closed: the write waits and then answers `TENANT_MIGRATING`                                                           |
+| Real-time authentication                                                                | Closed: 503, never 401, so the client keeps its session                                                               |
+| Cache, routing cache, Bloom filters                                                     | Open: read from the database                                                                                          |
+| Rate limiting                                                                           | Open: per-process limits, behind a circuit breaker                                                                    |
+| Feature flags                                                                           | Open: last known value                                                                                                |
+| Scheduled job lock (`JobLock`, [ADR 0026](0026-scheduled-jobs-scheduledjob-joblock.md)) | Closed: the run is skipped and the next occurrence tries again                                                        |
+| Directory change channel (routing cache invalidation)                                   | Open: routing reads go to the database while Valkey is down, and the routing cache is flushed when the breaker closes |
+| Real-time stream and presence                                                           | Open: no live frames; the inbox still has every notification                                                          |
 
 - Every Valkey call has a deadline and a circuit breaker, so an outage adds no more than the deadline to a request.
 

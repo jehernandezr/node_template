@@ -12,13 +12,13 @@ ADR 0020 lets each service run its API on Lambda or Fargate, but nothing says wh
 
 Every service has the components below. The API is the only one whose runtime is a choice.
 
-| Component   | Entry point                             | Runtime                          | Runs                                                                 |
-| ----------- | --------------------------------------- | -------------------------------- | -------------------------------------------------------------------- |
-| `api`       | `main.mjs` or `lambda.handler`          | `fargate` (default) or `lambda`  | Public routes and `/internal/operations/*`; no background loops      |
-| `worker`    | `worker.mjs`                            | Always Fargate, `min_count = 1`  | Outbox relay, `SagaRecoveryJob`, every `ScheduledJob`, SQS consumers |
-| `consumers` | `lambda.consumer` (optional)            | Lambda with SQS event source     | Consumers moved out of the worker, one queue each                    |
-| `realtime`  | `main.mjs` with `REALTIME_HOST=service` | Fargate, only in `notifications` | SSE and Socket.IO ([ADR 0045](0045-edge-domains-and-real-time.md))   |
-| `migrate`   | `migrate.mjs all`                       | One-off Fargate task per deploy  | Migrations ([ADR 0043](0043-deploy-migrations-and-rollback.md))      |
+| Component   | Entry point                             | Runtime                                                    | Runs                                                                 |
+| ----------- | --------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| `api`       | `main.mjs` or `lambda.handler`          | `fargate` (default) or `lambda`                            | Public routes and `/internal/operations/*`; no background loops      |
+| `worker`    | `worker.mjs`                            | Always Fargate, `min_count = 1`                            | Outbox relay, `SagaRecoveryJob`, every `ScheduledJob`, SQS consumers |
+| `consumers` | `lambda.consumer` (optional)            | Lambda with SQS event source                               | Consumers moved out of the worker, one queue each                    |
+| `realtime`  | `main.mjs` with `REALTIME_HOST=service` | Fargate, only in `notifications`                           | SSE and Socket.IO ([ADR 0045](0045-edge-domains-and-real-time.md))   |
+| `migrate`   | `migrate.mjs all`                       | One-off Fargate task per deploy, defined by `service-base` | Migrations ([ADR 0043](0043-deploy-migrations-and-rollback.md))      |
 
 - A service never runs only on Lambda: the worker owns every loop, so the relay and the jobs keep a single home whatever the API runtime is. A consumer moved to Lambda is removed from the worker by the `consumers` map; the worker keeps the rest.
 - Defaults: all five services run the API on Fargate in every environment. In `dev`, `tasks` runs its API on Lambda so both runtimes stay in acceptance.
