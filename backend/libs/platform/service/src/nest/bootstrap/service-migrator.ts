@@ -1,4 +1,3 @@
-import { NestFactory } from '@nestjs/core';
 import { DirectoryShardLister } from '@platform/adapters-postgres';
 import { TelemetryBootstrap } from '@platform/observability/setup';
 import {
@@ -10,7 +9,9 @@ import { MigrationTarget } from '../../migration-target.enum.js';
 import type { ServiceDefinition } from '../../service-definition.js';
 import { ServiceDefinitionValidator } from '../../service-definition-validator.js';
 import type { ServiceMigrationReport } from '../../service-migration-report.js';
+import { ApplicationContextFactory } from './application-context-factory.js';
 import { MigrationHostModule } from './migration-host.module.js';
+import { NestApplicationContextFactory } from './nest-application-context-factory.js';
 import type { ServiceMigratorOptions } from './service-migrator-options.js';
 
 /**
@@ -18,6 +19,13 @@ import type { ServiceMigratorOptions } from './service-migrator-options.js';
  * calls it.
  */
 export class ServiceMigrator {
+  /**
+   * @param contexts Creates the context the migrations run in: `NestFactory` by default.
+   */
+  constructor(
+    private readonly contexts: ApplicationContextFactory = new NestApplicationContextFactory(),
+  ) {}
+
   /**
    * The migrator does not export telemetry: starting it disabled keeps the process from waiting for a collector.
    * @param definition Service definition.
@@ -36,7 +44,7 @@ export class ServiceMigrator {
       serviceName: definition.name,
       disabled: true,
     });
-    const app = await NestFactory.createApplicationContext(
+    const app = await this.contexts.create(
       MigrationHostModule.forService(definition, env, telemetry),
       { logger: false, abortOnError: false },
     );
