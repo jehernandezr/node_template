@@ -30,11 +30,12 @@ A microservice on Fargate: an API with inbound traffic behind the ALB, or a work
 
 ## Outputs
 
-`service_name`, `service_arn`, `task_definition_arn`, `task_role_arn`, `task_role_name`, `execution_role_arn`, `security_group_id`, `target_group_arn`, `target_group_arn_suffix`, `log_group_name`, `autoscaling_resource_id`.
+`service_name`, `service_arn`, `task_definition_arn`, `task_role_arn`, `task_role_name`, `execution_role_arn`, `security_group_id`, `target_group_arn`, `target_group_arn_suffix`, `target_group_name_prefix`, `log_group_name`, `autoscaling_resource_id`.
 
 ## Notes
 
 - Queue scaling uses two alarms: it scales out with the visible messages and scales in to the minimum when visible plus in-flight reach zero for `scale_in_periods` minutes. In workers, set `cpu_target_percent = null` so the CPU policy does not compete with the queue policy.
+- The target group name is a prefix of up to 6 characters from `service_name` plus a suffix that AWS makes unique, with `create_before_destroy`. A full name would not fit the 32-character limit with real prefixes, and a change that replaces the target group creates the new one before the old one goes.
 - The logs KMS key is the module's unless you pass `kms_key_arn`. The `ecs-cluster` key works if `name_prefix` matches, because its policy covers `/ecs/<name_prefix>/*`.
 - Without NAT, the task reaches AWS through VPC endpoints. Calls to the Internet (Claude API, APNs, FCM, payments) need an egress route defined by `network`.
 - The collector image has a default version that you must review and pin.

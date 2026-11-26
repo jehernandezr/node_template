@@ -61,3 +61,22 @@ run "explicit_command_wins" {
     error_message = "An explicit command must replace the default."
   }
 }
+
+run "target_groups_get_a_short_prefix_with_the_longest_real_name_prefix" {
+  command = plan
+
+  variables {
+    name_prefix           = "node-template-staging"
+    service_name          = "notifications-api"
+    container_port        = 3000
+    enable_load_balancer  = true
+    alb_listener_arn      = "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/nt-api/1/2"
+    alb_security_group_id = "sg-0api"
+    path_patterns         = ["/v1/notifications"]
+  }
+
+  assert {
+    condition     = output.target_group_name_prefix == "notif-" && aws_lb_target_group.this[0].name_prefix == "notif-"
+    error_message = "The target group takes a prefix of at most 6 characters and AWS adds a unique suffix, so the API and realtime of one service never collide and the name never ends in a hyphen."
+  }
+}

@@ -43,6 +43,11 @@ output "target_group_arn_suffix" {
   value       = var.enable_load_balancer ? aws_lb_target_group.this[0].arn_suffix : null
 }
 
+output "target_group_name_prefix" {
+  description = "Prefix of the target group name. AWS completes it with a unique suffix, so a replacement can be created before the old one is destroyed."
+  value       = var.enable_load_balancer ? aws_lb_target_group.this[0].name_prefix : null
+}
+
 output "log_group_name" {
   description = "Service log group name."
   value       = aws_cloudwatch_log_group.this.name
