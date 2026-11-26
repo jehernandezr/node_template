@@ -10,3 +10,9 @@
 
 # UUIDv7 fixture in a field named tokenId (not a credential) in the acting member test.
 0e3b7de69c2235644f9443913848b4121d045b01:backend/libs/platform/auth/src/actor/__tests__/acting-member.spec.ts:generic-api-key:27
+
+# Public TOTP test vectors (the RFC 6238 SHA-1 seed and fixed base32 fixtures) in the deploy-smoke and smoke account tests.
+0a4dc6e7960076c8e7e86d80d44ecd2d093adec7:backend/e2e/deploy-smoke/src/__tests__/totp-code.spec.ts:generic-api-key:4
+0a4dc6e7960076c8e7e86d80d44ecd2d093adec7:backend/e2e/deploy-smoke/src/__tests__/smoke-settings.spec.ts:generic-api-key:7
+be21b248bcfdc6178c2cab8fa26203f14350baf2:backend/apps/identity/src/smoke-account/__tests__/seed-smoke-account.spec.ts:generic-api-key:34
+be21b248bcfdc6178c2cab8fa26203f14350baf2:backend/apps/identity/src/smoke-account/__tests__/smoke-account.spec.ts:generic-api-key:7
