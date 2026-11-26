@@ -14,6 +14,16 @@ export abstract class JobLock {
   ): Promise<JobLease | undefined>;
 
   /**
+   * Extends a lease that is still held by `ttlMs` from now, so a run that lasts longer than the first
+   * `ttlMs` keeps the job to itself.
+   * @param lease Lease to extend.
+   * @param ttlMs New lease duration, counted from now.
+   * @returns `true` if the lease was still held and now lasts `ttlMs` more; `false` if it expired or another
+   * process took the job.
+   */
+  abstract renew(lease: JobLease, ttlMs: number): Promise<boolean>;
+
+  /**
    * Releases a lease that is still held.
    * @param lease Lease to release.
    */

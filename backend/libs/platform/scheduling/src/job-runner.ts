@@ -31,6 +31,7 @@ export class JobRunner {
   private readonly execution: JobExecution;
   private started = false;
   private shutdown = new AbortController();
+  private abandon = new AbortController();
 
   constructor(
     clock: Clock,
@@ -68,15 +69,17 @@ export class JobRunner {
     }
     this.started = true;
     this.shutdown = new AbortController();
+    this.abandon = new AbortController();
     for (const entry of this.entries.values()) {
       this.arm(entry, this.planner.delayMs(entry.job));
     }
   }
 
   /**
-   * Stops scheduling runs and waits for the ones in progress up to `graceMs`.
-   * If they time out, aborts their `signal` and waits for them to finish.
-   * @param graceMs Time to wait for running jobs.
+   * Stops scheduling runs and waits for the ones in progress up to `graceMs`. If they are still running, aborts
+   * their `signal` and waits up to `graceMs` more; a job that still has not returned is abandoned and logged,
+   * so this call always returns within about twice `graceMs`.
+   * @param graceMs Time to wait for running jobs, before and again after aborting them.
    */
   async stop(graceMs: number): Promise<void> {
     this.started = false;
@@ -91,18 +94,12 @@ export class JobRunner {
     if (pending.length === 0) {
       return;
     }
-    const settled = Promise.all(pending);
-    let cancelGrace: () => void = () => undefined;
-    const graceExpired = new Promise<boolean>((resolve) => {
-      cancelGrace = TimerScheduler.armDetached(graceMs, () => resolve(true));
-    });
-    const expired = await Promise.race([
-      settled.then(() => false),
-      graceExpired,
-    ]);
-    cancelGrace();
-    if (expired) {
+    const settled = Promise.all(pending).then(() => undefined);
+    if (await this.outlasts(settled, graceMs)) {
       this.shutdown.abort();
+      if (await this.outlasts(settled, graceMs)) {
+        this.abandon.abort();
+      }
       await settled;
     }
   }
@@ -165,12 +162,27 @@ export class JobRunner {
     }
   }
 
+  private async outlasts(work: Promise<void>, ms: number): Promise<boolean> {
+    let cancel: () => void = () => undefined;
+    const expired = new Promise<boolean>((resolve) => {
+      cancel = TimerScheduler.armDetached(ms, () => resolve(true));
+    });
+    try {
+      return await Promise.race([work.then(() => false), expired]);
+    } finally {
+      cancel();
+    }
+  }
+
   private run(entry: JobEntry): Promise<void> {
     if (entry.running !== undefined) {
       return entry.running;
     }
     const running = this.execution
-      .execute(entry.job, this.shutdown.signal)
+      .execute(entry.job, {
+        shutdown: this.shutdown.signal,
+        abandon: this.abandon.signal,
+      })
       .then(() => undefined)
       .finally(() => {
         entry.running = undefined;

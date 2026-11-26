@@ -7,15 +7,26 @@ import {
   type ScheduledJob,
 } from '@platform/kernel';
 import type { LoggerPort, MetricsPort } from '@platform/observability';
-import { Deadline } from '@platform/primitives';
+import { Deadline, TimerScheduler } from '@platform/primitives';
+import { JobLeaseLostError } from './errors/job-lease-lost.error.js';
 import {
   JobRunResult,
   SchedulingMetric,
   SchedulingMetricAttribute,
 } from './scheduling-metric.enum.js';
 
-/** One run of a job: takes the lock if it is exclusive, applies the maximum time and measures. */
+/** Signals that end a run from outside: the runner aborts the job first and stops waiting for it later. */
+export interface JobExecutionSignals {
+  /** Aborts the job's signal when the runner shuts down and the grace period ran out. */
+  readonly shutdown: AbortSignal;
+  /** Stops waiting for a job that ignored the abort: the run is abandoned and its lease left to expire. */
+  readonly abandon: AbortSignal;
+}
+
+/** One run of a job: takes the lock if it is exclusive, keeps it while the job runs, applies the maximum time and measures. */
 export class JobExecution {
+  private static readonly RENEWALS_PER_LEASE = 3;
+
   constructor(
     private readonly clock: Clock,
     private readonly random: RandomSource,
@@ -26,23 +37,26 @@ export class JobExecution {
 
   /**
    * Runs the job once. An exclusive job whose lock is held by another process does not run and is
-   * counted as skipped. A run that outlives its `timeoutMs` is aborted and counted as failed, and this call settles,
-   * and the lock is released, only once the job itself returns, so a job that ignores the abort never overlaps the
-   * next run.
-   * @param shutdown Aborts the run when the runner shuts down and the grace period ran out.
+   * counted as skipped; while an exclusive job runs, its lease is renewed every third of `timeoutMs`, and
+   * if a renewal finds the lease lost the job is aborted. A run that outlives its `timeoutMs` is aborted and
+   * counted as failed; this call settles, and the lock is released, only once the job itself returns or
+   * `signals.abandon` aborts, so a job that ignores the abort never overlaps the next run.
    * @param job Job to run.
+   * @param signals Shutdown and abandon signals of the runner.
    * @returns The outcome of the run.
-   * @throws The job error, or `DeadlineExceededError` if it exceeded its `timeoutMs`.
+   * @throws The job error, `DeadlineExceededError` if it exceeded its `timeoutMs`, or `JobLeaseLostError` if
+   * its lease was lost.
    */
   async execute(
     job: ScheduledJob,
-    shutdown: AbortSignal,
+    signals: JobExecutionSignals,
   ): Promise<JobRunResult> {
     const startedAt = this.clock.now();
     const runId = Buffer.from(this.random.bytes(8)).toString('hex');
     const fields = { job: job.name, runId };
     let lease: JobLease | undefined;
     let running: Promise<void> | undefined;
+    let stopRenewing: () => void = () => undefined;
     try {
       if (job.exclusive) {
         lease = await this.lock.tryAcquire(job.name, job.timeoutMs);
@@ -54,10 +68,17 @@ export class JobExecution {
           return this.finish(job, JobRunResult.Skipped, startedAt);
         }
       }
-      await Deadline.after(job.timeoutMs, this.clock).race((signal) => {
-        running = job.run({ signal, startedAt, runId });
-        return running;
-      }, shutdown);
+      const leaseLost = new AbortController();
+      if (lease !== undefined) {
+        stopRenewing = this.keepRenewing(job, lease, leaseLost, fields);
+      }
+      await Deadline.after(job.timeoutMs, this.clock).race(
+        (signal) => {
+          running = job.run({ signal, startedAt, runId });
+          return running;
+        },
+        AbortSignal.any([signals.shutdown, leaseLost.signal]),
+      );
       return this.finish(job, JobRunResult.Succeeded, startedAt);
     } catch (error) {
       this.logger.error('Job run failed', {
@@ -67,8 +88,89 @@ export class JobExecution {
       this.finish(job, JobRunResult.Failed, startedAt);
       throw error;
     } finally {
-      await running?.catch(() => undefined);
-      await this.releaseQuietly(lease, fields);
+      const returned = await this.awaitReturn(running, signals.abandon);
+      stopRenewing();
+      if (returned) {
+        await this.releaseQuietly(lease, fields);
+      } else {
+        this.logger.warn(
+          'Job abandoned: it ignored the abort and the runner stopped waiting for it',
+          fields,
+        );
+      }
+    }
+  }
+
+  private async awaitReturn(
+    running: Promise<void> | undefined,
+    abandon: AbortSignal,
+  ): Promise<boolean> {
+    if (running === undefined) {
+      return true;
+    }
+    const returned = running.then(
+      () => true,
+      () => true,
+    );
+    if (abandon.aborted) {
+      return Promise.race([returned, Promise.resolve(false)]);
+    }
+    let onAbandon: () => void = () => undefined;
+    const abandoned = new Promise<boolean>((resolve) => {
+      onAbandon = () => resolve(false);
+      abandon.addEventListener('abort', onAbandon, { once: true });
+    });
+    try {
+      return await Promise.race([returned, abandoned]);
+    } finally {
+      abandon.removeEventListener('abort', onAbandon);
+    }
+  }
+
+  private keepRenewing(
+    job: ScheduledJob,
+    lease: JobLease,
+    leaseLost: AbortController,
+    fields: Record<string, unknown>,
+  ): () => void {
+    const everyMs = Math.max(
+      1,
+      Math.floor(job.timeoutMs / JobExecution.RENEWALS_PER_LEASE),
+    );
+    let stopped = false;
+    let cancel: () => void = () => undefined;
+    const renew = async (): Promise<void> => {
+      const held = await this.renewQuietly(lease, job.timeoutMs, fields);
+      if (stopped) {
+        return;
+      }
+      if (!held) {
+        this.logger.error('Job lost its lock while it ran', fields);
+        leaseLost.abort(new JobLeaseLostError(job.name));
+        return;
+      }
+      cancel = TimerScheduler.armDetached(everyMs, () => void renew());
+    };
+    cancel = TimerScheduler.armDetached(everyMs, () => void renew());
+    return () => {
+      stopped = true;
+      cancel();
+    };
+  }
+
+  private async renewQuietly(
+    lease: JobLease,
+    ttlMs: number,
+    fields: Record<string, unknown>,
+  ): Promise<boolean> {
+    try {
+      return await this.lock.renew(lease, ttlMs);
+    } catch (error) {
+      this.logger.warn('Could not renew the job lock', {
+        ...fields,
+        error: ErrorDescriptor.describe(error),
+      });
+      return true;
     }
   }
 

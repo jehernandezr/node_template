@@ -23,4 +23,9 @@ export const schedulingErrorCatalog = defineErrorCatalog(SchedulingErrorCode, {
     false,
     'The requested job is not registered.',
   ),
+  [SchedulingErrorCode.LeaseLost]: ErrorSpecs.internal(
+    500,
+    true,
+    'An exclusive job lost its lock while it ran, so its run was aborted.',
+  ),
 });

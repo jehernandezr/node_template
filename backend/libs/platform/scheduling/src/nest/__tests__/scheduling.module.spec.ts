@@ -30,6 +30,10 @@ class TestJobLock extends JobLock {
     return { name, token: 'test-lock' };
   }
 
+  override async renew(): Promise<boolean> {
+    return true;
+  }
+
   override async release(): Promise<void> {
     return undefined;
   }

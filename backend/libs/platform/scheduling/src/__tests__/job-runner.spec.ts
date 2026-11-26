@@ -1,4 +1,9 @@
-import { JobScheduleKind, type JobLock } from '@platform/kernel';
+import {
+  JobScheduleKind,
+  SystemClock,
+  type Clock,
+  type JobLock,
+} from '@platform/kernel';
 import { FixedClock, FixedRandomSource } from '@platform/kernel/test-utils';
 import { SchedulingErrorCode } from '../errors/scheduling-error-code.enum.js';
 import { InProcessJobLock } from '../locks/in-process-job-lock.js';
@@ -10,6 +15,7 @@ import {
 } from '../scheduling-metric.enum.js';
 import {
   Eventually,
+  FakeLogLevel,
   FakeLogger,
   RecordingJob,
   RecordingJobBehavior,
@@ -23,6 +29,7 @@ const HUNG_JOB = RecordingJobBehavior.HangUntilAborted;
 interface RunnerFixture {
   readonly runner: JobRunner;
   readonly metrics: RecordingMetrics;
+  readonly logger: FakeLogger;
 }
 
 describe('JobRunner', () => {
@@ -34,21 +41,16 @@ describe('JobRunner', () => {
   });
 
   const createRunner = (
-    options: { clock?: FixedClock; lock?: JobLock } = {},
+    options: { clock?: Clock; lock?: JobLock } = {},
   ): RunnerFixture => {
     const clock = options.clock ?? new FixedClock(START);
     const random = new FixedRandomSource([0.5], 1);
     const metrics = new RecordingMetrics();
+    const logger = new FakeLogger();
     const lock = options.lock ?? new InProcessJobLock(clock, random);
-    const runner = new JobRunner(
-      clock,
-      random,
-      lock,
-      new FakeLogger(),
-      metrics,
-    );
+    const runner = new JobRunner(clock, random, lock, logger, metrics);
     runners.push(runner);
-    return { runner, metrics };
+    return { runner, metrics, logger };
   };
 
   describe('when registering jobs', () => {
@@ -187,6 +189,35 @@ describe('JobRunner', () => {
       await second.runner.stop(0);
       await expect(secondRun).rejects.toThrow();
     });
+
+    it('keeps the lock of a run that outlives its timeout, so another runner never overlaps it', async () => {
+      jest.useFakeTimers();
+      const clock = new SystemClock();
+      const lock = new InProcessJobLock(clock, new FixedRandomSource([0.5], 1));
+      const first = createRunner({ clock, lock });
+      const second = createRunner({ clock, lock });
+      const stubborn = new RecordingJob({
+        name: 'exclusive',
+        exclusive: true,
+        timeoutMs: 150,
+        behavior: RecordingJobBehavior.WaitForRelease,
+      });
+      const other = new RecordingJob({ name: 'exclusive', exclusive: true });
+      first.runner.register(stubborn);
+      second.runner.register(other);
+
+      const stubbornRun = first.runner.runNow('exclusive');
+      const outcome = expect(stubbornRun).rejects.toThrow();
+      await jest.advanceTimersByTimeAsync(1_000);
+      await second.runner.runNow('exclusive');
+      expect(stubborn.contexts[0]?.signal.aborted).toBe(true);
+      expect(other.runs).toBe(0);
+
+      stubborn.release();
+      await outcome;
+      await second.runner.runNow('exclusive');
+      expect(other.runs).toBe(1);
+    });
   });
 
   describe('when stopping', () => {
@@ -236,6 +267,38 @@ describe('JobRunner', () => {
       await runner.stop(10);
       expect(job.abortedRuns).toBe(1);
       await expect(run).rejects.toThrow();
+    });
+
+    it('returns within its hard limit when a job ignores the abort, and logs the job it abandons', async () => {
+      jest.useFakeTimers();
+      const { runner, logger } = createRunner();
+      const job = new RecordingJob({
+        name: 'stubborn',
+        timeoutMs: 150,
+        behavior: RecordingJobBehavior.WaitForRelease,
+      });
+      runner.register(job);
+      const outcome = expect(runner.runNow('stubborn')).rejects.toThrow();
+      await jest.advanceTimersByTimeAsync(1);
+
+      let stopped = false;
+      const stopping = runner.stop(100).then(() => {
+        stopped = true;
+      });
+      await jest.advanceTimersByTimeAsync(199);
+      expect(stopped).toBe(false);
+      await jest.advanceTimersByTimeAsync(1);
+      await stopping;
+
+      expect(job.contexts[0]?.signal.aborted).toBe(true);
+      expect(logger.entries).toContainEqual(
+        expect.objectContaining({
+          level: FakeLogLevel.Warn,
+          fields: expect.objectContaining({ job: 'stubborn' }),
+        }),
+      );
+      await outcome;
+      job.release();
     });
 
     it('resolves immediately when nothing is running', async () => {

@@ -3,6 +3,7 @@ import { schedulingErrorCatalog } from '../scheduling-error-catalog.js';
 import { DuplicateJobError } from '../duplicate-job.error.js';
 import { InvalidCronExpressionError } from '../invalid-cron-expression.error.js';
 import { InvalidJobScheduleError } from '../invalid-job-schedule.error.js';
+import { JobLeaseLostError } from '../job-lease-lost.error.js';
 import { UnknownJobError } from '../unknown-job.error.js';
 
 describe('Scheduling errors', () => {
@@ -26,6 +27,11 @@ describe('Scheduling errors', () => {
       [
         new UnknownJobError('job'),
         SchedulingErrorCode.UnknownJob,
+        { jobName: 'job' },
+      ],
+      [
+        new JobLeaseLostError('job'),
+        SchedulingErrorCode.LeaseLost,
         { jobName: 'job' },
       ],
     ])('exposes its code and details for %s', (error, code, details) => {

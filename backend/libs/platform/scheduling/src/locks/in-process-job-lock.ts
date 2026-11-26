@@ -40,6 +40,19 @@ export class InProcessJobLock extends JobLock {
   }
 
   /**
+   * Only the current owner extends: an expired lease that another runner took stays with that runner.
+   */
+  override async renew(lease: JobLease, ttlMs: number): Promise<boolean> {
+    const current = this.leases.get(lease.name);
+    const now = this.clock.now().getTime();
+    if (current?.token !== lease.token || current.expiresAt <= now) {
+      return false;
+    }
+    this.leases.set(lease.name, { token: lease.token, expiresAt: now + ttlMs });
+    return true;
+  }
+
+  /**
    * Only the current owner releases: an expired lease does not remove the lock from whoever took it later.
    */
   override async release(lease: JobLease): Promise<void> {

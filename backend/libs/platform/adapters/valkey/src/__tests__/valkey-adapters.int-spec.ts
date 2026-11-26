@@ -443,6 +443,31 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       await expect(lock().tryAcquire('job', 10_000)).resolves.toBeUndefined();
     });
 
+    it('keeps the job for its owner while it renews the lease past the first ttl', async () => {
+      const owner = lock();
+      const lease = await owner.tryAcquire('renewed', 300);
+      for (let round = 0; round < 4; round += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        await expect(
+          owner.renew(lease ?? { name: 'renewed', token: '' }, 300),
+        ).resolves.toBe(true);
+      }
+      await expect(
+        lock().tryAcquire('renewed', 10_000),
+      ).resolves.toBeUndefined();
+    });
+
+    it('never renews a lease that expired and another instance took', async () => {
+      const [first, second] = [lock(), lock()];
+      const stale = await first.tryAcquire('taken', 50);
+      await PollUntil.run(
+        async () => (await second.tryAcquire('taken', 10_000)) !== undefined,
+      );
+      await expect(
+        first.renew(stale ?? { name: 'taken', token: '' }, 10_000),
+      ).resolves.toBe(false);
+    });
+
     it('expires by itself so a crashed owner does not block the job forever', async () => {
       const first = lock();
       await first.tryAcquire('job', 100);
