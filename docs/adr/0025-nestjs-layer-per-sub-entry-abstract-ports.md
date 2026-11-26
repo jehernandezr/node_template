@@ -1,6 +1,6 @@
 # 0025. NestJS layer per sub-entry point and ports as abstract classes
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0044](0044-valkey-failure-policy.md) (outside `local` a service without Valkey does not start, and readiness does not include Valkey)
 - Date: 2026-11-14
 
 ## Context

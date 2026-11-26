@@ -5,7 +5,7 @@ Flutter shell for the web. It composes the microfrontends that declare `AppPlatf
 ## What it does
 
 - `lib/main.dart` starts `ShellHostApp` with the `ShellHost` from `buildWebHost`. With `--dart-define=API_BASE_URL=...` it passes the real connection from `lib/src/config.dart` (httpOnly cookie and a browser client with credentials).
-- `lib/src/web_shell.dart`: `webManifests` (`account`, `tasks`, `notifications`, `assistant`, `billing`, `backoffice`), the demo profiles it offers and the frame.
+- `lib/src/web_shell.dart`: `webManifests` (`account`, `tasks`, `notifications`, `reports`, `assistant`, `billing`, `backoffice`), the demo profiles it offers and the frame.
 - `lib/src/pages/web_shell_scaffold.dart`: `ShellChrome` without a top bar (each screen draws its own with `AppPage`). Label, icon and badge of each destination come from the manifest's `MenuEntry`; the shell knows no microfrontend.
 
 Session, login, additional step, `/forbidden`, router, badges and demo or live mode belong to `shell_host`.

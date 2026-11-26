@@ -1,6 +1,6 @@
 # 0020. Terraform by stacks and API runtime chosen per service
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0039](0039-runtime-matrix-per-service.md) (runtime matrix, always-on worker, computed priorities), [ADR 0040](0040-internal-routing-and-authentication.md) (internal routing through Lattice), [ADR 0041](0041-secrets-and-database-credentials.md) (secrets and IAM database auth), [ADR 0042](0042-region-and-catalog-model.md) (one catalog per service, `global` stack), [ADR 0043](0043-deploy-migrations-and-rollback.md) (pipeline and the `service-base` stack) and [ADR 0045](0045-edge-domains-and-real-time.md) (real time behind CloudFront)
 - Date: 2026-11-13
 
 ## Context

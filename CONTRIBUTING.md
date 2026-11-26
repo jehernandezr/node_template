@@ -52,7 +52,7 @@ node .claude/skills/backend-structure/scripts/check-structure.mjs
 node .claude/skills/front-structure/scripts/check-structure.mjs
 ```
 
-For a large piece of work, the `backend-lead` and `front-lead` agents split it into packages with disjoint files, and `backend-implementer` and `front-implementer` write each package. How they are organized into troops and waves is in the [plan](docs/plan/README.md#how-a-wave-runs).
+For a large piece of work, the `backend-lead` and `front-lead` agents split it into packages with disjoint files, and `backend-implementer` and `front-implementer` write each package. How they are organized into troops and waves is in the [plan](docs/plan/README.md#how-a-wave-ran).
 
 ## Before opening a PR
 
@@ -93,7 +93,7 @@ Review checklist:
 
 **Minimal root.** The root only has `backend/`, `front/`, Nx and the repository tooling. Shared backend code lives in `backend/libs`, shared front code in `front/packages`, and code shared within a service or microfrontend in its `shared/{enums,constants,types,utils}` folder. See [ADR 0015](docs/adr/0015-repository-structure-and-shared-code.md).
 
-**Persistence with TypeORM.** Entities, mappers and repositories live in each module's `infrastructure/persistence`, and migrations are generated and applied with the TypeORM CLI. The shard key is declared in `PersistenceModule.forFeature`. The `@platform/persistence` layer on TypeORM follows the [design](docs/design/typeorm-persistence-and-sagas.md) and [ADR 0024](docs/adr/0024-typeorm-persistence-sharding-persistent-sagas.md), and its construction is in the [plan](docs/plan/README.md); today it runs on the `pg` driver.
+**Persistence with TypeORM.** Entities, mappers and repositories live in each module's `infrastructure/persistence`, and migrations are generated and applied with the TypeORM CLI. The shard key is declared in `PersistenceModule.forFeature`. The `@platform/persistence` layer on TypeORM follows the [design](docs/design/typeorm-persistence-and-sagas.md) and [ADR 0024](docs/adr/0024-typeorm-persistence-sharding-persistent-sagas.md), and its construction is in the [plan](docs/plan/README.md).
 
 **A single `node_modules`.** External backend dependencies are declared only in `backend/package.json`, with exact versions, and the Nx and hook dependencies in the root `package.json`. Backend libraries, apps and tools have no `package.json`: they are Nx projects (`project.json`) and are imported through the aliases in `backend/tsconfig.base.json`. A new library follows the `backend-structure` skill: code directly in `src/`, tests in the `__tests__/` of each folder and shared test utilities in `__tests__/utils/`. Libraries are not compiled; only apps are bundled with esbuild into `backend/dist/<app>/`.
 

@@ -1,6 +1,8 @@
 # node_template front review
 
-Read-only review of `front/` (packages, microfrontends, apps and tools) against the `front-*` skills and what the user requires. Paths are relative to `/Users/jonatan/Documents/projects/node_template/front`. Effort: S (less than half a day), M (1 to 2 days), L (more than 2 days).
+> Snapshot of 2026-11-14, kept as history. Open items are tracked in the [plan](../plan/README.md).
+
+Read-only review of `front/` (packages, microfrontends, apps and tools) against the `front-*` skills and what the user requires. Paths are relative to `front/` in the repository. Effort: S (less than half a day), M (1 to 2 days), L (more than 2 days).
 
 ## Executive summary
 

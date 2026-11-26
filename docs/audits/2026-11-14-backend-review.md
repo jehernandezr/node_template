@@ -1,8 +1,10 @@
 # Review of the node_template backend libraries
 
+> Snapshot of 2026-11-14, kept as history. Its comment-language advice (T8) is superseded by the English-only rule of `CLAUDE.md`; open items are tracked in the [plan](../plan/README.md).
+
 Read-only review of `backend/libs` and `backend/tools` against the `backend-*` skills, against the user's three requirements (enterprise code, TypeORM, easy to use) and against what was already decided (persistence with TypeORM and redesigned sagas).
 
-All paths are relative to `/Users/jonatan/Documents/projects/node_template/backend`. Effort: S (less than half a day), M (one to three days), L (more than three days).
+All paths are relative to `backend/` in the repository. Effort: S (less than half a day), M (one to three days), L (more than three days).
 
 ## 0. Quick read
 

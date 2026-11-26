@@ -1,6 +1,6 @@
 # 0026. Scheduled jobs: ScheduledJob, JobLock and @platform/scheduling
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0039](0039-runtime-matrix-per-service.md) (in AWS every job runs in the Fargate worker; `SchedulingMode.External` with EventBridge is not used) and [ADR 0044](0044-valkey-failure-policy.md) (`JobLock` fails closed)
 - Date: 2026-11-14
 
 ## Context

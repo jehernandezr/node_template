@@ -1,6 +1,6 @@
 # 0023. Routing identity data across shards
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0029](0029-cross-tenant-maintenance-search-per-shard.md) and [ADR 0037](0037-composition-shared-platform-pieces-and-domain-events.md) (without a tenant in the session the policy shows no rows: it fails closed)
 - Date: 2026-11-13
 
 ## Context
