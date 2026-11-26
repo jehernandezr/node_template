@@ -10,7 +10,7 @@ state_bucket = "node-template-dev-tfstate"
 service_name = "identity"
 
 # Lambda API behind API Gateway HTTP, CloudFront and WAF. To move it to Fargate:
-# runtime = "fargate", a unique listener_rule_priority and fargate_api_enabled in platform.
+# runtime = "fargate" and a unique listener_rule_priority.
 api = {
   runtime        = "lambda"
   route_prefixes = ["/identity"]

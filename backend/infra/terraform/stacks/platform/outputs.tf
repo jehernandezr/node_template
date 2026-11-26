@@ -43,7 +43,7 @@ output "http_api" {
 }
 
 output "api_alb" {
-  description = "Internal ALB for the Fargate APIs: listener_arn and security_group_id. Null if fargate_api_enabled is false."
+  description = "Internal ALB for the Fargate APIs: listener_arn and security_group_id. Null without compute."
   value = local.api_alb_enabled ? {
     listener_arn      = module.api_alb[0].listener_arn
     security_group_id = module.api_alb[0].security_group_id

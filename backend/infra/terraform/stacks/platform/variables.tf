@@ -45,12 +45,6 @@ variable "budget_cost_filter_tags" {
 
 # --- HTTP API and load balancers ------------------------------------------------
 
-variable "fargate_api_enabled" {
-  description = "Creates the VPC link and the internal ALB for services whose API runs on Fargate. Not needed if all APIs are Lambda."
-  type        = bool
-  default     = false
-}
-
 variable "api_throttling_burst_limit" {
   description = "Maximum request burst of the HTTP API."
   type        = number

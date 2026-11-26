@@ -34,7 +34,7 @@ variable "api" {
   description = <<-EOT
     HTTP API of the service in the shared API, behind CloudFront and its WAF.
     runtime "lambda": function with the lambda.ts adapter; "fargate": container with main.ts behind
-    the internal ALB and the VPC link (requires fargate_api_enabled in platform and a listener_rule_priority
+    the internal ALB and the VPC link (requires a listener_rule_priority
     unique across services). Changing the runtime means changing this field and the artifact.
   EOT
   type = object({

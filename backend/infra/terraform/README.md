@@ -72,7 +72,7 @@ A service is an instance of the `service` stack with its own state. To add one, 
 
 Parts of a service:
 
-- `api`: `runtime = "lambda"` (a function with `lambda.ts` behind API Gateway HTTP) or `"fargate"` (a container with `main.ts` behind the internal ALB, through the VPC link; requires `fargate_api_enabled = true` in `platform` and a unique `listener_rule_priority`). Both enter through the shared HTTP API, behind CloudFront and its WAF. Each prefix in `route_prefixes` creates `ANY <prefix>` and `ANY <prefix>/{proxy+}`.
+- `api`: `runtime = "lambda"` (a function with `lambda.ts` behind API Gateway HTTP) or `"fargate"` (a container with `main.ts` behind the internal ALB, through the VPC link; requires a unique `listener_rule_priority`). Both enter through the shared HTTP API, behind CloudFront and its WAF. Each prefix in `route_prefixes` creates `ANY <prefix>` and `ANY <prefix>/{proxy+}`.
 - `realtime`: Socket.IO and SSE, always on Fargate behind the public ALB from `platform` (`realtime_alb_certificate_arn`).
 - `workers`: Fargate with `worker.ts`, scales from zero on the depth of its queue.
 - `consumers`: Lambdas that consume a queue, with partial batch failures.

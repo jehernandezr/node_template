@@ -7,8 +7,6 @@ state_bucket = "node-template-prod-tfstate"
 # alarm_topic_arn = "arn:aws:sns:us-east-1:222222222222:alarmas"
 monthly_budget = 1500
 
-fargate_api_enabled = false
-
 # realtime_alb_certificate_arn  = "arn:aws:acm:us-east-1:222222222222:certificate/REEMPLAZAR"
 # files_cors_allowed_origins    = ["https://app.example.com"]
 # ses_domain                    = "example.com"

@@ -172,7 +172,7 @@ resource "terraform_data" "service_check" {
     }
     precondition {
       condition     = !local.api_fargate || local.platform.api_alb != null
-      error_message = "A Fargate API needs fargate_api_enabled = true in the platform stack."
+      error_message = "A Fargate API needs the internal ALB of the platform stack, which exists with compute_enabled."
     }
     precondition {
       condition     = var.realtime == null || local.platform.realtime_alb != null

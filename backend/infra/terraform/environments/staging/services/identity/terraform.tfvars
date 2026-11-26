@@ -3,7 +3,7 @@ state_bucket = "node-template-staging-tfstate"
 
 service_name = "identity"
 
-# API on Fargate behind the internal ALB (requires fargate_api_enabled in platform). To move it to Lambda:
+# API on Fargate behind the internal ALB. To move it to Lambda:
 # runtime = "lambda" (uses lambda.handler) and remove listener_rule_priority.
 api = {
   runtime                = "fargate"

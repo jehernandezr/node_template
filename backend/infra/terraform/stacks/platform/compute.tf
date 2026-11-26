@@ -5,7 +5,7 @@ locals {
   network = var.compute_enabled ? data.terraform_remote_state.network[0].outputs : null
 
   realtime_alb_enabled = var.compute_enabled && var.realtime_alb_certificate_arn != null
-  api_alb_enabled      = var.compute_enabled && var.fargate_api_enabled
+  api_alb_enabled      = var.compute_enabled
 }
 
 # One CMK per environment for the service logs (Fargate tasks and Lambdas, with their
@@ -69,7 +69,8 @@ module "http_api" {
   secret_recovery_window_days = var.secret_recovery_window_days
 }
 
-# Internal ALB for the APIs that run on Fargate. Only the VPC link reaches it.
+# Internal ALB for the APIs that run on Fargate. It always exists with compute (ADR 0039), so a service
+# changes its API runtime without touching this stack. Only the VPC link reaches it.
 module "api_alb" {
   count  = local.api_alb_enabled ? 1 : 0
   source = "../../modules/alb"

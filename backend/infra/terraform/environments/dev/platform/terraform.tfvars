@@ -5,9 +5,6 @@ state_bucket = "node-template-dev-tfstate"
 # alarm_email    = "alarmas-dev@tu-dominio"
 # monthly_budget = 150
 
-# true if any service runs its API on Fargate (VPC link and internal ALB).
-fargate_api_enabled = false
-
 # Realtime (Socket.IO and SSE): regional certificate for the public ALB.
 # realtime_alb_certificate_arn = "arn:aws:acm:us-east-1:111111111111:certificate/REEMPLAZAR"
 

@@ -7,8 +7,6 @@ state_bucket = "node-template-staging-tfstate"
 # alarm_topic_arn = "arn:aws:sns:us-east-1:111111111111:alarmas"
 monthly_budget = 400
 
-fargate_api_enabled = false
-
 # realtime_alb_certificate_arn  = "arn:aws:acm:us-east-1:111111111111:certificate/REEMPLAZAR"
 # files_cors_allowed_origins    = ["https://app.staging.example.com"]
 # ses_domain                    = "staging.example.com"
