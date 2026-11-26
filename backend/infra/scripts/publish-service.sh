@@ -38,11 +38,6 @@ if [[ "$needs_image" == "true" ]]; then
   repo="$ECR_PREFIX/$SERVICE"
   tag="sha-$GIT_SHA"
 
-  if ! probe aws ecr describe-repositories --repository-names "$repo"; then
-    run aws ecr create-repository --repository-name "$repo" \
-      --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush=true
-  fi
-
   if is_dry; then
     dry_text "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $registry"
   else
@@ -64,7 +59,7 @@ fi
 if [[ "$needs_package" == "true" ]]; then
   package_dir="$artifacts_dir/$SERVICE-lambda"
   zip_file="$artifacts_dir/$SERVICE-$GIT_SHA.zip"
-  key="services/$SERVICE/$GIT_SHA.zip"
+  key="lambda/$SERVICE/$GIT_SHA.zip"
 
   run docker build -f backend/infra/scripts/service.Dockerfile --platform "$PLATFORM" \
     --build-arg "SERVICE=$SERVICE" --target lambda \

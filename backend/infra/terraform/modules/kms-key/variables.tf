@@ -29,6 +29,17 @@ variable "service_principals" {
   default = []
 }
 
+variable "account_principals" {
+  description = "IAM principals, usually of other accounts, that use the key only through one AWS service of the region (via_service, for example s3): Sid, principal ARNs and actions."
+  type = list(object({
+    sid         = string
+    arns        = list(string)
+    via_service = string
+    actions     = optional(list(string), ["kms:Decrypt"])
+  }))
+  default = []
+}
+
 variable "deletion_window_in_days" {
   description = "Waiting period in days before the key is deleted."
   type        = number

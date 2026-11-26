@@ -4,6 +4,7 @@ Procedures for operating the platform. Each one says when to use it, what to che
 
 | Runbook                                                | When                                                                    |
 | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| [First deploy of an account](first-deploy.md)          | Create the state bucket and apply the `global` stack of a new account   |
 | [Operating the services](service-operations.md)        | Check health, jobs, queues, DLQs and configuration of any service       |
 | [Moving a tenant](tenant-move.md)                      | Move a tenant to another shard group or another region                  |
 | [Rotating the identity keys](identity-key-rotation.md) | Rotate the signing keys for access tokens                               |

@@ -1,4 +1,5 @@
 import { defineQueue, defineTopic } from '@contracts/platform';
+import { AwsMessagingNames } from '@platform/adapters-aws';
 import { InvalidServiceDefinitionError } from '../../../errors/invalid-service-definition.error.js';
 import { ConsumedQueueSelector } from '../consumed-queue-selector.js';
 import { RuntimeProbeRecorded } from './utils/index.js';
@@ -25,6 +26,27 @@ describe('ConsumedQueueSelector', () => {
   const selector = new ConsumedQueueSelector();
 
   describe('select', () => {
+    it.each([
+      ['dev', usage],
+      ['node-template-staging', identity],
+    ])(
+      'matches QUEUE_URL by the physical name rule of AwsMessagingNames under prefix %s',
+      (prefix, expected) => {
+        const physical = AwsMessagingNames.physicalName(
+          prefix,
+          expected.name,
+          expected.fifo,
+        );
+
+        expect(
+          selector.select('billing', queues, {
+            QUEUE_URL: `${accountUrl}/${physical}`,
+            MESSAGING_NAME_PREFIX: prefix,
+          }),
+        ).toEqual([expected]);
+      },
+    );
+
     it.each([
       ['QUEUE_URL is not set', {}],
       ['QUEUE_URL is blank', { QUEUE_URL: ' ' }],

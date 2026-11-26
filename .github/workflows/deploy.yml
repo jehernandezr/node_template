@@ -152,8 +152,8 @@ jobs:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Read the platform outputs
-        run: backend/infra/scripts/read-platform-outputs.sh "$ENVIRONMENT"
+      - name: Read the global stack outputs
+        run: backend/infra/scripts/read-global-outputs.sh "$ENVIRONMENT"
 
       - name: Publish role credentials
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4

@@ -16,10 +16,13 @@ provider "aws" {
 module "oidc_github" {
   source = "../../modules/oidc-github"
 
-  name_prefix        = "nt-dev"
-  github_repository  = "mi-organizacion/node-template"
-  github_environment = "dev"
-  state_bucket       = "nt-dev-tfstate"
+  name_prefix           = "nt-dev"
+  github_repository     = "mi-organizacion/node-template"
+  github_environment    = "dev"
+  state_bucket          = "nt-dev-tfstate"
+  artifacts_bucket_arn  = "arn:aws:s3:::nt-dev-artifacts"
+  artifacts_kms_key_arn = "arn:aws:kms:us-east-1:111111111111:key/00000000-0000-0000-0000-000000000000"
+  ecr_repository_arns   = ["arn:aws:ecr:us-east-1:111111111111:repository/nt-dev/tasks"]
 
   tags = { Environment = "dev" }
 }

@@ -9,6 +9,7 @@ backend/infra/
 ├── terraform/
 │   ├── modules/             Reusable pieces, without backend or provider (CMKs come from kms-key)
 │   ├── stacks/              Roots with their own state
+│   │   ├── global/          One per account: GitHub OIDC, ECR, artifacts bucket, hosted zone and CloudFront certificate
 │   │   ├── network/         VPC, subnets, NAT, endpoints and flow logs (ADR 0016)
 │   │   ├── platform/        Alarms and budget, ECS, OpenObserve, HTTP API, ALB, files, SES and the compute logs CMK
 │   │   ├── data/            RDS with per-shard and catalog databases, RDS Proxy, replicas and Valkey
@@ -22,7 +23,7 @@ backend/infra/
 │   ├── .terraform-version   Terraform version used in CI
 │   ├── .tflint-version      tflint version used in CI
 │   └── .tflint.hcl          tflint rules (includes the AWS ruleset)
-├── scripts/                 deploy-aws.sh, local.sh, tf-validate.mjs, check_vendor.py and fetch-rds-ca-bundle.sh
+├── scripts/                 bootstrap-account.sh, deploy-aws.sh, local.sh, tf-validate.mjs, check_vendor.py and fetch-rds-ca-bundle.sh
 └── local/                   PostgreSQL init.sql, LocalStack and the OpenTelemetry Collector
 ```
 
@@ -30,13 +31,14 @@ Each stack has:
 
 - `config.tf`: versions, provider and an empty `backend "s3" {}`. The bucket and key come from `backend.tfvars`.
 - `variables_common.tf`: `region`, `environment`, `name_prefix`, `aws_endpoint_url` and tags. It is identical in every stack; `tf-validate.mjs` fails if it differs.
-- `remote_state.tf`: reads the previous stacks from `<region>/<stack>/terraform.tfstate`.
+- `remote_state.tf`: reads the previous stacks from `<region>/<stack>/terraform.tfstate`. `global` reads none.
 - `tests/`: `terraform test` tests with mocked providers, without AWS.
 
 ## Stacks and order
 
 | Order | Stack       | Reads                              | Environments              |
 | ----- | ----------- | ---------------------------------- | ------------------------- |
+| 0     | `global`    |                                    | dev, staging, prod        |
 | 1     | `network`   |                                    | dev, staging, prod        |
 | 2     | `platform`  | network                            | local, dev, staging, prod |
 | 3     | `data`      | network, platform                  | dev, staging, prod        |
@@ -44,7 +46,20 @@ Each stack has:
 | 5     | `edge`      | platform                           | dev, staging, prod        |
 | 6     | `service`   | network, platform, data, messaging | dev, staging, prod        |
 
-Each region has its own states with the same code: the region is part of the key.
+Each region has its own states with the same code: the region is part of the key. `global` is the exception: one per account, with state key `global/terraform.tfstate`, applied first and by hand on a new account ([first deploy](../../../docs/runbooks/first-deploy.md)). `deploy-aws.sh plan global` and `apply global` run it; `all` leaves it out.
+
+## Global stack
+
+What is unique per account ([ADR 0042](../../../docs/adr/0042-region-and-catalog-model.md), [ADR 0043](../../../docs/adr/0043-deploy-migrations-and-rollback.md)):
+
+- The GitHub OIDC provider and the deploy, publish and web roles of `modules/oidc-github`. `oidc_existing_provider_arn` reuses a provider the account already has.
+- One ECR repository `<name_prefix>/<service>` per entry of `services`, which lists the directories under `environments/<env>/services`. Tags are immutable; untagged images expire after 7 days and only the last 50 `sha-*` images are kept.
+- The `<name_prefix>-artifacts` bucket for the Lambda packages (`lambda/<service>/<commit>.zip`) and the mobile builds: versioned, encrypted with its CMK, private and TLS-only.
+- In `dev`, `promotion_account_ids` (`staging` and `prod` account ids) gives the deploy role `<project>-<env>-github-deploy` of each one a repository policy to pull the images, and a bucket and key policy to read `lambda/*`. Add an account only after its `global` stack exists.
+- The public hosted zone: `dev` and `staging` create `<env>.<domain>` and output its name servers for the delegation from the apex zone; `prod` reads the apex zone `<domain>`, which lives in its account.
+- The CloudFront certificate in `us-east-1` for `api.<zone>` and `app.<zone>`, validated by DNS in that zone.
+
+The state bucket itself comes before Terraform: `backend/infra/scripts/bootstrap-account.sh <env>` creates the bucket of `environments/<env>/global/backend.tfvars`, versioned, encrypted with KMS and TLS-only, and can run again without changes. Every stack uses S3 native locking (`use_lockfile`).
 
 ## Services
 
@@ -112,7 +127,7 @@ Subscription filters read the `type` field of the CloudEvents body; an empty lis
 
 ## Commands
 
-Requirements: Terraform from `.terraform-version` (or `>= 1.11`), AWS credentials (OIDC in CI) and one versioned state bucket per environment, created once: `node-template-<environment>-tfstate`.
+Requirements: Terraform from `.terraform-version` (or `>= 1.11`), AWS credentials (OIDC in CI) and one state bucket per account, `node-template-<environment>-tfstate`, created by `bootstrap-account.sh`.
 
 ```bash
 ENV=dev backend/infra/scripts/deploy-aws.sh plan data               # saves the plan of a stack
@@ -147,7 +162,7 @@ python3 -B -I backend/infra/scripts/check_vendor.py backend/infra/terraform/modu
 
 ## Deployment pipeline
 
-The `deploy.yml`, `publish-web.yml` and `publish-mobile.yml` workflows access AWS through OIDC. There are no long-lived keys: each job assumes a role with `aws-actions/configure-aws-credentials`. The `modules/oidc-github` module creates the roles and the artifacts bucket, and the `platform` stack wires it when `github_repository` is set (if it is `null`, the pipeline stays off).
+The `deploy.yml`, `publish-web.yml` and `publish-mobile.yml` workflows access AWS through OIDC. There are no long-lived keys: each job assumes a role with `aws-actions/configure-aws-credentials`. The `global` stack creates the roles with `modules/oidc-github`, together with the ECR repositories and the artifacts bucket; `read-global-outputs.sh` passes the bucket and the repository prefix to the services job. `publish-service.sh` pushes to the existing repositories and never creates one.
 
 Roles and variables of the GitHub repository. Each GitHub environment, named like the environment (`dev`, `staging`, `prod`), stores these variables:
 
@@ -158,7 +173,7 @@ Roles and variables of the GitHub repository. Each GitHub environment, named lik
 | `vars.AWS_WEB_ROLE_ARN`     | Role that publishes the web and invalidates CloudFront.                                                                                                                                                                                                        |
 | `vars.AWS_REGION`           | AWS region of the environment.                                                                                                                                                                                                                                 |
 | `vars.NAME_PREFIX`          | Name prefix, for example `node-template-dev`. Used by the web.                                                                                                                                                                                                 |
-| `vars.ARTIFACTS_BUCKET`     | Artifacts bucket. Read by `publish-mobile.yml`; the services pipeline takes it from `platform`.                                                                                                                                                                |
+| `vars.ARTIFACTS_BUCKET`     | Artifacts bucket. Read by `publish-mobile.yml`; the services pipeline takes it from `global`.                                                                                                                                                                  |
 | `vars.DEPLOY_RUNNER`        | Optional. Label of a self-hosted runner inside the VPC. Without it the stacks job uses `ubuntu-latest` and the services job uses the native `ubuntu-24.04-arm`; a custom runner still builds `linux/arm64`, because the build passes `--platform linux/arm64`. |
 
 Order per service. Services are discovered by walking `environments/<environment>/services/*`: every folder with `terraform.tfvars` and `backend.tfvars` is a service, and the workflow has no fixed list. For each one, four steps run in order: publish the artifact (an image tagged `sha-<commit>` or a Lambda package in S3), migrate the database, plan and apply the `service` stack. The artifact goes first because the `apply` needs `TF_VAR_image` or `TF_VAR_lambda_package`. Before the services, the stacks job applies `network`, `platform`, `data`, `messaging` and `edge`, in that order, planning and applying each one before the next because it reads their outputs.

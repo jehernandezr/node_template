@@ -146,35 +146,3 @@ variable "force_destroy_buckets" {
   type        = bool
   default     = false
 }
-
-# --- Deployment pipeline (GitHub OIDC) ------------------------------------------------
-
-variable "github_repository" {
-  description = "GitHub repository (owner/name) whose jobs assume the deploy and publish roles. Null does not create OIDC access."
-  type        = string
-  default     = null
-}
-
-variable "github_environment" {
-  description = "GitHub environment that assumes the roles. Null uses the environment name."
-  type        = string
-  default     = null
-}
-
-variable "oidc_create_provider" {
-  description = "Creates the GitHub OIDC provider. There is only one per account: false if another environment in the account already created it."
-  type        = bool
-  default     = true
-}
-
-variable "oidc_existing_provider_arn" {
-  description = "ARN of the existing GitHub OIDC provider. Required with oidc_create_provider = false."
-  type        = string
-  default     = null
-}
-
-variable "deploy_policy_arns" {
-  description = "Managed policies of the deploy role: what Terraform can create in the account. You choose them."
-  type        = list(string)
-  default     = []
-}

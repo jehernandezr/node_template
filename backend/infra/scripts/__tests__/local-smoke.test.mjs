@@ -242,29 +242,36 @@ class GatewayRoutes {
 }
 
 describe('smoke gateway', () => {
-  const services = join(
-    ROOT,
-    'backend/infra/terraform/environments/dev/services',
-  );
+  const environments = ['dev', 'staging', 'prod'];
   const gateway = new GatewayRoutes(
     readFileSync(join(ROOT, 'backend/infra/local/smoke-gateway.conf'), 'utf8'),
   );
-  const prefixesOf = (service) => {
+  const servicesOf = (environment) =>
+    join(ROOT, 'backend/infra/terraform/environments', environment, 'services');
+  const prefixesOf = (environment, service) => {
     const api = new TfvarsBlockReader(
-      readFileSync(join(services, service, 'terraform.tfvars'), 'utf8'),
+      readFileSync(
+        join(servicesOf(environment), service, 'terraform.tfvars'),
+        'utf8',
+      ),
     ).block('api');
     const list = /route_prefixes\s*=\s*\[([^\]]*)\]/.exec(api ?? '')?.[1];
     return [...(list ?? '').matchAll(/"([^"]+)"/g)].map(([, prefix]) => prefix);
   };
 
-  for (const service of readdirSync(services)) {
-    it(`routes every route prefix of ${service} in the dev tfvars to ${service}`, () => {
-      const prefixes = prefixesOf(service);
-      assert.ok(prefixes.length > 0, `${service} declares no route_prefixes`);
-      for (const prefix of prefixes) {
-        assert.equal(gateway.serviceOf(prefix), service, prefix);
-        assert.equal(gateway.serviceOf(`${prefix}/probe`), service, prefix);
-      }
-    });
+  for (const environment of environments) {
+    for (const service of readdirSync(servicesOf(environment))) {
+      it(`routes every route prefix of ${service} in the ${environment} tfvars to ${service}`, () => {
+        const prefixes = prefixesOf(environment, service);
+        assert.ok(
+          prefixes.length > 0,
+          `${service} declares no route_prefixes in ${environment}`,
+        );
+        for (const prefix of prefixes) {
+          assert.equal(gateway.serviceOf(prefix), service, prefix);
+          assert.equal(gateway.serviceOf(`${prefix}/probe`), service, prefix);
+        }
+      });
+    }
   }
 });

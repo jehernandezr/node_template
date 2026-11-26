@@ -27,6 +27,25 @@ describe('AwsMessagingNames', () => {
   });
 
   it.each([
+    ['reports-work', false],
+    ['ledger-projection', true],
+  ])('names %s with the shared physical name rule', (name, fifo) => {
+    const names = new AwsMessagingNames(
+      AWS_TEST_SETTINGS,
+      new FakeSqsClient(),
+      new AwsErrorTranslator(),
+    );
+    const physical = AwsMessagingNames.physicalName(
+      AWS_TEST_SETTINGS.MESSAGING_NAME_PREFIX,
+      name,
+      fifo,
+    );
+
+    expect(names.queueName(name, fifo)).toBe(physical);
+    expect(names.topicName(name, fifo)).toBe(physical);
+  });
+
+  it.each([
     ['us-east-1', 'arn:aws:sns:us-east-1:000000000000:test-ledger-events.fifo'],
     [
       'cn-north-1',

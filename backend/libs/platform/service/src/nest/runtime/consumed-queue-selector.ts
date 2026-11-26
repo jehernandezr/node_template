@@ -38,7 +38,11 @@ export class ConsumedQueueSelector {
     const queue = all.find(
       (candidate) =>
         prefix !== '' &&
-        ConsumedQueueSelector.physicalName(prefix, candidate) === physicalName,
+        AwsMessagingNames.physicalName(
+          prefix,
+          candidate.name,
+          candidate.fifo,
+        ) === physicalName,
     );
     if (queue === undefined) {
       throw new InvalidServiceDefinitionError(
@@ -54,9 +58,5 @@ export class ConsumedQueueSelector {
       return undefined;
     }
     return new URL(queueUrl).pathname.split('/').pop();
-  }
-
-  private static physicalName(prefix: string, queue: QueueDefinition): string {
-    return `${prefix}-${queue.name}${queue.fifo ? AwsMessagingNames.FIFO_SUFFIX : ''}`;
   }
 }

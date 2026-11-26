@@ -18,9 +18,12 @@ api = {
   health_check_path      = "/health/ready"
 }
 
-# The worker consumes the access projection queue and runs the service jobs.
+# One worker per contract queue: each polls only the queue of its QUEUE_URL.
 workers = {
   access-projection = { queue = "identity-access-projection", max_capacity = 2 }
+  auth-state        = { queue = "identity-auth-state", max_capacity = 2 }
+  billing           = { queue = "identity-billing", max_capacity = 2 }
+  password-resets   = { queue = "identity-password-resets", max_capacity = 2 }
 }
 
 # Non-secret values. The domains belong to the environment and are adjusted at deploy time.
