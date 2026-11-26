@@ -1,31 +1,31 @@
 import { readFileSync } from 'node:fs';
 import { RuleInventory } from './rule-inventory.mjs';
 
-/** One row of `docs/quality/rule-checks.md`: a rule and the check that enforces it, or `review only`. */
+/** One row of `docs/quality/rule-checks.md`: a rule id, the rule and the check that enforces it, or `review only`. */
 export class RuleCheck {
   /**
-   * @param {string} source `CLAUDE.md` or the skill name.
+   * @param {string} id Rule id, such as `claude.code.3`.
    * @param {string} rule First words of the rule.
    * @param {string} check The check, or `review only`.
    */
-  constructor(source, rule, check) {
-    this.source = source;
+  constructor(id, rule, check) {
+    this.id = id.replace(/`/g, '');
     this.rule = rule;
     this.check = check;
   }
 
   /**
-   * Key that matches the rule in the inventory.
-   * @returns {string} `source|first words`.
+   * The first words of the rule, as the inventory keys it.
+   * @returns {string} Lowercase words without Markdown.
    */
-  get id() {
-    return `${this.source}|${RuleInventory.keyOf(this.rule)}`;
+  get key() {
+    return RuleInventory.keyOf(this.rule);
   }
 }
 
-/** Reads the rows of `docs/quality/rule-checks.md`: every table whose header is `Source | Rule | Check`. */
+/** Reads the rows of `docs/quality/rule-checks.md`: every table whose header is `Id | Rule | Check`. */
 export class RuleChecksDocument {
-  static HEADER = /^\|\s*Source\s*\|\s*Rule\s*\|\s*Check\s*\|$/;
+  static HEADER = /^\|\s*Id\s*\|\s*Rule\s*\|\s*Check\s*\|$/;
   static REVIEW_ONLY = 'review only';
 
   /**

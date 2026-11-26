@@ -12,11 +12,11 @@ describe('docs/quality/rule-checks.md', () => {
   const rules = new RuleInventory(ROOT).rules();
   const rows = RuleChecksDocument.read(DOCUMENT).rows();
 
-  it('has a row for every rule of CLAUDE.md and the skills', () => {
+  it('has a row for every rule id of CLAUDE.md and the skills', () => {
     const listed = new Set(rows.map((row) => row.id));
     const missing = rules
-      .filter((rule) => !listed.has(`${rule.source}|${rule.key}`))
-      .map((rule) => `| ${rule.source} | ${rule.text} | review only |`);
+      .filter((rule) => !listed.has(rule.id))
+      .map((rule) => `| \`${rule.id}\` | ${rule.text} | review only |`);
     assert.deepEqual(
       missing,
       [],
@@ -24,10 +24,25 @@ describe('docs/quality/rule-checks.md', () => {
     );
   });
 
-  it('names only rules that still exist', () => {
-    const known = new Set(rules.map((rule) => `${rule.source}|${rule.key}`));
-    const stale = rows.filter((row) => !known.has(row.id)).map((row) => row.id);
-    assert.deepEqual(stale, []);
+  it('names only rule ids that still exist, each once', () => {
+    const known = new Set(rules.map((rule) => rule.id));
+    const ids = rows.map((row) => row.id);
+    assert.deepEqual(
+      ids.filter((id) => !known.has(id)),
+      [],
+    );
+    assert.deepEqual(
+      ids.filter((id, index) => ids.indexOf(id) !== index),
+      [],
+    );
+  });
+
+  it('gives each id the rule the source has at that place, so a moved rule moves its row', () => {
+    const keys = new Map(rules.map((rule) => [rule.id, rule.key]));
+    const shifted = rows
+      .filter((row) => keys.has(row.id) && keys.get(row.id) !== row.key)
+      .map((row) => `${row.id}: "${row.key}" is now "${keys.get(row.id)}"`);
+    assert.deepEqual(shifted, []);
   });
 
   it('gives every row a check or marks it review only', () => {
@@ -49,6 +64,27 @@ describe('RuleInventory', () => {
     assert.deepEqual(
       rules.map((rule) => rule.text),
       ['No `new` of dependencies.'],
+    );
+  });
+
+  it('numbers the rules of CLAUDE.md within each section and those of a skill through the file', () => {
+    const claude = inventory.rulesOf(
+      'CLAUDE.md',
+      '## Language\n\n- One.\n\n## Code\n\n- Two.\n- Three.\n',
+    );
+    const skill = inventory.rulesOf(
+      'backend-testing',
+      '## Location\n\n- One.\n\n## Doubles\n\n- Two.\n',
+    );
+    assert.deepEqual(
+      [...claude, ...skill].map((rule) => rule.id),
+      [
+        'claude.language.1',
+        'claude.code.1',
+        'claude.code.2',
+        'backend-testing.1',
+        'backend-testing.2',
+      ],
     );
   });
 
