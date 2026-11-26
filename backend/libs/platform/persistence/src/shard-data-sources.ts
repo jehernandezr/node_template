@@ -23,6 +23,7 @@ interface Entry {
  */
 export class ShardDataSources {
   private readonly entries = new Map<string, Entry>();
+  private readonly switching = new Map<string, Promise<DataSource>>();
   private shutDown = false;
 
   constructor(
@@ -33,8 +34,8 @@ export class ShardDataSources {
   ) {}
 
   /**
-   * Returns the initialized `DataSource` of the shard.
-   * Without this, the next request would receive the failed initialization instead of retrying it.
+   * Returns the initialized `DataSource` of the shard. A failed initialization is forgotten, so the next request
+   * initializes again.
    * @param location Shard and its instance.
    * @returns The data source.
    * @throws PersistenceError `ShuttingDown` if they were already closed: a job still running during shutdown
@@ -42,12 +43,37 @@ export class ShardDataSources {
    */
   async get(location: ShardLocation): Promise<DataSource> {
     this.assertOpen();
-    const now = this.clock.now().getTime();
     const existing = this.entries.get(location.logicalShard);
     if (existing !== undefined && existing.instance === location.instance) {
-      existing.lastUsedMs = now;
+      existing.lastUsedMs = this.clock.now().getTime();
       return existing.ready;
     }
+    const pending = this.switching.get(location.logicalShard);
+    if (pending !== undefined) {
+      await pending.catch(() => undefined);
+      return this.get(location);
+    }
+    const switched = this.switchTo(location, existing);
+    this.switching.set(location.logicalShard, switched);
+    try {
+      return await switched;
+    } finally {
+      if (this.switching.get(location.logicalShard) === switched) {
+        this.switching.delete(location.logicalShard);
+      }
+    }
+  }
+
+  /**
+   * Opens the shard on its instance, closing first the DataSource of another instance. Only one switch of a shard
+   * runs at a time: a concurrent request waits for it and then reuses or replaces what it opened, so no
+   * DataSource is left open outside the map.
+   */
+  private async switchTo(
+    location: ShardLocation,
+    existing: Entry | undefined,
+  ): Promise<DataSource> {
+    const now = this.clock.now().getTime();
     if (existing !== undefined) {
       this.entries.delete(location.logicalShard);
       await this.dispose(existing);
