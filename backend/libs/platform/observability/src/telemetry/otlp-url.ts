@@ -5,7 +5,11 @@ export class OtlpUrl {
   private static readonly SLASH = 0x2f;
 
   /**
+   * Joins the OTLP endpoint and the signal path.
    * Strips trailing slashes with a linear scan; a /\/+$/ regex is polynomial with many consecutive slashes (CodeQL js/polynomial-redos).
+   * @param endpoint Base endpoint.
+   * @param path Signal path.
+   * @returns The URL.
    */
   static of(endpoint: string, path: OtlpPath): string {
     let end = endpoint.length;

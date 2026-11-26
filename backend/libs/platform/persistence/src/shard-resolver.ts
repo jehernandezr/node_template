@@ -29,6 +29,8 @@ export class ShardResolver {
 
   /**
    * The scope takes precedence over the module declaration: it is the key requested by whoever opened it.
+   * @param request Key and intent.
+   * @returns The shard handle.
    * @throws ShardingError `KeyMissing` without a tenant, without the key declared by the module or, with `requireScope`, without a scope.
    * @throws ShardingError and `WrongRegionError` thrown by `ShardRouter.resolve`.
    * @throws ShardingError `TenantMigrating` if a write waits longer than allowed for its tenant to finish

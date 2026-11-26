@@ -18,5 +18,9 @@ export abstract class ScheduledJob {
   /** Maximum duration of a run; when it runs out, its `signal` is aborted. */
   readonly timeoutMs: number = 60_000;
 
+  /**
+   * Runs one pass of the job; it must stop when `context.signal` aborts.
+   * @param context Signal and deadline of the run.
+   */
   abstract run(context: JobContext): Promise<void>;
 }

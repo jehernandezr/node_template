@@ -20,6 +20,9 @@ export class TenantId extends ValueObject<{ value: string }> {
   /**
    * Validates and creates a lowercase `TenantId`. Throws `InvalidTenantIdError` if
    * it is not a string of 1 to `MAX_LENGTH` characters that matches `pattern`.
+   * @param raw Tenant id text.
+   * @param pattern Allowed pattern.
+   * @returns The tenant id.
    */
   static from(
     raw: string,
@@ -37,6 +40,7 @@ export class TenantId extends ValueObject<{ value: string }> {
     return new TenantId(raw.toLowerCase());
   }
 
+  /** Text of the tenant id. */
   get value(): string {
     return this.props.value;
   }

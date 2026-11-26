@@ -37,12 +37,20 @@ export class Redactor {
     private readonly rules: RedactionRules = RedactionRules.defaults(),
   ) {}
 
-  /** Returns a copy of `value` with sensitive values replaced by `Redactor.REDACTED`. Never mutates the input. */
+  /**
+   * Returns a copy of `value` with sensitive values replaced by `Redactor.REDACTED`. Never mutates the input.
+   * @param value Value to redact.
+   * @returns The redacted copy.
+   */
   redact(value: unknown): unknown {
     return this.sanitize(value, new Set<object>(), 0, 0);
   }
 
-  /** Hides credentials embedded in free text (URLs with user info, query, bearer, JWT, private keys). */
+  /**
+   * Hides credentials embedded in free text (URLs with user info, query, bearer, JWT, private keys).
+   * @param text Text to redact.
+   * @returns The redacted text.
+   */
   redactString(text: string): string {
     return text
       .replace(Redactor.PRIVATE_KEY_BLOCK, Redactor.REDACTED)
@@ -64,6 +72,8 @@ export class Redactor {
    * and decides by the position of each word. So `accessToken`, `passwordHash`
    * or `mfaCode` are sensitive, while `tokenCount`, `inputTokens`,
    * `sessionId` or `errorCode` are kept.
+   * @param key Key of a field.
+   * @returns `true` when its value is hidden.
    */
   isSensitiveKey(key: string): boolean {
     const lists = this.rules.lists;

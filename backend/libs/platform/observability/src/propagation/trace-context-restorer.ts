@@ -16,7 +16,12 @@ import { TraceContextCodec } from './trace-context-codec.js';
 export class TraceContextRestorer {
   constructor(private readonly tracing: Tracing) {}
 
-  /** Returns the OTel context that continues `traceparent`; if invalid, returns `base` (the root context by default). */
+  /**
+   * Returns the OTel context that continues `traceparent`; if invalid, returns `base` (the root context by default).
+   * @param traceparent Header to continue.
+   * @param base Context used when it is invalid.
+   * @returns The context.
+   */
   contextFrom(
     traceparent: string | null | undefined,
     base: Context = ROOT_CONTEXT,
@@ -33,12 +38,20 @@ export class TraceContextRestorer {
     });
   }
 
-  /** Runs `fn` inside the context of `contextFrom(traceparent)`. */
+  /**
+   * Runs `fn` inside the context of `contextFrom(traceparent)`.
+   * @param traceparent Header to continue.
+   * @param fn Work to run.
+   * @returns What `fn` returns.
+   */
   run<T>(traceparent: string | null | undefined, fn: () => T): T {
     return otelContext.with(this.contextFrom(traceparent), fn);
   }
 
-  /** Returns the `traceparent` of the active span, or `undefined` if there is no valid span. */
+  /**
+   * Returns the `traceparent` of the active span, or `undefined` if there is no valid span.
+   * @returns The header, or `undefined`.
+   */
   current(): string | undefined {
     const ids = this.tracing.activeIds();
     return ids === undefined

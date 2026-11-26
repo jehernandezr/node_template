@@ -19,6 +19,9 @@ export class Money extends ValueObject<{
   /**
    * Creates an amount. Throws `InvalidMoneyError` if it is not a safe integer or the currency is invalid.
    * Normalizes -0 so equality and serialization do not tell the zeros apart.
+   * @param amountMinor Amount in minor units.
+   * @param currency ISO 4217 code.
+   * @returns The amount.
    */
   static of(amountMinor: number, currency: string): Money {
     if (!Money.CURRENCY_PATTERN.test(currency)) {
@@ -33,12 +36,21 @@ export class Money extends ValueObject<{
     return new Money(amountMinor === 0 ? 0 : amountMinor, currency);
   }
 
-  /** Zero amount in `currency`. */
+  /**
+   * Zero amount in `currency`.
+   * @param currency ISO 4217 code.
+   * @returns The zero amount.
+   */
   static zero(currency: string): Money {
     return Money.of(0, currency);
   }
 
-  /** Sums a list of amounts; the empty list gives zero in `currency`. */
+  /**
+   * Sums a list of amounts; the empty list gives zero in `currency`.
+   * @param values Amounts to sum.
+   * @param currency Currency of the result.
+   * @returns The sum.
+   */
   static sum(values: readonly Money[], currency: string): Money {
     return values.reduce(
       (total, value) => total.add(value),
@@ -46,27 +58,41 @@ export class Money extends ValueObject<{
     );
   }
 
+  /** Amount in minor units. */
   get amountMinor(): number {
     return this.props.amountMinor;
   }
 
+  /** ISO 4217 currency code. */
   get currency(): string {
     return this.props.currency;
   }
 
-  /** Adds two amounts of the same currency. */
+  /**
+   * Adds two amounts of the same currency.
+   * @param other Amount to add.
+   * @returns The sum.
+   */
   add(other: Money): Money {
     this.assertSameCurrency(other);
     return Money.of(this.amountMinor + other.amountMinor, this.currency);
   }
 
-  /** Subtracts `other` from this amount, of the same currency. */
+  /**
+   * Subtracts `other` from this amount, of the same currency.
+   * @param other Amount to subtract.
+   * @returns The difference.
+   */
   subtract(other: Money): Money {
     this.assertSameCurrency(other);
     return Money.of(this.amountMinor - other.amountMinor, this.currency);
   }
 
-  /** Multiplies by an integer quantity, for example units of an item. */
+  /**
+   * Multiplies by an integer quantity, for example units of an item.
+   * @param quantity Integer factor.
+   * @returns The product.
+   */
   multiply(quantity: number): Money {
     if (!Number.isInteger(quantity)) {
       throw new InvalidMoneyError('quantity must be an integer');
@@ -77,6 +103,8 @@ export class Money extends ValueObject<{
   /**
    * Splits the amount into `parts` integer parts that add up exactly to the total.
    * The leftover cents go to the first parts.
+   * @param parts Number of parts.
+   * @returns The parts.
    */
   allocate(parts: number): Money[] {
     if (!Number.isInteger(parts) || parts < 1) {
@@ -91,13 +119,21 @@ export class Money extends ValueObject<{
     );
   }
 
-  /** Compares two amounts of the same currency: negative, zero or positive. */
+  /**
+   * Compares two amounts of the same currency: negative, zero or positive.
+   * @param other Amount to compare.
+   * @returns The comparison.
+   */
   compareTo(other: Money): number {
     this.assertSameCurrency(other);
     return Math.sign(this.amountMinor - other.amountMinor);
   }
 
-  /** Formats for people in `locale`, for example `$ 1.500,00`. */
+  /**
+   * Formats for people in `locale`, for example `$ 1.500,00`.
+   * @param locale BCP 47 locale.
+   * @returns The formatted amount.
+   */
   format(locale: string): string {
     const digits = Money.digitsOf(this.currency);
     return new Intl.NumberFormat(locale, {
@@ -108,6 +144,10 @@ export class Money extends ValueObject<{
     }).format(this.amountMinor / 10 ** digits);
   }
 
+  /**
+   * Serializes the amount with its currency.
+   * @returns The JSON value.
+   */
   toJSON(): { amountMinor: number; currency: string } {
     return { amountMinor: this.amountMinor, currency: this.currency };
   }

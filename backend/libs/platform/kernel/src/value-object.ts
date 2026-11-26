@@ -9,6 +9,11 @@ export abstract class ValueObject<TProps extends object> {
     this.props = Object.freeze({ ...props });
   }
 
+  /**
+   * Compares two value objects by their properties.
+   * @param other Value object to compare.
+   * @returns `true` when equal.
+   */
   equals(other: ValueObject<TProps> | null | undefined): boolean {
     if (other == null) return false;
     if (other === this) return true;

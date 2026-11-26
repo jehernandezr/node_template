@@ -64,7 +64,12 @@ export class TelemetryBootstrap extends TelemetryHandle {
     super();
   }
 
-  /** Reads the environment (`ServiceConfig` and `TelemetryConfig`) and starts. `overrides` wins over what was read. */
+  /**
+   * Reads the environment (`ServiceConfig` and `TelemetryConfig`) and starts. `overrides` wins over what was read.
+   * @param env Environment variables.
+   * @param overrides Options a test replaces.
+   * @returns The started telemetry.
+   */
   static start(
     env: Readonly<Record<string, string | undefined>>,
     overrides: Partial<TelemetryOptions> = {},
@@ -75,7 +80,11 @@ export class TelemetryBootstrap extends TelemetryHandle {
     });
   }
 
-  /** Starts with already built options. */
+  /**
+   * Starts with already built options.
+   * @param options Telemetry options.
+   * @returns The started telemetry.
+   */
   static startWith(options: TelemetryOptions): TelemetryBootstrap {
     if (options.disabled === true) {
       return new TelemetryBootstrap(

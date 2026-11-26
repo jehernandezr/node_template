@@ -35,6 +35,8 @@ export class ShardDataSources {
   /**
    * Returns the initialized `DataSource` of the shard.
    * Without this, the next request would receive the failed initialization instead of retrying it.
+   * @param location Shard and its instance.
+   * @returns The data source.
    * @throws PersistenceError `ShuttingDown` if they were already closed: a job still running during shutdown
    * would open a pool that nobody closes.
    */
@@ -80,7 +82,10 @@ export class ShardDataSources {
     return dataSource;
   }
 
-  /** Closes the `DataSource`s unused for longer than `idleTtlMs`. Returns how many it closed. */
+  /**
+   * Closes the `DataSource`s unused for longer than `idleTtlMs`. Returns how many it closed.
+   * @returns How many were closed.
+   */
   async closeIdle(): Promise<number> {
     const now = this.clock.now().getTime();
     const idle = [...this.entries].filter(
@@ -93,7 +98,10 @@ export class ShardDataSources {
     return idle.length;
   }
 
-  /** Ids of the shards with an open `DataSource`. */
+  /**
+   * Ids of the shards with an open `DataSource`.
+   * @returns The shard ids.
+   */
   activeShards(): readonly string[] {
     return [...this.entries.keys()];
   }

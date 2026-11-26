@@ -27,7 +27,11 @@ export class PostgresFailureClassifier {
 
   private static readonly FALLBACK = new FailureClassifier();
 
-  /** Transient if the SQLSTATE is; any other error, including a network code like `EPIPE`, is decided by the general classifier. */
+  /**
+   * Transient if the SQLSTATE is; any other error, including a network code like `EPIPE`, is decided by the general classifier.
+   * @param error Error to classify.
+   * @returns The failure kind.
+   */
   static classify(error: unknown): FailureKind {
     return (
       PostgresFailureClassifier.transientKindOf(error) ??
@@ -35,7 +39,11 @@ export class PostgresFailureClassifier {
     );
   }
 
-  /** `Transient` if the error carries a transient SQLSTATE; `undefined` if it says nothing about that. */
+  /**
+   * `Transient` if the error carries a transient SQLSTATE; `undefined` if it says nothing about that.
+   * @param error Error to check.
+   * @returns `Transient`, or `undefined`.
+   */
   static transientKindOf(error: unknown): FailureKind | undefined {
     const sqlState = PostgresFailureClassifier.sqlStateOf(error);
     return sqlState !== undefined &&
@@ -45,12 +53,21 @@ export class PostgresFailureClassifier {
       : undefined;
   }
 
-  /** Whether the `pg` error carries exactly that SQLSTATE. */
+  /**
+   * Whether the `pg` error carries exactly that SQLSTATE.
+   * @param error Error to check.
+   * @param state Expected SQLSTATE.
+   * @returns `true` when it matches.
+   */
   static hasSqlState(error: unknown, state: PostgresSqlState): boolean {
     return PostgresFailureClassifier.sqlStateOf(error) === state;
   }
 
-  /** SQLSTATE of a `pg` error, if it has one. Node network codes are not five characters long. */
+  /**
+   * SQLSTATE of a `pg` error, if it has one. Node network codes are not five characters long.
+   * @param error Error to read.
+   * @returns The SQLSTATE, or `undefined`.
+   */
   static sqlStateOf(error: unknown): string | undefined {
     const code = (error as { code?: unknown } | null)?.code;
     return typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)

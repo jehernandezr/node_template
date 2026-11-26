@@ -15,6 +15,7 @@ export class RedactionRules {
    * A hash or digest is as sensitive as what it summarizes when that is a secret (`tokenHash`, `codeHmac`): it can be used to test a guessed value.
    * Compound names that only make sense together (`privateKey`, `signing_key`).
    * `code` is sensitive only when qualified by one of these words: the one-time MFA, verification, recovery or reset codes (`mfaCode`, `verificationCode`, `oneTimeCode`, `recovery_codes`). `errorCode`, `statusCode` or `countryCode` stay visible.
+   * @returns The rules.
    */
   static defaults(): RedactionRules {
     return new RedactionRules({
@@ -108,7 +109,11 @@ export class RedactionRules {
     });
   }
 
-  /** Returns new rules with additional sensitive words (lowercase) as the last word of the key. */
+  /**
+   * Returns new rules with additional sensitive words (lowercase) as the last word of the key.
+   * @param extraSensitiveLastWords Words to add.
+   * @returns The new rules.
+   */
   extend(extraSensitiveLastWords: readonly string[]): RedactionRules {
     return new RedactionRules({
       ...this.lists,

@@ -58,7 +58,11 @@ export abstract class PlatformError extends Error {
     });
   }
 
-  /** Whether `value` is a `PlatformError`. */
+  /**
+   * Whether `value` is a `PlatformError`.
+   * @param value Value to check.
+   * @returns `true` for a platform error.
+   */
   static is(value: unknown): value is PlatformError {
     return value instanceof PlatformError;
   }

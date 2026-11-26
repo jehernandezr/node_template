@@ -45,7 +45,12 @@ export class PersistenceError extends PlatformError {
     this.failureKind = failureKind;
   }
 
-  /** Configuration error, with the option that failed and what was expected. */
+  /**
+   * Configuration error, with the option that failed and what was expected.
+   * @param option Option that failed.
+   * @param expectation What was expected.
+   * @returns The error.
+   */
   static invalidConfiguration(
     option: string,
     expectation: string,

@@ -17,6 +17,9 @@ export class ShardScope {
 
   /**
    * Inside a transaction the block must land on the same shard it already touched.
+   * @param init Shard key of the block.
+   * @param fn Work to run.
+   * @returns What `fn` returns.
    * @throws ShardingError `CrossShardTransaction` if there is an open transaction and the key points to another shard.
    */
   async run<T>(init: ShardScopeInit, fn: () => Promise<T>): Promise<T> {
@@ -33,7 +36,10 @@ export class ShardScope {
     return this.storage.run(init, fn);
   }
 
-  /** The key of the block that wraps the call, or `undefined` if there is none. */
+  /**
+   * The key of the block that wraps the call, or `undefined` if there is none.
+   * @returns The key, or `undefined`.
+   */
   current(): ShardScopeInit | undefined {
     return this.storage.getStore();
   }

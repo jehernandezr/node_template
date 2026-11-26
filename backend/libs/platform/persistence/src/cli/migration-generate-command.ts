@@ -39,7 +39,11 @@ export class MigrationGenerateCommand {
     private readonly write: (text: string) => void,
   ) {}
 
-  /** @returns the exit code: 0 on success or no changes, 1 on an error, 2 on incorrect usage. */
+  /**
+   * Generates a migration from the entity changes of a project.
+   * @returns the exit code: 0 on success or no changes, 1 on an error, 2 on incorrect usage.
+   * @param argv Arguments without the node and script paths.
+   */
   async run(argv: readonly string[]): Promise<number> {
     const options = this.parse(argv);
     const user = this.env[CliEnv.User];

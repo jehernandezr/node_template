@@ -14,7 +14,11 @@ export class Id extends ValueObject<{ value: string }> {
     super({ value });
   }
 
-  /** Validates and creates an `Id` from a string. Throws `InvalidIdError` if it is not a UUIDv7. */
+  /**
+   * Validates and creates an `Id` from a string. Throws `InvalidIdError` if it is not a UUIDv7.
+   * @param value UUIDv7 text.
+   * @returns The id.
+   */
   static from(value: string): Id {
     if (typeof value !== 'string' || !UUID_V7.test(value)) {
       throw new InvalidIdError(value);
@@ -22,7 +26,10 @@ export class Id extends ValueObject<{ value: string }> {
     return new Id(value.toLowerCase());
   }
 
-  /** Returns the creation date encoded in the 48 millisecond bits of the UUIDv7. */
+  /**
+   * Returns the creation date encoded in the 48 millisecond bits of the UUIDv7.
+   * @returns The creation instant.
+   */
   timestamp(): Date {
     const hex = this.props.value.slice(0, 8) + this.props.value.slice(9, 13);
     return new Date(Number.parseInt(hex, 16));

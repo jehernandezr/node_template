@@ -5,5 +5,10 @@ export abstract class HealthCheckable {
   /** Stable name of the dependency in health reports. */
   abstract readonly name: string;
 
+  /**
+   * Checks the dependency.
+   * @param signal Abort signal of the check.
+   * @returns Its health report.
+   */
   abstract check(signal?: AbortSignal): Promise<HealthReport>;
 }

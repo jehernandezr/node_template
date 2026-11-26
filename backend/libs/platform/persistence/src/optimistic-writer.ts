@@ -16,6 +16,10 @@ export class OptimisticWriter {
   /**
    * `UPDATE ... WHERE id = :id AND version = :version` plus the `scope` conditions, which increments the version by one.
    * The version and audit dates are set by the database: TypeORM increments the version and updates `updated_at` on each UPDATE, and `created_*` never changes.
+   * @param manager Entity manager of the transaction.
+   * @param target Entity class.
+   * @param entity Changed entity with its read version.
+   * @param scope Columns that must also match, such as the tenant.
    * @throws OptimisticLockError if no row matches (another write already changed the version, or the row does not exist).
    */
   async update<TEntity extends VersionedEntity>(

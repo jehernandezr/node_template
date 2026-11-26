@@ -21,6 +21,7 @@ export class CatalogDataSource {
   /**
    * Returns the initialized catalog `DataSource`.
    * A failure leaves the field empty so the next call retries.
+   * @returns The data source.
    */
   get(): Promise<DataSource> {
     if (this.pending !== undefined) {
@@ -43,6 +44,7 @@ export class CatalogDataSource {
     return this.pending;
   }
 
+  /** Closes the catalog connection on shutdown. */
   async close(): Promise<void> {
     try {
       if (this.created !== undefined && this.created.isInitialized) {

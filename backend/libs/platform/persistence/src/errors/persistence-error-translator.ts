@@ -8,6 +8,8 @@ export class PersistenceErrorTranslator {
   /**
    * Wraps a driver error in `QueryFailed`. `PlatformError`s pass through
    * unchanged. The message does not copy the driver text, which may include values.
+   * @param error Driver error.
+   * @returns The platform error.
    */
   static toPersistenceError(error: unknown): PlatformError {
     if (error instanceof PlatformError) {

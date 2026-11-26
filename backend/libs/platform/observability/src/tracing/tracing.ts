@@ -26,6 +26,10 @@ export class Tracing {
   /**
    * Runs `fn` inside an active span and closes it when done. If `fn`
    * throws or its promise rejects, marks the span with the error and rethrows it.
+   * @param name Span name.
+   * @param fn Work inside the span.
+   * @param options Kind and attributes.
+   * @returns What `fn` returns.
    */
   withSpan<T>(
     name: string,
@@ -55,6 +59,8 @@ export class Tracing {
    * Marks the span with the error: `ERROR` status, `error.type`, `error.code` and an
    * exception event with redacted message and stack. The status message is
    * the code or the name, never the error text.
+   * @param span Span to mark.
+   * @param error Error to record.
    */
   recordError(span: Span, error: unknown): void {
     const description = ErrorDescriptor.describe(error);
@@ -74,7 +80,10 @@ export class Tracing {
     span.setStatus({ code: SpanStatusCode.ERROR, message: type });
   }
 
-  /** Ids of the active span, or `undefined` if there is no valid span. */
+  /**
+   * Ids of the active span, or `undefined` if there is no valid span.
+   * @returns The ids, or `undefined`.
+   */
   activeIds(): ActiveSpanIds | undefined {
     const spanContext = trace.getActiveSpan()?.spanContext();
     if (spanContext === undefined || !isSpanContextValid(spanContext)) {

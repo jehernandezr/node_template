@@ -3,19 +3,35 @@
  * allows reusing it in the domain and combining it without repeating conditions.
  */
 export abstract class Specification<T> {
+  /**
+   * Tells whether a candidate satisfies the rule.
+   * @param candidate Value to check.
+   * @returns `true` when satisfied.
+   */
   abstract isSatisfiedBy(candidate: T): boolean;
 
-  /** Satisfied when both this rule and `other` are satisfied. */
+  /**
+   * Satisfied when both this rule and `other` are satisfied.
+   * @param other Other rule.
+   * @returns The combined rule.
+   */
   and(other: Specification<T>): Specification<T> {
     return new AllOfSpecification([this, other]);
   }
 
-  /** Satisfied when this rule or `other` is satisfied. */
+  /**
+   * Satisfied when this rule or `other` is satisfied.
+   * @param other Other rule.
+   * @returns The combined rule.
+   */
   or(other: Specification<T>): Specification<T> {
     return new AnyOfSpecification([this, other]);
   }
 
-  /** Satisfied when this rule is not satisfied. */
+  /**
+   * Satisfied when this rule is not satisfied.
+   * @returns The negated rule.
+   */
   not(): Specification<T> {
     return new NotSpecification(this);
   }

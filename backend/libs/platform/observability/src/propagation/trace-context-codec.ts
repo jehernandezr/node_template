@@ -28,19 +28,29 @@ export class TraceContextCodec {
     private readonly random: RandomSource,
   ) {}
 
-  /** UUIDv7 without dashes: a valid W3C trace id. */
+  /**
+   * UUIDv7 without dashes: a valid W3C trace id.
+   * @returns The trace id.
+   */
   newTraceId(): string {
     return this.ids.next().toString().replace(/-/g, '');
   }
 
-  /** 8 random bytes as 16 lowercase hex. */
+  /**
+   * 8 random bytes as 16 lowercase hex.
+   * @returns The span id.
+   */
   newSpanId(): string {
     return TraceContextCodec.toHex(
       this.random.bytes(TraceContextCodec.SPAN_ID_BYTES),
     );
   }
 
-  /** 32 lowercase hex, not all zeros. */
+  /**
+   * 32 lowercase hex, not all zeros.
+   * @param value Value to check.
+   * @returns `true` for a trace id.
+   */
   static isTraceId(value: unknown): value is string {
     return (
       typeof value === 'string' &&
@@ -49,7 +59,11 @@ export class TraceContextCodec {
     );
   }
 
-  /** 16 lowercase hex, not all zeros. */
+  /**
+   * 16 lowercase hex, not all zeros.
+   * @param value Value to check.
+   * @returns `true` for a span id.
+   */
   static isSpanId(value: unknown): value is string {
     return (
       typeof value === 'string' &&
@@ -58,7 +72,11 @@ export class TraceContextCodec {
     );
   }
 
-  /** Converts a trace id (32 hex or dashed UUID, in any case) to 32 hex; `undefined` if invalid. Never throws. */
+  /**
+   * Converts a trace id (32 hex or dashed UUID, in any case) to 32 hex; `undefined` if invalid. Never throws.
+   * @param value Trace id to normalize.
+   * @returns The normalized id, or `undefined`.
+   */
   static normalizeTraceId(value: unknown): string | undefined {
     if (typeof value !== 'string') {
       return undefined;
@@ -70,7 +88,11 @@ export class TraceContextCodec {
     return TraceContextCodec.isTraceId(compact) ? compact : undefined;
   }
 
-  /** Same as `normalizeTraceId` for 16-hex span ids. */
+  /**
+   * Same as `normalizeTraceId` for 16-hex span ids.
+   * @param value Span id to normalize.
+   * @returns The normalized id, or `undefined`.
+   */
   static normalizeSpanId(value: unknown): string | undefined {
     if (typeof value !== 'string') {
       return undefined;
@@ -79,7 +101,11 @@ export class TraceContextCodec {
     return TraceContextCodec.isSpanId(lower) ? lower : undefined;
   }
 
-  /** Builds a version 00 `traceparent`. Throws `InvalidTraceContextError` if an id is invalid. */
+  /**
+   * Builds a version 00 `traceparent`. Throws `InvalidTraceContextError` if an id is invalid.
+   * @param fields Trace id, span id and flags.
+   * @returns The header.
+   */
   static formatTraceparent(fields: TraceparentFields): string {
     if (!TraceContextCodec.isTraceId(fields.traceId)) {
       throw new InvalidTraceContextError('trace id of 32 lowercase hex chars');
@@ -90,7 +116,11 @@ export class TraceContextCodec {
     return `00-${fields.traceId}-${fields.spanId}-${fields.sampled ? '01' : '00'}`;
   }
 
-  /** Parses a `traceparent`; `null` if missing or invalid. */
+  /**
+   * Parses a `traceparent`; `null` if missing or invalid.
+   * @param header Header value.
+   * @returns The fields, or `null`.
+   */
   static parseTraceparent(
     header: string | null | undefined,
   ): TraceparentFields | null {
@@ -115,7 +145,11 @@ export class TraceContextCodec {
     };
   }
 
-  /** Formats 32 hex as an 8-4-4-4-12 UUID. Throws `InvalidTraceContextError` if invalid. */
+  /**
+   * Formats 32 hex as an 8-4-4-4-12 UUID. Throws `InvalidTraceContextError` if invalid.
+   * @param traceId Trace id in hex.
+   * @returns The dashed form.
+   */
   static toDisplayTraceId(traceId: string): string {
     if (!TraceContextCodec.isTraceId(traceId)) {
       throw new InvalidTraceContextError('trace id of 32 lowercase hex chars');

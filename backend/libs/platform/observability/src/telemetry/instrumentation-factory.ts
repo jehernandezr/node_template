@@ -10,8 +10,11 @@ import { TelemetryInstrumentation } from './telemetry-instrumentation.enum.js';
 /** Creates the automatic instrumentation of each `TelemetryInstrumentation`. */
 export class InstrumentationFactory {
   /**
+   * Builds an OpenTelemetry instrumentation that keeps parameter values and Valkey keys out of the spans.
    * No parameter values in spans.
    * Only the command name: keys and values may carry data.
+   * @param kind Instrumentation to build.
+   * @returns The instrumentation.
    */
   create(kind: TelemetryInstrumentation): Instrumentation {
     switch (kind) {
