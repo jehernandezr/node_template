@@ -11,9 +11,6 @@ mock_provider "aws" {
   mock_data "aws_caller_identity" {
     defaults = { account_id = "111111111111" }
   }
-  mock_data "aws_iam_policy_document" {
-    defaults = { json = "{\"Version\":\"2012-10-17\",\"Statement\":[]}" }
-  }
   mock_data "aws_route53_zone" {
     defaults = { zone_id = "ZAPEX0000000000", name_servers = ["ns-1.example.test", "ns-2.example.test"] }
   }
