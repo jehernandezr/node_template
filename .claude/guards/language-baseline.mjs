@@ -49,6 +49,19 @@ export class LanguageBaseline {
   }
 
   /**
+   * Lowers each entry to what its file still holds, never raising one or adding a file.
+   * @param {Record<string, number>} found Spanish lines found per file.
+   * @returns {Record<string, number>} The lowered counts, only files above zero.
+   */
+  lowered(found) {
+    return Object.fromEntries(
+      Object.entries(this.counts)
+        .map(([file, allowed]) => [file, Math.min(allowed, found[file] ?? 0)])
+        .filter(([, count]) => count > 0),
+    );
+  }
+
+  /**
    * Writes the counts, sorted by file.
    * @param {string} path Absolute path of the JSON file.
    * @param {Record<string, number>} counts Spanish lines per file, only files above zero.

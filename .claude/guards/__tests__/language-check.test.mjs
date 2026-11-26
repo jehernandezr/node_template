@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
@@ -11,6 +17,20 @@ import { SpanishDetector } from '../spanish-detector.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..');
 const SCRIPT = join(ROOT, '.claude/guards/check-language.mjs');
+const BASELINE = '.claude/guards/language-baseline.json';
+const BASELINE_CAPS = {
+  'backend/infra/terraform/modules/alb/main.tf': 2,
+  'backend/infra/terraform/modules/cloudfront-waf/main.tf': 1,
+  'backend/infra/terraform/modules/http-api/main.tf': 3,
+  'backend/infra/terraform/modules/observability/main.tf': 1,
+  'backend/infra/terraform/modules/oidc-github/main.tf': 2,
+  'backend/infra/terraform/modules/rds-postgres/main.tf': 4,
+  'backend/infra/terraform/modules/service-fargate/main.tf': 2,
+  'backend/infra/terraform/modules/ses/main.tf': 1,
+  'backend/infra/terraform/stacks/data/main.tf': 2,
+  'backend/infra/terraform/stacks/platform/alarms.tf': 1,
+  'backend/infra/terraform/stacks/platform/compute.tf': 1,
+};
 
 /** A throwaway folder with files laid out as in the repository. */
 class Fixture {
@@ -188,5 +208,61 @@ describe('check-language.mjs', () => {
       encoding: 'utf8',
     });
     assert.equal(result.status, 2);
+  });
+});
+
+describe('language-baseline.json', () => {
+  const baseline = JSON.parse(readFileSync(join(ROOT, BASELINE), 'utf8'));
+  const total = (counts) =>
+    Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+  it('never lists a file the recorded caps do not list', () => {
+    assert.deepEqual(
+      Object.keys(baseline).filter((file) => !(file in BASELINE_CAPS)),
+      [],
+    );
+  });
+
+  it('never raises an entry or the total above the recorded caps', () => {
+    const raised = Object.entries(baseline)
+      .filter(([file, count]) => count > (BASELINE_CAPS[file] ?? 0))
+      .map(([file, count]) => `${file}: ${count}`);
+    assert.deepEqual(raised, []);
+    assert.ok(total(baseline) <= 20, `total ${total(baseline)} above 20`);
+    assert.equal(total(BASELINE_CAPS), 20);
+  });
+});
+
+describe('check-language.mjs --update-baseline', () => {
+  it('lowers an entry but never raises one or adds a file', () => {
+    const fixture = new Fixture()
+      .write(
+        'grown.ts',
+        '/** Crea la tarea que falta para el usuario. */\n/** Guarda la sesión del usuario en la base. */\n',
+      )
+      .write('shrunk.ts', '/** Creates the missing task. */\n')
+      .write(
+        'new.ts',
+        '/** Devuelve la lista de tareas que están pendientes. */\n',
+      )
+      .write(
+        BASELINE,
+        `${JSON.stringify({ 'grown.ts': 1, 'shrunk.ts': 2 })}\n`,
+      );
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: fixture.root });
+      const result = spawnSync(
+        process.execPath,
+        [SCRIPT, '--update-baseline', fixture.root],
+        { encoding: 'utf8' },
+      );
+      assert.equal(result.status, 0, result.stderr);
+      assert.deepEqual(
+        JSON.parse(readFileSync(join(fixture.root, BASELINE), 'utf8')),
+        { 'grown.ts': 1 },
+      );
+    } finally {
+      fixture.dispose();
+    }
   });
 });

@@ -6,7 +6,8 @@
  *   --all checks every tracked and new file and the baseline itself.
  *   --staged checks the files staged for the next commit.
  *   --files checks the given files; --commit-msg checks a commit message file.
- *   --update-baseline records the current counts in .claude/guards/language-baseline.json.
+ *   --update-baseline lowers the entries of .claude/guards/language-baseline.json to what their files still hold; it
+ *   never raises an entry or adds a file.
  * Exits with 1 and the list of findings when it finds any, and with 2 on an unknown mode.
  */
 import { execFileSync } from 'node:child_process';
@@ -48,9 +49,13 @@ class LanguageCommand {
     }
     const root = this.root();
     const baselinePath = join(root, LanguageCommand.BASELINE);
-    const check = new LanguageCheck(root, LanguageBaseline.read(baselinePath));
+    const baseline = LanguageBaseline.read(baselinePath);
+    const check = new LanguageCheck(root, baseline);
     if (this.mode === '--update-baseline') {
-      LanguageBaseline.write(baselinePath, check.count(this.all(root)));
+      LanguageBaseline.write(
+        baselinePath,
+        baseline.lowered(check.count(baseline.files())),
+      );
       return 0;
     }
     const findings =
