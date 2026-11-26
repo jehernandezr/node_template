@@ -34,6 +34,7 @@ export class EnvelopeValidator {
   /**
    * Checks the envelope attributes against the schema. `data` is left to the
    * message contract.
+   * Zod infers `data` as optional; the contract validates it later.
    * @throws MessagingError `InvalidEnvelope`.
    */
   validate(candidate: unknown): MessageEnvelope {
@@ -41,7 +42,6 @@ export class EnvelopeValidator {
     if (!parsed.success) {
       throw this.invalid(parsed.error.message);
     }
-    // Zod infers `data` as optional; the contract validates it later.
     return parsed.data as MessageEnvelope;
   }
 

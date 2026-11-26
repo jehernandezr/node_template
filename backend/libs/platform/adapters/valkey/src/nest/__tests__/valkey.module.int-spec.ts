@@ -15,10 +15,6 @@ import { ValkeyModule } from '../valkey.module.js';
 import { VALKEY_CLIENT } from '../valkey.tokens.js';
 import { ValkeyTestPlatformModule } from './utils/valkey-test-platform.module.js';
 
-/**
- * The whole module against a real Valkey. Without Docker it is skipped; with
- * `INTEGRATION_TESTS=require` missing Docker is an error.
- */
 jest.setTimeout(60_000);
 
 const runtime = new ContainerRuntime(process.env);

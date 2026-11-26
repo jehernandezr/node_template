@@ -11,13 +11,9 @@ export class RecordingLogger extends LoggerPort {
   readonly errors: RecordedLog[] = [];
   readonly warnings: RecordedLog[] = [];
 
-  debug(): void {
-    // Tests do not look at the low levels.
-  }
+  debug(): void {}
 
-  info(): void {
-    // Tests do not look at the low levels.
-  }
+  info(): void {}
 
   warn(message: string, fields?: Record<string, unknown>): void {
     this.warnings.push({ message, fields });

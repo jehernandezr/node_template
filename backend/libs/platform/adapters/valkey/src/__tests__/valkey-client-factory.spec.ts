@@ -41,7 +41,6 @@ class CountingTokenProvider extends ValkeyAuthTokenProvider {
   }
 }
 
-// Nothing listens on port 1: each connection is refused at once.
 const DOWN = {
   VALKEY_HOST: '127.0.0.1',
   VALKEY_PORT: '1',
@@ -177,10 +176,8 @@ describe('ValkeyClientFactory', () => {
           serverless: true,
         });
         expect(client.options.password).toBe('token-1');
-        // A command queued while the first attempt fails is rejected, not lost.
         await expect(client.call('GET', ['svc:a'])).rejects.toThrow();
 
-        // Each reconnection, automatic or explicit, requested its own token.
         client.disconnect();
         await expect(client.connect()).rejects.toThrow();
         expect(provider.requests.length).toBeGreaterThan(1);
@@ -202,7 +199,6 @@ describe('ValkeyClientFactory', () => {
         client.disconnect();
         const outcome = await new Promise<Error | null | undefined>(
           (resolve) => {
-            // iovalkey reconnects with `connect(callback)`; the test does it by hand.
             void client
               .connect((error) => resolve(error))
               .catch(() => undefined);

@@ -134,24 +134,27 @@ export class JobRunner {
     return entry;
   }
 
+  /**
+   * Keeps the process alive: a worker that only runs jobs has nothing else holding it up.
+   */
   private arm(entry: JobEntry, delayMs: number): void {
     entry.cancelTimer?.();
-    // Keeps the process alive: a worker that only runs jobs has nothing else holding it up.
     entry.cancelTimer = TimerScheduler.arm(delayMs, () => {
       entry.cancelTimer = undefined;
       void this.tick(entry);
     });
   }
 
+  /**
+   * The failure is already in the log and the metrics; the next cycle continues.
+   */
   private async tick(entry: JobEntry): Promise<void> {
     if (!this.started) {
       return;
     }
     try {
       await this.run(entry);
-    } catch {
-      // The failure is already in the log and the metrics; the next cycle continues.
-    }
+    } catch {}
     if (this.started && entry.cancelTimer === undefined) {
       this.arm(entry, this.planner.delayMs(entry.job));
     }

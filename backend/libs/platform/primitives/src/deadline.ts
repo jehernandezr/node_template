@@ -101,12 +101,12 @@ export class Deadline {
   /**
    * Awaits an already created promise with the deadline. If the deadline expires or `signal`
    * aborts first, rejects and the promise is abandoned.
+   * An abandoned promise may reject later: its error has no owner.
    */
   wait<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
     try {
       this.assertCanStart(signal);
     } catch (error) {
-      // An abandoned promise may reject later: its error has no owner.
       promise.catch(() => undefined);
       return Promise.reject(error as Error);
     }

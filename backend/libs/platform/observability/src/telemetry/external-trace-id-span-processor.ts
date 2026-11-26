@@ -19,9 +19,9 @@ export class ExternalTraceIdSpanProcessor implements SpanProcessor {
     }
   }
 
-  onEnd(): void {
-    // No effect: it only marks spans on start.
-  }
+  /** Does nothing: the processor only marks spans on start. */
+  // eslint-disable-next-line @typescript-eslint/no-empty-function -- SpanProcessor requires onEnd and there is nothing to do at the end of a span
+  onEnd(): void {}
 
   forceFlush(): Promise<void> {
     return Promise.resolve();

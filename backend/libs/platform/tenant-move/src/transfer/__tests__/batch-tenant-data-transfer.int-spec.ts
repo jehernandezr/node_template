@@ -311,7 +311,6 @@ new ContainerRuntime(process.env).describeIfAvailable(
       await transfer.sync(move);
       const [first, , , , , sixth, , , , , eleventh, , , , , sixteenth] =
         ledgers;
-      // Changes the delta rounds do not see: without touching `updated_at`, like a transaction that committed late.
       await sourceAdmin.query(
         'UPDATE ledgers SET total = total + 1000 WHERE id = ANY($1::uuid[])',
         [[first, eleventh]],

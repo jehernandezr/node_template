@@ -61,6 +61,9 @@ export class ClaimTable<R> {
     );
   }
 
+  /**
+   * TypeORM types the `jsonb` column as a partial of `unknown` and does not accept `null` there; the `null` is the SQL value.
+   */
   async complete(key: string, claimToken: string, result: R): Promise<void> {
     const affected = await this.managers.run(
       ManagerIntent.Write,
@@ -70,7 +73,6 @@ export class ClaimTable<R> {
           .update(this.entity)
           .set({
             state: ClaimState.Completed,
-            // TypeORM types the `jsonb` column as a partial of `unknown` and does not accept `null` there; the `null` is the SQL value.
             result: (this.serialize(result) ?? null) as QueryDeepPartialEntity<
               ClaimRecordEntity['result']
             >,
@@ -160,6 +162,9 @@ export class ClaimTable<R> {
   /**
    * Runs entirely inside the manager it receives: the `SELECT` of the live row and the `INSERT` must see the same state
    * and, with the `Write`, end up in the same transaction.
+   * With no time to run the operation, only an already stored result is useful.
+   * TypeORM's `orUpdate` does not accept the conflict WHERE, and Postgres returns no row if that WHERE does not hold. Our own token tells whether the key was taken.
+   * The row was released or expired between the two statements: the caller retries.
    */
   private async claimIn(
     manager: EntityManager,
@@ -168,7 +173,6 @@ export class ClaimTable<R> {
   ): Promise<ClaimResult<R>> {
     const now = this.clock.now();
     if (request.deadline.atMs <= now.getTime()) {
-      // With no time to run the operation, only an already stored result is useful.
       const live = await this.readLive(manager, key, now.getTime());
       if (live !== undefined) {
         return live;
@@ -178,8 +182,6 @@ export class ClaimTable<R> {
     const claimToken = this.ids.next().toString();
     const leaseUntil = ClaimRules.computeLeaseUntil(request, now.getTime());
     const table = this.tableName(manager);
-    // TypeORM's `orUpdate` does not accept the conflict WHERE, and Postgres returns no row if that WHERE does not hold.
-    // Our own token tells whether the key was taken.
     const tenant = this.tenantColumn
       ? { column: ', tenant_id', value: ', $7' }
       : { column: '', value: '' };
@@ -214,7 +216,6 @@ export class ClaimTable<R> {
     if (live !== undefined) {
       return live;
     }
-    // The row was released or expired between the two statements: the caller retries.
     throw new PersistenceError(
       PersistenceErrorCode.Contention,
       'Idempotency key changed while claiming it',

@@ -51,10 +51,12 @@ export class ValkeyShardDirectoryChannel extends ShardDirectoryChannel {
     ]);
   }
 
+  /**
+   * It is wrapped so the same handler can be subscribed twice and unsubscribed only once.
+   */
   async subscribe(
     handler: ShardDirectoryChangeHandler,
   ): Promise<() => Promise<void>> {
-    // It is wrapped so the same handler can be subscribed twice and unsubscribed only once.
     const entry: ShardDirectoryChangeHandler = (event) => handler(event);
     const first = this.handlers.size === 0;
     this.handlers.add(entry);

@@ -20,9 +20,11 @@ export class StepConfig<TState, TIn, TOut> {
     return this;
   }
 
-  /** Applies this step's output to the saga state. Receives a normalized copy. */
+  /**
+   * Applies this step's output to the saga state. Receives a normalized copy.
+   * The engine delivers the JSON-normalized output that the invoker produced.
+   */
   onSuccess(fn: (state: TState, output: TOut) => void): this {
-    // The engine delivers the JSON-normalized output that the invoker produced.
     this.draft.onSuccess = fn as (state: TState, output: unknown) => void;
     return this;
   }

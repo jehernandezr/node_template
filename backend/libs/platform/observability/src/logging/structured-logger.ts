@@ -51,6 +51,9 @@ export class StructuredLogger extends LoggerPort {
     });
   }
 
+  /**
+   * A log inside a span without an open context (a job, a library) is also linked to the trace.
+   */
   private write(
     level: LogLevel,
     message: string,
@@ -69,7 +72,6 @@ export class StructuredLogger extends LoggerPort {
       ),
     );
     const ctx = this.options.contextStore.current();
-    // A log inside a span without an open context (a job, a library) is also linked to the trace.
     const span =
       ctx === undefined ? this.options.tracing.activeIds() : undefined;
     const traceId = ctx?.traceId ?? span?.traceId;

@@ -131,7 +131,6 @@ describe('OutboxRelay fencing', () => {
     const { clock, store, publisher, relay } = setup();
     store.add(envelope('m1'));
 
-    // Relay A takes m1 and stays in publish beyond its lease.
     let release = (): void => undefined;
     const stalled = new Promise<void>((resolve) => {
       release = resolve;
@@ -160,7 +159,6 @@ describe('OutboxRelay fencing', () => {
     const { clock, store, relay } = setup();
     store.add(envelope('m1'));
     store.add(envelope('m2'));
-    // The first publication takes longer than the lease of the second record.
     const slowFirst = new SlowFirstPublisher(clock);
 
     const report = await relay({
@@ -214,7 +212,6 @@ describe('OutboxRelay FIFO per groupId', () => {
       leaseOwner: undefined,
     });
 
-    // a2 expires, but a1 does not: the group waits.
     clock.advance(500);
     expect(await instance.relayOnce()).toMatchObject({
       claimed: 0,

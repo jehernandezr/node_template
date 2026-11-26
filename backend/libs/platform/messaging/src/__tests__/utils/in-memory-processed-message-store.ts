@@ -125,8 +125,6 @@ export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
       throw new DeadlineExceededError(request.deadline.atMs);
     }
 
-    // Free key or expired lease: new token, invalidating the previous one. When taking
-    // an expired lease, the fingerprint of the first claim is kept.
     const fingerprint = record?.fingerprint ?? request.fingerprint;
     const claimToken = this.ids.next().toString();
     const leaseUntil = ClaimRules.computeLeaseUntil(request, now);

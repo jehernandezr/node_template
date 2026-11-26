@@ -87,12 +87,14 @@ export class RealtimeSession {
     }
   }
 
+  /**
+   * Without Valkey the subscription is not canceled either; a notice that arrives later finds the session closed.
+   */
   private async fail(error: unknown): Promise<void> {
     this.logger.warn('realtime delivery failed', {
       channel: this.channel,
       error: error instanceof Error ? error.message : String(error),
     });
-    // Without Valkey the subscription is not canceled either; a notice that arrives later finds the session closed.
     await this.close().catch(() => undefined);
   }
 

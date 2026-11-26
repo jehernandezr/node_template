@@ -41,9 +41,7 @@ class FakeTransactionManager extends TransactionManager {
     return this.open;
   }
 
-  afterCommit(): void {
-    // There are no effects to record in this test.
-  }
+  afterCommit(): void {}
 }
 
 /** One turn through the scheduler: lets the other workers run before continuing. */

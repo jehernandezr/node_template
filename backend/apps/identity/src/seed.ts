@@ -5,7 +5,9 @@ import { ServiceBootstrap } from '@platform/service/nest';
 import { identityService } from './identity.service.js';
 import { SeedRegionTenants } from './modules/tenants/index.js';
 
-// Seeds the region's fixed tenants without running jobs: it is a deployment step, after migrating.
+/**
+ * Seeds the region's fixed tenants without running jobs: it is a deployment step, after migrating.
+ */
 const running = await ServiceBootstrap.worker(identityService, {
   env: process.env,
   telemetry,

@@ -41,6 +41,9 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
     super();
   }
 
+  /**
+   * In bytes: with a string the library would encode its UTF-8 bytes and the challenge would no longer match.
+   */
   registrationOptions(input: {
     challenge: string;
     userId: string;
@@ -52,7 +55,6 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
       rpID: this.settings.values.WEBAUTHN_RP_ID,
       userName: input.userName,
       userID: Buffer.from(input.userId),
-      // In bytes: with a string the library would encode its UTF-8 bytes and the challenge would no longer match.
       challenge: Buffer.from(input.challenge, 'base64url'),
       attestationType: 'none',
       excludeCredentials: input.exclude.map((passkey) => ({

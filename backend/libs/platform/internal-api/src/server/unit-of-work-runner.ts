@@ -64,7 +64,10 @@ export class UnitOfWorkRunner {
     }
   }
 
-  /** Runs the handler and stores its final result with the token, inside the unit of work if there is one. */
+  /**
+   * Runs the handler and stores its final result with the token, inside the unit of work if there is one.
+   * Without `TransactionManager` there is nothing to roll back: the result follows the normal path.
+   */
   private async runAndStore(
     route: OperationRoute,
     claimed: ClaimedOperation,
@@ -88,7 +91,6 @@ export class UnitOfWorkRunner {
       progress.rejected = outcome;
       throw new UnitRollbackError();
     }
-    // Without `TransactionManager` there is nothing to roll back: the result follows the normal path.
     if (
       (result as HandlerResult<unknown>).commit === false &&
       this.transactions !== undefined
@@ -102,7 +104,14 @@ export class UnitOfWorkRunner {
     return outcome;
   }
 
-  /** Closes the key according to how far the unit of work got when something failed. */
+  /**
+   * Closes the key according to how far the unit of work got when something failed.
+   * A thrown error is classified: a declared `DomainError` is a final result.
+   * The unit of work never opened or nothing ran: the key is released.
+   * Another attempt took the key. Without a unit of work the effects are already applied, so it is unknown whether this result counts.
+   * The effects were rolled back along with the result: a retry applies them only once.
+   * The commit failed: the effects and the result may or may not be stored.
+   */
   private async recover(
     route: OperationRoute,
     claimed: ClaimedOperation,
@@ -111,7 +120,6 @@ export class UnitOfWorkRunner {
   ): Promise<CallOutcome<unknown>> {
     if (error instanceof UnitRollbackError) {
       if (progress.thrown !== undefined) {
-        // A thrown error is classified: a declared `DomainError` is a final result.
         return this.storeAlone(
           route,
           claimed,
@@ -127,13 +135,10 @@ export class UnitOfWorkRunner {
     switch (progress.stage) {
       case UnitStage.Begin:
       case UnitStage.Handler:
-        // The unit of work never opened or nothing ran: the key is released.
         await this.gate.release(claimed);
         return this.outcomes.fromError(error);
       case UnitStage.Complete:
         if (error instanceof StaleClaimError) {
-          // Another attempt took the key. Without a unit of work the effects are already applied,
-          // so it is unknown whether this result counts.
           return this.transactions !== undefined
             ? CallOutcome.transientFailure(InternalApiReason.StaleClaim, {
                 cause: error,
@@ -141,12 +146,10 @@ export class UnitOfWorkRunner {
             : CallOutcome.uncertain(InternalApiReason.StaleClaim, error);
         }
         if (this.transactions !== undefined) {
-          // The effects were rolled back along with the result: a retry applies them only once.
           await this.gate.release(claimed);
         }
         return this.outcomes.fromError(error);
       case UnitStage.Commit:
-        // The commit failed: the effects and the result may or may not be stored.
         return CallOutcome.uncertain(InternalApiReason.CommitFailed, error);
     }
   }

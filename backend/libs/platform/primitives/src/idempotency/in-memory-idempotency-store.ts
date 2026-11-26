@@ -87,6 +87,9 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
     return Promise.resolve(true);
   }
 
+  /**
+   * Free key or expired lease: a new token is issued and the previous one stops being valid. When an expired lease is taken, the fingerprint of the first claim is kept.
+   */
   private claimNow(key: string, request: ClaimRequest): ClaimResult<R> {
     ClaimRules.assertInput(key, request.fingerprint);
     const now = this.clock.now().getTime();
@@ -110,8 +113,6 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
       throw new DeadlineExceededError(request.deadline.atMs);
     }
 
-    // Free key or expired lease: a new token is issued and the previous one stops being valid.
-    // When an expired lease is taken, the fingerprint of the first claim is kept.
     const fingerprint = record?.fingerprint ?? request.fingerprint;
     const claimToken = this.ids.next().toString();
     const leaseUntil = ClaimRules.computeLeaseUntil(request, now);

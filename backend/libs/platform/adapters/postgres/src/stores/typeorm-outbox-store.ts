@@ -39,6 +39,9 @@ export class TypeOrmOutboxStore implements OutboxStore, OutboxWriter {
     private readonly claims: OutboxClaimQuery,
   ) {}
 
+  /**
+   * TypeORM types JSON deeply and does not accept `unknown`; the value is stored as is in `jsonb`.
+   */
   async append(record: OutboxAppend): Promise<void> {
     await this.managers.run(ManagerIntent.Write, (manager) =>
       manager
@@ -47,7 +50,6 @@ export class TypeOrmOutboxStore implements OutboxStore, OutboxWriter {
         .into(OutboxEntity)
         .values({
           id: record.envelope.id,
-          // TypeORM types JSON deeply and does not accept `unknown`; the value is stored as is in `jsonb`.
           envelope: record.envelope as never,
           status: OutboxStatus.Pending,
           attempts: 0,

@@ -34,6 +34,7 @@ export class CallerWait {
   /**
    * Waits for `work` until it settles, the signal aborts or the deadline expires,
    * whichever happens first. Without a signal or deadline it returns the same promise.
+   * `work` may reject later and nobody else listens to it.
    */
   wait<T>(work: Promise<T>, options: CallerWaitOptions): Promise<T> {
     if (options.signal === undefined && options.deadline === undefined) {
@@ -41,7 +42,6 @@ export class CallerWait {
     }
     const cancelled = this.cancellation(options);
     if (cancelled !== undefined) {
-      // `work` may reject later and nobody else listens to it.
       work.catch(() => undefined);
       return Promise.reject(cancelled);
     }

@@ -67,7 +67,6 @@ describe('ObservabilityModule', () => {
     moduleRef = await Test.createTestingModule({
       imports: [
         KernelModule,
-        // An invalid database value does not break startup: nobody validates it.
         ConfigModule.forRoot({
           env: { ...SERVICE_ENV, DB_SLOW_QUERY_MS: 'not-a-number' },
         }),

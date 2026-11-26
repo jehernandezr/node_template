@@ -38,7 +38,10 @@ export class DegradingRateLimiter extends RateLimiter {
     this.reporter = options.reporter;
   }
 
-  /** Consumes from the shared limiter, or from the local one with the divided limit if it fails. */
+  /**
+   * Consumes from the shared limiter, or from the local one with the divided limit if it fails.
+   * A cost that the local limit does not admit would never fit: it is clamped.
+   */
   async consume(
     key: string,
     rule: RateLimitRule,
@@ -50,7 +53,6 @@ export class DegradingRateLimiter extends RateLimiter {
     } catch (error) {
       this.degraded(RateLimitOperation.Consume, rule, error);
       const local = this.localRule(rule);
-      // A cost that the local limit does not admit would never fit: it is clamped.
       return this.fallback.consume(key, local, Math.min(cost, local.limit));
     }
   }
@@ -90,6 +92,10 @@ export class DegradingRateLimiter extends RateLimiter {
     };
   }
 
+  /**
+   * The warning is diagnostic: it must not change the limiter's response.
+   * The report is diagnostic: it must not change the limiter's response.
+   */
   private degraded(
     operation: RateLimitOperation,
     rule: RateLimitRule,
@@ -97,13 +103,9 @@ export class DegradingRateLimiter extends RateLimiter {
   ): void {
     try {
       this.onDegraded?.(operation, rule, error);
-    } catch {
-      // The warning is diagnostic: it must not change the limiter's response.
-    }
+    } catch {}
     try {
       this.reporter.degraded(operation, rule, error);
-    } catch {
-      // The report is diagnostic: it must not change the limiter's response.
-    }
+    } catch {}
   }
 }

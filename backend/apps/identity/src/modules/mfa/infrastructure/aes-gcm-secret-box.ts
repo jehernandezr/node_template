@@ -14,9 +14,11 @@ export class AesGcmSecretBox extends SecretBox {
   private static readonly IV_BYTES = 12;
   private readonly key: Buffer;
 
+  /**
+   * The configuration key is text; its SHA-256 gives the 32 bytes AES-256 requires.
+   */
   constructor(settings: IdentitySettings) {
     super();
-    // The configuration key is text; its SHA-256 gives the 32 bytes AES-256 requires.
     this.key = createHash('sha256')
       .update(settings.values.IDENTITY_DATA_KEY.reveal())
       .digest();

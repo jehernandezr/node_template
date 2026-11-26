@@ -13,12 +13,14 @@ export class ValkeySubscriberSource {
 
   constructor(private readonly opener: ValkeyConnectionOpener) {}
 
-  /** Returns the same connection on each call. */
+  /**
+   * Returns the same connection on each call.
+   * If opening fails, the next attempt opens again instead of repeating the error.
+   */
   connection(): Promise<ValkeySubscriberConnection> {
     if (this.opened === undefined) {
       const opening = this.opener.create();
       this.opened = opening;
-      // If opening fails, the next attempt opens again instead of repeating the error.
       opening.catch(() => {
         if (this.opened === opening) {
           this.opened = undefined;

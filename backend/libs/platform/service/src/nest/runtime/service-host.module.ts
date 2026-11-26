@@ -7,6 +7,9 @@ import type { ServiceHostOptions } from './service-host-options.js';
 /** Root module of a process: the platform runtime, the service business module and the `overrides`. */
 @Module({})
 export class ServiceHostModule {
+  /**
+   * The core declares `rootModule` with its own type to avoid importing NestJS. Here it is already a Nest module class.
+   */
   static forService(
     definition: ServiceDefinition,
     options: ServiceHostOptions,
@@ -16,7 +19,6 @@ export class ServiceHostModule {
       imports: [
         PlatformRuntimeModule.forService(definition, options),
         ServiceOverridesModule.of(options.overrides ?? []),
-        // The core declares `rootModule` with its own type to avoid importing NestJS. Here it is already a Nest module class.
         definition.rootModule as unknown as Type<unknown>,
       ],
     };

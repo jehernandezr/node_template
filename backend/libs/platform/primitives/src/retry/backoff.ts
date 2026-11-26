@@ -16,6 +16,7 @@ export class Backoff {
   /**
    * Returns the wait, in whole milliseconds, before retry number `attempt` (the
    * first is 1). It never exceeds `policy.maxMs` and is never negative.
+   * `baseMs = 0` gives 0; a huge exponent gives Infinity and `maxMs` caps it.
    */
   delay(attempt: number): number {
     PrimitivesGuard.instance.integerInRange(
@@ -26,7 +27,6 @@ export class Backoff {
     );
     const { baseMs, maxMs, factor, strategy } = this.policy;
     const exponential = baseMs * factor ** (attempt - 1);
-    // `baseMs = 0` gives 0; a huge exponent gives Infinity and `maxMs` caps it.
     const ceiling = Math.min(
       maxMs,
       Number.isNaN(exponential) ? 0 : exponential,

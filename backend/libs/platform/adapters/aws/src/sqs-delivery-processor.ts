@@ -46,7 +46,10 @@ export class SqsDeliveryProcessor {
     private readonly errors: AwsErrorTranslator,
   ) {}
 
-  /** One `DeliveryReport` per delivery, in the same order. */
+  /**
+   * One `DeliveryReport` per delivery, in the same order.
+   * Zero visibility: the delivery comes back immediately for the next attempt.
+   */
   async process(deliveries: readonly SqsDelivery[]): Promise<DeliveryReport[]> {
     const reports: DeliveryReport[] = [];
     let halted = false;
@@ -56,7 +59,6 @@ export class SqsDeliveryProcessor {
           messageId: delivery.messageId,
           action: DeliveryAction.Redeliver,
         });
-        // Zero visibility: the delivery comes back immediately for the next attempt.
         await this.changeVisibility(delivery, 0);
         continue;
       }
@@ -69,6 +71,9 @@ export class SqsDeliveryProcessor {
     return reports;
   }
 
+  /**
+   * The dispatcher reports failures as results: if it throws, it is a bug or an outage.
+   */
   private async handle(delivery: SqsDelivery): Promise<DeliveryReport> {
     let result: DispatchResult;
     try {
@@ -78,7 +83,6 @@ export class SqsDeliveryProcessor {
         visibilityTimeoutMs: this.queue.visibilityTimeoutSeconds * 1000,
       });
     } catch (err) {
-      // The dispatcher reports failures as results: if it throws, it is a bug or an outage.
       this.logger.error('dispatcher threw', {
         message_id: delivery.messageId,
         error_code: ErrorDescriptor.codeOf(err),
@@ -120,6 +124,9 @@ export class SqsDeliveryProcessor {
     }
   }
 
+  /**
+   * Without the change, the message comes back when its current visibility expires.
+   */
   private async changeVisibility(
     delivery: SqsDelivery,
     delayMs: number,
@@ -140,7 +147,6 @@ export class SqsDeliveryProcessor {
         }),
       );
     } catch (err) {
-      // Without the change, the message comes back when its current visibility expires.
       const error = this.errors.translate(
         AwsOperation.ChangeMessageVisibility,
         err,

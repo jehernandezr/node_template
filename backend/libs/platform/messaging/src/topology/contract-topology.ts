@@ -43,27 +43,25 @@ function queueDefOf(
 /**
  * Builds the runtime topology of a service from its
  * contracts.
- *
  * It receives the service's own contract and those of the services it
  * talks to: the owners of the commands it sends (`sends`) and of the topics
  * its queues subscribe to. The topics of a subscription are included even if
  * their contract is missing, because the definition travels with the subscription; a command in
  * `sends` needs the contract that declares its queue.
- *
  * Each event gets the route to its topic and each command the route to its queue, with
  * the kit contract, so the bus and the relay validate the payload and the
  * dispatcher knows whether a type without a handler is an event (ignored) or a
  * command. The topology is validated before being returned (`TopologyError` if it is not
  * valid).
+ * By name: a subscriber points to another service's topic with a reference, which is a different object.
+ * By type, for the same reason: what a service sends can be a reference to the command.
  */
 export function topologyFromContracts(
   contracts: readonly ServiceContract[],
 ): Topology {
-  // By name: a subscriber points to another service's topic with a reference, which is a different object.
   const topics = new Map<string, TopicDef>();
   const queues: QueueDef[] = [];
   const routes: RouteDef[] = [];
-  // By type, for the same reason: what a service sends can be a reference to the command.
   const commandQueues = new Map<string, QueueDef>();
 
   const topicDef = (topic: TopicDefinition): TopicDef => {

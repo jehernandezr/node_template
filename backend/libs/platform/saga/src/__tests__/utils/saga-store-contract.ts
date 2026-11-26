@@ -45,7 +45,6 @@ export function runSagaStoreContract(
             .with({
               idempotencyKey: 'key-1',
               state: { name: 'acme', nested: { list: [1, 2] } },
-              // Without tenant: a sharded store requires it to be the one of the current scope.
               context: {
                 actorId: 'actor-1',
                 traceparent:

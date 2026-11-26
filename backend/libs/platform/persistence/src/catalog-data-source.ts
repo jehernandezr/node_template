@@ -18,7 +18,10 @@ export class CatalogDataSource {
     >,
   ) {}
 
-  /** Returns the initialized catalog `DataSource`. */
+  /**
+   * Returns the initialized catalog `DataSource`.
+   * A failure leaves the field empty so the next call retries.
+   */
   get(): Promise<DataSource> {
     if (this.pending !== undefined) {
       return this.pending;
@@ -32,7 +35,6 @@ export class CatalogDataSource {
       this.endpoints.resolve(this.settings.DB_CATALOG_INSTANCE),
     );
     this.created = dataSource;
-    // A failure leaves the field empty so the next call retries.
     this.pending = dataSource.initialize().catch((error: unknown) => {
       this.pending = undefined;
       this.created = undefined;

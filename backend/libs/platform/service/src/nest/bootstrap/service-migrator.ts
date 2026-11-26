@@ -18,6 +18,9 @@ import type { ServiceMigratorOptions } from './service-migrator-options.js';
  * calls it.
  */
 export class ServiceMigrator {
+  /**
+   * The migrator does not export telemetry: starting it disabled keeps the process from waiting for a collector.
+   */
   async run(
     definition: ServiceDefinition,
     target: MigrationTarget,
@@ -25,7 +28,6 @@ export class ServiceMigrator {
   ): Promise<ServiceMigrationReport> {
     new ServiceDefinitionValidator().validate(definition);
     const env = options.env ?? process.env;
-    // The migrator does not export telemetry: starting it disabled keeps the process from waiting for a collector.
     const telemetry = TelemetryBootstrap.startWith({
       serviceName: definition.name,
       disabled: true,

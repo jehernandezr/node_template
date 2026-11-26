@@ -76,14 +76,16 @@ export class GeneratorSmoke {
     ]);
   }
 
+  /**
+   * The copy is disposable: without the daemon or remote cache, Nx leaves no processes or data outside it.
+   * tsx leaves in the environment the tsconfig this process runs with, a relative path that does not exist in the copy.
+   */
   private pnpm(cwd: string, args: readonly string[]): Promise<number> {
     return this.runner.run({
       command: 'pnpm',
       args,
       cwd,
-      // The copy is disposable: without the daemon or remote cache, Nx leaves no processes or data outside it.
       env: { NX_DAEMON: 'false', NX_NO_CLOUD: 'true' },
-      // tsx leaves in the environment the tsconfig this process runs with, a relative path that does not exist in the copy.
       unset: ['TSX_TSCONFIG_PATH'],
     });
   }

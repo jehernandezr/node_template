@@ -21,6 +21,9 @@ export class CachedApiKeyAuthenticator extends ApiKeyAuthenticator {
     super();
   }
 
+  /**
+   * The Valkey copy is not the source of truth: if it does not respond, the resolver decides.
+   */
   async authenticate(rawKey: string): Promise<ServiceAccountActor> {
     const parsed = ApiKeyFormat.parse(rawKey);
     if (parsed === undefined) {
@@ -32,7 +35,6 @@ export class CachedApiKeyAuthenticator extends ApiKeyAuthenticator {
     try {
       principal = await this.state.apiKey(parsed.prefix, hash);
     } catch {
-      // The Valkey copy is not the source of truth: if it does not respond, the resolver decides.
       principal = undefined;
     }
     if (principal === undefined) {

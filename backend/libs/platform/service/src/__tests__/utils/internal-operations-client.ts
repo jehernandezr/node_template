@@ -30,7 +30,6 @@ export class InternalOperationsClient {
     tenantId?: string,
   ): Promise<CallOutcome<unknown>> {
     return this.transport.invoke(operation.id, input, {
-      // Each call is a new operation: the key does not repeat across clients of the same app.
       idempotencyKey: randomUUID(),
       deadline: Date.now() + InternalOperationsClient.BUDGET_MS,
       timeoutMs: InternalOperationsClient.BUDGET_MS,

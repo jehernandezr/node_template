@@ -117,6 +117,9 @@ export class PolicyRegistry {
     this.configs.set(name, config);
   }
 
+  /**
+   * Attempt timeouts count as a failure. Non-transient errors, cancellations and an exhausted caller deadline do not open the circuit.
+   */
   private createEntry(
     name: PolicyName,
     dependencyKey: string,
@@ -153,9 +156,6 @@ export class PolicyRegistry {
             consecutiveFailures: breakerConfig.consecutiveFailures,
             halfOpenAfterMs: breakerConfig.halfOpenAfterMs,
             clock: this.clock,
-            // Attempt timeouts count as a failure. Non-transient errors,
-            // cancellations and an exhausted caller deadline
-            // do not open the circuit.
             counts: (error) =>
               error instanceof ResilienceTimeoutError
                 ? error.scope === TimeoutScope.Attempt

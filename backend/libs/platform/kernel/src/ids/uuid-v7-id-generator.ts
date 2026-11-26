@@ -27,11 +27,13 @@ export class UuidV7IdGenerator extends IdGenerator {
     return Id.from(this.generate());
   }
 
+  /**
+   * The counter starts in the lower half to leave room to go up.
+   */
   private generate(): string {
     const random = this.random.bytes(10);
     let ms = this.clock.now().getTime();
     if (ms > this.lastMs) {
-      // The counter starts in the lower half to leave room to go up.
       this.counter = ((random[0] << 4) | (random[1] >> 4)) & 0x7ff;
     } else {
       ms = this.lastMs;

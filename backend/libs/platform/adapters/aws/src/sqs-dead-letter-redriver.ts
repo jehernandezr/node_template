@@ -22,7 +22,10 @@ export class SqsDeadLetterRedriver {
     private readonly errors: AwsErrorTranslator,
   ) {}
 
-  /** `true` if the message ended up in the DLQ; `false` if the copy failed and the delivery must be retried. */
+  /**
+   * `true` if the message ended up in the DLQ; `false` if the copy failed and the delivery must be retried.
+   * The FIFO DLQ requires a group and deduplication; the message id serves as the group when the original did not have one.
+   */
   async copy(
     delivery: SqsDelivery,
     result: DeadLetterResult,
@@ -37,8 +40,6 @@ export class SqsDeadLetterRedriver {
           QueueUrl: queueUrl,
           MessageBody: delivery.body,
           MessageAttributes: this.attributes(result),
-          // The FIFO DLQ requires a group and deduplication; the message id serves as
-          // the group when the original did not have one.
           ...(fifo
             ? {
                 MessageGroupId: delivery.groupId ?? delivery.messageId,

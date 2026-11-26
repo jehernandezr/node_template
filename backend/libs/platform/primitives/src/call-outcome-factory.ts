@@ -34,9 +34,11 @@ export class CallOutcomeFactory {
     }
   }
 
+  /**
+   * A retryable conflict is not a final result: it is not stored for idempotency.
+   */
   private static fromDomainError(error: DomainError): CallOutcome<never> {
     if (error.retryable) {
-      // A retryable conflict is not a final result: it is not stored for idempotency.
       return CallOutcome.transientFailure(error.code, { cause: error });
     }
     return CallOutcome.businessError(error.code, {

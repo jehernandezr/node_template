@@ -278,7 +278,10 @@ export class SagaInstance {
     );
   }
 
-  /** Pauses to retry, or requires intervention when the suspension limits are exceeded. */
+  /**
+   * Pauses to retry, or requires intervention when the suspension limits are exceeded.
+   * The start of the suspension is kept even when giving up, so the instance shows how long the step had been failing.
+   */
   suspend(
     code: string,
     detail: string | null,
@@ -286,8 +289,6 @@ export class SagaInstance {
     policy: SuspendPolicy,
   ): SagaInstance {
     const attempts = this.data.attempts + 1;
-    // The start of the suspension is kept even when giving up, so the
-    // instance shows how long the step had been failing.
     const since = this.data.suspendedSince ?? now;
     const exhausted =
       attempts > policy.maxSuspendAttempts ||

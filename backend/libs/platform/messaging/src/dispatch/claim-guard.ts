@@ -146,12 +146,11 @@ export class ClaimGuard {
    * Gives the claim back with its token. Best effort: never throws. If the
    * release fails (store down or expired token), the claim stays in
    * progress until its lease expires, which bounds how long it blocks redeliveries.
+   * The lease bounds how long the claim can block.
    */
   async release(claim: AcquiredMessageClaim): Promise<void> {
     try {
       await this.store.release(claim.key, claim.token);
-    } catch {
-      // The lease bounds how long the claim can block.
-    }
+    } catch {}
   }
 }

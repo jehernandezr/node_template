@@ -21,10 +21,12 @@ export class InProcessDirectoryChannel extends ShardDirectoryChannel {
     }
   }
 
+  /**
+   * Wrapped so the same handler can be subscribed twice and unsubscribed once.
+   */
   async subscribe(
     handler: ShardDirectoryChangeHandler,
   ): Promise<() => Promise<void>> {
-    // Wrapped so the same handler can be subscribed twice and unsubscribed once.
     const entry: ShardDirectoryChangeHandler = (event) => handler(event);
     this.handlers.add(entry);
     return async () => {

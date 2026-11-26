@@ -93,7 +93,6 @@ runtime.describeIfAvailable('identity app', () => {
       meta('profile-without-tenant'),
     );
 
-    // The handler ran: it responds that the user does not exist, not that the shard is missing.
     expect(withTenant).toMatchObject({
       kind: CallOutcomeKind.BusinessError,
       code: IdentityErrorCode.UserNotFound,

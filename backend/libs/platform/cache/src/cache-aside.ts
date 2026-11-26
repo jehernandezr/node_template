@@ -150,7 +150,11 @@ export class CacheAside {
     }
   }
 
-  /** Flight leader path: reads the cache and, if missing, loads and stores in the background. */
+  /**
+   * Flight leader path: reads the cache and, if missing, loads and stores in the background.
+   * It is served, but a huge entry is never written to the shared cache.
+   * Background write: the caller does not wait. `store` never rejects.
+   */
   private async fetchOrLoad<T>(
     key: string,
     ttlMs: number,
@@ -171,13 +175,11 @@ export class CacheAside {
     }
     const bytes = Buffer.byteLength(raw, 'utf8');
     if (bytes > CacheAside.MAX_VALUE_BYTES) {
-      // It is served, but a huge entry is never written to the shared cache.
       this.reporter.report(
         new CacheValueTooLargeError(bytes, CacheAside.MAX_VALUE_BYTES),
       );
       return { kind: FlightOutcomeKind.Raw, raw };
     }
-    // Background write: the caller does not wait. `store` never rejects.
     void this.store(key, raw, ttlMs);
     return { kind: FlightOutcomeKind.Raw, raw };
   }

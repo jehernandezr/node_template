@@ -427,14 +427,15 @@ export class TypeOrmSagaStore extends SagaStore {
       .execute();
   }
 
-  /** Returns the instance that is a candidate for a run. If its context had no tenant, the row's tenant completes it for routing. */
+  /**
+   * Returns the instance that is a candidate for a run. If its context had no tenant, the row's tenant completes it for routing.
+   * This candidate only serves so `SagaScopes` routes it to the shard. The engine reads the instance again with `get`, which keeps the original context.
+   */
   private recoverable(row: SagaInstanceEntity): SagaInstance {
     const instance = this.deps.instances.toDomain(row);
     if (instance.tenantId !== null) {
       return instance;
     }
-    // This candidate only serves so `SagaScopes` routes it to the shard. The engine
-    // reads the instance again with `get`, which keeps the original context.
     return SagaInstance.rehydrate({
       ...instance.toProps(),
       context: { ...(instance.context ?? {}), tenantId: row.tenantId },

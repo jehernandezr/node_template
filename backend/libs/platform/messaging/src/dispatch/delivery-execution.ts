@@ -46,6 +46,9 @@ export class DeliveryExecution {
     private readonly consumer: string,
   ) {}
 
+  /**
+   * The effects may have been rolled back along with the complete failure.
+   */
   async execute(
     envelope: MessageEnvelope,
     delivery: PreparedDelivery,
@@ -66,7 +69,6 @@ export class DeliveryExecution {
         case Stage.Handler:
           return this.classifier.failure(envelope.id, err, options, false);
         case Stage.Complete:
-          // The effects may have been rolled back along with the complete failure.
           return this.classifier.failure(envelope.id, err, options, true);
         case Stage.Claim:
         case Stage.Done:
@@ -103,6 +105,9 @@ export class DeliveryExecution {
     );
   }
 
+  /**
+   * The claim is released here, still inside the delivery context: in a sharded service, the store only knows which shard to go to while that context is open.
+   */
   private async run(
     envelope: MessageEnvelope,
     delivery: PreparedDelivery,
@@ -129,8 +134,6 @@ export class DeliveryExecution {
       state.stage = Stage.Complete;
       await this.claimGuard.complete(outcome.claim);
     } catch (err) {
-      // The claim is released here, still inside the delivery context: in a sharded service, the
-      // store only knows which shard to go to while that context is open.
       await this.releaseHeld(state);
       throw err;
     }

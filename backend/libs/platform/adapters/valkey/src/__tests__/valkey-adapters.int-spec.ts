@@ -57,10 +57,6 @@ import {
   ValkeyTestServer,
 } from './utils/index.js';
 
-/**
- * Tests against a real Valkey with the bloom module. Without Docker they are skipped;
- * with `INTEGRATION_TESTS=require` missing Docker is an error.
- */
 jest.setTimeout(60_000);
 
 const PREFIX = 'orders';
@@ -156,14 +152,12 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
         { commandTimeoutMs: 5_000 },
         provider,
       ).create();
-      // While the password rotates, reconnections with the old one fail: that is what is tested.
       client.on('error', () => undefined);
       try {
         await expect(client.call('SET', `${PREFIX}:auth`, '1')).resolves.toBe(
           'OK',
         );
 
-        // The password is rotated: only the new one is valid, and the connection is cut.
         const rotated = randomUUID();
         provider.current = rotated;
         await server.rotatePassword(rotated);
@@ -306,8 +300,6 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       await expect(writers[0]?.get('race')).resolves.toBe('value-199');
     });
 
-    // The ShardRouter test race (a slow read that finishes after an invalidation), now
-    // against Valkey and two connections.
     it('does not let a read in flight in another process resurrect an invalidated placement', async () => {
       const store = new InMemoryDirectoryStore();
       store.setInstance('shard-1', 'pg-1');
@@ -420,7 +412,6 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       await expect(
         second.tryAcquire('outbox-relay', 10_000),
       ).resolves.toBeUndefined();
-      // Another job is not affected.
       await expect(
         second.tryAcquire('retention', 10_000),
       ).resolves.toBeDefined();
@@ -483,7 +474,6 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       const members = Array.from({ length: 5_000 }, (_, i) => `member-${i}`);
       await filter.addMany(members);
       await filter.add('one-more');
-      // The queries go out together: the client pipelines them on one connection instead of paying a round trip each.
       const present = await Promise.all(
         [...members.slice(0, 200), 'one-more'].map((item) =>
           filter.mightContain(item),

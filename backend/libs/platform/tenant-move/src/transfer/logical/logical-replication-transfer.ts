@@ -309,12 +309,14 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     return cause?.code === LogicalReplicationTransfer.LOCK_NOT_AVAILABLE;
   }
 
+  /**
+   * pg_subscription is a server-wide catalog: without the filter it would see subscriptions from other databases.
+   */
   private async isSubscribed(
     target: DataSource,
     name: string,
   ): Promise<boolean> {
     const rows: unknown[] = await target.query(
-      // pg_subscription is a server-wide catalog: without the filter it would see subscriptions from other databases.
       `SELECT 1 FROM pg_subscription
         WHERE subname = $1 AND subdbid = (SELECT oid FROM pg_database WHERE datname = current_database())`,
       [name],

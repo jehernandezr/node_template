@@ -40,8 +40,10 @@ import { SAGA_MODULE_OPTIONS } from './saga.module-definition.js';
  * `undefined`, because optional fields do not accept it).
  */
 export class SagaProviders {
+  /**
+   * `SagaModule` already checked that the store exists.
+   */
   static build(extras: SagaModuleExtras): Provider[] {
-    // `SagaModule` already checked that the store exists.
     const { store } = extras as Required<Pick<SagaModuleExtras, 'store'>>;
     return [
       ...SagaProviders.random(extras),

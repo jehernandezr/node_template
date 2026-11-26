@@ -17,8 +17,10 @@ export class TypeOrmTenantMoveLog
     super(catalog);
   }
 
+  /**
+   * The unique index of moves in progress decides between two simultaneous launches.
+   */
   async start(move: TenantMove): Promise<boolean> {
-    // The unique index of moves in progress decides between two simultaneous launches.
     const inserted: unknown[] = await this.write((manager) =>
       manager.query(
         'INSERT INTO "tenant_moves" ("move_id", "tenant_id", "target_group", "target_region", "saga_id", "status", "started_at") ' +

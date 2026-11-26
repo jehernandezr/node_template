@@ -15,6 +15,7 @@ import type { VersionedEntity } from './entities/versioned-entity.js';
 export class OptimisticWriter {
   /**
    * `UPDATE ... WHERE id = :id AND version = :version` plus the `scope` conditions, which increments the version by one.
+   * The version and audit dates are set by the database: TypeORM increments the version and updates `updated_at` on each UPDATE, and `created_*` never changes.
    * @throws OptimisticLockError if no row matches (another write already changed the version, or the row does not exist).
    */
   async update<TEntity extends VersionedEntity>(
@@ -30,8 +31,6 @@ export class OptimisticWriter {
         values[column.propertyName] = column.getEntityValue(entity);
       }
     }
-    // The version and audit dates are set by the database: TypeORM increments the version and
-    // updates `updated_at` on each UPDATE, and `created_*` never changes.
     const result = await manager
       .createQueryBuilder()
       .update(target)

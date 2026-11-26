@@ -138,11 +138,13 @@ export class Topology {
   private readonly routesByType = new Map<string, RouteDef>();
   private readonly queuesByName = new Map<string, QueueDef>();
 
+  /**
+   * The first declaration wins; `validate` reports the duplicates.
+   */
   constructor(parts: TopologyParts) {
     this.topics = Object.freeze([...parts.topics]);
     this.queues = Object.freeze([...parts.queues]);
     this.routes = Object.freeze([...parts.routes]);
-    // The first declaration wins; `validate` reports the duplicates.
     for (const route of this.routes) {
       if (!this.routesByType.has(route.type)) {
         this.routesByType.set(route.type, route);
@@ -155,7 +157,10 @@ export class Topology {
     }
   }
 
-  /** Returns all structural problems, both errors and warnings. */
+  /**
+   * Returns all structural problems, both errors and warnings.
+   * SNS FIFO topics can feed standard queues; a FIFO queue needs a FIFO topic.
+   */
   validate(options: ValidateOptions = {}): TopologyIssue[] {
     const issues: TopologyIssue[] = [];
     const error = (kind: TopologyIssueKind, message: string) =>
@@ -284,7 +289,6 @@ export class Topology {
             `queue "${queue.name}" subscribes to undeclared topic "${subscription.topic.name}"`,
           );
         } else if (queue.isFifo && !fifo) {
-          // SNS FIFO topics can feed standard queues; a FIFO queue needs a FIFO topic.
           error(
             TopologyIssueKind.FifoMismatch,
             `fifo queue "${queue.name}" cannot subscribe to standard topic "${subscription.topic.name}"`,

@@ -145,7 +145,6 @@ describe('OutboxMessageBus', () => {
         { groupId: 'o-1' },
       );
       await bus.send(ExpireOrder, { orderId: 'o-1' }, { delayMs: 60_000 });
-      // Nothing is published while the transaction is still open.
       expect(published).toEqual([]);
       return placed;
     });

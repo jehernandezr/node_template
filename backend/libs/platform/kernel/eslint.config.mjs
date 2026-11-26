@@ -23,7 +23,7 @@ export default [
     },
   },
   {
-    // The codes are declared here: it is the only place where they go as text.
+    /** The codes are declared here: it is the only place where they go as text. */
     files: ['src/errors/kernel-error-code.enum.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },

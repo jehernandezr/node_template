@@ -33,6 +33,9 @@ export class SseTransport extends RealtimeTransport {
     return this.connections.closeAll();
   }
 
+  /**
+   * A client that disconnected during the catch-up will no longer emit `close`.
+   */
   private async serve(
     request: IncomingMessage,
     response: ServerResponse,
@@ -52,7 +55,6 @@ export class SseTransport extends RealtimeTransport {
       new SseResponseSink(response),
       typeof lastEventId === 'string' ? lastEventId : undefined,
     );
-    // A client that disconnected during the catch-up will no longer emit `close`.
     if (response.closed) {
       await connection.close();
       return;

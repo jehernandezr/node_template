@@ -34,6 +34,7 @@ export class ShardDataSources {
 
   /**
    * Returns the initialized `DataSource` of the shard.
+   * Without this, the next request would receive the failed initialization instead of retrying it.
    * @throws PersistenceError `ShuttingDown` if they were already closed: a job still running during shutdown
    * would open a pool that nobody closes.
    */
@@ -70,7 +71,6 @@ export class ShardDataSources {
     try {
       await ready;
     } catch (error) {
-      // Without this, the next request would receive the failed initialization instead of retrying it.
       if (this.entries.get(location.logicalShard)?.ready === ready) {
         this.entries.delete(location.logicalShard);
       }
@@ -115,14 +115,15 @@ export class ShardDataSources {
     }
   }
 
+  /**
+   * If the initialization never finished there is nothing to close.
+   */
   private async dispose(entry: Entry): Promise<void> {
     try {
       const dataSource = await entry.ready;
       if (dataSource.isInitialized) {
         await dataSource.destroy();
       }
-    } catch {
-      // If the initialization never finished there is nothing to close.
-    }
+    } catch {}
   }
 }

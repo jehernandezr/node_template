@@ -33,7 +33,6 @@ export class InMemoryFileSystem extends FileSystem {
     for (const file of this.files.keys()) {
       const rest = file.startsWith(prefix) ? file.slice(prefix.length) : '';
       const slash = rest.indexOf('/');
-      // A file directly in the folder is not a subdirectory.
       if (slash > 0) names.add(rest.slice(0, slash));
     }
     return Promise.resolve([...names].sort());

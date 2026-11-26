@@ -26,8 +26,10 @@ import { MESSAGING_MODULE_OPTIONS } from './messaging.module-definition.js';
 
 /** Base providers of `MessagingModule`: stores, dispatcher, bus and explorer. */
 export class MessagingProviders {
+  /**
+   * `MessagingModule` already checked that both required adapters exist.
+   */
   static build(extras: MessagingModuleExtras): Provider[] {
-    // `MessagingModule` already checked that both required adapters exist.
     const { outboxStore, processedStore } = extras as Required<
       Pick<MessagingModuleExtras, 'outboxStore' | 'processedStore'>
     >;

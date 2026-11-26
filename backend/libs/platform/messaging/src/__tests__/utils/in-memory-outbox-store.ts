@@ -115,7 +115,6 @@ export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
 
   claimPending(request: ClaimOutboxRequest): Promise<OutboxRecord[]> {
     const t = request.now.getTime();
-    // `Array.prototype.sort` is stable: with equal `createdAt` the insertion order is kept.
     const ordered = [...this.records.values()]
       .filter(isOpen)
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
@@ -133,7 +132,6 @@ export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
       if (eligible) {
         due.push(record);
       } else if (group !== undefined) {
-        // An earlier record of the group is not due: the later ones wait.
         blockedGroups.add(group);
       }
     }

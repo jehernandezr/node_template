@@ -11,7 +11,6 @@ export class FakeValkey {
   readonly options = { host: 'cache.local', port: 6379 };
 
   sendCommand(command: FakeValkeyCommand): void {
-    // Like the real client, the response arrives after sendCommand returns.
     queueMicrotask(() => command.resolve('OK'));
   }
 

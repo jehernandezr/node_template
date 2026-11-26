@@ -16,12 +16,14 @@ export class EnvelopeParser {
     return this.validator.validate(this.decode(raw));
   }
 
+  /**
+   * A UTF-16 length over the limit already implies more bytes than the limit.
+   */
   private decode(raw: unknown): unknown {
     if (typeof raw !== 'string') {
       this.validator.assertSize(this.serializedSize(raw));
       return raw;
     }
-    // A UTF-16 length over the limit already implies more bytes than the limit.
     if (raw.length > EnvelopeLimits.MAX_BYTES) {
       this.validator.assertSize();
     }

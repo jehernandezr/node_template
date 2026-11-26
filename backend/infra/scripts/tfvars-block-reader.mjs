@@ -1,7 +1,6 @@
-// Reads what the pipeline needs from a terraform.tfvars: top-level blocks with braces,
-// quoted strings and comments with #. Before counting braces, strings and comments are masked
-// (same length, same line breaks), so a "}" inside a string does not
-// close a block and a commented-out block does not count.
+/**
+ * Reads what the pipeline needs from a terraform.tfvars: top-level blocks with braces, quoted strings and comments with #. Before counting braces, strings and comments are masked (same length, same line breaks), so a "}" inside a string does not close a block and a commented-out block does not count.
+ */
 export class TfvarsBlockReader {
   static #CHARACTER_MASK = ' ';
 

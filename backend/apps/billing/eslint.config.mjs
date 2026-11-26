@@ -6,7 +6,7 @@ const awsSdk = {
     '@aws-sdk/* is only imported inside backend/libs/platform/adapters/aws (ADR 0002).',
 };
 
-// A module is imported only through its index.js; its internal layers are private.
+/** A module is imported only through its index.js; its internal layers are private. */
 const crossModule = {
   regex:
     '^(\\.\\./)+(?!shared/)[a-z-]+/(domain|application|infrastructure|presentation)/',

@@ -54,8 +54,6 @@ export class FakeSqsClient extends SQSClient {
     return this.table.sentOf(command);
   }
 
-  // The SDK declares `send` with generic overloads that a derived class cannot
-  // override; this is the only cast, and it pins the type to the original's.
   override send = (async (
     command: SdkCommand,
     options?: { abortSignal?: AbortSignal },

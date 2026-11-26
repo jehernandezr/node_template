@@ -105,13 +105,14 @@ export class Redactor {
     );
   }
 
+  /**
+   * An invalid encoding is compared against the raw name.
+   */
   private isSensitiveParam(name: string): boolean {
     let decoded = name;
     try {
       decoded = decodeURIComponent(name);
-    } catch {
-      // An invalid encoding is compared against the raw name.
-    }
+    } catch {}
     return decoded.toLowerCase() === 'code' || this.isSensitiveKey(decoded);
   }
 
@@ -184,6 +185,9 @@ export class Redactor {
     }
   }
 
+  /**
+   * Propiedades propias: `code`, `details`, `retryable`, `failureKind`, `errno`...
+   */
   private serializeError(
     error: Error,
     ancestors: Set<object>,
@@ -198,7 +202,6 @@ export class Redactor {
       stack:
         error.stack === undefined ? undefined : this.redactString(error.stack),
     };
-    // Propiedades propias: `code`, `details`, `retryable`, `failureKind`, `errno`...
     for (const [key, item] of Object.entries(error)) {
       if (Redactor.ERROR_BASE_KEYS.has(key)) {
         continue;

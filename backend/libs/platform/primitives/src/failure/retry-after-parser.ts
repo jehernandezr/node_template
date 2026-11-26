@@ -31,6 +31,9 @@ export class RetryAfterParser {
     return Math.min(this.maxMs, Math.max(0, Math.ceil(delay)));
   }
 
+  /**
+   * Only an HTTP date with a day name (IMF-fixdate, RFC 850 or asctime); prevents Date.parse from accepting loose numbers or other ambiguous formats.
+   */
   private rawDelayMs(
     value: string | number | Date | null | undefined,
   ): number | undefined {
@@ -51,8 +54,6 @@ export class RetryAfterParser {
     if (RetryAfterParser.DELAY_SECONDS.test(trimmed)) {
       return Number(trimmed) * 1000;
     }
-    // Only an HTTP date with a day name (IMF-fixdate, RFC 850 or asctime);
-    // prevents Date.parse from accepting loose numbers or other ambiguous formats.
     if (!/^[A-Za-z]{3}/.test(trimmed)) {
       return undefined;
     }

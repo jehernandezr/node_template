@@ -26,8 +26,9 @@ export class ShardingFeature<TSource = unknown> {
 
   /**
    * Validates the declaration.
+   * A resolver without a Custom key would be dead code hiding a misconfiguration.
    * @throws ShardingError `InvalidConfiguration` for an unknown strategy or key, a
-   *   `ShardKey.Custom` without `keyResolver` or a `keyResolver` with another key.
+   * `ShardKey.Custom` without `keyResolver` or a `keyResolver` with another key.
    */
   validate(): this {
     if (!ShardingFeature.STRATEGIES.has(this.options.strategy)) {
@@ -36,7 +37,6 @@ export class ShardingFeature<TSource = unknown> {
     if (!ShardingFeature.KEYS.has(this.options.key)) {
       throw ShardingFeature.invalid('Unknown shard key', 'key');
     }
-    // A resolver without a Custom key would be dead code hiding a misconfiguration.
     const hasResolver = this.options.keyResolver !== undefined;
     if (this.options.key === ShardKey.Custom && !hasResolver) {
       throw ShardingFeature.invalid(

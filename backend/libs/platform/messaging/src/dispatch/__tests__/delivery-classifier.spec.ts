@@ -144,7 +144,6 @@ describe('DeliveryClassifier', () => {
   });
 
   it('asks for a retry with the exact backoff delay of the policy', () => {
-    // Second attempt: 200 ms ceiling; with randomness at 0.5 the wait is 100 ms.
     expect(
       classifierWith().failure(
         ID,

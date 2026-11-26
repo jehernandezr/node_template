@@ -55,6 +55,8 @@ export class CursorCodec {
   /**
    * Validates a token produced by `encode`: rejects tokens that are large, non-canonical, with extra keys and, if there is
    * a secret, unsigned or with a signature that does not match.
+   * Constant-time comparison so the response time does not reveal the signature.
+   * Canonical form: re-encoding must yield the same payload, so a token has a single representation.
    * @throws CriteriaError `InvalidValue` if the token is malformed or tampered with.
    */
   decode(token: string): Cursor {
@@ -76,7 +78,6 @@ export class CursorCodec {
         bytes.length - CursorCodec.SIGNATURE_BYTES,
       );
       const actual = bytes.subarray(bytes.length - CursorCodec.SIGNATURE_BYTES);
-      // Constant-time comparison so the response time does not reveal the signature.
       if (
         !timingSafeEqual(CursorCodec.sign(payloadBytes, this.secret), actual)
       ) {
@@ -101,7 +102,6 @@ export class CursorCodec {
     ) {
       throw CursorCodec.invalid('malformed cursor');
     }
-    // Canonical form: re-encoding must yield the same payload, so a token has a single representation.
     const canonical = Buffer.from(JSON.stringify({ v, i }), 'utf8');
     if (
       !canonical.equals(payloadBytes) ||

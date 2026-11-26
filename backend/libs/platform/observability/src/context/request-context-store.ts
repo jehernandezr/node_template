@@ -25,6 +25,9 @@ export class RequestContextStore {
     return this.storage.run(this.normalize(init), fn);
   }
 
+  /**
+   * The active span carries a valid trace: the warning about the received value no longer applies.
+   */
   current(): RequestContextData | undefined {
     const stored = this.storage.getStore();
     if (stored === undefined) {
@@ -34,7 +37,6 @@ export class RequestContextStore {
     if (span === undefined) {
       return stored;
     }
-    // The active span carries a valid trace: the warning about the received value no longer applies.
     const withoutInvalidFlag = Object.fromEntries(
       Object.entries(stored).filter(([key]) => key !== 'traceIdInvalid'),
     ) as RequestContextData;

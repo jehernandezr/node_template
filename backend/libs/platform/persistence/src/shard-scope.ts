@@ -16,12 +16,12 @@ export class ShardScope {
   constructor(private readonly router: ShardRouter) {}
 
   /**
+   * Inside a transaction the block must land on the same shard it already touched.
    * @throws ShardingError `CrossShardTransaction` if there is an open transaction and the key points to another shard.
    */
   async run<T>(init: ShardScopeInit, fn: () => Promise<T>): Promise<T> {
     const guard = TransactionShardGuard.current();
     if (guard !== undefined) {
-      // Inside a transaction the block must land on the same shard it already touched.
       const resolved = await this.router.resolve({
         tenantId: init.tenantId,
         keyKind: init.keyKind,

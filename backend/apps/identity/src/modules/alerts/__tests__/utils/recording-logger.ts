@@ -10,9 +10,7 @@ export interface RecordedLine {
 export class RecordingLogger extends LoggerPort {
   readonly lines: RecordedLine[] = [];
 
-  debug(): void {
-    // The tests do not look at the debug level.
-  }
+  debug(): void {}
 
   info(message: string, fields?: Record<string, unknown>): void {
     this.lines.push({ message, fields });

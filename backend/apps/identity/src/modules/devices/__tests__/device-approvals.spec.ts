@@ -144,7 +144,6 @@ describe('DeviceApprovalsUseCase deny', () => {
     expect(alerts.raised).toEqual([
       expect.objectContaining({ type: SecurityAlertType.DeviceApprovalDenied }),
     ]);
-    // The failure counts as a sign-in failure: the remaining attempts before lockout drop by one.
     for (let i = 0; i < 3; i += 1) {
       await lockout.recordFailure(account, ATTEMPT_IP);
     }

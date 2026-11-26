@@ -28,10 +28,12 @@ export class ValkeyLifecycle implements OnModuleInit, OnModuleDestroy {
     this.registry.register(this.health);
   }
 
+  /**
+   * It was never used: closing it with `quit` would open a connection just to close it.
+   */
   async onModuleDestroy(): Promise<void> {
     await this.subscribers.close();
     if (this.client.status === 'wait') {
-      // It was never used: closing it with `quit` would open a connection just to close it.
       this.client.disconnect();
       return;
     }

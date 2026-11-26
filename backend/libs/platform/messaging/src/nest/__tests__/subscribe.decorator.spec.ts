@@ -4,13 +4,9 @@ import { UserRegisteredV1 } from './utils/index.js';
 
 class DecoratedConsumer {
   @Subscribe(UserRegisteredV1)
-  handle(): void {
-    // Only the decorator matters.
-  }
+  handle(): void {}
 
-  plain(): void {
-    // No decorator on purpose.
-  }
+  plain(): void {}
 }
 
 describe('Subscribe', () => {

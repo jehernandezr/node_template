@@ -27,10 +27,11 @@ export class IdempotencyGate {
    * - The store throws: `Respond` with `outcomes.fromError(error)`.
    * - The key has the tombstone of its compensation: `Respond` with the tombstone result, without running the step.
    * - The stored hash differs: if the claim was acquired it is released quietly, and `Respond`
-   *   with `protocol-violation` `idempotency-key-reuse`.
+   * with `protocol-violation` `idempotency-key-reuse`.
    * - `Completed`: `Respond` with the stored result.
    * - `InProgress`: `Respond` with `transient-failure` `in-progress`.
    * - `Acquired`: `Proceed` with the key and its token.
+   * A claim acquired with a different hash is used by nobody: it is released so the key is free.
    */
   async claim(
     key: string,
@@ -65,7 +66,6 @@ export class IdempotencyGate {
       return { kind: GateDecisionKind.Respond, outcome: claim.result };
     }
     if (claim.fingerprint !== fingerprint) {
-      // A claim acquired with a different hash is used by nobody: it is released so the key is free.
       if (claim.state === ClaimState.Acquired) {
         await this.release({ key, claimToken: claim.claimToken });
       }
@@ -108,12 +108,11 @@ export class IdempotencyGate {
   /**
    * Releases the claim. A stale token means another attempt owns the
    * key: it never throws, because the result of this call is already decided.
+   * The lease expires on its own: failing here does not change the response already decided.
    */
   async release(claimed: ClaimedOperation): Promise<void> {
     try {
       await this.store.release(claimed.key, claimed.claimToken);
-    } catch {
-      // The lease expires on its own: failing here does not change the response already decided.
-    }
+    } catch {}
   }
 }

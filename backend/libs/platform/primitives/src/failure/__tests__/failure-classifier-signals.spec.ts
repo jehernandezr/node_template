@@ -176,7 +176,6 @@ describe('FailureClassifier signals', () => {
   });
 
   it('walks the cause chain when the outer error says nothing', () => {
-    // undici fetch: TypeError('fetch failed') with the network cause.
     const fetchFailed = new TypeError('fetch failed', {
       cause: withCode('ECONNREFUSED'),
     });

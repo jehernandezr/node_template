@@ -25,10 +25,10 @@ export class InternalHandlerExplorer implements OnApplicationBootstrap {
    * (`scanner.getAllMethodNames`) and, for each one with `InternalHandlerMetadata.read(...)`,
    * calls `router.register(operation, new BoundMethodHandler(instance, name))`. At the end
    * `router.assertComplete(published)`.
+   * The same provider can appear under several tokens (for example, with `useExisting`).
    * @throws InternalApiError `MissingHandler` or `DuplicateOperation`; it makes startup fail.
    */
   onApplicationBootstrap(): void {
-    // The same provider can appear under several tokens (for example, with `useExisting`).
     const seen = new Set<object>();
     for (const wrapper of this.discovery.getProviders()) {
       const instance: unknown = wrapper.instance;

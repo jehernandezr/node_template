@@ -20,13 +20,15 @@ export class InProcessJobLock extends JobLock {
     super();
   }
 
+  /**
+   * The counter prevents two leases with the same bytes from sharing a token.
+   */
   async tryAcquire(name: string, ttlMs: number): Promise<JobLease | undefined> {
     const current = this.leases.get(name);
     const now = this.clock.now().getTime();
     if (current !== undefined && current.expiresAt > now) {
       return undefined;
     }
-    // The counter prevents two leases with the same bytes from sharing a token.
     this.sequence += 1;
     const random = Buffer.from(this.random.bytes(8)).toString('hex');
     const token = `${random}-${this.sequence}`;
@@ -34,8 +36,10 @@ export class InProcessJobLock extends JobLock {
     return { name, token };
   }
 
+  /**
+   * Only the current owner releases: an expired lease does not remove the lock from whoever took it later.
+   */
   async release(lease: JobLease): Promise<void> {
-    // Only the current owner releases: an expired lease does not remove the lock from whoever took it later.
     if (this.leases.get(lease.name)?.token === lease.token) {
       this.leases.delete(lease.name);
     }

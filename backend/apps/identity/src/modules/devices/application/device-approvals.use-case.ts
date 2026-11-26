@@ -44,13 +44,15 @@ export class DeviceApprovalsUseCase {
     };
   }
 
+  /**
+   * Only a challenge this device had pending: one device does not cancel another's.
+   */
   async deny(request: DenyDeviceApprovalRequest): Promise<void> {
     const { route } = await this.signed.verify(
       IdentityRoute.DenyDeviceApproval,
       request,
       [request.challengeId],
     );
-    // Only a challenge this device had pending: one device does not cancel another's.
     const denied = await this.approvals.remove(
       route.deviceId,
       request.challengeId,

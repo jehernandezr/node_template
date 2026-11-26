@@ -201,7 +201,6 @@ describe('ResilienceRegistry deadlines', () => {
       )
       .catch((error: unknown) => error);
     await jest.advanceTimersByTimeAsync(150);
-    // The second attempt fails at 100 ms and another 100 ms wait no longer fits.
     expect(await outcome).toMatchObject({ status: 503 });
     expect(attempts).toBe(2);
   });

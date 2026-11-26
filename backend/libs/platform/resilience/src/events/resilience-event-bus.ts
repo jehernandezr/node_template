@@ -24,6 +24,9 @@ export class ResilienceEventBus {
     };
   }
 
+  /**
+   * A failing subscriber must not break the protected call.
+   */
   publish(
     policy: string,
     dependencyKey: string,
@@ -40,9 +43,7 @@ export class ResilienceEventBus {
     for (const listener of this.listeners) {
       try {
         void Promise.resolve(listener(event)).catch(() => undefined);
-      } catch {
-        // A failing subscriber must not break the protected call.
-      }
+      } catch {}
     }
   }
 }

@@ -30,6 +30,9 @@ export class RunningService {
     return this.stopping;
   }
 
+  /**
+   * Without this, a pending timer would keep the process alive after closing.
+   */
   private async closeWithin(): Promise<void> {
     let timer: NodeJS.Timeout | undefined;
     const timeout = new Promise<never>((_resolve, reject) => {
@@ -40,7 +43,6 @@ export class RunningService {
     try {
       await Promise.race([this.app.close(), timeout]);
     } finally {
-      // Without this, a pending timer would keep the process alive after closing.
       clearTimeout(timer);
     }
   }

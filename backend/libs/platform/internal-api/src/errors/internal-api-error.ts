@@ -9,12 +9,14 @@ import { InternalApiErrorCode } from './internal-api-error-code.enum.js';
 export class InternalApiError extends PlatformError {
   override readonly code: InternalApiErrorCode;
 
+  /**
+   * A broken contract is a protocol violation for the classifier.
+   */
   constructor(
     code: InternalApiErrorCode,
     message: string,
     details?: Readonly<Record<string, unknown>>,
   ) {
-    // A broken contract is a protocol violation for the classifier.
     super(message, {
       failureKind: FailureKind.ProtocolViolation,
       ...(details === undefined ? {} : { details }),

@@ -38,6 +38,7 @@ export class CompensationRunner {
 
   /**
    * Makes one attempt to compensate step `instance.currentStep`.
+   * As in the forward step, the clock is read after the call.
    * @throws SagaError `InvalidState` if the step has no compensation operation or no forward input.
    */
   async run(
@@ -74,7 +75,6 @@ export class CompensationRunner {
     if (call.result === StepCallResult.Halted) {
       return call.instance;
     }
-    // As in the forward step, the clock is read after the call.
     const now = this.deps.clock.now();
     return this.settle(run, compiled, steps, call.attempt, now);
   }

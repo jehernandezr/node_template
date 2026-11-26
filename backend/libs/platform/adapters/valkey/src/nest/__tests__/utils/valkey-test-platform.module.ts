@@ -13,7 +13,6 @@ import { StaticTokenProvider } from '../../../__tests__/utils/static-token-provi
 export class ValkeyTestPlatformModule {
   static readonly ENV = {
     SERVICE_NAME: 'orders',
-    // Nothing listens on port 1: the client is created without connecting.
     VALKEY_URL: 'redis://127.0.0.1:1',
   };
 

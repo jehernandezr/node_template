@@ -27,10 +27,12 @@ export class RealtimeConnection {
     private readonly logger: LoggerPort,
   ) {}
 
-  /** If the session fails to open, the connection is closed and stops being announced before the error is propagated. */
+  /**
+   * If the session fails to open, the connection is closed and stops being announced before the error is propagated.
+   * Heartbeat of a live connection, not a job: it ends with the connection.
+   */
   async start(heartbeatMs: number, closeInMs: number): Promise<void> {
     await this.announce(heartbeatMs);
-    // Heartbeat of a live connection, not a job: it ends with the connection.
     this.heartbeat = setInterval(
       () => void this.beat(heartbeatMs),
       heartbeatMs,

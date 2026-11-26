@@ -58,6 +58,9 @@ export class PlacementLoader {
     return promise;
   }
 
+  /**
+   * Invalidated while the directory was being read, or a replica lagging behind a version this process already saw: answer the caller without caching.
+   */
   private async loadPlacement(
     tenantId: string,
     sequence: number,
@@ -89,8 +92,6 @@ export class PlacementLoader {
       !this.invalidations.isCurrent(tenantId, sequence) ||
       this.cache.isOutdated(tenantId, placement.version)
     ) {
-      // Invalidated while the directory was being read, or a replica lagging behind
-      // a version this process already saw: answer the caller without caching.
       return placement;
     }
     const sharedExpiresAt = this.cache.sharedExpiry();

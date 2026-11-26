@@ -27,7 +27,10 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
   private readonly nonScaling: boolean;
   private readonly ids: IdGenerator;
 
-  /** @throws InvalidParametersError (`@platform/bloom`) with an invalid name, size or rate. */
+  /**
+   * The same validation as the in-memory sizing.
+   * @throws InvalidParametersError (`@platform/bloom`) with an invalid name, size or rate.
+   */
   constructor(
     private readonly executor: ValkeyCommandExecutor,
     options: ValkeyBloomFilterOptions,
@@ -36,7 +39,6 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
     this.capacity = options.expectedItems;
     this.rate =
       options.falsePositiveRate ?? BloomSizing.DEFAULT_FALSE_POSITIVE_RATE;
-    // The same validation as the in-memory sizing.
     BloomSizing.requiredBits(this.capacity, this.rate);
     this.nonScaling = options.nonScaling ?? false;
     this.ids = options.ids;
@@ -69,6 +71,7 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
    * Fills a new filter under a temporary key and swaps it in with an
    * atomic rename. If the job dies, the temporary key expires after
    * `BloomKeys.REBUILD_KEY_TTL_MS`.
+   * NOCREATE: if the temporary filter expired, it fails instead of building a partial one.
    */
   async rebuild(source: BloomRebuildSource): Promise<void> {
     const temporary = BloomKeys.rebuild(this.key, this.ids);
@@ -84,7 +87,6 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
       ]);
       for await (const chunk of source) {
         for (const batch of BloomKeys.batches(chunk)) {
-          // NOCREATE: if the temporary filter expired, it fails instead of building a partial one.
           await this.executor.run(ValkeyCommand.BloomInsert, [
             temporary,
             'NOCREATE',

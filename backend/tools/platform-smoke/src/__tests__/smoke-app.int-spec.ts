@@ -95,7 +95,6 @@ runtime.describeIfAvailable(
         .useValue(sqs)
         .compile();
 
-      // The catalog first: the directory and the shard list live in it.
       const runner = app.get(ShardedMigrationRunner);
       await runner.migrateCatalog();
       const directory = app.get(TypeOrmDirectoryStore);
@@ -229,7 +228,6 @@ runtime.describeIfAvailable(
           ],
         }));
 
-      // The consumer runs as a tenant's would: its idempotency writes go to that tenant's shard.
       await tenants.runAs(SmokeInfrastructure.TENANT_A, () =>
         poller.pollOnce(),
       );

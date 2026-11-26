@@ -33,11 +33,13 @@ export class LoginLockout {
     return this.store.isProtected(account);
   }
 
-  /** Counts the failure and activates the corresponding lockouts. */
+  /**
+   * Counts the failure and activates the corresponding lockouts.
+   * Only whoever activates protected mode reports it: subsequent failures already find it active.
+   */
   async recordFailure(account: string, ip: string): Promise<FailureOutcome> {
     const origin = await this.originOf(account, ip);
     const counts = await this.counters.recordFailure(origin, account, ip);
-    // Only whoever activates protected mode reports it: subsequent failures already find it active.
     const protectedModeEnabled =
       this.policy.enablesProtectedMode(counts.account) &&
       (await this.store.protect(account, LockoutRules.origin.maxLockMs));

@@ -16,7 +16,10 @@ export class Money extends ValueObject<{
     super({ amountMinor, currency });
   }
 
-  /** Creates an amount. Throws `InvalidMoneyError` if it is not a safe integer or the currency is invalid. */
+  /**
+   * Creates an amount. Throws `InvalidMoneyError` if it is not a safe integer or the currency is invalid.
+   * Normalizes -0 so equality and serialization do not tell the zeros apart.
+   */
   static of(amountMinor: number, currency: string): Money {
     if (!Money.CURRENCY_PATTERN.test(currency)) {
       throw new InvalidMoneyError('invalid currency');
@@ -27,7 +30,6 @@ export class Money extends ValueObject<{
     ) {
       throw new InvalidMoneyError('amount out of range');
     }
-    // Normalizes -0 so equality and serialization do not tell the zeros apart.
     return new Money(amountMinor === 0 ? 0 : amountMinor, currency);
   }
 

@@ -21,6 +21,9 @@ export class PostgresDataSourceFactory extends DataSourceFactory {
     super();
   }
 
+  /**
+   * A module can declare in `forFeature` an entity that the service already listed: TypeORM does not allow duplicates.
+   */
   create(target: DatabaseTarget, endpoints: InstanceEndpoints): DataSource {
     const definition =
       target.kind === DatabaseKind.Catalog ? this.catalog : this.shard;
@@ -45,7 +48,6 @@ export class PostgresDataSourceFactory extends DataSourceFactory {
       extra: {
         statement_timeout: this.settings.DB_STATEMENT_TIMEOUT_MS,
       },
-      // A module can declare in `forFeature` an entity that the service already listed: TypeORM does not allow duplicates.
       entities: [
         ...new Set([
           ...definition.entities,

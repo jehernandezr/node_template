@@ -14,7 +14,6 @@ export class TestRealtimeHost implements RealtimeHost {
       handler(request, response);
       return;
     }
-    // Socket.IO serves its own routes on this same server.
     if (!(request.url ?? '').startsWith('/socket.io/')) {
       response.writeHead(404).end();
     }

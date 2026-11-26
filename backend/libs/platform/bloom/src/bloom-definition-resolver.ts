@@ -10,8 +10,9 @@ export class BloomDefinitionResolver {
   private static readonly CRON_FIELD = /^[0-9A-Za-z*/,?#-]+$/;
 
   /**
+   * Validates expectedItems and the rate with the same rules as the sizing.
    * @throws InvalidParametersError for an empty name, an invalid size or rate, or a
-   *   cron expression that has neither five nor six fields.
+   * cron expression that has neither five nor six fields.
    */
   static resolve<TName extends string>(
     definition: BloomFilterDefinition<TName>,
@@ -21,7 +22,6 @@ export class BloomDefinitionResolver {
     }
     const falsePositiveRate =
       definition.falsePositiveRate ?? BloomSizing.DEFAULT_FALSE_POSITIVE_RATE;
-    // Validates expectedItems and the rate with the same rules as the sizing.
     BloomSizing.requiredBits(definition.expectedItems, falsePositiveRate);
     const fields =
       typeof definition.rebuildCron === 'string'

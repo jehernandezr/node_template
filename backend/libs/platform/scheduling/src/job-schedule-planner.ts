@@ -14,9 +14,11 @@ export class JobSchedulePlanner {
     private readonly random: RandomSource,
   ) {}
 
-  /** @throws InvalidJobScheduleError or InvalidCronExpressionError when the schedule or the `timeoutMs` is not valid. */
+  /**
+   * An invalid deadline would make every run fail; it is rejected when the job is registered.
+   * @throws InvalidJobScheduleError or InvalidCronExpressionError when the schedule or the `timeoutMs` is not valid.
+   */
   validate(job: ScheduledJob): void {
-    // An invalid deadline would make every run fail; it is rejected when the job is registered.
     if (!Number.isFinite(job.timeoutMs) || job.timeoutMs <= 0) {
       throw new InvalidJobScheduleError(
         job.name,

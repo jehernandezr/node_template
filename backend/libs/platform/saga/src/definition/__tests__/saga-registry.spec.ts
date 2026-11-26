@@ -63,9 +63,7 @@ class Other extends SagaDefinition<unknown> {
 class Empty extends SagaDefinition<unknown> {
   readonly type = 'empty';
 
-  protected define(): void {
-    // no steps
-  }
+  protected define(): void {}
 }
 
 class Duplicate extends SagaDefinition<unknown> {

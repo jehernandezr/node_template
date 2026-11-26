@@ -113,9 +113,7 @@ describe('SagaDefinition.build', () => {
     class Empty extends SagaDefinition<State> {
       readonly type = 'empty';
 
-      protected define(): void {
-        // no steps
-      }
+      protected define(): void {}
     }
 
     expect(() => new Empty().build(resolver)).toThrow(SagaError);

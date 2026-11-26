@@ -41,6 +41,9 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     super();
   }
 
+  /**
+   * Joins the open transaction: the outer one's options take precedence.
+   */
   async runInTransaction<T>(
     fn: (uow: TypeOrmUnitOfWork) => Promise<T>,
     options?: ShardedTransactionOptions,
@@ -53,7 +56,6 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     const shard = handle.resolved.logicalShard;
     const existing = this.current();
     if (existing !== undefined) {
-      // Joins the open transaction: the outer one's options take precedence.
       TransactionShardGuard.current()?.touch(shard);
       return fn(existing);
     }
@@ -68,13 +70,15 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     return this.current() !== undefined;
   }
 
+  /**
+   * Without a transaction there is nothing to wait for: the effect runs immediately and without blocking.
+   */
   afterCommit(hook: TransactionHook): void {
     const uow = this.current();
     if (uow !== undefined) {
       uow.afterCommit(hook);
       return;
     }
-    // Without a transaction there is nothing to wait for: the effect runs immediately and without blocking.
     try {
       void Promise.resolve(hook()).catch((error: unknown) => {
         this.logHookFailure(
@@ -87,6 +91,9 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     }
   }
 
+  /**
+   * The original error is the one that matters to the caller.
+   */
   private async runNew<T>(
     handle: ShardHandle,
     fn: (uow: TypeOrmUnitOfWork) => Promise<T>,
@@ -131,9 +138,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
       if (active) {
         try {
           await qr.rollbackTransaction();
-        } catch {
-          // The original error is the one that matters to the caller.
-        }
+        } catch {}
         hooks = uow?.takeRollbackHooks() ?? [];
       }
       await this.release(qr, admitted ? fencedTenant : undefined);

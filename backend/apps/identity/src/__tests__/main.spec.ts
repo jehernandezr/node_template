@@ -1,10 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/**
- * The entry points start the real process and are not executed here: their text is read to check
- * the order that matters: telemetry before anything else and each binary with its bootstrap.
- */
 describe('entry points', () => {
   const srcDir = join(__dirname, '..');
   const read = (file: string): string =>

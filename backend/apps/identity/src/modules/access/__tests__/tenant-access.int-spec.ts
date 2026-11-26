@@ -33,7 +33,6 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
   jest.setTimeout(180_000);
 
   const app = new IdentityTestApp();
-  /** Each organization with its owner; the owners live in different shards. */
   const organizations: Array<{ tenantId: string; owner: UserRef }> = [];
 
   beforeAll(async () => {

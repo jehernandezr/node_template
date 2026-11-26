@@ -50,7 +50,12 @@ export class VersionedKeyspace {
     this.ids = options.ids;
   }
 
-  /** Returns the current version token of a namespace. It is created on first use. */
+  /**
+   * Returns the current version token of a namespace. It is created on first use.
+   * A corrupt or foreign token would produce keys of unbounded length: it is replaced.
+   * Another writer may have won the race: the token that remained stored is read.
+   * If it disappeared (eviction), a throwaway token leaves this read without cache.
+   */
   async version(namespace: readonly string[]): Promise<string> {
     const key = this.versionKey(namespace);
     const existing = await this.cache.get(key);
@@ -61,13 +66,10 @@ export class VersionedKeyspace {
       return existing;
     }
     if (existing !== undefined) {
-      // A corrupt or foreign token would produce keys of unbounded length: it is replaced.
       return this.bump(namespace);
     }
     await this.cache.setIfAbsent(key, this.token());
-    // Another writer may have won the race: the token that remained stored is read.
     const stored = await this.cache.get(key);
-    // If it disappeared (eviction), a throwaway token leaves this read without cache.
     return stored !== undefined && VersionedKeyspace.TOKEN_PATTERN.test(stored)
       ? stored
       : this.token();
@@ -82,11 +84,11 @@ export class VersionedKeyspace {
 
   /**
    * Returns the cache key for `params` under the namespace's current token.
+   * Validated before touching the store, so a bad call does not cost a round trip.
    * @throws CacheKeyTooLongError when the namespace makes the key too long.
    * @throws NonJsonValueError (primitives) when `params` is not canonical JSON.
    */
   async key(namespace: readonly string[], params: unknown): Promise<string> {
-    // Validated before touching the store, so a bad call does not cost a round trip.
     const encoded = this.encodedNamespace(namespace);
     const digest = CanonicalJson.digest(params);
     const token = await this.version(namespace);
@@ -106,6 +108,7 @@ export class VersionedKeyspace {
   /**
    * Encodes each segment so one with ':' does not collide with another
    * namespace, and rejects namespaces that do not fit in a key.
+   * Encoding never shortens a segment: huge ones are rejected before encoding.
    */
   private encodedNamespace(namespace: readonly string[]): string {
     if (!Array.isArray(namespace)) {
@@ -119,7 +122,6 @@ export class VersionedKeyspace {
             'an array of strings',
           );
         }
-        // Encoding never shortens a segment: huge ones are rejected before encoding.
         this.bounded(segment);
         return encodeURIComponent(segment);
       })

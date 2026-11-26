@@ -7,6 +7,7 @@ import type { TraceparentFields } from './traceparent-fields.js';
  * W3C/OpenTelemetry trace id: the 128 bits of the UUIDv7 written as 32 lowercase
  * hex are the W3C trace-id. The conversion works both ways. The formatting
  * operations are static; generation uses the injected sources.
+ * UUIDs reach support with dashes; they are accepted so they can be normalized.
  */
 export class TraceContextCodec {
   /** W3C header that carries the trace. */
@@ -14,7 +15,6 @@ export class TraceContextCodec {
 
   private static readonly TRACE_ID_PATTERN = /^[0-9a-f]{32}$/;
   private static readonly SPAN_ID_PATTERN = /^[0-9a-f]{16}$/;
-  /* UUIDs reach support with dashes; they are accepted so they can be normalized. */
   private static readonly UUID_PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   private static readonly TRACEPARENT_PATTERN =

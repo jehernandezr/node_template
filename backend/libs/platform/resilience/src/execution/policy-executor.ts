@@ -119,13 +119,15 @@ export class PolicyExecutor {
     return options.deadline ?? fromBudget;
   }
 
+  /**
+   * A queued call can receive its slot after the caller gave up.
+   */
   private async runBulkhead<T>(context: CallContext<T>): Promise<T> {
     const bulkhead = context.call.entry.bulkhead;
     if (!bulkhead) {
       return this.runAttempts(context);
     }
     return bulkhead.execute(() => {
-      // A queued call can receive its slot after the caller gave up.
       if (context.signal.aborted) {
         throw TimerScheduler.abortReason(context.signal);
       }
@@ -133,6 +135,9 @@ export class PolicyExecutor {
     }, context.signal);
   }
 
+  /**
+   * Waiting would exhaust the whole budget: the real failure is reported now.
+   */
   private async runAttempts<T>(context: CallContext<T>): Promise<T> {
     const retry = context.idempotent ? context.call.config.retry : undefined;
     const maxAttempts = retry?.policy.maxAttempts ?? 1;
@@ -158,7 +163,6 @@ export class PolicyExecutor {
           context.deadline !== undefined &&
           delayMs >= context.deadline.remainingMs()
         ) {
-          // Waiting would exhaust the whole budget: the real failure is reported now.
           throw error;
         }
         this.emit(context.call, ResilienceEventKind.Retry, {
@@ -171,28 +175,32 @@ export class PolicyExecutor {
     }
   }
 
+  /**
+   * The circuit stays open longer than any retry wait.
+   * The result is uncertain, but the caller declared the call idempotent.
+   */
   private shouldRetry<T>(context: CallContext<T>, error: unknown): boolean {
     if (error instanceof CircuitOpenError) {
-      // The circuit stays open longer than any retry wait.
       return false;
     }
     if (
       error instanceof ResilienceTimeoutError &&
       error.scope === TimeoutScope.Attempt
     ) {
-      // The result is uncertain, but the caller declared the call idempotent.
       return true;
     }
     return context.isTransient(error);
   }
 
+  /**
+   * The `Retry-After` hint is a minimum wait for the next attempt.
+   */
   private retryDelay(
     retry: ResilienceRetryConfig,
     attempt: number,
     error: unknown,
   ): number {
     const backoff = new Backoff(retry.policy, this.random).delay(attempt);
-    // The `Retry-After` hint is a minimum wait for the next attempt.
     const hint = this.retryAfter.hintMs(error, retry.maxRetryAfterMs);
     return Math.max(backoff, hint ?? 0);
   }
@@ -211,6 +219,7 @@ export class PolicyExecutor {
   /**
    * Runs an attempt with its own timeout. The attempt timer is only
    * armed if it ends before the call's deadline; otherwise, the deadline cuts it.
+   * Cooperative: the operation honored the abort; the reason for the abort is reported.
    */
   private async runTimedAttempt<T>(
     context: CallContext<T>,
@@ -260,7 +269,6 @@ export class PolicyExecutor {
       try {
         return await run();
       } catch (error) {
-        // Cooperative: the operation honored the abort; the reason for the abort is reported.
         throw controller.signal.aborted
           ? TimerScheduler.abortReason(controller.signal)
           : error;

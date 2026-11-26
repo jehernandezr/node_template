@@ -176,7 +176,6 @@ describe('InMemoryIdempotencyStore', () => {
       expect(second.leaseUntil).toBe(
         first.leaseUntil + 2_000 + ClaimRules.DEFAULT_LEASE_MARGIN_MS,
       );
-      // The fingerprint is the one of the first claim, to detect key reuse.
       expect(second.fingerprint).toBe('fp-1');
     });
 
@@ -195,7 +194,6 @@ describe('InMemoryIdempotencyStore', () => {
         code: PrimitivesErrorCode.StaleClaim,
       });
 
-      // The new owner does complete, and its result is the one that remains.
       const fresh = CallOutcome.success({ orderId: 'fresh' });
       await store.complete(KEY, second.claimToken, fresh);
       const after = await store.claim(KEY, request());
@@ -212,7 +210,6 @@ describe('InMemoryIdempotencyStore', () => {
       await expect(store.release(KEY, first.claimToken)).rejects.toBeInstanceOf(
         StaleClaimError,
       );
-      // The new owner's claim is still in progress.
       expect((await store.claim(KEY, request())).state).toBe(
         ClaimState.InProgress,
       );
