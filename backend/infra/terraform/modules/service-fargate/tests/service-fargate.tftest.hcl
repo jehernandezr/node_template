@@ -80,3 +80,17 @@ run "target_groups_get_a_short_prefix_with_the_longest_real_name_prefix" {
     error_message = "The target group takes a prefix of at most 6 characters and AWS adds a unique suffix, so the API and realtime of one service never collide and the name never ends in a hyphen."
   }
 }
+
+run "a_worker_named_after_its_queue_fits_the_iam_role_name_limit" {
+  command = plan
+
+  variables {
+    name_prefix  = "node-template-staging"
+    service_name = "notifications-realtime-control"
+  }
+
+  assert {
+    condition     = length(aws_iam_role.execution.name) <= 64 && length(aws_iam_role.task.name) <= 64
+    error_message = "With the longest real name_prefix, a worker named <service>-<queue> keeps its role names within 64 characters."
+  }
+}

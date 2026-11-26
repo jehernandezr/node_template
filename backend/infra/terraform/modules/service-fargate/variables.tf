@@ -9,12 +9,12 @@ variable "name_prefix" {
 }
 
 variable "service_name" {
-  description = "Short service name, for example reports or realtime."
+  description = "Short service name, for example reports or realtime. With a name_prefix of up to 22 characters, 31 keeps <name_prefix>-<service_name>-execution within the 64 characters of an IAM role name."
   type        = string
 
   validation {
-    condition     = can(regex("^[a-z][a-z0-9-]{1,20}[a-z0-9]$", var.service_name))
-    error_message = "service_name must use lowercase letters, digits and hyphens, and be 3 to 22 characters long."
+    condition     = can(regex("^[a-z][a-z0-9-]{1,29}[a-z0-9]$", var.service_name))
+    error_message = "service_name must use lowercase letters, digits and hyphens, and be 3 to 31 characters long."
   }
 }
 

@@ -33,6 +33,7 @@ Each stack has:
 - `variables_common.tf`: `region`, `environment`, `name_prefix`, `domain`, `aws_endpoint_url` and tags. It is identical in every stack; `tf-validate.mjs` fails if it differs.
 - `remote_state.tf`: reads the previous stacks from `<region>/<stack>/terraform.tfstate`. `global` reads none.
 - `tests/`: `terraform test` tests with mocked providers, without AWS.
+- `tests/environment/`: one plan with the real values of an environment and mocked providers. `tf-validate.mjs` runs it for every stack of every environment, passing `common.tfvars` and the stack's `terraform.tfvars`, so a contradiction between tfvars, a variable validation or a precondition fails in CI before any deploy.
 
 ## Stacks and order
 
@@ -129,7 +130,7 @@ Subscription filters read the `type` field of the CloudEvents body; an empty lis
 
 ## Alarms and costs
 
-`platform` creates the alarms topic with `alarm_email` (or uses `alarm_topic_arn`) and a budget with `monthly_budget`. In staging and prod the destination is mandatory and `alarm_email` rejects example values (`REEMPLAZAR`, `example.com`).
+`platform` creates the alarms topic with `alarm_email` (or uses `alarm_topic_arn`) and a budget with `monthly_budget`. In staging and prod the destination is mandatory and `alarm_email` rejects example values (`REEMPLAZAR`, `example.com`). No mailbox is committed: the deploy passes it as `TF_VAR_alarm_email`.
 
 ## Commands
 

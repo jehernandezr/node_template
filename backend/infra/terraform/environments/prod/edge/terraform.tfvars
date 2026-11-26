@@ -1,8 +1,8 @@
 region       = "us-east-1"
 state_bucket = "node-template-prod-tfstate"
 
-# cloudfront_certificate_arn = "arn:aws:acm:us-east-1:222222222222:certificate/REEMPLAZAR" # Must be in us-east-1.
+# cloudfront_certificate_arn = "arn:aws:acm:us-east-1:222222222222:certificate/REPLACE" # Must be in us-east-1.
 # web_aliases                = ["app.example.com"]
 # api_aliases                = ["api.example.com"]
 # realtime_hostname          = "rt.example.com"
-# route53_zone_id            = "ZREEMPLAZAR"
+# route53_zone_id            = "ZREPLACE"
