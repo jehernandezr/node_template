@@ -1,6 +1,6 @@
 import { SagaStatus } from '@platform/saga';
 import type { ShardLocation } from '@platform/persistence';
-import type { ShardConnections } from '../transfer/shard-connections.js';
+import type { ShardConnections } from '../transfer/typeorm/shard-connections.js';
 import { TenantMoveActivity } from '../application/tenant-move-activity.js';
 
 /**

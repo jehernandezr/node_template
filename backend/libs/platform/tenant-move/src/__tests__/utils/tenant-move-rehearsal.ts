@@ -19,7 +19,7 @@ import {
 import { PlacementBuilder } from '@platform/sharding/test-utils';
 import type { DataSource } from 'typeorm';
 import { ShardTenantMoveFence } from '../../fence/shard-tenant-move-fence.js';
-import { PooledShardConnections } from '../../transfer/pooled-shard-connections.js';
+import { PooledShardConnections } from '../../transfer/typeorm/pooled-shard-connections.js';
 import { OpenSagaActivity } from '../../activity/open-saga-activity.js';
 import { TenantMoveShards } from '../../application/tenant-move-shards.js';
 import { TenantMoves } from '../../application/tenant-moves.js';

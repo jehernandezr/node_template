@@ -1,6 +1,6 @@
 import type { ShardLocation, TenantWriteFence } from '@platform/persistence';
 import { TenantMoveFence } from '../application/tenant-move-fence.js';
-import type { ShardConnections } from '../transfer/shard-connections.js';
+import type { ShardConnections } from '../transfer/typeorm/shard-connections.js';
 
 /** `TenantMoveFence` over the persistence write fence of each shard. */
 export class ShardTenantMoveFence extends TenantMoveFence {

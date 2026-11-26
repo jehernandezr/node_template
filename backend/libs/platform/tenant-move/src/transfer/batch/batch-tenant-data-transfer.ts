@@ -9,13 +9,14 @@ import type { DataSource, QueryRunner } from 'typeorm';
 import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
 import { TenantDataTransfer } from '../tenant-data-transfer.js';
 import type { ShardLocation } from '@platform/persistence';
-import type { ConnectedTransfer } from '../connected-transfer.js';
-import type { ShardConnections } from '../shard-connections.js';
+import type { ConnectedTransfer } from '../typeorm/connected-transfer.js';
+import type { ShardConnections } from '../typeorm/shard-connections.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 import { TransferBudget } from '../transfer-budget.js';
 import type { BatchTransferOptions } from './batch-transfer-options.js';
 import type { KeyRange } from './key-range.js';
 import type { RowPage } from './row-page.js';
+import { ForeignKeyRound } from './foreign-key-round.js';
 import { TableCopier } from './table-copier.js';
 import type { TableChecksum } from './table-checksum.js';
 import { TableShapeReader } from './table-shape-reader.js';
@@ -51,7 +52,23 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     this.filter = new TenantRowFilter(manifest);
   }
 
+  /**
+   * Copies the rows written since the last round, table by table.
+   * @throws TenantMoveError `RoundPending` if a child row reaches the target before its parent.
+   */
   async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
+    return ForeignKeyRound.run(() => this.syncRound(move));
+  }
+
+  /**
+   * Compares and reconciles each table with the tenant frozen.
+   * @throws TenantMoveError `RoundPending` if a child row reaches the target before its parent.
+   */
+  async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
+    return ForeignKeyRound.run(() => this.verifyRound(move));
+  }
+
+  private async syncRound(move: TenantTransfer): Promise<TenantMoveProgress> {
     const transfer = await this.connections.connect(move);
     const budget = transfer.budget ?? this.newBudget();
     const tables: TenantMoveTableProgress[] = [];
@@ -69,7 +86,9 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     return { tables, caughtUp: changed <= this.options.caughtUpRows };
   }
 
-  async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
+  private async verifyRound(
+    move: TenantTransfer,
+  ): Promise<TenantMoveVerification> {
     const transfer = await this.connections.connect(move);
     const budget = transfer.budget ?? this.newBudget();
     const tables: TenantMoveTableCheck[] = [];

@@ -1,7 +1,7 @@
 import { FixedClock } from '@platform/kernel/test-utils';
 import type { DataSource } from 'typeorm';
-import { AssignedShardConnections } from '../../__tests__/utils/assigned-shard-connections.js';
-import { TransferBudget } from '../transfer-budget.js';
+import { AssignedShardConnections } from '../../../__tests__/utils/assigned-shard-connections.js';
+import { TransferBudget } from '../../transfer-budget.js';
 
 const SOURCE = { options: { database: 'source' } } as DataSource;
 const TARGET = { options: { database: 'target' } } as DataSource;

@@ -17,8 +17,8 @@ import { TenantMoveActivity } from '../application/tenant-move-activity.js';
 import { TenantMoveFence } from '../application/tenant-move-fence.js';
 import { TenantMoveListener } from '../application/tenant-move-listener.js';
 import { ShardTenantMoveFence } from '../fence/shard-tenant-move-fence.js';
-import { PooledShardConnections } from '../transfer/pooled-shard-connections.js';
-import { ShardConnections } from '../transfer/shard-connections.js';
+import { PooledShardConnections } from '../transfer/typeorm/pooled-shard-connections.js';
+import { ShardConnections } from '../transfer/typeorm/shard-connections.js';
 import { TenantMoveShards } from '../application/tenant-move-shards.js';
 import { TenantMoves } from '../application/tenant-moves.js';
 import {
@@ -39,6 +39,11 @@ import { TenantMoveOperationsFactory } from './tenant-move-operations.factory.js
  */
 @Module({})
 export class TenantMoveModule {
+  /**
+   * Registers the move steps of the service over its manifest and exposes its move operations.
+   * @param options The contract operations, the manifest class, the optional listener and, in `imports`, the
+   *   service modules whose exports the listener injects.
+   */
   static forFeature(options: TenantMoveFeatureOptions): DynamicModule {
     const operations = TenantMoveOperationsFactory.create(options.operations);
     return {

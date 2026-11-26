@@ -1,7 +1,7 @@
 import type { ShardLocation } from '@platform/persistence';
 import type { DataSource } from 'typeorm';
 import type { ConnectedTransfer } from './connected-transfer.js';
-import type { TenantTransfer } from './tenant-transfer.js';
+import type { TenantTransfer } from '../tenant-transfer.js';
 
 /** Opens the connection of a shard for the adapters of a move; the application layer only knows shard locations. */
 export abstract class ShardConnections {

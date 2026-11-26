@@ -12,7 +12,7 @@ import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js'
 import { SqlIdentifier } from '../batch/sql-identifier.js';
 import { TenantDataTransfer } from '../tenant-data-transfer.js';
 import type { ShardLocation } from '@platform/persistence';
-import type { ShardConnections } from '../shard-connections.js';
+import type { ShardConnections } from '../typeorm/shard-connections.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 import { TransferBudget } from '../transfer-budget.js';
 import type { LogicalReplicationOptions } from './logical-replication-options.js';

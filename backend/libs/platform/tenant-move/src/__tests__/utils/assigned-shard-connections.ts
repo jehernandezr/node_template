@@ -1,6 +1,6 @@
 import type { ShardLocation } from '@platform/persistence';
 import type { DataSource } from 'typeorm';
-import { ShardConnections } from '../../transfer/shard-connections.js';
+import { ShardConnections } from '../../transfer/typeorm/shard-connections.js';
 
 /** Connections a test hands out for the databases it creates, such as a fresh database pair per test. */
 export class AssignedShardConnections extends ShardConnections {

@@ -4,6 +4,7 @@ import type {
 } from '@contracts/platform';
 import type { ShardLocation } from '@platform/persistence';
 import { QueryFailedError } from 'typeorm';
+import { ForeignKeyRound } from '../../transfer/batch/foreign-key-round.js';
 import { TenantDataTransfer } from '../../transfer/tenant-data-transfer.js';
 import type { TenantTransfer } from '../../transfer/tenant-transfer.js';
 import type { TransferBudget } from '../../transfer/transfer-budget.js';
@@ -50,27 +51,30 @@ export class DelegatingTransfer extends TenantDataTransfer {
 
 /**
  * The first round fails as when the service writes a parent and its child between copying the parent table and
- * the child table: the child reaches the target without its parent and `pg` reports the foreign key violation.
+ * the child table: the child reaches the target without its parent, `pg` reports the foreign key violation and the
+ * batch copy turns it into a pending round.
  */
 export class ForeignKeyRaceTransfer extends DelegatingTransfer {
   private static readonly FOREIGN_KEY_VIOLATION = '23503';
   private raced = false;
 
-  /** Fails the first time with the foreign key; afterwards it really copies. */
+  /** Fails the first time as a pending round caused by the foreign key; afterwards it really copies. */
   override sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
     if (this.raced) {
       return super.sync(transfer);
     }
     this.raced = true;
-    return Promise.reject(
-      new QueryFailedError(
-        'INSERT INTO "invoice_lines" ...',
-        [],
-        Object.assign(
-          new Error(
-            'insert violates foreign key constraint "invoice_lines_invoice_fk"',
+    return ForeignKeyRound.run(() =>
+      Promise.reject(
+        new QueryFailedError(
+          'INSERT INTO "invoice_lines" ...',
+          [],
+          Object.assign(
+            new Error(
+              'insert violates foreign key constraint "invoice_lines_invoice_fk"',
+            ),
+            { code: ForeignKeyRaceTransfer.FOREIGN_KEY_VIOLATION },
           ),
-          { code: ForeignKeyRaceTransfer.FOREIGN_KEY_VIOLATION },
         ),
       ),
     );

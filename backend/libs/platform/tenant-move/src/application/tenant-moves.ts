@@ -4,12 +4,7 @@ import type {
   TenantMoveRef,
   TenantMoveVerification,
 } from '@contracts/platform';
-import {
-  PostgresFailureClassifier,
-  PostgresSqlState,
-  type ShardLister,
-  type ShardLocation,
-} from '@platform/persistence';
+import type { ShardLister, ShardLocation } from '@platform/persistence';
 import {
   TenantStatus,
   type PlacementTransition,
@@ -57,7 +52,7 @@ export class TenantMoves {
       TenantMoveErrorCode.RoundPending,
       'The tenant has work in progress in the source',
     );
-    const progress = await this.round(() => this.transfer.sync(transfer));
+    const progress = await this.transfer.sync(transfer);
     if (!progress.caughtUp) {
       throw new TenantMoveError(
         TenantMoveErrorCode.RoundPending,
@@ -81,7 +76,7 @@ export class TenantMoves {
       TenantMoveErrorCode.TenantBusy,
       'The tenant has work in progress behind the fence',
     );
-    const verification = await this.round(() => this.transfer.verify(transfer));
+    const verification = await this.transfer.verify(transfer);
     if (!verification.verified) {
       throw new TenantMoveError(
         TenantMoveErrorCode.VerificationFailed,
@@ -207,30 +202,6 @@ export class TenantMoves {
       }
     }
     return fenced;
-  }
-
-  /**
-   * Runs a copy round. A foreign key that fails on the target is a child row written on the source after
-   * the round copied its parent table: the next round brings the parent, so it answers `RoundPending`.
-   * @throws TenantMoveError `RoundPending` on a foreign key violation.
-   */
-  private async round<T>(work: () => Promise<T>): Promise<T> {
-    try {
-      return await work();
-    } catch (error) {
-      if (
-        PostgresFailureClassifier.hasSqlState(
-          error,
-          PostgresSqlState.ForeignKeyViolation,
-        )
-      ) {
-        throw new TenantMoveError(
-          TenantMoveErrorCode.RoundPending,
-          'A row reached the target before its parent',
-        );
-      }
-      throw error;
-    }
   }
 
   /** @throws TenantMoveError with `code` if the tenant has open work on the source. */

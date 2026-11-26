@@ -7,7 +7,7 @@ import type { TenantMoveManifest } from '../manifest/tenant-move-manifest.js';
 import { BatchTenantDataTransfer } from './batch/batch-tenant-data-transfer.js';
 import { CompositeTenantDataTransfer } from './composite-tenant-data-transfer.js';
 import { LogicalReplicationTransfer } from './logical/logical-replication-transfer.js';
-import type { ShardConnections } from './shard-connections.js';
+import type { ShardConnections } from './typeorm/shard-connections.js';
 import type { TenantDataTransfer } from './tenant-data-transfer.js';
 
 /**
