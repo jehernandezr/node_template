@@ -1,4 +1,3 @@
-import type { MessageEnvelope } from '@platform/messaging';
 import { TenantVerifier } from '@platform/messaging';
 
 /** Tenant verifier of a region with a fixed set of placed tenants, like `PlacedTenantVerifier` without a directory. */
@@ -10,10 +9,7 @@ export class PlacedTenants extends TenantVerifier {
     this.placed = new Set(tenantIds);
   }
 
-  override async verify(
-    tenantId: string | undefined,
-    _envelope: MessageEnvelope,
-  ): Promise<boolean> {
+  override async verify(tenantId: string | undefined): Promise<boolean> {
     return tenantId !== undefined && this.placed.has(tenantId);
   }
 }
