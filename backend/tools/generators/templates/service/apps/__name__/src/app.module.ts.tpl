@@ -14,6 +14,7 @@ import { __Name__TenantMoveManifest } from './database/__name__-tenant-move.mani
 import { __NAME___ERROR_CATALOGS } from './shared/constants/__name__-error-catalogs.constants.js';
 // generated:modules:imports
 
+/** Root module of __name__: its modules over the platform runtime. */
 @Module({
   imports: [
     RemoteIdentityAuthModule,

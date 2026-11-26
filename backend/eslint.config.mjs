@@ -249,7 +249,7 @@ export default [
     files: ['**/*.ts', '**/*.js', '**/*.mjs', '**/*.cjs'],
     plugins: { comments: commentsPlugin },
     rules: {
-      'comments/no-inline-comments': 'warn',
+      'comments/no-inline-comments': 'error',
       'no-empty': ['error', { allowEmptyCatch: true }],
       '@typescript-eslint/no-empty-function': [
         'error',
@@ -267,7 +267,7 @@ export default [
       '**/migrations/**',
     ],
     languageOptions: { parserOptions: { projectService: true } },
-    rules: { 'comments/require-public-jsdoc': 'warn' },
+    rules: { 'comments/require-public-jsdoc': 'error' },
   },
   {
     files: ['**/migrations/**/*.ts'],

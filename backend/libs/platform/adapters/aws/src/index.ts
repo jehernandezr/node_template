@@ -1,5 +1,5 @@
 /**
- * The only place in the backend where @aws-sdk/* is allowed (ADR 0002).
+ * The only place in the backend where the `@aws-sdk` packages are allowed (ADR 0002).
  */
 export * from './aws.config.js';
 export * from './aws-client-factory.js';
