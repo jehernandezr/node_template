@@ -55,7 +55,7 @@ variable "image" {
 }
 
 variable "command" {
-  description = "Container command. Null uses the image default. The same service can run its worker with a different command."
+  description = "Container command. Null runs the image default (node main.mjs) for a task with container_port, and node worker.mjs for a worker without one."
   type        = list(string)
   default     = null
 }

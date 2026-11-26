@@ -4,7 +4,7 @@ An arm64 Lambda: a consumer of an SQS queue with partial batch responses, or an 
 
 ## What it creates
 
-- arm64 Lambda function with a local or S3 package, JSON logging, KMS-encrypted environment variables and X-Ray enabled.
+- arm64 Lambda function with a local or S3 package, JSON logging, `NODE_ENV=production`, KMS-encrypted environment variables and X-Ray enabled.
 - SQS event source mapping with `ReportBatchItemFailures`: only the failed messages go back to the queue and, after the retries run out, go to their DLQ (defined in `messaging`). Supports `maximum_concurrency`, batching window and filters.
 - Optional reserved concurrency (`reserved_concurrent_executions`).
 - Dead-letter queue for asynchronous invocations (`dead_letter_config`), KMS-encrypted, with an alarm.

@@ -4,7 +4,7 @@ A microservice on Fargate: an API with inbound traffic behind the ALB, or a work
 
 ## What it creates
 
-- Task definition (ARM64 by default) with environment variables, Secrets Manager secrets by ARN and logs in a KMS-encrypted log group.
+- Task definition (ARM64 by default) with environment variables, `NODE_ENV=production`, Secrets Manager secrets by ARN and logs in a KMS-encrypted log group. Without `command`, an API (with `container_port`) runs the image command, `node main.mjs`, and a worker runs `node worker.mjs`.
 - OpenTelemetry: `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` and `OTEL_EXPORTER_OTLP_*`. With `otel_collector_sidecar = true` (default) the ADOT collector runs as a non-essential sidecar: the application exports to `localhost:4318` and the collector forwards to OpenObserve with the authorization header from the secret.
 - ECS service with circuit breaker and rollback, `initProcessEnabled` and optional ECS Exec.
 - With `enable_load_balancer`: target group without stickiness, listener rule by path or host, ingress on the service security group from the ALB and the matching egress on the ALB security group.

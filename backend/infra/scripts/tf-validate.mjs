@@ -4,7 +4,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack and example; it also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
+ * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack, each module with tests and each example; it also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
  */
 const terraformRoot = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -86,6 +86,10 @@ for (const env of subdirs(environmentsDir)) {
 }
 
 for (const stack of stacks) check(join(stacksDir, stack), true);
+for (const module of subdirs(join(terraformRoot, 'modules'))) {
+  const dir = join(terraformRoot, 'modules', module);
+  if (existsSync(join(dir, 'tests'))) check(dir, true);
+}
 for (const example of subdirs(join(terraformRoot, 'examples'))) {
   check(join(terraformRoot, 'examples', example), false);
 }
