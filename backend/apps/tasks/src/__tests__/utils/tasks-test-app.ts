@@ -4,7 +4,6 @@ import type { HttpTestClient } from '@platform/http/test-utils';
 import {
   IdentityStub,
   InternalOperationsClient,
-  ServicePostgresServer,
   ServiceTestApp,
   ServiceTestServers,
   type StubMember,
@@ -23,11 +22,7 @@ export class TasksTestApp {
   /** Billing only answers service account quotas, and the tests call as people: nobody queries it. */
   private static readonly BILLING_URL = 'http://billing.test';
 
-  readonly servers = new ServiceTestServers(
-    'tasks',
-    ServicePostgresServer.PGVECTOR_IMAGE,
-    ['vector'],
-  );
+  readonly servers = new ServiceTestServers('tasks', ['vector']);
   readonly identity = new IdentityStub();
   private readonly app = new ServiceTestApp({
     definition: tasksService,

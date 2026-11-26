@@ -26,6 +26,17 @@ export class ServiceDatabases {
     ];
   }
 
+  /**
+   * Names of the catalog and both shards.
+   * @returns The catalog first, then the shards in order.
+   */
+  names(): readonly string[] {
+    return [
+      this.catalog.database,
+      ...this.shards.map((shard) => shard.database),
+    ];
+  }
+
   /** Environment variables that point the service at these databases. */
   environment(serviceName: string): ConfigEnv {
     return {

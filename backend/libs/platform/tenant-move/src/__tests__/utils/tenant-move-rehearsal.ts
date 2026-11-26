@@ -50,8 +50,6 @@ export interface TenantMoveRehearsalOptions {
   /** Migrations of each shard: the platform ones and the service ones. */
   readonly shardMigrations: readonly MigrationClass[];
   readonly fixedColumns?: FixedColumns;
-  /** PostgreSQL image, for services that need pgvector. */
-  readonly image?: string;
   /** Extensions that provisioning creates in each shard before migrating. */
   readonly extensions?: readonly string[];
   /** Rows per batch; a small one makes each table get copied in several batches. */
@@ -150,7 +148,7 @@ export class TenantMoveRehearsal {
         ],
       },
       catalog: { entities: [], migrations: [] },
-      image: options.image,
+      shardExtensions: options.extensions ?? [],
       fence: this.fence,
     });
     this.manifest = new MergedTenantMoveManifest([
@@ -166,13 +164,6 @@ export class TenantMoveRehearsal {
 
   async start(): Promise<void> {
     await this.db.start();
-    for (const shard of Object.values(RehearsalShard)) {
-      for (const extension of this.options.extensions ?? []) {
-        await (
-          await this.shard(shard)
-        ).query(`CREATE EXTENSION IF NOT EXISTS "${extension}"`);
-      }
-    }
     await this.db.migrate();
     const transition = new PlacementTransition(
       this.db.directory,

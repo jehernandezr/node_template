@@ -1,12 +1,12 @@
 import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
 import { SystemClock } from '@platform/kernel';
-import { ContainerRuntime } from '@platform/kernel/test-utils';
+import {
+  ContainerRuntime,
+  SharedTestServers,
+  type SharedPostgres,
+} from '@platform/kernel/test-utils';
 import { MigrationGenerator } from '../migration-generator.js';
 import type { MigrationGenerateRequest } from '../model/migration-generate-request.js';
 import type { DatabaseSetDefinition } from '../model/database-set-definition.js';
@@ -20,23 +20,17 @@ jest.setTimeout(180_000);
 const runtime = new ContainerRuntime(process.env);
 
 runtime.describeIfAvailable('MigrationGenerator against PostgreSQL', () => {
-  let container: StartedPostgreSqlContainer;
+  let server: SharedPostgres;
   let outputDir: string;
   let generator: MigrationGenerator;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:17-alpine')
-      .withAutoCleanup(runtime.autoCleanup())
-      .start();
+    server = new SharedTestServers(process.env).postgres();
     outputDir = await mkdtemp(join(tmpdir(), 'migration-'));
     generator = new MigrationGenerator(
       new SystemClock(),
       new MigrationSourceRenderer(),
     );
-  });
-
-  afterAll(async () => {
-    await container.stop();
   });
 
   function requestFor(
@@ -47,11 +41,11 @@ runtime.describeIfAvailable('MigrationGenerator against PostgreSQL', () => {
       outputDir,
       definition,
       server: {
-        host: container.getHost(),
-        port: container.getMappedPort(5432),
+        host: server.host,
+        port: server.port,
       },
-      user: container.getUsername(),
-      password: container.getPassword(),
+      user: server.username,
+      password: server.password,
     };
   }
 

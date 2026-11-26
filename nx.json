@@ -25,6 +25,13 @@
       "include": ["backend/**/*"]
     },
     {
+      "plugin": "@nx/jest/plugin",
+      "options": {
+        "targetName": "test-int"
+      },
+      "include": ["backend/**/*"]
+    },
+    {
       "plugin": "@nx/eslint/plugin",
       "options": {
         "targetName": "lint"
@@ -73,6 +80,32 @@
         }
       ],
       "outputs": ["{workspaceRoot}/backend/dist/{projectName}"]
+    },
+    "test-int": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/backend/jest.preset.js",
+        "{workspaceRoot}/backend/jest.servers.cjs",
+        "{workspaceRoot}/backend/jest.global-setup.cjs",
+        "{workspaceRoot}/backend/jest.global-teardown.cjs",
+        {
+          "env": "INTEGRATION_TESTS"
+        },
+        {
+          "externalDependencies": [
+            "jest",
+            "@nx/jest",
+            "@swc/jest",
+            "testcontainers",
+            "@testcontainers/postgresql"
+          ]
+        }
+      ],
+      "configurations": {
+        "ci": {}
+      }
     }
   }
 }

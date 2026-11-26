@@ -145,6 +145,7 @@ runtime.describeIfAvailable('shard routing over PostgreSQL', () => {
         shard: ProbeDatabaseSets.shard,
         catalog: ProbeDatabaseSets.catalog,
         requireScope: true,
+        namespace: 'strict',
       });
       await strict.start();
       try {
