@@ -12,3 +12,8 @@ output "alias_name" {
   description = "Full alias name (alias/...)."
   value       = aws_kms_alias.this.name
 }
+
+output "policy" {
+  description = "Key policy JSON: the account statement plus the CloudWatch Logs, service and account principal grants."
+  value       = aws_kms_key.this.policy
+}

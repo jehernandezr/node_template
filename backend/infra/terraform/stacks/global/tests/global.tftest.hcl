@@ -68,6 +68,18 @@ run "dev_shares_artifacts_with_the_promotion_accounts" {
   }
 
   assert {
+    condition = contains(jsondecode(module.artifacts_kms.policy).Statement, {
+      Sid       = "AllowPromotionRead"
+      Effect    = "Allow"
+      Principal = { AWS = ["arn:aws:iam::333333333333:role/nt-prod-github-deploy", "arn:aws:iam::222222222222:role/nt-staging-github-deploy"] }
+      Action    = ["kms:Decrypt"]
+      Resource  = "*"
+      Condition = { StringEquals = { "kms:ViaService" = "s3.us-east-1.amazonaws.com" } }
+    })
+    error_message = "The artifacts key lets the staging and prod deploy roles decrypt the Lambda packages, only through S3 of the region."
+  }
+
+  assert {
     condition     = aws_s3_bucket.artifacts.bucket == "nt-dev-artifacts"
     error_message = "The artifacts bucket is <name_prefix>-artifacts."
   }
@@ -132,6 +144,11 @@ run "every_repository_has_immutable_tags_and_the_lifecycle_rules" {
   assert {
     condition     = length(jsondecode(aws_s3_bucket_policy.artifacts.policy).Statement) == 1 && jsondecode(aws_s3_bucket_policy.artifacts.policy).Statement[0].Sid == "DenyInsecureTransport"
     error_message = "Without promotion accounts the bucket policy only denies insecure transport."
+  }
+
+  assert {
+    condition     = !contains([for statement in jsondecode(module.artifacts_kms.policy).Statement : statement.Sid], "AllowPromotionRead")
+    error_message = "Without promotion accounts the artifacts key grants no other account."
   }
 
   assert {
