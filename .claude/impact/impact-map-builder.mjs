@@ -8,12 +8,13 @@ import { StringKeyExtractor } from './string-key-extractor.mjs';
  * Builds the starting impact map of a diff for the reviewer: affected projects, importers and subtypes of every
  * export of a changed file (importers that the diff also changes are kept and marked), every occurrence of each
  * string-keyed identifier the diff changed, and the generated or configuration paths a changed path drags along.
+ * Test files are skipped, but the shared test utilities (`__tests__/utils`, `test/utils`, `test_utils`) count as
+ * sources, because other projects import them through their `test-utils` aliases.
  * What only reading reveals (DI tokens, payload shapes, migrations, docs) the reviewer adds on top.
  */
 export class ImpactMapBuilder {
   static SOURCE = /\.(ts|mjs|cjs|js|dart)$/;
-  static TEST =
-    /(\/__tests__\/|\.(int-|e2e-|contract-)?spec\.ts$|\.test\.mjs$|(^|\/)test\/.*_test\.dart$)/;
+  static TEST = /(\.(int-|e2e-|contract-)?spec\.ts$|\.test\.mjs$|_test\.dart$)/;
 
   /**
    * @param {string} root Repository root.

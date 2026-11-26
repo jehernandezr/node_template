@@ -373,3 +373,106 @@ describe('ImpactMapBuilder importers', () => {
     );
   });
 });
+
+describe('ImpactMapBuilder shared test utilities', () => {
+  const fixture = new GitFixture();
+  const UTILITY =
+    'backend/libs/platform/persistence/src/__tests__/utils/test-database-server.ts';
+
+  before(() => {
+    fixture
+      .write(
+        'backend/tsconfig.base.json',
+        JSON.stringify({
+          compilerOptions: {
+            paths: {
+              '@platform/persistence/test-utils': [
+                './libs/platform/persistence/src/__tests__/utils/index.ts',
+              ],
+            },
+          },
+        }),
+      )
+      .write(
+        'backend/libs/platform/persistence/src/__tests__/utils/index.ts',
+        "export * from './test-database-server.js';\n",
+      )
+      .write(UTILITY, 'export class TestDatabaseServer {}\n')
+      .write(
+        'backend/libs/platform/persistence/src/__tests__/test-database-server.int-spec.ts',
+        'export class LocalSuite {}\n',
+      )
+      .write(
+        'backend/apps/tasks/src/__tests__/tasks.int-spec.ts',
+        "import { TestDatabaseServer } from '@platform/persistence/test-utils';\nnew TestDatabaseServer();\n",
+      )
+      .commit('chore: base');
+    fixture.git('checkout', '-q', '-b', 'change');
+    fixture
+      .write(UTILITY, 'export class TestDatabaseServer {\n  ready = true;\n}\n')
+      .write(
+        'backend/libs/platform/persistence/src/__tests__/test-database-server.int-spec.ts',
+        'export class LocalSuite {\n  ok = true;\n}\n',
+      )
+      .commit('feat: change');
+  });
+
+  after(() => fixture.dispose());
+
+  it('lists a changed export of a __tests__/utils file with its importers in another project, and skips test files', () => {
+    const map = new ImpactMapBuilder(fixture.root, 'main', {
+      affected: () => [],
+    }).build();
+
+    assert.deepEqual(
+      map.exports.map((entry) => [entry.file, entry.name, entry.importers]),
+      [
+        [
+          UTILITY,
+          'TestDatabaseServer',
+          ['backend/apps/tasks/src/__tests__/tasks.int-spec.ts'],
+        ],
+      ],
+    );
+  });
+
+  it('keeps the test utilities of the front as sources and skips Dart tests', () => {
+    assert.equal(
+      ImpactMapBuilder.TEST.test('front/packages/test_utils/lib/src/app.dart'),
+      false,
+    );
+    assert.equal(
+      ImpactMapBuilder.TEST.test('front/packages/ui/test/utils/fakes.dart'),
+      false,
+    );
+    assert.equal(
+      ImpactMapBuilder.TEST.test('front/packages/ui/test/button_test.dart'),
+      true,
+    );
+    assert.equal(
+      ImpactMapBuilder.TEST.test(
+        'backend/e2e/flow/src/__tests__/a.e2e-spec.ts',
+      ),
+      true,
+    );
+  });
+});
+
+describe('StringKeyExtractor file names', () => {
+  it('does not take source or configuration file names for events or messages', () => {
+    const found = new StringKeyExtractor().extract(
+      [
+        '+++ b/x.ts',
+        "+import './lint-staged.config.mjs';",
+        "+const a = 'jest.servers.cjs';",
+        "+const b = 'user.entity.ts';",
+        "+const c = 'sign-in.use-case.ts';",
+        "+const d = 'billing.invoice.paid.v1';",
+      ].join('\n'),
+    );
+    assert.deepEqual(
+      Object.fromEntries([...found].map(([kind, set]) => [kind, [...set]])),
+      { 'event or message': ['billing.invoice.paid.v1'] },
+    );
+  });
+});

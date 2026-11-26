@@ -52,6 +52,8 @@ export class StringKeyExtractor {
       pattern: /^ {2}([\w-]+):\s*$/,
     },
   ];
+  static FILE_NAME =
+    /\.(ts|mts|cts|js|mjs|cjs|dart|json|ya?ml|tf|tfvars|md|arb|sh|sql|html|css)$/;
   static LITERAL =
     /'([^'\n\\]{3,120})'|"([^"\n\\]{3,120})"|`([^`\n\\$]{3,120})`/g;
 
@@ -92,12 +94,13 @@ export class StringKeyExtractor {
   }
 
   /**
-   * Classifies one literal.
+   * Classifies one literal. A file name, such as `user.entity.ts`, is not an identifier of any kind.
    * @param {string} literal String without its quotes.
    * @param {string} [file] File of the line, for the kinds that only apply to some files.
    * @returns {string | undefined} The kind, or `undefined` for ordinary text.
    */
   kindOf(literal, file = '') {
+    if (StringKeyExtractor.FILE_NAME.test(literal)) return undefined;
     return StringKeyExtractor.KINDS.find(
       ({ pattern, files }) =>
         (files === undefined || files.test(file)) && pattern.test(literal),
