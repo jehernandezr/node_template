@@ -26,7 +26,7 @@ class AllOfSpecification<T> extends Specification<T> {
     super();
   }
 
-  isSatisfiedBy(candidate: T): boolean {
+  override isSatisfiedBy(candidate: T): boolean {
     return this.parts.every((part) => part.isSatisfiedBy(candidate));
   }
 }
@@ -36,7 +36,7 @@ class AnyOfSpecification<T> extends Specification<T> {
     super();
   }
 
-  isSatisfiedBy(candidate: T): boolean {
+  override isSatisfiedBy(candidate: T): boolean {
     return this.parts.some((part) => part.isSatisfiedBy(candidate));
   }
 }
@@ -46,7 +46,7 @@ class NotSpecification<T> extends Specification<T> {
     super();
   }
 
-  isSatisfiedBy(candidate: T): boolean {
+  override isSatisfiedBy(candidate: T): boolean {
     return !this.inner.isSatisfiedBy(candidate);
   }
 }

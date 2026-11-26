@@ -7,16 +7,16 @@ class RecordingSuiteApi extends SuiteApi {
   readonly calls: string[] = [];
   private readonly tests: Array<() => void> = [];
 
-  describe(name: string, body: () => void): void {
+  override describe(name: string, body: () => void): void {
     this.calls.push(`describe:${name}`);
     body();
   }
 
-  skip(name: string): void {
+  override skip(name: string): void {
     this.calls.push(`skip:${name}`);
   }
 
-  it(name: string, test: () => void): void {
+  override it(name: string, test: () => void): void {
     this.calls.push(`it:${name}`);
     this.tests.push(test);
   }

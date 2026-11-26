@@ -17,7 +17,10 @@ export class ShardedSagaScopes extends SagaScopes {
    * recovery, which has no request, reaches the same shard where the saga lives.
    * @throws PersistenceError `PersistenceTenantRequired` if the instance has no tenant.
    */
-  async run<T>(instance: SagaInstance, body: () => Promise<T>): Promise<T> {
+  override async run<T>(
+    instance: SagaInstance,
+    body: () => Promise<T>,
+  ): Promise<T> {
     const tenantId = instance.tenantId;
     if (tenantId === null) {
       throw new PersistenceError(

@@ -23,7 +23,7 @@ export interface DeleteAccountState {
 export class DeleteAccountSaga extends SagaDefinition<DeleteAccountState> {
   readonly type = IdentitySaga.DeleteAccount;
 
-  protected define(flow: SagaFlow<DeleteAccountState>): void {
+  protected override define(flow: SagaFlow<DeleteAccountState>): void {
     flow
       .step(SuspendUserOperation)
       .input((state) => ({

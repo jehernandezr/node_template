@@ -17,7 +17,7 @@ import { AuthMethod } from '../auth-method.enum.js';
 import { RequestAuthenticator } from '../request-authenticator.js';
 
 class NoGrants extends AccessResolver {
-  async resolve(): Promise<AccessGrant> {
+  override async resolve(): Promise<AccessGrant> {
     throw new Error('no grants in this test');
   }
 }
@@ -25,7 +25,7 @@ class NoGrants extends AccessResolver {
 class StubApiKeys extends ApiKeyAuthenticator {
   readonly seen: string[] = [];
 
-  async authenticate(rawKey: string): Promise<ServiceAccountActor> {
+  override async authenticate(rawKey: string): Promise<ServiceAccountActor> {
     this.seen.push(rawKey);
     return {
       kind: ActorType.ServiceAccount,

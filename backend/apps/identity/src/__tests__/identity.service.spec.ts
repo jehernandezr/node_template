@@ -14,7 +14,7 @@ import { IdentityTestEnvironment, StaticAppConfig } from './utils/index.js';
 
 /** Credentials built in the test: they never leave the process. */
 class FixedCredentials extends AwsCredentialsProvider {
-  async resolve(): Promise<AwsCredentials> {
+  override async resolve(): Promise<AwsCredentials> {
     return {
       accessKeyId: ['AKID', 'TEST'].join(''),
       secretAccessKey: ['s', 'k'].join(''),

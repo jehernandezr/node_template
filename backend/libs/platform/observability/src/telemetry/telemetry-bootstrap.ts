@@ -159,12 +159,12 @@ export class TelemetryBootstrap extends TelemetryHandle {
    * Exports pending spans, logs and metrics without shutting down the SDK. In Lambda it is
    * called at the end of each invocation, before the environment freezes.
    */
-  forceFlush(): Promise<void> {
+  override forceFlush(): Promise<void> {
     return this.flush();
   }
 
   /** Exports what is pending and shuts down the SDK. */
-  shutdown(): Promise<void> {
+  override shutdown(): Promise<void> {
     return this.stop();
   }
 }

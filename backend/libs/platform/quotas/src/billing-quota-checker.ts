@@ -43,7 +43,7 @@ export class BillingQuotaChecker extends QuotaChecker {
   }
 
   /** @throws BillingUnavailableError if billing does not respond. */
-  async check(
+  override async check(
     tenantId: string,
     metric: UsageMetric,
     requested = 1,

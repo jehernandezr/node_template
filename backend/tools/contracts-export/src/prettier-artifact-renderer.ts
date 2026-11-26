@@ -7,7 +7,7 @@ import { ArtifactRenderer } from './artifact-renderer.js';
  * dynamic `import()` and does not run inside jest: it is tested with `check`.
  */
 export class PrettierArtifactRenderer extends ArtifactRenderer {
-  async render(path: string, value: unknown): Promise<string> {
+  override async render(path: string, value: unknown): Promise<string> {
     const config = (await resolveConfig(path)) ?? {};
     return format(JSON.stringify(value), {
       ...config,

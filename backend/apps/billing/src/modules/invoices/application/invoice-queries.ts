@@ -60,7 +60,7 @@ export class InvoiceQueries extends InvoicesFacade {
     });
   }
 
-  hasInvoices(tenantId: string): Promise<boolean> {
+  override hasInvoices(tenantId: string): Promise<boolean> {
     return this.shard.inTenantShard(tenantId, () => this.invoices.any());
   }
 

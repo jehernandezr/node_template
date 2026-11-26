@@ -2,7 +2,7 @@ import { Clock } from './clock.js';
 
 /** System clock. */
 export class SystemClock extends Clock {
-  now(): Date {
+  override now(): Date {
     return new Date();
   }
 }

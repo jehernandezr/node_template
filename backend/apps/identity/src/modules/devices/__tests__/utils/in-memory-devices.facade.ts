@@ -28,11 +28,14 @@ export class InMemoryDevicesFacade extends DevicesFacade {
     return this;
   }
 
-  async issueDeviceId(ref: UserRef, deviceId: string): Promise<string> {
+  override async issueDeviceId(
+    ref: UserRef,
+    deviceId: string,
+  ): Promise<string> {
     return `dv1_${ref.userId}_${ref.homeTenantId}_${deviceId}`;
   }
 
-  async recognize(
+  override async recognize(
     ref: UserRef,
     proof?: DeviceProof,
   ): Promise<DeviceRecognition> {
@@ -52,7 +55,7 @@ export class InMemoryDevicesFacade extends DevicesFacade {
       : { recognized: true, device };
   }
 
-  async register(
+  override async register(
     ref: UserRef,
     input: RegisterDeviceInput,
   ): Promise<DeviceSnapshot> {
@@ -70,17 +73,17 @@ export class InMemoryDevicesFacade extends DevicesFacade {
     return device;
   }
 
-  async verifiers(ref: UserRef): Promise<readonly DeviceSnapshot[]> {
+  override async verifiers(ref: UserRef): Promise<readonly DeviceSnapshot[]> {
     return this.userDevices(ref.userId).filter((device) => device.verifier);
   }
 
-  async retireVerifiers(ref: UserRef): Promise<void> {
+  override async retireVerifiers(ref: UserRef): Promise<void> {
     for (const device of this.userDevices(ref.userId)) {
       this.devices.set(device.id, { ...device, verifier: false });
     }
   }
 
-  async enqueueApproval(
+  override async enqueueApproval(
     deviceId: string,
     approval: DeviceApproval,
   ): Promise<void> {
@@ -101,7 +104,7 @@ export class InMemoryDevicesFacade extends DevicesFacade {
     );
   }
 
-  async forget(ref: UserRef): Promise<void> {
+  override async forget(ref: UserRef): Promise<void> {
     for (const [key, device] of this.devices) {
       if (device.userId === ref.userId) {
         this.devices.delete(key);

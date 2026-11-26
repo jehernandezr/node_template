@@ -13,7 +13,7 @@ export class SdkClientCredentialsProvider extends AwsCredentialsProvider {
     super();
   }
 
-  resolve(): Promise<AwsCredentials> {
+  override resolve(): Promise<AwsCredentials> {
     return this.client.config.credentials();
   }
 }

@@ -5,7 +5,7 @@ import { InternalRequestSigner } from '../../signing/internal-request-signer.js'
 export class RecordingRequestSigner extends InternalRequestSigner {
   readonly requests: SignableRequest[] = [];
 
-  sign(request: SignableRequest): Promise<Record<string, string>> {
+  override sign(request: SignableRequest): Promise<Record<string, string>> {
     this.requests.push(request);
     return Promise.resolve({ 'x-test-signature': 'signed' });
   }

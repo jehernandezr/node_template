@@ -4,7 +4,7 @@ import { CacheErrorReporter } from '../../cache-error-reporter.js';
 export class RecordingCacheErrorReporter extends CacheErrorReporter {
   readonly errors: unknown[] = [];
 
-  report(error: unknown): void {
+  override report(error: unknown): void {
     this.errors.push(error);
   }
 }

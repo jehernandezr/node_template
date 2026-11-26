@@ -44,7 +44,7 @@ export class ValkeyShardDirectoryChannel extends ShardDirectoryChannel {
     this.listener = (channel, message) => this.deliver(channel, message);
   }
 
-  async publish(event: ShardDirectoryChanged): Promise<void> {
+  override async publish(event: ShardDirectoryChanged): Promise<void> {
     await this.executor.run(ValkeyCommand.Publish, [
       this.channel,
       ShardDirectoryChangeCodec.encode(event),
@@ -54,7 +54,7 @@ export class ValkeyShardDirectoryChannel extends ShardDirectoryChannel {
   /**
    * It is wrapped so the same handler can be subscribed twice and unsubscribed only once.
    */
-  async subscribe(
+  override async subscribe(
     handler: ShardDirectoryChangeHandler,
   ): Promise<() => Promise<void>> {
     const entry: ShardDirectoryChangeHandler = (event) => handler(event);

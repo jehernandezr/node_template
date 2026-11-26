@@ -17,7 +17,10 @@ export class TenantShardDeliveryContext extends DeliveryContext {
     super();
   }
 
-  run(envelope: MessageEnvelope, fn: () => Promise<void>): Promise<void> {
+  override run(
+    envelope: MessageEnvelope,
+    fn: () => Promise<void>,
+  ): Promise<void> {
     const tenantId = envelope.tenantid;
     if (tenantId === undefined) {
       return fn();

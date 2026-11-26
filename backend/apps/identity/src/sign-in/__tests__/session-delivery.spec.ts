@@ -13,19 +13,19 @@ class RecordingExchange extends HttpExchange {
     super();
   }
 
-  sessionCookie(): string | undefined {
+  override sessionCookie(): string | undefined {
     return undefined;
   }
 
-  setSessionCookie(token: string, maxAgeMs: number): void {
+  override setSessionCookie(token: string, maxAgeMs: number): void {
     this.cookies.push({ token, maxAgeMs });
   }
 
-  clearSessionCookie(): void {
+  override clearSessionCookie(): void {
     return undefined;
   }
 
-  setHeader(): void {
+  override setHeader(): void {
     return undefined;
   }
 }

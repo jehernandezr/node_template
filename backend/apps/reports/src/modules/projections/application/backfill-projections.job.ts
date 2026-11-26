@@ -56,7 +56,7 @@ export class BackfillProjectionsJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     for (const tenantId of await this.tenants.active()) {
       await this.backfill(tenantId, BackfillSource.Tasks, (cursor) =>
         this.copyTasks(tenantId, cursor),

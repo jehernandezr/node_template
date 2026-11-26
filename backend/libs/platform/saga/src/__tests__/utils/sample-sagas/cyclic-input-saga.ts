@@ -13,7 +13,7 @@ export class CyclicInputSaga extends SagaDefinition<SampleState> {
     this.cycle.self = this.cycle;
   }
 
-  protected define(flow: SagaFlow<SampleState>): void {
+  protected override define(flow: SagaFlow<SampleState>): void {
     flow.step(LOOSE_A).input(() => this.cycle);
   }
 }

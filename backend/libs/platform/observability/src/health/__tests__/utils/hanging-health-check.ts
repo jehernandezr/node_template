@@ -6,7 +6,7 @@ export class HangingHealthCheck extends HealthCheckable {
     super();
   }
 
-  check(): Promise<HealthReport> {
+  override check(): Promise<HealthReport> {
     return new Promise<HealthReport>(() => undefined);
   }
 }

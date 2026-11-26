@@ -24,7 +24,7 @@ export class ManagePreferences extends PreferencesFacade {
     super();
   }
 
-  async get(user: UserRef): Promise<NotificationPreferences> {
+  override async get(user: UserRef): Promise<NotificationPreferences> {
     const saved = await this.shard.inUserShard(user, () =>
       this.preferences.find(user.userId),
     );
@@ -39,7 +39,7 @@ export class ManagePreferences extends PreferencesFacade {
     );
   }
 
-  erase(user: UserRef): Promise<number> {
+  override erase(user: UserRef): Promise<number> {
     return this.shard.inUserShard(user, () =>
       this.preferences.erase(user.userId),
     );

@@ -9,7 +9,7 @@ import type { PaymentResult } from '../../domain/payment-provider.js';
 export class InMemoryPaymentAttempts extends PaymentAttempts {
   protected readonly rows = new Map<string, PaymentAttempt>();
 
-  async reserve(attempt: PaymentAttempt): Promise<boolean> {
+  override async reserve(attempt: PaymentAttempt): Promise<boolean> {
     const key = InMemoryPaymentAttempts.keyOf(
       attempt.invoiceId,
       attempt.attempt,
@@ -21,14 +21,14 @@ export class InMemoryPaymentAttempts extends PaymentAttempts {
     return true;
   }
 
-  async find(
+  override async find(
     invoiceId: string,
     attempt: number,
   ): Promise<PaymentAttempt | undefined> {
     return this.rows.get(InMemoryPaymentAttempts.keyOf(invoiceId, attempt));
   }
 
-  async findById(
+  override async findById(
     invoiceId: string,
     id: string,
   ): Promise<PaymentAttempt | undefined> {
@@ -37,7 +37,9 @@ export class InMemoryPaymentAttempts extends PaymentAttempts {
     );
   }
 
-  async latest(invoiceId: string): Promise<PaymentAttempt | undefined> {
+  override async latest(
+    invoiceId: string,
+  ): Promise<PaymentAttempt | undefined> {
     return this.all()
       .filter((row) => row.invoiceId === invoiceId)
       .reduce<PaymentAttempt | undefined>(
@@ -47,7 +49,7 @@ export class InMemoryPaymentAttempts extends PaymentAttempts {
       );
   }
 
-  async resolve(id: string, result: PaymentResult): Promise<void> {
+  override async resolve(id: string, result: PaymentResult): Promise<void> {
     for (const [key, row] of this.rows) {
       if (row.id === id && OPEN_PAYMENT_STATUSES.has(row.status)) {
         this.rows.set(key, { ...row, ...result });

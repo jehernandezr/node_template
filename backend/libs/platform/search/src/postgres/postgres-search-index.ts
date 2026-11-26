@@ -26,16 +26,16 @@ export abstract class PostgresSearchIndex extends SearchIndex {
     this.repository = new SearchRowRepository(kit);
   }
 
-  async index(document: SearchDocument): Promise<void> {
+  override async index(document: SearchDocument): Promise<void> {
     const embedding = await this.embeddingOf(document.text);
     await this.repository.upsert(document, embedding);
   }
 
-  remove(collection: string, id: string): Promise<void> {
+  override remove(collection: string, id: string): Promise<void> {
     return this.repository.delete(collection, id);
   }
 
-  async search(query: SearchQuery): Promise<readonly SearchHit[]> {
+  override async search(query: SearchQuery): Promise<readonly SearchHit[]> {
     const rows = await this.repository.select<HitRow>(
       await this.rankingSql(query),
     );

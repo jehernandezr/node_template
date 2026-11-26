@@ -27,7 +27,7 @@ class ModeRecordingDataSource extends StubDataSource {
 class ModeRecordingFactory extends DataSourceFactory {
   readonly created: ModeRecordingDataSource[] = [];
 
-  create(target: DatabaseTarget): DataSource {
+  override create(target: DatabaseTarget): DataSource {
     const dataSource = new ModeRecordingDataSource(target.database);
     this.created.push(dataSource);
     return dataSource;

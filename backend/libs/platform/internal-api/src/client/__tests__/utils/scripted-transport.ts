@@ -48,7 +48,7 @@ export class ScriptedTransport extends Transport {
     return this;
   }
 
-  invoke(
+  override invoke(
     _operationId: string,
     input: unknown,
     meta: CallMeta,

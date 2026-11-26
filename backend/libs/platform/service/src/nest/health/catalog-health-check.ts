@@ -18,7 +18,7 @@ export class CatalogHealthCheck extends HealthCheckable {
     super();
   }
 
-  async check(signal?: AbortSignal): Promise<HealthReport> {
+  override async check(signal?: AbortSignal): Promise<HealthReport> {
     signal?.throwIfAborted();
     const dataSource = await this.catalog.get();
     await dataSource.query(HealthProbeQuery.SelectOne);

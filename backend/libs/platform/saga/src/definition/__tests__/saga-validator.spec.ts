@@ -58,7 +58,7 @@ const SEND = defineOperation({
 class FlowSaga extends SagaDefinition<unknown> {
   readonly type = 'flow';
 
-  protected define(flow: SagaFlow<unknown>): void {
+  protected override define(flow: SagaFlow<unknown>): void {
     flow.step(CREATE).pivot().step(SEND);
   }
 }

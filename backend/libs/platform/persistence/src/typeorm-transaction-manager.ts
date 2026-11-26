@@ -44,7 +44,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
   /**
    * Joins the open transaction: the outer one's options take precedence.
    */
-  async runInTransaction<T>(
+  override async runInTransaction<T>(
     fn: (uow: TypeOrmUnitOfWork) => Promise<T>,
     options?: ShardedTransactionOptions,
   ): Promise<T> {
@@ -62,18 +62,18 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     return TransactionShardGuard.run(() => this.runNew(handle, fn, options));
   }
 
-  current(): TypeOrmUnitOfWork | undefined {
+  override current(): TypeOrmUnitOfWork | undefined {
     return this.storage.getStore();
   }
 
-  isInTransaction(): boolean {
+  override isInTransaction(): boolean {
     return this.current() !== undefined;
   }
 
   /**
    * Without a transaction there is nothing to wait for: the effect runs immediately and without blocking.
    */
-  afterCommit(hook: TransactionHook): void {
+  override afterCommit(hook: TransactionHook): void {
     const uow = this.current();
     if (uow !== undefined) {
       uow.afterCommit(hook);

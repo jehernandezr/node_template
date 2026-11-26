@@ -26,7 +26,7 @@ class RecordingDirectory extends OperationHandler<
   readonly received: TenantDirectoryEntry[] = [];
   refuses = false;
 
-  async handle(
+  override async handle(
     input: TenantDirectoryEntry,
   ): Promise<HandlerResult<TenantDirectoryAck>> {
     if (this.refuses) {

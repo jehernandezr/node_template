@@ -8,7 +8,7 @@ export class SigningKeyJwksSource extends JwksKeySource {
     super();
   }
 
-  async keyFor(kid: string): Promise<KeyObject | undefined> {
+  override async keyFor(kid: string): Promise<KeyObject | undefined> {
     return this.keys.ring().find(kid)?.publicKey;
   }
 }

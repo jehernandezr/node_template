@@ -17,7 +17,7 @@ export class InMemorySagaStore extends SagaStore {
   private readonly instances = new Map<string, SagaInstanceProps>();
   private readonly log = new Map<string, StepLogEntry[]>();
 
-  async create(instance: SagaInstance): Promise<void> {
+  override async create(instance: SagaInstance): Promise<void> {
     const keyTaken =
       instance.idempotencyKey !== null &&
       [...this.instances.values()].some(
@@ -32,14 +32,16 @@ export class InMemorySagaStore extends SagaStore {
     this.instances.set(instance.id, InMemorySagaStore.copy(instance.toProps()));
   }
 
-  async get(id: string): Promise<SagaInstance | null> {
+  override async get(id: string): Promise<SagaInstance | null> {
     const found = this.instances.get(id);
     return found === undefined
       ? null
       : SagaInstance.rehydrate(InMemorySagaStore.copy(found));
   }
 
-  async findByIdempotencyKey(key: string): Promise<SagaInstance | null> {
+  override async findByIdempotencyKey(
+    key: string,
+  ): Promise<SagaInstance | null> {
     const found = [...this.instances.values()].find(
       (instance) => instance.idempotencyKey === key,
     );
@@ -48,11 +50,11 @@ export class InMemorySagaStore extends SagaStore {
       : SagaInstance.rehydrate(InMemorySagaStore.copy(found));
   }
 
-  async commitStep(write: FencedWrite): Promise<SagaInstance> {
+  override async commitStep(write: FencedWrite): Promise<SagaInstance> {
     return this.fencedWrite(write);
   }
 
-  async dispatchStep(write: DispatchWrite): Promise<SagaInstance> {
+  override async dispatchStep(write: DispatchWrite): Promise<SagaInstance> {
     if (write.step.status !== StepStatus.Dispatched) {
       throw new SagaError(
         SagaErrorCode.InvalidState,
@@ -62,7 +64,7 @@ export class InMemorySagaStore extends SagaStore {
     return this.fencedWrite(write);
   }
 
-  async steps(sagaId: string): Promise<StepLogEntry[]> {
+  override async steps(sagaId: string): Promise<StepLogEntry[]> {
     return [...(this.log.get(sagaId) ?? [])]
       .sort(
         (a, b) =>
@@ -72,7 +74,10 @@ export class InMemorySagaStore extends SagaStore {
       .map((entry) => InMemorySagaStore.copyEntry(entry));
   }
 
-  async findRecoverable(now: Date, limit: number): Promise<SagaInstance[]> {
+  override async findRecoverable(
+    now: Date,
+    limit: number,
+  ): Promise<SagaInstance[]> {
     const time = now.getTime();
     return [...this.instances.values()]
       .filter((instance) => {
@@ -100,7 +105,7 @@ export class InMemorySagaStore extends SagaStore {
       .map((props) => SagaInstance.rehydrate(InMemorySagaStore.copy(props)));
   }
 
-  async tryAcquireLease(
+  override async tryAcquireLease(
     id: string,
     token: string,
     until: Date,
@@ -125,7 +130,11 @@ export class InMemorySagaStore extends SagaStore {
     return true;
   }
 
-  async renewLease(id: string, token: string, until: Date): Promise<boolean> {
+  override async renewLease(
+    id: string,
+    token: string,
+    until: Date,
+  ): Promise<boolean> {
     const current = this.instances.get(id);
     if (current === undefined || current.leaseToken !== token) {
       return false;
@@ -137,7 +146,7 @@ export class InMemorySagaStore extends SagaStore {
     return true;
   }
 
-  async releaseLease(id: string, token: string): Promise<void> {
+  override async releaseLease(id: string, token: string): Promise<void> {
     const current = this.instances.get(id);
     if (current !== undefined && current.leaseToken === token) {
       this.instances.set(id, {
@@ -148,7 +157,7 @@ export class InMemorySagaStore extends SagaStore {
     }
   }
 
-  async purge(options: SagaPurge): Promise<number> {
+  override async purge(options: SagaPurge): Promise<number> {
     const limit = options.limit ?? SagaStore.DEFAULT_PURGE_LIMIT;
     const doomed = [...this.instances.values()]
       .filter(

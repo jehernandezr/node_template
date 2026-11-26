@@ -6,15 +6,15 @@ import { RoutingCache } from './ports/routing-cache.js';
  * always queries the directory and its in-process cache.
  */
 export class NullRoutingCache extends RoutingCache {
-  get(): Promise<string | undefined> {
+  override get(): Promise<string | undefined> {
     return Promise.resolve(undefined);
   }
 
-  setIfNewer(): Promise<boolean> {
+  override setIfNewer(): Promise<boolean> {
     return Promise.resolve(false);
   }
 
-  delete(): Promise<void> {
+  override delete(): Promise<void> {
     return Promise.resolve();
   }
 }

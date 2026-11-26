@@ -36,7 +36,7 @@ export class SnsSqsEnvelopePublisher extends EnvelopePublisher {
     super();
   }
 
-  async publish(
+  override async publish(
     envelope: MessageEnvelope,
     target: OutboundTarget,
     options: PublishOutboxOptions = {},

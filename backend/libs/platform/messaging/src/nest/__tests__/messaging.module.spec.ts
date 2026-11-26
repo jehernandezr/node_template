@@ -76,11 +76,11 @@ function userRegistered(id: string, tenantid?: string) {
 
 /** Bus that publishes directly, without an outbox, to test the `bus` option. */
 class DirectBus extends MessageBus {
-  publish(): Promise<never> {
+  override publish(): Promise<never> {
     return Promise.reject(new Error('direct bus'));
   }
 
-  send(): Promise<never> {
+  override send(): Promise<never> {
     return Promise.reject(new Error('direct bus'));
   }
 }

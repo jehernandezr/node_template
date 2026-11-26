@@ -33,7 +33,7 @@ export class PurgeDeletedTasksJob extends ScheduledJob {
       PurgeDeletedTasksJob.DAY_MS;
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     await this.maintenance.purgeDeletedBefore(
       new Date(this.clock.now().getTime() - this.retentionMs),
     );

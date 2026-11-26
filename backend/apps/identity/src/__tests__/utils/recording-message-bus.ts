@@ -28,7 +28,7 @@ export class RecordingMessageBus extends MessageBus {
    * @param options Envelope options.
    * @returns The envelope of the event.
    */
-  async publish<M extends EventDefinition>(
+  override async publish<M extends EventDefinition>(
     event: M,
     data: MessageInput<M>,
     options: PublishOptions = {},
@@ -44,7 +44,7 @@ export class RecordingMessageBus extends MessageBus {
    * @param options Envelope options.
    * @returns The envelope of the command.
    */
-  async send<M extends CommandDefinition>(
+  override async send<M extends CommandDefinition>(
     command: M,
     data: MessageInput<M>,
     options: PublishOptions = {},

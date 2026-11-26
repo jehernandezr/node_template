@@ -33,7 +33,7 @@ export class ManageInbox extends InboxFacade {
     super();
   }
 
-  async add(
+  override async add(
     user: UserRef,
     notification: NotificationState,
   ): Promise<AppNotification> {
@@ -60,7 +60,7 @@ export class ManageInbox extends InboxFacade {
     });
   }
 
-  unreadCount(user: UserRef): Promise<number> {
+  override unreadCount(user: UserRef): Promise<number> {
     return this.shard.inUserShard(user, () =>
       this.inbox.unreadCount(user.userId),
     );
@@ -90,7 +90,7 @@ export class ManageInbox extends InboxFacade {
     await this.realtime.unreadCount(user, 0);
   }
 
-  erase(user: UserRef): Promise<number> {
+  override erase(user: UserRef): Promise<number> {
     return this.shard.inUserShard(user, () => this.inbox.erase(user.userId));
   }
 }

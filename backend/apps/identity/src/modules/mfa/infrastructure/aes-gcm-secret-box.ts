@@ -24,7 +24,7 @@ export class AesGcmSecretBox extends SecretBox {
       .digest();
   }
 
-  seal(plain: Buffer): string {
+  override seal(plain: Buffer): string {
     const iv = randomBytes(AesGcmSecretBox.IV_BYTES);
     const cipher = createCipheriv('aes-256-gcm', this.key, iv);
     const encrypted = Buffer.concat([cipher.update(plain), cipher.final()]);
@@ -33,7 +33,7 @@ export class AesGcmSecretBox extends SecretBox {
       .join('.');
   }
 
-  open(sealed: string): Buffer {
+  override open(sealed: string): Buffer {
     const [iv, tag, encrypted] = sealed
       .split('.')
       .map((part) => Buffer.from(part, 'base64url'));

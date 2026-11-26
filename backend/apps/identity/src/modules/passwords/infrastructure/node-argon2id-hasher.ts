@@ -24,7 +24,7 @@ export class NodeArgon2idHasher extends PasswordHasher {
   private static readonly PHC =
     /^\$argon2id\$v=19\$m=(\d+),t=(\d+),p=(\d+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
 
-  async hash(password: string): Promise<string> {
+  override async hash(password: string): Promise<string> {
     const salt = randomBytes(Argon2Params.saltBytes);
     const tag = await this.derive(password, {
       memoryKiB: Argon2Params.memoryKiB,
@@ -43,7 +43,7 @@ export class NodeArgon2idHasher extends PasswordHasher {
     ].join('$');
   }
 
-  async verify(password: string, hash: string): Promise<boolean> {
+  override async verify(password: string, hash: string): Promise<boolean> {
     const parsed = NodeArgon2idHasher.parse(hash);
     if (parsed === undefined) {
       return false;
@@ -55,7 +55,7 @@ export class NodeArgon2idHasher extends PasswordHasher {
     return tag.length === parsed.tag.length && timingSafeEqual(tag, parsed.tag);
   }
 
-  needsRehash(hash: string): boolean {
+  override needsRehash(hash: string): boolean {
     const parsed = NodeArgon2idHasher.parse(hash);
     return (
       parsed === undefined ||

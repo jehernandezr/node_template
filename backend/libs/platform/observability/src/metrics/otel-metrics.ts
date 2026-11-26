@@ -24,7 +24,11 @@ export class OtelMetrics extends MetricsPort {
     super();
   }
 
-  increment(name: string, attributes: MetricAttributes = {}, value = 1): void {
+  override increment(
+    name: string,
+    attributes: MetricAttributes = {},
+    value = 1,
+  ): void {
     let counter = this.counters.get(name);
     if (counter === undefined) {
       counter = this.meter.createCounter(name);
@@ -33,7 +37,11 @@ export class OtelMetrics extends MetricsPort {
     counter.add(value, attributes);
   }
 
-  record(name: string, value: number, attributes: MetricAttributes = {}): void {
+  override record(
+    name: string,
+    value: number,
+    attributes: MetricAttributes = {},
+  ): void {
     let histogram = this.histograms.get(name);
     if (histogram === undefined) {
       histogram = this.meter.createHistogram(name);

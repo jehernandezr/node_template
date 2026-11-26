@@ -7,25 +7,30 @@ export class InMemoryUserAccessRepository extends UserAccessRepository {
   private readonly tenants = new Map<string, UserTenant>();
   private readonly roles = new Map<string, PlatformRole[]>();
 
-  async listTenants(userId: string): Promise<readonly UserTenant[]> {
+  override async listTenants(userId: string): Promise<readonly UserTenant[]> {
     return [...this.tenants.values()].filter(
       (tenant) => tenant.userId === userId,
     );
   }
 
-  async projectTenant(tenant: UserTenant): Promise<void> {
+  override async projectTenant(tenant: UserTenant): Promise<void> {
     this.tenants.set(`${tenant.userId}@${tenant.tenantId}`, tenant);
   }
 
-  async removeTenant(userId: string, tenantId: string): Promise<void> {
+  override async removeTenant(userId: string, tenantId: string): Promise<void> {
     this.tenants.delete(`${userId}@${tenantId}`);
   }
 
-  async platformRoles(userId: string): Promise<readonly PlatformRole[]> {
+  override async platformRoles(
+    userId: string,
+  ): Promise<readonly PlatformRole[]> {
     return this.roles.get(userId) ?? [];
   }
 
-  async grantPlatformRole(userId: string, role: PlatformRole): Promise<void> {
+  override async grantPlatformRole(
+    userId: string,
+    role: PlatformRole,
+  ): Promise<void> {
     this.roles.set(userId, [...(this.roles.get(userId) ?? []), role]);
   }
 }

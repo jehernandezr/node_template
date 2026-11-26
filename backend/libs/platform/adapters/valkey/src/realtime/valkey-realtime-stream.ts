@@ -47,7 +47,10 @@ return id
     super();
   }
 
-  async append(channel: string, frame: RealtimeFrame): Promise<string> {
+  override async append(
+    channel: string,
+    frame: RealtimeFrame,
+  ): Promise<string> {
     const reply = await this.executor.script(
       ValkeyRealtimeStream.APPEND,
       [this.streamKey(channel)],
@@ -67,7 +70,7 @@ return id
     return reply;
   }
 
-  async readAfter(
+  override async readAfter(
     channel: string,
     afterId: string | undefined,
     limit: number,
@@ -87,7 +90,7 @@ return id
   }
 
   /** An id with a valid shape but later than the last frame (from another Valkey or made up) counts as the end. */
-  async resumePoint(
+  override async resumePoint(
     channel: string,
     lastEventId: string | undefined,
   ): Promise<string | undefined> {
@@ -111,7 +114,7 @@ return id
     return last;
   }
 
-  async subscribe(
+  override async subscribe(
     channel: string,
     onAppend: () => void,
   ): Promise<StreamUnsubscribe> {

@@ -10,7 +10,7 @@ export class MetricsCacheErrorReporter extends CacheErrorReporter {
     super();
   }
 
-  report(error: unknown): void {
+  override report(error: unknown): void {
     this.metrics.reportError(error, this.cacheName);
   }
 }

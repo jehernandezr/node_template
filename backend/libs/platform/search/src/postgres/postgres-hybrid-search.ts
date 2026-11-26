@@ -32,13 +32,13 @@ export class PostgresHybridSearch extends PostgresSearchIndex {
     }
   }
 
-  protected async embeddingOf(text: string): Promise<string> {
+  protected override async embeddingOf(text: string): Promise<string> {
     return PostgresHybridSearch.vectorLiteral(
       await this.embeddings.embed(text),
     );
   }
 
-  protected async rankingSql(query: SearchQuery): Promise<RankingSql> {
+  protected override async rankingSql(query: SearchQuery): Promise<RankingSql> {
     const candidates = Math.max(
       PostgresHybridSearch.CANDIDATES_PER_LIST,
       query.offset + query.limit,

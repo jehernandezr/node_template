@@ -14,13 +14,13 @@ export class HmacApiKeySecretHasher extends ApiKeySecretHasher {
     this.key = settings.values.IDENTITY_API_KEY_PEPPER.reveal();
   }
 
-  hmac(secretSha256: string): string {
+  override hmac(secretSha256: string): string {
     return createHmac('sha256', this.key)
       .update(secretSha256)
       .digest('base64url');
   }
 
-  matches(secretSha256: string, hmac: string): boolean {
+  override matches(secretSha256: string, hmac: string): boolean {
     return constantTimeEquals(this.hmac(secretSha256), hmac);
   }
 }

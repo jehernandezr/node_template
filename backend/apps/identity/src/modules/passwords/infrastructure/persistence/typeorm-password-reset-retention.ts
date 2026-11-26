@@ -17,7 +17,7 @@ export class TypeOrmPasswordResetRetention extends PasswordResetRetention {
     super();
   }
 
-  async purgeExpiredBefore(cutoff: Date): Promise<number> {
+  override async purgeExpiredBefore(cutoff: Date): Promise<number> {
     const outcome = await this.shards.run((connection) =>
       TenantMaintenanceSession.run(
         connection.dataSource.manager,

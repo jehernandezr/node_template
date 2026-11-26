@@ -17,7 +17,7 @@ const runtime = new ContainerRuntime(process.env);
 
 /** Leaves the HTTP application as Nest creates it: the probe service has no HTTP contract. */
 class PlainHttpSetup extends HttpApplicationConfigurer {
-  configure(): Promise<void> {
+  override configure(): Promise<void> {
     return Promise.resolve();
   }
 }

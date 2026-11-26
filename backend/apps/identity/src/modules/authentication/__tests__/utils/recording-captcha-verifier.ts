@@ -8,7 +8,10 @@ export class RecordingCaptchaVerifier extends CaptchaVerifier {
     super();
   }
 
-  async verify(response: string | undefined, ip: string): Promise<boolean> {
+  override async verify(
+    response: string | undefined,
+    ip: string,
+  ): Promise<boolean> {
     this.checked.push({ ...(response === undefined ? {} : { response }), ip });
     return response !== undefined && this.valid.includes(response);
   }

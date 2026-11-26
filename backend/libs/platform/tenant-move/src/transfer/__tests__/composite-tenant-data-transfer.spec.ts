@@ -21,7 +21,7 @@ class ScriptedTransfer extends TenantDataTransfer {
     super();
   }
 
-  async sync(): Promise<TenantMoveProgress> {
+  override async sync(): Promise<TenantMoveProgress> {
     this.journal.push(`sync ${this.table}`);
     return {
       tables: [{ table: this.table, copiedRows: 1, pendingRows: 0 }],
@@ -29,7 +29,7 @@ class ScriptedTransfer extends TenantDataTransfer {
     };
   }
 
-  async verify(): Promise<TenantMoveVerification> {
+  override async verify(): Promise<TenantMoveVerification> {
     this.journal.push(`verify ${this.table}`);
     return {
       tables: [
@@ -45,15 +45,15 @@ class ScriptedTransfer extends TenantDataTransfer {
     };
   }
 
-  async abort(): Promise<void> {
+  override async abort(): Promise<void> {
     this.journal.push(`abort ${this.table}`);
   }
 
-  async cleanup(tenantId: string): Promise<void> {
+  override async cleanup(tenantId: string): Promise<void> {
     this.journal.push(`cleanup ${this.table} ${tenantId}`);
   }
 
-  async assignRegion(
+  override async assignRegion(
     tenantId: string,
     _target: ShardLocation,
     region: string,
@@ -72,7 +72,7 @@ class SlowTransfer extends TenantDataTransfer {
     super();
   }
 
-  async sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
+  override async sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
     this.spend(transfer.budget);
     return {
       tables: [{ table: this.table, copiedRows: 1, pendingRows: 0 }],
@@ -80,15 +80,15 @@ class SlowTransfer extends TenantDataTransfer {
     };
   }
 
-  async verify(): Promise<TenantMoveVerification> {
+  override async verify(): Promise<TenantMoveVerification> {
     return { tables: [], verified: true };
   }
 
-  async abort(transfer: TenantTransfer): Promise<void> {
+  override async abort(transfer: TenantTransfer): Promise<void> {
     this.spend(transfer.budget);
   }
 
-  async cleanup(
+  override async cleanup(
     _tenantId: string,
     _source: ShardLocation,
     budget?: TransferBudget,
@@ -96,7 +96,7 @@ class SlowTransfer extends TenantDataTransfer {
     this.spend(budget);
   }
 
-  assignRegion(): Promise<void> {
+  override assignRegion(): Promise<void> {
     return Promise.resolve();
   }
 

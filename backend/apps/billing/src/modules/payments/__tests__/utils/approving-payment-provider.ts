@@ -9,7 +9,7 @@ import { PaymentStatus } from '../../domain/payment-status.enum.js';
 export class ApprovingPaymentProvider extends PaymentProvider {
   private readonly charged = new Map<string, PaymentResult>();
 
-  async charge(request: ProviderCharge): Promise<PaymentResult> {
+  override async charge(request: ProviderCharge): Promise<PaymentResult> {
     const result = this.charged.get(request.attemptId) ?? {
       status: PaymentStatus.Approved,
       reference: `gateway-${request.attemptId}`,
@@ -18,7 +18,7 @@ export class ApprovingPaymentProvider extends PaymentProvider {
     return result;
   }
 
-  async find(attemptId: string): Promise<PaymentResult | undefined> {
+  override async find(attemptId: string): Promise<PaymentResult | undefined> {
     return this.charged.get(attemptId);
   }
 

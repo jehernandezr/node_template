@@ -26,7 +26,7 @@ export class ValkeyErrorTranslator extends FailureRule {
   private static readonly COMMAND_TIMEOUT_MESSAGE = 'Command timed out';
 
   /** Only judges a server reply error; the rest is left to the classifier. */
-  classify(error: object): FailureKind | undefined {
+  override classify(error: object): FailureKind | undefined {
     return this.isReplyError(error) ? this.kindOf(error) : undefined;
   }
 

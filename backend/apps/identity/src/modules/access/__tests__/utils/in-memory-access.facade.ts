@@ -54,7 +54,10 @@ export class InMemoryAccessFacade extends AccessFacade {
     return this;
   }
 
-  async resolve(userId: string, tenantId: string): Promise<UserAccess> {
+  override async resolve(
+    userId: string,
+    tenantId: string,
+  ): Promise<UserAccess> {
     const access = this.accesses.get(keyOf(userId, tenantId));
     if (access === undefined) {
       throw new Error('Access not found');
@@ -62,11 +65,11 @@ export class InMemoryAccessFacade extends AccessFacade {
     return access;
   }
 
-  async isMember(userId: string, tenantId: string): Promise<boolean> {
+  override async isMember(userId: string, tenantId: string): Promise<boolean> {
     return this.memberships.has(keyOf(userId, tenantId));
   }
 
-  async defaultTenant(ref: UserRef): Promise<string> {
+  override async defaultTenant(ref: UserRef): Promise<string> {
     const tenantId = this.defaults.get(ref.userId);
     if (tenantId === undefined) {
       throw new Error('Default tenant not found');
@@ -74,14 +77,14 @@ export class InMemoryAccessFacade extends AccessFacade {
     return tenantId;
   }
 
-  async requiresMfaOnEveryLogin(
+  override async requiresMfaOnEveryLogin(
     ref: UserRef,
     tenantId: string,
   ): Promise<boolean> {
     return this.mfaEveryLogin.has(keyOf(ref.userId, tenantId));
   }
 
-  async addMember(
+  override async addMember(
     tenantId: string,
     ref: UserRef,
     groupIds: readonly string[],
@@ -90,7 +93,7 @@ export class InMemoryAccessFacade extends AccessFacade {
     this.memberships.add(keyOf(ref.userId, tenantId));
   }
 
-  async assertCanGrantGroups(
+  override async assertCanGrantGroups(
     tenantId: string,
     actor: Actor | undefined,
     groupIds: readonly string[],
@@ -112,7 +115,7 @@ export class InMemoryAccessFacade extends AccessFacade {
 
   readonly setUp: Array<{ tenantId: string; owner?: UserRef }> = [];
 
-  async setupTenant(tenantId: string, owner?: UserRef): Promise<void> {
+  override async setupTenant(tenantId: string, owner?: UserRef): Promise<void> {
     this.setUp.push(owner === undefined ? { tenantId } : { tenantId, owner });
     if (owner !== undefined) {
       this.memberships.add(keyOf(owner.userId, tenantId));
@@ -121,7 +124,10 @@ export class InMemoryAccessFacade extends AccessFacade {
 
   readonly projected: Array<{ tenantId: string; ref: UserRef }> = [];
 
-  async projectMembership(tenantId: string, ref: UserRef): Promise<void> {
+  override async projectMembership(
+    tenantId: string,
+    ref: UserRef,
+  ): Promise<void> {
     this.projected.push({ tenantId, ref });
   }
 
@@ -138,7 +144,7 @@ export class InMemoryAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.reserveDepartures} */
-  async reserveDepartures(ref: UserRef): Promise<readonly string[]> {
+  override async reserveDepartures(ref: UserRef): Promise<readonly string[]> {
     const reserved: string[] = [];
     for (const { tenantId } of await this.tenantsOf(ref)) {
       const key = keyOf(ref.userId, tenantId);
@@ -151,7 +157,7 @@ export class InMemoryAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.releaseDepartures} */
-  async releaseDepartures(
+  override async releaseDepartures(
     ref: UserRef,
     tenantIds: readonly string[],
   ): Promise<void> {
@@ -161,13 +167,13 @@ export class InMemoryAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.cancelDepartures} */
-  async cancelDepartures(ref: UserRef): Promise<void> {
+  override async cancelDepartures(ref: UserRef): Promise<void> {
     for (const { tenantId } of await this.tenantsOf(ref)) {
       this.departures.delete(keyOf(ref.userId, tenantId));
     }
   }
 
-  async removeFromAllTenants(ref: UserRef): Promise<void> {
+  override async removeFromAllTenants(ref: UserRef): Promise<void> {
     for (const key of [...this.memberships]) {
       if (key.startsWith(`${ref.userId}@`)) {
         this.memberships.delete(key);
@@ -175,7 +181,7 @@ export class InMemoryAccessFacade extends AccessFacade {
     }
   }
 
-  async discardTenant(tenantId: string): Promise<void> {
+  override async discardTenant(tenantId: string): Promise<void> {
     for (const key of [...this.memberships]) {
       if (key.endsWith(`@${tenantId}`)) {
         this.memberships.delete(key);
@@ -183,14 +189,14 @@ export class InMemoryAccessFacade extends AccessFacade {
     }
   }
 
-  async memberPermissions(
+  override async memberPermissions(
     tenantId: string,
     userId: string,
   ): Promise<readonly Permission[]> {
     return this.accesses.get(keyOf(userId, tenantId))?.permissions ?? [];
   }
 
-  async assertGroupsWithin(
+  override async assertGroupsWithin(
     _tenantId: string,
     groupIds: readonly string[],
     granted: readonly Permission[],
@@ -205,7 +211,7 @@ export class InMemoryAccessFacade extends AccessFacade {
 
   readonly replayed: PermissionsChangedPayload[] = [];
 
-  async replayPermissionVersion(
+  override async replayPermissionVersion(
     event: PermissionsChangedPayload,
   ): Promise<void> {
     this.replayed.push(event);
@@ -213,11 +219,11 @@ export class InMemoryAccessFacade extends AccessFacade {
 
   readonly refreshed: string[] = [];
 
-  async refreshTenant(tenantId: string): Promise<void> {
+  override async refreshTenant(tenantId: string): Promise<void> {
     this.refreshed.push(tenantId);
   }
 
-  async tenantsOf(ref: UserRef): Promise<readonly UserTenant[]> {
+  override async tenantsOf(ref: UserRef): Promise<readonly UserTenant[]> {
     return [...this.memberships]
       .filter((key) => key.startsWith(`${ref.userId}@`))
       .map((key) => ({

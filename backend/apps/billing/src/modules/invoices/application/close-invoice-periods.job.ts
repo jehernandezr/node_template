@@ -51,7 +51,7 @@ export class CloseInvoicePeriodsJob extends ScheduledJob {
    * @param context Run context, with its abort signal.
    * @throws AbortError if the signal fires in the middle of the run.
    */
-  async run(context: JobContext): Promise<void> {
+  override async run(context: JobContext): Promise<void> {
     await this.closeDuePeriods(context.signal);
     await this.collectDueInvoices(context.signal);
   }

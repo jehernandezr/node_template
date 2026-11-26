@@ -13,7 +13,7 @@ export class ConsoleIdentityMailer extends IdentityMailer {
     super();
   }
 
-  async send(email: OutgoingEmail): Promise<void> {
+  override async send(email: OutgoingEmail): Promise<void> {
     this.logger.info('identity email', { ...email });
   }
 }

@@ -37,7 +37,9 @@ export class ValkeyAuthRevocationFeed extends AuthRevocationFeed {
   /**
    * It is wrapped so the same handler can be subscribed twice and unsubscribed only once.
    */
-  async subscribe(handler: RevocationHandler): Promise<() => Promise<void>> {
+  override async subscribe(
+    handler: RevocationHandler,
+  ): Promise<() => Promise<void>> {
     const entry: RevocationHandler = (sessionId) => handler(sessionId);
     const first = this.handlers.size === 0;
     this.handlers.add(entry);

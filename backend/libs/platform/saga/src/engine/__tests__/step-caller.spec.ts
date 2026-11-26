@@ -71,7 +71,7 @@ class RecordingInvoker extends FakeParticipant {
 class HangingInvoker extends OperationInvoker {
   readonly signals: AbortSignal[] = [];
 
-  invoke(
+  override invoke(
     _operationId: string,
     _input: unknown,
     _key: string,
@@ -86,7 +86,7 @@ class HangingInvoker extends OperationInvoker {
 
 /** Invoker that returns something that is not a call result. */
 class BrokenInvoker extends OperationInvoker {
-  invoke(): Promise<CallOutcome<unknown>> {
+  override invoke(): Promise<CallOutcome<unknown>> {
     return Promise.resolve({} as CallOutcome<unknown>);
   }
 }

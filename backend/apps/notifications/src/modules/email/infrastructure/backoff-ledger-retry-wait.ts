@@ -33,7 +33,7 @@ export class BackoffLedgerRetryWait extends LedgerRetryWait {
    * @param retry Number of the retry about to run, starting at 1.
    * @returns Resolves once the delay has elapsed.
    */
-  before(retry: number): Promise<void> {
+  override before(retry: number): Promise<void> {
     const delayMs = this.backoff.delay(retry);
     return new Promise((resolve) => {
       TimerScheduler.arm(delayMs, resolve);

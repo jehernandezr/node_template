@@ -7,7 +7,7 @@ export class StaticJwksKeySource extends JwksKeySource {
     super();
   }
 
-  async keyFor(kid: string): Promise<KeyObject | undefined> {
+  override async keyFor(kid: string): Promise<KeyObject | undefined> {
     return this.keys.get(kid);
   }
 }

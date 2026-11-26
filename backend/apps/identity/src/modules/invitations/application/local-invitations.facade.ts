@@ -11,15 +11,15 @@ export class LocalInvitationsFacade extends InvitationsFacade {
     super();
   }
 
-  preview(token: string): Promise<InvitationPreview | undefined> {
+  override preview(token: string): Promise<InvitationPreview | undefined> {
     return this.accept.preview(token);
   }
 
-  acceptForNewUser(token: string, user: UserRef): Promise<void> {
+  override acceptForNewUser(token: string, user: UserRef): Promise<void> {
     return this.accept.forNewUser(token, user);
   }
 
-  assertRoomForNewUser(invitation: InvitationPreview): Promise<void> {
+  override assertRoomForNewUser(invitation: InvitationPreview): Promise<void> {
     return this.accept.assertRoomForNewUser(invitation.tenantId);
   }
 }

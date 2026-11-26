@@ -17,7 +17,7 @@ export class HttpJwksFetcher extends JwksFetcher {
   /**
    * A redirect could take the download to another host the issuer has not published.
    */
-  async fetch(): Promise<unknown> {
+  override async fetch(): Promise<unknown> {
     let response: Response;
     try {
       response = await this.fetchFn(this.url, {

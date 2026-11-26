@@ -26,11 +26,11 @@ import {
 import { TestObservabilityModule } from './utils/test-observability.module.js';
 
 class TestJobLock extends JobLock {
-  async tryAcquire(name: string): Promise<JobLease | undefined> {
+  override async tryAcquire(name: string): Promise<JobLease | undefined> {
     return { name, token: 'test-lock' };
   }
 
-  async release(): Promise<void> {
+  override async release(): Promise<void> {
     return undefined;
   }
 }

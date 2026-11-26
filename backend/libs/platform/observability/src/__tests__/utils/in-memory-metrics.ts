@@ -19,7 +19,11 @@ export interface RecordedMeasurement {
 export class InMemoryMetrics extends MetricsPort {
   readonly measurements: RecordedMeasurement[] = [];
 
-  increment(name: string, attributes: MetricAttributes = {}, value = 1): void {
+  override increment(
+    name: string,
+    attributes: MetricAttributes = {},
+    value = 1,
+  ): void {
     this.measurements.push({
       type: MeasurementType.Counter,
       name,
@@ -28,7 +32,11 @@ export class InMemoryMetrics extends MetricsPort {
     });
   }
 
-  record(name: string, value: number, attributes: MetricAttributes = {}): void {
+  override record(
+    name: string,
+    value: number,
+    attributes: MetricAttributes = {},
+  ): void {
     this.measurements.push({
       type: MeasurementType.Histogram,
       name,

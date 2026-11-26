@@ -11,7 +11,7 @@ export class RecordingCommandRunner extends CommandRunner {
     super();
   }
 
-  async run(run: CommandRun): Promise<number> {
+  override async run(run: CommandRun): Promise<number> {
     this.runs.push(run);
     if (this.failure !== undefined) {
       throw this.failure;

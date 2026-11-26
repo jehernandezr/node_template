@@ -34,7 +34,7 @@ export class RecordingMessageBus extends MessageBus {
     return this.messages.map((message) => message.type);
   }
 
-  publish<M extends EventDefinition>(
+  override publish<M extends EventDefinition>(
     event: M,
     data: MessageInput<M>,
     options?: PublishOptions,
@@ -42,7 +42,7 @@ export class RecordingMessageBus extends MessageBus {
     return this.record(event, data, options);
   }
 
-  send<M extends CommandDefinition>(
+  override send<M extends CommandDefinition>(
     command: M,
     data: MessageInput<M>,
     options?: PublishOptions,

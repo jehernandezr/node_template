@@ -49,11 +49,11 @@ class ScaledTtlCache extends CachePort {
     super();
   }
 
-  get(key: string): Promise<string | undefined> {
+  override get(key: string): Promise<string | undefined> {
     return this.inner.get(key);
   }
 
-  set(key: string, value: string, ttlMs?: number): Promise<void> {
+  override set(key: string, value: string, ttlMs?: number): Promise<void> {
     return this.inner.set(
       key,
       value,
@@ -61,11 +61,11 @@ class ScaledTtlCache extends CachePort {
     );
   }
 
-  setIfAbsent(key: string, value: string): Promise<boolean> {
+  override setIfAbsent(key: string, value: string): Promise<boolean> {
     return this.inner.setIfAbsent(key, value);
   }
 
-  delete(key: string): Promise<void> {
+  override delete(key: string): Promise<void> {
     return this.inner.delete(key);
   }
 }
@@ -76,11 +76,11 @@ class ScaledTtlRoutingCache extends RoutingCache {
     super();
   }
 
-  get(key: string): Promise<string | undefined> {
+  override get(key: string): Promise<string | undefined> {
     return this.inner.get(key);
   }
 
-  setIfNewer(
+  override setIfNewer(
     key: string,
     value: string,
     version: number,
@@ -94,7 +94,7 @@ class ScaledTtlRoutingCache extends RoutingCache {
     );
   }
 
-  delete(key: string): Promise<void> {
+  override delete(key: string): Promise<void> {
     return this.inner.delete(key);
   }
 }

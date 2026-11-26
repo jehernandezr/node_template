@@ -14,7 +14,7 @@ export class StreamRealtimeFacade extends RealtimeFacade {
     super();
   }
 
-  async notification(
+  override async notification(
     user: UserRef,
     notification: AppNotification,
   ): Promise<void> {
@@ -24,14 +24,17 @@ export class StreamRealtimeFacade extends RealtimeFacade {
     });
   }
 
-  async unreadCount(user: UserRef, count: number): Promise<void> {
+  override async unreadCount(user: UserRef, count: number): Promise<void> {
     await this.publisher.publish(user.userId, {
       type: NotificationFrameType.UnreadCount,
       data: { count },
     });
   }
 
-  async closeSession(userId: string, sessionId: string): Promise<void> {
+  override async closeSession(
+    userId: string,
+    sessionId: string,
+  ): Promise<void> {
     await this.publisher.publish(userId, {
       type: NotificationFrameType.SessionClosed,
       data: { sessionId },
@@ -39,11 +42,11 @@ export class StreamRealtimeFacade extends RealtimeFacade {
     });
   }
 
-  async closeAllSessions(userId: string): Promise<void> {
+  override async closeAllSessions(userId: string): Promise<void> {
     await this.closeSession(userId, RealtimeFrames.ALL_SESSIONS);
   }
 
-  isOnline(user: UserRef): Promise<boolean> {
+  override isOnline(user: UserRef): Promise<boolean> {
     return this.publisher.isOnline(user.userId);
   }
 }

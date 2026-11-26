@@ -7,7 +7,7 @@ export class StaticShardLister extends ShardLister {
     super();
   }
 
-  list(): Promise<readonly ShardLocation[]> {
+  override list(): Promise<readonly ShardLocation[]> {
     return Promise.resolve(this.shards);
   }
 }

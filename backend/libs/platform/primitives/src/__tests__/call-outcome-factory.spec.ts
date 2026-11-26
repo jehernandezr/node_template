@@ -19,7 +19,7 @@ class UpstreamBusyError extends PlatformError {
 
 /** Rule of a fake provider: its `THROTTLED` code is transient. */
 class ThrottledRule extends FailureRule {
-  classify(error: object): FailureKind | undefined {
+  override classify(error: object): FailureKind | undefined {
     return (error as { code?: unknown }).code === 'THROTTLED'
       ? FailureKind.Transient
       : undefined;

@@ -28,7 +28,7 @@ class CountingResolver extends AccessResolver {
     super();
   }
 
-  async resolve(): Promise<AccessGrant> {
+  override async resolve(): Promise<AccessGrant> {
     this.calls += 1;
     return this.grant;
   }

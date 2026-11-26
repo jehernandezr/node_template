@@ -18,7 +18,7 @@ export class TasksServiceHistory extends TaskHistory {
   }
 
   /** @throws PeerUnavailableError if tasks does not respond: the backfill continues on the next run. */
-  async page(
+  override async page(
     tenantId: string,
     after: string | undefined,
     limit: number,

@@ -9,7 +9,7 @@ export class InMemoryPresenceTracker extends PresenceTracker {
     super();
   }
 
-  async connected(
+  override async connected(
     channel: string,
     connectionId: string,
     ttlMs: number,
@@ -19,11 +19,14 @@ export class InMemoryPresenceTracker extends PresenceTracker {
     this.expiries.set(channel, connections);
   }
 
-  async disconnected(channel: string, connectionId: string): Promise<void> {
+  override async disconnected(
+    channel: string,
+    connectionId: string,
+  ): Promise<void> {
     this.expiries.get(channel)?.delete(connectionId);
   }
 
-  async isOnline(channel: string): Promise<boolean> {
+  override async isOnline(channel: string): Promise<boolean> {
     const now = this.clock.now().getTime();
     return [...(this.expiries.get(channel)?.values() ?? [])].some(
       (expiresAt) => expiresAt > now,

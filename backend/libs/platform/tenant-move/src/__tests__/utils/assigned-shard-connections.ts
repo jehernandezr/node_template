@@ -27,7 +27,7 @@ export class AssignedShardConnections extends ShardConnections {
    * The connection handed out for the location.
    * @throws Error if the location was not handed out by `locationOf`.
    */
-  get(location: ShardLocation): Promise<DataSource> {
+  override get(location: ShardLocation): Promise<DataSource> {
     const dataSource = this.byShard.get(location.logicalShard);
     if (dataSource === undefined) {
       return Promise.reject(

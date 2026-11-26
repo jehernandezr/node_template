@@ -42,7 +42,7 @@ export class DegradingRateLimiter extends RateLimiter {
    * Consumes from the shared limiter, or from the local one with the divided limit if it fails.
    * A cost that the local limit does not admit would never fit: it is clamped.
    */
-  async consume(
+  override async consume(
     key: string,
     rule: RateLimitRule,
     cost = 1,
@@ -58,7 +58,10 @@ export class DegradingRateLimiter extends RateLimiter {
   }
 
   /** Reads the shared limiter's state, or the local one's if it fails. */
-  async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
+  override async peek(
+    key: string,
+    rule: RateLimitRule,
+  ): Promise<RateLimitResult> {
     RateLimitCallValidator.validate(key, rule);
     try {
       return await this.primary.peek(key, rule);
@@ -73,7 +76,7 @@ export class DegradingRateLimiter extends RateLimiter {
    * resets (for example, after a successful login) must not fail
    * because of it, and the old counter expires on its own with its window.
    */
-  async reset(key: string, rule: RateLimitRule): Promise<void> {
+  override async reset(key: string, rule: RateLimitRule): Promise<void> {
     RateLimitCallValidator.validate(key, rule);
     await this.fallback.reset(key, this.localRule(rule));
     try {

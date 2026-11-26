@@ -14,19 +14,19 @@ const SHARDS: readonly AvailableShard[] = [
 
 /** Directory where another writer always wins the write. */
 class AlwaysTakenDirectory extends DirectoryWriter {
-  async readPlacement(): Promise<TenantPlacement | undefined> {
+  override async readPlacement(): Promise<TenantPlacement | undefined> {
     return undefined;
   }
 
-  async listPlacements(): Promise<readonly TenantPlacement[]> {
+  override async listPlacements(): Promise<readonly TenantPlacement[]> {
     return [];
   }
 
-  async putPlacement(): Promise<DirectoryWriteResult> {
+  override async putPlacement(): Promise<DirectoryWriteResult> {
     return DirectoryWriteResult.ShardTaken;
   }
 
-  async deletePlacement(): Promise<DirectoryWriteResult> {
+  override async deletePlacement(): Promise<DirectoryWriteResult> {
     return DirectoryWriteResult.VersionConflict;
   }
 }

@@ -8,7 +8,7 @@ export class FakeContainerProbe extends ContainerProbe {
     super();
   }
 
-  isRunning(): boolean {
+  override isRunning(): boolean {
     this.calls += 1;
     return this.running;
   }

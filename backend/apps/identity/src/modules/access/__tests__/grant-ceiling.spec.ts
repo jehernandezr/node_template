@@ -28,10 +28,10 @@ import { TenantAccessSetup } from '../application/tenant-access-setup.js';
 
 /** The tests only cover rejections: if anything gets to publish, the rejection did not happen. */
 class UnreachableMessageBus extends MessageBus {
-  publish(): Promise<MessageEnvelope<never>> {
+  override publish(): Promise<MessageEnvelope<never>> {
     throw new Error('The rejection should have happened before publishing');
   }
-  send(): Promise<MessageEnvelope<never>> {
+  override send(): Promise<MessageEnvelope<never>> {
     throw new Error('The rejection should have happened before sending');
   }
 }

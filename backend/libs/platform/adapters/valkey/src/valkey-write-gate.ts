@@ -20,18 +20,18 @@ export class ValkeyWriteGate extends TenantWriteGate {
     super();
   }
 
-  async isClosed(tenantId: string): Promise<boolean> {
+  override async isClosed(tenantId: string): Promise<boolean> {
     const reply = await this.executor.run(ValkeyCommand.Exists, [
       this.keyOf(tenantId),
     ]);
     return Number(reply) > 0;
   }
 
-  async close(tenantId: string): Promise<void> {
+  override async close(tenantId: string): Promise<void> {
     await this.executor.run(ValkeyCommand.Set, [this.keyOf(tenantId), '1']);
   }
 
-  async open(tenantId: string): Promise<void> {
+  override async open(tenantId: string): Promise<void> {
     await this.executor.run(ValkeyCommand.Del, [this.keyOf(tenantId)]);
   }
 

@@ -34,7 +34,7 @@ class ContendedDirectoryStore extends InMemoryDirectoryStore {
 class KnownTenantData extends TenantDataPresence {
   readonly withData = new Set<string>();
 
-  async holdsData(placement: TenantPlacement): Promise<boolean> {
+  override async holdsData(placement: TenantPlacement): Promise<boolean> {
     return this.withData.has(placement.tenantId);
   }
 }

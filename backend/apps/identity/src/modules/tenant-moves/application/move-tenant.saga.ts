@@ -20,7 +20,7 @@ export type MoveTenantState = TenantMoveRef;
 export class MoveTenantSaga extends SagaDefinition<MoveTenantState> {
   readonly type = IdentitySaga.MoveTenant;
 
-  protected define(flow: SagaFlow<MoveTenantState>): void {
+  protected override define(flow: SagaFlow<MoveTenantState>): void {
     const participants = TenantMoveParticipants.ALL;
     for (const service of participants) {
       flow

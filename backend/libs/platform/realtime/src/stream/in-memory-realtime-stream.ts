@@ -16,7 +16,10 @@ export class InMemoryRealtimeStream extends RealtimeStream {
     super();
   }
 
-  async append(channel: string, frame: RealtimeFrame): Promise<string> {
+  override async append(
+    channel: string,
+    frame: RealtimeFrame,
+  ): Promise<string> {
     this.sequence += 1;
     const id = `${this.sequence}`;
     const frames = [...(this.frames.get(channel) ?? []), { ...frame, id }];
@@ -25,7 +28,7 @@ export class InMemoryRealtimeStream extends RealtimeStream {
     return id;
   }
 
-  async readAfter(
+  override async readAfter(
     channel: string,
     afterId: string | undefined,
     limit: number,
@@ -39,7 +42,7 @@ export class InMemoryRealtimeStream extends RealtimeStream {
       .slice(0, limit);
   }
 
-  async resumePoint(
+  override async resumePoint(
     channel: string,
     lastEventId: string | undefined,
   ): Promise<string | undefined> {
@@ -55,7 +58,7 @@ export class InMemoryRealtimeStream extends RealtimeStream {
     return last;
   }
 
-  async subscribe(
+  override async subscribe(
     channel: string,
     onAppend: () => void,
   ): Promise<StreamUnsubscribe> {

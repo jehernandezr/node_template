@@ -34,14 +34,14 @@ export class ValkeyEphemeralStore extends EphemeralStore {
     super();
   }
 
-  async get(key: string): Promise<string | undefined> {
+  override async get(key: string): Promise<string | undefined> {
     return this.executor.optionalString(
       ValkeyCommand.Get,
       await this.executor.run(ValkeyCommand.Get, [this.keyOf(key)]),
     );
   }
 
-  async set(key: string, value: string, ttlMs: number): Promise<void> {
+  override async set(key: string, value: string, ttlMs: number): Promise<void> {
     await this.executor.run(ValkeyCommand.Set, [
       this.keyOf(key),
       value,
@@ -50,7 +50,7 @@ export class ValkeyEphemeralStore extends EphemeralStore {
     ]);
   }
 
-  async setIfAbsent(
+  override async setIfAbsent(
     key: string,
     value: string,
     ttlMs: number,
@@ -65,7 +65,7 @@ export class ValkeyEphemeralStore extends EphemeralStore {
     return reply === 'OK';
   }
 
-  async take(key: string): Promise<string | undefined> {
+  override async take(key: string): Promise<string | undefined> {
     return this.executor.optionalString(
       ValkeyCommand.EvalSha,
       await this.executor.script(
@@ -76,11 +76,11 @@ export class ValkeyEphemeralStore extends EphemeralStore {
     );
   }
 
-  async delete(key: string): Promise<void> {
+  override async delete(key: string): Promise<void> {
     await this.executor.run(ValkeyCommand.Del, [this.keyOf(key)]);
   }
 
-  async increment(key: string, ttlMs: number): Promise<number> {
+  override async increment(key: string, ttlMs: number): Promise<number> {
     return this.executor.integer(
       ValkeyCommand.EvalSha,
       await this.executor.script(
@@ -91,7 +91,7 @@ export class ValkeyEphemeralStore extends EphemeralStore {
     );
   }
 
-  async extend(key: string, ttlMs: number): Promise<void> {
+  override async extend(key: string, ttlMs: number): Promise<void> {
     await this.executor.script(
       ValkeyEphemeralStore.EXTEND,
       [this.keyOf(key)],
@@ -99,7 +99,7 @@ export class ValkeyEphemeralStore extends EphemeralStore {
     );
   }
 
-  async remainingMs(key: string): Promise<number | undefined> {
+  override async remainingMs(key: string): Promise<number | undefined> {
     const ttl = this.executor.integer(
       ValkeyCommand.EvalSha,
       await this.executor.script(
@@ -111,7 +111,7 @@ export class ValkeyEphemeralStore extends EphemeralStore {
     return ttl < 0 ? undefined : ttl;
   }
 
-  async putField(
+  override async putField(
     key: string,
     field: string,
     value: string,
@@ -124,7 +124,7 @@ export class ValkeyEphemeralStore extends EphemeralStore {
     );
   }
 
-  async takeFields(key: string): Promise<ReadonlyMap<string, string>> {
+  override async takeFields(key: string): Promise<ReadonlyMap<string, string>> {
     const reply = await this.executor.script(
       ValkeyEphemeralStore.TAKE_FIELDS,
       [this.keyOf(key)],

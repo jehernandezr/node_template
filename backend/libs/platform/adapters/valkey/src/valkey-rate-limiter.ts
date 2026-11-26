@@ -75,7 +75,7 @@ return {
   }
 
   /** @throws InvalidArgumentError before any command, with an invalid key, rule or cost. */
-  async consume(
+  override async consume(
     key: string,
     rule: RateLimitRule,
     cost = 1,
@@ -95,7 +95,10 @@ return {
   }
 
   /** @throws InvalidArgumentError before any command, with an invalid key or rule. */
-  async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
+  override async peek(
+    key: string,
+    rule: RateLimitRule,
+  ): Promise<RateLimitResult> {
     RateLimitCallValidator.validate(key, rule);
     const position = this.position(rule);
     const [previous, current] = this.integers(
@@ -117,7 +120,7 @@ return {
   }
 
   /** @throws InvalidArgumentError before any command, with an invalid key or rule. */
-  async reset(key: string, rule: RateLimitRule): Promise<void> {
+  override async reset(key: string, rule: RateLimitRule): Promise<void> {
     RateLimitCallValidator.validate(key, rule);
     await this.executor.run(
       ValkeyCommand.Del,

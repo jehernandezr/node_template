@@ -14,13 +14,13 @@ export class FixedRandomSource extends RandomSource {
     super();
   }
 
-  next(): number {
+  override next(): number {
     const value = this.values[this.index % this.values.length];
     this.index += 1;
     return value;
   }
 
-  bytes(length: number): Uint8Array {
+  override bytes(length: number): Uint8Array {
     return new Uint8Array(length).fill(this.fill);
   }
 }

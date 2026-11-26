@@ -22,12 +22,12 @@ export class LocalPasskeysFacade extends PasskeysFacade {
     super();
   }
 
-  async hasPasskeys(user: UserRef): Promise<boolean> {
+  override async hasPasskeys(user: UserRef): Promise<boolean> {
     return (await this.ceremony.userPasskeys(user)).length > 0;
   }
 
   /** Deletes the shard's ones first and then the index: a retry finds them while any remain. */
-  async forget(user: UserRef): Promise<void> {
+  override async forget(user: UserRef): Promise<void> {
     const removed = await this.scopes.inUserShard(user, () =>
       this.transactions.runInTransaction(async () => {
         const passkeys = await this.passkeys.list(user.userId);
@@ -42,7 +42,10 @@ export class LocalPasskeysFacade extends PasskeysFacade {
     }
   }
 
-  relocateHomeTenant(homeTenantId: string, region: string): Promise<void> {
+  override relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void> {
     return this.directory.relocateHomeTenant(homeTenantId, region);
   }
 }

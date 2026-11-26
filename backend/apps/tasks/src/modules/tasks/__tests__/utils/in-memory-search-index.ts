@@ -13,15 +13,15 @@ export class InMemorySearchIndex extends SearchIndex {
   private readonly documents = new Map<string, SearchDocument>();
   reads = 0;
 
-  async index(document: SearchDocument): Promise<void> {
+  override async index(document: SearchDocument): Promise<void> {
     this.documents.set(`${document.collection}:${document.id}`, document);
   }
 
-  async remove(collection: string, id: string): Promise<void> {
+  override async remove(collection: string, id: string): Promise<void> {
     this.documents.delete(`${collection}:${id}`);
   }
 
-  async search(query: SearchQuery): Promise<readonly SearchHit[]> {
+  override async search(query: SearchQuery): Promise<readonly SearchHit[]> {
     this.reads += 1;
     const text = query.text.toLowerCase();
     return [...this.documents.values()]

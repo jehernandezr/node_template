@@ -18,7 +18,7 @@ export class ValkeyCache extends CachePort {
     super();
   }
 
-  async get(key: string): Promise<string | undefined> {
+  override async get(key: string): Promise<string | undefined> {
     return this.executor.optionalString(
       ValkeyCommand.Get,
       await this.executor.run(ValkeyCommand.Get, [this.keyOf(key)]),
@@ -30,7 +30,11 @@ export class ValkeyCache extends CachePort {
    * the key, like an entry that expires instantly.
    * @throws CacheInvalidArgumentError with a negative or non-finite TTL.
    */
-  async set(key: string, value: string, ttlMs?: number): Promise<void> {
+  override async set(
+    key: string,
+    value: string,
+    ttlMs?: number,
+  ): Promise<void> {
     if (ttlMs === undefined) {
       await this.executor.run(ValkeyCommand.Set, [this.keyOf(key), value]);
       return;
@@ -51,7 +55,7 @@ export class ValkeyCache extends CachePort {
     ]);
   }
 
-  async setIfAbsent(key: string, value: string): Promise<boolean> {
+  override async setIfAbsent(key: string, value: string): Promise<boolean> {
     const reply = await this.executor.run(ValkeyCommand.Set, [
       this.keyOf(key),
       value,
@@ -60,7 +64,7 @@ export class ValkeyCache extends CachePort {
     return reply === 'OK';
   }
 
-  async delete(key: string): Promise<void> {
+  override async delete(key: string): Promise<void> {
     await this.executor.run(ValkeyCommand.Del, [this.keyOf(key)]);
   }
 

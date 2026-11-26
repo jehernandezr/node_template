@@ -14,7 +14,7 @@ export class InMemoryTaskSearch extends TaskSearch {
     super();
   }
 
-  async index(task: Task): Promise<void> {
+  override async index(task: Task): Promise<void> {
     const state = task.snapshot();
     this.texts.set(
       state.id,
@@ -22,7 +22,7 @@ export class InMemoryTaskSearch extends TaskSearch {
     );
   }
 
-  async remove(taskId: string): Promise<void> {
+  override async remove(taskId: string): Promise<void> {
     this.texts.delete(taskId);
   }
 
@@ -30,7 +30,7 @@ export class InMemoryTaskSearch extends TaskSearch {
     return [...this.texts.keys()];
   }
 
-  async search(query: TaskSearchQuery): Promise<TaskSearchResult> {
+  override async search(query: TaskSearchQuery): Promise<TaskSearchResult> {
     const words = query.text.toLowerCase().split(/\s+/).filter(Boolean);
     const ids = [...this.texts.entries()]
       .filter(([, text]) => words.every((word) => text.includes(word)))

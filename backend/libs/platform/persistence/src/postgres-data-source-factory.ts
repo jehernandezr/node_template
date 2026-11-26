@@ -24,7 +24,10 @@ export class PostgresDataSourceFactory extends DataSourceFactory {
   /**
    * A module can declare in `forFeature` an entity that the service already listed: TypeORM does not allow duplicates.
    */
-  create(target: DatabaseTarget, endpoints: InstanceEndpoints): DataSource {
+  override create(
+    target: DatabaseTarget,
+    endpoints: InstanceEndpoints,
+  ): DataSource {
     const definition =
       target.kind === DatabaseKind.Catalog ? this.catalog : this.shard;
     const credentials = (endpoint: { host: string; port: number }) => ({

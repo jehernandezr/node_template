@@ -9,7 +9,7 @@ export class PooledShardConnections extends ShardConnections {
   }
 
   /** The pooled `DataSource` of the shard, opened on first use. */
-  get(location: ShardLocation): Promise<DataSource> {
+  override get(location: ShardLocation): Promise<DataSource> {
     return this.sources.get(location);
   }
 }

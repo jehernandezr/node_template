@@ -37,7 +37,7 @@ export class RetryDeliveriesJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     for (const delivery of await this.failed.due(
       this.clock.now(),
       RetryDeliveriesJob.BATCH,

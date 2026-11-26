@@ -16,12 +16,12 @@ export class LocalApiKeysFacade extends ApiKeysFacade {
   }
 
   /** {@inheritDoc ApiKeysFacade.relocateTenant} */
-  relocateTenant(tenantId: string, region: string): Promise<void> {
+  override relocateTenant(tenantId: string, region: string): Promise<void> {
     return this.directory.relocateTenant(tenantId, region);
   }
 
   /** {@inheritDoc ApiKeysFacade.activeServicePermissions} */
-  async activeServicePermissions(
+  override async activeServicePermissions(
     tenantId: string,
     serviceAccountId: string,
   ): Promise<readonly Permission[] | undefined> {

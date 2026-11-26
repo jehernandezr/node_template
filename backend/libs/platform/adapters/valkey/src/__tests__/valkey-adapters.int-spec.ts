@@ -116,7 +116,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
     class RotatingPassword extends ValkeyAuthTokenProvider {
       current = server.password;
 
-      async token(): Promise<string> {
+      override async token(): Promise<string> {
         return this.current;
       }
     }

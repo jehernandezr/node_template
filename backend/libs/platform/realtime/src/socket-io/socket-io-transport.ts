@@ -38,7 +38,7 @@ export class SocketIoTransport extends RealtimeTransport {
     super();
   }
 
-  attach(host: RealtimeHost): void {
+  override attach(host: RealtimeHost): void {
     this.server = new Server(host.server, {
       transports: ['websocket'],
       serveClient: false,
@@ -62,7 +62,7 @@ export class SocketIoTransport extends RealtimeTransport {
     });
   }
 
-  async close(): Promise<void> {
+  override async close(): Promise<void> {
     await this.connections.closeAll();
     this.server?.disconnectSockets(true);
     this.server?.engine.close();

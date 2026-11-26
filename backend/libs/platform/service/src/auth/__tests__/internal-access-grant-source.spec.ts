@@ -22,7 +22,9 @@ const STRANGER = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f09';
 class StubUserAccessHandler extends OperationHandler<
   typeof GetUserAccessOperation
 > {
-  async handle(input: GetUserAccessInput): Promise<HandlerResult<UserAccess>> {
+  override async handle(
+    input: GetUserAccessInput,
+  ): Promise<HandlerResult<UserAccess>> {
     if (input.userId !== MEMBER || input.tenantId !== TENANT) {
       return {
         outcome: CallOutcome.businessError(IdentityErrorCode.UserNotFound),

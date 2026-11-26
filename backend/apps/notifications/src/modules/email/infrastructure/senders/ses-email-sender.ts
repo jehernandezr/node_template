@@ -9,7 +9,7 @@ export class SesEmailSender extends EmailSender {
   }
 
   /** Sends the email through SES and returns the id SES assigns to it. */
-  send(email: OutgoingEmail): Promise<string> {
+  override send(email: OutgoingEmail): Promise<string> {
     return this.ses.send(email);
   }
 }

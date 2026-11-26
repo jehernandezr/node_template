@@ -88,7 +88,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     });
   }
 
-  async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
+  override async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
     const transfer = await this.connections.connect(move);
     const name = ReplicationNames.of(transfer.moveId);
     await this.publish(transfer.source, transfer.tenantId, name);
@@ -106,7 +106,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   }
 
   /** Waits for the subscription to receive all the WAL of the frozen source, drops it and verifies like the batch copy. */
-  async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
+  override async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
     const transfer = await this.connections.connect(move);
     const name = ReplicationNames.of(transfer.moveId);
     const budget = transfer.budget ?? this.newBudget();
@@ -121,7 +121,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     return this.batch.verify({ ...move, budget });
   }
 
-  async abort(move: TenantTransfer): Promise<void> {
+  override async abort(move: TenantTransfer): Promise<void> {
     const transfer = await this.connections.connect(move);
     const budget = transfer.budget ?? this.newBudget();
     await this.unsubscribe(
@@ -133,7 +133,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     await this.batch.abort({ ...move, budget });
   }
 
-  async cleanup(
+  override async cleanup(
     tenantId: string,
     source: ShardLocation,
     budget?: TransferBudget,
@@ -141,7 +141,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     await this.batch.cleanup(tenantId, source, budget);
   }
 
-  async assignRegion(
+  override async assignRegion(
     tenantId: string,
     target: ShardLocation,
     region: string,

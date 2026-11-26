@@ -13,7 +13,7 @@ export class MemoryIdentityMailer extends IdentityMailer {
   private static readonly KEPT = 200;
   private readonly outbox: OutgoingEmail[] = [];
 
-  async send(email: OutgoingEmail): Promise<void> {
+  override async send(email: OutgoingEmail): Promise<void> {
     this.outbox.push(email);
     if (this.outbox.length > MemoryIdentityMailer.KEPT) {
       this.outbox.shift();

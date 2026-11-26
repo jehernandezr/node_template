@@ -13,7 +13,7 @@ class FixedRetention extends LoginAttemptRetention {
     super();
   }
 
-  async maintain(now: Date): Promise<LoginAttemptRetentionReport> {
+  override async maintain(now: Date): Promise<LoginAttemptRetentionReport> {
     this.calls.push(now);
     return this.report;
   }

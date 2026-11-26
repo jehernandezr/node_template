@@ -19,7 +19,7 @@ class KindRule extends FailureRule {
     super();
   }
 
-  classify(): FailureKind {
+  override classify(): FailureKind {
     return this.kind;
   }
 }

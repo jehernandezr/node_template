@@ -31,7 +31,9 @@ export class InMemoryTransactionManager extends TransactionManager {
   rollbacks = 0;
   private readonly storage = new AsyncLocalStorage<InMemoryUnitOfWork>();
 
-  async runInTransaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
+  override async runInTransaction<T>(
+    fn: (uow: UnitOfWork) => Promise<T>,
+  ): Promise<T> {
     const open = this.storage.getStore();
     if (open !== undefined) {
       return fn(open);
@@ -54,15 +56,15 @@ export class InMemoryTransactionManager extends TransactionManager {
     return result;
   }
 
-  current(): UnitOfWork | undefined {
+  override current(): UnitOfWork | undefined {
     return this.storage.getStore();
   }
 
-  isInTransaction(): boolean {
+  override isInTransaction(): boolean {
     return this.current() !== undefined;
   }
 
-  afterCommit(hook: TransactionHook): void {
+  override afterCommit(hook: TransactionHook): void {
     const uow = this.storage.getStore();
     if (uow !== undefined) {
       uow.afterCommit(hook);

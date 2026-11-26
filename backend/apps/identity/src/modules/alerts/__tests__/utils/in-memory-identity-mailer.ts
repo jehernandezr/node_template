@@ -5,7 +5,7 @@ import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 export class InMemoryIdentityMailer extends IdentityMailer {
   readonly sent: OutgoingEmail[] = [];
 
-  async send(email: OutgoingEmail): Promise<void> {
+  override async send(email: OutgoingEmail): Promise<void> {
     this.sent.push(email);
   }
 

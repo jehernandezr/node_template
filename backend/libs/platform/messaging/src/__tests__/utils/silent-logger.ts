@@ -2,15 +2,15 @@ import { LoggerPort } from '@platform/observability';
 
 /** Logger that discards everything; tests do not clutter the output. */
 export class SilentLogger extends LoggerPort {
-  debug(): void {}
+  override debug(): void {}
 
-  info(): void {}
+  override info(): void {}
 
-  warn(): void {}
+  override warn(): void {}
 
-  error(): void {}
+  override error(): void {}
 
-  child(): LoggerPort {
+  override child(): LoggerPort {
     return this;
   }
 }

@@ -12,13 +12,13 @@ export class FailingRoutingCache extends RoutingCache {
     super();
   }
 
-  get(key: string): Promise<string | undefined> {
+  override get(key: string): Promise<string | undefined> {
     return this.failReads
       ? Promise.reject(new Error('shared cache is down'))
       : this.inner.get(key);
   }
 
-  setIfNewer(
+  override setIfNewer(
     key: string,
     value: string,
     version: number,
@@ -29,7 +29,7 @@ export class FailingRoutingCache extends RoutingCache {
       : this.inner.setIfNewer(key, value, version, ttlMs);
   }
 
-  delete(key: string): Promise<void> {
+  override delete(key: string): Promise<void> {
     return this.failWrites
       ? Promise.reject(new Error('shared cache is down'))
       : this.inner.delete(key);

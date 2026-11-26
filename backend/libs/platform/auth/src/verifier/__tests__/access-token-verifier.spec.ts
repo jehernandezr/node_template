@@ -24,7 +24,7 @@ const UNAUTHENTICATED = PlatformErrorCode.AuthUnauthenticated;
 
 /** Key source that simulates a down JWKS. */
 class FailingKeySource extends JwksKeySource {
-  async keyFor(): Promise<KeyObject | undefined> {
+  override async keyFor(): Promise<KeyObject | undefined> {
     throw new Error('jwks down');
   }
 }

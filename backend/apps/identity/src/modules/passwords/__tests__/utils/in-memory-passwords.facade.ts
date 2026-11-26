@@ -10,7 +10,10 @@ export class InMemoryPasswordsFacade extends PasswordsFacade {
   readonly rejected = new Set<string>();
   private readonly passwords = new Map<string, string>();
 
-  async verify(ref: UserRef | undefined, password: string): Promise<boolean> {
+  override async verify(
+    ref: UserRef | undefined,
+    password: string,
+  ): Promise<boolean> {
     if (ref === undefined) {
       this.unknownUserChecks += 1;
       return false;
@@ -19,17 +22,17 @@ export class InMemoryPasswordsFacade extends PasswordsFacade {
     return stored !== undefined && constantTimeEquals(stored, password);
   }
 
-  async setInitial(ref: UserRef, password: string): Promise<void> {
+  override async setInitial(ref: UserRef, password: string): Promise<void> {
     this.passwords.set(ref.userId, password);
   }
 
-  async assertAcceptable(password: string): Promise<void> {
+  override async assertAcceptable(password: string): Promise<void> {
     if (this.rejected.has(password)) {
       throw new Error('Password rejected');
     }
   }
 
-  async forget(ref: UserRef): Promise<void> {
+  override async forget(ref: UserRef): Promise<void> {
     this.passwords.delete(ref.userId);
   }
 }

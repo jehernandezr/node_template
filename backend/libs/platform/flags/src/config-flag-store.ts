@@ -7,7 +7,7 @@ export class ConfigFlagStore extends FlagStore {
     super();
   }
 
-  async rules(): Promise<readonly FlagRule[]> {
+  override async rules(): Promise<readonly FlagRule[]> {
     return this.configured;
   }
 }

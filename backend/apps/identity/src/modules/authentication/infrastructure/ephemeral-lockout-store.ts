@@ -12,7 +12,7 @@ export class EphemeralLockoutStore extends LockoutStore {
     super();
   }
 
-  async remainingLockMs(
+  override async remainingLockMs(
     origin: string,
     ip: string,
   ): Promise<number | undefined> {
@@ -25,7 +25,7 @@ export class EphemeralLockoutStore extends LockoutStore {
     return remaining.length === 0 ? undefined : Math.max(...remaining);
   }
 
-  async isProtected(account: string): Promise<boolean> {
+  override async isProtected(account: string): Promise<boolean> {
     return (
       (await this.store.get(
         this.key(IdentityCacheKey.LockoutProtected, account),
@@ -33,14 +33,14 @@ export class EphemeralLockoutStore extends LockoutStore {
     );
   }
 
-  raiseLevel(origin: string, ttlMs: number): Promise<number> {
+  override raiseLevel(origin: string, ttlMs: number): Promise<number> {
     return this.store.increment(
       this.key(IdentityCacheKey.LockoutLevel, origin),
       ttlMs,
     );
   }
 
-  lockOrigin(origin: string, lockMs: number): Promise<void> {
+  override lockOrigin(origin: string, lockMs: number): Promise<void> {
     return this.store.set(
       this.key(IdentityCacheKey.LockoutOrigin, origin),
       EphemeralLockoutStore.MARK,
@@ -48,7 +48,7 @@ export class EphemeralLockoutStore extends LockoutStore {
     );
   }
 
-  lockIp(ip: string, lockMs: number): Promise<void> {
+  override lockIp(ip: string, lockMs: number): Promise<void> {
     return this.store.set(
       this.key(IdentityCacheKey.LockoutIp, ip),
       EphemeralLockoutStore.MARK,
@@ -56,7 +56,7 @@ export class EphemeralLockoutStore extends LockoutStore {
     );
   }
 
-  protect(account: string, ttlMs: number): Promise<boolean> {
+  override protect(account: string, ttlMs: number): Promise<boolean> {
     return this.store.setIfAbsent(
       this.key(IdentityCacheKey.LockoutProtected, account),
       EphemeralLockoutStore.MARK,
@@ -64,14 +64,14 @@ export class EphemeralLockoutStore extends LockoutStore {
     );
   }
 
-  async unlockEpoch(account: string): Promise<number> {
+  override async unlockEpoch(account: string): Promise<number> {
     const raw = await this.store.get(
       this.key(IdentityCacheKey.LockoutEpoch, account),
     );
     return raw === undefined ? 0 : Number(raw);
   }
 
-  async unlock(account: string, ttlMs: number): Promise<void> {
+  override async unlock(account: string, ttlMs: number): Promise<void> {
     const epoch = this.key(IdentityCacheKey.LockoutEpoch, account);
     await this.store.increment(epoch, ttlMs);
     await this.store.extend(epoch, ttlMs);
@@ -80,7 +80,7 @@ export class EphemeralLockoutStore extends LockoutStore {
     );
   }
 
-  async retainEpoch(account: string, ttlMs: number): Promise<void> {
+  override async retainEpoch(account: string, ttlMs: number): Promise<void> {
     await this.store.extend(
       this.key(IdentityCacheKey.LockoutEpoch, account),
       ttlMs,

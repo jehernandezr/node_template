@@ -35,7 +35,10 @@ return 0
   }
 
   /** @throws GuardViolationError with an empty name or a `ttlMs` that is not a positive integer. */
-  async tryAcquire(name: string, ttlMs: number): Promise<JobLease | undefined> {
+  override async tryAcquire(
+    name: string,
+    ttlMs: number,
+  ): Promise<JobLease | undefined> {
     Guard.default.nonEmpty('name', name);
     Guard.default.positiveInteger('ttlMs', ttlMs);
     const token = Buffer.from(
@@ -51,7 +54,7 @@ return 0
     return reply === 'OK' ? { name, token } : undefined;
   }
 
-  async release(lease: JobLease): Promise<void> {
+  override async release(lease: JobLease): Promise<void> {
     await this.executor.script(
       ValkeyJobLock.RELEASE,
       [this.keyOf(lease.name)],

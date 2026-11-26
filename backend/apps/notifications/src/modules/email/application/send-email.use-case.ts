@@ -56,7 +56,7 @@ export class SendEmail extends EmailFacade {
    * @returns The id the provider assigned, that of the first send if it was already sent.
    * @throws RecipientSuppressedError, TemplateUnknownError, TemplateParameterMissingError or EmailInProgressError.
    */
-  async send(request: EmailRequest): Promise<string> {
+  override async send(request: EmailRequest): Promise<string> {
     const recipientHash = this.fingerprint.of(request.to);
     if (await this.ledger.isSuppressed(recipientHash)) {
       throw new RecipientSuppressedError();

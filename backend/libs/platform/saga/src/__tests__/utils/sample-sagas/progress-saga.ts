@@ -8,7 +8,7 @@ export class ProgressSaga extends SagaDefinition<SampleState> {
   static readonly ROUND_PENDING = 'SAMPLE.COPY.ROUND_PENDING';
   readonly type = 'progress';
 
-  protected define(flow: SagaFlow<SampleState>): void {
+  protected override define(flow: SagaFlow<SampleState>): void {
     flow
       .step(STEP_A)
       .input(() => ({ name: 'a' }))

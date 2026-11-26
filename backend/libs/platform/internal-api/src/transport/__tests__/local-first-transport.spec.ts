@@ -9,7 +9,7 @@ class NamedTransport extends Transport {
     super();
   }
 
-  async invoke(operationId: string): Promise<Outcome<unknown>> {
+  override async invoke(operationId: string): Promise<Outcome<unknown>> {
     return CallOutcome.success({ via: this.name, operationId });
   }
 }

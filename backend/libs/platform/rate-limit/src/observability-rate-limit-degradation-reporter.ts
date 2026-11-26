@@ -15,7 +15,7 @@ export class ObservabilityRateLimitDegradationReporter extends RateLimitDegradat
     super();
   }
 
-  degraded(
+  override degraded(
     operation: RateLimitOperation,
     rule: RateLimitRule,
     error: unknown,

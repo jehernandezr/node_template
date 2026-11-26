@@ -17,7 +17,7 @@ export class InternalFollowerDirectories extends FollowerDirectories {
     super();
   }
 
-  async place(entry: TenantDirectoryEntry): Promise<void> {
+  override async place(entry: TenantDirectoryEntry): Promise<void> {
     for (const follower of TenantDirectoryFollowers.ALL) {
       const operation = follower.tenantDirectoryPlace;
       const outcome = await this.client.call(operation, entry, {

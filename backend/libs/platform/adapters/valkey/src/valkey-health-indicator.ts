@@ -17,7 +17,7 @@ export class ValkeyHealthIndicator extends HealthCheckable {
   }
 
   /** `Up` if it answers `PONG`; `Down` with the error name if it fails or the signal is aborted. */
-  async check(signal?: AbortSignal): Promise<HealthReport> {
+  override async check(signal?: AbortSignal): Promise<HealthReport> {
     try {
       signal?.throwIfAborted();
       const reply = await this.abortable(

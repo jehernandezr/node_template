@@ -19,11 +19,11 @@ class FunctionRandomSource extends RandomSource {
     super();
   }
 
-  next(): number {
+  override next(): number {
     return this.source();
   }
 
-  bytes(length: number): Uint8Array {
+  override bytes(length: number): Uint8Array {
     return new Uint8Array(length);
   }
 }

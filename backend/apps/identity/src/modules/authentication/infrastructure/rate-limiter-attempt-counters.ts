@@ -34,7 +34,7 @@ export class RateLimiterAttemptCounters extends AttemptCounters {
     super();
   }
 
-  async recordFailure(
+  override async recordFailure(
     origin: string,
     account: string,
     ip: string,
@@ -51,11 +51,11 @@ export class RateLimiterAttemptCounters extends AttemptCounters {
     };
   }
 
-  async clearOrigin(origin: string): Promise<void> {
+  override async clearOrigin(origin: string): Promise<void> {
     await this.limiter.reset(origin, RateLimiterAttemptCounters.ORIGIN);
   }
 
-  async clearAccount(account: string): Promise<void> {
+  override async clearAccount(account: string): Promise<void> {
     await this.limiter.reset(account, RateLimiterAttemptCounters.ACCOUNT);
   }
 }

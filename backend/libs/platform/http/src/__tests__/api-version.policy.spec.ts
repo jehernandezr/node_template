@@ -7,11 +7,11 @@ const NEXT = '2027-01-01';
 class ConstantTransformer extends VersionTransformer {
   readonly fromVersion = '2025-01-01';
 
-  transformRequest(_routeId: string, input: unknown): unknown {
+  override transformRequest(_routeId: string, input: unknown): unknown {
     return input;
   }
 
-  transformResponse(_routeId: string, output: unknown): unknown {
+  override transformResponse(_routeId: string, output: unknown): unknown {
     return output;
   }
 }

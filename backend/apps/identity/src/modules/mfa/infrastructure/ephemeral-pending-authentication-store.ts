@@ -41,7 +41,7 @@ export class EphemeralPendingAuthenticationStore extends PendingAuthenticationSt
     super();
   }
 
-  async save(pending: PendingAuthentication): Promise<string> {
+  override async save(pending: PendingAuthentication): Promise<string> {
     const token =
       EphemeralPendingAuthenticationStore.PREFIX +
       this.generator
@@ -55,11 +55,15 @@ export class EphemeralPendingAuthenticationStore extends PendingAuthenticationSt
     return token;
   }
 
-  async find(mfaToken: string): Promise<PendingAuthentication | undefined> {
+  override async find(
+    mfaToken: string,
+  ): Promise<PendingAuthentication | undefined> {
     return this.parse(await this.store.get(this.keyOf(mfaToken)));
   }
 
-  async consume(mfaToken: string): Promise<PendingAuthentication | undefined> {
+  override async consume(
+    mfaToken: string,
+  ): Promise<PendingAuthentication | undefined> {
     return this.parse(await this.store.take(this.keyOf(mfaToken)));
   }
 

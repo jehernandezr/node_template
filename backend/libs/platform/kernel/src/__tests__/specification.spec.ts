@@ -6,13 +6,13 @@ interface Invoice {
 }
 
 class LargeInvoiceSpecification extends Specification<Invoice> {
-  isSatisfiedBy(invoice: Invoice): boolean {
+  override isSatisfiedBy(invoice: Invoice): boolean {
     return invoice.amountMinor >= 100_000;
   }
 }
 
 class OverdueInvoiceSpecification extends Specification<Invoice> {
-  isSatisfiedBy(invoice: Invoice): boolean {
+  override isSatisfiedBy(invoice: Invoice): boolean {
     return invoice.overdue;
   }
 }

@@ -30,7 +30,7 @@ const ID = TestTenants.One;
 const KEY = PlacementCache.KEY_PREFIX + ID;
 
 class FailingPublisher extends ShardDirectoryChangePublisher {
-  async publish(): Promise<void> {
+  override async publish(): Promise<void> {
     throw new Error('channel is down');
   }
 }

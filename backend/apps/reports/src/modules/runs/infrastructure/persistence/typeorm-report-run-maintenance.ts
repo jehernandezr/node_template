@@ -23,7 +23,7 @@ export class TypeOrmReportRunMaintenance extends ReportRunMaintenance {
     super();
   }
 
-  async expireBefore(now: Date): Promise<readonly TenantRun[]> {
+  override async expireBefore(now: Date): Promise<readonly TenantRun[]> {
     const outcome = await this.shards.run((connection) =>
       TenantMaintenanceSession.run(
         connection.dataSource.manager,
@@ -52,7 +52,7 @@ export class TypeOrmReportRunMaintenance extends ReportRunMaintenance {
     return outcome.results.flatMap((result) => result.value);
   }
 
-  async replaceRequester(
+  override async replaceRequester(
     userId: string,
     replacement: UserRef,
   ): Promise<number> {

@@ -14,7 +14,7 @@ class FixedTargets extends PushTargetDirectory {
     super();
   }
 
-  async targetsOf(): Promise<readonly PushTarget[]> {
+  override async targetsOf(): Promise<readonly PushTarget[]> {
     return this.targets;
   }
 }

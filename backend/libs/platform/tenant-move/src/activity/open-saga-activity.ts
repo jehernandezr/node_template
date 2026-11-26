@@ -19,7 +19,10 @@ export class OpenSagaActivity extends TenantMoveActivity {
   }
 
   /** How many sagas of the tenant are running, suspended or compensating on the shard. */
-  async openWork(shard: ShardLocation, tenantId: string): Promise<number> {
+  override async openWork(
+    shard: ShardLocation,
+    tenantId: string,
+  ): Promise<number> {
     const dataSource = await this.connections.get(shard);
     const rows: { open: string }[] = await dataSource.query(
       'SELECT count(*)::text AS open FROM "saga"."instances" WHERE "tenant_id"::text = $1 AND "status" = ANY($2::text[])',

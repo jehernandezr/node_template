@@ -32,27 +32,30 @@ export class LocalAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.resolve} */
-  resolve(userId: string, tenantId: string): Promise<UserAccess> {
+  override resolve(userId: string, tenantId: string): Promise<UserAccess> {
     return this.resolver.resolve(userId, tenantId);
   }
 
   /** {@inheritDoc AccessFacade.isMember} */
-  isMember(userId: string, tenantId: string): Promise<boolean> {
+  override isMember(userId: string, tenantId: string): Promise<boolean> {
     return this.resolver.isMember(userId, tenantId);
   }
 
   /** {@inheritDoc AccessFacade.defaultTenant} */
-  defaultTenant(ref: UserRef): Promise<string> {
+  override defaultTenant(ref: UserRef): Promise<string> {
     return this.resolver.defaultTenant(ref);
   }
 
   /** {@inheritDoc AccessFacade.requiresMfaOnEveryLogin} */
-  requiresMfaOnEveryLogin(ref: UserRef, tenantId: string): Promise<boolean> {
+  override requiresMfaOnEveryLogin(
+    ref: UserRef,
+    tenantId: string,
+  ): Promise<boolean> {
     return this.resolver.requiresMfaOnEveryLogin(ref, tenantId);
   }
 
   /** {@inheritDoc AccessFacade.addMember} */
-  addMember(
+  override addMember(
     tenantId: string,
     ref: UserRef,
     groupIds: readonly string[],
@@ -62,7 +65,7 @@ export class LocalAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.memberPermissions} */
-  memberPermissions(
+  override memberPermissions(
     tenantId: string,
     userId: string,
   ): Promise<readonly Permission[]> {
@@ -70,7 +73,7 @@ export class LocalAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.assertGroupsWithin} */
-  assertGroupsWithin(
+  override assertGroupsWithin(
     tenantId: string,
     groupIds: readonly string[],
     granted: readonly Permission[],
@@ -79,7 +82,7 @@ export class LocalAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.assertCanGrantGroups} */
-  assertCanGrantGroups(
+  override assertCanGrantGroups(
     tenantId: string,
     actor: Actor | undefined,
     groupIds: readonly string[],
@@ -88,22 +91,22 @@ export class LocalAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.setupTenant} */
-  setupTenant(tenantId: string, owner?: UserRef): Promise<void> {
+  override setupTenant(tenantId: string, owner?: UserRef): Promise<void> {
     return this.setup.setup(tenantId, owner);
   }
 
   /** {@inheritDoc AccessFacade.projectMembership} */
-  projectMembership(tenantId: string, ref: UserRef): Promise<void> {
+  override projectMembership(tenantId: string, ref: UserRef): Promise<void> {
     return this.setup.project(tenantId, ref);
   }
 
   /** {@inheritDoc AccessFacade.tenantsOf} */
-  tenantsOf(ref: UserRef): Promise<readonly UserTenant[]> {
+  override tenantsOf(ref: UserRef): Promise<readonly UserTenant[]> {
     return this.resolver.tenantsOf(ref);
   }
 
   /** {@inheritDoc AccessFacade.reserveDepartures} */
-  async reserveDepartures(ref: UserRef): Promise<readonly string[]> {
+  override async reserveDepartures(ref: UserRef): Promise<readonly string[]> {
     const reserved: string[] = [];
     try {
       for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
@@ -119,7 +122,7 @@ export class LocalAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.releaseDepartures} */
-  async releaseDepartures(
+  override async releaseDepartures(
     ref: UserRef,
     tenantIds: readonly string[],
   ): Promise<void> {
@@ -129,14 +132,14 @@ export class LocalAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.cancelDepartures} */
-  async cancelDepartures(ref: UserRef): Promise<void> {
+  override async cancelDepartures(ref: UserRef): Promise<void> {
     for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
       await this.members.cancelDeparture(tenantId, ref.userId);
     }
   }
 
   /** {@inheritDoc AccessFacade.removeFromAllTenants} */
-  async removeFromAllTenants(ref: UserRef): Promise<void> {
+  override async removeFromAllTenants(ref: UserRef): Promise<void> {
     for (const { tenantId } of await this.resolver.tenantsOf(ref)) {
       await this.members.removeErased(tenantId, ref);
     }
@@ -144,17 +147,19 @@ export class LocalAccessFacade extends AccessFacade {
   }
 
   /** {@inheritDoc AccessFacade.discardTenant} */
-  discardTenant(tenantId: string): Promise<void> {
+  override discardTenant(tenantId: string): Promise<void> {
     return this.setup.discard(tenantId);
   }
 
   /** {@inheritDoc AccessFacade.replayPermissionVersion} */
-  replayPermissionVersion(event: PermissionsChangedPayload): Promise<void> {
+  override replayPermissionVersion(
+    event: PermissionsChangedPayload,
+  ): Promise<void> {
     return this.versions.replay(event);
   }
 
   /** {@inheritDoc AccessFacade.refreshTenant} */
-  refreshTenant(tenantId: string): Promise<void> {
+  override refreshTenant(tenantId: string): Promise<void> {
     return this.refresh.execute(tenantId);
   }
 }

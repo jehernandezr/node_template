@@ -56,7 +56,7 @@ export class SagaRecoveryJob extends ScheduledJob {
   }
 
   /** One pass: `runOnce(settings.recoveryBatchSize)`. */
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     await this.runOnce(this.deps.settings.recoveryBatchSize);
   }
 

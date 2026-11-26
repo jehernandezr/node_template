@@ -44,7 +44,7 @@ export class ValkeyAuthStateReader extends AuthStateReader {
     super();
   }
 
-  async isSessionRevoked(sessionId: string): Promise<boolean> {
+  override async isSessionRevoked(sessionId: string): Promise<boolean> {
     return (await this.text(AuthStateKey.revoked(sessionId))) !== undefined;
   }
 
@@ -54,7 +54,7 @@ export class ValkeyAuthStateReader extends AuthStateReader {
    * from the Bloom filter for a revoked session. `ZSCAN` guarantees to return everything that was
    * in the index during the whole walk; what is added midway is covered by the channel.
    */
-  async *revokedSessionIds(
+  override async *revokedSessionIds(
     signal?: AbortSignal,
   ): AsyncIterable<readonly string[]> {
     const nowMs = this.clock.now().getTime();
@@ -80,15 +80,15 @@ export class ValkeyAuthStateReader extends AuthStateReader {
     } while (cursor !== '0');
   }
 
-  async userEpoch(userId: string): Promise<Epoch | undefined> {
+  override async userEpoch(userId: string): Promise<Epoch | undefined> {
     return this.epoch(AuthStateKey.userEpoch(userId));
   }
 
-  async tenantEpoch(tenantId: string): Promise<Epoch | undefined> {
+  override async tenantEpoch(tenantId: string): Promise<Epoch | undefined> {
     return this.epoch(AuthStateKey.tenantEpoch(tenantId));
   }
 
-  async permissionVersion(
+  override async permissionVersion(
     tenantId: string,
     userId: string,
   ): Promise<PermissionVersion | undefined> {
@@ -102,7 +102,7 @@ export class ValkeyAuthStateReader extends AuthStateReader {
     return { tenant: this.counter(tenant), user: this.counter(user) };
   }
 
-  async accessGrant(
+  override async accessGrant(
     tenantId: string,
     userId: string,
   ): Promise<AccessGrant | undefined> {
@@ -116,7 +116,7 @@ export class ValkeyAuthStateReader extends AuthStateReader {
         );
   }
 
-  async apiKey(
+  override async apiKey(
     prefix: string,
     secretHash: string,
   ): Promise<ApiKeyPrincipal | undefined> {

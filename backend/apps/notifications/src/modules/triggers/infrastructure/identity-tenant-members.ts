@@ -21,7 +21,7 @@ export class IdentityTenantMembers extends TenantMembers {
   }
 
   /** @throws IdentityUnavailableError if identity does not respond for a page. */
-  async withPermission(
+  override async withPermission(
     tenantId: string,
     permission: Permission,
   ): Promise<readonly UserRef[]> {

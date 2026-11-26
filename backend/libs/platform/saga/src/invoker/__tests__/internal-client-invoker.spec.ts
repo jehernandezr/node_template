@@ -75,7 +75,7 @@ interface OnboardingState {
 class OnboardingSaga extends SagaDefinition<OnboardingState> {
   readonly type = 'onboarding';
 
-  protected define(flow: SagaFlow<OnboardingState>): void {
+  protected override define(flow: SagaFlow<OnboardingState>): void {
     flow
       .step(CreateAccount)
       .input((s) => ({ name: s.name }))

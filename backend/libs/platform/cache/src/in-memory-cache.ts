@@ -21,18 +21,22 @@ export class InMemoryCache extends CachePort {
     this.clock = options.clock;
   }
 
-  async get(key: string): Promise<string | undefined> {
+  override async get(key: string): Promise<string | undefined> {
     return this.live(key)?.value;
   }
 
-  async set(key: string, value: string, ttlMs?: number): Promise<void> {
+  override async set(
+    key: string,
+    value: string,
+    ttlMs?: number,
+  ): Promise<void> {
     this.entries.set(key, {
       value,
       expiresAt: ttlMs === undefined ? undefined : this.now() + ttlMs,
     });
   }
 
-  async setIfAbsent(key: string, value: string): Promise<boolean> {
+  override async setIfAbsent(key: string, value: string): Promise<boolean> {
     if (this.live(key) !== undefined) {
       return false;
     }
@@ -40,7 +44,7 @@ export class InMemoryCache extends CachePort {
     return true;
   }
 
-  async delete(key: string): Promise<void> {
+  override async delete(key: string): Promise<void> {
     this.entries.delete(key);
   }
 

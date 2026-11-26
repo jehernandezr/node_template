@@ -18,7 +18,7 @@ export class FakePaymentProvider extends PaymentProvider {
     super();
   }
 
-  async charge(request: ProviderCharge): Promise<PaymentResult> {
+  override async charge(request: ProviderCharge): Promise<PaymentResult> {
     const previous = this.answered.get(request.attemptId);
     if (previous !== undefined) {
       return previous;
@@ -28,7 +28,7 @@ export class FakePaymentProvider extends PaymentProvider {
     return result;
   }
 
-  async find(attemptId: string): Promise<PaymentResult | undefined> {
+  override async find(attemptId: string): Promise<PaymentResult | undefined> {
     return this.answered.get(attemptId);
   }
 

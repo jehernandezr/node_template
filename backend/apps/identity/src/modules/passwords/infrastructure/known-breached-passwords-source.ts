@@ -44,7 +44,7 @@ export class KnownBreachedPasswordsSource extends BloomRebuildSourceProvider {
     ];
   }
 
-  batches(): BloomRebuildSource {
+  override batches(): BloomRebuildSource {
     const all = this.passwords();
     const batches: string[][] = [];
     for (let i = 0; i < all.length; i += KnownBreachedPasswordsSource.BATCH) {

@@ -10,7 +10,7 @@ export class GrantReportEntitlements extends ReportEntitlements {
     super();
   }
 
-  async allowsAdvancedReports(
+  override async allowsAdvancedReports(
     tenantId: string,
     userId: string,
   ): Promise<boolean> {

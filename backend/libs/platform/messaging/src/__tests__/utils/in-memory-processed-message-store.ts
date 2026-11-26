@@ -49,7 +49,7 @@ export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
     super();
   }
 
-  claim(
+  override claim(
     key: string,
     request: ClaimRequest,
   ): Promise<ClaimResult<ProcessedMessage>> {
@@ -60,7 +60,7 @@ export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
     }
   }
 
-  complete(
+  override complete(
     key: string,
     claimToken: string,
     result: ProcessedMessage,
@@ -77,7 +77,7 @@ export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
     return Promise.resolve();
   }
 
-  release(key: string, claimToken: string): Promise<void> {
+  override release(key: string, claimToken: string): Promise<void> {
     if (this.ownedRecord(key, claimToken) === undefined) {
       return Promise.reject(new StaleClaimError('release'));
     }
@@ -85,7 +85,7 @@ export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
     return Promise.resolve();
   }
 
-  purgeCompleted(before: Date): Promise<number> {
+  override purgeCompleted(before: Date): Promise<number> {
     let deleted = 0;
     for (const [key, record] of this.records) {
       if (

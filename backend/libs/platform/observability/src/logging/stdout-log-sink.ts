@@ -15,7 +15,7 @@ export class StdoutLogSink extends LogSink {
     super();
   }
 
-  write(record: LogRecord): void {
+  override write(record: LogRecord): void {
     this.output(
       JSON.stringify({
         ...record.fields,

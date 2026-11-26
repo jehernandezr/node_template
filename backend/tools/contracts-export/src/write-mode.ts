@@ -10,12 +10,12 @@ export class WriteMode extends ExportMode {
     super();
   }
 
-  async apply(path: string, content: string): Promise<void> {
+  override async apply(path: string, content: string): Promise<void> {
     await this.fileSystem.write(path, content);
     this.lines.push(`Wrote ${path}`);
   }
 
-  report(): ExportReport {
+  override report(): ExportReport {
     return { ok: true, lines: [...this.lines] };
   }
 }

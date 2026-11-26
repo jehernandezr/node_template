@@ -21,7 +21,7 @@ export class SseTransport extends RealtimeTransport {
     super();
   }
 
-  attach(host: RealtimeHost): void {
+  override attach(host: RealtimeHost): void {
     host.get(this.path, (request, response) => {
       this.serve(request, response).catch((error: unknown) =>
         response.destroy(error instanceof Error ? error : undefined),
@@ -29,7 +29,7 @@ export class SseTransport extends RealtimeTransport {
     });
   }
 
-  close(): Promise<void> {
+  override close(): Promise<void> {
     return this.connections.closeAll();
   }
 

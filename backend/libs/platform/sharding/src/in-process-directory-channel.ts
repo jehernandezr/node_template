@@ -15,7 +15,7 @@ export class InProcessDirectoryChannel extends ShardDirectoryChannel {
     return this.handlers.size;
   }
 
-  async publish(event: ShardDirectoryChanged): Promise<void> {
+  override async publish(event: ShardDirectoryChanged): Promise<void> {
     for (const handler of [...this.handlers]) {
       await handler(event);
     }
@@ -24,7 +24,7 @@ export class InProcessDirectoryChannel extends ShardDirectoryChannel {
   /**
    * Wrapped so the same handler can be subscribed twice and unsubscribed once.
    */
-  async subscribe(
+  override async subscribe(
     handler: ShardDirectoryChangeHandler,
   ): Promise<() => Promise<void>> {
     const entry: ShardDirectoryChangeHandler = (event) => handler(event);

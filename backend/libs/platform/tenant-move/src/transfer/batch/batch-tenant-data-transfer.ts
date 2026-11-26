@@ -57,7 +57,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
    * Copies the rows written since the last round, table by table.
    * @throws TenantMoveError `RoundPending` if a child row reaches the target before its parent.
    */
-  async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
+  override async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
     return ForeignKeyRound.run(() => this.syncRound(move));
   }
 
@@ -65,7 +65,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
    * Compares and reconciles each table with the tenant frozen.
    * @throws TenantMoveError `RoundPending` if a child row reaches the target before its parent.
    */
-  async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
+  override async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
     return ForeignKeyRound.run(() => this.verifyRound(move));
   }
 
@@ -113,7 +113,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     return { verified, tables };
   }
 
-  async abort(move: TenantTransfer): Promise<void> {
+  override async abort(move: TenantTransfer): Promise<void> {
     const transfer = await this.connections.connect(move);
     await this.purge(
       transfer.tenantId,
@@ -127,7 +127,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     );
   }
 
-  async cleanup(
+  override async cleanup(
     tenantId: string,
     source: ShardLocation,
     budget: TransferBudget = this.newBudget(),
@@ -135,7 +135,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     await this.purge(tenantId, await this.connections.get(source), budget);
   }
 
-  async assignRegion(
+  override async assignRegion(
     tenantId: string,
     location: ShardLocation,
     region: string,

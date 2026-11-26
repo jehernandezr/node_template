@@ -20,7 +20,9 @@ export class TypeOrmPreferencesRepository extends PreferencesRepository {
     super();
   }
 
-  async find(userId: string): Promise<NotificationPreferences | undefined> {
+  override async find(
+    userId: string,
+  ): Promise<NotificationPreferences | undefined> {
     const row = await this.kit.provider.run(
       { feature: this.kit.feature, intent: ManagerIntent.Read },
       (manager) => manager.findOneBy(NotificationPreferencesEntity, { userId }),
@@ -39,7 +41,7 @@ export class TypeOrmPreferencesRepository extends PreferencesRepository {
   }
 
   /** Replaces the whole row: saving the same preferences twice leaves a single identical row. */
-  async save(
+  override async save(
     owner: UserRef,
     preferences: NotificationPreferences,
   ): Promise<void> {
@@ -74,7 +76,7 @@ export class TypeOrmPreferencesRepository extends PreferencesRepository {
     );
   }
 
-  async erase(userId: string): Promise<number> {
+  override async erase(userId: string): Promise<number> {
     const result = await this.kit.provider.run(
       { feature: this.kit.feature, intent: ManagerIntent.Write },
       (manager) => manager.delete(NotificationPreferencesEntity, { userId }),

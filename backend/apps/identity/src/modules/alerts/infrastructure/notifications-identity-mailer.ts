@@ -53,7 +53,7 @@ export class NotificationsIdentityMailer extends IdentityMailer {
   }
 
   /** @throws NotificationsUnavailableError if notifications neither confirms the send nor discards it by suppression. */
-  async send(email: OutgoingEmail): Promise<void> {
+  override async send(email: OutgoingEmail): Promise<void> {
     const messageId = this.ids.next().toString();
     const template = NotificationsIdentityMailer.TEMPLATES[email.template];
     const outcome = await this.client.call(

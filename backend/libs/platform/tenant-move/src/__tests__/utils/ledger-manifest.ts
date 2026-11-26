@@ -4,7 +4,7 @@ import type { TenantMoveTable } from '../../manifest/tenant-move-table.js';
 
 /** Manifest of the test tables: `ledgers` with a tenant column and `entries` hanging from their ledger. */
 export class LedgerManifest extends TenantMoveManifest {
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return [
       {
         table: 'ledgers',
@@ -28,7 +28,7 @@ export class LedgerManifest extends TenantMoveManifest {
 
 /** `ledgers` and `postings`, whose `ledger_id` is a foreign key to `ledgers` on both shards. */
 export class LedgerWithPostingsManifest extends TenantMoveManifest {
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return [
       {
         table: 'ledgers',
@@ -52,7 +52,7 @@ export class LedgerWithPostingsManifest extends TenantMoveManifest {
 
 /** Only `ledgers`: what logical replication supports, since it does not follow children through their parent. */
 export class LedgersOnlyManifest extends TenantMoveManifest {
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return [
       {
         table: 'ledgers',
@@ -67,7 +67,7 @@ export class LedgersOnlyManifest extends TenantMoveManifest {
 
 /** `ledgers` and `attempts`, a log without `updated_at` like `login_attempts`: insert only. */
 export class LedgerWithAttemptsManifest extends TenantMoveManifest {
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return [
       {
         table: 'ledgers',

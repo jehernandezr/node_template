@@ -16,11 +16,11 @@ export class PostgresTextSearch extends PostgresSearchIndex {
     super(kit, language);
   }
 
-  protected async embeddingOf(): Promise<null> {
+  protected override async embeddingOf(): Promise<null> {
     return null;
   }
 
-  protected async rankingSql(query: SearchQuery): Promise<RankingSql> {
+  protected override async rankingSql(query: SearchQuery): Promise<RankingSql> {
     return {
       sql: `SELECT "document_id" AS id, ts_rank_cd("search_vector", q) AS score FROM "${SearchSchema.TABLE}", websearch_to_tsquery($3::regconfig, $4) q WHERE "tenant_id" = $1 AND "collection" = $2 AND "search_vector" @@ q ORDER BY score DESC, "document_id" LIMIT $5 OFFSET $6`,
       parameters: [

@@ -5,7 +5,7 @@ import { UsageCounterStore } from './usage-counter-store.js';
 export class InMemoryUsageCounterStore extends UsageCounterStore {
   private readonly windows = new Map<number, Map<string, UsageCount>>();
 
-  async add(
+  override async add(
     windowStart: Date,
     tenantId: string,
     metric: string,
@@ -21,7 +21,7 @@ export class InMemoryUsageCounterStore extends UsageCounterStore {
     this.windows.set(windowStart.getTime(), window);
   }
 
-  async pending(before: Date): Promise<readonly UsageWindow[]> {
+  override async pending(before: Date): Promise<readonly UsageWindow[]> {
     return [...this.windows.entries()]
       .filter(([start]) => start < before.getTime())
       .sort(([a], [b]) => a - b)
@@ -31,7 +31,7 @@ export class InMemoryUsageCounterStore extends UsageCounterStore {
       }));
   }
 
-  async clear(windowStart: Date): Promise<void> {
+  override async clear(windowStart: Date): Promise<void> {
     this.windows.delete(windowStart.getTime());
   }
 }

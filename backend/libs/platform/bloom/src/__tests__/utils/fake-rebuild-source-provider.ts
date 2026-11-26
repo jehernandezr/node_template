@@ -18,7 +18,7 @@ export class FakeRebuildSourceProvider extends BloomRebuildSourceProvider {
     super();
   }
 
-  batches(): BloomRebuildSource {
+  override batches(): BloomRebuildSource {
     this.calls += 1;
     return this.generate();
   }

@@ -11,12 +11,12 @@ export class FakeTelemetryHandle extends TelemetryHandle {
     super();
   }
 
-  forceFlush(): Promise<void> {
+  override forceFlush(): Promise<void> {
     this.forceFlushCalls += 1;
     return Promise.resolve();
   }
 
-  shutdown(): Promise<void> {
+  override shutdown(): Promise<void> {
     this.shutdownCalls += 1;
     return Promise.resolve();
   }

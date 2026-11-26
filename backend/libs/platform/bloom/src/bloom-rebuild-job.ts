@@ -42,7 +42,7 @@ export class BloomRebuildJob extends ScheduledJob {
    * Rebuilds the filter. If the source fails, the old filter is kept and the error propagates.
    * @throws InvalidParametersError when the filter cannot be rebuilt.
    */
-  async run(context: JobContext): Promise<void> {
+  override async run(context: JobContext): Promise<void> {
     if (this.filter instanceof PartitionedBloomFilter) {
       await this.filter.rebuildFrom(() => this.source.batches(context.signal));
       return;

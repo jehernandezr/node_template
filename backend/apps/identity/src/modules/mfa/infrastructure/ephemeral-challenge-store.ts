@@ -28,7 +28,7 @@ export class EphemeralChallengeStore extends ChallengeStore {
     super();
   }
 
-  async save(challenge: MfaChallengeRecord): Promise<void> {
+  override async save(challenge: MfaChallengeRecord): Promise<void> {
     const ttl = this.ttlOf(challenge);
     await this.store.set(
       this.keyOf(challenge.id),
@@ -38,7 +38,9 @@ export class EphemeralChallengeStore extends ChallengeStore {
     await this.store.set(this.liveKey(challenge.id), '1', ttl);
   }
 
-  async find(challengeId: string): Promise<MfaChallengeRecord | undefined> {
+  override async find(
+    challengeId: string,
+  ): Promise<MfaChallengeRecord | undefined> {
     const raw = await this.store.get(this.keyOf(challengeId));
     if (raw === undefined) {
       return undefined;
@@ -47,7 +49,7 @@ export class EphemeralChallengeStore extends ChallengeStore {
     return parsed.success ? parsed.data : undefined;
   }
 
-  async attempt(challengeId: string): Promise<number> {
+  override async attempt(challengeId: string): Promise<number> {
     const ttl = (await this.store.remainingMs(this.keyOf(challengeId))) ?? 1;
     return this.store.increment(
       [IdentityCacheKey.MfaChallenge, challengeId, 'attempts'].join(':'),
@@ -55,11 +57,11 @@ export class EphemeralChallengeStore extends ChallengeStore {
     );
   }
 
-  async consume(challengeId: string): Promise<boolean> {
+  override async consume(challengeId: string): Promise<boolean> {
     return (await this.store.take(this.liveKey(challengeId))) !== undefined;
   }
 
-  countRequest(pendingId: string, windowMs: number): Promise<number> {
+  override countRequest(pendingId: string, windowMs: number): Promise<number> {
     return this.store.increment(
       [IdentityCacheKey.MfaChallengeRate, pendingId].join(':'),
       windowMs,

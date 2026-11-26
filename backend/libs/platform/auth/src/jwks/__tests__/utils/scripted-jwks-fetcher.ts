@@ -31,7 +31,7 @@ export class ScriptedJwksFetcher extends JwksFetcher {
     this.openGate = undefined;
   }
 
-  async fetch(): Promise<unknown> {
+  override async fetch(): Promise<unknown> {
     this.fetched += 1;
     if (this.gate !== undefined) {
       await this.gate;

@@ -12,7 +12,7 @@ export class PresetIdGenerator extends IdGenerator {
     this.pending = [...ids];
   }
 
-  next(): Id {
+  override next(): Id {
     const preset = this.pending.shift();
     return preset === undefined ? this.fallback.next() : Id.from(preset);
   }

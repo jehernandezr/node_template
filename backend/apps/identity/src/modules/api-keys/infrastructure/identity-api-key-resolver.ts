@@ -25,7 +25,7 @@ export class IdentityApiKeyResolver extends ApiKeyResolver {
     super();
   }
 
-  async resolve(
+  override async resolve(
     prefix: string,
     secretHash: string,
   ): Promise<ApiKeyPrincipal | undefined> {

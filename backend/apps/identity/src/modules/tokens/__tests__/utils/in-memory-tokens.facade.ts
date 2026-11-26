@@ -13,7 +13,7 @@ export class InMemoryTokensFacade extends TokensFacade {
     super();
   }
 
-  async issue(
+  override async issue(
     input: AccessTokenInput,
   ): Promise<{ accessToken: string; accessExpiresAt: Date }> {
     this.issued.push(input);

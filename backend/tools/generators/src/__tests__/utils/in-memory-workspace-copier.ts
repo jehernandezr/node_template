@@ -16,7 +16,7 @@ export class InMemoryWorkspaceCopier extends WorkspaceCopier {
     super();
   }
 
-  async copy(): Promise<string> {
+  override async copy(): Promise<string> {
     const backend = `${InMemoryWorkspaceCopier.ROOT}/backend`;
     await this.files.write(
       `${backend}/tsconfig.base.json`,
@@ -29,7 +29,7 @@ export class InMemoryWorkspaceCopier extends WorkspaceCopier {
     return InMemoryWorkspaceCopier.ROOT;
   }
 
-  async remove(root: string): Promise<void> {
+  override async remove(root: string): Promise<void> {
     this.removed.push(root);
   }
 }

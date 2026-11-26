@@ -17,7 +17,7 @@ export class RegistryAppConfig extends AppConfig {
     super();
   }
 
-  get<T>(section: ConfigSection<T>): T {
+  override get<T>(section: ConfigSection<T>): T {
     const found = this.registry.find(section);
     if (found !== undefined) {
       return found;
@@ -26,7 +26,7 @@ export class RegistryAppConfig extends AppConfig {
     return this.registry.find(section) as T;
   }
 
-  root<T = unknown>(): T {
+  override root<T = unknown>(): T {
     const value = this.registry.root();
     if (value === undefined) {
       throw new ConfigValidationError([

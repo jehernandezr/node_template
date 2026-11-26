@@ -13,7 +13,7 @@ export class LocalTokensFacade extends TokensFacade {
     super();
   }
 
-  issue(input: AccessTokenInput): Promise<IssuedAccessToken> {
+  override issue(input: AccessTokenInput): Promise<IssuedAccessToken> {
     return this.issueToken.execute(input);
   }
 }

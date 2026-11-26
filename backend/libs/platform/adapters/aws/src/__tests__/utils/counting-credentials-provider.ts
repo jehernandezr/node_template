@@ -9,7 +9,7 @@ export class CountingCredentialsProvider extends AwsCredentialsProvider {
     super();
   }
 
-  async resolve(): Promise<AwsCredentials> {
+  override async resolve(): Promise<AwsCredentials> {
     this.resolutions += 1;
     return this.credentials;
   }

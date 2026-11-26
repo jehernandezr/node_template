@@ -37,7 +37,7 @@ return 1
     super();
   }
 
-  async add(
+  override async add(
     windowStart: Date,
     tenantId: string,
     metric: string,
@@ -56,7 +56,7 @@ return 1
     );
   }
 
-  async pending(before: Date): Promise<readonly UsageWindow[]> {
+  override async pending(before: Date): Promise<readonly UsageWindow[]> {
     const reply = await this.executor.run(ValkeyCommand.ZrangeByScore, [
       this.indexKey(),
       '-inf',
@@ -79,7 +79,7 @@ return 1
     return windows;
   }
 
-  async clear(windowStart: Date): Promise<void> {
+  override async clear(windowStart: Date): Promise<void> {
     const start = windowStart.getTime();
     await this.executor.script(
       ValkeyUsageCounterStore.CLEAR,

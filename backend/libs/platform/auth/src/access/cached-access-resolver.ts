@@ -28,7 +28,10 @@ export class CachedAccessResolver extends AccessResolver {
   /**
    * The Valkey copy is optional: if it does not respond or does not have the grant, it falls through to the source.
    */
-  async resolve(tenantId: string, userId: string): Promise<AccessGrant> {
+  override async resolve(
+    tenantId: string,
+    userId: string,
+  ): Promise<AccessGrant> {
     const nowMs = this.clock.now().getTime();
     const key = `${tenantId}:${userId}`;
     const entry = this.grants.get(key);

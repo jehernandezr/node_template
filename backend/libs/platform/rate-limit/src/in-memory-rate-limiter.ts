@@ -43,7 +43,7 @@ export class InMemoryRateLimiter extends RateLimiter {
   /**
    * Also when rejecting: a key that insists is the last one worth forgetting.
    */
-  async consume(
+  override async consume(
     key: string,
     rule: RateLimitRule,
     cost = 1,
@@ -63,7 +63,10 @@ export class InMemoryRateLimiter extends RateLimiter {
     return SlidingWindow.result(next, position, rule, allowed, cost);
   }
 
-  async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
+  override async peek(
+    key: string,
+    rule: RateLimitRule,
+  ): Promise<RateLimitResult> {
     RateLimitCallValidator.validate(key, rule);
     const { position, counts } = this.read(
       InMemoryRateLimiter.entryId(key, rule),
@@ -78,7 +81,7 @@ export class InMemoryRateLimiter extends RateLimiter {
     );
   }
 
-  async reset(key: string, rule: RateLimitRule): Promise<void> {
+  override async reset(key: string, rule: RateLimitRule): Promise<void> {
     RateLimitCallValidator.validate(key, rule);
     this.entries.delete(InMemoryRateLimiter.entryId(key, rule));
   }

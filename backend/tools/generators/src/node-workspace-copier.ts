@@ -30,7 +30,7 @@ export class NodeWorkspaceCopier extends WorkspaceCopier {
     super();
   }
 
-  async copy(): Promise<string> {
+  override async copy(): Promise<string> {
     const root = await mkdtemp(join(tmpdir(), 'generators-smoke-'));
     for (const file of NodeWorkspaceCopier.ROOT_FILES) {
       await cp(join(this.workspaceRoot, file), join(root, file));
@@ -52,7 +52,7 @@ export class NodeWorkspaceCopier extends WorkspaceCopier {
     return root;
   }
 
-  async remove(root: string): Promise<void> {
+  override async remove(root: string): Promise<void> {
     await rm(root, { recursive: true, force: true });
   }
 }

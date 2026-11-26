@@ -10,21 +10,21 @@ export interface RecordedLine {
 export class RecordingLogger extends LoggerPort {
   readonly lines: RecordedLine[] = [];
 
-  debug(): void {}
+  override debug(): void {}
 
-  info(message: string, fields?: Record<string, unknown>): void {
+  override info(message: string, fields?: Record<string, unknown>): void {
     this.lines.push({ message, fields });
   }
 
-  warn(message: string, fields?: Record<string, unknown>): void {
+  override warn(message: string, fields?: Record<string, unknown>): void {
     this.lines.push({ message, fields });
   }
 
-  error(message: string, fields?: Record<string, unknown>): void {
+  override error(message: string, fields?: Record<string, unknown>): void {
     this.lines.push({ message, fields });
   }
 
-  child(): LoggerPort {
+  override child(): LoggerPort {
     return this;
   }
 }

@@ -9,7 +9,7 @@ export class StaticHealthCheck extends HealthCheckable {
     super();
   }
 
-  check(): Promise<HealthReport> {
+  override check(): Promise<HealthReport> {
     return Promise.resolve(this.report);
   }
 }

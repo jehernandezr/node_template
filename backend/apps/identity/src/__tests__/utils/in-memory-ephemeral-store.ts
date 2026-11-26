@@ -20,15 +20,15 @@ export class InMemoryEphemeralStore extends EphemeralStore {
     super();
   }
 
-  async get(key: string): Promise<string | undefined> {
+  override async get(key: string): Promise<string | undefined> {
     return this.live(key)?.value;
   }
 
-  async set(key: string, value: string, ttlMs: number): Promise<void> {
+  override async set(key: string, value: string, ttlMs: number): Promise<void> {
     this.entries.set(key, { value, expiresAt: this.now() + ttlMs });
   }
 
-  async setIfAbsent(
+  override async setIfAbsent(
     key: string,
     value: string,
     ttlMs: number,
@@ -40,17 +40,17 @@ export class InMemoryEphemeralStore extends EphemeralStore {
     return true;
   }
 
-  async take(key: string): Promise<string | undefined> {
+  override async take(key: string): Promise<string | undefined> {
     const entry = this.live(key);
     this.entries.delete(key);
     return entry?.value;
   }
 
-  async delete(key: string): Promise<void> {
+  override async delete(key: string): Promise<void> {
     this.entries.delete(key);
   }
 
-  async increment(key: string, ttlMs: number): Promise<number> {
+  override async increment(key: string, ttlMs: number): Promise<number> {
     const entry = this.live(key);
     const next = Number(entry?.value ?? '0') + 1;
     this.entries.set(key, {
@@ -60,7 +60,7 @@ export class InMemoryEphemeralStore extends EphemeralStore {
     return next;
   }
 
-  async extend(key: string, ttlMs: number): Promise<void> {
+  override async extend(key: string, ttlMs: number): Promise<void> {
     const entry = this.live(key);
     if (entry !== undefined) {
       this.entries.set(key, {
@@ -70,12 +70,12 @@ export class InMemoryEphemeralStore extends EphemeralStore {
     }
   }
 
-  async remainingMs(key: string): Promise<number | undefined> {
+  override async remainingMs(key: string): Promise<number | undefined> {
     const entry = this.live(key);
     return entry === undefined ? undefined : entry.expiresAt - this.now();
   }
 
-  async putField(
+  override async putField(
     key: string,
     field: string,
     value: string,
@@ -91,7 +91,7 @@ export class InMemoryEphemeralStore extends EphemeralStore {
     this.maps.set(key, entry);
   }
 
-  async takeFields(key: string): Promise<ReadonlyMap<string, string>> {
+  override async takeFields(key: string): Promise<ReadonlyMap<string, string>> {
     const entry = this.maps.get(key);
     this.maps.delete(key);
     return entry === undefined || entry.expiresAt <= this.now()

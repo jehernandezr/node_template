@@ -34,7 +34,7 @@ export class RemoteJwksKeySource extends JwksKeySource {
   /**
    * If identity does not respond, the last download keeps being served: the cache covers the outage.
    */
-  async keyFor(kid: string): Promise<KeyObject | undefined> {
+  override async keyFor(kid: string): Promise<KeyObject | undefined> {
     const nowMs = this.clock.now().getTime();
     if (!this.loaded) {
       if (

@@ -12,7 +12,7 @@ export class ShardTenantMoveFence extends TenantMoveFence {
   }
 
   /** Raises the fence of the move on the shard. */
-  async raise(
+  override async raise(
     shard: ShardLocation,
     tenantId: string,
     moveId: string,
@@ -21,7 +21,7 @@ export class ShardTenantMoveFence extends TenantMoveFence {
   }
 
   /** Marks the fence of the move as pivoted on the shard. */
-  async markSwitched(
+  override async markSwitched(
     shard: ShardLocation,
     tenantId: string,
     moveId: string,
@@ -34,7 +34,7 @@ export class ShardTenantMoveFence extends TenantMoveFence {
   }
 
   /** The move whose fence is raised on the shard, or `undefined`. */
-  async raisedBy(
+  override async raisedBy(
     shard: ShardLocation,
     tenantId: string,
   ): Promise<string | undefined> {
@@ -42,7 +42,7 @@ export class ShardTenantMoveFence extends TenantMoveFence {
   }
 
   /** The move whose fence is raised on the shard without pivoting, or `undefined`. */
-  async unswitchedBy(
+  override async unswitchedBy(
     shard: ShardLocation,
     tenantId: string,
   ): Promise<string | undefined> {
@@ -50,7 +50,7 @@ export class ShardTenantMoveFence extends TenantMoveFence {
   }
 
   /** Lowers the fence of the move on the shard. */
-  async lower(
+  override async lower(
     shard: ShardLocation,
     tenantId: string,
     moveId: string,
@@ -59,7 +59,10 @@ export class ShardTenantMoveFence extends TenantMoveFence {
   }
 
   /** Lowers any fence of the tenant on the shard. */
-  async lowerAny(shard: ShardLocation, tenantId: string): Promise<void> {
+  override async lowerAny(
+    shard: ShardLocation,
+    tenantId: string,
+  ): Promise<void> {
     await this.fence.lowerAny(await this.connections.get(shard), tenantId);
   }
 }

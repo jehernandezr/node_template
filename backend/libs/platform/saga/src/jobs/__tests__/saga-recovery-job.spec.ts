@@ -62,22 +62,22 @@ class RecordingLogger extends LoggerPort {
 
   readonly others: string[] = [];
 
-  debug(message: string): void {
+  override debug(message: string): void {
     this.others.push(message);
   }
 
-  info(message: string): void {
+  override info(message: string): void {
     this.others.push(message);
   }
 
-  warn(message: string): void {
+  override warn(message: string): void {
     this.others.push(message);
   }
 
-  child(): LoggerPort {
+  override child(): LoggerPort {
     return this;
   }
-  error(message: string, fields?: Record<string, unknown>): void {
+  override error(message: string, fields?: Record<string, unknown>): void {
     this.errors.push({ message, fields });
   }
 }

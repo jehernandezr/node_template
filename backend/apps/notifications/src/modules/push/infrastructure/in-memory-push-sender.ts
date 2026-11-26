@@ -12,7 +12,10 @@ export interface SentPush {
 export class InMemoryPushSender extends PushSender {
   readonly sent: SentPush[] = [];
 
-  async send(target: PushTarget, message: PushMessage): Promise<string> {
+  override async send(
+    target: PushTarget,
+    message: PushMessage,
+  ): Promise<string> {
     this.sent.push({ target, message });
     return `memory-push-${this.sent.length}`;
   }

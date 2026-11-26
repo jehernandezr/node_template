@@ -26,7 +26,9 @@ export class TypeOrmInvoiceMaintenance extends InvoiceMaintenance {
    * @param now Reference instant.
    * @returns The invoices of all shards, ordered by id within each one.
    */
-  async dueForCollection(now: Date): Promise<readonly TenantInvoice[]> {
+  override async dueForCollection(
+    now: Date,
+  ): Promise<readonly TenantInvoice[]> {
     const outcome = await this.shards.run((connection) =>
       TenantMaintenanceSession.run(connection.dataSource.manager, (manager) =>
         manager

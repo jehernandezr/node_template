@@ -33,7 +33,7 @@ export class PurgeReadNotificationsJob extends ScheduledJob {
       PurgeReadNotificationsJob.DAY_MS;
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     await this.maintenance.purgeReadBefore(
       new Date(this.clock.now().getTime() - this.retentionMs),
     );

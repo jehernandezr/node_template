@@ -61,7 +61,7 @@ class ScriptedCleanup extends OperationHandler<
     return this.calls;
   }
 
-  async handle(
+  override async handle(
     input: TenantMoveRef,
     context: CallMeta,
   ): Promise<HandlerResult<TenantMoveAck>> {

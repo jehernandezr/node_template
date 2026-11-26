@@ -25,14 +25,14 @@ export class IdentityTenantMoveListener extends TenantMoveListener {
     super();
   }
 
-  async switched(move: TenantMoveRef): Promise<void> {
+  override async switched(move: TenantMoveRef): Promise<void> {
     await this.tenants.relocate(move.tenantId, move.targetRegion);
     await this.users.relocateHomeTenant(move.tenantId, move.targetRegion);
     await this.passkeys.relocateHomeTenant(move.tenantId, move.targetRegion);
     await this.apiKeys.relocateTenant(move.tenantId, move.targetRegion);
   }
 
-  async aborted(move: TenantMoveRef): Promise<void> {
+  override async aborted(move: TenantMoveRef): Promise<void> {
     await this.log.markAborted(move.moveId);
   }
 }

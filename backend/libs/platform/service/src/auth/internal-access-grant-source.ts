@@ -18,7 +18,7 @@ export class InternalAccessGrantSource extends AccessGrantSource {
   }
 
   /** @throws AuthenticationError `stateUnavailable` if identity does not respond with the access. */
-  async fetch(tenantId: string, userId: string): Promise<AccessGrant> {
+  override async fetch(tenantId: string, userId: string): Promise<AccessGrant> {
     const outcome = await this.client.call(
       GetUserAccessOperation,
       { tenantId, userId },

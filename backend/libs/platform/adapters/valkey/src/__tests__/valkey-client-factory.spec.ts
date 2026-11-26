@@ -35,7 +35,7 @@ import { valkeyConfigSchema } from '../valkey.config.js';
 class CountingTokenProvider extends ValkeyAuthTokenProvider {
   readonly requests: ValkeyAuthRequest[] = [];
 
-  async token(request: ValkeyAuthRequest): Promise<string> {
+  override async token(request: ValkeyAuthRequest): Promise<string> {
     this.requests.push(request);
     return `token-${this.requests.length}`;
   }

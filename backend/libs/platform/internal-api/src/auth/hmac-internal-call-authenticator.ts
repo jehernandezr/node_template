@@ -27,7 +27,7 @@ export class HmacInternalCallAuthenticator extends InternalCallAuthenticator {
     this.calculator = new HmacSignatureCalculator(secret);
   }
 
-  authenticate(request: SignableRequest): Promise<void> {
+  override authenticate(request: SignableRequest): Promise<void> {
     const timestampMs = Number(request.headers[InternalHeader.Timestamp]);
     const signature = request.headers[InternalHeader.Signature];
     if (

@@ -47,7 +47,7 @@ const UNDOABLE = defineOperation({
 class Good extends SagaDefinition<unknown> {
   readonly type = 'good';
 
-  protected define(flow: SagaFlow<unknown>): void {
+  protected override define(flow: SagaFlow<unknown>): void {
     flow.step(CREATE).pivot().step(SEND);
   }
 }
@@ -55,7 +55,7 @@ class Good extends SagaDefinition<unknown> {
 class Other extends SagaDefinition<unknown> {
   readonly type = 'other';
 
-  protected define(flow: SagaFlow<unknown>): void {
+  protected override define(flow: SagaFlow<unknown>): void {
     flow.step(CREATE).pivot().step(REMOVE);
   }
 }
@@ -63,13 +63,13 @@ class Other extends SagaDefinition<unknown> {
 class Empty extends SagaDefinition<unknown> {
   readonly type = 'empty';
 
-  protected define(): void {}
+  protected override define(): void {}
 }
 
 class Duplicate extends SagaDefinition<unknown> {
   readonly type = 'good';
 
-  protected define(flow: SagaFlow<unknown>): void {
+  protected override define(flow: SagaFlow<unknown>): void {
     flow.step(CREATE).pivot().step(SEND);
   }
 }
@@ -77,7 +77,7 @@ class Duplicate extends SagaDefinition<unknown> {
 class Unfinished extends SagaDefinition<unknown> {
   readonly type = 'unfinished';
 
-  protected define(flow: SagaFlow<unknown>): void {
+  protected override define(flow: SagaFlow<unknown>): void {
     flow.step(UNDOABLE).step(CREATE);
   }
 }

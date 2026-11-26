@@ -20,7 +20,7 @@ interface SdkErrorShape {
  */
 export class AwsErrorTranslator extends FailureRule {
   /** Transient or permanent for an SDK error; `undefined` for anything else. */
-  classify(error: object): FailureKind | undefined {
+  override classify(error: object): FailureKind | undefined {
     if (!AwsErrorTranslator.isSdkError(error)) {
       return undefined;
     }

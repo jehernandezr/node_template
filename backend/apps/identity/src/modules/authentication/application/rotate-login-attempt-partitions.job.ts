@@ -33,7 +33,7 @@ export class RotateLoginAttemptPartitionsJob extends ScheduledJob {
    * @throws PersistenceError `QueryFailed` if any shard failed, so that the run is marked as failed and
    *   shows in the job metrics.
    */
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     const report = await this.retention.maintain(this.clock.now());
     if (report.failedShards.length > 0) {
       throw new PersistenceError(

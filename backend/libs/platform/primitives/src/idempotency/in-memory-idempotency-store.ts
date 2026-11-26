@@ -38,7 +38,7 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
     super();
   }
 
-  claim(key: string, request: ClaimRequest): Promise<ClaimResult<R>> {
+  override claim(key: string, request: ClaimRequest): Promise<ClaimResult<R>> {
     try {
       return Promise.resolve(this.claimNow(key, request));
     } catch (error) {
@@ -46,7 +46,7 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
     }
   }
 
-  complete(key: string, claimToken: string, result: R): Promise<void> {
+  override complete(key: string, claimToken: string, result: R): Promise<void> {
     const record = this.ownedRecord(key, claimToken);
     if (record === undefined) {
       return Promise.reject(new StaleClaimError('complete'));
@@ -59,7 +59,7 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
     return Promise.resolve();
   }
 
-  release(key: string, claimToken: string): Promise<void> {
+  override release(key: string, claimToken: string): Promise<void> {
     if (this.ownedRecord(key, claimToken) === undefined) {
       return Promise.reject(new StaleClaimError('release'));
     }

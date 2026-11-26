@@ -12,7 +12,7 @@ export class LoggingPushNotifier extends PushNotifier {
     super();
   }
 
-  async wake(deviceId: string): Promise<void> {
+  override async wake(deviceId: string): Promise<void> {
     this.logger.debug('device approval pending', { deviceId });
   }
 }

@@ -25,7 +25,9 @@ class FakeTransactionManager extends TransactionManager {
     super();
   }
 
-  runInTransaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
+  override runInTransaction<T>(
+    fn: (uow: UnitOfWork) => Promise<T>,
+  ): Promise<T> {
     return fn({
       database: '',
       afterCommit: () => undefined,
@@ -33,15 +35,15 @@ class FakeTransactionManager extends TransactionManager {
     });
   }
 
-  current(): undefined {
+  override current(): undefined {
     return undefined;
   }
 
-  isInTransaction(): boolean {
+  override isInTransaction(): boolean {
     return this.open;
   }
 
-  afterCommit(): void {}
+  override afterCommit(): void {}
 }
 
 /** One turn through the scheduler: lets the other workers run before continuing. */

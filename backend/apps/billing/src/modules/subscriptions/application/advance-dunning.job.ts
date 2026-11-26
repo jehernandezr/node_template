@@ -30,7 +30,7 @@ export class AdvanceDunningJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     for (const tenantId of await this.maintenance.pastDueBefore(
       this.standing.overdueCutoff(),
     )) {

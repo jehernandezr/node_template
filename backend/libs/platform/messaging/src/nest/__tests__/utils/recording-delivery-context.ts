@@ -5,7 +5,10 @@ import type { MessageEnvelope } from '../../../envelope/message-envelope.js';
 export class RecordingDeliveryContext extends DeliveryContext {
   readonly tenants: Array<string | undefined> = [];
 
-  async run(envelope: MessageEnvelope, fn: () => Promise<void>): Promise<void> {
+  override async run(
+    envelope: MessageEnvelope,
+    fn: () => Promise<void>,
+  ): Promise<void> {
     this.tenants.push(envelope.tenantid);
     await fn();
   }

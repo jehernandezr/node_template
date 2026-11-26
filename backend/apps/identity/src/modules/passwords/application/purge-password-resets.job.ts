@@ -31,7 +31,7 @@ export class PurgePasswordResetsJob extends ScheduledJob {
     super();
   }
 
-  async run(): Promise<void> {
+  override async run(): Promise<void> {
     await this.retention.purgeExpiredBefore(
       new Date(
         this.clock.now().getTime() - PurgePasswordResetsJob.RETENTION_MS,

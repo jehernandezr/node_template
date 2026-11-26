@@ -6,16 +6,16 @@ import { ReportResultStoreSelector } from '../report-result-store-selector.js';
 class MapResultStore extends ReportResultStore {
   private readonly results = new Map<string, ReportResult>();
 
-  save(runId: string, result: ReportResult): Promise<void> {
+  override save(runId: string, result: ReportResult): Promise<void> {
     this.results.set(runId, result);
     return Promise.resolve();
   }
 
-  load(runId: string): Promise<ReportResult | undefined> {
+  override load(runId: string): Promise<ReportResult | undefined> {
     return Promise.resolve(this.results.get(runId));
   }
 
-  discard(runId: string): Promise<void> {
+  override discard(runId: string): Promise<void> {
     this.results.delete(runId);
     return Promise.resolve();
   }

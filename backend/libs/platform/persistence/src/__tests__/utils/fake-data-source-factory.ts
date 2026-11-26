@@ -31,7 +31,10 @@ export class FakeDataSourceFactory extends DataSourceFactory {
     this.failures = count;
   }
 
-  create(target: DatabaseTarget, endpoints: InstanceEndpoints): DataSource {
+  override create(
+    target: DatabaseTarget,
+    endpoints: InstanceEndpoints,
+  ): DataSource {
     const failing = this.failures > 0;
     if (failing) {
       this.failures -= 1;

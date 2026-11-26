@@ -11,23 +11,23 @@ export interface RecordedLog {
 export class RecordingLogger extends LoggerPort {
   readonly entries: RecordedLog[] = [];
 
-  debug(message: string, fields?: Record<string, unknown>): void {
+  override debug(message: string, fields?: Record<string, unknown>): void {
     this.entries.push({ level: 'debug', message, fields });
   }
 
-  info(message: string, fields?: Record<string, unknown>): void {
+  override info(message: string, fields?: Record<string, unknown>): void {
     this.entries.push({ level: 'info', message, fields });
   }
 
-  warn(message: string, fields?: Record<string, unknown>): void {
+  override warn(message: string, fields?: Record<string, unknown>): void {
     this.entries.push({ level: 'warn', message, fields });
   }
 
-  error(message: string, fields?: Record<string, unknown>): void {
+  override error(message: string, fields?: Record<string, unknown>): void {
     this.entries.push({ level: 'error', message, fields });
   }
 
-  child(): LoggerPort {
+  override child(): LoggerPort {
     return this;
   }
 

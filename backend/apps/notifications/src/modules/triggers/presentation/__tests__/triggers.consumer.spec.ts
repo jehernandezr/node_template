@@ -8,7 +8,7 @@ import { TriggerNotifications } from '../../application/trigger-notifications.js
 import { TriggersConsumer } from '../triggers.consumer.js';
 
 class NoMembers extends TenantMembers {
-  async withPermission() {
+  override async withPermission() {
     return [];
   }
 }

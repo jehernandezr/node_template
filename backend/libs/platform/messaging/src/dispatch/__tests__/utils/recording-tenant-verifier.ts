@@ -15,7 +15,7 @@ export class RecordingTenantVerifier extends TenantVerifier {
     super();
   }
 
-  async verify(
+  override async verify(
     tenantId: string | undefined,
     envelope: MessageEnvelope,
   ): Promise<boolean> {

@@ -22,7 +22,7 @@ export class TypeOrmEmailLedger extends EmailLedger {
     super();
   }
 
-  async find(messageId: string): Promise<EmailRecord | undefined> {
+  override async find(messageId: string): Promise<EmailRecord | undefined> {
     const row = await this.run((manager) =>
       manager.findOneBy(EmailMessageEntity, { messageId }),
     );
@@ -38,7 +38,7 @@ export class TypeOrmEmailLedger extends EmailLedger {
    * @returns `Reserved` if this send is the owner, or `Taken` with the current record.
    * @throws PersistenceError `PLATFORM.PERSISTENCE.CONTENTION` if the row disappears between the reservation and its read.
    */
-  async reserve(
+  override async reserve(
     entry: Omit<EmailRecord, 'status' | 'providerId'>,
     abandonedAfterMs: number,
   ): Promise<EmailReservation> {
@@ -75,7 +75,7 @@ export class TypeOrmEmailLedger extends EmailLedger {
    * A single `INSERT ... ON CONFLICT` so two writes of the same message do not collide on the key; the
    * conflict bumps `version` and `updated_at` by hand because the TypeORM upsert does not.
    */
-  async record(entry: EmailRecord): Promise<void> {
+  override async record(entry: EmailRecord): Promise<void> {
     await this.run((manager) =>
       manager.query(
         `INSERT INTO "email_messages" ("message_id", "template", "template_version", "recipient_hash", "status", "provider_id", "trace_id", "version") VALUES ($1, $2, $3, $4, $5, $6, $7, 1) ON CONFLICT ("message_id") DO UPDATE SET "template" = EXCLUDED."template", "template_version" = EXCLUDED."template_version", "recipient_hash" = EXCLUDED."recipient_hash", "status" = EXCLUDED."status", "provider_id" = EXCLUDED."provider_id", "trace_id" = EXCLUDED."trace_id", "version" = "email_messages"."version" + 1, "updated_at" = now()`,
@@ -92,13 +92,16 @@ export class TypeOrmEmailLedger extends EmailLedger {
     );
   }
 
-  async isSuppressed(recipientHash: string): Promise<boolean> {
+  override async isSuppressed(recipientHash: string): Promise<boolean> {
     return this.run((manager) =>
       manager.existsBy(EmailSuppressionEntity, { recipientHash }),
     );
   }
 
-  async suppress(recipientHash: string, reason: string): Promise<void> {
+  override async suppress(
+    recipientHash: string,
+    reason: string,
+  ): Promise<void> {
     await this.run((manager) =>
       manager.upsert(EmailSuppressionEntity, { recipientHash, reason }, [
         'recipientHash',

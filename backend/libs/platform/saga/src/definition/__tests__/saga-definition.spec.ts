@@ -50,7 +50,7 @@ function codeOf(fn: () => unknown): unknown {
 class ValidSaga extends SagaDefinition<State> {
   readonly type = 'valid';
 
-  protected define(flow: SagaFlow<State>): void {
+  protected override define(flow: SagaFlow<State>): void {
     flow
       .step(CREATE_A)
       .input(() => ({ name: 'a' }))
@@ -113,7 +113,7 @@ describe('SagaDefinition.build', () => {
     class Empty extends SagaDefinition<State> {
       readonly type = 'empty';
 
-      protected define(): void {}
+      protected override define(): void {}
     }
 
     expect(() => new Empty().build(resolver)).toThrow(SagaError);
@@ -135,7 +135,7 @@ describe('SagaDefinition.build', () => {
     class Saga extends SagaDefinition<State> {
       readonly type = 'missing-compensation';
 
-      protected define(flow: SagaFlow<State>): void {
+      protected override define(flow: SagaFlow<State>): void {
         flow.step(UNDOABLE).step(CREATE_B);
       }
     }

@@ -11,7 +11,7 @@ export class InMemoryTenantsFacade extends TenantsFacade {
     return this;
   }
 
-  async get(tenantId: string): Promise<TenantSnapshot> {
+  override async get(tenantId: string): Promise<TenantSnapshot> {
     const tenant = this.tenants.get(tenantId);
     if (tenant === undefined) {
       throw new Error('Tenant not found');
@@ -19,14 +19,14 @@ export class InMemoryTenantsFacade extends TenantsFacade {
     return tenant;
   }
 
-  async assertActive(tenantId: string): Promise<void> {
+  override async assertActive(tenantId: string): Promise<void> {
     const tenant = await this.get(tenantId);
     if (tenant.status !== TenantLifecycle.Active) {
       throw new Error('Tenant not active');
     }
   }
 
-  async relocate(tenantId: string, region: string): Promise<void> {
+  override async relocate(tenantId: string, region: string): Promise<void> {
     this.tenants.set(tenantId, { ...(await this.get(tenantId)), region });
   }
 }

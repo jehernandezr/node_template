@@ -23,12 +23,12 @@ const BEA: UserRef = {
 class RecordingDispatch extends DispatchFacade {
   readonly commands: NotifyCommand[] = [];
 
-  async notify(command: NotifyCommand) {
+  override async notify(command: NotifyCommand) {
     this.commands.push(command);
     return [];
   }
 
-  async eraseUser(): Promise<number> {
+  override async eraseUser(): Promise<number> {
     return 0;
   }
 }
@@ -38,7 +38,7 @@ class FixedMembers extends TenantMembers {
     super();
   }
 
-  async withPermission(): Promise<readonly UserRef[]> {
+  override async withPermission(): Promise<readonly UserRef[]> {
     return this.members;
   }
 }

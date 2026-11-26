@@ -65,7 +65,7 @@ export class BillingTenantMoveManifest extends TenantMoveManifest {
     },
   ];
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return BillingTenantMoveManifest.TABLES;
   }
 }

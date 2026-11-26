@@ -19,7 +19,7 @@ import {
  * @throws ShardingError `UnknownShard` when there is no suitable shard in the region.
  */
 export class LeastLoadedPlacementPolicy extends ShardPlacementPolicy {
-  place(
+  override place(
     request: PlacementRequest,
     current: readonly TenantPlacement[],
     availableShards: readonly AvailableShard[],

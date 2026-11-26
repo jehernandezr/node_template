@@ -21,15 +21,15 @@ export class LocalTasksFacade extends TasksFacade {
     super();
   }
 
-  get(tenantId: string, taskId: string): Promise<Task> {
+  override get(tenantId: string, taskId: string): Promise<Task> {
     return this.getTask.execute(tenantId, taskId);
   }
 
-  anonymizeUser(userId: string): Promise<number> {
+  override anonymizeUser(userId: string): Promise<number> {
     return this.maintenance.replaceAuthor(userId, TasksDefaults.erasedAuthor);
   }
 
-  listChanges(query: ListTaskChangesInput): Promise<TaskChangePage> {
+  override listChanges(query: ListTaskChangesInput): Promise<TaskChangePage> {
     return this.changes.execute(query);
   }
 }

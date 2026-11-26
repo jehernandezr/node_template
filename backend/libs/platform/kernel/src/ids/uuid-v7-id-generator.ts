@@ -23,7 +23,7 @@ export class UuidV7IdGenerator extends IdGenerator {
     super();
   }
 
-  next(): Id {
+  override next(): Id {
     return Id.from(this.generate());
   }
 

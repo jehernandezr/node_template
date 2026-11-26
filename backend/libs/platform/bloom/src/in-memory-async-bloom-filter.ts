@@ -11,22 +11,22 @@ export class InMemoryAsyncBloomFilter extends RebuildableBloomFilter {
     this.filter = filter;
   }
 
-  async add(item: string): Promise<void> {
+  override async add(item: string): Promise<void> {
     this.filter.add(item);
   }
 
-  async addMany(items: readonly string[]): Promise<void> {
+  override async addMany(items: readonly string[]): Promise<void> {
     for (const item of items) {
       this.filter.add(item);
     }
   }
 
-  async mightContain(item: string): Promise<boolean> {
+  override async mightContain(item: string): Promise<boolean> {
     return this.filter.mightContain(item);
   }
 
   /** Rebuilds with the same size and number of hash functions. */
-  async rebuild(source: BloomRebuildSource): Promise<void> {
+  override async rebuild(source: BloomRebuildSource): Promise<void> {
     const fresh = new BloomFilter({
       bits: this.filter.bits,
       hashes: this.filter.hashes,

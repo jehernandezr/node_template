@@ -30,7 +30,7 @@ export class RecordingEnvelopePublisher extends EnvelopePublisher {
   /** Publication attempts, whether or not they failed. */
   attempts = 0;
 
-  publish(
+  override publish(
     envelope: MessageEnvelope,
     target: OutboundTarget,
     options: PublishOutboxOptions,

@@ -27,7 +27,7 @@ export class PlatformTaskSearch extends TaskSearch {
     super();
   }
 
-  index(task: Task): Promise<void> {
+  override index(task: Task): Promise<void> {
     const state = task.snapshot();
     return this.documents.index({
       collection: TasksSearchCollection.Tasks,
@@ -36,11 +36,11 @@ export class PlatformTaskSearch extends TaskSearch {
     });
   }
 
-  remove(taskId: string): Promise<void> {
+  override remove(taskId: string): Promise<void> {
     return this.documents.remove(TasksSearchCollection.Tasks, taskId);
   }
 
-  async search(query: TaskSearchQuery): Promise<TaskSearchResult> {
+  override async search(query: TaskSearchQuery): Promise<TaskSearchResult> {
     const batch = query.limit + 1;
     const ranked: RankedTask[] = [];
     let offset = query.offset;

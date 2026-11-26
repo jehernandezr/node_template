@@ -38,7 +38,7 @@ export class HttpTransport extends Transport {
    * resilience registry classifies them.
    * @throws InternalApiError `UnknownService` if there is no URL for the operation's service.
    */
-  async invoke(
+  override async invoke(
     operationId: string,
     input: unknown,
     meta: CallMeta,

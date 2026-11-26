@@ -6,11 +6,11 @@ import { RandomSource } from './random-source.js';
  * sampling; `bytes` comes from the cryptographic generator for identifiers.
  */
 export class SystemRandomSource extends RandomSource {
-  next(): number {
+  override next(): number {
     return Math.random();
   }
 
-  bytes(length: number): Uint8Array {
+  override bytes(length: number): Uint8Array {
     return randomFillSync(new Uint8Array(length));
   }
 }

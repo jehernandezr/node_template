@@ -7,7 +7,7 @@ export class MergedTenantMoveManifest extends TenantMoveManifest {
     super();
   }
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return this.manifests.flatMap((manifest) => manifest.tables());
   }
 }

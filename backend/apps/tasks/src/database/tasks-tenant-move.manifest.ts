@@ -23,7 +23,7 @@ export class TasksTenantMoveManifest extends TenantMoveManifest {
     },
   ];
 
-  tables(): readonly TenantMoveTable[] {
+  override tables(): readonly TenantMoveTable[] {
     return TasksTenantMoveManifest.TABLES;
   }
 }

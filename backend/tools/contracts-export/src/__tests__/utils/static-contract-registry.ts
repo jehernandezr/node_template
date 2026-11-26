@@ -7,7 +7,7 @@ export class StaticContractRegistry extends ContractRegistry {
     super();
   }
 
-  load(): Promise<readonly ServiceContract[]> {
+  override load(): Promise<readonly ServiceContract[]> {
     return Promise.resolve(this.contracts);
   }
 }

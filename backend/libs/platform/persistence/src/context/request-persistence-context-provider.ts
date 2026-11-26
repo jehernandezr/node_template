@@ -10,7 +10,7 @@ export class RequestPersistenceContextProvider extends PersistenceContextProvide
     super();
   }
 
-  current(): PersistenceContext {
+  override current(): PersistenceContext {
     const data = this.store.current();
     if (data === undefined) {
       return RequestPersistenceContextProvider.EMPTY;

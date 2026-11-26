@@ -18,7 +18,7 @@ export class InMemoryFlagStore extends FlagStore {
     this.byFlag.delete(flag);
   }
 
-  async rules(): Promise<readonly FlagRule[]> {
+  override async rules(): Promise<readonly FlagRule[]> {
     return [...this.byFlag.values()];
   }
 }

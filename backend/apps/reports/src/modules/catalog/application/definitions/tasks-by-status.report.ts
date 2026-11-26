@@ -22,7 +22,10 @@ export class TasksByStatusReport extends ReportDefinition {
     super();
   }
 
-  async rows(tenantId: string, params: ReportParams): Promise<ReportRow[]> {
+  override async rows(
+    tenantId: string,
+    params: ReportParams,
+  ): Promise<ReportRow[]> {
     const counts = await this.projections.taskStatusCounts(tenantId, params);
     return Object.values(TaskStatus).map((status) => ({
       cells: [

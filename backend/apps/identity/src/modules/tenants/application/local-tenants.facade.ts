@@ -16,15 +16,15 @@ export class LocalTenantsFacade extends TenantsFacade {
     super();
   }
 
-  relocate(tenantId: string, region: string): Promise<void> {
+  override relocate(tenantId: string, region: string): Promise<void> {
     return this.relocation.execute(tenantId, region);
   }
 
-  get(tenantId: string): Promise<TenantSnapshot> {
+  override get(tenantId: string): Promise<TenantSnapshot> {
     return this.reader.get(tenantId);
   }
 
-  async assertActive(tenantId: string): Promise<void> {
+  override async assertActive(tenantId: string): Promise<void> {
     const tenant = await this.reader.get(tenantId);
     if (tenant.status !== TenantLifecycle.Active) {
       throw new IdentityError(IdentityErrorCode.TenantSuspended);

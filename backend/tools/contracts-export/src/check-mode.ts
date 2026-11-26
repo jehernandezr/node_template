@@ -16,14 +16,14 @@ export class CheckMode extends ExportMode {
     super();
   }
 
-  async apply(path: string, content: string): Promise<void> {
+  override async apply(path: string, content: string): Promise<void> {
     const missing = !(await this.fileSystem.exists(path));
     if (missing || (await this.fileSystem.read(path)) !== content) {
       this.drift.push(path);
     }
   }
 
-  report(): ExportReport {
+  override report(): ExportReport {
     if (this.drift.length === 0) {
       return { ok: true, lines: [UP_TO_DATE] };
     }

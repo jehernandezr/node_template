@@ -83,7 +83,7 @@ class CreateOnboarding {
 class BrokenSaga extends SagaDefinition<unknown> {
   readonly type = 'broken';
 
-  protected define(flow: SagaFlow<unknown>): void {
+  protected override define(flow: SagaFlow<unknown>): void {
     flow
       .step(
         defineOperation({

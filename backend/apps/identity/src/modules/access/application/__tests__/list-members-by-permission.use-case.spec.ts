@@ -17,65 +17,65 @@ class ReadOnlyTenantAccess extends TenantAccessRepository {
     super();
   }
 
-  listMemberships(): Promise<readonly Membership[]> {
+  override listMemberships(): Promise<readonly Membership[]> {
     return Promise.resolve(this.memberships);
   }
-  listGroups(): Promise<readonly Group[]> {
+  override listGroups(): Promise<readonly Group[]> {
     return Promise.resolve(this.groups);
   }
-  listRoles(): Promise<readonly Role[]> {
+  override listRoles(): Promise<readonly Role[]> {
     return Promise.resolve(this.roles);
   }
-  listMembershipsAfter(): never {
+  override listMembershipsAfter(): never {
     throw new Error('not used');
   }
-  findMembership(): never {
+  override findMembership(): never {
     throw new Error('not used');
   }
-  insertMembership(): never {
+  override insertMembership(): never {
     throw new Error('not used');
   }
-  updateMembership(): never {
+  override updateMembership(): never {
     throw new Error('not used');
   }
-  removeMembership(): never {
+  override removeMembership(): never {
     throw new Error('not used');
   }
-  removedVersion(): never {
+  override removedVersion(): never {
     throw new Error('not used');
   }
-  purgeMembership(): never {
+  override purgeMembership(): never {
     throw new Error('not used');
   }
-  purgeTenant(): never {
+  override purgeTenant(): never {
     throw new Error('not used');
   }
-  insertGroup(): never {
+  override insertGroup(): never {
     throw new Error('not used');
   }
-  updateGroup(): never {
+  override updateGroup(): never {
     throw new Error('not used');
   }
-  deleteGroup(): never {
+  override deleteGroup(): never {
     throw new Error('not used');
   }
-  insertRole(): never {
+  override insertRole(): never {
     throw new Error('not used');
   }
-  updateRole(): never {
+  override updateRole(): never {
     throw new Error('not used');
   }
-  deleteRole(): never {
+  override deleteRole(): never {
     throw new Error('not used');
   }
-  tenantVersion(): never {
+  override tenantVersion(): never {
     throw new Error('not used');
   }
-  bumpTenantVersion(): never {
+  override bumpTenantVersion(): never {
     throw new Error('not used');
   }
 
-  lockForChanges(): never {
+  override lockForChanges(): never {
     throw new Error('not used');
   }
 }

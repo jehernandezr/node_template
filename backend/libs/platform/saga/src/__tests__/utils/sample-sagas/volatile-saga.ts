@@ -12,7 +12,7 @@ export class VolatileSaga extends SagaDefinition<SampleState> {
   readonly type = 'volatile';
   readonly counts = { inputs: 0, compensations: 0 };
 
-  protected define(flow: SagaFlow<SampleState>): void {
+  protected override define(flow: SagaFlow<SampleState>): void {
     flow
       .step(STEP_A)
       .input(() => ({ name: 'a' }))
