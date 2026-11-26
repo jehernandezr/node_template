@@ -186,7 +186,7 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
 - **Layout:** each screen owns its single top bar with `AppPage` from `ui`. The shell uses `ShellChrome`.
 - **States and errors:** each screen has a controller (`ChangeNotifier`) tested without widgets. Loading is composed by an `AsyncLoader` and actions by an `ActionRunner`; the screen is a `StatelessWidget` that creates the controller with `ControllerBuilder`. An action's errors are shown with `showActionResult`.
 
-All seven manifests use `screens:`, and `notifications` creates its lifecycle with `lifecycleFactory`. The previous APIs (`routes:`, `lifecycle:`, `ShellContext.eventBus` and `AdaptiveScaffold.compactActions`) were removed.
+All eight manifests use `screens:`, and `notifications` creates its lifecycle with `lifecycleFactory`. The previous APIs (`routes:`, `lifecycle:`, `ShellContext.eventBus` and `AdaptiveScaffold.compactActions`) were removed.
 
 **Deferred loading**
 
@@ -234,21 +234,21 @@ The `notifications` lifecycle ships in the initial bundle with the manifest, so 
 
 Each external capability is a port in the platform library that uses it (for example `CachePort` in `@platform/cache` or `RateLimiter` in `@platform/rate-limit`), with one adapter per provider in `backend/libs/platform/adapters/<provider>` (today `aws`, `postgres` and `valkey`). Business code talks to the port; each service's module picks the adapter by configuration. Changing clouds means writing new adapters and different Terraform.
 
-| Capability                 | Port                                | AWS adapter                              | Local adapter and alternatives                          |
-| -------------------------- | ----------------------------------- | ---------------------------------------- | ------------------------------------------------------- |
-| Topics (pub/sub)           | `TopicPublisher`                    | SNS                                      | In memory; Google Pub/Sub, Kafka                        |
-| Queues                     | `QueueSender`, `QueueConsumer`      | SQS                                      | In memory, BullMQ on Valkey; RabbitMQ                   |
-| Files                      | `FileStorage`                       | S3                                       | Local file system, MinIO; GCS, Azure Blob               |
-| Scheduled jobs             | `JobScheduler`                      | EventBridge Scheduler                    | `node-cron`; Cloud Scheduler, Kubernetes CronJob        |
-| Cache and short-lived data | `Cache`, `KeyValueStore`            | ElastiCache for Valkey                   | Valkey in Docker; any Redis-compatible server           |
-| Email                      | `EmailSender`                       | SES                                      | SMTP with Mailpit                                       |
-| Push                       | `PushSender`                        | APNs, FCM and Web Push directly          | Same on any cloud                                       |
-| Secrets                    | `SecretsProvider`                   | Secrets Manager                          | Environment variables; Vault                            |
-| Feature flags              | OpenFeature                         | Own provider on DB + Valkey              | flagd; AppConfig                                        |
-| Real time                  | `RealtimePublisher`                 | Socket.IO and SSE in NestJS on Fargate   | The same gateways locally or on Kubernetes              |
-| Signatures and encryption  | `Signer`, `KeyManagement`           | KMS                                      | Local keys                                              |
-| Compute entry point        | `main.ts`, `lambda.ts`, `worker.ts` | Lambda, Fargate                          | Any container                                           |
-| Observability              | OpenTelemetry                       | ADOT Collector to OpenObserve on Fargate | OpenObserve in a container; any OTel-compatible backend |
+| Capability                 | Port                                | AWS adapter                                                  | Local adapter and alternatives                                         |
+| -------------------------- | ----------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Topics (pub/sub)           | `TopicPublisher`                    | SNS                                                          | In memory; Google Pub/Sub, Kafka                                       |
+| Queues                     | `QueueSender`, `QueueConsumer`      | SQS                                                          | In memory, BullMQ on Valkey; RabbitMQ                                  |
+| Files                      | `FileStorage`                       | S3                                                           | Local file system, MinIO; GCS, Azure Blob                              |
+| Scheduled jobs             | `ScheduledJob`, `JobLock`           | `@platform/scheduling` in the Fargate worker, lock in Valkey | The same in any process; Kubernetes CronJob                            |
+| Cache and short-lived data | `Cache`, `KeyValueStore`            | ElastiCache for Valkey                                       | Valkey in Docker; any Redis-compatible server                          |
+| Email                      | `EmailSender`                       | SES                                                          | SMTP with Mailpit                                                      |
+| Push                       | `PushSender`                        | APNs, FCM and Web Push directly                              | Same on any cloud                                                      |
+| Secrets                    | `SecretSource`                      | Secrets Manager                                              | Environment variables; Vault                                           |
+| Feature flags              | OpenFeature                         | Own provider on DB + Valkey                                  | flagd; AppConfig                                                       |
+| Real time                  | `RealtimePublisher`                 | Socket.IO and SSE in NestJS on Fargate                       | The same gateways locally or on Kubernetes                             |
+| Signatures and encryption  | `Signer`, `KeyManagement`           | KMS                                                          | Local keys                                                             |
+| Compute entry point        | `main.ts`, `lambda.ts`, `worker.ts` | Lambda, Fargate                                              | Any container                                                          |
+| Observability              | OpenTelemetry                       | Direct OTLP/HTTP export to OpenObserve on Fargate            | OpenObserve and a Collector in containers; any OTel-compatible backend |
 
 The messaging topology, the jobs and the buckets are declared in code in an abstract way (topic, queue, job). The AWS Terraform reads those declarations; another provider would have its own module reading the same ones.
 
@@ -260,7 +260,6 @@ Endpoints, event handlers, jobs, internal operations and real-time messages are 
 | ---------------------------- | ----------------------------------------------------------------------------- |
 | Lambda with HTTP API Gateway | `lambda.ts` turns the event into a NestJS request                             |
 | Lambda with SQS              | Turns the batch into messages for `@Subscribe` and reports partial failures   |
-| EventBridge Scheduler        | Turns the trigger into the run of its `@ScheduledJob`                         |
 | Real-time container          | NestJS `@WebSocketGateway` (Socket.IO) and `@Sse()` call `@RealtimeHandler`   |
 | Fargate, Kubernetes or local | `main.ts` and `worker.ts`: HTTP server, long polling consumers, cron and `ws` |
 
@@ -290,7 +289,7 @@ OpenTelemetry (OTel) is the open instrumentation standard: it produces logs, tra
 - Automatic instrumentation of HTTP, NestJS, `pg`, the Valkey client, the AWS SDK and `fetch`. Custom spans in use cases, saga steps, message handlers and jobs.
 - Logs: the `LoggerPort` writes JSON with `trace_id` and `span_id` and exports it as OTel logs, so each log opens its full trace. Fields such as `password`, `token` and `authorization` are hidden automatically.
 - Metrics: latency per endpoint, errors per code, queue depth and age, retries, stalled sagas, cache hits and usage per tenant.
-- An OpenTelemetry Collector receives everything and forwards it: in Lambda as a layer (ADOT, the AWS distribution), in Fargate as a sidecar and locally inside `docker-compose`. Changing backend means changing the Collector configuration.
+- In AWS each process exports OTLP/HTTP straight to OpenObserve, in Fargate and Lambda, with no Collector. Locally an OpenTelemetry Collector inside `docker-compose` receives everything and forwards it ([ADR 0046](adr/0046-providers-and-telemetry-per-environment.md)).
 
 A single tool gathers logs, metrics, traces, dashboards and alerts in every environment: **OpenObserve**.
 
@@ -309,7 +308,7 @@ A single tool gathers logs, metrics, traces, dashboards and alerts in every envi
 | `DB_LOG_QUERIES`, `DB_SLOW_QUERY_MS`           | SQL off by default, slow queries always logged                               |
 | Feature flag `log-level`                       | Hot level change, without redeploy                                           |
 
-Trace sampling is configured in the Collector (every trace with an error and a percentage of the rest). Retention is 14 days in dev and 30 in prod.
+In AWS traces use head sampling per environment (`OTEL_TRACES_SAMPLER_ARG`: 1.0 in dev, 0.2 in staging, 0.05 in prod); the local Collector keeps every trace with an error and a percentage of the rest. Retention is 14 days in dev and 30 in prod.
 
 ## Errors
 
@@ -501,7 +500,7 @@ Tenant tables extend `TenantIsolatedRepository` instead: each query filters by `
 
 - The base entities (`AuditedEntity`, `VersionedEntity`) come with a uuid `id`, auditing, version and soft delete in `timestamptz`. The `id` is a UUIDv7 generated by the app.
 - Each module's shard key is declared in `forFeature`, not in decorators on the entity.
-- Each service keeps its migrations in `migrations/shard` and `migrations/catalog`. The library provides `pnpm nx run platform-persistence:migration-generate --name=<Nombre> --definition=<modulo> --out=<carpeta>`, which generates the migration by comparing the entities with a temporary database. Each service will have its own target on top of that CLI. `migration-run` and `migration-revert` use the same `DataSource` objects. `synchronize` is always off.
+- Each service keeps its migrations in `migrations/shard` and `migrations/catalog`. The library provides `pnpm nx run platform-persistence:migration-generate --name=<Name> --definition=<module> --out=<folder>`, which generates the migration by comparing the entities with a temporary database. Each service will have its own target on top of that CLI. `migration-run` and `migration-revert` use the same `DataSource` objects; `migration-revert` is for local work only, and no down migration runs in a deploy ([ADR 0043](adr/0043-deploy-migrations-and-rollback.md)). `synchronize` is always off.
 - The platform tables (outbox, processed messages, idempotency, shard directory and saga log) bring their entities and migrations from `@platform/adapters-postgres`.
 
 **Current code.** Persistence and the platform tables run on TypeORM; the old `pg` code is gone. ADR 0009 remains superseded.
@@ -755,8 +754,8 @@ Retries only apply to operations marked as idempotent, and each dependency has i
 | Load shedding                             | Responds 503 with `Retry-After` when load exceeds a threshold                | HTTP gateway and real time       |
 
 - **Valkey failure**: caches, routing, Bloom filters, rate limiting and flags degrade (database reads, local limits, last known value); revocation, replay, lockout and the write gate fail closed with a retryable 503. Valkey is required outside `local` ([ADR 0044](adr/0044-valkey-failure-policy.md)).
-- In-house liveness and readiness **health checks**, without `@nestjs/terminus` (F4 design, section 9); an instance without its critical dependencies leaves the load balancer.
-- **Infrastructure**: RDS and Valkey in Multi-AZ with automatic failover.
+- In-house liveness and readiness **health checks**, without `@nestjs/terminus` (F4 design, section 9); an instance without its critical dependencies leaves the load balancer. Valkey is not one of them ([ADR 0044](adr/0044-valkey-failure-policy.md)).
+- **Infrastructure**: RDS and Valkey in Multi-AZ with automatic failover in staging and prod.
 - Each policy emits metrics and spans (circuit state, retries, rejections).
 - **Failure tests**: in integration, Toxiproxy injects latency and outages between the services and their dependencies.
 
@@ -1172,11 +1171,11 @@ The real saga places the tenant in tasks, notifications, reports and billing bef
 
 Each service that orchestrates stores its log in a `saga` schema inside its shard database, with its own migrations and permissions ([ADR 0024](adr/0024-typeorm-persistence-sharding-persistent-sagas.md)). That way the saga starts in the same transaction as the local change that triggers it, and its data stays in the tenant's region. A database shared by every service would couple them and would be a single point of failure.
 
-| Table                      | Content                                                                                                                                                                                            |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `saga.instances`           | Saga type, status, `state`, current step, direction, `version`, lease, `next_attempt_at`, deadline, tenant, actor and home tenant, `traceparent`, idempotency key and reply channel                |
-| `saga.step_log`            | One record per step attempt: operation, direction (forward or compensation), status, key `sagaId:step:direction`, input and output (encrypted when they carry personal data), error code and dates |
-| `saga_directory` (catalog) | Where each saga lives: service, tenant, region, logical shard, type and status. No payloads. Support, the backoffice and the status query find any saga by its id without walking shards           |
+| Table                                 | Content                                                                                                                                                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `saga.instances`                      | Saga type, status, `state`, current step, direction, `version`, lease, `next_attempt_at`, deadline, tenant, actor and home tenant, `traceparent`, idempotency key and reply channel                       |
+| `saga.step_log`                       | One record per step attempt: operation, direction (forward or compensation), status, key `sagaId:step:direction`, input and output (encrypted when they carry personal data), error code and dates        |
+| `identity_sagas` (identity's catalog) | Where each identity saga lives: saga id, type, tenant and requester. No payloads. The status query finds a saga by its id without walking shards ([ADR 0031](adr/0031-reports-billing-identity-sagas.md)) |
 
 `TypeOrmSagaStore` from `@platform/adapters-postgres` implements the `SagaStore` port: it stores the instance and its step in the same transaction, and each guarded write is an `UPDATE ... WHERE version = :v AND lease_token = :t`. A saga's result goes out through the outbox as an event (`SagaCompleted`, `SagaCompensated`) or through `GET /v1/sagas/{sagaId}`. A job purges finished sagas after the retention period, and a large payload is stored by reference.
 
@@ -1191,7 +1190,7 @@ If the process dies between step 1 and step 3, the record stays in `Dispatched`.
 **Recovery**
 
 - Whoever runs a saga takes a lease (`lease_owner`, `lease_until` = now + 30 s) and renews it while working.
-- `SagaRecoveryJob` runs every minute and when each instance starts, scheduled with EventBridge on AWS and with cron locally. It walks the shards with `AcrossShards`, takes with `FOR UPDATE SKIP LOCKED` the active sagas with an expired lease or a due `next_attempt_at` and resumes them from the log. The owning service resumes it, without depending on whoever invoked it.
+- `SagaRecoveryJob` runs every minute and when each instance starts, as a `ScheduledJob` in the worker in every environment ([ADR 0039](adr/0039-runtime-matrix-per-service.md)). It walks the shards with `AcrossShards`, takes with `FOR UPDATE SKIP LOCKED` the active sagas with an expired lease or a due `next_attempt_at` and resumes them from the log. The owning service resumes it, without depending on whoever invoked it.
 - Asynchronous steps (reply through a queue) stay in `WaitingReply`, correlated by the key. If the reply takes longer than the contract declares, recovery resends the command with the same key.
 
 **How it reacts to each result**
@@ -1246,7 +1245,7 @@ export class PurgeLoginAttemptsJob implements JobHandler { ... }
 await this.scheduler.scheduleOnce(JobId.ExpireTrial, at, { tenantId });
 ```
 
-- The `JobScheduler` port covers recurring and one-off jobs. On AWS, EventBridge Scheduler publishes to a queue; locally, `node-cron`.
+- Jobs are `ScheduledJob` classes run by `@platform/scheduling` inside the worker, in AWS (always-on Fargate worker, [ADR 0039](adr/0039-runtime-matrix-per-service.md)) and locally.
 - A distributed lock in Valkey prevents double runs.
 - `job_runs` table: status, duration, error and `traceId`. View and manual run in the backoffice.
 - Included jobs: future partitions, retention purge, billing period close, saga recovery, outbox sweep, deprecation notices.
@@ -1324,14 +1323,14 @@ Security alerts go out on every channel at once. Each notification stays in the 
 
 The `billing` service computes what each tenant must pay and tracks the status of each invoice. Collection is a separate process that connects through a port and moves those statuses.
 
-| Component     | What it does                                                                                                                                            |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plans         | Versioned catalog with price, billing period, included features (`Feature`) and limits (`Quota`)                                                        |
-| Subscriptions | Tenant, plan, current period and status (`Trialing`, `Active`, `PastDue`, `Suspended`, `Canceled`)                                                      |
-| Metering      | Services publish `BillingEvent.UsageRecorded` with metric, quantity and idempotency key; `billing` aggregates per tenant and period                     |
-| Entitlements  | `@Endpoint({ entitlement: Feature.Webhooks })` and quota checks with a cache in Valkey; when the limit is exceeded it responds `BILLING.QUOTA.EXCEEDED` |
-| Invoices      | A job closes each period and generates the invoice (`Draft`, `Issued`, `Paid`, `Failed`, `Void`) with its fixed charge and usage lines                  |
-| Collection    | `PaymentProvider` port and internal operations `BillingOperation.MarkInvoicePaid` and `MarkInvoiceFailed`, so the external process reports results      |
+| Component     | What it does                                                                                                                                                                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plans         | Versioned catalog with price, billing period, included features (`Feature`) and limits (`Quota`)                                                                                                                                                                                                                                |
+| Subscriptions | Tenant, plan, current period and status (`Trialing`, `Active`, `PastDue`, `Suspended`, `Canceled`)                                                                                                                                                                                                                              |
+| Metering      | Services publish `BillingEvent.UsageRecorded` with metric, quantity and idempotency key; `billing` aggregates per tenant and period                                                                                                                                                                                             |
+| Entitlements  | `@Endpoint({ entitlement: Feature.Webhooks })` and quota checks with a cache in Valkey; when the limit is exceeded it responds `BILLING.QUOTA.EXCEEDED`                                                                                                                                                                         |
+| Invoices      | A job closes each period and generates the invoice (`Draft`, `Issued`, `Paid`, `Failed`, `Void`) with its fixed charge and usage lines                                                                                                                                                                                          |
+| Collection    | `PaymentProvider` port and internal operations `BillingOperation.MarkInvoicePaid` and `MarkInvoiceFailed`, so the external process reports results. Until a real provider lands, `staging` and `prod` use the `none` provider, which leaves invoices `Issued` ([ADR 0046](adr/0046-providers-and-telemetry-per-environment.md)) |
 
 - Money as integers of the smallest unit with its currency.
 - Delinquency cycle: `Failed` takes the subscription to `PastDue`; after the grace period, to `Suspended`, which publishes an event and `identity` suspends the tenant.
@@ -1342,21 +1341,22 @@ The `billing` service computes what each tenant must pay and tracks the status o
 
 The infrastructure lives in `backend/infra/terraform` and is organized in reusable modules, stacks with their own state and per-environment values ([ADR 0020](adr/0020-terraform-stacks-and-runtime-per-service.md)). The details of variables, outputs and commands are in the [Terraform README](../backend/infra/terraform/README.md).
 
-| Stack                       | Resources                                                                                                                                                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `global`                    | Account-wide: GitHub OIDC provider and roles, shared DNS records and the CloudFront certificate (F12, [ADR 0042](adr/0042-region-and-catalog-model.md))                                                       |
-| `network`                   | VPC with public, private and data subnets, NAT according to `egress`, VPC endpoints and flow logs                                                                                                             |
-| `platform`                  | Alarm topic and budget; ECS cluster; OpenObserve; HTTP API Gateway with its origin authorizer; internal ALB for Fargate APIs and VPC link; real-time ALB; VPC Lattice service network (F12); file bucket; SES |
-| `data`                      | RDS PostgreSQL with RDS Proxy and replicas, one database per shard and one catalog per service; Valkey; client security group                                                                                 |
-| `messaging`                 | Topics, queues and DLQs read from `topology.json`, and the SES events queue                                                                                                                                   |
-| `edge`                      | CloudFront with WAF for the Flutter web app and the API, and the DNS records                                                                                                                                  |
-| `service` (one per service) | API (Lambda or Fargate) and its routes, real time, Fargate workers, Lambda consumers, IAM derived from the topology, logs and alarms                                                                          |
+| Stack                            | Resources                                                                                                                                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `global`                         | One per account: GitHub OIDC provider and roles, ECR repositories, the artifacts bucket, the environment hosted zone and the CloudFront certificate (F12, [ADR 0042](adr/0042-region-and-catalog-model.md))   |
+| `network`                        | VPC with public, private and data subnets, NAT according to `egress`, VPC endpoints and flow logs                                                                                                             |
+| `platform`                       | Alarm topic and budget; ECS cluster; OpenObserve; HTTP API Gateway with its origin authorizer; internal ALB for Fargate APIs and VPC link; real-time ALB; VPC Lattice service network (F12); file bucket; SES |
+| `data`                           | RDS PostgreSQL with RDS Proxy and replicas, one database per shard and one catalog per service; Valkey; client security group                                                                                 |
+| `messaging`                      | Topics, queues and DLQs read from `topology.json`, and the SES events queue                                                                                                                                   |
+| `edge`                           | CloudFront with WAF for the Flutter web app and the API, and the DNS records                                                                                                                                  |
+| `service-base` (one per service) | Roles, log groups, the service's secrets and the settings of its one-off tasks (`migrate`, `seed`), applied before `service` (F12, [ADR 0043](adr/0043-deploy-migrations-and-rollback.md))                    |
+| `service` (one per service)      | API (Lambda or Fargate) and its routes, real time, Fargate workers, Lambda consumers, IAM derived from the topology, logs and alarms                                                                          |
 
 **Stacks and environments**
 
 - Each stack has its `config.tf` with an empty S3 backend, its `remote_state.tf` to read the previous ones and the same `variables_common.tf`. The values live in `environments/<environment>/<stack>/{backend.tfvars,terraform.tfvars}`; a service's, in `environments/<environment>/services/<service>/`.
-- The deployment order is global, network, platform, data, messaging, edge and then each service. Deploying a service neither plans nor applies the network, the database or the platform.
-- Environments `local` (LocalStack), `dev`, `staging` and `prod`. The key of each state is `<region>/<stack>/terraform.tfstate`: another region is another set of states with the same code.
+- The deployment order is global, network, platform, data, messaging, edge and then, per service, `service-base`, its one-off tasks and `service`. Deploying a service neither plans nor applies the network, the database or the platform.
+- Environments `local` (LocalStack), `dev`, `staging` and `prod`. The key of each state is `<region>/<stack>/terraform.tfstate`, and `global/terraform.tfstate` for the `global` stack of each account: another region is another set of states with the same code.
 - `backend/infra/scripts/deploy-aws.sh` runs plan, apply or destroy per stack or per service, with `environments/<env>/common.tfvars` before the stack's own values (F12); `local.sh` starts Docker and applies the local environment.
 - Terraform `>= 1.11` and AWS provider `>= 6.0, < 7.0`. CI uses the version in `.terraform-version` and tflint the one in `.tflint-version`.
 
