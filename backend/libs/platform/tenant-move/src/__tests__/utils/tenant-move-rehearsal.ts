@@ -30,6 +30,7 @@ import { PlatformTenantMoveManifest } from '../../manifest/platform-tenant-move-
 import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
 import { TenantMoveTargets } from '../../targets/tenant-move-targets.js';
 import { BatchTenantDataTransfer } from '../../transfer/batch/batch-tenant-data-transfer.js';
+import type { BatchTransferOptions } from '../../transfer/batch/batch-transfer-options.js';
 import type { TableChecksum } from '../../transfer/batch/table-checksum.js';
 import { TableCopier } from '../../transfer/batch/table-copier.js';
 import type { TenantDataTransfer } from '../../transfer/tenant-data-transfer.js';
@@ -37,6 +38,7 @@ import { TableShapeReader } from '../../transfer/batch/table-shape-reader.js';
 import { TenantRowFilter } from '../../transfer/batch/tenant-row-filter.js';
 import { TenantSession } from '../../transfer/batch/tenant-session.js';
 import { ManifestRowSeeder, type FixedColumns } from './manifest-row-seeder.js';
+import { RehearsalTransferOptions } from './rehearsal-transfer-options.js';
 
 /** The two rehearsal shards. */
 export enum RehearsalShard {
@@ -52,14 +54,25 @@ export interface TenantMoveRehearsalOptions {
   readonly fixedColumns?: FixedColumns;
   /** Extensions that provisioning creates in each shard before migrating. */
   readonly extensions?: readonly string[];
-  /** Rows per batch; a small one makes each table get copied in several batches. */
+  /**
+   * Rows per batch of a quiet move; a small one makes each table get copied in several batches. A move under writes
+   * always copies in the service batch.
+   */
   readonly batchSize?: number;
+}
+
+/** A copy and the settings it was built with. */
+interface RehearsalCopy {
+  readonly transfer: TenantDataTransfer;
+  readonly options: BatchTransferOptions;
 }
 
 /** The `TenantMoves` parts the rehearsal builds once and shares across its variants. */
 interface RehearsalParts {
   readonly shards: TenantMoveShards;
   readonly transfer: TenantDataTransfer;
+  /** The copy of a move whose tenant keeps writing, in the service batch. */
+  readonly underWrites: RehearsalCopy;
   readonly gate: DirectoryWriteGate;
   readonly transition: PlacementTransition;
 }
@@ -95,6 +108,8 @@ export interface WritesRehearsalReport {
   /** Writes that committed before the freeze, and writes the fence turned away after it. */
   readonly acked: number;
   readonly rejected: number;
+  /** Rows per batch the copy used while the writers ran. */
+  readonly copyBatchSize: number;
 }
 
 /**
@@ -103,12 +118,6 @@ export interface WritesRehearsalReport {
  * its own region, so each move changes shard and region.
  */
 export class TenantMoveRehearsal {
-  /**
-   * Rows a sync round may still copy and count as caught up. The writers of `rehearseUnderWrites` change hundreds of
-   * rows per round; the freeze and `verify` take over what the last round leaves.
-   */
-  static readonly CAUGHT_UP_ROWS = 1_000;
-
   /** Pause of each writer between two writes, so the copy rounds keep up with them. */
   static readonly WRITE_PAUSE_MS = 20;
 
@@ -135,10 +144,11 @@ export class TenantMoveRehearsal {
   private readonly seeder: ManifestRowSeeder;
   private readonly filter: TenantRowFilter;
   private readonly session = new TenantSession();
+  private readonly transferOptions: RehearsalTransferOptions;
   private moves: TenantMoves | undefined;
   private parts: RehearsalParts | undefined;
 
-  constructor(private readonly options: TenantMoveRehearsalOptions) {
+  constructor(options: TenantMoveRehearsalOptions) {
     this.db = new ShardedTestDatabase({
       shard: {
         entities: [],
@@ -160,6 +170,7 @@ export class TenantMoveRehearsal {
       ...options.fixedColumns,
     });
     this.filter = new TenantRowFilter(this.manifest);
+    this.transferOptions = new RehearsalTransferOptions(options.batchSize);
   }
 
   async start(): Promise<void> {
@@ -179,17 +190,11 @@ export class TenantMoveRehearsal {
     );
     this.parts = {
       shards: new TenantMoveShards(this.db.router, this.db.directory, targets),
-      transfer: new BatchTenantDataTransfer(
-        this.manifest,
-        this.connections(),
-        new SystemClock(),
-        {
-          batchSize: this.options.batchSize ?? 500,
-          callBudgetMs: 4_000,
-          deltaMarginMs: 60_000,
-          caughtUpRows: TenantMoveRehearsal.CAUGHT_UP_ROWS,
-        },
-      ),
+      transfer: this.batchTransfer(this.transferOptions.quiet()),
+      underWrites: {
+        transfer: this.batchTransfer(this.transferOptions.underWrites()),
+        options: this.transferOptions.underWrites(),
+      },
       gate: new DirectoryWriteGate(this.db.router, transition),
       transition,
     };
@@ -266,8 +271,13 @@ export class TenantMoveRehearsal {
         );
       }
     });
+    const copy = this.assembled().underWrites;
     try {
-      const { verification } = await this.move(tenantId, RehearsalShard.B);
+      const { verification } = await this.moveWith(
+        this.assemble(copy.transfer),
+        tenantId,
+        RehearsalShard.B,
+      );
       return {
         verified: verification.verified,
         verifiedSource: TenantMoveRehearsal.sidesOf(verification).source,
@@ -275,6 +285,7 @@ export class TenantMoveRehearsal {
         sourceAfterSwitch: await this.checksums(RehearsalShard.A, tenantId),
         acked: writers.reduce((sum, writer) => sum + writer.acked(), 0),
         rejected: writers.reduce((sum, writer) => sum + writer.rejected(), 0),
+        copyBatchSize: copy.options.batchSize,
       };
     } finally {
       writing = false;
@@ -318,7 +329,17 @@ export class TenantMoveRehearsal {
     readonly ref: TenantMoveRef;
     readonly verification: TenantMoveVerification;
   }> {
-    const moves = this.started();
+    return this.moveWith(this.started(), tenantId, to);
+  }
+
+  private async moveWith(
+    moves: TenantMoves,
+    tenantId: string,
+    to: RehearsalShard,
+  ): Promise<{
+    readonly ref: TenantMoveRef;
+    readonly verification: TenantMoveVerification;
+  }> {
     const ref = this.refTo(tenantId, to);
     await PendingRounds.untilDone(() => moves.sync(ref));
     const verification = await PendingRounds.untilDone(() =>
@@ -347,10 +368,7 @@ export class TenantMoveRehearsal {
   stepsWith(
     decorate: (transfer: TenantDataTransfer) => TenantDataTransfer,
   ): TenantMoves {
-    if (this.parts === undefined) {
-      throw new Error('TenantMoveRehearsal.start() was not called');
-    }
-    return this.assemble(decorate(this.parts.transfer));
+    return this.assemble(decorate(this.assembled().transfer));
   }
 
   async cleanup(ref: TenantMoveRef): Promise<void> {
@@ -406,11 +424,24 @@ export class TenantMoveRehearsal {
     });
   }
 
-  private assemble(transfer: TenantDataTransfer): TenantMoves {
-    const parts = this.parts;
-    if (parts === undefined) {
+  private assembled(): RehearsalParts {
+    if (this.parts === undefined) {
       throw new Error('TenantMoveRehearsal.start() was not called');
     }
+    return this.parts;
+  }
+
+  private batchTransfer(options: BatchTransferOptions): TenantDataTransfer {
+    return new BatchTenantDataTransfer(
+      this.manifest,
+      this.connections(),
+      new SystemClock(),
+      options,
+    );
+  }
+
+  private assemble(transfer: TenantDataTransfer): TenantMoves {
+    const parts = this.assembled();
     return new TenantMoves(
       parts.shards,
       transfer,
