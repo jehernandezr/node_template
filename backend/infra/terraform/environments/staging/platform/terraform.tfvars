@@ -1,6 +1,4 @@
 region       = "us-east-1"
-environment  = "staging"
-name_prefix  = "node-template-staging"
 state_bucket = "node-template-staging-tfstate"
 
 # Alarms and costs: a destination is required in staging. Use a real mailbox; example

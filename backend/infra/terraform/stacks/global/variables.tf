@@ -3,16 +3,6 @@ variable "state_bucket" {
   type        = string
 }
 
-variable "domain" {
-  description = "Apex domain of the product, for example example.com. Its public hosted zone lives in the prod account; dev and staging delegate <environment>.<domain> from it."
-  type        = string
-
-  validation {
-    condition     = can(regex("^([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,}$", var.domain))
-    error_message = "domain must be a lowercase DNS name such as example.com."
-  }
-}
-
 variable "services" {
   description = "Services that get an ECR repository <name_prefix>/<service>: the directory names under environments/<environment>/services."
   type        = list(string)

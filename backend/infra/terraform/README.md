@@ -16,7 +16,7 @@ backend/infra/
 │   │   ├── messaging/       Topics, queues and DLQs from topology.json and the SES events queue
 │   │   ├── edge/            CloudFront with WAF and DNS
 │   │   └── service/         One microservice: instantiated once per service
-│   ├── environments/        <environment>/<stack>/{backend.tfvars,terraform.tfvars}
+│   ├── environments/        <environment>/common.tfvars and <environment>/<stack>/{backend.tfvars,terraform.tfvars}
 │   │   └── <environment>/services/<service>/   Values for each service
 │   ├── examples/            A minimal usage of each module, validated in CI
 │   ├── topology.json        Topology exported by contracts-export (build-topology.ts)
@@ -30,7 +30,7 @@ backend/infra/
 Each stack has:
 
 - `config.tf`: versions, provider and an empty `backend "s3" {}`. The bucket and key come from `backend.tfvars`.
-- `variables_common.tf`: `region`, `environment`, `name_prefix`, `aws_endpoint_url` and tags. It is identical in every stack; `tf-validate.mjs` fails if it differs.
+- `variables_common.tf`: `region`, `environment`, `name_prefix`, `domain`, `aws_endpoint_url` and tags. It is identical in every stack; `tf-validate.mjs` fails if it differs.
 - `remote_state.tf`: reads the previous stacks from `<region>/<stack>/terraform.tfstate`. `global` reads none.
 - `tests/`: `terraform test` tests with mocked providers, without AWS.
 
@@ -45,6 +45,8 @@ Each stack has:
 | 4     | `messaging` | platform                           | local, dev, staging, prod |
 | 5     | `edge`      | platform                           | dev, staging, prod        |
 | 6     | `service`   | network, platform, data, messaging | dev, staging, prod        |
+
+`environments/<environment>/common.tfvars` sets `environment`, `name_prefix` and `domain` once for every stack of the environment ([ADR 0042](../../../docs/adr/0042-region-and-catalog-model.md)). `deploy-aws.sh` and `local.sh` pass it before the stack's `terraform.tfvars`, which never repeats those keys (a script test checks it).
 
 Each region has its own states with the same code: the region is part of the key. `global` is the exception: one per account, with state key `global/terraform.tfstate`, applied first and by hand on a new account ([first deploy](../../../docs/runbooks/first-deploy.md)). `deploy-aws.sh plan global` and `apply global` run it; `all` leaves it out.
 

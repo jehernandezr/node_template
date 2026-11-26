@@ -1,6 +1,4 @@
-region      = "us-east-1"
-environment = "prod"
-name_prefix = "node-template-prod"
+region = "us-east-1"
 
 vpc_cidr = "10.20.0.0/16"
 

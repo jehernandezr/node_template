@@ -18,6 +18,7 @@ mock_provider "aws" {
 
 variables {
   region       = "us-east-1"
+  domain       = "example.test"
   name_prefix  = "nt-test"
   state_bucket = "nt-test-tfstate"
 }

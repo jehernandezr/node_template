@@ -9,6 +9,8 @@
 # applies that file and nothing else: what was reviewed is what is applied. If the state changed
 # since the plan, Terraform rejects the old plan and it has to be planned again. A stack that reads
 # outputs of another one is planned after that other one is applied.
+# Each stack gets environments/<env>/common.tfvars (environment, name_prefix, domain) before its own
+# terraform.tfvars, which never repeats those keys.
 # Variables: ENV (dev), AUTO_APPROVE=1 skips the destroy confirmation, LOCK_TIMEOUT (5m).
 # The artifacts of a service arrive as TF_VAR_image and TF_VAR_lambda_package when planning.
 # Credentials: OIDC in CI, a profile locally.
@@ -44,17 +46,21 @@ selected() {
 # $1: stack folder (stacks/<x>), $2: values folder (environments/<env>/<y>), $3: action.
 tf_run() {
   local code="$TF_DIR/stacks/$1" values="$TF_DIR/environments/$ENV/$2" action=$3
+  local common="$TF_DIR/environments/$ENV/common.tfvars"
   local plan_file="$PLAN_DIR/${2//\//-}.tfplan"
-  if [[ ! -f "$values/terraform.tfvars" ]]; then
-    echo "$values/terraform.tfvars does not exist" >&2
-    exit 1
-  fi
+  local file
+  for file in "$common" "$values/terraform.tfvars"; do
+    if [[ ! -f "$file" ]]; then
+      echo "$file does not exist" >&2
+      exit 1
+    fi
+  done
   terraform -chdir="$code" init -input=false -reconfigure -backend-config="$values/backend.tfvars" >/dev/null
   case "$action" in
     plan)
       mkdir -p "$PLAN_DIR"
       terraform -chdir="$code" plan -input=false -lock-timeout="$LOCK_TIMEOUT" \
-        -var-file="$values/terraform.tfvars" -out="$plan_file"
+        -var-file="$common" -var-file="$values/terraform.tfvars" -out="$plan_file"
       ;;
     apply)
       if [[ ! -f "$plan_file" ]]; then
@@ -66,7 +72,7 @@ tf_run() {
       ;;
     destroy)
       terraform -chdir="$code" destroy -input=false -lock-timeout="$LOCK_TIMEOUT" \
-        -var-file="$values/terraform.tfvars" ${AUTO_APPROVE:+-auto-approve}
+        -var-file="$common" -var-file="$values/terraform.tfvars" ${AUTO_APPROVE:+-auto-approve}
       ;;
   esac
 }

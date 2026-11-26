@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
+import { describe, it } from 'node:test';
+import { TfvarsBlockReader } from '../tfvars-block-reader.mjs';
+import { ScriptRunner } from './utils/script-runner.mjs';
+
+const ENVIRONMENTS = join(
+  resolve(ScriptRunner.scriptsDir, '../terraform'),
+  'environments',
+);
+const COMMON_KEYS = ['environment', 'name_prefix', 'domain'];
+
+/** The tfvars of one environment: its common.tfvars and every stack's terraform.tfvars. */
+class EnvironmentValues {
+  constructor(environment) {
+    this.dir = join(ENVIRONMENTS, environment);
+    this.common = new TfvarsBlockReader(
+      readFileSync(join(this.dir, 'common.tfvars'), 'utf8'),
+    );
+  }
+
+  stackFiles(dir = this.dir) {
+    return readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) return this.stackFiles(path);
+      return name === 'terraform.tfvars' ? [path] : [];
+    });
+  }
+}
+
+describe('environment values', () => {
+  for (const environment of readdirSync(ENVIRONMENTS).sort()) {
+    const values = new EnvironmentValues(environment);
+
+    it(`${environment}/common.tfvars sets the environment, its name prefix and the domain`, () => {
+      assert.equal(values.common.topLevelString('environment'), environment);
+      assert.match(
+        values.common.topLevelString('name_prefix') ?? '',
+        new RegExp(`-${environment}$`),
+      );
+      assert.ok(values.common.topLevelString('domain'));
+    });
+
+    it(`no ${environment} stack repeats a key of common.tfvars`, () => {
+      for (const file of values.stackFiles()) {
+        const text = readFileSync(file, 'utf8');
+        for (const key of COMMON_KEYS) {
+          assert.doesNotMatch(
+            text,
+            new RegExp(`^${key}\\s*=`, 'm'),
+            `${relative(ENVIRONMENTS, file)} sets ${key}`,
+          );
+        }
+      }
+    });
+  }
+});

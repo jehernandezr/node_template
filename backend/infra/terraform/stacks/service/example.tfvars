@@ -1,11 +1,10 @@
 # Example of a service. To deploy one, copy this file to
 # environments/<environment>/services/<service>/terraform.tfvars and create next to it a
-# backend.tfvars with key = "<region>/services/<service>/terraform.tfstate".
+# backend.tfvars with key = "<region>/services/<service>/terraform.tfstate". environment, name_prefix and
+# domain come from environments/<environment>/common.tfvars.
 # The pipeline passes the artifacts with TF_VAR_image and TF_VAR_lambda_package.
 
 region       = "us-east-1"
-environment  = "dev"
-name_prefix  = "node-template-dev"
 state_bucket = "node-template-dev-tfstate"
 
 service_name = "identity"

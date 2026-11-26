@@ -1,6 +1,4 @@
 region       = "us-east-1"
-environment  = "prod"
-name_prefix  = "node-template-prod"
 state_bucket = "node-template-prod-tfstate"
 
 # cloudfront_certificate_arn = "arn:aws:acm:us-east-1:222222222222:certificate/REEMPLAZAR" # Must be in us-east-1.

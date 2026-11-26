@@ -1,6 +1,4 @@
 region       = "us-east-1"
-environment  = "prod"
-name_prefix  = "node-template-prod"
 state_bucket = "node-template-prod-tfstate"
 
 db_instance_class          = "db.r6g.large"

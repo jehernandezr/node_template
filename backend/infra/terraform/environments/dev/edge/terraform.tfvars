@@ -1,6 +1,4 @@
 region       = "us-east-1"
-environment  = "dev"
-name_prefix  = "node-template-dev"
 state_bucket = "node-template-dev-tfstate"
 
 # CloudFront with WAF in front of the web app and the API. Not created without a certificate.
