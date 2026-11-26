@@ -2,10 +2,13 @@ import { Global, Module } from '@nestjs/common';
 import { TransactionManager } from '@platform/kernel';
 import {
   LoggerPort,
+  MetricsPort,
+  NoopMetrics,
   Redactor,
   TraceContextRestorer,
   Tracing,
 } from '@platform/observability';
+import { FailureClassifier } from '@platform/primitives';
 import {
   InMemoryOutboxStore,
   InMemoryProcessedMessageStore,
@@ -27,6 +30,8 @@ import {
       useFactory: (tracing: Tracing) => new TraceContextRestorer(tracing),
       inject: [Tracing],
     },
+    { provide: FailureClassifier, useFactory: () => new FailureClassifier() },
+    { provide: MetricsPort, useFactory: () => new NoopMetrics() },
     SilentLogger,
     { provide: LoggerPort, useExisting: SilentLogger },
     InMemoryTransactionManager,
@@ -49,6 +54,8 @@ import {
   exports: [
     Tracing,
     TraceContextRestorer,
+    FailureClassifier,
+    MetricsPort,
     SilentLogger,
     LoggerPort,
     TransactionManager,

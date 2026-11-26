@@ -12,12 +12,13 @@ import {
   TraceContextRestorer,
   Tracing,
 } from '@platform/observability';
+import { FailureClassifier } from '@platform/primitives';
 import { ResilienceModule } from '@platform/resilience/nest';
 import { InMemoryProcessedOperationStore } from '../../../__tests__/utils/in-memory-processed-operation-store.js';
 
 /**
  * What `InternalApiModule` expects from the service, without real configuration or
- * telemetry: clock, ids, traces and `ResilienceRegistry`. It is imported in
+ * telemetry: clock, ids, traces, the failure classifier and `ResilienceRegistry`. It is imported in
  * module tests together with `InternalApiModule.forRoot`, with
  * `InMemoryProcessedOperationStore` as `processedStore`.
  */
@@ -42,6 +43,7 @@ import { InMemoryProcessedOperationStore } from '../../../__tests__/utils/in-mem
       useFactory: (tracing: Tracing) => new TraceContextRestorer(tracing),
       inject: [Tracing],
     },
+    { provide: FailureClassifier, useFactory: () => new FailureClassifier() },
     {
       provide: InMemoryProcessedOperationStore,
       useFactory: (clock: Clock, ids: IdGenerator) =>
@@ -55,6 +57,7 @@ import { InMemoryProcessedOperationStore } from '../../../__tests__/utils/in-mem
     IdGenerator,
     Tracing,
     TraceContextRestorer,
+    FailureClassifier,
     InMemoryProcessedOperationStore,
   ],
 })

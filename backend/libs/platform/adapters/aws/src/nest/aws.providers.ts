@@ -90,7 +90,7 @@ export class AwsProviders {
             publisher,
             clock,
             ids,
-            traceparent: () => restorer.current(),
+            restorer,
           }),
         inject: [
           SnsSqsEnvelopePublisher,

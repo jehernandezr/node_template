@@ -103,6 +103,7 @@ describe('SchedulingModule', () => {
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
             logger: FakeLogger,
+            metrics: RecordingMetrics,
           }),
           JobsModule,
         ],
@@ -131,6 +132,7 @@ describe('SchedulingModule', () => {
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
             logger: FakeLogger,
+            metrics: RecordingMetrics,
           }),
         ],
         providers: [{ provide: RecordingJob, useValue: job }],
@@ -152,7 +154,10 @@ describe('SchedulingModule', () => {
         imports: [
           KernelModule,
           TestObservabilityModule,
-          SchedulingModule.forRoot({ logger: FakeLogger }),
+          SchedulingModule.forRoot({
+            logger: FakeLogger,
+            metrics: RecordingMetrics,
+          }),
         ],
         providers: [{ provide: RecordingJob, useValue: job }],
       }).compile();
@@ -174,6 +179,7 @@ describe('SchedulingModule', () => {
           TestObservabilityModule,
           SchedulingModule.forRoot({
             logger: FakeLogger,
+            metrics: RecordingMetrics,
             shutdownGraceMs: 5,
           }),
         ],
@@ -200,7 +206,11 @@ describe('SchedulingModule', () => {
           KernelModule,
           TestObservabilityModule,
           ResourceModule.global(resource),
-          SchedulingModule.forRoot({ logger: FakeLogger, shutdownGraceMs: 5 }),
+          SchedulingModule.forRoot({
+            logger: FakeLogger,
+            metrics: RecordingMetrics,
+            shutdownGraceMs: 5,
+          }),
         ],
         providers: [{ provide: RecordingJob, useValue: job }],
       }).compile();
@@ -229,6 +239,7 @@ describe('SchedulingModule', () => {
           SchedulingModule.forRootAsync({
             useFactory: () => ({ mode: SchedulingMode.External }),
             logger: FakeLogger,
+            metrics: RecordingMetrics,
             lock: TestJobLock,
           }),
         ],
@@ -247,8 +258,21 @@ describe('SchedulingModule', () => {
 
   describe('when the logger is missing', () => {
     it('rejects the module definition', () => {
-      expect(() => SchedulingModule.forRoot({})).toThrow(
+      expect(() =>
+        SchedulingModule.forRoot({ metrics: RecordingMetrics }),
+      ).toThrow(
         expect.objectContaining({ code: PrimitivesErrorCode.InvalidArgument }),
+      );
+    });
+  });
+
+  describe('when the metrics are missing', () => {
+    it('rejects the module definition', () => {
+      expect(() => SchedulingModule.forRoot({ logger: FakeLogger })).toThrow(
+        expect.objectContaining({
+          code: PrimitivesErrorCode.InvalidArgument,
+          message: expect.stringContaining('metrics'),
+        }),
       );
     });
   });
@@ -262,6 +286,7 @@ describe('SchedulingModule', () => {
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
             logger: FakeLogger,
+            metrics: RecordingMetrics,
           }),
         ],
       }).compile();
@@ -277,6 +302,7 @@ describe('SchedulingModule', () => {
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
             logger: FakeLogger,
+            metrics: RecordingMetrics,
             lock: TestJobLock,
           }),
         ],

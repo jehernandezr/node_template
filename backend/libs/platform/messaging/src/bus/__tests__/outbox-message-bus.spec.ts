@@ -1,3 +1,4 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
 import { SystemRandomSource } from '@platform/kernel';
 import {
   defineCommand,
@@ -101,7 +102,7 @@ function setup() {
     source: '/services/orders',
     clock,
     ids: new SequentialIdGenerator(),
-    traceparent: () => undefined,
+    restorer: new FixedTraceContextRestorer(),
     onCommitted: async () => {
       commits.notify();
       await relay.relayOnce();

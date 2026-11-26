@@ -40,7 +40,7 @@ export interface MessageDispatcherOptions {
   readonly verifyTenant?: TenantVerifier;
 }
 
-/** Optional collaborators of the dispatcher; without them it builds the default ones. */
+/** Collaborators of the dispatcher. All are required; the caller provides each one. */
 export interface MessageDispatcherParts {
   /** Consumer spans. */
   readonly tracing: Tracing;

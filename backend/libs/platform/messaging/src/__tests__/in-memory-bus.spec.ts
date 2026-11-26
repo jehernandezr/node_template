@@ -1,3 +1,4 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
 import { TestDispatcherParts } from './utils/index.js';
 import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { defineCommand, defineEvent } from '@contracts/platform';
@@ -69,6 +70,7 @@ function setup() {
     source: '/services/tasks',
     clock: { now: () => new Date(clock) },
     ids: new SequentialIdGenerator(),
+    restorer: new FixedTraceContextRestorer(),
   });
   const dispatcher = new MessageDispatcher(
     {

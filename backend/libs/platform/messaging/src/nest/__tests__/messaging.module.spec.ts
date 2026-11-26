@@ -1,6 +1,7 @@
 import { KernelModule } from '@platform/kernel/nest';
 import { Global, Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { MetricsPort } from '@platform/observability';
 import { ResilienceModule } from '@platform/resilience/nest';
 import { JobRunner, SchedulingMode } from '@platform/scheduling';
 import { SchedulingModule } from '@platform/scheduling/nest';
@@ -203,6 +204,7 @@ describe('MessagingModule', () => {
           ResilienceModule.forRoot(),
           SchedulingModule.forRoot({
             logger: SilentLogger,
+            metrics: MetricsPort,
             mode: SchedulingMode.External,
           }),
           MessagingModule.forRoot(

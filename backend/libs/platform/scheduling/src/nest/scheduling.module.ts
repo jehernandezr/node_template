@@ -2,7 +2,6 @@ import { Module, type DynamicModule, type Provider } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { Clock, JobLock, RandomSource } from '@platform/kernel';
 import type { LoggerPort, MetricsPort } from '@platform/observability';
-import { NoopMetrics } from '@platform/observability';
 import { InvalidArgumentError } from '@platform/primitives';
 import { InProcessJobLock } from '../locks/in-process-job-lock.js';
 import { JobRunner } from '../job-runner.js';
@@ -35,7 +34,7 @@ export class SchedulingModule extends SchedulingModuleClass {
     return SchedulingModule.complete(super.forRootAsync(options), options);
   }
 
-  /** @throws InvalidArgumentError when `logger` is missing. */
+  /** @throws InvalidArgumentError when `logger` or `metrics` is missing. */
   private static complete(
     base: DynamicModule,
     extras: SchedulingModuleExtras,
@@ -44,6 +43,12 @@ export class SchedulingModule extends SchedulingModuleClass {
       throw new InvalidArgumentError(
         'logger',
         'the LoggerPort implementation used by the JobRunner',
+      );
+    }
+    if (extras.metrics === undefined) {
+      throw new InvalidArgumentError(
+        'metrics',
+        'the MetricsPort implementation used by the JobRunner',
       );
     }
     return {
@@ -74,9 +79,8 @@ export class SchedulingModule extends SchedulingModuleClass {
 
   private static runnerProvider(
     loggerToken: NonNullable<SchedulingModuleExtras['logger']>,
-    metricsToken: SchedulingModuleExtras['metrics'],
+    metricsToken: NonNullable<SchedulingModuleExtras['metrics']>,
   ): Provider {
-    const optionalMetrics = metricsToken === undefined ? [] : [metricsToken];
     return {
       provide: JobRunner,
       useFactory: (
@@ -84,16 +88,9 @@ export class SchedulingModule extends SchedulingModuleClass {
         random: RandomSource,
         lock: JobLock,
         logger: LoggerPort,
-        metrics?: MetricsPort,
-      ) =>
-        new JobRunner(
-          clock,
-          random,
-          lock,
-          logger,
-          metrics ?? new NoopMetrics(),
-        ),
-      inject: [Clock, RandomSource, JobLock, loggerToken, ...optionalMetrics],
+        metrics: MetricsPort,
+      ) => new JobRunner(clock, random, lock, logger, metrics),
+      inject: [Clock, RandomSource, JobLock, loggerToken, metricsToken],
     };
   }
 }

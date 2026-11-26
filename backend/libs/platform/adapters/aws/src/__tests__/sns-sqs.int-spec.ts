@@ -1,3 +1,4 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
 import { TestDispatcherParts } from '@platform/messaging/test-utils';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { ReceiveMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
@@ -114,7 +115,7 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
       topology,
       publisher,
       source: '/services/it',
-      traceparent: () => TRACEPARENT,
+      restorer: new FixedTraceContextRestorer(TRACEPARENT),
     });
     const dispatcher = new MessageDispatcher(
       {
@@ -268,6 +269,7 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
         },
       },
       source: '/services/it',
+      restorer: new FixedTraceContextRestorer(),
     });
     await outbox.send(GenerateReport, { reportId: 'from-outbox' });
 

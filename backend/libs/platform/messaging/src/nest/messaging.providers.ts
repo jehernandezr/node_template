@@ -57,8 +57,8 @@ export class MessagingProviders {
         random: RandomSource,
         tracing: Tracing,
         restorer: TraceContextRestorer,
+        failures: FailureClassifier,
         verifier: TenantVerifier | undefined,
-        failures: FailureClassifier | undefined,
         deliveryContext: DeliveryContext | undefined,
       ) =>
         new MessageDispatcher(
@@ -82,7 +82,7 @@ export class MessagingProviders {
             random,
             tracing,
             restorer,
-            failures: failures ?? new FailureClassifier(),
+            failures,
           },
         ),
       inject: [
@@ -92,8 +92,8 @@ export class MessagingProviders {
         RandomSource,
         Tracing,
         TraceContextRestorer,
+        FailureClassifier,
         { token: TenantVerifier, optional: true },
-        { token: FailureClassifier, optional: true },
         { token: DeliveryContext, optional: true },
       ],
     };
@@ -122,7 +122,7 @@ export class MessagingProviders {
           transactions,
           clock,
           ids,
-          traceparent: () => restorer.current(),
+          restorer,
           ...(relay && runner !== undefined
             ? { onCommitted: () => runner.trigger(MessagingJob.OutboxRelay) }
             : {}),

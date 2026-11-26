@@ -167,7 +167,7 @@ export class SagaProviders {
         clock: Clock,
         tracing: Tracing,
         restorer: TraceContextRestorer,
-        failures?: FailureClassifier,
+        failures: FailureClassifier,
         logger?: LoggerPort,
       ) =>
         new StepCaller({
@@ -178,7 +178,7 @@ export class SagaProviders {
           clock,
           tracing,
           restorer,
-          outcomes: new CallOutcomeFactory(failures ?? new FailureClassifier()),
+          outcomes: new CallOutcomeFactory(failures),
           ...(logger === undefined ? {} : { logger }),
         }),
       inject: [
@@ -189,7 +189,7 @@ export class SagaProviders {
         Clock,
         Tracing,
         TraceContextRestorer,
-        { token: FailureClassifier, optional: true },
+        FailureClassifier,
         { token: LoggerPort, optional: true },
       ],
     };

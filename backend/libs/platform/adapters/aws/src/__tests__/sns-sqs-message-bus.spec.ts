@@ -1,3 +1,4 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
 import {
   SystemClock,
   SystemRandomSource,
@@ -39,7 +40,7 @@ function setup() {
     source: '/services/reports',
     clock: new FixedClock(),
     ids: new SequentialIdGenerator(),
-    traceparent: () => undefined,
+    restorer: new FixedTraceContextRestorer(),
   });
   return { bus, publisher };
 }
@@ -86,6 +87,7 @@ describe('SnsSqsMessageBus', () => {
       topology: topologyFromContracts([tasksContract]),
       publisher,
       source: '/services/reports',
+      restorer: new FixedTraceContextRestorer(),
     });
 
     await expect(isolated.send(Unrouted, {})).rejects.toMatchObject({

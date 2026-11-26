@@ -10,6 +10,7 @@ import {
   TraceContextRestorer,
   Tracing,
 } from '@platform/observability';
+import { FailureClassifier } from '@platform/primitives';
 import { z } from 'zod';
 import { SagaDefinition } from '../../definition/saga-definition.js';
 import type { SagaFlow } from '../../definition/saga-flow.js';
@@ -38,7 +39,8 @@ class FixedRandom extends FixedRandomSource {
 
 /**
  * What `SagaModule` needs from its environment and that in an app another
- * module would provide: the store, the invoker, the trace and the logger.
+ * module would provide: the store, the invoker, the trace, the failure classifier and
+ * the logger.
  */
 @Global()
 @Module({
@@ -52,6 +54,7 @@ class FixedRandom extends FixedRandomSource {
       useFactory: (tracing: Tracing) => new TraceContextRestorer(tracing),
       inject: [Tracing],
     },
+    { provide: FailureClassifier, useFactory: () => new FailureClassifier() },
     { provide: LoggerPort, useFactory: () => new RecordingLogger() },
   ],
   exports: [
@@ -60,6 +63,7 @@ class FixedRandom extends FixedRandomSource {
     FixedRandom,
     Tracing,
     TraceContextRestorer,
+    FailureClassifier,
     LoggerPort,
   ],
 })

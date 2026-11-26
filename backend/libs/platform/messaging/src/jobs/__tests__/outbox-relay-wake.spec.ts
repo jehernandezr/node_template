@@ -1,3 +1,4 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
 import { defineEvent } from '@contracts/platform';
 import {
   SystemClock,
@@ -86,7 +87,7 @@ describe('OutboxRelayJob woken by a commit', () => {
       transactions,
       source: '/services/users',
       clock,
-      traceparent: () => undefined,
+      restorer: new FixedTraceContextRestorer(),
       onCommitted: () => instance.trigger(MessagingJob.OutboxRelay),
     });
 

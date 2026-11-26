@@ -1,9 +1,5 @@
 import { type Clock, type IdGenerator } from '@platform/kernel';
-import {
-  Redactor,
-  TraceContextRestorer,
-  Tracing,
-} from '@platform/observability';
+import type { TraceContextRestorer } from '@platform/observability';
 import {
   type CommandDefinition,
   type EventDefinition,
@@ -49,8 +45,8 @@ export interface OutboundMessageFactoryOptions {
   readonly clock: Clock;
   /** Envelope id generator. */
   readonly ids: IdGenerator;
-  /** Source of the default `traceparent`. Defaults to the one of the active span. */
-  readonly traceparent?: () => string | undefined;
+  /** Source of the default `traceparent`: the one of the active span. */
+  readonly restorer: TraceContextRestorer;
 }
 
 /**
@@ -64,7 +60,7 @@ export class OutboundMessageFactory {
   private readonly options: OutboundMessageFactoryOptions;
   private readonly clock: Clock;
   private readonly ids: IdGenerator;
-  private readonly traceparent: () => string | undefined;
+  private readonly restorer: TraceContextRestorer;
   private readonly envelopes: EnvelopeFactory;
   private readonly validator = new EnvelopeValidator();
 
@@ -73,8 +69,7 @@ export class OutboundMessageFactory {
     this.options = options;
     this.clock = options.clock;
     this.ids = options.ids;
-    const restorer = new TraceContextRestorer(new Tracing(new Redactor()));
-    this.traceparent = options.traceparent ?? (() => restorer.current());
+    this.restorer = options.restorer;
     this.envelopes = new EnvelopeFactory(this.clock, this.ids);
   }
 
@@ -119,7 +114,7 @@ export class OutboundMessageFactory {
         source: this.options.source,
         data: parsed.data as MessageOutput<M>,
         subject: options.subject,
-        traceparent: options.traceparent ?? this.traceparent(),
+        traceparent: options.traceparent ?? this.restorer.current(),
         tenantId: options.tenantId,
         actorId: options.actorId,
       }),
