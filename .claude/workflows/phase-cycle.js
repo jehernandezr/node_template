@@ -60,7 +60,7 @@ const PATH_PREFIX = `${args.shim ? ` && export PATH="${args.shim}:$PATH"` : ''}$
 const VERIFY = {
   backend: `- node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .
 - Intermediate rounds: pnpm nx affected -t lint typecheck test test-int --base=main --parallel=1, without coverage (test runs the unit tests with parallel workers; test-int runs the container suites one at a time over one shared PostgreSQL and Valkey per project)
-- Final round: pnpm nx run-many -t lint typecheck test-int --configuration=ci --projects=<touched projects and their dependents> --coverage --parallel=1 (test-int:ci runs unit and container tests together; coverage 80/80/80/75), as CI repeats it
+- Final round, as CI repeats it, in two commands because Nx forwards --coverage to every target: pnpm nx run-many -t lint typecheck --projects=<touched projects and their dependents> --parallel=1, then pnpm nx run-many -t test-int --configuration=ci --projects=<touched projects and their dependents> --coverage --parallel=1 (test-int:ci runs unit and container tests together; coverage 80/80/80/75)
 - node .claude/guards/run-gate.mjs --base main (every guard: structure, language, rule-checks coverage, tooling lint, affected lint, format)
 - pnpm nx format:check
 - If you touch contracts: pnpm nx run contracts-export:check and (cd front/packages/contracts && dart run contracts_gen --check)
