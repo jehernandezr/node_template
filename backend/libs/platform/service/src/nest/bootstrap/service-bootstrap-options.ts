@@ -1,5 +1,6 @@
 import type { ConfigEnv } from '@platform/config';
 import type { ServiceHostOptions } from '../runtime/service-host-options.js';
+import type { ServiceApplicationFactory } from './service-application-factory.js';
 import type { ServiceHttpOptions } from './service-http-options.js';
 
 /** Options of `ServiceBootstrap.http` and `ServiceBootstrap.worker`. */
@@ -13,4 +14,6 @@ export interface ServiceBootstrapOptions extends Omit<
   readonly http?: ServiceHttpOptions;
   /** Maximum time `RunningService.stop()` waits for everything to close. 10 000 ms by default. */
   readonly shutdownGraceMs?: number;
+  /** Creates the Nest application; `NestServiceApplicationFactory` by default. */
+  readonly applications?: ServiceApplicationFactory;
 }
