@@ -12,6 +12,9 @@ import type { MigrationClass } from '../../model/database-set-definition.js';
 export class TestDatabaseServer {
   private static readonly TEMPLATE_KEY_LENGTH = 12;
 
+  /** Comment a template carries once its build finished, so a half-migrated template is never cloned. */
+  static readonly READY_MARK = 'node-template: migrated template';
+
   constructor(private readonly servers = new SharedTestServers(process.env)) {}
 
   /**
@@ -117,13 +120,16 @@ export class TestDatabaseServer {
   }
 
   /**
-   * Replaces each target with a copy of its template, building the templates first when no earlier suite did. A
-   * session lock on the key keeps two builders of the same template from racing.
+   * Replaces each target with a copy of its template, building the templates first when no earlier suite finished
+   * them. A template is marked ready only after its build succeeds and is dropped when the build fails, so one failed
+   * migration fails one suite instead of every later clone. A session lock on the key keeps two builders of the same
+   * template from racing.
    * @param key Template key, from `templateKey`.
    * @param targets Databases the templates are cloned into.
    * @param templates Template of each target, at the same position.
    * @param build Migrates the template databases, which already exist and are empty, and closes its connections.
    * @param owner Owner of the templates and of the cloned databases; the superuser when absent.
+   * @throws The error of `build`, after dropping the templates it left half-built.
    */
   async cloneFromTemplates(
     key: string,
@@ -135,11 +141,11 @@ export class TestDatabaseServer {
     await this.asAdmin(async (admin) => {
       await admin.query('SELECT pg_advisory_lock(hashtext($1))', [key]);
       try {
-        const present: unknown[] = await admin.query(
-          'SELECT datname FROM pg_database WHERE datname = ANY($1)',
-          [templates],
+        const ready: unknown[] = await admin.query(
+          `SELECT datname FROM pg_database WHERE datname = ANY($1) AND shobj_description(oid, 'pg_database') = $2`,
+          [templates, TestDatabaseServer.READY_MARK],
         );
-        if (present.length !== templates.length) {
+        if (ready.length !== templates.length) {
           for (const template of templates) {
             await admin.query(
               `DROP DATABASE IF EXISTS "${template}" WITH (FORCE)`,
@@ -148,7 +154,21 @@ export class TestDatabaseServer {
               `CREATE DATABASE "${template}"${owner === undefined ? '' : ` OWNER "${owner}"`}`,
             );
           }
-          await build();
+          try {
+            await build();
+          } catch (error) {
+            for (const template of templates) {
+              await admin.query(
+                `DROP DATABASE IF EXISTS "${template}" WITH (FORCE)`,
+              );
+            }
+            throw error;
+          }
+          for (const template of templates) {
+            await admin.query(
+              `COMMENT ON DATABASE "${template}" IS '${TestDatabaseServer.READY_MARK}'`,
+            );
+          }
         }
         for (const [index, target] of targets.entries()) {
           await admin.query(`DROP DATABASE IF EXISTS "${target}" WITH (FORCE)`);
