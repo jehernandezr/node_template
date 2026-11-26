@@ -38,6 +38,12 @@ describe('entry points', () => {
     expect(seed).toContain('SchedulingMode.External');
   });
 
+  it('seeds the smoke account after the region tenants', () => {
+    expect(seed.indexOf('SeedSmokeAccount).execute()')).toBeGreaterThan(
+      seed.indexOf('SeedRegionTenants).execute()'),
+    );
+  });
+
   it('exports the Lambda handler of the API with LambdaBootstrap.http', () => {
     expect(lambda).toContain('export const handler = LambdaBootstrap.http(');
     expect(lambda).toContain('HttpApplicationSetup');

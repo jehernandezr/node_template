@@ -3,10 +3,12 @@ import { telemetry } from './instrumentation.js';
 import { SchedulingMode } from '@platform/scheduling';
 import { ServiceBootstrap } from '@platform/service/nest';
 import { identityService } from './identity.service.js';
+import { SeedSmokeAccount } from './smoke-account/seed-smoke-account.js';
 import { SeedRegionTenants } from './modules/tenants/index.js';
 
 /**
- * Seeds the region's fixed tenants without running jobs: it is a deployment step, after migrating.
+ * Seeds the region's fixed tenants and, when `IDENTITY_SMOKE_ACCOUNT` is set, the smoke account, without running
+ * jobs: it is a deployment step, after migrating.
  */
 const running = await ServiceBootstrap.worker(identityService, {
   env: process.env,
@@ -15,6 +17,7 @@ const running = await ServiceBootstrap.worker(identityService, {
 });
 try {
   await running.app.get(SeedRegionTenants).execute();
+  await running.app.get(SeedSmokeAccount).execute();
   process.exitCode = 0;
 } catch (error) {
   console.error(error);

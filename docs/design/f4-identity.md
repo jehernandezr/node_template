@@ -642,6 +642,7 @@ Extends `baseConfigSchema`, `databaseConfigSchema` and `valkeyConfigSchema`. Sec
 | `ACCESS_TOKEN_TTL`, `SESSION_IDLE_TTL`, `SESSION_ABSOLUTE_TTL`                                                             | 10 min (between 10 and 15), 1 day, 30 days   |
 | `WEB_ORIGINS`, `TRUST_PROXY_HOPS`                                                                                          | Origin policy, CORS and client IP            |
 | `IDENTITY_DEFAULT_TENANT_ID`, `IDENTITY_PLATFORM_TENANT_ID`                                                                | Seeded tenants of the region                 |
+| `IDENTITY_SMOKE_ACCOUNT`                                                                                                   | Smoke account the seed resets (seed only)    |
 | `WEBAUTHN_RP_ID`, `WEBAUTHN_RP_NAME`, `WEBAUTHN_ORIGINS`                                                                   | Passkeys                                     |
 | `MFA_RECOVERY_BASE_HOURS`, `API_KEY_ROTATION_GRACE_HOURS`                                                                  | 24 and 24                                    |
 | `INTERNAL_API_SHARED_SECRET`                                                                                               | Local internal API signature (secret)        |

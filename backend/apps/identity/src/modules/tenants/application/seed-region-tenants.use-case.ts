@@ -10,13 +10,15 @@ import { TenantReader } from './tenant-reader.js';
 
 /**
  * Seeds the region's two fixed tenants: the platform one and the shared customer one, where those who
- * sign up without an invitation end up. They do not go through the creation saga, so they are recorded right here in the directory
- * of the other services: it runs after deploying them. It is idempotent: it runs on every deployment.
+ * sign up without an invitation end up. Outside production it also seeds the smoke tenant the deploy smoke tests sign
+ * in to, in the shared customer group. They do not go through the creation saga, so they are recorded right here in
+ * the directory of the other services: it runs after deploying them. It is idempotent: it runs on every deployment.
  */
 @Injectable()
 export class SeedRegionTenants {
   private static readonly SHARED_SLUG = 'customers';
   private static readonly PLATFORM_SLUG = 'platform';
+  private static readonly SMOKE_SLUG = 'smoke';
 
   constructor(
     private readonly provision: ProvisionTenant,
@@ -35,11 +37,42 @@ export class SeedRegionTenants {
       this.settings.values.IDENTITY_DEFAULT_TENANT_ID,
       `${SeedRegionTenants.SHARED_SLUG}-${region}`,
       TenantKind.SharedCustomers,
+      true,
     );
     await this.seed(
       this.settings.values.IDENTITY_PLATFORM_TENANT_ID,
       `${SeedRegionTenants.PLATFORM_SLUG}-${region}`,
       TenantKind.Platform,
+      false,
+    );
+  }
+
+  /**
+   * Places the smoke tenant in the region's shared customer group of identity, so its owner can be created in its
+   * shard before the tenant exists.
+   * @param tenantId Smoke tenant.
+   */
+  async placeSmokeTenant(tenantId: string): Promise<void> {
+    await this.placement.place(
+      tenantId,
+      this.settings.values.IDENTITY_REGION,
+      true,
+    );
+  }
+
+  /**
+   * Creates the smoke tenant with its owner when it is missing, activates it and records it in every service, like
+   * the fixed tenants. Place it first with `placeSmokeTenant`.
+   * @param tenantId Smoke tenant.
+   * @param ownerUserId Owner of the smoke tenant, whose owner role holds every tenant permission.
+   */
+  async seedSmokeTenant(tenantId: string, ownerUserId: string): Promise<void> {
+    await this.seed(
+      tenantId,
+      `${SeedRegionTenants.SMOKE_SLUG}-${this.settings.values.IDENTITY_REGION}`,
+      TenantKind.Organization,
+      true,
+      ownerUserId,
     );
   }
 
@@ -47,6 +80,8 @@ export class SeedRegionTenants {
     tenantId: string,
     slug: string,
     kind: TenantKind,
+    sharedGroup: boolean,
+    ownerUserId?: string,
   ): Promise<void> {
     const region = this.settings.values.IDENTITY_REGION;
     if ((await this.reader.find(tenantId)) === undefined) {
@@ -56,14 +91,11 @@ export class SeedRegionTenants {
         name: slug,
         region,
         kind,
+        ...(ownerUserId === undefined ? {} : { ownerUserId }),
       });
     }
     await this.status.activate(tenantId);
-    const placed = await this.placement.place(
-      tenantId,
-      region,
-      kind === TenantKind.SharedCustomers,
-    );
+    const placed = await this.placement.place(tenantId, region, sharedGroup);
     await this.followers.place(this.entries.of(tenantId, placed));
   }
 }

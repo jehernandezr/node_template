@@ -72,4 +72,11 @@ export class InMemoryMfaFacade extends MfaFacade {
   override async forget(ref: UserRef): Promise<void> {
     this.forgotten.push(ref);
   }
+
+  /** TOTP secrets set with `replaceTotp`, by user id. */
+  readonly totpSecrets = new Map<string, Uint8Array>();
+
+  override async replaceTotp(ref: UserRef, secret: Uint8Array): Promise<void> {
+    this.totpSecrets.set(ref.userId, secret);
+  }
 }

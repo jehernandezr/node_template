@@ -75,5 +75,6 @@ import { UsersCoreModule } from '../../users/module.js';
     TenantsInternalOperations,
     BillingStandingConsumer,
   ],
+  exports: [SeedRegionTenants],
 })
 export class TenantsModule {}

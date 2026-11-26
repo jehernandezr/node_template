@@ -54,7 +54,13 @@ export class InMemoryUsersFacade extends UsersFacade {
       id,
       homeTenantId: input.homeTenantId,
       email,
-      status: UserStatus.PendingVerification,
+      status:
+        input.emailVerifiedAt === undefined
+          ? UserStatus.PendingVerification
+          : UserStatus.Active,
+      ...(input.emailVerifiedAt === undefined
+        ? {}
+        : { emailVerifiedAt: input.emailVerifiedAt }),
       displayName: input.displayName,
       locale: input.locale,
     });
