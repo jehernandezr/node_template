@@ -45,6 +45,24 @@ describe('nx.json test inputs', () => {
     });
   }
 
+  for (const target of ['test', 'test-int']) {
+    it(`hashes the shared test server variables into ${target}`, () => {
+      const inputs =
+        [NX.targetDefaults[target] ?? []]
+          .flat()
+          .filter(
+            (entry) =>
+              !entry.filter?.plugin ||
+              entry.filter.plugin === '@nx/jest/plugin',
+          )
+          .at(-1)?.inputs ?? [];
+      assert.ok(
+        inputs.includes('{workspaceRoot}/backend/jest.servers.cjs'),
+        `targetDefaults.${target}.inputs must include backend/jest.servers.cjs, which the unit tests of the server variables load`,
+      );
+    });
+  }
+
   it('hashes the shared backend lint config and its guards into lint', () => {
     const lint = [NX.targetDefaults.lint ?? []]
       .flat()

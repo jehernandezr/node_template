@@ -5,21 +5,16 @@
  * Usage: node .claude/guards/run-gate.mjs [--base <ref>] [root]
  * Exits with 1 and the output of each failed guard, or with 0 when all pass.
  */
-import { resolve } from 'node:path';
+import { GateCommand } from './gate-command.mjs';
 import { GuardGate } from './guard-gate.mjs';
 
-/** Command line of the gate. */
-class GateCommand {
+/** Runs the gate a command line asks for and prints its outcome. */
+class GateRun {
   /**
-   * @param {string[]} argv Arguments after the script name.
+   * @param {GateCommand} command Parsed command line.
    */
-  constructor(argv) {
-    const base = argv.indexOf('--base');
-    this.base = base === -1 ? 'main' : argv[base + 1];
-    const rest = argv.filter(
-      (_, index) => index !== base && index !== base + 1,
-    );
-    this.root = resolve(rest[0] ?? '.');
+  constructor(command) {
+    this.command = command;
   }
 
   /**
@@ -27,7 +22,10 @@ class GateCommand {
    * @returns {number} The exit code.
    */
   run() {
-    const { passed, failed } = new GuardGate(this.root, this.base).check();
+    const { passed, failed } = new GuardGate(
+      this.command.root,
+      this.command.base,
+    ).check();
     if (passed) {
       console.log('Guard gate: green');
       return 0;
@@ -41,4 +39,4 @@ class GateCommand {
   }
 }
 
-process.exitCode = new GateCommand(process.argv.slice(2)).run();
+process.exitCode = new GateRun(new GateCommand(process.argv.slice(2))).run();

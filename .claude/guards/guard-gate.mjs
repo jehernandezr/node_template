@@ -24,6 +24,7 @@ export class GuardGate {
     '.claude/impact/__tests__/*.test.mjs',
     '.claude/skills/backend-structure/scripts/*.test.mjs',
     '.claude/skills/front-structure/scripts/__tests__/*.test.mjs',
+    '.claude/skills/front-structure/scripts/rules/__tests__/*.test.mjs',
   ];
 
   /**

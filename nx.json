@@ -111,6 +111,7 @@
           "^production",
           "^testUtils",
           "{workspaceRoot}/backend/jest.preset.js",
+          "{workspaceRoot}/backend/jest.servers.cjs",
           "{workspaceRoot}/backend/jest.global-setup.cjs",
           "{workspaceRoot}/backend/jest.global-teardown.cjs",
           {
