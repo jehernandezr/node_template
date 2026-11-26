@@ -1,5 +1,5 @@
 variable "name_prefix" {
-  description = "Prefix for the role, bucket and repository names, for example node-template-dev."
+  description = "Prefix for the role names, for example node-template-dev."
   type        = string
 }
 
@@ -51,10 +51,19 @@ variable "deploy_policy_arns" {
   default     = []
 }
 
-variable "artifacts_force_destroy" {
-  description = "Allows deleting the artifacts bucket with content. Only for disposable environments."
-  type        = bool
-  default     = false
+variable "artifacts_bucket_arn" {
+  description = "ARN of the artifacts bucket (Lambda bundles and mobile builds): the publish role writes it and the deploy role reads it."
+  type        = string
+}
+
+variable "artifacts_kms_key_arn" {
+  description = "ARN of the CMK that encrypts the artifacts bucket."
+  type        = string
+}
+
+variable "ecr_repository_arns" {
+  description = "ARNs of the ECR repositories the publish role pushes to. The role cannot create repositories."
+  type        = list(string)
 }
 
 variable "tags" {

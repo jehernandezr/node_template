@@ -33,6 +33,14 @@ locals {
       Resource  = "*"
       Condition = { StringEquals = { "aws:SourceAccount" = local.account_id } }
     }],
+    [for p in var.account_principals : {
+      Sid       = p.sid
+      Effect    = "Allow"
+      Principal = { AWS = p.arns }
+      Action    = p.actions
+      Resource  = "*"
+      Condition = { StringEquals = { "kms:ViaService" = "${p.via_service}.${data.aws_region.current.region}.amazonaws.com" } }
+    }],
   )
 }
 

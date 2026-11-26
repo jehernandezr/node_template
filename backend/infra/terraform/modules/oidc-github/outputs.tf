@@ -17,13 +17,3 @@ output "web_role_arn" {
   description = "Role that publishes the web app to its bucket and invalidates CloudFront."
   value       = aws_iam_role.web.arn
 }
-
-output "artifacts_bucket" {
-  description = "Bucket for Lambda bundles and mobile builds."
-  value       = aws_s3_bucket.artifacts.bucket
-}
-
-output "ecr_repository_prefix" {
-  description = "Prefix of the services' ECR repositories: <prefix>/<service>."
-  value       = var.name_prefix
-}
