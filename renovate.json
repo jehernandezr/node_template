@@ -37,7 +37,7 @@
   ],
   "packageRules": [
     {
-      "description": "Las dependencias de npm se declaran con versión exacta en package.json y backend/package.json",
+      "description": "npm dependencies are declared with an exact version in package.json and backend/package.json",
       "matchManagers": ["npm"],
       "matchFileNames": ["package.json", "backend/package.json"],
       "rangeStrategy": "pin"
