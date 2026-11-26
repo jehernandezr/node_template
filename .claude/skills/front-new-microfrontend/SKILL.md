@@ -16,9 +16,9 @@ The generator creates the structure and the glue. What remains is the domain: th
 dart run front/tools/new_microfrontend.dart reports --menu "Reportes" [--menu-en "Reports"] [--no-install]
 ```
 
-- The id is lowercase, 2 to 24 characters (`^[a-z][a-z0-9]{1,23}$`). It is the first segment of the routes.
-- `--menu-en` is optional; it defaults to the id with an initial capital.
-- `--no-install` skips the three install steps below.
+- The id is lowercase, 2 to 24 characters (`^[a-z][a-z0-9]{1,23}$`). It is the first segment of the routes. <!-- id: front-new-microfrontend.1 -->
+- `--menu-en` is optional; it defaults to the id with an initial capital. <!-- id: front-new-microfrontend.2 -->
+- `--no-install` skips the three install steps below. <!-- id: front-new-microfrontend.3 -->
 
 ## What it creates
 
@@ -46,24 +46,24 @@ The generator prints three pieces for each app:
 
 ## What is written by hand
 
-- **Port and data:** the `ReportsRepository` port (an `abstract interface class` that implements `ScopedResource`) and `FakeReportsRepository` with `DemoBehavior` for latency and failures. The demo data is `FakeReportsRepository.demoItems`; `reports_demo.dart` only holds the latency. A real repository does not exist until there is a contract.
-- **Controllers:** one per screen, with an `AsyncLoader` for each load and an `ActionRunner` if it writes, both listened to with `addListener(notifyListeners)` and released in `dispose`. `start` loads and also serves as retry. No `State` with a `Future`, no logic `try/catch`.
-- **Screens:** one per route, a `StatelessWidget` with `ControllerBuilder`, with the four states.
-- **Texts:** the new keys in `app_es.arb` and `app_en.arb`, with placeholders.
-- **Tests:** controllers without widgets, screens with the four states, compact and expanded widths, `expectAccessible` and 2x scale.
-- **Access:** `AccessRule.permissions([...])` with the real `Permission` once it exists. Today `ReportsAccess.read` uses `AccessRule.authenticated()`, because `Permission` has no reports permission.
-- **Writes:** if there are actions that change data, `ActionRunner`. A sensitive action is protected with `AccessRule.mfa` and `context.can`, or with `scope.services.requestStepUp()` when the session does not meet it.
-- **Deep links:** `deepLinks` in the manifest, only if needed.
+- **Port and data:** the `ReportsRepository` port (an `abstract interface class` that implements `ScopedResource`) and `FakeReportsRepository` with `DemoBehavior` for latency and failures. The demo data is `FakeReportsRepository.demoItems`; `reports_demo.dart` only holds the latency. A real repository does not exist until there is a contract. <!-- id: front-new-microfrontend.4 -->
+- **Controllers:** one per screen, with an `AsyncLoader` for each load and an `ActionRunner` if it writes, both listened to with `addListener(notifyListeners)` and released in `dispose`. `start` loads and also serves as retry. No `State` with a `Future`, no logic `try/catch`. <!-- id: front-new-microfrontend.5 -->
+- **Screens:** one per route, a `StatelessWidget` with `ControllerBuilder`, with the four states. <!-- id: front-new-microfrontend.6 -->
+- **Texts:** the new keys in `app_es.arb` and `app_en.arb`, with placeholders. <!-- id: front-new-microfrontend.7 -->
+- **Tests:** controllers without widgets, screens with the four states, compact and expanded widths, `expectAccessible` and 2x scale. <!-- id: front-new-microfrontend.8 -->
+- **Access:** `AccessRule.permissions([...])` with the real `Permission` once it exists. Today `ReportsAccess.read` uses `AccessRule.authenticated()`, because `Permission` has no reports permission. <!-- id: front-new-microfrontend.9 -->
+- **Writes:** if there are actions that change data, `ActionRunner`. A sensitive action is protected with `AccessRule.mfa` and `context.can`, or with `scope.services.requestStepUp()` when the session does not meet it. <!-- id: front-new-microfrontend.10 -->
+- **Deep links:** `deepLinks` in the manifest, only if needed. <!-- id: front-new-microfrontend.11 -->
 
 ## Pieces
 
-- Manifest: where: `lib/mf_reports.dart`; what it does: id, platforms, modes, access, menu and deferred routes
-- Route constants: where: `lib/src/shared/constants/`; what it does: `ReportsPaths.list`, `ReportsPaths.detail(id)`, `idParam` and `idSegment`
-- Port and demo data: where: `lib/src/data/`; what it does: `ReportsRepository`, `FakeReportsRepository`, `ReportsData.repository`
-- Controller: where: `lib/src/screens/*_controller.dart`; what it does: state with `AsyncLoader`, actions with `ActionRunner`
-- Screen: where: `lib/src/screens/*_screen.dart`; what it does: `ControllerBuilder` and `AsyncValueView`, no logic
-- Screens bridge: where: `lib/src/screens/reports_screens.dart`; what it does: static `ReportsScreens`, with `DeferredLocalizations` and `scope.repository`
-- Texts: where: `lib/src/l10n/*.arb`; what it does: `ReportsLocalizations`, with placeholders
+- Manifest: where: `lib/mf_reports.dart`; what it does: id, platforms, modes, access, menu and deferred routes <!-- id: front-new-microfrontend.12 -->
+- Route constants: where: `lib/src/shared/constants/`; what it does: `ReportsPaths.list`, `ReportsPaths.detail(id)`, `idParam` and `idSegment` <!-- id: front-new-microfrontend.13 -->
+- Port and demo data: where: `lib/src/data/`; what it does: `ReportsRepository`, `FakeReportsRepository`, `ReportsData.repository` <!-- id: front-new-microfrontend.14 -->
+- Controller: where: `lib/src/screens/*_controller.dart`; what it does: state with `AsyncLoader`, actions with `ActionRunner` <!-- id: front-new-microfrontend.15 -->
+- Screen: where: `lib/src/screens/*_screen.dart`; what it does: `ControllerBuilder` and `AsyncValueView`, no logic <!-- id: front-new-microfrontend.16 -->
+- Screens bridge: where: `lib/src/screens/reports_screens.dart`; what it does: static `ReportsScreens`, with `DeferredLocalizations` and `scope.repository` <!-- id: front-new-microfrontend.17 -->
+- Texts: where: `lib/src/l10n/*.arb`; what it does: `ReportsLocalizations`, with placeholders <!-- id: front-new-microfrontend.18 -->
 
 ## Manifest and bridge outline
 
@@ -77,13 +77,13 @@ Example in `references/examples.md`, section "Bridge outline".
 
 ## Reviewer checklist
 
-- No screen has a `State` with a `Future`, a `try/catch` or `widget.repository.`.
-- Every controller uses `AsyncLoader`, and `ActionRunner` if it writes. Its test does not mount widgets.
-- Every screen has a test for its four states, one compact and one expanded width, `expectAccessible` and a test at 2x scale.
-- Colors from `Theme` and `context.statusColors`; texts from the ARB with placeholders; `AlignmentDirectional` and `EdgeInsetsDirectional`.
-- Dialogs with `context.showLocalizedDialog`.
-- `check_microfrontend_boundaries` and `check_deferred_chunks` green.
-- Acceptance: `pnpm nx run-many -t format-check analyze test --projects=front-mf_<id> --skip-nx-cache`.
+- No screen has a `State` with a `Future`, a `try/catch` or `widget.repository.`. <!-- id: front-new-microfrontend.19 -->
+- Every controller uses `AsyncLoader`, and `ActionRunner` if it writes. Its test does not mount widgets. <!-- id: front-new-microfrontend.20 -->
+- Every screen has a test for its four states, one compact and one expanded width, `expectAccessible` and a test at 2x scale. <!-- id: front-new-microfrontend.21 -->
+- Colors from `Theme` and `context.statusColors`; texts from the ARB with placeholders; `AlignmentDirectional` and `EdgeInsetsDirectional`. <!-- id: front-new-microfrontend.22 -->
+- Dialogs with `context.showLocalizedDialog`. <!-- id: front-new-microfrontend.23 -->
+- `check_microfrontend_boundaries` and `check_deferred_chunks` green. <!-- id: front-new-microfrontend.24 -->
+- Acceptance: `pnpm nx run-many -t format-check analyze test --projects=front-mf_<id> --skip-nx-cache`. <!-- id: front-new-microfrontend.25 -->
 
 ## Changing the generator
 

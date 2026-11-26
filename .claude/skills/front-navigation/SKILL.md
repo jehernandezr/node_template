@@ -14,17 +14,17 @@ The shell (`shell_core`) already uses `go_router`. Microfrontends do not create 
 
 ## Rules
 
-- A microfrontend's routes hang from its id (`/tasks`, `/tasks/:id`, `/tasks/:id/edit`). They are built in a constants class of the microfrontend (`TasksPaths`), and screens never write a path by hand.
-- `context.go(TasksPaths.detail(id))` to change destination. `context.push` only when the screen expects a result (`await context.push<bool>(...)`) or is a temporary step over the current one. `context.pop` to go back.
-- Data travels in the path (`:id`) or the query (`?status=done`). Never in `extra`: it is lost on a web reload, in a deep link and when the app is restored. `ScreenRoute` delivers both merged in `params`, and the path wins.
-- A segment that names a page (`new`, `edit`) must not be mistaken for an id: it is declared in the paths class, as `TasksPaths` does.
-- Segments use lowercase and hyphens (`/audit-log`), not camelCase or underscores.
-- Subroutes are nested as children of their route so back works: `/tasks` has `:id`, and `:id` has `edit`.
-- An app link enters through the manifest's `deepLinks`, which translates it to one of its own routes. Anything from outside (query, path) is untrusted data: it is validated and, if invalid, the error screen is shown instead of throwing.
-- Access is declared, not coded in the screen: `ScreenRoute(access: ...)`, `redirect: accessRedirect(rule)` for a subroute, `AccessGate` or `context.can(rule)` for an action. A sensitive action calls `scope.services.requestStepUp()`.
-- After login the user returns to the origin with `?from=`, validated by `return_location` in `shell_host` so it never redirects to an external site.
-- After an `await`, before navigating, check `mounted` (see `front-code`).
-- Transitions respect `disableAnimations` (see `front-accessibility`).
+- A microfrontend's routes hang from its id (`/tasks`, `/tasks/:id`, `/tasks/:id/edit`). They are built in a constants class of the microfrontend (`TasksPaths`), and screens never write a path by hand. <!-- id: front-navigation.1 -->
+- `context.go(TasksPaths.detail(id))` to change destination. `context.push` only when the screen expects a result (`await context.push<bool>(...)`) or is a temporary step over the current one. `context.pop` to go back. <!-- id: front-navigation.2 -->
+- Data travels in the path (`:id`) or the query (`?status=done`). Never in `extra`: it is lost on a web reload, in a deep link and when the app is restored. `ScreenRoute` delivers both merged in `params`, and the path wins. <!-- id: front-navigation.3 -->
+- A segment that names a page (`new`, `edit`) must not be mistaken for an id: it is declared in the paths class, as `TasksPaths` does. <!-- id: front-navigation.4 -->
+- Segments use lowercase and hyphens (`/audit-log`), not camelCase or underscores. <!-- id: front-navigation.5 -->
+- Subroutes are nested as children of their route so back works: `/tasks` has `:id`, and `:id` has `edit`. <!-- id: front-navigation.6 -->
+- An app link enters through the manifest's `deepLinks`, which translates it to one of its own routes. Anything from outside (query, path) is untrusted data: it is validated and, if invalid, the error screen is shown instead of throwing. <!-- id: front-navigation.7 -->
+- Access is declared, not coded in the screen: `ScreenRoute(access: ...)`, `redirect: accessRedirect(rule)` for a subroute, `AccessGate` or `context.can(rule)` for an action. A sensitive action calls `scope.services.requestStepUp()`. <!-- id: front-navigation.8 -->
+- After login the user returns to the origin with `?from=`, validated by `return_location` in `shell_host` so it never redirects to an external site. <!-- id: front-navigation.9 -->
+- After an `await`, before navigating, check `mounted` (see `front-code`). <!-- id: front-navigation.10 -->
+- Transitions respect `disableAnimations` (see `front-accessibility`). <!-- id: front-navigation.11 -->
 
 ## Example
 

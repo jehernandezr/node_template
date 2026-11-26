@@ -45,11 +45,54 @@ describe('docs/quality/rule-checks.md', () => {
     assert.deepEqual(shifted, []);
   });
 
+  it('stores an id with every rule, under the prefix of its source and section, never twice and never a retired one', () => {
+    const ids = rules.map((rule) => rule.id);
+    const retired = new Set(RuleChecksDocument.read(DOCUMENT).retired());
+    assert.deepEqual(
+      rules
+        .filter((rule) => rule.id === undefined)
+        .map((rule) => `${rule.source}: ${rule.text}`),
+      [],
+    );
+    assert.deepEqual(
+      rules
+        .filter((rule) => {
+          const prefix = `${RuleInventory.prefixOf(rule.source, rule.section)}.`;
+          return !(
+            rule.id.startsWith(prefix) &&
+            /^\d+$/.test(rule.id.slice(prefix.length))
+          );
+        })
+        .map((rule) => rule.id),
+      [],
+    );
+    assert.deepEqual(
+      ids.filter((id, index) => ids.indexOf(id) !== index),
+      [],
+    );
+    assert.deepEqual(
+      ids.filter((id) => retired.has(id)),
+      [],
+    );
+  });
+
   it('gives every row a check or marks it review only', () => {
     assert.deepEqual(
       rows.filter((row) => row.check === '').map((row) => row.id),
       [],
     );
+  });
+});
+
+describe('RuleChecksDocument', () => {
+  it('reads the retired ids and treats a missing line as none', () => {
+    assert.deepEqual(
+      new RuleChecksDocument(
+        'Retired ids: `claude.code.4`, `backend-testing.9`.\n',
+      ).retired(),
+      ['claude.code.4', 'backend-testing.9'],
+    );
+    assert.deepEqual(new RuleChecksDocument('# Rule checks\n').retired(), []);
   });
 });
 
@@ -67,24 +110,40 @@ describe('RuleInventory', () => {
     );
   });
 
-  it('numbers the rules of CLAUDE.md within each section and those of a skill through the file', () => {
-    const claude = inventory.rulesOf(
-      'CLAUDE.md',
-      '## Language\n\n- One.\n\n## Code\n\n- Two.\n- Three.\n',
-    );
-    const skill = inventory.rulesOf(
+  it('reads the id stored with each bullet, so a rule added in the middle shifts no other id', () => {
+    const before = inventory.rulesOf(
       'backend-testing',
-      '## Location\n\n- One.\n\n## Doubles\n\n- Two.\n',
+      '## Location\n\n- One. <!-- id: backend-testing.1 -->\n- Two. <!-- id: backend-testing.2 -->\n',
     );
+    const after = inventory.rulesOf(
+      'backend-testing',
+      '## Location\n\n- One. <!-- id: backend-testing.1 -->\n- New. <!-- id: backend-testing.3 -->\n- Two. <!-- id: backend-testing.2 -->\n',
+    );
+    const idOf = (rules, text) => rules.find((rule) => rule.text === text).id;
+    assert.equal(idOf(after, 'Two.'), idOf(before, 'Two.'));
     assert.deepEqual(
-      [...claude, ...skill].map((rule) => rule.id),
-      [
-        'claude.language.1',
-        'claude.code.1',
-        'claude.code.2',
-        'backend-testing.1',
-        'backend-testing.2',
-      ],
+      after.map((rule) => rule.id),
+      ['backend-testing.1', 'backend-testing.3', 'backend-testing.2'],
+    );
+  });
+
+  it('leaves the id undefined on a bullet that stores none', () => {
+    assert.deepEqual(
+      inventory
+        .rulesOf('CLAUDE.md', '## Code\n\n- Bare rule.\n')
+        .map((rule) => [rule.text, rule.id]),
+      [['Bare rule.', undefined]],
+    );
+  });
+
+  it('prefixes the ids of CLAUDE.md with their section and those of a skill with its name', () => {
+    assert.equal(
+      RuleInventory.prefixOf('CLAUDE.md', 'Way of working: pstack'),
+      'claude.way-of-working-pstack',
+    );
+    assert.equal(
+      RuleInventory.prefixOf('backend-testing', 'Location'),
+      'backend-testing',
     );
   });
 

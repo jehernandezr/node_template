@@ -11,28 +11,28 @@ paths:
 
 ## Where each text lives
 
-- **Shared texts** (actions, catalog errors, `ui` labels): `front/packages/i18n/lib/l10n/app_es.arb` and `app_en.arb`, class `AppLocalizations`.
-- **A microfrontend's texts:** `lib/src/l10n/app_es.arb` and `app_en.arb`, with their own class (`TasksLocalizations`). They hang from `l10n/` inside the deferred chunk, so a client does not download the texts of a microfrontend it does not use.
-- **Menu label:** `MenuLabel({'es': ..., 'en': ...})` in the manifest, because the shell draws it before loading the microfrontend. It is the only exception.
-- The template is `app_es.arb`; every key exists in all supported languages.
+- **Shared texts** (actions, catalog errors, `ui` labels): `front/packages/i18n/lib/l10n/app_es.arb` and `app_en.arb`, class `AppLocalizations`. <!-- id: front-i18n.1 -->
+- **A microfrontend's texts:** `lib/src/l10n/app_es.arb` and `app_en.arb`, with their own class (`TasksLocalizations`). They hang from `l10n/` inside the deferred chunk, so a client does not download the texts of a microfrontend it does not use. <!-- id: front-i18n.2 -->
+- **Menu label:** `MenuLabel({'es': ..., 'en': ...})` in the manifest, because the shell draws it before loading the microfrontend. It is the only exception. <!-- id: front-i18n.3 -->
+- The template is `app_es.arb`; every key exists in all supported languages. <!-- id: front-i18n.4 -->
 
 ## Rules
 
-- No visible text in a Dart literal: not `Text('Guardar')`, not `tooltip`, not `semanticLabel`, not error messages. Everything comes from localization: `TasksLocalizations.of(context).save`.
-- A shared `ui` widget does not read `AppLocalizations` if it receives the text as a parameter; those that do read it (`ErrorView`, `showActionError`) say so in their documentation and require the delegate.
-- A server text is never shown. Map the contract code: `ErrorPresenter(l10n).describe(error)` for an error's message and code, `actionMessage(error)` for an action's text. Both come from `i18n`, and `errorMessage(l10n, code)` from `i18n` gives the text for a code.
-- An enum's text comes from a function with an exhaustive `switch` (`taskStatusLabel(l10n, status)`), so a new case breaks compilation until it has its text.
-- Plurals, gender and numbers go in the ARB with ICU syntax, not with `if (count == 1)` in Dart:
+- No visible text in a Dart literal: not `Text('Guardar')`, not `tooltip`, not `semanticLabel`, not error messages. Everything comes from localization: `TasksLocalizations.of(context).save`. <!-- id: front-i18n.5 -->
+- A shared `ui` widget does not read `AppLocalizations` if it receives the text as a parameter; those that do read it (`ErrorView`, `showActionError`) say so in their documentation and require the delegate. <!-- id: front-i18n.6 -->
+- A server text is never shown. Map the contract code: `ErrorPresenter(l10n).describe(error)` for an error's message and code, `actionMessage(error)` for an action's text. Both come from `i18n`, and `errorMessage(l10n, code)` from `i18n` gives the text for a code. <!-- id: front-i18n.7 -->
+- An enum's text comes from a function with an exhaustive `switch` (`taskStatusLabel(l10n, status)`), so a new case breaks compilation until it has its text. <!-- id: front-i18n.8 -->
+- Plurals, gender and numbers go in the ARB with ICU syntax, not with `if (count == 1)` in Dart: <!-- id: front-i18n.9 -->
 
 ```json
 "messagesCount": "{count, plural, =0{Sin mensajes} =1{1 mensaje} other{{count} mensajes}}",
 "@messagesCount": { "placeholders": { "count": { "type": "int" } } }
 ```
 
-- Dates, times and money: `DateFormat` and `NumberFormat` from `intl` with the context locale, or the helpers in `front/packages/utils` (`dates`, `money`, `numbers`). Never concatenate parts by hand.
-- Do not concatenate sentences or join them with separators (`·`): `'${l10n.hello} $name'` breaks in other languages. Use a placeholder: `"hello": "Hola, {name}"`, and the separator goes inside the ARB sentence.
-- Directionality: `EdgeInsetsDirectional`, `AlignmentDirectional` and `start`/`end` instead of `left`/`right`, so a right-to-left language works without rewriting.
-- No third-party i18n libraries. Flutter and `intl` are enough.
+- Dates, times and money: `DateFormat` and `NumberFormat` from `intl` with the context locale, or the helpers in `front/packages/utils` (`dates`, `money`, `numbers`). Never concatenate parts by hand. <!-- id: front-i18n.10 -->
+- Do not concatenate sentences or join them with separators (`·`): `'${l10n.hello} $name'` breaks in other languages. Use a placeholder: `"hello": "Hola, {name}"`, and the separator goes inside the ARB sentence. <!-- id: front-i18n.11 -->
+- Directionality: `EdgeInsetsDirectional`, `AlignmentDirectional` and `start`/`end` instead of `left`/`right`, so a right-to-left language works without rewriting. <!-- id: front-i18n.12 -->
+- No third-party i18n libraries. Flutter and `intl` are enough. <!-- id: front-i18n.13 -->
 
 ## Dialogs and sheets
 

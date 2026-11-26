@@ -27,6 +27,7 @@ export class RuleCheck {
 export class RuleChecksDocument {
   static HEADER = /^\|\s*Id\s*\|\s*Rule\s*\|\s*Check\s*\|$/;
   static REVIEW_ONLY = 'review only';
+  static RETIRED = /^Retired ids:(.*)$/m;
 
   /**
    * @param {string} text Markdown of the document.
@@ -42,6 +43,15 @@ export class RuleChecksDocument {
    */
   static read(path) {
     return new RuleChecksDocument(readFileSync(path, 'utf8'));
+  }
+
+  /**
+   * The ids of removed rules, which no new rule may take: the backticked ids on the `Retired ids:` line.
+   * @returns {string[]} The retired ids; none when the line is missing or says `none`.
+   */
+  retired() {
+    const line = RuleChecksDocument.RETIRED.exec(this.text)?.[1] ?? '';
+    return [...line.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
   }
 
   /**
