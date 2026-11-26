@@ -18,8 +18,8 @@ export class FrontStructureCheck {
   }
 
   /**
-   * Checks the files of the mode: those changed against HEAD with `CHANGED`, all of `front/` with `ALL`. Generated
-   * files are skipped by their path.
+   * Checks the files of the mode: those changed against HEAD with `CHANGED`, those staged for the next commit with
+   * `STAGED`, all of `front/` with `ALL`. Generated files are skipped by their path.
    * @returns {{ violations: import('./violation.mjs').Violation[] }} Every violation found.
    */
   run() {
@@ -58,14 +58,18 @@ export class FrontStructureCheck {
   }
 
   /**
-   * Front files changed against `HEAD` or not yet tracked, which still exist.
+   * Front files staged for the next commit, or changed against `HEAD` or not yet tracked, which still exist.
    * @returns {string[]} Paths from the repository root.
    */
   #changedFrontFiles() {
-    const changed = new Set([
-      ...this.#git(['diff', '--name-only', '--diff-filter=ACMR', 'HEAD']),
-      ...this.#git(['ls-files', '--others', '--exclude-standard']),
-    ]);
+    const changed = new Set(
+      this.mode === CheckMode.STAGED
+        ? this.#git(['diff', '--cached', '--name-only', '--diff-filter=ACMR'])
+        : [
+            ...this.#git(['diff', '--name-only', '--diff-filter=ACMR', 'HEAD']),
+            ...this.#git(['ls-files', '--others', '--exclude-standard']),
+          ],
+    );
     return [...changed].filter(
       (f) => f.startsWith('front/') && existsSync(join(this.root, f)),
     );

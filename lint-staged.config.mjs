@@ -39,7 +39,8 @@ class StagedGuards {
   }
 
   /**
-   * Commands that only read: the language check of every staged text file and the structure checks.
+   * Commands that only read: the language check of every staged text file and the structure checks of the staged
+   * files. Anything that reads the whole repository or runs Nx belongs to CI and the workflow gate.
    * @param {string[]} files Staged text files.
    * @returns {string[]} The commands.
    */
@@ -51,8 +52,8 @@ class StagedGuards {
             `node .claude/guards/check-language.mjs --files ${StagedGuards.quote(text)}`,
           ]
         : []),
-      'node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .',
-      'node .claude/skills/front-structure/scripts/check-structure.mjs --changed .',
+      'node .claude/skills/backend-structure/scripts/check-structure.mjs --staged .',
+      'node .claude/skills/front-structure/scripts/check-structure.mjs --staged .',
     ];
   }
 }

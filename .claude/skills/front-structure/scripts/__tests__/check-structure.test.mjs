@@ -49,6 +49,19 @@ describe('check-structure', () => {
     assert.match(all.stderr, /screens\/b\.dart/);
   });
 
+  it('--staged checks only what is staged for the next commit', () => {
+    repo.current.write(SCREEN, CLEAN);
+    repo.current.commitAll();
+    repo.current.write(SCREEN, ONE);
+    repo.current.write(OTHER, ONE);
+    repo.current.git('add', SCREEN);
+
+    const staged = repo.current.runCheck('--staged');
+    assert.equal(staged.status, 1);
+    assert.match(staged.stderr, /screens\/a\.dart/);
+    assert.doesNotMatch(staged.stderr, /screens\/b\.dart/);
+  });
+
   it('--all fails with a pubspec that uses ^ in a dependency', () => {
     repo.current.write(
       'front/packages/ui/pubspec.yaml',

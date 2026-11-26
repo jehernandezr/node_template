@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Checks the rules of backend-structure, backend-code and backend-testing.
- * Usage: node check-structure.mjs [--all | --changed] [repository root]
+ * Usage: node check-structure.mjs [--all | --changed | --staged] [repository root]
  *   --changed (default) checks only the files changed against HEAD, including new ones.
+ *   --staged checks only the files staged for the next commit, as the pre-commit hook does.
  *   --all checks all of backend/.
  * Exits with code 1 and the list of violations if it finds any.
  */
@@ -102,10 +103,14 @@ class BackendStructureCheck {
       execFileSync('git', args, { cwd: this.root, encoding: 'utf8' })
         .split('\n')
         .filter(Boolean);
-    const changed = new Set([
-      ...git(['diff', '--name-only', '--diff-filter=ACMR', 'HEAD']),
-      ...git(['ls-files', '--others', '--exclude-standard']),
-    ]);
+    const changed = new Set(
+      this.mode === '--staged'
+        ? git(['diff', '--cached', '--name-only', '--diff-filter=ACMR'])
+        : [
+            ...git(['diff', '--name-only', '--diff-filter=ACMR', 'HEAD']),
+            ...git(['ls-files', '--others', '--exclude-standard']),
+          ],
+    );
     return [...changed].filter(
       (f) => f.startsWith('backend/') && existsSync(join(this.root, f)),
     );
@@ -179,13 +184,15 @@ class BackendStructureCheck {
     if (this.mode === '--all') return full;
     this.addedLines ??= this.readAddedLines();
     this.untracked ??= new Set(
-      execFileSync(
-        'git',
-        ['ls-files', '--others', '--exclude-standard', 'backend/'],
-        { cwd: this.root, encoding: 'utf8' },
-      )
-        .split('\n')
-        .filter(Boolean),
+      this.mode === '--staged'
+        ? []
+        : execFileSync(
+            'git',
+            ['ls-files', '--others', '--exclude-standard', 'backend/'],
+            { cwd: this.root, encoding: 'utf8' },
+          )
+            .split('\n')
+            .filter(Boolean),
     );
     return this.untracked.has(file) ? full : (this.addedLines.get(file) ?? '');
   }
@@ -194,7 +201,9 @@ class BackendStructureCheck {
   readAddedLines() {
     const diff = execFileSync(
       'git',
-      ['diff', '-U0', '-M', 'HEAD', '--', 'backend/'],
+      this.mode === '--staged'
+        ? ['diff', '--cached', '-U0', '-M', '--', 'backend/']
+        : ['diff', '-U0', '-M', 'HEAD', '--', 'backend/'],
       {
         cwd: this.root,
         encoding: 'utf8',
