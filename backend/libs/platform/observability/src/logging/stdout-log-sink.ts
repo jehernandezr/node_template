@@ -7,24 +7,28 @@ import type { LogRecord } from './log-record.js';
  * (tests, scripts) and the one for Lambda and Fargate, where stdout reaches CloudWatch.
  */
 export class StdoutLogSink extends LogSink {
+  /**
+   * @param stream Where each line goes, ended with a newline: the process stdout by default.
+   */
   constructor(
-    private readonly output: (line: string) => void = (line) => {
-      process.stdout.write(`${line}\n`);
-    },
+    private readonly stream: Pick<
+      NodeJS.WritableStream,
+      'write'
+    > = process.stdout,
   ) {
     super();
   }
 
   override write(record: LogRecord): void {
-    this.output(
-      JSON.stringify({
+    this.stream.write(
+      `${JSON.stringify({
         ...record.fields,
         [LogField.Timestamp]: record.timestamp.toISOString(),
         [LogField.Level]: record.level,
         [LogField.Service]: record.service,
         [LogField.Context]: record.context,
         [LogField.Message]: record.message,
-      }),
+      })}\n`,
     );
   }
 }

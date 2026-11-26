@@ -1,46 +1,55 @@
 import { TimerScheduler } from '../timer-scheduler.js';
 
+/** Counts how many times a timer fired. */
+class Firings {
+  count = 0;
+
+  readonly fire = (): void => {
+    this.count += 1;
+  };
+}
+
 describe('TimerScheduler', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
   it('fires after the given time and not before', () => {
-    const fire = jest.fn();
-    TimerScheduler.arm(100, fire);
+    const firings = new Firings();
+    TimerScheduler.arm(100, firings.fire);
     jest.advanceTimersByTime(99);
-    expect(fire).not.toHaveBeenCalled();
+    expect(firings.count).toBe(0);
     jest.advanceTimersByTime(1);
-    expect(fire).toHaveBeenCalledTimes(1);
+    expect(firings.count).toBe(1);
   });
 
   it('can be cancelled', () => {
-    const fire = jest.fn();
-    TimerScheduler.arm(100, fire)();
+    const firings = new Firings();
+    TimerScheduler.arm(100, firings.fire)();
     jest.advanceTimersByTime(1000);
-    expect(fire).not.toHaveBeenCalled();
+    expect(firings.count).toBe(0);
   });
 
   it('splits waits longer than the setTimeout maximum', () => {
-    const fire = jest.fn();
-    TimerScheduler.arm(TimerScheduler.MAX_TIMER_MS + 1000, fire);
+    const firings = new Firings();
+    TimerScheduler.arm(TimerScheduler.MAX_TIMER_MS + 1000, firings.fire);
     jest.advanceTimersByTime(TimerScheduler.MAX_TIMER_MS);
-    expect(fire).not.toHaveBeenCalled();
+    expect(firings.count).toBe(0);
     jest.advanceTimersByTime(1000);
-    expect(fire).toHaveBeenCalledTimes(1);
+    expect(firings.count).toBe(1);
   });
 
   it('treats a negative wait as zero', () => {
-    const fire = jest.fn();
-    TimerScheduler.arm(-5, fire);
+    const firings = new Firings();
+    TimerScheduler.arm(-5, firings.fire);
     jest.advanceTimersByTime(0);
-    expect(fire).toHaveBeenCalledTimes(1);
+    expect(firings.count).toBe(1);
   });
 
   it('armDetached fires like arm but does not keep the process alive', () => {
-    const fire = jest.fn();
-    TimerScheduler.armDetached(10, fire);
+    const firings = new Firings();
+    TimerScheduler.armDetached(10, firings.fire);
     jest.advanceTimersByTime(10);
-    expect(fire).toHaveBeenCalledTimes(1);
+    expect(firings.count).toBe(1);
   });
 
   describe('abortReason', () => {

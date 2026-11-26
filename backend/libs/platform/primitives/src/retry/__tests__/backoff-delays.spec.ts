@@ -64,9 +64,13 @@ describe('backoffDelay', () => {
     });
 
     it('never calls the random source', () => {
-      const random = jest.fn(() => 0.5);
+      let draws = 0;
+      const random = (): number => {
+        draws += 1;
+        return 0.5;
+      };
       backoffDelay(3, { ...options, random });
-      expect(random).not.toHaveBeenCalled();
+      expect(draws).toBe(0);
     });
 
     it('honours a custom factor', () => {

@@ -8,7 +8,7 @@ const TIMESTAMP = new Date('2026-01-02T03:04:05.000Z');
 describe('StdoutLogSink', () => {
   it('writes one JSON line with the fixed fields and the record fields', () => {
     const collector = new LineCollector();
-    const sink = new StdoutLogSink((line) => collector.write(line));
+    const sink = new StdoutLogSink(collector);
 
     sink.write({
       level: LogLevel.Info,
@@ -37,7 +37,7 @@ describe('StdoutLogSink', () => {
 
   it('leaves out the context field when the record has no context', () => {
     const collector = new LineCollector();
-    const sink = new StdoutLogSink((line) => collector.write(line));
+    const sink = new StdoutLogSink(collector);
 
     sink.write({
       level: LogLevel.Warn,
@@ -54,10 +54,10 @@ describe('StdoutLogSink', () => {
     });
   });
 
-  it('writes to stdout with a trailing newline by default', () => {
-    const spy = jest.spyOn(process.stdout, 'write').mockReturnValue(true);
+  it('ends each record with a newline, one record per write', () => {
+    const collector = new LineCollector();
 
-    new StdoutLogSink().write({
+    new StdoutLogSink(collector).write({
       level: LogLevel.Info,
       message: 'hi',
       timestamp: TIMESTAMP,
@@ -65,10 +65,10 @@ describe('StdoutLogSink', () => {
       fields: {},
     });
 
-    expect(spy).toHaveBeenCalledTimes(1);
-    const written = spy.mock.calls[0][0] as string;
-    expect(written.endsWith('\n')).toBe(true);
-    expect(JSON.parse(written)).toMatchObject({ message: 'hi' });
-    spy.mockRestore();
+    expect(collector.chunks).toHaveLength(1);
+    expect(collector.chunks[0]?.endsWith('\n')).toBe(true);
+    expect(collector.parsed()).toEqual([
+      expect.objectContaining({ message: 'hi' }),
+    ]);
   });
 });
