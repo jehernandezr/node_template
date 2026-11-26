@@ -23,11 +23,10 @@ if (values.tenant === undefined || values.target === undefined) {
   );
   process.exitCode = 2;
 } else {
-  const running = await ServiceBootstrap.worker(identityService, {
+  const running = await ServiceBootstrap.task(identityService, {
     env: process.env,
     telemetry,
     schedulingMode: SchedulingMode.External,
-    consumeQueues: false,
   });
   try {
     const launch = await running.app.get(StartTenantMove).execute({
