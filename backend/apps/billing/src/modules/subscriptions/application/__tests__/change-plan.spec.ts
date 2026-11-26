@@ -3,10 +3,8 @@ import {
   SubscriptionChangedEvent,
   UsageMetric,
 } from '@contracts/billing';
-import {
-  CatalogPlans,
-  SubscriptionsHarness,
-} from '../../__tests__/utils/index.js';
+import { CatalogPlans } from '../../../../__tests__/utils/catalog-plans.js';
+import { SubscriptionsHarness } from '../../../../__tests__/utils/subscriptions-harness.js';
 
 const DAY_MS = 86_400_000;
 const TENANT = SubscriptionsHarness.TENANT;

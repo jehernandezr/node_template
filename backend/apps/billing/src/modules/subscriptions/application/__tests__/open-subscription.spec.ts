@@ -3,10 +3,8 @@ import {
   SubscriptionChangedEvent,
   SubscriptionStatus,
 } from '@contracts/billing';
-import {
-  CatalogPlans,
-  SubscriptionsHarness,
-} from '../../__tests__/utils/index.js';
+import { CatalogPlans } from '../../../../__tests__/utils/catalog-plans.js';
+import { SubscriptionsHarness } from '../../../../__tests__/utils/subscriptions-harness.js';
 
 const TENANT = SubscriptionsHarness.TENANT;
 

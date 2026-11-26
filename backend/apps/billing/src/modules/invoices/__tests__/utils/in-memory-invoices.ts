@@ -5,13 +5,9 @@ import {
 } from '../../domain/invoice.repository.js';
 import { Invoice } from '../../domain/invoice.js';
 
-/** Invoices of one tenant kept in memory as snapshots, recording each read in a shared journal. */
+/** Invoices of one tenant kept in memory as snapshots, so a change is only seen once saved. */
 export class InMemoryInvoices extends InvoiceRepository {
   private readonly stored = new Map<string, Invoice>();
-
-  constructor(private readonly journal: string[] = []) {
-    super();
-  }
 
   override async insert(invoice: Invoice): Promise<void> {
     this.stored.set(
@@ -21,7 +17,6 @@ export class InMemoryInvoices extends InvoiceRepository {
   }
 
   override async find(invoiceId: string): Promise<Invoice | undefined> {
-    this.journal.push(`find:${invoiceId}`);
     const invoice = this.stored.get(invoiceId);
     return invoice === undefined
       ? undefined
@@ -50,5 +45,10 @@ export class InMemoryInvoices extends InvoiceRepository {
   /** The stored state of an invoice. */
   stateOf(invoiceId: string) {
     return this.stored.get(invoiceId)?.snapshot();
+  }
+
+  /** Every stored invoice, as a later read would see it. */
+  all(): readonly Invoice[] {
+    return [...this.stored.values()];
   }
 }

@@ -1,8 +1,8 @@
 import { Currency, PlanPeriodicity, UsageMetric } from '@contracts/billing';
-import { BillingError } from '../../../../shared/errors/billing.error.js';
+import { BillingError } from '../../shared/errors/billing.error.js';
 import { BillingErrorCode } from '@contracts/billing';
-import { PlansFacade } from '../../../plans/index.js';
-import { Plan, type PlanState } from '../../../plans/index.js';
+import { PlansFacade } from '../../modules/plans/index.js';
+import { Plan, type PlanState } from '../../modules/plans/index.js';
 
 /** A fixed plan catalog: a free trial, a basic plan with five users and a pro plan with fifty. */
 export class CatalogPlans extends PlansFacade {

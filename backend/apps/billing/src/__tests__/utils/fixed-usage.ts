@@ -1,4 +1,4 @@
-import { UsageFacade, type UsageLevel } from '../../../usage/index.js';
+import { UsageFacade, type UsageLevel } from '../../modules/usage/index.js';
 
 /** Usage of the current period fixed by the test. */
 export class FixedUsage extends UsageFacade {

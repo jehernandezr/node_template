@@ -3,7 +3,7 @@ import { BillingErrorCode } from '@contracts/billing';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import type { PaymentAttempt } from '../../domain/payment-attempt.js';
 import { PaymentStatus } from '../../domain/payment-status.enum.js';
-import { InMemoryPaymentAttempts } from '../../__tests__/utils/index.js';
+import { InMemoryPaymentAttempts } from '../../../../__tests__/utils/in-memory-payment-attempts.js';
 import type { PaymentNotice } from '../payments.facade.js';
 import { RecordPaymentResult } from '../record-payment-result.use-case.js';
 

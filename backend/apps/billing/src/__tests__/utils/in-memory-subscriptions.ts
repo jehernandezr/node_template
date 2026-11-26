@@ -1,5 +1,5 @@
-import { SubscriptionRepository } from '../../domain/subscription.repository.js';
-import { Subscription } from '../../domain/subscription.js';
+import { SubscriptionRepository } from '../../modules/subscriptions/domain/subscription.repository.js';
+import { Subscription } from '../../modules/subscriptions/domain/subscription.js';
 
 /** The subscription of one tenant kept in memory, stored as snapshots so a write is only seen once saved. */
 export class InMemorySubscriptions extends SubscriptionRepository {

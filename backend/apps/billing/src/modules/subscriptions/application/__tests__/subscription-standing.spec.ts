@@ -4,7 +4,7 @@ import {
   SubscriptionStatus,
   SubscriptionSuspendedEvent,
 } from '@contracts/billing';
-import { SubscriptionsHarness } from '../../__tests__/utils/index.js';
+import { SubscriptionsHarness } from '../../../../__tests__/utils/subscriptions-harness.js';
 
 const DAY_MS = 86_400_000;
 const TENANT = SubscriptionsHarness.TENANT;

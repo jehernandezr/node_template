@@ -2,8 +2,8 @@ import {
   PaymentProvider,
   type PaymentResult,
   type ProviderCharge,
-} from '../../domain/payment-provider.js';
-import { PaymentStatus } from '../../domain/payment-status.enum.js';
+} from '../../modules/payments/domain/payment-provider.js';
+import { PaymentStatus } from '../../modules/payments/domain/payment-status.enum.js';
 
 /** Provider that approves everything and, like a real one, charges only once per idempotency key. */
 export class ApprovingPaymentProvider extends PaymentProvider {

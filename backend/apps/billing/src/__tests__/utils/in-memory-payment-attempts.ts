@@ -1,9 +1,9 @@
 import {
   OPEN_PAYMENT_STATUSES,
   type PaymentAttempt,
-} from '../../domain/payment-attempt.js';
-import { PaymentAttempts } from '../../domain/payment-attempts.js';
-import type { PaymentResult } from '../../domain/payment-provider.js';
+} from '../../modules/payments/domain/payment-attempt.js';
+import { PaymentAttempts } from '../../modules/payments/domain/payment-attempts.js';
+import type { PaymentResult } from '../../modules/payments/domain/payment-provider.js';
 
 /** In-memory `PaymentAttempts` with the same unique key per invoice and attempt number as the table. */
 export class InMemoryPaymentAttempts extends PaymentAttempts {

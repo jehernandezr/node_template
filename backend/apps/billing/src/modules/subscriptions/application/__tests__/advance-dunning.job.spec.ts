@@ -4,7 +4,7 @@ import {
 } from '@contracts/billing';
 import { SilentLogger } from '@platform/messaging/test-utils';
 import { SubscriptionMaintenance } from '../../domain/subscription-maintenance.js';
-import { SubscriptionsHarness } from '../../__tests__/utils/index.js';
+import { SubscriptionsHarness } from '../../../../__tests__/utils/subscriptions-harness.js';
 import { AdvanceDunningJob } from '../advance-dunning.job.js';
 
 const DAY_MS = 86_400_000;
