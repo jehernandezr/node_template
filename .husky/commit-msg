@@ -1,1 +1,2 @@
 pnpm exec commitlint --edit "$1"
+node .claude/guards/check-language.mjs --commit-msg "$1"
