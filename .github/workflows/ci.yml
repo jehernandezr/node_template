@@ -26,6 +26,7 @@ jobs:
       web: ${{ steps.filter.outputs.web }}
       terraform: ${{ steps.filter.outputs.terraform }}
       backend: ${{ steps.filter.outputs.backend }}
+      artifact: ${{ steps.filter.outputs.artifact }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -62,6 +63,15 @@ jobs:
               - 'pnpm-lock.yaml'
               - '.nvmrc'
               - '.github/workflows/ci.yml'
+            # Everything that changes a service image or Lambda package.
+            artifact:
+              - 'backend/**'
+              - '.github/workflows/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.dockerignore'
+              - '.nvmrc'
 
   nx:
     name: Nx affected (backend and front)
@@ -373,6 +383,35 @@ jobs:
         run: dart run ../../tools/check_deferred_chunks.dart
         working-directory: front/apps/web
 
+  # Builds the ARM64 image and the Lambda package of every service natively on an ARM runner and proves they
+  # start: inside each image migrate.mjs exits 0 and main.mjs answers the readiness route against the PostgreSQL and
+  # Valkey of backend/docker-compose.yml, and each package loads its handler.
+  artifact-smoke:
+    name: Artifact smoke (ARM64)
+    needs: changes
+    if: needs.changes.outputs.artifact == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Bundle the services
+        run: pnpm nx run-many -t build --projects='tag:type:app'
+
+      - name: Build, migrate and start every service artifact
+        run: node backend/infra/scripts/artifact-smoke-cli.mjs
+
   terraform:
     name: Terraform
     needs: changes
@@ -449,6 +488,7 @@ jobs:
       - contracts
       - web-deferred
       - terraform
+      - artifact-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}

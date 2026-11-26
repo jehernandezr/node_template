@@ -42,7 +42,11 @@ describe('deploy-service.sh dry run', () => {
     const output = lines.join('\n');
     assert.match(output, /aws s3 cp .*fixture-lambda-abc1234\.zip/);
     assert.match(output, /zip -qr/);
-    assert.doesNotMatch(output, /docker build/);
+    assert.match(
+      output,
+      /docker build .*--target lambda --output type=local,dest=/,
+    );
+    assert.doesNotMatch(output, /docker push/);
     assertInOrder(lines, [
       'aws s3 cp',
       'pnpm nx run fixture-lambda:migrate',

@@ -165,6 +165,15 @@ Order per service. Services are discovered by walking `environments/<environment
 
 Migrations. Migrations run on the job's runner and need to reach the database through RDS Proxy. That is why a runner inside the VPC (`vars.DEPLOY_RUNNER`) is preferable to a GitHub-hosted one. `migrate-service.sh` reads the service's database and credentials from the `data` stack outputs and masks them in the logs.
 
+Artifacts. `scripts/service.Dockerfile` builds one ARM64 image per service from the bundles in `backend/dist/<service>` and the production `node_modules` of `pnpm deploy --prod`, on a Node base image pinned by digest; the image runs `node main.mjs`, and a worker without `command` runs `node worker.mjs`. Its `lambda` stage is the Lambda package of the same service, which `publish-service.sh` zips. The CI job `artifact-smoke` builds every image and package on an ARM runner and proves they start; to run it locally, bundle the services and run:
+
+```bash
+pnpm nx run-many -t build --projects='tag:type:app'
+node backend/infra/scripts/artifact-smoke-cli.mjs --services=tasks
+```
+
+It starts its own network, PostgreSQL and Valkey (the images of `backend/docker-compose.yml`), runs `node migrate.mjs all` in each image, waits for `/health/ready` from `node main.mjs`, loads `lambda.handler` from the package, and then removes the containers, the network and the images it built. Shared settings come from `backend/infra/local/artifact-smoke.env`; secrets are generated per run.
+
 Mobile app. The pipeline only builds the `.aab` and uploads it to the artifacts bucket under the commit. Store upload and release signing require the account holder's credentials and are not automated.
 
 Testing the scripts without touching AWS. With `DRY_RUN=1` each command is printed with the `+ ` prefix instead of being executed, and reads return `<dry-run>`. To test against the services fixture:

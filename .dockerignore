@@ -1,0 +1,8 @@
+# The service image only needs the manifests that pnpm deploy reads and the built bundles.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!backend/package.json
+!backend/dist/
+backend/dist/**/*.map
