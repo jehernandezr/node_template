@@ -3,10 +3,10 @@ import type { ServiceHostOptions } from '../runtime/service-host-options.js';
 import type { ServiceApplicationFactory } from './service-application-factory.js';
 import type { ServiceHttpOptions } from './service-http-options.js';
 
-/** Options of `ServiceBootstrap.http` and `ServiceBootstrap.worker`. */
+/** Options of `ServiceBootstrap.http`, `ServiceBootstrap.worker` and `ServiceBootstrap.task`; the entry point decides whether queues are polled. */
 export interface ServiceBootstrapOptions extends Omit<
   ServiceHostOptions,
-  'env'
+  'env' | 'consumeQueues'
 > {
   /** `process.env` by default. */
   readonly env?: ConfigEnv;

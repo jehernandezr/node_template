@@ -1,4 +1,12 @@
 import type { AbstractHttpAdapter } from '@nestjs/core';
+import {
+  defineEvent,
+  defineQueue,
+  defineServiceContract,
+  defineTopic,
+} from '@contracts/platform';
+import { SqsConsumerModule } from '@platform/adapters-aws/nest';
+import { z } from 'zod';
 import { InvalidServiceDefinitionError } from '../../../errors/invalid-service-definition.error.js';
 import { ServiceDefinitionBuilder } from '../../../__tests__/utils/service-definition.builder.js';
 import { ServiceHostModule } from '../../runtime/service-host.module.js';
@@ -8,6 +16,12 @@ import { FakeNestApplication } from './utils/fake-nest-application.js';
 import { ModuleTree } from './utils/module-tree.js';
 import { RecordingApplicationFactory } from './utils/recording-application-factory.js';
 import { RecordingHttpConfigurer } from './utils/recording-http-configurer.js';
+
+const ProbeRecorded = defineEvent({
+  type: 'identity.probe.recorded.v1',
+  payload: z.object({ probeId: z.string() }),
+  description: 'A probe was recorded.',
+});
 
 const LISTENING_SERVER = {
   address: () => ({ address: '127.0.0.1', port: 4321 }),
@@ -130,6 +144,52 @@ describe('ServiceBootstrap', () => {
       });
 
       expect(steps).toEqual([BootstrapStep.EnableShutdownHooks]);
+    });
+
+    it.each([
+      [
+        'a worker polls the queues of its contract',
+        ServiceBootstrap.worker,
+        true,
+      ],
+      ['a one-off task polls nothing', ServiceBootstrap.task, false],
+    ])('%s', async (_, start, consumes) => {
+      const topic = defineTopic({
+        name: 'identity-probe-events',
+        events: [ProbeRecorded],
+        description: 'Probe events.',
+      });
+      const withQueue = ServiceDefinitionBuilder.aDefinition('identity')
+        .with({
+          contract: defineServiceContract({
+            service: 'identity',
+            description: 'Service with a queue.',
+            events: { probeRecorded: ProbeRecorded },
+            topics: { topic },
+            queues: {
+              probe: defineQueue({
+                name: 'identity-probe',
+                subscriptions: [{ topic }],
+                description: 'Probe queue.',
+              }),
+            },
+          }),
+        })
+        .build();
+      const applications = new RecordingApplicationFactory(
+        new FakeNestApplication(steps, undefined),
+      );
+
+      await start(withQueue, {
+        env: { ...env, AWS_REGION: 'us-east-1' },
+        applications,
+      });
+
+      expect(
+        new ModuleTree(applications.requests[0]?.module).reaches(
+          SqsConsumerModule,
+        ),
+      ).toBe(consumes);
     });
 
     it('returns a running service without an address', async () => {

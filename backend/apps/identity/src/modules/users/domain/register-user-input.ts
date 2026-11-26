@@ -6,4 +6,6 @@ export interface RegisterUserInput {
   readonly locale: string;
   /** Home tenant: the region's shared tenant or the inviting one. */
   readonly homeTenantId: string;
+  /** Instant the email was proved, for an account created outside the public sign-up; unverified when absent. */
+  readonly emailVerifiedAt?: Date;
 }

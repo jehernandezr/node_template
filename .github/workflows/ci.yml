@@ -412,6 +412,30 @@ jobs:
       - name: Build, migrate and start every service artifact
         run: node backend/infra/scripts/artifact-smoke-cli.mjs
 
+  local-smoke:
+    name: Local smoke (deploy-smoke on the local stack)
+    needs: changes
+    if: needs.changes.outputs.artifact == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Builds the bundles and the images, runs smoke.compose.yml, and seeds and runs deploy-smoke twice.
+      - name: Run deploy-smoke twice against the local stack
+        run: pnpm nx run deploy-smoke:local
+
   terraform:
     name: Terraform
     needs: changes
@@ -489,6 +513,7 @@ jobs:
       - web-deferred
       - terraform
       - artifact-smoke
+      - local-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}

@@ -9,6 +9,7 @@ describe('entry points', () => {
   const worker = read('worker.ts');
   const migrate = read('migrate.ts');
   const seed = read('seed.ts');
+  const tenantMove = read('tenant-move.ts');
   const lambda = read('lambda.ts');
   const instrumentation = read('instrumentation.ts');
 
@@ -33,9 +34,21 @@ describe('entry points', () => {
     expect(main).toContain('HttpApplicationSetup');
   });
 
-  it('seeds the region tenants without running jobs', () => {
+  it('seeds the region tenants without running jobs or consuming queues', () => {
     expect(seed).toContain('SeedRegionTenants');
     expect(seed).toContain('SchedulingMode.External');
+    expect(seed).toContain('ServiceBootstrap.task(');
+  });
+
+  it('moves a tenant without running jobs or consuming queues', () => {
+    expect(tenantMove).toContain('SchedulingMode.External');
+    expect(tenantMove).toContain('ServiceBootstrap.task(');
+  });
+
+  it('seeds the smoke account after the region tenants', () => {
+    expect(seed.indexOf('SeedSmokeAccount).execute()')).toBeGreaterThan(
+      seed.indexOf('SeedRegionTenants).execute()'),
+    );
   });
 
   it('exports the Lambda handler of the API with LambdaBootstrap.http', () => {

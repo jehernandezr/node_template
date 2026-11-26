@@ -74,7 +74,7 @@ Environment variables: they are the contract with the `@platform/*` configuratio
 | `VALKEY_AUTH`, `VALKEY_CACHE_NAME`                                              | `valkey_access`          | `iam-serverless`: the client signs an IAM token (SigV4, 15 minutes) for the `VALKEY_CACHE_NAME` cache.  |
 | `VALKEY_KEY_PREFIX`                                                             | `valkey_access`          | Service name. The adapters write `<prefix>:...` in keys and channels, the only thing the ACL allows.    |
 | `FILES_BUCKET`                                                                  | `files_access` of a part | Files bucket.                                                                                           |
-| `QUEUE_URL`                                                                     | workers                  | URL of its queue.                                                                                       |
+| `QUEUE_URL`                                                                     | workers                  | URL of its queue. The worker polls only that contract queue; without it, every queue of the contract.   |
 
 `environment_variables` adds custom variables, without being able to replace the ones in the table. The pipeline passes the artifacts with `TF_VAR_image` and `TF_VAR_lambda_package`. Lambdas use the runtime of the major version in `.nvmrc` (`nodejs24.x`); `service-lambda` rejects any other in the plan.
 
@@ -173,6 +173,14 @@ node backend/infra/scripts/artifact-smoke-cli.mjs --services=tasks
 ```
 
 It starts its own network, PostgreSQL and Valkey (the images of `backend/docker-compose.yml`), runs `node migrate.mjs all` in each image, waits for `/health/ready` from `node main.mjs`, loads `lambda.handler` from the package, and then removes the containers, the network and the images it built. Shared settings come from `backend/infra/local/artifact-smoke.env`; secrets are generated per run.
+
+Local smoke. The CI job `local-smoke` runs the deploy smoke tests (`backend/e2e/deploy-smoke`, ADR 0043) against the five images, with no AWS:
+
+```bash
+pnpm nx run deploy-smoke:local
+```
+
+`backend/infra/scripts/local-smoke-cli.mjs` builds the images, starts `backend/infra/local/smoke.compose.yml` (PostgreSQL, Valkey, LocalStack with the SNS and SQS topology, the API and the worker of each service with HMAC internal calls, and an nginx gateway on `127.0.0.1:18480` that routes the path prefixes of the `service` tfvars), migrates each service, and then twice runs identity's seed with the fixed account of `backend/infra/local/smoke.env` and the suite. The second round proves that the seed is idempotent and resets the account. It removes its compose project, volumes included, and the images it built. Against a deployed environment the suite runs with `SMOKE_BASE_URL` and `SMOKE_ACCOUNT` set: `pnpm nx run deploy-smoke:run`.
 
 Mobile app. The pipeline only builds the `.aab` and uploads it to the artifacts bucket under the commit. Store upload and release signing require the account holder's credentials and are not automated.
 

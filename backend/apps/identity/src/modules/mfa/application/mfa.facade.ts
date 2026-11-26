@@ -66,4 +66,12 @@ export abstract class MfaFacade {
    * @param ref User.
    */
   abstract forget(ref: UserRef): Promise<void>;
+
+  /**
+   * Replaces every factor of the user with a confirmed TOTP built from a known secret, for an account that a
+   * deployment provisions and signs in with. Its recovery codes and pending recoveries are removed.
+   * @param ref User.
+   * @param secret Raw TOTP secret.
+   */
+  abstract replaceTotp(ref: UserRef, secret: Uint8Array): Promise<void>;
 }

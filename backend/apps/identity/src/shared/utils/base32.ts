@@ -18,3 +18,26 @@ export function encodeBase32(bytes: Uint8Array): string {
   }
   return output;
 }
+
+/**
+ * Decodes RFC 4648 Base32, ignoring case and trailing `=` padding, as authenticator apps read a TOTP secret.
+ * @throws RangeError when the text holds a character outside the alphabet.
+ */
+export function decodeBase32(text: string): Uint8Array {
+  let bits = 0;
+  let value = 0;
+  const bytes: number[] = [];
+  for (const char of text.toUpperCase().replace(/=+$/, '')) {
+    const index = ALPHABET.indexOf(char);
+    if (index < 0) {
+      throw new RangeError('The text is not Base32');
+    }
+    value = ((value << 5) | index) & 0xffff;
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Uint8Array.from(bytes);
+}

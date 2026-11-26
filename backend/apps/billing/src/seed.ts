@@ -6,9 +6,9 @@ import { billingService } from './billing.service.js';
 import { SeedPlans } from './modules/plans/index.js';
 
 /**
- * Seeds the plan catalog without running jobs: it is a deployment step, after migrating.
+ * Seeds the plan catalog without running jobs or consuming queues: it is a deployment step, after migrating.
  */
-const running = await ServiceBootstrap.worker(billingService, {
+const running = await ServiceBootstrap.task(billingService, {
   env: process.env,
   telemetry,
   schedulingMode: SchedulingMode.External,

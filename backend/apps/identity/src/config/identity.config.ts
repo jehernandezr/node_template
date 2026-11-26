@@ -40,6 +40,11 @@ export const identityConfigSchema = serviceConfigSchema
     IDENTITY_API_KEY_PEPPER: secret({ minLength: 32 }),
     IDENTITY_DEVICE_ID_KEY: secret({ minLength: 32 }),
     IDENTITY_DATA_KEY: secret({ minLength: 32 }),
+    /**
+     * The smoke account as JSON, `{ "email", "password", "totpSecret" }`: when set, the seed creates or resets it.
+     * Only the seed task receives it.
+     */
+    IDENTITY_SMOKE_ACCOUNT: secret({ minLength: 2 }).optional(),
     ...internalHttpConfigSchema.shape,
     ACCESS_TOKEN_TTL: envDuration()
       .pipe(z.number().min(600_000).max(900_000))

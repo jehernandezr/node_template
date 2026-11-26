@@ -11,7 +11,7 @@ import {
   SnsSqsEnvelopePublisher,
   type AwsSettings,
 } from '@platform/adapters-aws';
-import { AwsModule } from '@platform/adapters-aws/nest';
+import { AwsModule, SqsConsumerModule } from '@platform/adapters-aws/nest';
 import {
   CatalogIdempotencyStore,
   DirectoryShardLister,
@@ -97,6 +97,7 @@ import type {
   PlatformRuntimeOptions,
   RuntimeAdapters,
 } from './platform-runtime-options.js';
+import { ConsumedQueueSelector } from './consumed-queue-selector.js';
 import { RuntimeAdapterSelector } from './runtime-adapter-selector.js';
 
 /** Environment variables the runtime reads in addition to those of the service schema. */
@@ -215,6 +216,12 @@ export class PlatformRuntimeModule {
           metrics: MetricsPort,
           ...(adapters.valkey ? { lock: ValkeyJobLock } : {}),
         }),
+        ...PlatformRuntimeModule.queueConsumers(
+          definition,
+          topology,
+          options.env,
+          adapters.aws && options.consumeQueues === true,
+        ),
         HealthModule,
       ],
       providers: [
@@ -298,6 +305,27 @@ export class PlatformRuntimeModule {
       );
     }
     return kind;
+  }
+
+  /**
+   * One SQS poller per queue the worker consumes: the queue of `QUEUE_URL`, or every queue of the contract without it.
+   * They are imported after the modules that generate work and before health, so on shutdown they stop before the AWS
+   * clients and the databases close.
+   */
+  private static queueConsumers(
+    definition: ServiceDefinition,
+    topology: Topology,
+    env: ConfigEnv,
+    consume: boolean,
+  ): DynamicModule[] {
+    if (!consume) {
+      return [];
+    }
+    return new ConsumedQueueSelector()
+      .select(definition.name, definition.contract.queues, env)
+      .map((queue) =>
+        SqsConsumerModule.forRoot({ topology, queue: queue.name }),
+      );
   }
 
   private static regionsProvider(): Provider {

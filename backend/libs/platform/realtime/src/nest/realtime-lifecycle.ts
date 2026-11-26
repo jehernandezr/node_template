@@ -11,7 +11,8 @@ import { RealtimeTransports } from './realtime-transports.js';
 /**
  * Mounts the transports when the modules initialize: the HTTP server already exists and Nest has not yet registered its
  * 404 response, which would hide the SSE route if it were added later. Closes the connections before Nest
- * closes the server. In a worker there is no server and nothing is mounted.
+ * closes the server. In a worker there is no server, so its application context has no HTTP adapter (`null`), and
+ * nothing is mounted.
  */
 @Injectable()
 export class RealtimeLifecycle
@@ -23,7 +24,10 @@ export class RealtimeLifecycle
   ) {}
 
   onModuleInit(): void {
-    if (this.adapterHost.httpAdapter === undefined) {
+    if (
+      this.adapterHost.httpAdapter === undefined ||
+      this.adapterHost.httpAdapter === null
+    ) {
       return;
     }
     const host = new NestRealtimeHost(this.adapterHost);

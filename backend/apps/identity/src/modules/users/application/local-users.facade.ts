@@ -39,7 +39,7 @@ export class LocalUsersFacade extends UsersFacade {
    * public route (an invitation or the initial load) cannot create another account with that email.
    */
   override async register(input: RegisterUserInput): Promise<UserRef> {
-    const ref = await this.registrar.register(input);
+    const ref = await this.registrar.register(input, input.emailVerifiedAt);
     if (ref === undefined) {
       throw new IdentityError(IdentityErrorCode.InvitationInvalid);
     }

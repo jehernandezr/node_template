@@ -100,6 +100,14 @@ describe('CI workflow', () => {
     }
   });
 
+  it('runs the deploy smoke on the local stack natively on ARM64 when the artifacts change, and ci-ok waits for it', () => {
+    const smoke = ci.job('local-smoke');
+    assert.match(smoke, /runs-on: ubuntu-24\.04-arm/);
+    assert.match(smoke, /if: needs\.changes\.outputs\.artifact == 'true'/);
+    assert.match(smoke, /run: pnpm nx run deploy-smoke:local/);
+    assert.ok(ci.needs('ci-ok').includes('local-smoke'));
+  });
+
   it('never hands a shard the servers of another run', () => {
     const shared = readdirSync(WORKFLOWS)
       .filter((file) => /\.ya?ml$/.test(file))
