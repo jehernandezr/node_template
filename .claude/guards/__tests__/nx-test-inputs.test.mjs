@@ -44,4 +44,27 @@ describe('nx.json test inputs', () => {
       );
     });
   }
+
+  it('hashes the shared backend lint config and its guards into lint', () => {
+    const lint = [NX.targetDefaults.lint ?? []]
+      .flat()
+      .filter(
+        (entry) =>
+          !entry.filter?.plugin || entry.filter.plugin === '@nx/eslint/plugin',
+      )
+      .at(-1);
+    const inputs = lint?.inputs ?? [];
+    for (const file of [
+      '{workspaceRoot}/backend/eslint.config.mjs',
+      '{workspaceRoot}/backend/eslint.comments.mjs',
+      '{workspaceRoot}/backend/eslint.guards.mjs',
+      '{workspaceRoot}/backend/eslint.baseline.json',
+    ]) {
+      assert.ok(
+        inputs.includes(file) ||
+          inputs.includes('{workspaceRoot}/backend/eslint.*'),
+        `targetDefaults.lint.inputs must cover ${file}, or a new guard replays cached lint results`,
+      );
+    }
+  });
 });

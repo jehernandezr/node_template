@@ -37,7 +37,8 @@ mapping what they affect elsewhere.
   their dependencies: `^production` leaves those folders out, so without it a change to a shared harness such as
   `ShardedTestDatabase` replayed the cached result of every dependent. The `test` entry is filtered to
   `@nx/jest/plugin`, so the Flutter `test` targets keep their own inputs. A tooling test fails when either target
-  drops `^testUtils` or a `test-utils` alias points outside those folders. Nx already keeps one cache for every checkout of the workspace under `~/.nx`, and
+  drops `^testUtils` or a `test-utils` alias points outside those folders. For the same reason the inferred `lint` target hashes
+  `backend/eslint.*`, so a new guard or a lower baseline lints every project again instead of replaying its cache. Nx already keeps one cache for every checkout of the workspace under `~/.nx`, and
   setting `NX_CACHE_DIRECTORY` would turn that sharing off. Jest keeps its transform cache in
   `~/.cache/node-template/jest` (or `NT_JEST_CACHE_DIRECTORY`), on disk and shared by the worktrees, instead of the
   small temporary folder.

@@ -44,6 +44,24 @@
   ],
   "analytics": false,
   "targetDefaults": {
+    "lint": [
+      {
+        "filter": {
+          "plugin": "@nx/eslint/plugin"
+        },
+        "cache": true,
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/backend/eslint.*",
+          "{workspaceRoot}/backend/tsconfig.base.json",
+          "{workspaceRoot}/tools/eslint-rules/**/*",
+          {
+            "externalDependencies": ["eslint"]
+          }
+        ]
+      }
+    ],
     "analyze": {
       "cache": true
     },
