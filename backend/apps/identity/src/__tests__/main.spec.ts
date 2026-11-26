@@ -33,9 +33,10 @@ describe('entry points', () => {
     expect(main).toContain('HttpApplicationSetup');
   });
 
-  it('seeds the region tenants without running jobs', () => {
+  it('seeds the region tenants without running jobs or consuming queues', () => {
     expect(seed).toContain('SeedRegionTenants');
     expect(seed).toContain('SchedulingMode.External');
+    expect(seed).toContain('consumeQueues: false');
   });
 
   it('seeds the smoke account after the region tenants', () => {

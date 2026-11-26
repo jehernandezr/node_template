@@ -8,12 +8,13 @@ import { SeedRegionTenants } from './modules/tenants/index.js';
 
 /**
  * Seeds the region's fixed tenants and, when `IDENTITY_SMOKE_ACCOUNT` is set, the smoke account, without running
- * jobs: it is a deployment step, after migrating.
+ * jobs or consuming queues: it is a deployment step, after migrating.
  */
 const running = await ServiceBootstrap.worker(identityService, {
   env: process.env,
   telemetry,
   schedulingMode: SchedulingMode.External,
+  consumeQueues: false,
 });
 try {
   await running.app.get(SeedRegionTenants).execute();

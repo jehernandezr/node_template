@@ -27,4 +27,9 @@ export interface PlatformRuntimeOptions {
   readonly publisher?: Type<EnvelopePublisher>;
   /** `SchedulingMode.InProcess` by default. */
   readonly schedulingMode?: SchedulingMode;
+  /**
+   * Polls the SQS queues of the service's contract, as the worker does. It needs `adapters.aws`; `false` by default, so
+   * an API process or a one-off task consumes nothing.
+   */
+  readonly consumeQueues?: boolean;
 }

@@ -27,6 +27,7 @@ if (values.tenant === undefined || values.target === undefined) {
     env: process.env,
     telemetry,
     schedulingMode: SchedulingMode.External,
+    consumeQueues: false,
   });
   try {
     const launch = await running.app.get(StartTenantMove).execute({

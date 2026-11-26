@@ -20,7 +20,12 @@ import { PlacedTenantVerifier } from '../../../messaging/placed-tenant-verifier.
 import { TenantShardDeliveryContext } from '../../../messaging/tenant-shard-delivery-context.js';
 import { AppConfig } from '@platform/config';
 import { ValkeyAuthMode } from '@platform/adapters-valkey';
-import { AwsModule } from '@platform/adapters-aws/nest';
+import {
+  defineQueue,
+  defineServiceContract,
+  defineTopic,
+} from '@contracts/platform';
+import { AwsModule, SqsConsumerModule } from '@platform/adapters-aws/nest';
 import { ValkeyModule } from '@platform/adapters-valkey/nest';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { SchedulingModule } from '@platform/scheduling/nest';
@@ -50,7 +55,7 @@ import { ServiceDefinitionBuilder } from '../../../__tests__/utils/index.js';
 import { HealthModule } from '../../health/health.module.js';
 import { KernelModule } from '@platform/kernel/nest';
 import { PlatformRuntimeModule } from '../platform-runtime.module.js';
-import { ImportedModules } from './utils/index.js';
+import { ImportedModules, RuntimeProbeRecorded } from './utils/index.js';
 
 describe('PlatformRuntimeModule', () => {
   describe('forService', () => {
@@ -105,6 +110,68 @@ describe('PlatformRuntimeModule', () => {
         );
         expect(modules.indexOf(ValkeyModule)).toBeLessThan(
           modules.indexOf(PersistenceModule),
+        );
+      });
+    });
+
+    describe('when the process consumes the queues of its contract', () => {
+      const probeEvents = defineTopic({
+        name: 'runtime-probe-queue-events',
+        events: [RuntimeProbeRecorded],
+        description: 'Events the queue probe consumes.',
+      });
+      const definition = ServiceDefinitionBuilder.aDefinition('runtime-probe')
+        .with({
+          contract: defineServiceContract({
+            service: 'runtime-probe',
+            description: 'Service with two queues.',
+            events: { probeRecorded: RuntimeProbeRecorded },
+            topics: { probeEvents },
+            queues: {
+              first: defineQueue({
+                name: 'runtime-probe-first',
+                subscriptions: [{ topic: probeEvents }],
+                description: 'First queue.',
+              }),
+              second: defineQueue({
+                name: 'runtime-probe-second',
+                subscriptions: [{ topic: probeEvents }],
+                description: 'Second queue.',
+              }),
+            },
+          }),
+        })
+        .build();
+      const consumersOf = (aws: boolean, consumeQueues?: boolean) =>
+        ImportedModules.of(
+          PlatformRuntimeModule.forService(definition, {
+            env: {},
+            adapters: { valkey: false, aws },
+            ...(consumeQueues === undefined ? {} : { consumeQueues }),
+          }),
+        );
+
+      it('polls each queue with AWS, after the scheduler and before health, so the pollers stop first', () => {
+        const modules = consumersOf(true, true);
+        const consumers = modules.flatMap((module, index) =>
+          module === SqsConsumerModule ? [index] : [],
+        );
+
+        expect(consumers).toHaveLength(2);
+        expect(Math.min(...consumers)).toBeGreaterThan(
+          modules.indexOf(SchedulingModule),
+        );
+        expect(Math.max(...consumers)).toBeLessThan(
+          modules.indexOf(HealthModule),
+        );
+      });
+
+      it.each([
+        ['an API process', true, undefined],
+        ['a process without AWS', false, true],
+      ])('polls nothing in %s', (_, aws, consumeQueues) => {
+        expect(consumersOf(aws, consumeQueues)).not.toContain(
+          SqsConsumerModule,
         );
       });
     });

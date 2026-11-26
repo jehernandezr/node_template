@@ -11,7 +11,7 @@ import {
   SnsSqsEnvelopePublisher,
   type AwsSettings,
 } from '@platform/adapters-aws';
-import { AwsModule } from '@platform/adapters-aws/nest';
+import { AwsModule, SqsConsumerModule } from '@platform/adapters-aws/nest';
 import {
   CatalogIdempotencyStore,
   DirectoryShardLister,
@@ -215,6 +215,11 @@ export class PlatformRuntimeModule {
           metrics: MetricsPort,
           ...(adapters.valkey ? { lock: ValkeyJobLock } : {}),
         }),
+        ...PlatformRuntimeModule.queueConsumers(
+          definition,
+          topology,
+          adapters.aws && options.consumeQueues === true,
+        ),
         HealthModule,
       ],
       providers: [
@@ -298,6 +303,23 @@ export class PlatformRuntimeModule {
       );
     }
     return kind;
+  }
+
+  /**
+   * One SQS poller per queue of the service's contract. They are imported after the modules that generate work and
+   * before health, so on shutdown they stop before the AWS clients and the databases close.
+   */
+  private static queueConsumers(
+    definition: ServiceDefinition,
+    topology: Topology,
+    consume: boolean,
+  ): DynamicModule[] {
+    if (!consume) {
+      return [];
+    }
+    return Object.values(definition.contract.queues).map((queue) =>
+      SqsConsumerModule.forRoot({ topology, queue: queue.name }),
+    );
   }
 
   private static regionsProvider(): Provider {

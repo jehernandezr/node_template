@@ -48,7 +48,8 @@ export class ServiceBootstrap {
   }
 
   /**
-   * Process without an HTTP server: jobs and consumers.
+   * Process without an HTTP server: jobs and consumers. It polls the queues of the service unless
+   * `consumeQueues: false`, which a one-off task such as a seed passes.
    * @param definition Service definition.
    * @param options Shutdown options.
    * @returns The running service.
@@ -58,7 +59,10 @@ export class ServiceBootstrap {
     options: ServiceBootstrapOptions = {},
   ): Promise<RunningService> {
     const app = await ServiceBootstrap.applications(options).worker(
-      ServiceBootstrap.host(definition, options),
+      ServiceBootstrap.host(definition, {
+        ...options,
+        consumeQueues: options.consumeQueues ?? true,
+      }),
       ServiceBootstrap.NEST_OPTIONS,
     );
     app.enableShutdownHooks();
@@ -92,6 +96,9 @@ export class ServiceBootstrap {
       ...(options.schedulingMode === undefined
         ? {}
         : { schedulingMode: options.schedulingMode }),
+      ...(options.consumeQueues === undefined
+        ? {}
+        : { consumeQueues: options.consumeQueues }),
       ...(options.overrides === undefined
         ? {}
         : { overrides: options.overrides }),
