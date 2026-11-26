@@ -7,7 +7,6 @@ service_name = "fixture-mixed"
 api = {
   runtime                = "fargate"
   route_prefixes         = ["/v1/fixture-mixed"]
-  listener_rule_priority = 901
 }
 
 workers = {

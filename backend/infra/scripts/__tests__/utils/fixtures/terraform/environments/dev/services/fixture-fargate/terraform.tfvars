@@ -7,5 +7,4 @@ service_name = "fixture-fargate"
 api = {
   runtime                = "fargate"
   route_prefixes         = ["/v1/fixture"]
-  listener_rule_priority = 900
 }

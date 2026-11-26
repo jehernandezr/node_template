@@ -5,16 +5,15 @@ service_name = "reports"
 
 # API on Fargate behind the internal ALB. The workers compute the runs that the API queues and keep the
 # projections up to date with events from tasks, billing and notifications. To move the API to Lambda:
-# runtime = "lambda" (uses lambda.handler) and remove listener_rule_priority.
+# runtime = "lambda" (uses lambda.handler).
 api = {
-  runtime                = "fargate"
-  route_prefixes         = ["/v1/reports"]
-  listener_rule_priority = 140
-  desired_count          = 2
-  min_capacity           = 2
-  max_capacity           = 6
-  spot                   = false
-  health_check_path      = "/health/ready"
+  runtime           = "fargate"
+  route_prefixes    = ["/v1/reports"]
+  desired_count     = 2
+  min_capacity      = 2
+  max_capacity      = 6
+  spot              = false
+  health_check_path = "/health/ready"
 }
 
 workers = {

@@ -10,7 +10,7 @@ state_bucket = "node-template-dev-tfstate"
 service_name = "identity"
 
 # Lambda API behind API Gateway HTTP, CloudFront and WAF. To move it to Fargate:
-# runtime = "fargate" and a unique listener_rule_priority.
+# runtime = "fargate". The listener priority comes from the position of the service in the catalog.
 api = {
   runtime        = "lambda"
   route_prefixes = ["/identity"]
@@ -21,11 +21,11 @@ api = {
 
 # Realtime always runs on Fargate behind the public ALB (realtime_alb_certificate_arn in platform).
 # realtime = {
-#   listener_rule_priority = 100
-#   path_patterns          = ["/identity/socket.io/*", "/identity/events/*"]
+#   path_patterns = ["/identity/socket.io/*", "/identity/events/*"]
 # }
 
-# Fargate workers that scale from zero on the depth of their queue.
+# Fargate workers: each keeps one task for the outbox relay and the jobs, and scales on the depth of its
+# queue. A service without queues uses one worker without queue: workers = { jobs = {} }.
 # workers = {
 #   reports = { queue = "identity-reports-commands", max_capacity = 4 }
 # }

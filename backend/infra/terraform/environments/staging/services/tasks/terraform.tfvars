@@ -3,18 +3,20 @@ state_bucket = "node-template-staging-tfstate"
 
 service_name = "tasks"
 
-# API on Fargate behind the internal ALB. The same process runs the outbox relay and the jobs: tasks does not
-# consume queues. To move it to Lambda: runtime = "lambda" (uses lambda.handler), remove listener_rule_priority
-# and add a worker for the jobs.
+# API on Fargate behind the internal ALB. To move it to Lambda: runtime = "lambda" (uses lambda.handler).
 api = {
-  runtime                = "fargate"
-  route_prefixes         = ["/v1/tasks"]
-  listener_rule_priority = 110
-  desired_count          = 1
-  min_capacity           = 1
-  max_capacity           = 2
-  spot                   = true
-  health_check_path      = "/health/ready"
+  runtime           = "fargate"
+  route_prefixes    = ["/v1/tasks"]
+  desired_count     = 1
+  min_capacity      = 1
+  max_capacity      = 2
+  spot              = true
+  health_check_path = "/health/ready"
+}
+
+# tasks consumes no queue: one worker without queue runs the outbox relay, the jobs and saga recovery.
+workers = {
+  jobs = {}
 }
 
 # Non-secret values.

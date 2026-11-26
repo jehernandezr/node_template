@@ -72,10 +72,14 @@ A service is an instance of the `service` stack with its own state. To add one, 
 
 Parts of a service:
 
-- `api`: `runtime = "lambda"` (a function with `lambda.ts` behind API Gateway HTTP) or `"fargate"` (a container with `main.ts` behind the internal ALB, through the VPC link; requires a unique `listener_rule_priority`). Both enter through the shared HTTP API, behind CloudFront and its WAF. Each prefix in `route_prefixes` creates `ANY <prefix>` and `ANY <prefix>/{proxy+}`.
-- `realtime`: Socket.IO and SSE, always on Fargate behind the public ALB from `platform` (`realtime_alb_certificate_arn`).
-- `workers`: Fargate with `worker.ts`, scales from zero on the depth of its queue.
+- `api`: `runtime = "lambda"` (a function with `lambda.ts` behind API Gateway HTTP) or `"fargate"` (a container with `main.ts` behind the internal ALB, which `platform` always creates, through the VPC link). Both enter through the shared HTTP API, behind CloudFront and its WAF. Each prefix in `route_prefixes` creates `ANY <prefix>` and `ANY <prefix>/{proxy+}`; a prefix under `/internal` is rejected, because the internal API is never public ([ADR 0040](../../../docs/adr/0040-internal-routing-and-authentication.md)). All APIs run on Fargate except `tasks` in `dev`, which runs on Lambda so both runtimes stay in acceptance ([ADR 0039](../../../docs/adr/0039-runtime-matrix-per-service.md)).
+- `realtime`: Socket.IO and SSE, always on Fargate behind the public ALB from `platform` (`realtime_alb_certificate_arn`). Its path patterns cannot start with `/internal` either.
+- `workers`: Fargate with `worker.ts`, always at least one task, because the worker runs the outbox relay, the jobs and saga recovery. A worker with `queue` consumes only that queue and scales on its depth; a worker without `queue` consumes nothing and runs one task, for a service whose contract has no queues (`tasks`).
 - `consumers`: Lambdas that consume a queue, with partial batch failures.
+
+Listener priorities are not set by hand: the service stack takes the position of the service in the sorted catalog (the folders under `environments/<environment>/services`) times 10, for its API rule on the internal ALB and its realtime rule on the public ALB. Adding a service shifts the priorities of the services after it, and their next apply recreates the rules.
+
+Target groups are named with a prefix of up to 6 characters and a suffix that AWS makes unique, and are created before the old one is destroyed, so the API and realtime of one service never collide on the 32-character limit.
 
 Permissions per part (least privilege): the API, the workers and the consumers publish and send according to `producers` in the topology; realtime only if `realtime.publish = true`. Each worker consumes only its queue and each consumer only its own (granted by the `service-lambda` module); the API and realtime do not consume. `files_access` and `ses_send` are requested per part (`api.files_access`, `workers.<x>.ses_send`...). `valkey_access` and `database_access` apply to the whole service, as does `task_policies`.
 

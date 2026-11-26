@@ -48,6 +48,21 @@ output "target_group_name_prefix" {
   value       = var.enable_load_balancer ? aws_lb_target_group.this[0].name_prefix : null
 }
 
+output "listener_rule_priority" {
+  description = "Priority of the listener rule. Null without a load balancer."
+  value       = var.enable_load_balancer ? aws_lb_listener_rule.this[0].priority : null
+}
+
+output "min_capacity" {
+  description = "Autoscaling minimum task count."
+  value       = aws_appautoscaling_target.this.min_capacity
+}
+
+output "max_capacity" {
+  description = "Autoscaling maximum task count."
+  value       = aws_appautoscaling_target.this.max_capacity
+}
+
 output "log_group_name" {
   description = "Service log group name."
   value       = aws_cloudwatch_log_group.this.name

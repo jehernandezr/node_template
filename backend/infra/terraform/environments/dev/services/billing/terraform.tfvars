@@ -6,14 +6,13 @@ service_name = "billing"
 # API on Fargate behind the internal ALB. The API process also runs the jobs (period closing and
 # delinquency); the workers apply the usage that services send and the membership changes from identity.
 api = {
-  runtime                = "fargate"
-  route_prefixes         = ["/v1/billing"]
-  listener_rule_priority = 150
-  desired_count          = 1
-  min_capacity           = 1
-  max_capacity           = 2
-  spot                   = true
-  health_check_path      = "/health/ready"
+  runtime           = "fargate"
+  route_prefixes    = ["/v1/billing"]
+  desired_count     = 1
+  min_capacity      = 1
+  max_capacity      = 2
+  spot              = true
+  health_check_path = "/health/ready"
 }
 
 workers = {

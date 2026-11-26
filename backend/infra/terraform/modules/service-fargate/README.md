@@ -30,7 +30,7 @@ A microservice on Fargate: an API with inbound traffic behind the ALB, or a work
 
 ## Outputs
 
-`service_name`, `service_arn`, `task_definition_arn`, `task_role_arn`, `task_role_name`, `execution_role_arn`, `security_group_id`, `target_group_arn`, `target_group_arn_suffix`, `target_group_name_prefix`, `log_group_name`, `autoscaling_resource_id`.
+`service_name`, `service_arn`, `task_definition_arn`, `task_role_arn`, `task_role_name`, `execution_role_arn`, `security_group_id`, `target_group_arn`, `target_group_arn_suffix`, `target_group_name_prefix`, `listener_rule_priority`, `min_capacity`, `max_capacity`, `log_group_name`, `autoscaling_resource_id`.
 
 ## Notes
 
