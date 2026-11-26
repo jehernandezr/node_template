@@ -34,7 +34,9 @@ mapping what they affect elsewhere.
   runs the `.int-spec.ts` and `.e2e-spec.ts` suites; `test-int:ci` runs both, which is what coverage is measured on.
   `jest.preset.js` picks the tests from the Nx target (`NX_TASK_TARGET_TARGET`) or from `NT_TEST_KIND`. Both targets
   are cached with explicit inputs. Nx already keeps one cache for every checkout of the workspace under `~/.nx`, and
-  setting `NX_CACHE_DIRECTORY` would turn that sharing off, so only Jest gets a shared folder, `NT_JEST_CACHE_DIRECTORY`.
+  setting `NX_CACHE_DIRECTORY` would turn that sharing off. Jest keeps its transform cache in
+  `~/.cache/node-template/jest` (or `NT_JEST_CACHE_DIRECTORY`), on disk and shared by the worktrees, instead of the
+  small temporary folder.
 - **CI and rounds.** CI splits the affected projects with a `test-int` target across three runners, each running
   `test-int:ci --coverage`, and keeps a fast unit step in the `nx` job. In the workflow, intermediate rounds run the
   affected projects without coverage and the final round runs `test-int:ci --coverage`, which CI repeats.

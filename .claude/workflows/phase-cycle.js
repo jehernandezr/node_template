@@ -16,7 +16,7 @@
 //   maxRounds    maximum number of reviews (default 2: review, fix and final review)
 //   corrections  user findings or corrections that override everything else
 //   shim         optional folder prepended to PATH (for example, a pinned pnpm)
-//   cacheDir     optional folder for the Jest cache, shared by every worktree; Nx already shares its cache
+//   cacheDir     optional folder for the Jest cache instead of ~/.cache/node-template/jest; Nx already shares its cache
 //                across the checkouts of the workspace under ~/.nx, so NX_CACHE_DIRECTORY stays unset
 //   gateRounds   maximum gate and fix rounds before each review (default 2)
 //

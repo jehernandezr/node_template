@@ -1,5 +1,7 @@
 import { nxPreset } from '@nx/jest/preset';
 import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 const require = createRequire(import.meta.url);
 
@@ -34,17 +36,20 @@ class TestKind {
       raw === undefined || raw === ''
         ? (TestKind.BY_TARGET.get(target) ?? TestKind.ALL)
         : raw;
-    this.cacheDirectory = env['NT_JEST_CACHE_DIRECTORY'];
+    this.cacheDirectory =
+      env['NT_JEST_CACHE_DIRECTORY'] ||
+      join(homedir(), '.cache', 'node-template', 'jest');
   }
 
   /**
-   * Jest options that select the tests of this kind; the container kinds share one PostgreSQL and one Valkey.
+   * Jest options that select the tests of this kind and keep the transform cache in one folder on disk that every
+   * worktree shares, outside the temporary folder, which is small on the build machine; the container kinds share one PostgreSQL and one Valkey.
    * @returns {Record<string, unknown>} Options merged into the preset.
    */
   options() {
     return {
       passWithNoTests: true,
-      ...(this.cacheDirectory ? { cacheDirectory: this.cacheDirectory } : {}),
+      cacheDirectory: this.cacheDirectory,
       ...this.#selection(),
     };
   }
