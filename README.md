@@ -50,7 +50,7 @@ All of them run from the root, unless another folder is given.
 corepack enable                                                   # enables pnpm
 pnpm install                                                      # installs Nx and the backend in a single node_modules
 (cd front && flutter pub get)                                     # prepares the front
-pnpm nx affected -t lint test typecheck build analyze format-check   # validates what changed (same as CI)
+pnpm nx affected -t lint test test-int typecheck build analyze format-check   # validates what changed (same as CI)
 pnpm nx format:check                                              # checks formatting with Prettier
 pnpm nx run-many -t lint test typecheck build analyze             # validates the whole workspace (pnpm check)
 pnpm nx test platform-saga                                        # tests one backend project

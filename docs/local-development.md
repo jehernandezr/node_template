@@ -35,18 +35,19 @@ The backend libraries are not compiled. Jest, `tsc` and the tools read their Typ
 
 All of them run from the root:
 
-| Command                                                              | What it does                                              |
-| -------------------------------------------------------------------- | --------------------------------------------------------- |
-| `pnpm nx affected -t lint test typecheck build analyze format-check` | Validates what changed against `main`, the same as CI     |
-| `pnpm nx format:check`                                               | Checks formatting with Prettier                           |
-| `pnpm nx test platform-saga`                                         | Tests a backend project                                   |
-| `pnpm nx typecheck platform-saga`                                    | Checks the types of a project's code and tests            |
-| `pnpm nx build <app>`                                                | Bundles a backend app into `backend/dist/<app>/`          |
-| `pnpm nx test front-shell_core`                                      | Tests a front package                                     |
-| `pnpm nx run contracts-export:export`                                | Exports the contracts in `backend/libs/contracts` to JSON |
-| `pnpm nx run contracts-export:check`                                 | Fails if the exported JSON is out of date                 |
-| `pnpm nx show projects`                                              | Lists the backend and front projects                      |
-| `pnpm nx graph`                                                      | Opens the project graph                                   |
+| Command                                                                       | What it does                                                           |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm nx affected -t lint test test-int typecheck build analyze format-check` | Validates what changed against `main`, the same as CI                  |
+| `pnpm nx format:check`                                                        | Checks formatting with Prettier                                        |
+| `pnpm nx test platform-saga`                                                  | Runs the unit tests of a backend project                               |
+| `INTEGRATION_TESTS=require pnpm nx test-int platform-saga -c ci --coverage`   | Runs its unit and container tests together with the coverage threshold |
+| `pnpm nx typecheck platform-saga`                                             | Checks the types of a project's code and tests                         |
+| `pnpm nx build <app>`                                                         | Bundles a backend app into `backend/dist/<app>/`                       |
+| `pnpm nx test front-shell_core`                                               | Tests a front package                                                  |
+| `pnpm nx run contracts-export:export`                                         | Exports the contracts in `backend/libs/contracts` to JSON              |
+| `pnpm nx run contracts-export:check`                                          | Fails if the exported JSON is out of date                              |
+| `pnpm nx show projects`                                                       | Lists the backend and front projects                                   |
+| `pnpm nx graph`                                                               | Opens the project graph                                                |
 
 The `test` target runs the unit tests. Integration and end-to-end tests (`*.int-spec.ts`, `*.e2e-spec.ts`) run with the `test-int` target against one real PostgreSQL and one Valkey per Jest run, started with Testcontainers, and need Docker running. For example, `pnpm nx test-int platform-persistence` and `pnpm nx test-int platform-adapters-valkey`; `pnpm nx test-int <project> -c ci --coverage` runs both kinds with coverage, as CI does. The guards of the repository run with `node .claude/guards/run-gate.mjs`.
 

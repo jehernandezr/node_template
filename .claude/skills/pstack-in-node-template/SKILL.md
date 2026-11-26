@@ -26,7 +26,7 @@ The method comes from pstack and the rules from the `backend-*` and `front-*` sk
 
 ## Verification
 
-- Backend: `node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .`, `pnpm nx run-many -t lint test typecheck --projects=<touched and dependents>` and `pnpm nx format:check`. Integration with `INTEGRATION_TESTS=require` and `--runInBand`, one project at a time.
+- Backend: `node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .`, `pnpm nx run-many -t lint test typecheck --projects=<touched and dependents>` and `pnpm nx format:check`. Container suites and coverage with `INTEGRATION_TESTS=require pnpm nx run-many -t test-int -c ci --projects=<touched and dependents> --coverage --parallel=1`, one project at a time.
 - Contracts: `pnpm nx run contracts-export:check` and `(cd front/packages/contracts && dart run contracts_gen --check)`.
 - Front: `node .claude/skills/front-structure/scripts/check-structure.mjs --changed .` and, per package, `format-check`, `analyze` and `test`; in a microfrontend, `dart run tools/check_microfrontend_boundaries.dart`.
 - Across services: `pnpm nx run platform-flow:e2e`.

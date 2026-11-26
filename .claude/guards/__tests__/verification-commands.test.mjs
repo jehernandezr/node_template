@@ -1,11 +1,25 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..');
 const JEST_TARGETS = new Set(['test', 'test-int']);
+const LIVE_DOCS = [
+  'CLAUDE.md',
+  'README.md',
+  'CONTRIBUTING.md',
+  ...['docs', 'docs/plan', '.claude/agents'].flatMap((folder) =>
+    readdirSync(join(ROOT, folder))
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => `${folder}/${name}`),
+  ),
+  ...readdirSync(join(ROOT, '.claude/skills'), { recursive: true })
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => `.claude/skills/${name}`),
+];
+const CI_OR_INTEGRATION = /\bCI\b|integration|INTEGRATION_TESTS|coverage/i;
 
 /** The Nx commands a text tells a reader to run, with the targets each one names. */
 class NxCommandList {
@@ -62,6 +76,27 @@ describe('verification commands', () => {
       mixed,
       [],
       'Nx forwards --coverage to every target, and tsc and eslint reject it',
+    );
+  });
+
+  it('never presents the unit test target alone as the CI, coverage or integration run', () => {
+    const stale = LIVE_DOCS.flatMap((file) =>
+      readFileSync(join(ROOT, file), 'utf8')
+        .split('\n')
+        .map((line, index) => ({ line, at: `${file}:${index + 1}` }))
+        .filter(({ line }) => CI_OR_INTEGRATION.test(line))
+        .filter(({ line }) => {
+          const targets = new NxCommandList(line)
+            .commands()
+            .flatMap((command) => command.targets);
+          return targets.includes('test') && !targets.includes('test-int');
+        })
+        .map(({ at }) => at),
+    );
+    assert.deepEqual(
+      stale,
+      [],
+      'test runs only the unit tests; the container suites and coverage run in test-int',
     );
   });
 

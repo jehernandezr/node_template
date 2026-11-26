@@ -33,13 +33,22 @@ mapping what they affect elsewhere.
 - **Two targets.** `test` runs the unit tests with parallel workers; `test-int` (a second `@nx/jest/plugin` entry)
   runs the `.int-spec.ts` and `.e2e-spec.ts` suites; `test-int:ci` runs both, which is what coverage is measured on.
   `jest.preset.js` picks the tests from the Nx target (`NX_TASK_TARGET_TARGET`) or from `NT_TEST_KIND`. Both targets
-  are cached with explicit inputs. Nx already keeps one cache for every checkout of the workspace under `~/.nx`, and
+  are cached with explicit inputs in `nx.json`, and both hash `^testUtils`, the `src/**/__tests__/utils` folders of
+  their dependencies: `^production` leaves those folders out, so without it a change to a shared harness such as
+  `ShardedTestDatabase` replayed the cached result of every dependent. The `test` entry is filtered to
+  `@nx/jest/plugin`, so the Flutter `test` targets keep their own inputs. A tooling test fails when either target
+  drops `^testUtils` or a `test-utils` alias points outside those folders. Nx already keeps one cache for every checkout of the workspace under `~/.nx`, and
   setting `NX_CACHE_DIRECTORY` would turn that sharing off. Jest keeps its transform cache in
   `~/.cache/node-template/jest` (or `NT_JEST_CACHE_DIRECTORY`), on disk and shared by the worktrees, instead of the
   small temporary folder.
 - **CI and rounds.** CI splits the affected projects with a `test-int` target across three runners, each running
-  `test-int:ci --coverage`, and keeps a fast unit step in the `nx` job. In the workflow, intermediate rounds run the
-  affected projects without coverage and the final round runs `test-int:ci --coverage`, which CI repeats.
+  `test-int:ci --coverage`, and keeps a fast unit step in the `nx` job. The runners start only when a backend path
+  changed. This replaces the coverage step of [ADR 0037](0037-composition-shared-platform-pieces-and-domain-events.md),
+  which passed `--coverage` to `nx affected -t test`. In the workflow, intermediate rounds run the affected projects
+  without coverage and the final round runs `lint typecheck` and then `test-int:ci --coverage` as two commands, because
+  Nx forwards `--coverage` to every target and `tsc` and ESLint reject it; a tooling test fails when a workflow
+  command gives `--coverage` to a target other than `test` or `test-int`, and another when a live doc presents
+  `-t test` alone as the CI, coverage or integration run.
 
 ### Guards
 
@@ -59,7 +68,8 @@ mapping what they affect elsewhere.
 - **Baselines that only shrink.** A rule that cannot be fixed everywhere at once records what is left:
   `backend/eslint.baseline.json` for the lint guards and `.claude/guards/language-baseline.json` for the Terraform
   descriptions that are still in Spanish, whose change would replace security groups. A test fails when an entry no
-  longer breaks its rule, so each fix lowers the baseline.
+  longer breaks its rule, so each fix lowers the baseline, and another caps each entry and the total at the recorded
+  counts. `check-language.mjs --update-baseline` only lowers entries; it never raises one or adds a file.
 - **Three places.** The pre-commit hook runs the guards on staged files through lint-staged, the `commit-msg` hook
   checks the message, CI runs a required `guards` job, and `.claude/guards/run-gate.mjs` runs them all as the gate the
   `phase-cycle` workflow runs before each review; the builder fixes a red gate before the reviewer starts.

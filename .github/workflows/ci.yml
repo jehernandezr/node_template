@@ -25,6 +25,7 @@ jobs:
       contracts: ${{ steps.filter.outputs.contracts }}
       web: ${{ steps.filter.outputs.web }}
       terraform: ${{ steps.filter.outputs.terraform }}
+      backend: ${{ steps.filter.outputs.backend }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -52,6 +53,14 @@ jobs:
               - '.github/workflows/ci.yml'
             terraform:
               - 'backend/infra/**'
+              - '.github/workflows/ci.yml'
+            # Everything that can change what a backend test-int target runs.
+            backend:
+              - 'backend/**'
+              - 'nx.json'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - '.nvmrc'
               - '.github/workflows/ci.yml'
 
   nx:
@@ -143,6 +152,8 @@ jobs:
   # enforces the coverage threshold of backend/jest.preset.js on that project.
   test-int:
     name: Backend tests with coverage (shard ${{ matrix.shard }})
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
