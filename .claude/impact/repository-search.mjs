@@ -1,56 +1,122 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { ModuleResolver } from './module-resolver.mjs';
+
+/** @typedef {{ file: string, name: string }} Declaration An exported name and the file that declares it. */
 
 /**
  * Searches the tracked files of the repository with `git grep`, reading each candidate source once to follow imports
- * and class headers that span several lines.
+ * and class headers that span several lines. A file imports a declaration only when one of its imports resolves to
+ * the declaring module or a barrel over it, so a class with the same name elsewhere is not an importer.
  */
 export class RepositorySearch {
-  static SOURCES = ['*.ts', '*.mjs'];
+  static SOURCES = ['*.ts', '*.mjs', '*.cjs', '*.js', '*.dart'];
   static BATCH = 200;
+  static ES_IMPORT =
+    /(?:^|[;\n])\s*(?:import|export)\s+(?:type\s+)?([^;'"]*?)\s*from\s*['"]([^'"]+)['"]/g;
+  static REQUIRE = /require\(\s*['"]([^'"]+)['"]\s*\)/g;
+  static DART_IMPORT = /^\s*(?:import|export)\s+['"]([^'"]+)['"]/gm;
 
   /**
    * @param {string} root Repository root.
+   * @param {ModuleResolver} [resolver] Resolves import specifiers to files.
    */
-  constructor(root) {
+  constructor(root, resolver = new ModuleResolver(root)) {
     this.root = root;
+    this.resolver = resolver;
     this.texts = new Map();
   }
 
   /**
    * Every line that contains the literal.
    * @param {string} literal Text to find.
+   * @param {boolean} [word] Whether it must stand as a whole word.
    * @returns {string[]} `file:line` entries.
    */
-  occurrences(literal) {
-    return this.grep(['-n', '-F', '-e', literal]).map((line) =>
-      line.split(':').slice(0, 2).join(':'),
+  occurrences(literal, word = false) {
+    return this.grep(['-n', '-F', ...(word ? ['-w'] : []), '-e', literal]).map(
+      (line) => line.split(':').slice(0, 2).join(':'),
     );
   }
 
   /**
-   * For each name, the files that import it and the files with a class that extends or implements it.
-   * @param {string[]} names Exported names.
-   * @returns {Map<string, { importers: string[], subtypes: string[] }>} Uses per name.
+   * For each declaration, the files whose imports reach its module and use the name, and the files with a class that
+   * extends, implements or mixes it in.
+   * @param {Declaration[]} declared Exported names and the file that declares each.
+   * @returns {Map<string, { importers: string[], subtypes: string[] }>} Uses per `file#name`.
    */
-  usesOf(names) {
+  usesOf(declared) {
     const uses = new Map(
-      names.map((name) => [name, { importers: [], subtypes: [] }]),
+      declared.map(({ file, name }) => [
+        RepositorySearch.keyOf(file, name),
+        { importers: [], subtypes: [] },
+      ]),
     );
-    for (const file of this.candidates(names)) {
-      const text = this.text(file);
-      for (const name of names) {
-        const word = `\\b${name.replace(/\$/g, '\\$')}\\b`;
-        if (new RegExp(`import\\s[^;]*?${word}[^;]*?from\\s`, 's').test(text)) {
-          uses.get(name).importers.push(file);
-        }
-        if (new RegExp(`(extends|implements)[^{;]*?${word}`, 's').test(text)) {
-          uses.get(name).subtypes.push(file);
+    const names = [...new Set(declared.map(({ name }) => name))];
+    for (const candidate of this.candidates(names)) {
+      const text = this.text(candidate);
+      const imports = this.importsOf(candidate, text);
+      for (const { file, name } of declared) {
+        if (candidate === file) continue;
+        const word = new RegExp(`\\b${name.replace(/\$/g, '\\$')}\\b`);
+        const reached = imports.some(
+          ({ specifier, bindings }) =>
+            (bindings === undefined ||
+              bindings === '*' ||
+              word.test(bindings)) &&
+            this.resolver.reaches(candidate, specifier, file),
+        );
+        if (!reached || !word.test(text)) continue;
+        const entry = uses.get(RepositorySearch.keyOf(file, name));
+        entry.importers.push(candidate);
+        if (
+          new RegExp(
+            `(extends|implements|with)[^{;]*?${word.source}`,
+            's',
+          ).test(text)
+        ) {
+          entry.subtypes.push(candidate);
         }
       }
     }
     return uses;
+  }
+
+  /**
+   * The key `usesOf` files each declaration under.
+   * @param {string} file Declaring file.
+   * @param {string} name Exported name.
+   * @returns {string} `file#name`.
+   */
+  static keyOf(file, name) {
+    return `${file}#${name}`;
+  }
+
+  /**
+   * The imports of a source: the specifier and, for an ES import, the names it binds (`*` for a namespace). A Dart
+   * import or a `require` binds the whole module, so its bindings are `undefined`.
+   * @param {string} file Path from the root.
+   * @param {string} text Its content.
+   * @returns {{ specifier: string, bindings: string | undefined }[]} The imports.
+   */
+  importsOf(file, text) {
+    if (file.endsWith('.dart')) {
+      return [...text.matchAll(RepositorySearch.DART_IMPORT)].map((match) => ({
+        specifier: match[1],
+        bindings: undefined,
+      }));
+    }
+    return [
+      ...[...text.matchAll(RepositorySearch.ES_IMPORT)].map((match) => ({
+        specifier: match[2],
+        bindings: match[1].includes('*') ? '*' : match[1],
+      })),
+      ...[...text.matchAll(RepositorySearch.REQUIRE)].map((match) => ({
+        specifier: match[1],
+        bindings: undefined,
+      })),
+    ];
   }
 
   /**
