@@ -115,7 +115,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
-    runs-on: ${{ vars.DEPLOY_RUNNER || 'ubuntu-latest' }}
+    runs-on: ${{ vars.DEPLOY_RUNNER || 'ubuntu-24.04-arm' }}
     environment: ${{ inputs.environment || 'dev' }}
     timeout-minutes: 120
     permissions:

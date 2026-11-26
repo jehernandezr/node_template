@@ -75,6 +75,31 @@ describe('CI workflow', () => {
     }
   });
 
+  it('smokes the service artifacts natively on ARM64 when their inputs change, and ci-ok waits for it', () => {
+    const smoke = ci.job('artifact-smoke');
+    assert.match(smoke, /runs-on: ubuntu-24\.04-arm/);
+    assert.match(smoke, /if: needs\.changes\.outputs\.artifact == 'true'/);
+    assert.match(
+      smoke,
+      /node backend\/infra\/scripts\/artifact-smoke-cli\.mjs/,
+    );
+    assert.ok(ci.needs('ci-ok').includes('artifact-smoke'));
+    const filter =
+      /\n {12}artifact:\n((?: {14}- .+\n)+)/.exec(ci.job('changes'))?.[1] ?? '';
+    for (const path of [
+      'backend/**',
+      '.github/workflows/**',
+      'pnpm-lock.yaml',
+      '.nvmrc',
+      '.dockerignore',
+    ]) {
+      assert.ok(
+        filter.includes(`'${path}'`),
+        `the artifact filter must include ${path}`,
+      );
+    }
+  });
+
   it('never hands a shard the servers of another run', () => {
     const shared = readdirSync(WORKFLOWS)
       .filter((file) => /\.ya?ml$/.test(file))

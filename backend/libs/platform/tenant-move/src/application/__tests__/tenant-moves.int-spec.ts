@@ -291,4 +291,19 @@ runtime.describeIfAvailable('TenantMoves back and forth between shards', () => {
     expect(report.verifiedTarget).toEqual(report.verifiedSource);
     expect(report.sourceAfterSwitch).toEqual(report.verifiedSource);
   });
+
+  it('copies a tenant across several batches per table while bounded writers keep inserting', async () => {
+    const report = await rehearsal.rehearseBoundedWrites(12, 5);
+
+    expect(report.copyBatchSize).toBe(3);
+    expect(
+      Object.values(report.verifiedSource).every(
+        (table) => table.rows > report.copyBatchSize * 2,
+      ),
+    ).toBe(true);
+    expect(report.acked).toBeGreaterThan(0);
+    expect(report.verified).toBe(true);
+    expect(report.verifiedTarget).toEqual(report.verifiedSource);
+    expect(report.sourceAfterSwitch).toEqual(report.verifiedSource);
+  });
 });

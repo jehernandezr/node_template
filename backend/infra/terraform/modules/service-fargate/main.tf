@@ -27,6 +27,9 @@ locals {
   ])
 
 
+  worker_command = ["node", "worker.mjs"]
+  command        = var.command != null ? var.command : (var.container_port == null ? local.worker_command : null)
+
   app_environment = merge(
     local.otel_app_env,
     { SERVICE_NAME = var.service_name, NODE_ENV = "production" },
@@ -87,7 +90,7 @@ locals {
       linuxParameters        = { initProcessEnabled = true }
       logConfiguration       = local.log_configuration
     },
-    var.command == null ? {} : { command = var.command },
+    local.command == null ? {} : { command = local.command },
     var.container_port == null ? {} : {
       portMappings = [{ containerPort = var.container_port, protocol = "tcp" }]
     },

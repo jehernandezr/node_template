@@ -7,7 +7,8 @@ export class Rule {
    * @param {string} source `CLAUDE.md` or the skill name.
    * @param {string} section Heading the bullet sits under.
    * @param {string} text The bullet, without its marker.
-   * @param {string} id Stable id, such as `claude.code.3` or `backend-testing.2`.
+   * @param {string | undefined} id Stable id stored with the bullet, such as `claude.code.3` or `backend-testing.2`;
+   *   `undefined` when the bullet carries none.
    */
   constructor(source, section, text, id) {
     this.source = source;
@@ -31,12 +32,14 @@ export class Rule {
  * `SKILL.md`; numbered procedure steps, tables and the `references/` files detail those rules and are not listed.
  * Sections that only point elsewhere or show an example hold no rules.
  *
- * Each rule gets an id: `claude.<section>.<n>` for `CLAUDE.md`, numbered within its section, and `<skill>.<n>` for a
- * skill, numbered through its `SKILL.md`.
+ * Each rule carries its id at the end of its bullet, as `<!-- id: backend-testing.2 -->`. The id is written once, when
+ * the rule is added, and never changes when rules around it are added or removed: `claude.<section>.<n>` for
+ * `CLAUDE.md` and `<skill>.<n>` for a skill, with `n` the next number unused in that prefix.
  */
 export class RuleInventory {
   static CLAUDE = 'CLAUDE.md';
   static KEY_WORDS = 10;
+  static ID = /\s*<!-- id: ([a-z0-9.-]+) -->\s*$/;
   static NOT_RULES = new Set([
     'skill map',
     'with pstack',
@@ -100,11 +103,10 @@ export class RuleInventory {
    * The rules of one Markdown source.
    * @param {string} source Name of the source.
    * @param {string} text Its Markdown.
-   * @returns {Rule[]} Its top-level bullets outside the sections that hold no rules.
+   * @returns {Rule[]} Its top-level bullets outside the sections that hold no rules, each with the id it stores.
    */
   rulesOf(source, text) {
     const rules = [];
-    const counts = new Map();
     let section = '';
     let fence = false;
     for (const line of text.split('\n')) {
@@ -120,11 +122,10 @@ export class RuleInventory {
         section !== '' &&
         !RuleInventory.NOT_RULES.has(section.toLowerCase())
       ) {
-        const prefix = RuleInventory.prefixOf(source, section);
-        const index = (counts.get(prefix) ?? 0) + 1;
-        counts.set(prefix, index);
+        const bullet = line.slice(2).trim();
+        const id = RuleInventory.ID.exec(bullet)?.[1];
         rules.push(
-          new Rule(source, section, line.slice(2).trim(), `${prefix}.${index}`),
+          new Rule(source, section, bullet.replace(RuleInventory.ID, ''), id),
         );
       }
     }
@@ -132,7 +133,7 @@ export class RuleInventory {
   }
 
   /**
-   * The part of a rule id before its number.
+   * The part of a rule id before its number, which the id stored with a rule must start with.
    * @param {string} source `CLAUDE.md` or the skill name.
    * @param {string} section Heading the rule sits under.
    * @returns {string} `claude.<section slug>` for `CLAUDE.md`, the skill name otherwise.

@@ -248,49 +248,33 @@ export class TenantMoveRehearsal {
     rowsPerTable = 2,
     inserts = true,
   ): Promise<WritesRehearsalReport> {
-    const tenantId = this.ids.next().toString();
-    await this.seed(tenantId, RehearsalShard.A, rowsPerTable);
-    const source = await this.shard(RehearsalShard.A);
-    const writers = Array.from(
-      { length: 2 },
-      () =>
-        new ManifestRowWriter(
-          source,
-          tenantId,
-          this.manifest,
-          this.filter,
-          this.seeder,
-          inserts,
-        ),
+    return this.rehearseWrites(
+      rowsPerTable,
+      inserts,
+      this.assembled().underWrites,
+      Number.POSITIVE_INFINITY,
     );
-    let writing = true;
-    const running = writers.map(async (writer) => {
-      while (writing && (await writer.writeOnce())) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, TenantMoveRehearsal.WRITE_PAUSE_MS),
-        );
-      }
-    });
-    const copy = this.assembled().underWrites;
-    try {
-      const { verification } = await this.moveWith(
-        this.assemble(copy.transfer),
-        tenantId,
-        RehearsalShard.B,
-      );
-      return {
-        verified: verification.verified,
-        verifiedSource: TenantMoveRehearsal.sidesOf(verification).source,
-        verifiedTarget: TenantMoveRehearsal.sidesOf(verification).target,
-        sourceAfterSwitch: await this.checksums(RehearsalShard.A, tenantId),
-        acked: writers.reduce((sum, writer) => sum + writer.acked(), 0),
-        rejected: writers.reduce((sum, writer) => sum + writer.rejected(), 0),
-        copyBatchSize: copy.options.batchSize,
-      };
-    } finally {
-      writing = false;
-      await Promise.all(running);
-    }
+  }
+
+  /**
+   * Moves a tenant in the batch the suite asked for while two writers make a bounded number of writes each, adding a
+   * row to each table per write. With more seeded rows than the batch, the keyset copy crosses several batches while
+   * the writers insert between them, and the bound lets the delta rounds catch up.
+   * @param rowsPerTable Rows seeded in each table before the move.
+   * @param writesPerWriter Writes each writer makes before it stops.
+   * @returns What the move froze and copied, and how many writes committed and were turned away.
+   */
+  async rehearseBoundedWrites(
+    rowsPerTable: number,
+    writesPerWriter: number,
+  ): Promise<WritesRehearsalReport> {
+    const options = this.transferOptions.quiet();
+    return this.rehearseWrites(
+      rowsPerTable,
+      true,
+      { transfer: this.batchTransfer(options), options },
+      writesPerWriter,
+    );
   }
 
   /** The same rows in each manifest table, to compare with a report. */
@@ -491,5 +475,59 @@ export class TenantMoveRehearsal {
         checksum.rows,
       ]),
     );
+  }
+
+  private async rehearseWrites(
+    rowsPerTable: number,
+    inserts: boolean,
+    copy: RehearsalCopy,
+    writesPerWriter: number,
+  ): Promise<WritesRehearsalReport> {
+    const tenantId = this.ids.next().toString();
+    await this.seed(tenantId, RehearsalShard.A, rowsPerTable);
+    const source = await this.shard(RehearsalShard.A);
+    const writers = Array.from(
+      { length: 2 },
+      () =>
+        new ManifestRowWriter(
+          source,
+          tenantId,
+          this.manifest,
+          this.filter,
+          this.seeder,
+          inserts,
+        ),
+    );
+    let writing = true;
+    const running = writers.map(async (writer) => {
+      for (
+        let writes = 0;
+        writing && writes < writesPerWriter && (await writer.writeOnce());
+        writes += 1
+      ) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, TenantMoveRehearsal.WRITE_PAUSE_MS),
+        );
+      }
+    });
+    try {
+      const { verification } = await this.moveWith(
+        this.assemble(copy.transfer),
+        tenantId,
+        RehearsalShard.B,
+      );
+      return {
+        verified: verification.verified,
+        verifiedSource: TenantMoveRehearsal.sidesOf(verification).source,
+        verifiedTarget: TenantMoveRehearsal.sidesOf(verification).target,
+        sourceAfterSwitch: await this.checksums(RehearsalShard.A, tenantId),
+        acked: writers.reduce((sum, writer) => sum + writer.acked(), 0),
+        rejected: writers.reduce((sum, writer) => sum + writer.rejected(), 0),
+        copyBatchSize: copy.options.batchSize,
+      };
+    } finally {
+      writing = false;
+      await Promise.all(running);
+    }
   }
 }

@@ -4,7 +4,9 @@ Every rule of [CLAUDE.md](../../CLAUDE.md) and of the skills in [.claude/skills]
 
 A rule is one top-level bullet of a rule section of `CLAUDE.md` or of a skill's `SKILL.md`. Numbered procedure steps, tables and the `references/` files of a skill detail those rules and have no rows of their own; the reviewer covers them.
 
-Each rule has an id: `claude.<section>.<n>` for `CLAUDE.md`, numbered within its section, and `<skill>.<n>` for a skill, numbered through its `SKILL.md`. `.claude/guards/__tests__/rule-checks.test.mjs` fails when an id has no row here, a row names an id that no longer exists, or the rule at an id no longer starts with the words of its row, so a rule added or moved in the middle of a section moves the rows after it.
+Each rule stores its id at the end of its bullet, as `<!-- id: backend-testing.2 -->`: `claude.<section>.<n>` for `CLAUDE.md` and `<skill>.<n>` for a skill. A new rule takes the next number unused in its prefix, and the id never changes when rules around it are added, moved or removed. A removed rule's id goes on the `Retired ids` line below and is never given to another rule. `.claude/guards/__tests__/rule-checks.test.mjs` fails when a rule has no id, an id has the wrong prefix, is used twice or is retired, an id has no row here, a row names an id that no longer exists, or the rule at an id no longer starts with the words of its row.
+
+Retired ids: none.
 
 Where the checks run:
 

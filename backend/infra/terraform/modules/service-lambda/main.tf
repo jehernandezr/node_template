@@ -29,7 +29,7 @@ locals {
 
   function_environment = merge(
     local.otel_env,
-    { LOG_LEVEL = lower(var.application_log_level), SERVICE_NAME = var.function_name },
+    { LOG_LEVEL = lower(var.application_log_level), SERVICE_NAME = var.function_name, NODE_ENV = "production" },
     var.environment_variables,
   )
 

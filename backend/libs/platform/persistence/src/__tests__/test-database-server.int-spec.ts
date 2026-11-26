@@ -2,13 +2,13 @@ import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { DataSource } from 'typeorm';
 import { TestDatabaseServer } from './utils/test-database-server.js';
 
-/** Builds a template by creating one table in it, or fails halfway through, like a migration that breaks. */
+/** Builds templates by creating one table in each, or fails halfway through, like a migration that breaks. */
 class TemplateBuild {
   calls = 0;
 
   constructor(
     private readonly server: TestDatabaseServer,
-    private readonly template: string,
+    private readonly templates: readonly string[],
   ) {}
 
   async succeed(): Promise<void> {
@@ -28,19 +28,21 @@ class TemplateBuild {
 
   private async inTemplate(use: (source: DataSource) => Promise<unknown>) {
     const connection = this.server.connection();
-    const source = new DataSource({
-      type: 'postgres',
-      host: connection.host,
-      port: connection.port,
-      username: connection.username,
-      password: connection.password,
-      database: this.template,
-    });
-    await source.initialize();
-    try {
-      await use(source);
-    } finally {
-      await source.destroy();
+    for (const template of this.templates) {
+      const source = new DataSource({
+        type: 'postgres',
+        host: connection.host,
+        port: connection.port,
+        username: connection.username,
+        password: connection.password,
+        database: template,
+      });
+      await source.initialize();
+      try {
+        await use(source);
+      } finally {
+        await source.destroy();
+      }
     }
   }
 }
@@ -75,12 +77,16 @@ runtime.describeIfAvailable('TestDatabaseServer templates', () => {
     }
   };
 
+  const pairKey = 'template-pair-sibling-missing';
+  const pair = ['tpl_pair_first', 'tpl_pair_second'];
+  const pairTargets = ['clone_of_pair_first', 'clone_of_pair_second'];
+
   afterAll(async () => {
-    await server.drop([target, template]);
+    await server.drop([target, template, ...pairTargets, ...pair]);
   });
 
   it('rebuilds a template whose build failed instead of cloning it half-migrated', async () => {
-    const build = new TemplateBuild(server, template);
+    const build = new TemplateBuild(server, [template]);
 
     await expect(
       server.cloneFromTemplates(key, [target], [template], () =>
@@ -96,7 +102,7 @@ runtime.describeIfAvailable('TestDatabaseServer templates', () => {
   });
 
   it('clones a finished template without building it again', async () => {
-    const build = new TemplateBuild(server, template);
+    const build = new TemplateBuild(server, [template]);
 
     await server.cloneFromTemplates(key, [target], [template], () =>
       build.succeed(),
@@ -104,5 +110,21 @@ runtime.describeIfAvailable('TestDatabaseServer templates', () => {
 
     expect(build.calls).toBe(0);
     await expect(tablesOf(target)).resolves.toEqual(['built']);
+  });
+
+  it('rebuilds every template of a key when one is ready and its sibling is missing', async () => {
+    await server.cloneFromTemplates(pairKey, pairTargets, pair, () =>
+      new TemplateBuild(server, pair).succeed(),
+    );
+    await server.drop([pair[1]]);
+    const rebuild = new TemplateBuild(server, pair);
+
+    await server.cloneFromTemplates(pairKey, pairTargets, pair, () =>
+      rebuild.succeed(),
+    );
+
+    expect(rebuild.calls).toBe(1);
+    await expect(tablesOf(pairTargets[0])).resolves.toEqual(['built']);
+    await expect(tablesOf(pairTargets[1])).resolves.toEqual(['built']);
   });
 });

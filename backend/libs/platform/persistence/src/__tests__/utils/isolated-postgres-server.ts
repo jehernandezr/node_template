@@ -12,7 +12,8 @@ import type { PostgresTestServers } from './postgres-test-servers.js';
 /**
  * A PostgreSQL of a suite's own, for a suite that changes server-level state the other suites of the run would see:
  * roles, publications, subscriptions and replication slots. It runs the image and settings of the shared server. A
- * suite that uses it is tagged `@isolated-server` and listed in `backend/isolated-server-suites.json`.
+ * suite that uses it is tagged `@isolated-server` and listed in `backend/isolated-server-suites.json`. `IMAGE` and
+ * `SETTINGS` repeat those of `backend/jest.servers.cjs`, and a guard test keeps the two equal.
  */
 export class IsolatedPostgresServer implements PostgresTestServers {
   static readonly IMAGE = 'pgvector/pgvector:0.8.7-pg17';
@@ -21,6 +22,7 @@ export class IsolatedPostgresServer implements PostgresTestServers {
     'synchronous_commit=off',
     'full_page_writes=off',
     'wal_level=logical',
+    'max_connections=400',
     'max_replication_slots=20',
     'max_wal_senders=20',
   ];

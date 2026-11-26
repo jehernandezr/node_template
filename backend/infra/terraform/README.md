@@ -151,19 +151,28 @@ The `deploy.yml`, `publish-web.yml` and `publish-mobile.yml` workflows access AW
 
 Roles and variables of the GitHub repository. Each GitHub environment, named like the environment (`dev`, `staging`, `prod`), stores these variables:
 
-| Variable                    | Use                                                                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `vars.AWS_DEPLOY_ROLE_ARN`  | Role for Terraform and for reading the state, of the stacks and of each service.                |
-| `vars.AWS_PUBLISH_ROLE_ARN` | Role that pushes images to ECR and artifacts to the artifacts bucket.                           |
-| `vars.AWS_WEB_ROLE_ARN`     | Role that publishes the web and invalidates CloudFront.                                         |
-| `vars.AWS_REGION`           | AWS region of the environment.                                                                  |
-| `vars.NAME_PREFIX`          | Name prefix, for example `node-template-dev`. Used by the web.                                  |
-| `vars.ARTIFACTS_BUCKET`     | Artifacts bucket. Read by `publish-mobile.yml`; the services pipeline takes it from `platform`. |
-| `vars.DEPLOY_RUNNER`        | Optional. Label of a self-hosted runner inside the VPC; without it `ubuntu-latest` is used.     |
+| Variable                    | Use                                                                                                                                                                                                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vars.AWS_DEPLOY_ROLE_ARN`  | Role for Terraform and for reading the state, of the stacks and of each service.                                                                                                                                                                               |
+| `vars.AWS_PUBLISH_ROLE_ARN` | Role that pushes images to ECR and artifacts to the artifacts bucket.                                                                                                                                                                                          |
+| `vars.AWS_WEB_ROLE_ARN`     | Role that publishes the web and invalidates CloudFront.                                                                                                                                                                                                        |
+| `vars.AWS_REGION`           | AWS region of the environment.                                                                                                                                                                                                                                 |
+| `vars.NAME_PREFIX`          | Name prefix, for example `node-template-dev`. Used by the web.                                                                                                                                                                                                 |
+| `vars.ARTIFACTS_BUCKET`     | Artifacts bucket. Read by `publish-mobile.yml`; the services pipeline takes it from `platform`.                                                                                                                                                                |
+| `vars.DEPLOY_RUNNER`        | Optional. Label of a self-hosted runner inside the VPC. Without it the stacks job uses `ubuntu-latest` and the services job uses the native `ubuntu-24.04-arm`; a custom runner still builds `linux/arm64`, because the build passes `--platform linux/arm64`. |
 
 Order per service. Services are discovered by walking `environments/<environment>/services/*`: every folder with `terraform.tfvars` and `backend.tfvars` is a service, and the workflow has no fixed list. For each one, four steps run in order: publish the artifact (an image tagged `sha-<commit>` or a Lambda package in S3), migrate the database, plan and apply the `service` stack. The artifact goes first because the `apply` needs `TF_VAR_image` or `TF_VAR_lambda_package`. Before the services, the stacks job applies `network`, `platform`, `data`, `messaging` and `edge`, in that order, planning and applying each one before the next because it reads their outputs.
 
 Migrations. Migrations run on the job's runner and need to reach the database through RDS Proxy. That is why a runner inside the VPC (`vars.DEPLOY_RUNNER`) is preferable to a GitHub-hosted one. `migrate-service.sh` reads the service's database and credentials from the `data` stack outputs and masks them in the logs.
+
+Artifacts. `scripts/service.Dockerfile` builds one `linux/arm64` image per service from the bundles in `backend/dist/<service>` and the production `node_modules` of `pnpm deploy --prod`, on a Node base image pinned by digest; the image runs `node main.mjs`, and a worker without `command` runs `node worker.mjs`. Its `lambda` stage is the Lambda package of the same service, which `publish-service.sh` zips. `publish-service.sh` and the smoke both pass `--platform linux/arm64`, and `deploy.yml` publishes on the native `ubuntu-24.04-arm` runner unless `DEPLOY_RUNNER` names another. The CI job `artifact-smoke` builds every image and package on an ARM runner and proves they start; to run it locally, bundle the services and run:
+
+```bash
+pnpm nx run-many -t build --projects='tag:type:app'
+node backend/infra/scripts/artifact-smoke-cli.mjs --services=tasks
+```
+
+It starts its own network, PostgreSQL and Valkey (the images of `backend/docker-compose.yml`), runs `node migrate.mjs all` in each image, waits for `/health/ready` from `node main.mjs`, loads `lambda.handler` from the package, and then removes the containers, the network and the images it built. Shared settings come from `backend/infra/local/artifact-smoke.env`; secrets are generated per run.
 
 Mobile app. The pipeline only builds the `.aab` and uploads it to the artifacts bucket under the commit. Store upload and release signing require the account holder's credentials and are not automated.
 
@@ -180,6 +189,7 @@ node --test backend/infra/scripts/__tests__/*.test.mjs
 
 - Internet egress: `egress` (`none`, `single_nat` in dev, `per_az_nat` in staging and prod) adds NAT only for the private application subnets. The data subnets have no route to the Internet. See [ADR 0016](../../../docs/adr/0016-network-egress.md).
 - Terraform removes the default egress rule from security groups: every egress is explicit.
+- Some descriptions force a new resource in AWS when they change: `aws_security_group` (modules `alb`, `http-api`, `network`, `service-fargate`, `service-lambda`, `observability`, `rds-postgres`, `valkey`) and the parameter groups of `rds-postgres` and `valkey`. They may change freely until the first apply; after it they stay fixed, because changing one replaces the security group or parameter group.
 - Trivy exceptions (`trivy:ignore`) sit next to the resource with their reason: HTTPS egress of the services through NAT, the public realtime ALB, HTTP on the internal ALB behind the VPC link and SSE-S3 encryption of the ALB access logs.
 - `db_deletion_protection` is on and the final snapshot is created unless `db_skip_final_snapshot = true`. Turn them off only in disposable environments.
 - KMS keys: they all come from the `kms-key` module, with the same base policy. The logs of all services (Fargate and Lambda) share one CMK per environment from the `platform` stack; the roles already limit which log group each component writes to. RDS, messaging, Valkey, files and secrets keep their own CMK.

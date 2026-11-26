@@ -33,19 +33,19 @@ The method comes from pstack and the rules from the `backend-*` and `front-*` sk
 
 ## `interrogate` here
 
-- Adversaries from the `interrogate reviewers` line, each in its own worktree, with the area's review rules.
-- A finding counts only if a run proves it. Without a run it is a hypothesis and does not block.
-- Targeted runs (one test file or one script). The coordinator runs the full suite and reruns each finding before accepting it.
-- On the 4-core Raspberry Pi, only one heavy command at a time. Clean containers only with `--filter label=org.testcontainers=true`.
+- Adversaries from the `interrogate reviewers` line, each in its own worktree, with the area's review rules. <!-- id: pstack-in-node-template.1 -->
+- A finding counts only if a run proves it. Without a run it is a hypothesis and does not block. <!-- id: pstack-in-node-template.2 -->
+- Targeted runs (one test file or one script). The coordinator runs the full suite and reruns each finding before accepting it. <!-- id: pstack-in-node-template.3 -->
+- On the 4-core Raspberry Pi, only one heavy command at a time. Clean containers only with `--filter label=org.testcontainers=true`. <!-- id: pstack-in-node-template.4 -->
 
 ## Precedence
 
 When they disagree, the repository wins:
 
-- Business logic in framework-free domain classes, not in loose functions.
-- No inline comments; a complete, concise JSDoc on every public method (`///` in Dart). Reject Comment Sicko removing that JSDoc.
-- English only in docs, ADRs, PRs, commits and JSDoc, without em dashes; from `technical-writing`, only the structure.
-- Conventional Commits in English, no AI attribution, never `--no-verify`; PRs follow `.github/pull_request_template.md`.
-- Port fakes as classes, without `jest.fn`.
-- Enums instead of literals and ports as abstract classes, even if `typescript-best-practices` says otherwise.
-- Inside a `.claude/workflows/phase-cycle.js` cycle, its rules win over `autonomous-run`, `autopilot-*` and `shipping`.
+- Business logic in framework-free domain classes, not in loose functions. <!-- id: pstack-in-node-template.5 -->
+- No inline comments; a complete, concise JSDoc on every public method (`///` in Dart). Reject Comment Sicko removing that JSDoc. <!-- id: pstack-in-node-template.6 -->
+- English only in docs, ADRs, PRs, commits and JSDoc, without em dashes; from `technical-writing`, only the structure. <!-- id: pstack-in-node-template.7 -->
+- Conventional Commits in English, no AI attribution, never `--no-verify`; PRs follow `.github/pull_request_template.md`. <!-- id: pstack-in-node-template.8 -->
+- Port fakes as classes, without `jest.fn`. <!-- id: pstack-in-node-template.9 -->
+- Enums instead of literals and ports as abstract classes, even if `typescript-best-practices` says otherwise. <!-- id: pstack-in-node-template.10 -->
+- Inside a `.claude/workflows/phase-cycle.js` cycle, its rules win over `autonomous-run`, `autopilot-*` and `shipping`. <!-- id: pstack-in-node-template.11 -->

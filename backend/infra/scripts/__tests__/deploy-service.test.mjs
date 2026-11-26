@@ -34,6 +34,7 @@ describe('deploy-service.sh dry run', () => {
     const output = lines.join('\n');
     assert.doesNotMatch(output, /aws s3 cp/);
     assert.doesNotMatch(output, /s3api/);
+    assert.match(output, /docker build .*--platform linux\/arm64 /);
   });
 
   it('fixture-lambda publishes the package to S3, no image, then migrates, plans and applies', () => {
@@ -42,7 +43,12 @@ describe('deploy-service.sh dry run', () => {
     const output = lines.join('\n');
     assert.match(output, /aws s3 cp .*fixture-lambda-abc1234\.zip/);
     assert.match(output, /zip -qr/);
-    assert.doesNotMatch(output, /docker build/);
+    assert.match(
+      output,
+      /docker build .*--target lambda --output type=local,dest=/,
+    );
+    assert.match(output, /docker build .*--platform linux\/arm64 /);
+    assert.doesNotMatch(output, /docker push/);
     assertInOrder(lines, [
       'aws s3 cp',
       'pnpm nx run fixture-lambda:migrate',

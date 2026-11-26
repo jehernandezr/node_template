@@ -67,6 +67,46 @@ describe('check-structure.mjs', () => {
       assert.match(output, /staged\.ts/);
       assert.doesNotMatch(output, /unstaged\.ts/);
     });
+
+    it('checks the staged text of a partly staged file, not its working-tree text', () => {
+      const file = 'backend/libs/platform/cache/src/partial.ts';
+      repo
+        .write(file)
+        .git('add', file)
+        .git(
+          '-c',
+          'user.email=fixture@example.com',
+          '-c',
+          'user.name=Fixture',
+          'commit',
+          '-qm',
+          'base',
+        )
+        .write(file, `export class Sample {}\n${LOOSE_FUNCTION}`)
+        .git('add', file)
+        .write(file, 'export class Sample {}\n');
+
+      assert.equal(repo.check('--staged').status, 1);
+
+      repo
+        .git('reset', '-q', file)
+        .write(file, 'export class Sample {}\nexport class Other {}\n')
+        .git('add', file);
+      repo.write(
+        file,
+        `export class Sample {}\nexport class Other {}\n${LOOSE_FUNCTION}`,
+      );
+
+      assert.equal(repo.check('--staged').status, 0);
+    });
+
+    it('checks a staged file that was then deleted from the working tree', () => {
+      const file = 'backend/libs/platform/cache/src/removed.ts';
+      repo.write(file, LOOSE_FUNCTION).git('add', file);
+      rmSync(join(repo.root, file));
+
+      assert.equal(repo.check('--staged').status, 1);
+    });
   });
 
   describe('integration tests', () => {

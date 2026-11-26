@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Publishes the artifact of a service: image in ECR (Fargate, workers, real time) and/or package
-# in S3 (Lambda, consumers). Writes .artifacts/<service>.env with TF_VAR_image and
+# in S3 (Lambda, consumers). Both come from service.Dockerfile: the package is its lambda stage, the
+# bundles with their production node_modules. Both are built for linux/arm64, the architecture of
+# the Fargate tasks and Lambda functions. Writes .artifacts/<service>.env with TF_VAR_image and
 # TF_VAR_lambda_package so the service stack uses them when planning.
 # Usage: publish-service.sh <environment> <service>
 # Variables: ARTIFACTS_BUCKET, ECR_PREFIX, AWS_REGION (required), GIT_SHA (HEAD by default).
@@ -19,6 +21,7 @@ require_identifier "service" "$SERVICE"
 : "${AWS_REGION:?missing AWS_REGION}"
 cd "$REPO_ROOT"
 GIT_SHA="${GIT_SHA:-$(git rev-parse HEAD)}"
+PLATFORM="linux/arm64"
 
 entry="$(node "$SCRIPTS_DIR/service-catalog-cli.mjs" entry "$ENVIRONMENT" "$SERVICE")"
 needs_image="$(json_get "$entry" 'o.needsImage')"
@@ -48,10 +51,8 @@ if [[ "$needs_image" == "true" ]]; then
   fi
 
   if ! probe aws ecr describe-images --repository-name "$repo" --image-ids "imageTag=$tag"; then
-    node_version="$(tr -d '[:space:]' < "$REPO_ROOT/.nvmrc")"
-    run docker build -f backend/infra/scripts/service.Dockerfile \
-      --build-arg "SERVICE=$SERVICE" --build-arg "NODE_VERSION=$node_version" \
-      -t "$registry/$repo:$tag" .
+    run docker build -f backend/infra/scripts/service.Dockerfile --platform "$PLATFORM" \
+      --build-arg "SERVICE=$SERVICE" -t "$registry/$repo:$tag" .
     run docker push "$registry/$repo:$tag"
   fi
 
@@ -61,15 +62,18 @@ if [[ "$needs_image" == "true" ]]; then
 fi
 
 if [[ "$needs_package" == "true" ]]; then
-  dist="$REPO_ROOT/backend/dist/$SERVICE"
+  package_dir="$artifacts_dir/$SERVICE-lambda"
   zip_file="$artifacts_dir/$SERVICE-$GIT_SHA.zip"
   key="services/$SERVICE/$GIT_SHA.zip"
 
+  run docker build -f backend/infra/scripts/service.Dockerfile --platform "$PLATFORM" \
+    --build-arg "SERVICE=$SERVICE" --target lambda \
+    --output "type=local,dest=$package_dir" .
   if is_dry; then
-    dry_text "cd $dist && zip -qr $zip_file ."
+    dry_text "cd $package_dir && zip -qr $zip_file ."
   else
-    mkdir -p "$artifacts_dir"
-    (cd "$dist" && zip -qr "$zip_file" .)
+    (cd "$package_dir" && zip -qr "$zip_file" .)
+    rm -rf "$package_dir"
   fi
   run aws s3 cp "$zip_file" "s3://$ARTIFACTS_BUCKET/$key"
   version="$(capture aws s3api head-object --bucket "$ARTIFACTS_BUCKET" --key "$key" \
@@ -94,5 +98,5 @@ if ! is_dry; then
   done
   log "Artifacts of $SERVICE written to $env_file"
 else
-  dry_text "escribir .artifacts/$SERVICE.env"
+  dry_text "write .artifacts/$SERVICE.env"
 fi
