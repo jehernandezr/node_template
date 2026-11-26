@@ -1,3 +1,6 @@
+/**
+ * @isolated-server Logical replication creates publications, subscriptions and replication slots on its server.
+ */
 import { AssignedShardConnections } from '../../__tests__/utils/assigned-shard-connections.js';
 import {
   SystemClock,
@@ -5,6 +8,10 @@ import {
   SystemRandomSource,
 } from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
+import {
+  IsolatedPostgresServer,
+  TestDatabaseServer,
+} from '@platform/persistence/test-utils';
 import type { DataSource } from 'typeorm';
 import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import {
@@ -64,7 +71,8 @@ new ContainerRuntime(process.env).describeIfAvailable(
   'LogicalReplicationTransfer over PostgreSQL',
   () => {
     jest.setTimeout(180_000);
-    const databases = new TransferTestDatabases();
+    const server = new IsolatedPostgresServer();
+    const databases = new TransferTestDatabases(new TestDatabaseServer(server));
     const replication = new LogicalReplicationTransfer(
       manifest,
       batch,
@@ -80,11 +88,16 @@ new ContainerRuntime(process.env).describeIfAvailable(
     );
 
     beforeAll(async () => {
+      await server.start();
       await databases.start();
     });
 
     afterAll(async () => {
-      await databases.stop();
+      try {
+        await databases.stop();
+      } finally {
+        await server.stop();
+      }
     });
 
     it('refuses a manifest with tables reached through their parent', () => {

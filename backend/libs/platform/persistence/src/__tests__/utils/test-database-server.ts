@@ -3,9 +3,10 @@ import { SharedTestServers } from '@platform/kernel/test-utils';
 import type { SharedPostgres } from '@platform/kernel/test-utils';
 import { DataSource } from 'typeorm';
 import type { MigrationClass } from '../../model/database-set-definition.js';
+import type { PostgresTestServers } from './postgres-test-servers.js';
 
 /**
- * Databases on the PostgreSQL the Jest run shares. Suites run one at a time on it, so each one drops and creates
+ * Databases on the PostgreSQL the Jest run shares, or on an `IsolatedPostgresServer`. Suites run one at a time on it, so each one drops and creates
  * the databases it uses and drops them again when it ends; migrated templates survive the suite, so the next suite
  * with the same migrations clones them instead of migrating again.
  */
@@ -15,7 +16,15 @@ export class TestDatabaseServer {
   /** Comment a template carries once its build finished, so a half-migrated template is never cloned. */
   static readonly READY_MARK = 'node-template: migrated template';
 
-  constructor(private readonly servers = new SharedTestServers(process.env)) {}
+  /**
+   * @param servers The PostgreSQL the databases go on: the one the Jest run shares, unless a suite isolated on its
+   *   own server passes it.
+   */
+  constructor(
+    private readonly servers: PostgresTestServers = new SharedTestServers(
+      process.env,
+    ),
+  ) {}
 
   /**
    * The shared server and its superuser.

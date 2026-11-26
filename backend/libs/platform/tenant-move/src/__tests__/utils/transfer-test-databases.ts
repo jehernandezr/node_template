@@ -11,9 +11,13 @@ import { LedgerSchema } from './ledger-schema.js';
 export class TransferTestDatabases {
   private static readonly ROLE = 'ledger_service';
 
-  private readonly databases = new TestDatabaseServer();
   private readonly open: DataSource[] = [];
   private readonly created: string[] = [];
+
+  /**
+   * @param databases Server the pairs go on: the one the Jest run shares unless the suite isolates its own.
+   */
+  constructor(private readonly databases = new TestDatabaseServer()) {}
 
   /** Creates the service role unless an earlier suite of the run did. */
   async start(): Promise<void> {

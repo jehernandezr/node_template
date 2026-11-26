@@ -221,6 +221,7 @@ class NoOwnTestServerRule {
   static DEDICATED = [
     /\/adapters\/valkey\/src\/__tests__\/utils\/dedicated-valkey-host\.ts$/,
     /\/tenant-move\/src\/nest\/__tests__\/utils\/region-servers\.ts$/,
+    /\/persistence\/src\/__tests__\/utils\/isolated-postgres-server\.ts$/,
   ];
   static DATABASE_IMAGE = /postgres|valkey|redis/i;
 
