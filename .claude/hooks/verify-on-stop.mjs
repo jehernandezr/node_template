@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Stop and SubagentStop: before an agent finishes, checks the files it changed with the
- * structure skill scripts. On violations it exits with 2 and the agent keeps working with the
+ * structure skill scripts and the language check. On violations it exits with 2 and the agent keeps working with the
  * list on stderr. A second stop in a row is let through to avoid a loop; the violation stays
  * reported and CI catches it again.
  */
@@ -13,6 +13,7 @@ class StopVerifier {
   static CHECKS = [
     '.claude/skills/backend-structure/scripts/check-structure.mjs',
     '.claude/skills/front-structure/scripts/check-structure.mjs',
+    '.claude/guards/check-language.mjs',
   ];
 
   constructor(input) {

@@ -81,7 +81,7 @@
       "lint": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "eslint --config eslint.tooling.config.mjs .claude/skills .claude/hooks front/tools --ignore-pattern \"**/build/**\"",
+          "command": "eslint --config eslint.tooling.config.mjs .claude/skills .claude/hooks .claude/guards .claude/impact front/tools --ignore-pattern \"**/build/**\"",
           "cwd": "{workspaceRoot}"
         },
         "cache": true,
@@ -90,7 +90,25 @@
           "{workspaceRoot}/backend/eslint.comments.mjs",
           "{workspaceRoot}/.claude/skills/**/*",
           "{workspaceRoot}/.claude/hooks/**/*",
+          "{workspaceRoot}/.claude/guards/**/*",
+          "{workspaceRoot}/.claude/impact/**/*",
           "{workspaceRoot}/front/tools/**/*"
+        ]
+      },
+      "tooling-test": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node --test .claude/guards/__tests__/*.test.mjs .claude/impact/__tests__/*.test.mjs .claude/skills/backend-structure/scripts/*.test.mjs .claude/skills/front-structure/scripts/__tests__/*.test.mjs",
+          "cwd": "{workspaceRoot}"
+        },
+        "cache": true,
+        "inputs": [
+          "{workspaceRoot}/.claude/**/*",
+          "{workspaceRoot}/CLAUDE.md",
+          "{workspaceRoot}/docs/quality/**/*",
+          "{workspaceRoot}/backend/eslint.*",
+          "{workspaceRoot}/eslint.tooling.config.mjs",
+          "{workspaceRoot}/commitlint.config.mjs"
         ]
       }
     }
