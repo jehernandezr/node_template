@@ -31,6 +31,7 @@ class GuardRulesHarness {
               'guards/no-jest-doubles': 'error',
               'guards/no-new-collaborator': 'error',
               'guards/no-global-module': 'error',
+              'guards/no-own-test-server': 'error',
             },
           },
         ],
@@ -94,6 +95,44 @@ describe('guards/no-new-collaborator', () => {
     ]) {
       assert.deepEqual(
         harness.reported(file, 'const a = new TaskRepository();\n'),
+        [],
+        file,
+      );
+    }
+  });
+});
+
+describe('guards/no-own-test-server', () => {
+  const harnessFile =
+    'backend/libs/platform/x/src/__tests__/utils/orders-test-database.ts';
+
+  it('rejects a harness that starts its own PostgreSQL or Valkey container', () => {
+    assert.deepEqual(
+      harness.reported(
+        harnessFile,
+        "const a = new PostgreSqlContainer('postgres:17');\nconst b = new GenericContainer('valkey/valkey-bundle:8.1');\nconst c = new GenericContainer(OrdersValkey.IMAGE);\n",
+      ),
+      Array(3).fill('guards/no-own-test-server'),
+    );
+  });
+
+  it('accepts other containers and the hosts that need servers of their own', () => {
+    assert.deepEqual(
+      harness.reported(
+        harnessFile,
+        "const a = new GenericContainer('axllent/mailpit:v1.27');\n",
+      ),
+      [],
+    );
+    for (const file of [
+      'backend/libs/platform/adapters/valkey/src/__tests__/utils/dedicated-valkey-host.ts',
+      'backend/libs/platform/tenant-move/src/nest/__tests__/utils/region-servers.ts',
+    ]) {
+      assert.deepEqual(
+        harness.reported(
+          file,
+          "const a = new PostgreSqlContainer('postgres:17-alpine');\nconst b = new GenericContainer(DedicatedValkeyHost.IMAGE);\n",
+        ),
         [],
         file,
       );

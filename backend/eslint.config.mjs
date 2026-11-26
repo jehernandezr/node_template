@@ -285,6 +285,7 @@ export default [
       'guards/no-jest-doubles': 'error',
       'guards/no-new-collaborator': 'error',
       'guards/no-global-module': 'error',
+      'guards/no-own-test-server': 'error',
     },
   },
   {

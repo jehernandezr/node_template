@@ -84,38 +84,63 @@ Also verify: 400 with `application/problem+json` and `code` on invalid input, 40
 
 ## Testcontainers
 
-One support class per technology in `src/__tests__/utils/`:
+The Jest global setup (`backend/jest.servers.cjs`) starts one PostgreSQL and one Valkey per run, and the suites share
+them one at a time ([ADR 0039](../../../../docs/adr/0039-shared-test-servers-rule-guards-and-impact-review.md)). A
+harness never starts its own container: it creates its own databases on the shared server and drops them when it
+stops. The lint rule `guards/no-own-test-server` rejects `new PostgreSqlContainer` and a `GenericContainer` of a
+PostgreSQL or Valkey image outside the hosts that need servers of their own.
 
 ```ts
-export class PostgresTestDatabase {
-  private container?: StartedPostgreSqlContainer;
-  dataSource!: DataSource;
+describe('OrderRepository', () => {
+  let db: ShardedTestDatabase;
+  let valkey: ValkeyTestServer;
+  let repository: OrderRepository;
 
-  async start(): Promise<void> {
-    this.container = await new PostgreSqlContainer('postgres:17').start();
-    this.dataSource = new DataSource({
-      type: 'postgres',
-      url: this.container.getConnectionUri(),
-      entities: shardEntities,
-      migrations: shardMigrations,
-      migrationsTransactionMode: 'each',
-      synchronize: false,
+  beforeAll(async () => {
+    db = new ShardedTestDatabase({
+      shard: OrderDatabaseSets.shard,
+      catalog: OrderDatabaseSets.catalog,
     });
-    await this.dataSource.initialize();
-    await this.dataSource.runMigrations();
-  }
+    await db.start();
+    await db.migrate();
+    valkey = new ValkeyTestServer('orders');
+    await valkey.start();
+    repository = new OrderRepository(
+      db.kitFor(new PersistenceFeature({ key: ShardKey.Tenant })),
+      new OrderMapper(),
+    );
+  });
 
-  async stop(): Promise<void> {
-    await this.dataSource?.destroy();
-    await this.container?.stop();
-  }
-}
+  afterAll(async () => {
+    await valkey.stop();
+    await db.stop();
+  });
+
+  it('stores an order only in the shard of its tenant', async () => {
+    const order = anOrder();
+    await db.inTenant(ShardedTestDatabase.TENANT_A, () =>
+      repository.save(order),
+    );
+
+    const other = await db.inTenant(ShardedTestDatabase.TENANT_B, () =>
+      repository.findById(order.id),
+    );
+    expect(other).toBeUndefined();
+  });
+});
 ```
 
-- Image version equal to production.
-- Never `synchronize`: the schema comes from the migrations.
-- LocalStack for SNS and SQS, `valkey/valkey` for Valkey. They are declared from the same topology the app uses.
-- Reuse one container per Jest project (`globalSetup`) when startup is heavy, with a schema or tenant per suite.
+- `ShardedTestDatabase.start()` creates two shards and a catalog on the shared server; `migrate()` clones template
+  databases that `TestDatabaseServer.cloneFromTemplates` migrated once per run for the same migrations, so a suite
+  pays a clone, not a full migration.
+- A second instance alive in the same suite takes a `namespace`; a service app uses `ServiceTestApp` and its
+  `ServicePostgresServer`, which follow the same rules.
+- `ValkeyTestServer` connects to the shared Valkey; the first one of a suite empties it. A test that needs two Valkey
+  servers that do not see each other, such as two regions, passes a `DedicatedValkeyHost`.
+- `SharedTestServers` in `@platform/kernel/test-utils` reads the shared servers and throws when a suite runs outside
+  the preset.
+- The shared images match production; never `synchronize`: the schema comes from the migrations.
+- LocalStack for SNS and SQS is declared from the same topology the app uses.
 
 ## Contract
 

@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 
 /**
  * Guards for review findings that kept coming back: Jest mocks instead of class doubles, collaborators built with
- * `new` outside the composition root, and `@Global()` modules outside the platform. A rule that could not be fixed
+ * `new` outside the composition root, `@Global()` modules outside the platform, and test harnesses that start their
+ * own database server. A rule that could not be fixed
  * everywhere at once lists its remaining files in `eslint.baseline.json`; the list may only shrink.
  */
 class GuardBaseline {
@@ -211,6 +212,57 @@ class NoGlobalModuleRule {
   }
 }
 
+/**
+ * Rejects a test harness that starts its own PostgreSQL or Valkey container (ADR 0039): suites share the servers the
+ * Jest global setup starts and create their own databases on them. Only the hosts of a test that needs servers that do
+ * not see each other start one.
+ */
+class NoOwnTestServerRule {
+  static DEDICATED = [
+    /\/adapters\/valkey\/src\/__tests__\/utils\/dedicated-valkey-host\.ts$/,
+    /\/tenant-move\/src\/nest\/__tests__\/utils\/region-servers\.ts$/,
+  ];
+  static DATABASE_IMAGE = /postgres|valkey|redis/i;
+
+  meta = {
+    type: 'problem',
+    schema: [],
+    messages: {
+      server:
+        '`new {{name}}` starts a database server of its own: create databases on the shared server with `ShardedTestDatabase`, `TestDatabaseServer` or `ValkeyTestServer`, or pass a `DedicatedValkeyHost` when the test needs two servers.',
+    },
+  };
+
+  /**
+   * Reports each PostgreSQL container, and each generic container of a database image, outside the dedicated hosts.
+   * @param {import('eslint').Rule.RuleContext} context Lint context.
+   * @returns {import('eslint').Rule.RuleListener} The visitors.
+   */
+  create(context) {
+    const file = context.filename.replaceAll('\\', '/');
+    if (NoOwnTestServerRule.DEDICATED.some((pattern) => pattern.test(file))) {
+      return {};
+    }
+    return {
+      NewExpression(node) {
+        if (node.callee.type !== 'Identifier') return;
+        const name = node.callee.name;
+        const image = node.arguments[0];
+        const database =
+          name === 'PostgreSqlContainer' ||
+          (name === 'GenericContainer' &&
+            image !== undefined &&
+            NoOwnTestServerRule.DATABASE_IMAGE.test(
+              context.sourceCode.getText(image),
+            ));
+        if (database) {
+          context.report({ node, messageId: 'server', data: { name } });
+        }
+      },
+    };
+  }
+}
+
 const baseline = GuardBaseline.load();
 
 /** ESLint plugin with the guards of the backend. */
@@ -219,6 +271,7 @@ const guardsPlugin = {
     'no-jest-doubles': new NoJestDoublesRule(),
     'no-new-collaborator': new NoNewCollaboratorRule(baseline),
     'no-global-module': new NoGlobalModuleRule(baseline),
+    'no-own-test-server': new NoOwnTestServerRule(),
   },
 };
 
