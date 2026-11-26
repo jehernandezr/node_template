@@ -27,7 +27,13 @@ export class TypeOrmIdempotencyStore<
     return this.table.release(key, claimToken);
   }
 
-  /** Extends the lease of an in-progress claim of the token; `false` if it already finished or another attempt took it. */
+  /**
+   * Extends the lease of an in-progress claim of the token; `false` if it already finished or another attempt took it.
+   * @param key Idempotency key.
+   * @param claimToken Token of the claim.
+   * @param leaseUntilMs New lease end.
+   * @returns Whether it was renewed.
+   */
   renew(
     key: string,
     claimToken: string,
@@ -36,7 +42,11 @@ export class TypeOrmIdempotencyStore<
     return this.table.renew(key, claimToken, new Date(leaseUntilMs));
   }
 
-  /** Deletes results completed before `before`. For the retention job. Returns how many it deleted. */
+  /**
+   * Deletes results completed before `before`. For the retention job. Returns how many it deleted.
+   * @param before Instant the completion must predate.
+   * @returns How many were deleted.
+   */
   purgeCompleted(before: Date): Promise<number> {
     return this.table.purgeCompleted(before);
   }

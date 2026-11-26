@@ -35,7 +35,11 @@ export class SqsPoller {
     private readonly clock: Clock,
   ) {}
 
-  /** One round of long polling: receives, processes and deletes the acknowledged ones. */
+  /**
+   * One round of long polling: receives, processes and deletes the acknowledged ones.
+   * @param signal Abort signal.
+   * @returns The poll report.
+   */
   async pollOnce(signal?: AbortSignal): Promise<PollReport> {
     const queueUrl = await this.names.queueUrl(
       this.names.queueName(this.queue.name, this.queue.isFifo),

@@ -112,7 +112,11 @@ export class TypeOrmOutboxStore implements OutboxStore, OutboxWriter {
     });
   }
 
-  /** Returns the current state of a record, if it exists. For diagnostics and tests. */
+  /**
+   * Returns the current state of a record, if it exists. For diagnostics and tests.
+   * @param id Record id.
+   * @returns The record, or `undefined`.
+   */
   async get(id: string): Promise<OutboxRecord | undefined> {
     const entity = await this.managers.run(
       ManagerIntent.ReadPrimary,

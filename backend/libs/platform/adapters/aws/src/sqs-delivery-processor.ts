@@ -49,6 +49,8 @@ export class SqsDeliveryProcessor {
   /**
    * One `DeliveryReport` per delivery, in the same order.
    * Zero visibility: the delivery comes back immediately for the next attempt.
+   * @param deliveries Deliveries of the batch.
+   * @returns The reports.
    */
   async process(deliveries: readonly SqsDelivery[]): Promise<DeliveryReport[]> {
     const reports: DeliveryReport[] = [];

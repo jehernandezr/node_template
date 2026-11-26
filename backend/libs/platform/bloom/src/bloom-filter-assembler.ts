@@ -14,6 +14,11 @@ export class BloomFilterAssembler {
     private readonly maxBitsPerPartition: number = BloomSizing.MAX_BITS,
   ) {}
 
+  /**
+   * Builds the filter of a definition: one partition or several, each rebuildable.
+   * @param definition Resolved definition.
+   * @returns The filter.
+   */
   assemble(definition: ResolvedBloomFilterDefinition): AsyncBloomFilter {
     const count = BloomSizing.partitionCount(
       definition.expectedItems,

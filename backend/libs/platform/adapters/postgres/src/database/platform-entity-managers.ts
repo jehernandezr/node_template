@@ -27,6 +27,9 @@ export class PlatformEntityManagers {
   /**
    * Runs `fn` with the shard's manager. `Write` joins the open transaction or opens one on the primary;
    * `Read` goes to the replica and `ReadPrimary` to the primary, except inside a transaction, which always wins.
+   * @param intent Read or write.
+   * @param fn Work with the manager.
+   * @returns What `fn` returns.
    * @throws ShardingError `KeyMissing` if there is no fixed shard, tenant or `ShardScope`.
    */
   run<T>(
@@ -43,6 +46,8 @@ export class PlatformEntityManagers {
   /**
    * Maintenance that does not belong to a tenant (retention): with a fixed shard it runs on it and, without a fixed shard,
    * goes through all the service's shards and sums what `fn` returns on each one.
+   * @param fn Work on one shard; returns how many rows it touched.
+   * @returns The rows touched in every shard.
    * @throws PersistenceError `PersistenceQueryFailed` if `fn` failed on any shard.
    */
   async sweep(

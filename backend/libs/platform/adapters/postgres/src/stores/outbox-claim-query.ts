@@ -50,7 +50,12 @@ export class OutboxClaimQuery {
 
   constructor(private readonly clock: Clock) {}
 
-  /** Returns up to `request.limit` records with the lease set, from the oldest `created_at` to the newest. */
+  /**
+   * Returns up to `request.limit` records with the lease set, from the oldest `created_at` to the newest.
+   * @param manager Manager of the shard.
+   * @param request Limit, lease and worker.
+   * @returns The claimed records.
+   */
   async claim(
     manager: EntityManager,
     request: ClaimOutboxRequest,

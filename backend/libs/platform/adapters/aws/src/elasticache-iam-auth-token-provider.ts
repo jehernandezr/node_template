@@ -44,7 +44,11 @@ export class ElastiCacheIamAuthTokenProvider {
     private readonly clock: Clock,
   ) {}
 
-  /** Current token for that identity, signed with the credentials of this instant. */
+  /**
+   * Current token for that identity, signed with the credentials of this instant.
+   * @param request User, cache and region.
+   * @returns The token.
+   */
   async token(request: ElastiCacheIamAuthRequest): Promise<string> {
     return this.sign(
       request,
@@ -56,6 +60,10 @@ export class ElastiCacheIamAuthTokenProvider {
   /**
    * Signs the token for a given instant. It is the SigV4 presignature of
    * `GET http://<cacheName>/?Action=connect&User=<userId>` without the scheme.
+   * @param request User, cache and region.
+   * @param credentials AWS credentials.
+   * @param now Instant of the signature.
+   * @returns The token.
    */
   sign(
     request: ElastiCacheIamAuthRequest,

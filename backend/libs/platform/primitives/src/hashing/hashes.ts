@@ -9,6 +9,7 @@ export class Hashes {
    * Not cryptographic: not suitable for idempotency keys or anything that
    * an attacker can force to collide.
    * @returns Unsigned integer in `[0, 2^32)`.
+   * @param input Text or bytes.
    */
   static fnv1a32(input: string | Uint8Array): number {
     const bytes =
@@ -21,7 +22,11 @@ export class Hashes {
     return hash >>> 0;
   }
 
-  /** Returns 32-bit FNV-1a as 8 lowercase hexadecimal characters. */
+  /**
+   * Returns 32-bit FNV-1a as 8 lowercase hexadecimal characters.
+   * @param input Text or bytes.
+   * @returns The hex hash.
+   */
   static fnv1a32Hex(input: string | Uint8Array): string {
     return Hashes.fnv1a32(input).toString(16).padStart(8, '0');
   }

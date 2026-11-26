@@ -7,7 +7,12 @@ export class OutboxRecordMapper {
   private static readonly STATUSES: readonly string[] =
     Object.values(OutboxStatus);
 
-  /** @throws PersistenceError `PersistenceCorruptRow` if the row status is not an `OutboxStatus`. */
+  /**
+   * Rebuilds an outbox record from its row.
+   * @param entity Stored row.
+   * @returns The record.
+   * @throws PersistenceError `PersistenceCorruptRow` if the row status is not an `OutboxStatus`.
+   */
   static toRecord(entity: OutboxEntity): OutboxRecord {
     if (!OutboxRecordMapper.STATUSES.includes(entity.status)) {
       throw new PersistenceError(

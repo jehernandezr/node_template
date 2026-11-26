@@ -129,7 +129,10 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
       : DirectoryWriteResult.VersionConflict;
   }
 
-  /** Returns the registered logical shards, ordered by id. */
+  /**
+   * Returns the registered logical shards, ordered by id.
+   * @returns The shard ids.
+   */
   async listShards(): Promise<string[]> {
     const entities = await this.read((manager) =>
       manager.find(ShardInstanceEntity, { order: { logicalShard: 'ASC' } }),
@@ -137,7 +140,10 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     return entities.map((entity) => entity.logicalShard);
   }
 
-  /** Returns the logical shards with their instance, ordered by id. This is what `DirectoryShardLister` lists. */
+  /**
+   * Returns the logical shards with their instance, ordered by id. This is what `DirectoryShardLister` lists.
+   * @returns The shard locations.
+   */
   async listShardLocations(): Promise<readonly ShardLocation[]> {
     const entities = await this.read((manager) =>
       manager.find(ShardInstanceEntity, { order: { logicalShard: 'ASC' } }),
@@ -151,6 +157,8 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
   /**
    * Writes the placement if it is new or its version is greater than the stored one. Returns `true` if it wrote.
    * TypeORM's orUpdate does not accept the version WHERE, and Postgres returns no row if the stored version is not lower: that is why the INSERT goes as SQL and the response tells whether the row was written.
+   * @param placement Placement to write.
+   * @returns Whether it wrote.
    */
   async setPlacementIfNewer(placement: TenantPlacement): Promise<boolean> {
     PlacementValidator.assert(placement);
@@ -175,7 +183,11 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     });
   }
 
-  /** Registers or moves a logical shard to a physical instance. */
+  /**
+   * Registers or moves a logical shard to a physical instance.
+   * @param logicalShard Logical shard.
+   * @param instance Physical instance.
+   */
   async setInstance(logicalShard: string, instance: string): Promise<void> {
     if (typeof logicalShard !== 'string' || logicalShard.length === 0) {
       throw PersistenceError.invalidConfiguration(

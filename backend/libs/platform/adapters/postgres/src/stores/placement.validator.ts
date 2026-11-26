@@ -6,7 +6,11 @@ export class PlacementValidator {
   private static readonly STATUSES: readonly string[] =
     Object.values(TenantStatus);
 
-  /** @throws PersistenceError `PersistenceInvalidConfig` for the first invalid field. */
+  /**
+   * Validates a placement before it is written.
+   * @param placement Placement to check.
+   * @throws PersistenceError `PersistenceInvalidConfig` for the first invalid field.
+   */
   static assert(placement: TenantPlacement): void {
     const { tenantId, region, shardGroup, status, version, dedicated } =
       placement;

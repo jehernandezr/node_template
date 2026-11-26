@@ -56,7 +56,11 @@ export class BloomFilter {
     }
   }
 
-  /** Creates an empty filter sized for `expectedItems` with the given rate. */
+  /**
+   * Creates an empty filter sized for `expectedItems` with the given rate.
+   * @param options Expected items and rate.
+   * @returns The filter.
+   */
   static create(options: CreateBloomFilterOptions): BloomFilter {
     return new BloomFilter(
       BloomSizing.optimalParameters(
@@ -66,14 +70,21 @@ export class BloomFilter {
     );
   }
 
-  /** Inserts an item. */
+  /**
+   * Inserts an item.
+   * @param item Item to insert.
+   */
   add(item: string): void {
     for (const position of this.positions(item)) {
       this.data[Math.floor(position / 8)] |= 1 << (position % 8);
     }
   }
 
-  /** Returns false when the item is definitely absent; true when it might be present. */
+  /**
+   * Returns false when the item is definitely absent; true when it might be present.
+   * @param item Item to check.
+   * @returns Whether it might be present.
+   */
   mightContain(item: string): boolean {
     return this.positions(item).every(
       (position) =>
@@ -81,7 +92,10 @@ export class BloomFilter {
     );
   }
 
-  /** Estimates how many distinct items were inserted, from the set bits. */
+  /**
+   * Estimates how many distinct items were inserted, from the set bits.
+   * @returns The estimate.
+   */
   approximateCount(): number {
     const setBits = this.countSetBits();
     if (setBits === this.bits) {
@@ -95,12 +109,18 @@ export class BloomFilter {
     );
   }
 
-  /** Estimates the current false positive rate from the fill: (set bits / m)^k. */
+  /**
+   * Estimates the current false positive rate from the fill: (set bits / m)^k.
+   * @returns The estimated rate.
+   */
   estimatedFalsePositiveRate(): number {
     return Math.pow(this.countSetBits() / this.bits, this.hashes);
   }
 
-  /** Encodes the filter with its format version, its hash scheme and the bits in base64. */
+  /**
+   * Encodes the filter with its format version, its hash scheme and the bits in base64.
+   * @returns The serialized filter.
+   */
   serialize(): SerializedBloomFilter {
     return {
       version: BLOOM_FORMAT_VERSION,
@@ -113,6 +133,8 @@ export class BloomFilter {
 
   /**
    * Restores a filter produced by `serialize`.
+   * @param serialized Serialized filter.
+   * @returns The filter.
    * @throws CorruptedDataError when the version or scheme is unknown, the base64 is not canonical,
    *   the length does not match `bits` or leftover bits are set.
    */
@@ -136,6 +158,8 @@ export class BloomFilter {
 
   /**
    * Returns a new filter with the items of both. Neither input changes.
+   * @param other Filter to merge.
+   * @returns The union.
    * @throws IncompatibleFiltersError when the two filters have different parameters.
    */
   union(other: BloomFilter): BloomFilter {

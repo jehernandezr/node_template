@@ -23,6 +23,12 @@ export interface InternalRequestSignerDependencies {
  * the AWS adapter because it is the only one that knows both signers.
  */
 export class InternalRequestSignerSelector {
+  /**
+   * Picks the internal request signer of the configured kind.
+   * @param kind HMAC or SigV4.
+   * @param dependencies Secret, credentials and clock.
+   * @returns The signer.
+   */
   select(
     kind: InternalApiSignerKind,
     dependencies: InternalRequestSignerDependencies,

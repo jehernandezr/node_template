@@ -70,6 +70,7 @@ export class PartitionedBloomFilter extends AsyncBloomFilter {
    * Rebuilds each partition from a new source. First checks that all of them can be rebuilt and, if
    * not, throws `InvalidParametersError` without touching any. Then, in sequence, each partition reads the source
    * from the start and keeps only its items, so the whole set is never held in memory.
+   * @param factory Source of each partition.
    */
   async rebuildFrom(factory: BloomRebuildSourceFactory): Promise<void> {
     const rebuildable = this.partitions.filter(RebuildableBloomFilter.is);

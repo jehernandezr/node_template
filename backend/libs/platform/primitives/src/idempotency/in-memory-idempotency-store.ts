@@ -70,6 +70,10 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
   /**
    * Extends to `leaseUntilMs` the lease of an in-progress claim that still belongs to `claimToken`. Returns `false` if
    * the claim already finished or another attempt took it.
+   * @param key Idempotency key.
+   * @param claimToken Token of the claim.
+   * @param leaseUntilMs New lease end.
+   * @returns Whether it was renewed.
    */
   renew(
     key: string,

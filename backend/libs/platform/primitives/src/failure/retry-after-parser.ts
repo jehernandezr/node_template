@@ -22,6 +22,7 @@ export class RetryAfterParser {
    * Returns the suggested wait in milliseconds, bounded to `[0, maxMs]`. Accepts the
    * header (integer seconds or HTTP date), seconds as a number or a date.
    * @returns `undefined` if the value is missing or cannot be parsed.
+   * @param value Header value, seconds or date.
    */
   parse(value: string | number | Date | null | undefined): number | undefined {
     const delay = this.rawDelayMs(value);

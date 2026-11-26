@@ -25,6 +25,9 @@ export class SqsDeadLetterRedriver {
   /**
    * `true` if the message ended up in the DLQ; `false` if the copy failed and the delivery must be retried.
    * The FIFO DLQ requires a group and deduplication; the message id serves as the group when the original did not have one.
+   * @param delivery Delivery to copy.
+   * @param result Reason it is dead.
+   * @returns Whether it reached the DLQ.
    */
   async copy(
     delivery: SqsDelivery,

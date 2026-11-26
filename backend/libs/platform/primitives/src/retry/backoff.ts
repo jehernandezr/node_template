@@ -17,6 +17,8 @@ export class Backoff {
    * Returns the wait, in whole milliseconds, before retry number `attempt` (the
    * first is 1). It never exceeds `policy.maxMs` and is never negative.
    * `baseMs = 0` gives 0; a huge exponent gives Infinity and `maxMs` caps it.
+   * @param attempt Retry number.
+   * @returns The wait.
    */
   delay(attempt: number): number {
     PrimitivesGuard.instance.integerInRange(

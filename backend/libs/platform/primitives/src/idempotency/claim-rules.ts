@@ -15,6 +15,9 @@ export class ClaimRules {
   /**
    * Returns the lease end in epoch milliseconds: the deadline plus the margin, and at least
    * `minLeaseMs` from `nowMs`. So the lease always covers the whole operation.
+   * @param request Deadline and lease margins.
+   * @param nowMs Current instant.
+   * @returns The lease end.
    */
   static computeLeaseUntil(
     request: Pick<ClaimRequest, 'deadline' | 'leaseMarginMs' | 'minLeaseMs'>,
@@ -27,7 +30,11 @@ export class ClaimRules {
     return Math.max(request.deadline.atMs + margin, nowMs + minimum);
   }
 
-  /** Validates the key and the fingerprint. Throws `InvalidArgumentError`. */
+  /**
+   * Validates the key and the fingerprint. Throws `InvalidArgumentError`.
+   * @param key Idempotency key.
+   * @param fingerprint Fingerprint of the input.
+   */
   static assertInput(key: string, fingerprint: string): void {
     PrimitivesGuard.instance.integerInRange(
       'key',

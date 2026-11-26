@@ -54,6 +54,12 @@ export class ClaimTable<R> {
     this.tenantColumn = options.tenantColumn ?? false;
   }
 
+  /**
+   * Claims a key: acquires it, finds its stored result or sees it in progress.
+   * @param key Idempotency key.
+   * @param request Fingerprint, deadline and lease.
+   * @returns The claim result.
+   */
   async claim(key: string, request: ClaimRequest): Promise<ClaimResult<R>> {
     ClaimRules.assertInput(key, request.fingerprint);
     return this.managers.run(ManagerIntent.Write, (manager) =>
@@ -62,7 +68,11 @@ export class ClaimTable<R> {
   }
 
   /**
+   * Stores the result of a claim that still belongs to the token.
    * TypeORM types the `jsonb` column as a partial of `unknown` and does not accept `null` there; the `null` is the SQL value.
+   * @param key Idempotency key.
+   * @param claimToken Token of the claim.
+   * @param result Result to store.
    */
   async complete(key: string, claimToken: string, result: R): Promise<void> {
     const affected = await this.managers.run(
@@ -90,6 +100,11 @@ export class ClaimTable<R> {
     }
   }
 
+  /**
+   * Releases a claim of the token so the key can be claimed again.
+   * @param key Idempotency key.
+   * @param claimToken Token of the claim.
+   */
   async release(key: string, claimToken: string): Promise<void> {
     const affected = await this.managers.run(
       ManagerIntent.Write,
@@ -111,6 +126,10 @@ export class ClaimTable<R> {
   /**
    * Extends to `leaseUntil` the lease of an in-progress claim that still belongs to `claimToken`, never shortening it.
    * Returns `false` if the claim already finished or another attempt took it.
+   * @param key Idempotency key.
+   * @param claimToken Token of the claim.
+   * @param leaseUntil New lease end.
+   * @returns Whether it was renewed.
    */
   async renew(
     key: string,
@@ -143,7 +162,11 @@ export class ClaimTable<R> {
     return owned;
   }
 
-  /** Deletes results completed before `before`; visits all shards if none is pinned. Returns how many it deleted. */
+  /**
+   * Deletes results completed before `before`; visits all shards if none is pinned. Returns how many it deleted.
+   * @param before Instant the completion must predate.
+   * @returns How many were deleted.
+   */
   purgeCompleted(before: Date): Promise<number> {
     return this.managers.sweep(async (manager) => {
       const outcome = await manager

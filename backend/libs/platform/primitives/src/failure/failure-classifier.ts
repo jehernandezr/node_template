@@ -71,6 +71,11 @@ export class FailureClassifier {
   /** `rules` are consulted at each node of the chain, before the built-in rules. */
   constructor(private readonly rules: readonly FailureRule[] = []) {}
 
+  /**
+   * Classifies an error with the registered rules, falling back to its declared kind.
+   * @param error Error to classify.
+   * @returns Its failure kind.
+   */
   classify(error: unknown): FailureKind {
     let node: unknown = error;
     for (
@@ -99,7 +104,12 @@ export class FailureClassifier {
     return FailureKind.Permanent;
   }
 
-  /** Only `Transient` is retryable: a `Timeout` or `Cancelled` leaves the result uncertain. */
+  /**
+   * Tells whether retrying an error can help.
+   * Only `Transient` is retryable: a `Timeout` or `Cancelled` leaves the result uncertain.
+   * @param error Error to check.
+   * @returns `true` when transient.
+   */
   isTransient(error: unknown): boolean {
     return this.classify(error) === FailureKind.Transient;
   }

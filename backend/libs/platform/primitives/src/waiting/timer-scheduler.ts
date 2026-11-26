@@ -7,6 +7,9 @@ export class TimerScheduler {
    * Arms a timer of `ms` milliseconds even if it exceeds the `setTimeout`
    * maximum, in segments. Returns the function that cancels it. Keeps the
    * process alive while it waits.
+   * @param ms Delay.
+   * @param fire Called when it fires.
+   * @returns The cancel function.
    */
   static arm(ms: number, fire: () => void): () => void {
     return TimerScheduler.schedule(ms, fire, false);
@@ -15,12 +18,19 @@ export class TimerScheduler {
   /**
    * Same as `arm`, but the timer does not keep the process alive: it suits
    * deadline signals that nothing else waits for.
+   * @param ms Delay.
+   * @param fire Called when it fires.
+   * @returns The cancel function.
    */
   static armDetached(ms: number, fire: () => void): () => void {
     return TimerScheduler.schedule(ms, fire, true);
   }
 
-  /** Abort reason as an `Error`, so it always rejects with an error. */
+  /**
+   * Abort reason as an `Error`, so it always rejects with an error.
+   * @param signal Aborted signal.
+   * @returns The reason as an error.
+   */
   static abortReason(signal: AbortSignal): Error {
     return signal.reason instanceof Error
       ? signal.reason

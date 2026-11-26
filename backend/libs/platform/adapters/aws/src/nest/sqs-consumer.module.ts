@@ -13,6 +13,11 @@ import { SqsConsumerProviders } from './sqs-consumer.providers.js';
  */
 @Module({})
 export class SqsConsumerModule {
+  /**
+   * Registers the SQS consumer of a queue: poller, processor and Lambda handler.
+   * @param options Queue and consumer settings.
+   * @returns The module.
+   */
   static forRoot(options: SqsConsumerModuleOptions): DynamicModule {
     return {
       module: SqsConsumerModule,

@@ -25,6 +25,9 @@ export class BloomSizing {
   /**
    * Returns the bits an optimal filter needs, without the `MAX_BITS` cap: m = ceil(-n * ln p / (ln 2)^2).
    * Used to size partitions when a single filter is not enough (see `partitionCount`).
+   * @param expectedItems Items expected.
+   * @param falsePositiveRate Target rate.
+   * @returns The bits.
    * @throws InvalidParametersError when an argument is out of range.
    */
   static requiredBits(
@@ -42,6 +45,9 @@ export class BloomSizing {
   /**
    * Returns the array size and number of hash functions for a target rate.
    * m = ceil(-n * ln p / (ln 2)^2), k = max(1, round(m / n * ln 2)).
+   * @param expectedItems Items expected.
+   * @param falsePositiveRate Target rate.
+   * @returns The parameters.
    * @throws InvalidParametersError when an argument is out of range or the
    *   result exceeds the limits (bits in [1, 2^32], hash functions in [1, 32]).
    */
@@ -70,6 +76,10 @@ export class BloomSizing {
    * Returns the partitions needed so each one fits in `maxBitsPerPartition` at the target rate.
    * For example, 1.5 billion items at 1 % need about 14.4 billion bits: 4 partitions
    * of at most 2^32 bits.
+   * @param expectedItems Items expected.
+   * @param falsePositiveRate Target rate.
+   * @param maxBitsPerPartition Cap of each partition.
+   * @returns The number of partitions.
    * @throws InvalidParametersError for out-of-range arguments, or when more than `MAX_PARTITIONS` are needed.
    */
   static partitionCount(

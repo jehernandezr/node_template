@@ -10,6 +10,9 @@ export class SagaInstanceMapper {
   /**
    * Returns a new row with all the instance fields and `tenantId`. An undefined
    * `state` is stored as `null`, because the column is nullable `jsonb`.
+   * @param instance Saga instance.
+   * @param tenantId Tenant of the saga.
+   * @returns The row.
    */
   toPersistence(instance: SagaInstance, tenantId: string): SagaInstanceEntity {
     const props = instance.toProps();
@@ -38,7 +41,11 @@ export class SagaInstanceMapper {
     return entity;
   }
 
-  /** Returns the instance rebuilt with `SagaInstance.rehydrate`. A null `state` comes back as `undefined`. */
+  /**
+   * Returns the instance rebuilt with `SagaInstance.rehydrate`. A null `state` comes back as `undefined`.
+   * @param entity Stored row.
+   * @returns The saga instance.
+   */
   toDomain(entity: SagaInstanceEntity): SagaInstance {
     return SagaInstance.rehydrate({
       id: entity.id,

@@ -11,6 +11,8 @@ export class BloomDefinitionResolver {
 
   /**
    * Validates expectedItems and the rate with the same rules as the sizing.
+   * @param definition Filter definition.
+   * @returns The resolved definition.
    * @throws InvalidParametersError for an empty name, an invalid size or rate, or a
    * cron expression that has neither five nor six fields.
    */

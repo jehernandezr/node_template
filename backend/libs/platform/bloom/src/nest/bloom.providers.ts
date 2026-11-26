@@ -10,6 +10,11 @@ import type {
 
 /** Providers of the bloom root module and those it exports. */
 export class BloomProviders {
+  /**
+   * Builds the providers of the filter factory with its adapters.
+   * @param extras Filter factory adapter.
+   * @returns The providers.
+   */
   static build(extras: BloomModuleExtras): Provider[] {
     return [
       {
@@ -31,6 +36,10 @@ export class BloomProviders {
     ];
   }
 
+  /**
+   * Lists the tokens the bloom module exports.
+   * @returns The tokens.
+   */
   static exports(): Array<Abstract<unknown> | Type<unknown>> {
     return [BloomFilterAssembler, BloomFilterFactory];
   }

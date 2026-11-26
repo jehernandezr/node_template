@@ -3,6 +3,11 @@ import { SagaStepLogEntity } from './saga-step-log.entity.js';
 
 /** Converts between the log entry and its row. Undefined `input` and `output` are stored as `null`. */
 export class SagaStepLogMapper {
+  /**
+   * Turns a step log entry into its row.
+   * @param entry Step log entry.
+   * @returns The row.
+   */
   toPersistence(entry: StepLogEntry): SagaStepLogEntity {
     const row = new SagaStepLogEntity();
     row.sagaId = entry.sagaId;
@@ -20,6 +25,11 @@ export class SagaStepLogMapper {
     return row;
   }
 
+  /**
+   * Rebuilds a step log entry from its row.
+   * @param entity Stored row.
+   * @returns The entry.
+   */
   toDomain(entity: SagaStepLogEntity): StepLogEntry {
     return {
       sagaId: entity.sagaId,
