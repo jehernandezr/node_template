@@ -117,7 +117,8 @@ jobs:
 
       - run: pnpm nx affected -t lint typecheck build analyze format-check
 
-      # The coverage threshold lives in backend/jest.preset.js: the same command applies it locally.
+      # The coverage threshold lives in backend/jest.preset.js. The run-commands executor of each inferred test target
+      # forwards --coverage to Jest, so a project under the threshold fails this step, and the same command does locally.
       - name: Backend tests with minimum coverage
         run: >-
           pnpm nx affected -t test --exclude='tag:lang:dart' --coverage
