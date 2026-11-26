@@ -17,6 +17,7 @@ import { InternalApiModule } from '@platform/internal-api/nest';
 import { SagaModule } from '@platform/saga/nest';
 import { SmokeAppModule } from '../smoke-app.module.js';
 import { SmokeOrdersModule } from '../orders/smoke-orders.module.js';
+import { SmokeFailuresModule } from '../smoke-failures.module.js';
 import { SmokeTenancyModule } from '../smoke-tenancy.module.js';
 import { KernelModule } from '@platform/kernel/nest';
 
@@ -39,6 +40,7 @@ const EXPECTED_ORDER: readonly unknown[] = [
   InternalApiModule,
   SagaPostgresModule,
   SagaModule,
+  SmokeFailuresModule,
   SmokeTenancyModule,
   SmokeOrdersModule,
 ];

@@ -56,6 +56,7 @@ import { SmokeTenantVerifier } from './orders/smoke-tenant-verifier.js';
 import { SmokeOrderEntity } from './orders/smoke-order.entity.js';
 import { CreateSmokeOrdersMigration } from './orders/create-smoke-orders.migration.js';
 import { SmokeService } from './smoke-service.enum.js';
+import { SmokeFailuresModule } from './smoke-failures.module.js';
 import { SmokeTenancyModule } from './smoke-tenancy.module.js';
 import type { SmokeEnvironment } from './smoke-environment.js';
 
@@ -141,6 +142,7 @@ export class SmokeAppModule {
           store: TypeOrmSagaStore,
           scopes: ShardedSagaScopes,
         }),
+        SmokeFailuresModule,
         SmokeTenancyModule,
         SmokeOrdersModule,
       ],
