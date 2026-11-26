@@ -26,7 +26,9 @@ export class JobExecution {
 
   /**
    * Runs the job once. An exclusive job whose lock is held by another process does not run and is
-   * counted as skipped.
+   * counted as skipped. A run that outlives its `timeoutMs` is aborted and counted as failed, and this call settles,
+   * and the lock is released, only once the job itself returns, so a job that ignores the abort never overlaps the
+   * next run.
    * @param shutdown Aborts the run when the runner shuts down and the grace period ran out.
    * @param job Job to run.
    * @returns The outcome of the run.
@@ -40,6 +42,7 @@ export class JobExecution {
     const runId = Buffer.from(this.random.bytes(8)).toString('hex');
     const fields = { job: job.name, runId };
     let lease: JobLease | undefined;
+    let running: Promise<void> | undefined;
     try {
       if (job.exclusive) {
         lease = await this.lock.tryAcquire(job.name, job.timeoutMs);
@@ -51,10 +54,10 @@ export class JobExecution {
           return this.finish(job, JobRunResult.Skipped, startedAt);
         }
       }
-      await Deadline.after(job.timeoutMs, this.clock).race(
-        (signal) => job.run({ signal, startedAt, runId }),
-        shutdown,
-      );
+      await Deadline.after(job.timeoutMs, this.clock).race((signal) => {
+        running = job.run({ signal, startedAt, runId });
+        return running;
+      }, shutdown);
       return this.finish(job, JobRunResult.Succeeded, startedAt);
     } catch (error) {
       this.logger.error('Job run failed', {
@@ -64,6 +67,7 @@ export class JobExecution {
       this.finish(job, JobRunResult.Failed, startedAt);
       throw error;
     } finally {
+      await running?.catch(() => undefined);
       await this.releaseQuietly(lease, fields);
     }
   }

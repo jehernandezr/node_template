@@ -349,6 +349,32 @@ describe('JobRunner', () => {
       expect(job.runs).toBe(1);
     });
 
+    it('does not start another run while a run that ignores the abort outlives its timeout', async () => {
+      const { runner, metrics } = createRunner();
+      const job = new RecordingJob({
+        name: 'job',
+        behavior: RecordingJobBehavior.WaitForRelease,
+        schedule: { kind: JobScheduleKind.Interval, everyMs: 100 },
+        timeoutMs: 150,
+      });
+      runner.register(job);
+      runner.start();
+
+      await jest.advanceTimersByTimeAsync(1_000);
+
+      expect(job.runs).toBe(1);
+      expect(job.contexts[0]?.signal.aborted).toBe(true);
+      expect(
+        metrics.total(SchedulingMetric.Runs, {
+          [SchedulingMetricAttribute.Result]: JobRunResult.Failed,
+        }),
+      ).toBe(1);
+
+      job.release();
+      await jest.advanceTimersByTimeAsync(150);
+      expect(job.runs).toBe(2);
+    });
+
     it('keeps the schedule after a failed run', async () => {
       const { runner } = createRunner();
       const job = everyHundredMs(RecordingJobBehavior.Fail);
