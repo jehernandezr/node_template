@@ -180,6 +180,7 @@ node --test backend/infra/scripts/__tests__/*.test.mjs
 
 - Internet egress: `egress` (`none`, `single_nat` in dev, `per_az_nat` in staging and prod) adds NAT only for the private application subnets. The data subnets have no route to the Internet. See [ADR 0016](../../../docs/adr/0016-network-egress.md).
 - Terraform removes the default egress rule from security groups: every egress is explicit.
+- Some descriptions force a new resource in AWS when they change: `aws_security_group` (modules `alb`, `http-api`, `network`, `service-fargate`, `service-lambda`, `observability`, `rds-postgres`, `valkey`) and the parameter groups of `rds-postgres` and `valkey`. They may change freely until the first apply; after it they stay fixed, because changing one replaces the security group or parameter group.
 - Trivy exceptions (`trivy:ignore`) sit next to the resource with their reason: HTTPS egress of the services through NAT, the public realtime ALB, HTTP on the internal ALB behind the VPC link and SSE-S3 encryption of the ALB access logs.
 - `db_deletion_protection` is on and the final snapshot is created unless `db_skip_final_snapshot = true`. Turn them off only in disposable environments.
 - KMS keys: they all come from the `kms-key` module, with the same base policy. The logs of all services (Fargate and Lambda) share one CMK per environment from the `platform` stack; the roles already limit which log group each component writes to. RDS, messaging, Valkey, files and secrets keep their own CMK.

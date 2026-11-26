@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -59,6 +60,39 @@ class ContainerSuites {
   }
 
   /**
+   * Test utilities whose statements change server-level state.
+   * @returns {string[]} Paths from `backend/`.
+   */
+  utilitiesChangingServerState() {
+    return execFileSync(
+      'git',
+      [
+        'ls-files',
+        '-co',
+        '--exclude-standard',
+        'backend/**/__tests__/utils/*.ts',
+      ],
+      { cwd: this.root, encoding: 'utf8' },
+    )
+      .split('\n')
+      .filter(Boolean)
+      .map((file) => file.slice('backend/'.length))
+      .filter((file) => ContainerSuites.SERVER_STATE.test(this.text(file)));
+  }
+
+  /**
+   * Code lines of a file that create a role, leaving out JSDoc that only names the statement.
+   * @param {string} file Path from `backend/`.
+   * @returns {string[]} The lines.
+   */
+  roleCreations(file) {
+    return this.text(file)
+      .split('\n')
+      .filter((line) => !/^\s*(\*|\/\*\*)/.test(line))
+      .filter((line) => /\bCREATE\s+ROLE\b/i.test(line));
+  }
+
+  /**
    * Suites whose own statements change server-level state.
    * @returns {string[]} Paths from `backend/`.
    */
@@ -91,6 +125,56 @@ describe('backend/isolated-server-suites.json', () => {
       ),
       [],
     );
+  });
+
+  it('lists every test utility that changes server state with the reason it is safe on the shared server', () => {
+    assert.deepEqual(
+      suites.utilitiesChangingServerState().sort(),
+      REGISTRY.sharedUtilities.map((entry) => entry.file).sort(),
+    );
+    assert.deepEqual(
+      REGISTRY.sharedUtilities
+        .filter((entry) => entry.reason.trim() === '')
+        .map((entry) => entry.file),
+      [],
+    );
+  });
+
+  it('creates roles on the shared server only through TestDatabaseServer.ensureRole', () => {
+    const ensureRole =
+      'libs/platform/persistence/src/__tests__/utils/test-database-server.ts';
+    const outsideListed = [
+      ...suites.files.filter((suite) => !listed.includes(suite)),
+      ...suites.utilitiesChangingServerState(),
+    ];
+    assert.deepEqual(
+      outsideListed.filter(
+        (file) => file !== ensureRole && suites.roleCreations(file).length > 0,
+      ),
+      [],
+    );
+    const method = /async ensureRole\([\s\S]*?\n {2}\}\n/.exec(
+      suites.text(ensureRole),
+    )?.[0];
+    assert.equal(suites.roleCreations(ensureRole).length, 1);
+    assert.match(method ?? '', /\bCREATE\s+ROLE\b/);
+  });
+
+  it('gives the isolated PostgreSQL the image and settings of the shared one', () => {
+    const { JestTestServers } = createRequire(import.meta.url)(
+      join(ROOT, 'backend/jest.servers.cjs'),
+    );
+    const isolated = suites.text(
+      'libs/platform/persistence/src/__tests__/utils/isolated-postgres-server.ts',
+    );
+    const image = /IMAGE = '([^']+)'/.exec(isolated)?.[1];
+    const settings = [
+      ...(/SETTINGS = \[([\s\S]*?)\]/.exec(isolated)?.[1] ?? '').matchAll(
+        /'([^']+)'/g,
+      ),
+    ].map((match) => match[1]);
+    assert.equal(image, JestTestServers.POSTGRES_IMAGE);
+    assert.deepEqual(settings, JestTestServers.POSTGRES_SETTINGS);
   });
 
   it('gives every listed suite a known category', () => {
