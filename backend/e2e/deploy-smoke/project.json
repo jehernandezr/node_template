@@ -1,0 +1,42 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "deploy-smoke",
+  "sourceRoot": "backend/e2e/deploy-smoke/src",
+  "projectType": "application",
+  "tags": ["type:e2e", "scope:e2e"],
+  "targets": {
+    "typecheck": {
+      "options": {
+        "command": "tsc -p tsconfig.spec.json"
+      }
+    },
+    "run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest --config jest.smoke.config.cjs --runInBand",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "local": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": [
+            "identity",
+            "tasks",
+            "notifications",
+            "reports",
+            "billing"
+          ],
+          "target": "build"
+        }
+      ],
+      "options": {
+        "command": "node backend/infra/scripts/local-smoke-cli.mjs",
+        "cwd": "{workspaceRoot}"
+      },
+      "cache": false
+    }
+  }
+}
