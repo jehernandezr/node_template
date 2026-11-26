@@ -13,7 +13,7 @@ import {
   type StepUpResult,
 } from '@contracts/identity';
 import { Clock } from '@platform/kernel';
-import { DeploymentRegion } from '../../../shared/utils/deployment-region.js';
+import { DeploymentRegion } from '../../../sign-in/deployment-region.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { SignInResponses } from '../../../shared/utils/sign-in-responses.js';

@@ -7,7 +7,7 @@ import {
   type SignInResponse,
 } from '@contracts/identity';
 import { Clock } from '@platform/kernel';
-import { DeploymentRegion } from '../../../shared/utils/deployment-region.js';
+import { DeploymentRegion } from '../../../sign-in/deployment-region.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import type { PendingAuthentication } from '../../../shared/types/pending-authentication.type.js';

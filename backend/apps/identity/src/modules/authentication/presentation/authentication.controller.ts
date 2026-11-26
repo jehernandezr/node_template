@@ -6,7 +6,7 @@ import {
   type SignInResponse,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { SessionDelivery } from '../../../shared/utils/session-delivery.js';
+import { SessionDelivery } from '../../../sign-in/session-delivery.js';
 import { SignInWithPassword } from '../application/sign-in-with-password.use-case.js';
 
 @Resource(IdentityResource.Authentication)

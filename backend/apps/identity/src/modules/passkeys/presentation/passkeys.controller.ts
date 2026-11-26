@@ -37,7 +37,7 @@ import {
   type StepUpResult,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { SessionDelivery } from '../../../shared/utils/session-delivery.js';
+import { SessionDelivery } from '../../../sign-in/session-delivery.js';
 import { ManagePasskeys } from '../application/manage-passkeys.use-case.js';
 import { PasskeyAuthentication } from '../application/passkey-authentication.use-case.js';
 

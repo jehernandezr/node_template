@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { SignInResponse } from '@contracts/identity';
 import { ClientChannel, type HttpExchange } from '@platform/http';
-import { IdentitySettings } from '../../config/identity-settings.js';
+import { IdentitySettings } from '../config/identity-settings.js';
 
 /**
  * Delivers the session token of a sign-in response according to the channel: on the web it goes only in the
@@ -12,6 +12,7 @@ import { IdentitySettings } from '../../config/identity-settings.js';
 export class SessionDelivery {
   constructor(private readonly settings: IdentitySettings) {}
 
+  /** Returns the response to send, moving the session token to the cookie on the web channel. */
   deliver(response: SignInResponse, exchange: HttpExchange): SignInResponse {
     const sessionToken = response.tokens?.sessionToken;
     if (

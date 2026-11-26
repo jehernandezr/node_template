@@ -3,7 +3,7 @@ import {
   type PendingMfa,
   type SignInResponse,
 } from '@contracts/identity';
-import type { RegionLocation } from './deployment-region.js';
+import type { RegionLocation } from '../types/region-location.type.js';
 
 /** The tokens of a newly opened session. */
 export interface OpenedSession {

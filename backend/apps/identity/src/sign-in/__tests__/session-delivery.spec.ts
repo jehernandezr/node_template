@@ -1,9 +1,9 @@
 import { SignInStatus } from '@contracts/identity';
 import { ClientChannel, HttpExchange, type ClientInfo } from '@platform/http';
-import { StaticAppConfig } from '../../../__tests__/utils/index.js';
-import { IdentitySettings } from '../../../config/identity-settings.js';
+import { StaticAppConfig } from '../../__tests__/utils/index.js';
+import { IdentitySettings } from '../../config/identity-settings.js';
 import { SessionDelivery } from '../session-delivery.js';
-import { SignInResponses } from '../sign-in-responses.js';
+import { SignInResponses } from '../../shared/utils/sign-in-responses.js';
 
 /** HTTP exchange that records the cookies it would set on the response. */
 class RecordingExchange extends HttpExchange {

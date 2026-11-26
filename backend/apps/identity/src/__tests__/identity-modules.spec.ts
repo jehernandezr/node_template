@@ -1,93 +1,113 @@
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import type { Type } from '@nestjs/common';
 import {
   GLOBAL_MODULE_METADATA,
   MODULE_METADATA,
 } from '@nestjs/common/constants.js';
-import { AccessModule } from '../modules/access/presentation/access.module.js';
-import { AccessCoreModule } from '../modules/access/presentation/access-core.module.js';
 import { AlertsModule } from '../modules/alerts/presentation/alerts.module.js';
-import { ApiKeysModule } from '../modules/api-keys/presentation/api-keys.module.js';
-import { AuthenticationModule } from '../modules/authentication/presentation/authentication.module.js';
-import { DevicesModule } from '../modules/devices/presentation/devices.module.js';
-import { DevicesCoreModule } from '../modules/devices/presentation/devices-core.module.js';
-import { InvitationsModule } from '../modules/invitations/presentation/invitations.module.js';
-import { MfaModule } from '../modules/mfa/presentation/mfa.module.js';
-import { PasskeysModule } from '../modules/passkeys/presentation/passkeys.module.js';
-import { PasskeysCoreModule } from '../modules/passkeys/presentation/passkeys-core.module.js';
-import { PasswordsModule } from '../modules/passwords/presentation/passwords.module.js';
-import { PasswordsCoreModule } from '../modules/passwords/presentation/passwords-core.module.js';
-import { SagasModule } from '../modules/sagas/presentation/sagas.module.js';
-import { SessionsModule } from '../modules/sessions/presentation/sessions.module.js';
-import { TenantMovesModule } from '../modules/tenant-moves/presentation/tenant-moves.module.js';
-import { TenantMovesCoreModule } from '../modules/tenant-moves/presentation/tenant-moves-core.module.js';
-import { TenantsModule } from '../modules/tenants/presentation/tenants.module.js';
-import { TenantsCoreModule } from '../modules/tenants/presentation/tenants-core.module.js';
-import { TokensModule } from '../modules/tokens/presentation/tokens.module.js';
-import { UsersModule } from '../modules/users/presentation/users.module.js';
-import { UsersCoreModule } from '../modules/users/presentation/users-core.module.js';
 
-const BUSINESS_MODULES: readonly Type<unknown>[] = [
-  AccessModule,
-  AccessCoreModule,
-  AlertsModule,
-  ApiKeysModule,
-  AuthenticationModule,
-  DevicesModule,
-  DevicesCoreModule,
-  InvitationsModule,
-  MfaModule,
-  PasskeysModule,
-  PasskeysCoreModule,
-  PasswordsModule,
-  PasswordsCoreModule,
-  SagasModule,
-  SessionsModule,
-  TenantMovesModule,
-  TenantMovesCoreModule,
-  TenantsModule,
-  TenantsCoreModule,
-  TokensModule,
-  UsersModule,
-  UsersCoreModule,
-];
+/** A business module found in `modules/<name>/presentation/<file>.module.ts`. */
+interface BusinessModule {
+  readonly type: Type<unknown>;
+  readonly core: boolean;
+}
 
-const CORE_MODULES: readonly Type<unknown>[] = [
-  AccessCoreModule,
-  DevicesCoreModule,
-  PasskeysCoreModule,
-  PasswordsCoreModule,
-  TenantMovesCoreModule,
-  TenantsCoreModule,
-  UsersCoreModule,
-];
+/** Discovers every module class under `modules/<name>/presentation`, so a new one is checked without listing it. */
+class BusinessModules {
+  private static readonly MODULES_DIR = join(__dirname, '..', 'modules');
+  private static readonly MODULE_FILE = /\.module\.ts$/;
+  private static readonly CORE_FILE = /-core\.module\.ts$/;
 
-/** The identity business modules a module imports, ignoring platform and dynamic modules. */
-const businessImportsOf = (module: Type<unknown>): Type<unknown>[] =>
-  (
-    (Reflect.getMetadata(MODULE_METADATA.IMPORTS, module) as
-      unknown[] | undefined) ?? []
-  ).filter((entry): entry is Type<unknown> =>
-    BUSINESS_MODULES.includes(entry as Type<unknown>),
-  );
+  /** Loads the module files and returns their exported module classes. */
+  static async load(): Promise<BusinessModule[]> {
+    const found: BusinessModule[] = [];
+    for (const name of readdirSync(BusinessModules.MODULES_DIR)) {
+      const presentation = join(
+        BusinessModules.MODULES_DIR,
+        name,
+        'presentation',
+      );
+      for (const file of BusinessModules.moduleFiles(presentation)) {
+        const exported = (await import(join(presentation, file))) as Record<
+          string,
+          unknown
+        >;
+        for (const value of Object.values(exported)) {
+          if (BusinessModules.isModule(value)) {
+            found.push({
+              type: value,
+              core: BusinessModules.CORE_FILE.test(file),
+            });
+          }
+        }
+      }
+    }
+    return found;
+  }
+
+  private static moduleFiles(presentation: string): string[] {
+    try {
+      return readdirSync(presentation).filter((file) =>
+        BusinessModules.MODULE_FILE.test(file),
+      );
+    } catch {
+      return [];
+    }
+  }
+
+  private static isModule(value: unknown): value is Type<unknown> {
+    const moduleKeys: readonly string[] = Object.values(MODULE_METADATA);
+    return (
+      typeof value === 'function' &&
+      Reflect.getMetadataKeys(value).some((key) =>
+        moduleKeys.includes(String(key)),
+      )
+    );
+  }
+}
 
 describe('identity business modules', () => {
+  let modules: BusinessModule[];
+
+  beforeAll(async () => {
+    modules = await BusinessModules.load();
+  });
+
+  it('finds every business module and its core modules', () => {
+    expect(modules.length).toBeGreaterThanOrEqual(22);
+    expect(
+      modules.filter((module) => module.core).length,
+    ).toBeGreaterThanOrEqual(7);
+  });
+
   it('are not global: each one imports the modules whose facades it uses', () => {
-    const globals = BUSINESS_MODULES.filter(
-      (module) => Reflect.getMetadata(GLOBAL_MODULE_METADATA, module) === true,
+    const globals = modules.filter(
+      (module) =>
+        Reflect.getMetadata(GLOBAL_MODULE_METADATA, module.type) === true,
     );
 
-    expect(globals.map((module) => module.name)).toEqual([]);
+    expect(globals.map((module) => module.type.name)).toEqual([]);
   });
 
   it('keep the core modules importing only other core modules or the alerts', () => {
-    const crossings = CORE_MODULES.flatMap((module) =>
-      businessImportsOf(module)
-        .filter(
-          (imported) =>
-            !CORE_MODULES.includes(imported) && imported !== AlertsModule,
+    const business = new Map(modules.map((module) => [module.type, module]));
+    const crossings = modules
+      .filter((module) => module.core)
+      .flatMap((module) =>
+        (
+          (Reflect.getMetadata(MODULE_METADATA.IMPORTS, module.type) as
+            unknown[] | undefined) ?? []
         )
-        .map((imported) => `${module.name} -> ${imported.name}`),
-    );
+          .map((imported) => business.get(imported as Type<unknown>))
+          .filter(
+            (imported): imported is BusinessModule =>
+              imported !== undefined &&
+              !imported.core &&
+              imported.type !== AlertsModule,
+          )
+          .map((imported) => `${module.type.name} -> ${imported.type.name}`),
+      );
 
     expect(crossings).toEqual([]);
   });

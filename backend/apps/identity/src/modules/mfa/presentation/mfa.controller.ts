@@ -40,7 +40,7 @@ import {
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
-import { SessionDelivery } from '../../../shared/utils/session-delivery.js';
+import { SessionDelivery } from '../../../sign-in/session-delivery.js';
 import { ManageMfaFactors } from '../application/manage-mfa-factors.use-case.js';
 import { MfaRecoveryUseCase } from '../application/mfa-recovery.use-case.js';
 import { RequestMfaChallenge } from '../application/request-mfa-challenge.use-case.js';
