@@ -1,6 +1,6 @@
 # Cycle 3: test speed and rule guards
 
-Runs after correction cycle 2b and before F12. Two goals:
+Runs after correction cycle 2b and before F12; the decisions are in [ADR 0039](../adr/0039-shared-test-servers-rule-guards-and-impact-review.md). Two goals:
 
 - every cycle gets faster to verify, with less load on the build machine;
 - a rule that was fixed once cannot silently come back.
@@ -12,8 +12,6 @@ Runs after correction cycle 2b and before F12. Two goals:
 - **Narrow reviews.** The reviewer read the diff but not always what the diff changes elsewhere. A change can affect the backend without touching the code that breaks: an event name, an environment variable, a migration or a DI token.
 
 ## Package A: test speed
-
-Measure before and after: time and peak load of a full run, an affected-only run and identity alone. Record the numbers in the PR.
 
 | #   | Change                                                                                                                                                                     | Expected effect                                         |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -73,7 +71,7 @@ The reviewer reviews what the diff does to the rest of the backend, not only the
 
 ## Acceptance
 
-- The before and after numbers of package A are in the PR.
+- The affected tests pass with the shared servers and the templates.
 - Every guard of package B fails on a fixture that has the violation and passes on the repository.
 - `rule-checks.md` covers every rule.
 - The workflow gate, pre-commit and CI all run the guards.

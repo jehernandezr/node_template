@@ -91,9 +91,11 @@ They are a runtime mode, not a double, so they stay in the public index: `InMemo
 
 Example in `references/examples.md`, section "Integration".
 
-In CI: `INTEGRATION_TESTS=require pnpm nx test <project>`.
+`pnpm nx test <project>` runs the unit tests; `pnpm nx test-int <project>` runs the `.int-spec.ts` and `.e2e-spec.ts` suites; `pnpm nx test-int <project> -c ci --coverage` runs both with coverage, as CI does with `INTEGRATION_TESTS=require`.
 
-- Containers start once per suite (`beforeAll`) and tests isolate their data with their own tenants or ids, or with transactions that roll back.
+- The Jest global setup starts one PostgreSQL and one Valkey per run and the suites share them, one at a time ([ADR 0039](../../../docs/adr/0039-shared-test-servers-rule-guards-and-impact-review.md)). A harness never starts its own PostgreSQL or Valkey container: it creates its own databases on the shared server (`ShardedTestDatabase`, `ServicePostgresServer`, `TestDatabaseServer`) and drops them when it stops; only a test that needs two servers that do not see each other passes a `DedicatedValkeyHost`.
+- Migrations run once per run into template databases, and each suite clones them (`ShardedTestDatabase.migrate`, `ServiceTestApp`). A migration does not depend on the name of its database.
+- Tests isolate their data with their own tenants or ids, or with transactions that roll back.
 - TypeORM migrations actually run on the test database, and a test verifies that no changes are pending (`migration:generate` with no differences).
 - Each suite creates its data and assumes no prior data. Clean up after the suite, not between tests.
 - Repositories are tested with cases that catch real defects: concurrency (two writes with the same version), uniqueness, cursor pagination, isolation between tenants and number of queries (no N+1).

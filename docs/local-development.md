@@ -48,7 +48,7 @@ All of them run from the root:
 | `pnpm nx show projects`                                              | Lists the backend and front projects                      |
 | `pnpm nx graph`                                                      | Opens the project graph                                   |
 
-Integration tests (`*.int-spec.ts`) run with the same `test` target against real PostgreSQL and Valkey, started with Testcontainers. They need Docker running. For example, `pnpm nx test platform-persistence` and `pnpm nx test platform-adapters-valkey`.
+The `test` target runs the unit tests. Integration and end-to-end tests (`*.int-spec.ts`, `*.e2e-spec.ts`) run with the `test-int` target against one real PostgreSQL and one Valkey per Jest run, started with Testcontainers, and need Docker running. For example, `pnpm nx test-int platform-persistence` and `pnpm nx test-int platform-adapters-valkey`; `pnpm nx test-int <project> -c ci --coverage` runs both kinds with coverage, as CI does. The guards of the repository run with `node .claude/guards/run-gate.mjs`.
 
 The skills' structure scripts check the files changed against `HEAD` (or the whole tree with `--all`):
 

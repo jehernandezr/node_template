@@ -59,3 +59,4 @@ Numbers are not reused. File names use kebab-case and are in English.
 | 0036   | [Identity security: factors, access and lifecycle](0036-identity-security-factors-access-lifecycle.md)                | Accepted               |
 | 0037   | [Composition, shared platform pieces and domain events](0037-composition-shared-platform-pieces-and-domain-events.md) | Accepted               |
 | 0038   | [Comment and documentation rules enforced by lint](0038-comment-and-documentation-rules-enforced-by-lint.md)          | Accepted               |
+| 0039   | [Shared test servers, rule guards and impact review](0039-shared-test-servers-rule-guards-and-impact-review.md)       | Accepted               |

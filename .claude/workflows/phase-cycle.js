@@ -16,7 +16,8 @@
 //   maxRounds    maximum number of reviews (default 2: review, fix and final review)
 //   corrections  user findings or corrections that override everything else
 //   shim         optional folder prepended to PATH (for example, a pinned pnpm)
-//   cacheDir     optional folder for the Nx and Jest caches, shared by every worktree of the cycle
+//   cacheDir     optional folder for the Jest cache, shared by every worktree; Nx already shares its cache
+//                across the checkouts of the workspace under ~/.nx, so NX_CACHE_DIRECTORY stays unset
 //   gateRounds   maximum gate and fix rounds before each review (default 2)
 //
 // For an extra round of fixes on the same worktree: corrections with the pending
@@ -52,7 +53,7 @@ export const meta = {
 
 const PATH_PREFIX = `${args.shim ? ` && export PATH="${args.shim}:$PATH"` : ''}${
   args.cacheDir
-    ? ` && export NX_CACHE_DIRECTORY="${args.cacheDir}/nx" NT_JEST_CACHE_DIRECTORY="${args.cacheDir}/jest"`
+    ? ` && export NT_JEST_CACHE_DIRECTORY="${args.cacheDir}/jest"`
     : ''
 }`;
 
