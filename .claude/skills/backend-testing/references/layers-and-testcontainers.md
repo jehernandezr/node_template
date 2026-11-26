@@ -88,7 +88,10 @@ The Jest global setup (`backend/jest.servers.cjs`) starts one PostgreSQL and one
 them one at a time ([ADR 0047](../../../../docs/adr/0047-shared-test-servers-rule-guards-and-impact-review.md)). A
 harness never starts its own container: it creates its own databases on the shared server and drops them when it
 stops. The lint rule `guards/no-own-test-server` rejects `new PostgreSqlContainer` and a `GenericContainer` of a
-PostgreSQL or Valkey image outside the hosts that need servers of their own.
+PostgreSQL or Valkey image outside the hosts that need servers of their own: `IsolatedPostgresServer` (persistence
+test utilities), `RegionServers` and `DedicatedValkeyHost`. A suite that uses one changes server-level state (roles,
+publications, replication slots, two instances or two regions), carries `@isolated-server` in its header and is
+listed in `backend/isolated-server-suites.json`; `.claude/guards/__tests__/isolated-servers.test.mjs` checks both.
 
 ```ts
 describe('OrderRepository', () => {

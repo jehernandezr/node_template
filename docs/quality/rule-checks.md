@@ -8,9 +8,9 @@ Each rule has an id: `claude.<section>.<n>` for `CLAUDE.md`, numbered within its
 
 Where the checks run:
 
-- **Pre-commit**: lint-staged runs ESLint (backend rules and guards, tooling comment rules), the language check on staged files and the structure checks.
+- **Pre-commit**: lint-staged runs, on the staged files only, ESLint (backend rules and guards, tooling comment rules), the language check and the structure checks (`--staged`). Whole-repository checks, Nx and tests stay in CI and the workflow gate.
 - **`commit-msg`**: commitlint and the language check of the message.
-- **CI**: the `guards` job (language check, tool tests, structure checks, tooling lint) and the `nx` job (lint, typecheck, tests, contracts, generators); `ci-ok` requires both.
+- **CI**: the `guards` job (language check, tool tests, structure checks, tooling lint), the `nx` job (lint, typecheck, unit tests, contracts, generators), the `test-int` shards and the `coverage` job that merges their coverage; `ci-ok` requires all of them.
 - **Workflow gate**: `.claude/guards/run-gate.mjs`, which `phase-cycle.js` runs before every review.
 
 ## CLAUDE.md
