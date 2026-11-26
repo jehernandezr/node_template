@@ -26,6 +26,30 @@ export class LedgerManifest extends TenantMoveManifest {
   }
 }
 
+/** `ledgers` and `postings`, whose `ledger_id` is a foreign key to `ledgers` on both shards. */
+export class LedgerWithPostingsManifest extends TenantMoveManifest {
+  tables(): readonly TenantMoveTable[] {
+    return [
+      {
+        table: 'ledgers',
+        selector: {
+          kind: TenantMoveSelectorKind.TenantColumn,
+          column: 'tenant_id',
+        },
+      },
+      {
+        table: 'postings',
+        selector: {
+          kind: TenantMoveSelectorKind.ViaParent,
+          parent: 'ledgers',
+          column: 'ledger_id',
+          parentColumn: 'id',
+        },
+      },
+    ];
+  }
+}
+
 /** Only `ledgers`: what logical replication supports, since it does not follow children through their parent. */
 export class LedgersOnlyManifest extends TenantMoveManifest {
   tables(): readonly TenantMoveTable[] {
