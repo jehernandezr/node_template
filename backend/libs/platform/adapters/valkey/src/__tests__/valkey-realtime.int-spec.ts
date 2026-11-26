@@ -148,6 +148,43 @@ new ContainerRuntime(process.env).describeIfAvailable(
       });
     });
 
+    describe('resuming from an instant', () => {
+      const source = new ValkeySubscriberSource({
+        create: async () => {
+          const client = server.connect();
+          await client.connect();
+          return client;
+        },
+      });
+
+      afterAll(async () => {
+        await source.close();
+      });
+
+      it('resumes from a millisecond id, so a client gets the frames appended since that instant', async () => {
+        const stream = new ValkeyRealtimeStream(
+          ValkeyExecutors.over(server.connect()),
+          source,
+          new ValkeyKeyspace(PREFIX),
+          { retained: 100, ttlMs: 60_000 },
+        );
+        const channel = 'user-resume-from-instant';
+        const before = await stream.append(channel, {
+          type: 'before',
+          data: {},
+        });
+        const since = `${Number(before.split('-')[0]) + 1}-0`;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const after = await stream.append(channel, { type: 'after', data: {} });
+
+        const point = await stream.resumePoint(channel, since);
+        const frames = await stream.readAfter(channel, point, 10);
+
+        expect(point).toBe(since);
+        expect(frames).toEqual([{ id: after, type: 'after', data: {} }]);
+      });
+    });
+
     describe('two instances sharing the stream', () => {
       const first = new RealtimeInstance(server);
       const second = new RealtimeInstance(server);

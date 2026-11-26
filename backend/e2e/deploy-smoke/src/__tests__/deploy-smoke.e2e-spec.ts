@@ -88,7 +88,7 @@ describe('deploy smoke over the public API, in order, as the smoke account', () 
     const stream = await SseStream.open(
       api.url(STREAM_PATH),
       accessToken,
-      `${since}-0`,
+      SseStream.resumeIdAt(since),
     );
 
     try {

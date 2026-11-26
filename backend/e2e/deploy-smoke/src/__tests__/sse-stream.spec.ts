@@ -22,6 +22,10 @@ describe('SseStream', () => {
 
   afterAll(() => api.stop());
 
+  it('resumes from an instant with a Valkey stream id of its milliseconds', () => {
+    expect(SseStream.resumeIdAt(1_700_000_000_123.9)).toBe('1700000000123-0');
+  });
+
   it('opens with the token and the resume point and returns the first matching event', async () => {
     const stream = await SseStream.open(
       new URL('/stream', base),

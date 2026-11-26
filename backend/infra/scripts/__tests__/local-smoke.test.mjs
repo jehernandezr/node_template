@@ -1,9 +1,17 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { after, describe, it } from 'node:test';
 import { LocalSmoke, LocalSmokeSettings } from '../local-smoke.mjs';
+import { TfvarsBlockReader } from '../tfvars-block-reader.mjs';
 import { ScriptRunner } from './utils/script-runner.mjs';
 
 const ROOT = resolve(ScriptRunner.scriptsDir, '../../..');
@@ -213,4 +221,50 @@ describe('LocalSmokeSettings', () => {
       /success@simulator\.amazonses\.com/,
     );
   });
+});
+
+/** The regex locations of the smoke gateway, in the order nginx tries them, with the service each one proxies to. */
+class GatewayRoutes {
+  constructor(text) {
+    this.routes = [
+      ...text.matchAll(
+        /location ~ (\S+) \{\s*proxy_pass http:\/\/([a-z-]+):\d+;/g,
+      ),
+    ].map(([, pattern, service]) => ({
+      pattern: new RegExp(pattern),
+      service,
+    }));
+  }
+
+  serviceOf(path) {
+    return this.routes.find((route) => route.pattern.test(path))?.service;
+  }
+}
+
+describe('smoke gateway', () => {
+  const services = join(
+    ROOT,
+    'backend/infra/terraform/environments/dev/services',
+  );
+  const gateway = new GatewayRoutes(
+    readFileSync(join(ROOT, 'backend/infra/local/smoke-gateway.conf'), 'utf8'),
+  );
+  const prefixesOf = (service) => {
+    const api = new TfvarsBlockReader(
+      readFileSync(join(services, service, 'terraform.tfvars'), 'utf8'),
+    ).block('api');
+    const list = /route_prefixes\s*=\s*\[([^\]]*)\]/.exec(api ?? '')?.[1];
+    return [...(list ?? '').matchAll(/"([^"]+)"/g)].map(([, prefix]) => prefix);
+  };
+
+  for (const service of readdirSync(services)) {
+    it(`routes every route prefix of ${service} in the dev tfvars to ${service}`, () => {
+      const prefixes = prefixesOf(service);
+      assert.ok(prefixes.length > 0, `${service} declares no route_prefixes`);
+      for (const prefix of prefixes) {
+        assert.equal(gateway.serviceOf(prefix), service, prefix);
+        assert.equal(gateway.serviceOf(`${prefix}/probe`), service, prefix);
+      }
+    });
+  }
 });

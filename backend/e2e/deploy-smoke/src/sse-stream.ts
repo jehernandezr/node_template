@@ -20,6 +20,17 @@ export class SseStream {
   ) {}
 
   /**
+   * The `Last-Event-ID` that resumes the stream from an instant. It relies on the ids of the Valkey realtime stream,
+   * `<milliseconds>-<sequence>`, which the server accepts as a resume point: with another id format the server starts
+   * at the end and the frames published before the stream opens are missed.
+   * @param instantMs Instant to resume from, in epoch milliseconds.
+   * @returns The event id.
+   */
+  static resumeIdAt(instantMs: number): string {
+    return `${Math.trunc(instantMs)}-0`;
+  }
+
+  /**
    * Opens the stream with an access token and checks that the server answers it as `text/event-stream`.
    * @param url Stream URL.
    * @param accessToken Access token of a session.
