@@ -5,7 +5,7 @@ import type { AwsModuleOptions } from './aws-module-options.js';
 import { AwsProviders } from './aws.providers.js';
 
 /**
- * Wiring of the AWS adapter: SNS and SQS clients, physical names,
+ * Wiring of the AWS adapter: SNS, SQS and SES clients, physical names,
  * error translator, publisher and bus over SNS and SQS, and the ElastiCache
  * IAM token provider. It is global and closes the clients in its
  * `onModuleDestroy`: Nest destroys global modules after the others,

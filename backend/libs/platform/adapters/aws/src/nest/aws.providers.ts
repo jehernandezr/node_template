@@ -1,5 +1,6 @@
 import type { Abstract, Provider, Type } from '@nestjs/common';
 import type { SNSClient } from '@aws-sdk/client-sns';
+import type { SESv2Client } from '@aws-sdk/client-sesv2';
 import type { SQSClient } from '@aws-sdk/client-sqs';
 import { Clock, IdGenerator } from '@platform/kernel';
 import { TraceContextRestorer } from '@platform/observability';
@@ -10,11 +11,12 @@ import { type AwsSettings, AwsConfig } from '../aws.config.js';
 import { AwsCredentialsProvider } from '../aws-credentials-provider.js';
 import { ElastiCacheIamAuthTokenProvider } from '../elasticache-iam-auth-token-provider.js';
 import { SdkClientCredentialsProvider } from '../sdk-client-credentials-provider.js';
+import { SesEmailClient } from '../ses/ses-email-client.js';
 import { SnsSqsEnvelopePublisher } from '../sns-sqs-envelope-publisher.js';
 import { SnsSqsMessageBus } from '../sns-sqs-message-bus.js';
 import type { AwsModuleOptions } from './aws-module-options.js';
 import { AwsLifecycle } from './aws-lifecycle.js';
-import { SNS_CLIENT, SQS_CLIENT } from './aws.tokens.js';
+import { SES_CLIENT, SNS_CLIENT, SQS_CLIENT } from './aws.tokens.js';
 
 /**
  * Providers of `AwsModule`. All are built with `useFactory` because the core
@@ -39,6 +41,18 @@ export class AwsProviders {
         useFactory: (settings: AwsSettings, factory: AwsClientFactory) =>
           factory.sqs(settings),
         inject: [AwsConfig.token, AwsClientFactory],
+      },
+      {
+        provide: SES_CLIENT,
+        useFactory: (settings: AwsSettings, factory: AwsClientFactory) =>
+          factory.ses(settings),
+        inject: [AwsConfig.token, AwsClientFactory],
+      },
+      {
+        provide: SesEmailClient,
+        useFactory: (ses: SESv2Client, errors: AwsErrorTranslator) =>
+          new SesEmailClient(ses, errors),
+        inject: [SES_CLIENT, AwsErrorTranslator],
       },
       {
         provide: AwsMessagingNames,
@@ -114,6 +128,7 @@ export class AwsProviders {
     const exported: Array<symbol | Type<unknown> | Abstract<unknown>> = [
       SNS_CLIENT,
       SQS_CLIENT,
+      SesEmailClient,
       AwsErrorTranslator,
       AwsMessagingNames,
       SnsSqsEnvelopePublisher,

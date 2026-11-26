@@ -6,6 +6,7 @@ import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import { MessagingErrorCode, topologyFromContracts } from '@platform/messaging';
 import { Eventually } from '@platform/messaging/test-utils';
+import { FakeSesClient } from '../../__tests__/utils/fake-ses-client.js';
 import { FakeSnsClient } from '../../__tests__/utils/fake-sns-client.js';
 import { FakeSqsClient } from '../../__tests__/utils/fake-sqs-client.js';
 import {
@@ -19,7 +20,8 @@ import { SnsSqsMessageBus } from '../../sns-sqs-message-bus.js';
 import { SqsLambdaHandler } from '../../sqs-lambda-handler.js';
 import { SqsPoller } from '../../sqs-poller.js';
 import { AwsModule } from '../aws.module.js';
-import { SNS_CLIENT, SQS_CLIENT } from '../aws.tokens.js';
+import { SesEmailClient } from '../../ses/ses-email-client.js';
+import { SES_CLIENT, SNS_CLIENT, SQS_CLIENT } from '../aws.tokens.js';
 import { SqsConsumerModule } from '../sqs-consumer.module.js';
 import { AwsTestPlatformModule } from './utils/aws-test-platform.module.js';
 
@@ -32,11 +34,13 @@ const topology = topologyFromContracts([
 describe('AwsModule and SqsConsumerModule', () => {
   let fakeSns: FakeSnsClient;
   let fakeSqs: FakeSqsClient;
+  let fakeSes: FakeSesClient;
   let apps: TestingModule[];
 
   beforeEach(() => {
     fakeSns = new FakeSnsClient();
     fakeSqs = new FakeSqsClient();
+    fakeSes = new FakeSesClient();
     apps = [];
   });
 
@@ -54,13 +58,15 @@ describe('AwsModule and SqsConsumerModule', () => {
       .useValue(fakeSns)
       .overrideProvider(SQS_CLIENT)
       .useValue(fakeSqs)
+      .overrideProvider(SES_CLIENT)
+      .useValue(fakeSes)
       .compile();
     apps.push(moduleRef);
     await moduleRef.init();
     return moduleRef;
   }
 
-  it('closes both SDK clients when the application closes', async () => {
+  it('closes the SNS, SQS and SES clients when the application closes', async () => {
     const app = await appWith([AwsModule.forRoot()]);
 
     await app.close();
@@ -68,6 +74,21 @@ describe('AwsModule and SqsConsumerModule', () => {
 
     expect(fakeSns.closes).toBe(1);
     expect(fakeSqs.closes).toBe(1);
+    expect(fakeSes.closes).toBe(1);
+  });
+
+  it('provides the SES email client over the module SES client', async () => {
+    const app = await appWith([AwsModule.forRoot()]);
+
+    await app.get(SesEmailClient, { strict: false }).send({
+      from: 'noreply@example.test',
+      to: 'user@example.test',
+      subject: 'Subject',
+      text: 'Text',
+      html: '<p>Html</p>',
+    });
+
+    expect(fakeSes.sentEmails()).toHaveLength(1);
   });
 
   it('stops the poller before the clients are closed', async () => {
