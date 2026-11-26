@@ -26,11 +26,18 @@ export class ErrorCatalogRegistry {
     }
   }
 
+  /**
+   * Reads the catalog entry of a code.
+   * @param code Error code.
+   * @returns The entry, or `undefined`.
+   */
   get(code: string): ErrorCatalogEntry | undefined {
     return this.catalog.get(code);
   }
 
   /**
+   * Checks that every error code the contract declares is in the catalogs.
+   * @param contract Service contract.
    * @throws Error with all the codes in the contract's `route.errors` that have no entry.
    */
   assertCovers(contract: ServiceContract): void {

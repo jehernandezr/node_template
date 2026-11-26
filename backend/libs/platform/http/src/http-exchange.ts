@@ -8,17 +8,27 @@ import type { ClientInfo } from './client-info.js';
 export abstract class HttpExchange {
   abstract readonly client: ClientInfo;
 
-  /** Returns the request's session cookie value, or `undefined` if absent. */
+  /**
+   * Returns the request's session cookie value, or `undefined` if absent.
+   * @returns The cookie value, or `undefined`.
+   */
   abstract sessionCookie(): string | undefined;
 
   /**
    * Adds `Set-Cookie` with the session cookie: `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`,
    * no `Domain` and `Max-Age` in seconds from `maxAgeMs`.
+   * @param token Session token.
+   * @param maxAgeMs Lifetime.
    */
   abstract setSessionCookie(token: string, maxAgeMs: number): void;
 
   /** Adds a `Set-Cookie` that clears the session cookie (`Max-Age=0`). */
   abstract clearSessionCookie(): void;
 
+  /**
+   * Sets a response header.
+   * @param name Header name.
+   * @param value Header value.
+   */
   abstract setHeader(name: string, value: string): void;
 }

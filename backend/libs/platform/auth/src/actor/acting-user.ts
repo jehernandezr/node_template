@@ -7,6 +7,8 @@ import { ActorGuards } from './actor-guards.js';
 export class ActingUser {
   /**
    * The user actor of the route.
+   * @param actor Actor of the request.
+   * @returns The user actor.
    * @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` if the actor is not a user.
    */
   static of(actor: Actor | undefined): UserActor {
@@ -18,6 +20,8 @@ export class ActingUser {
 
   /**
    * The user and their home tenant, through which their shard is reached.
+   * @param actor Actor of the request.
+   * @returns The user reference.
    * @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` if the actor is not a user.
    */
   static refOf(actor: Actor | undefined): UserRef {

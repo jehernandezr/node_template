@@ -21,6 +21,11 @@ import { AccessOutcome } from './access-outcome.enum.js';
  * - With several failures `Forbidden` wins over `FeatureNotIncluded` and that one over `StepUpRequired`.
  */
 export class AccessEvaluator {
+  /**
+   * Decides whether an actor's grant satisfies a route's permissions, plan features and recent MFA.
+   * @param evaluation Route requirements and the actor's grant.
+   * @returns The decision with what is missing.
+   */
   evaluate(evaluation: AccessEvaluation): AccessDecision {
     const { requirement, actor, grant, now } = evaluation;
     if (requirement.kind === AccessKind.Public) {

@@ -17,6 +17,12 @@ import type { RawEndpointInput } from './raw-endpoint-input.js';
 export class RawEndpointInputFactory {
   private static readonly reflector = new Reflector();
 
+  /**
+   * Reads the raw input of the request: params, query and body.
+   * @param _data Unused decorator data.
+   * @param context Execution context.
+   * @returns The raw input.
+   */
   static create(_data: unknown, context: ExecutionContext): RawEndpointInput {
     const http = context.switchToHttp();
     const request = http.getRequest<PipelineRequest>();
@@ -42,7 +48,10 @@ const RawInputParam = createParamDecorator(RawEndpointInputFactory.create);
 
 /** Escribe `@Input()`. */
 export class InputDecorator {
-  /** Validated input: route parameters, query (with `decodeQuery`) or body, depending on the method. */
+  /**
+   * Validated input: route parameters, query (with `decodeQuery`) or body, depending on the method.
+   * @returns The parameter decorator.
+   */
   static apply(): ParameterDecorator {
     const pipe: Type<PipeTransform> = ContractInputPipe;
     return RawInputParam(pipe);

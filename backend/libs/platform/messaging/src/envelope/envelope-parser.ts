@@ -11,7 +11,12 @@ import type { MessageEnvelope } from './message-envelope.js';
 export class EnvelopeParser {
   constructor(private readonly validator: EnvelopeValidator) {}
 
-  /** @throws MessagingError `PayloadTooLarge` or `InvalidEnvelope`. */
+  /**
+   * Parses and validates a raw delivery.
+   * @param raw JSON text or decoded value.
+   * @returns The envelope.
+   * @throws MessagingError `PayloadTooLarge` or `InvalidEnvelope`.
+   */
   parse(raw: unknown): MessageEnvelope {
     return this.validator.validate(this.decode(raw));
   }

@@ -13,6 +13,10 @@ export class ApiVersionPolicy {
   ) {}
 
   /**
+   * Resolves the API version of a request.
+   * @param header `API-Version` header.
+   * @param pinned Version the route pins.
+   * @returns The version.
    * @throws HttpProblemError (`PLATFORM.API.UNSUPPORTED_VERSION`) if the header is invalid, repeated or unsupported.
    */
   resolve(header: string | string[] | undefined, pinned?: string): string {
@@ -31,7 +35,12 @@ export class ApiVersionPolicy {
     return header;
   }
 
-  /** @throws HttpProblemError if the route declares versions and does not include the requested one. */
+  /**
+   * Checks that the route accepts the version.
+   * @param version Requested version.
+   * @param routeVersions Versions of the route.
+   * @throws HttpProblemError if the route declares versions and does not include the requested one.
+   */
   assertAccepts(version: string, routeVersions?: readonly string[]): void {
     if (routeVersions !== undefined && !routeVersions.includes(version)) {
       throw HttpProblemError.unsupportedVersion(version);

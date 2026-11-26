@@ -20,15 +20,28 @@ export class RevokedSessionRegistry {
 
   constructor(private readonly filter: RebuildableBloomFilter) {}
 
+  /**
+   * Tells whether the filter was filled at least once.
+   * @returns `true` when warm.
+   */
   isWarm(): boolean {
     return this.warm;
   }
 
+  /**
+   * Adds a revoked session.
+   * @param sessionId Session id.
+   */
   async add(sessionId: string): Promise<void> {
     this.pending?.add(sessionId);
     await this.filter.add(sessionId);
   }
 
+  /**
+   * Tells whether a session might be revoked; a cold filter answers `true`.
+   * @param sessionId Session id.
+   * @returns Whether it might be revoked.
+   */
   async mightContain(sessionId: string): Promise<boolean> {
     if (this.pending?.has(sessionId) === true) {
       return true;
@@ -39,6 +52,7 @@ export class RevokedSessionRegistry {
   /**
    * Rebuilds the filter from `source` and marks it as filled. Two concurrent
    * calls share the same rebuild.
+   * @param source Revoked sessions.
    * @throws the error from `source`; the previous filter is kept.
    */
   rebuild(source: BloomRebuildSource): Promise<void> {

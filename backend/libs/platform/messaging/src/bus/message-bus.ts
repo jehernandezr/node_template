@@ -36,14 +36,26 @@ export interface SendOptions extends PublishOptions {
  * `@contracts/platform`, and the destination comes from the topology.
  */
 export abstract class MessageBus {
-  /** Publishes an event to the topic its route points to. */
+  /**
+   * Publishes an event to the topic its route points to.
+   * @param event Event contract.
+   * @param data Payload.
+   * @param options Tenant, group and deduplication.
+   * @returns The envelope.
+   */
   abstract publish<M extends EventDefinition>(
     event: M,
     data: MessageInput<M>,
     options?: PublishOptions,
   ): Promise<MessageEnvelope<MessageOutput<M>>>;
 
-  /** Sends a command to the queue its route points to. */
+  /**
+   * Sends a command to the queue its route points to.
+   * @param command Command contract.
+   * @param data Payload.
+   * @param options Tenant, group and deduplication.
+   * @returns The envelope.
+   */
   abstract send<M extends CommandDefinition>(
     command: M,
     data: MessageInput<M>,

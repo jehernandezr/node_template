@@ -24,6 +24,11 @@ import { SecurityHeadersMiddleware } from './security-headers.middleware.js';
  */
 @Module({})
 export class HttpModule implements NestModule {
+  /**
+   * Registers the contract routes, errors, rate limits and HTTP adapters.
+   * @param options Contract, error catalogs and adapters.
+   * @returns The module.
+   */
   static forRoot(options: HttpModuleOptions): DynamicModule {
     return {
       module: HttpModule,

@@ -8,7 +8,12 @@ export class JwkCodec {
   /** A P-256 coordinate in base64url is 32 bytes, that is 43 characters. */
   private static readonly COORDINATE = /^[A-Za-z0-9_-]{43}$/;
 
-  /** Returns the public JWK of `key` (public or private) with the given `kid`. It never includes `d`. */
+  /**
+   * Returns the public JWK of `key` (public or private) with the given `kid`. It never includes `d`.
+   * @param key Public or private key.
+   * @param kid Key id.
+   * @returns The public JWK.
+   */
   static toPublicJwk(key: KeyObject, kid: string): PublicJwk {
     const publicKey = key.type === 'private' ? createPublicKey(key) : key;
     const jwk = publicKey.export({ format: 'jwk' });
@@ -36,6 +41,8 @@ export class JwkCodec {
 
   /**
    * Returns the public key of a JWK, with `createPublicKey({ key, format: 'jwk' })`.
+   * @param jwk JWK to read.
+   * @returns The public key.
    * @throws InvalidKeyError if it is not an object with `kty: 'EC'` and `crv: 'P-256'`, or if `x` or `y` are not a valid coordinate.
    */
   static publicKeyFromJwk(jwk: unknown): KeyObject {

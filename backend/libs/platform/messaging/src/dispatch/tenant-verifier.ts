@@ -6,6 +6,12 @@ import type { MessageEnvelope } from '../envelope/message-envelope.js';
  * envelope carries none. If it throws, the dispatcher treats it as a transient failure.
  */
 export abstract class TenantVerifier {
+  /**
+   * Tells whether the envelope's tenant is placed in this service's region.
+   * @param tenantId Tenant of the envelope.
+   * @param envelope Delivered envelope.
+   * @returns `true` when accepted.
+   */
   abstract verify(
     tenantId: string | undefined,
     envelope: MessageEnvelope,

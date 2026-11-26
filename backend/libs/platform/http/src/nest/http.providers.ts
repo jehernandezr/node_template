@@ -31,6 +31,11 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 
 /** Providers of `HttpModule`: the guard, the interceptors, the filter and the pieces they use. */
 export class HttpProviders {
+  /**
+   * Builds the providers of the HTTP layer.
+   * @param options Contract, error catalogs and adapters.
+   * @returns The providers.
+   */
   static build(options: HttpModuleOptions): Provider[] {
     return [
       {
@@ -96,7 +101,10 @@ export class HttpProviders {
     ];
   }
 
-  /** What `HttpModule` exports to the modules that import it. */
+  /**
+   * What `HttpModule` exports to the modules that import it.
+   * @returns The exported tokens.
+   */
   static exports(): Array<
     symbol | (abstract new (...args: never[]) => object)
   > {

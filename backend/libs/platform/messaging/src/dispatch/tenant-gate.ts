@@ -16,6 +16,9 @@ export class TenantGate {
    * `expectedTenantId` or a verifier, an envelope that names a tenant is
    * rejected: nothing proves the producer may act on it. If the
    * verifier throws, the error propagates as is.
+   * @param envelope Delivered envelope.
+   * @param options Dispatch options.
+   * @returns The rejection, or `undefined`.
    */
   async check(
     envelope: MessageEnvelope,

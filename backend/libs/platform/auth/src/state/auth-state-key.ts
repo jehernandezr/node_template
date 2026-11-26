@@ -13,37 +13,67 @@ export class AuthStateKey {
   /** Pub/sub channel with one notice per revoked session; the message is the `sid`. */
   static readonly REVOCATIONS_CHANNEL = 'auth:revocations';
 
-  /** `auth:revoked:{sid}`: reason for the revocation. */
+  /**
+   * `auth:revoked:{sid}`: reason for the revocation.
+   * @param sessionId Session id.
+   * @returns The key.
+   */
   static revoked(sessionId: string): string {
     return `auth:revoked:${sessionId}`;
   }
 
-  /** `auth:epoch:user:{userId}`. */
+  /**
+   * `auth:epoch:user:{userId}`.
+   * @param userId User id.
+   * @returns The key.
+   */
   static userEpoch(userId: string): string {
     return `auth:epoch:user:${userId}`;
   }
 
-  /** `auth:epoch:tenant:{tenantId}`. */
+  /**
+   * `auth:epoch:tenant:{tenantId}`.
+   * @param tenantId Tenant id.
+   * @returns The key.
+   */
   static tenantEpoch(tenantId: string): string {
     return `auth:epoch:tenant:${tenantId}`;
   }
 
-  /** `auth:pv:tenant:{tenantId}`. */
+  /**
+   * `auth:pv:tenant:{tenantId}`.
+   * @param tenantId Tenant id.
+   * @returns The key.
+   */
   static tenantPermissionVersion(tenantId: string): string {
     return `auth:pv:tenant:${tenantId}`;
   }
 
-  /** `auth:pv:user:{tenantId}:{userId}`. */
+  /**
+   * `auth:pv:user:{tenantId}:{userId}`.
+   * @param tenantId Tenant id.
+   * @param userId User id.
+   * @returns The key.
+   */
   static userPermissionVersion(tenantId: string, userId: string): string {
     return `auth:pv:user:${tenantId}:${userId}`;
   }
 
-  /** `auth:access:{tenantId}:{userId}`. */
+  /**
+   * `auth:access:{tenantId}:{userId}`.
+   * @param tenantId Tenant id.
+   * @param userId User id.
+   * @returns The key.
+   */
   static access(tenantId: string, userId: string): string {
     return `auth:access:${tenantId}:${userId}`;
   }
 
-  /** `auth:apikey:{prefix}`: hash with one field per `sha256(secret)`. */
+  /**
+   * `auth:apikey:{prefix}`: hash with one field per `sha256(secret)`.
+   * @param prefix Key prefix.
+   * @returns The key.
+   */
   static apiKey(prefix: string): string {
     return `auth:apikey:${prefix}`;
   }

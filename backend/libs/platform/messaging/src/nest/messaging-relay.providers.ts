@@ -24,6 +24,11 @@ import { MESSAGING_MODULE_OPTIONS } from './messaging.module-definition.js';
  * policy, `OutboxRelay` and, with `relay: true`, the relay and retention jobs.
  */
 export class MessagingRelayProviders {
+  /**
+   * Builds the providers of the outbox relay and its job.
+   * @param extras Outbox store and publisher adapters.
+   * @returns The providers.
+   */
   static build(extras: MessagingModuleExtras): Provider[] {
     if (extras.publisher === undefined) {
       return [];

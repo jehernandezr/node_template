@@ -15,6 +15,10 @@ export class JwtCodec {
   /**
    * Returns `<header>.<claims>.<signature>` in base64url. Signs with SHA-256 and
    * `dsaEncoding: 'ieee-p1363'`, the format JWS requires for ES256.
+   * @param header Header of the token.
+   * @param claims Claims of the token.
+   * @param privateKey ES256 private key.
+   * @returns The compact JWT.
    */
   static sign(
     header: AccessTokenHeader | Readonly<Record<string, unknown>>,
@@ -37,6 +41,8 @@ export class JwtCodec {
 
   /**
    * Splits a compact JWT without verifying the signature.
+   * @param token Compact JWT.
+   * @returns Its parts.
    * @throws AuthenticationError (`PLATFORM.AUTH.UNAUTHENTICATED`) if it does not have three base64url parts, if the header or the claims are not a JSON object or if the signature is not 64 bytes.
    */
   static parse(token: string): ParsedJwt {
@@ -65,7 +71,12 @@ export class JwtCodec {
     };
   }
 
-  /** Verifies the ES256 signature of an already split token with the public key. It never throws for a wrong signature: it returns `false`. */
+  /**
+   * Verifies the ES256 signature of an already split token with the public key. It never throws for a wrong signature: it returns `false`.
+   * @param parsed Split token.
+   * @param publicKey ES256 public key.
+   * @returns `true` when the signature is valid.
+   */
   static verifySignature(parsed: ParsedJwt, publicKey: KeyObject): boolean {
     try {
       return verify(

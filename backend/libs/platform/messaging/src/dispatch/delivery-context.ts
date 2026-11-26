@@ -6,6 +6,11 @@ import type { MessageEnvelope } from '../envelope/message-envelope.js';
  * tenant database and outside a context it would not know which shard to go to.
  */
 export abstract class DeliveryContext {
+  /**
+   * Runs the delivery inside its context.
+   * @param envelope Delivered envelope.
+   * @param fn Claim, handler and complete.
+   */
   abstract run(
     envelope: MessageEnvelope,
     fn: () => Promise<void>,

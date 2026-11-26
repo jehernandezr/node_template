@@ -47,6 +47,8 @@ export class ClaimGuard {
 
   /**
    * Fingerprint of the message: its type, its tenant and its data in canonical JSON.
+   * @param envelope Envelope to fingerprint.
+   * @returns The fingerprint.
    * @throws MessagingError `InvalidEnvelope` if `data` is not canonical JSON.
    */
   fingerprint(envelope: MessageEnvelope): string {
@@ -70,6 +72,11 @@ export class ClaimGuard {
    * `Duplicate`, `InProgress` or `DeadLetter` (the stored fingerprint differs:
    * idempotency conflict; if the claim had been acquired, it is returned).
    * If the store fails, the error propagates as is.
+   * @param envelope Delivered envelope.
+   * @param fingerprint Its fingerprint.
+   * @param consumer Consumer name.
+   * @param options Dispatch options.
+   * @returns The claim outcome.
    */
   async claim(
     envelope: MessageEnvelope,
@@ -135,7 +142,10 @@ export class ClaimGuard {
     }
   }
 
-  /** Saves the result with the claim token. */
+  /**
+   * Saves the result with the claim token.
+   * @param claim Acquired claim.
+   */
   async complete(claim: AcquiredMessageClaim): Promise<void> {
     await this.store.complete(claim.key, claim.token, {
       processedAt: this.clock.now().getTime(),
@@ -147,6 +157,7 @@ export class ClaimGuard {
    * release fails (store down or expired token), the claim stays in
    * progress until its lease expires, which bounds how long it blocks redeliveries.
    * The lease bounds how long the claim can block.
+   * @param claim Acquired claim.
    */
   async release(claim: AcquiredMessageClaim): Promise<void> {
     try {

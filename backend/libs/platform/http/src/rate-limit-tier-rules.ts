@@ -26,6 +26,11 @@ export class RateLimitTierRules {
     windowMs: RateLimitTierRules.WINDOW_MS,
   });
 
+  /**
+   * Reads the rule of a tier.
+   * @param tier Rate limit tier.
+   * @returns The rule.
+   */
   ruleFor(tier: RateLimitTier): RateLimitRule {
     switch (tier) {
       case RateLimitTier.Auth:

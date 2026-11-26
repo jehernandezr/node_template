@@ -8,6 +8,8 @@ export class JsonBodyReader {
   /**
    * An empty body is `undefined`. When the cap is exceeded it stops reading: Node discards the rest when
    * the response finishes.
+   * @param chunks Body chunks.
+   * @returns The parsed body.
    * @throws HttpProblemError (`PLATFORM.HTTP.PAYLOAD_TOO_LARGE` or `PLATFORM.HTTP.MALFORMED_BODY`).
    */
   async read(chunks: AsyncIterable<Uint8Array | string>): Promise<unknown> {

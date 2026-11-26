@@ -6,6 +6,12 @@ import type { PipelineRequest } from './pipeline-request.js';
 
 /** Builds the `HttpExchange` of the current request. */
 export class ExchangeFactory {
+  /**
+   * Builds the exchange of the request and response.
+   * @param _data Unused decorator data.
+   * @param context Execution context.
+   * @returns The exchange.
+   */
   static create(_data: unknown, context: ExecutionContext): HttpExchange {
     const http = context.switchToHttp();
     return new ExpressHttpExchange(

@@ -6,7 +6,19 @@ export abstract class VersionTransformer {
   /** Earlier version this transformer knows how to translate. */
   abstract readonly fromVersion: string;
 
+  /**
+   * Adapts a request of an older version to the current shape.
+   * @param routeId Route id.
+   * @param input Request input.
+   * @returns The adapted input.
+   */
   abstract transformRequest(routeId: string, input: unknown): unknown;
 
+  /**
+   * Adapts a response to the shape of an older version.
+   * @param routeId Route id.
+   * @param output Response body.
+   * @returns The adapted body.
+   */
   abstract transformResponse(routeId: string, output: unknown): unknown;
 }

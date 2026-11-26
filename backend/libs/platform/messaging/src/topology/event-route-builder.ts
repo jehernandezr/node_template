@@ -16,7 +16,11 @@ export class EventRouteBuilder {
     this.contract = typeof source === 'string' ? null : source;
   }
 
-  /** Publishes this event type to a topic. */
+  /**
+   * Publishes this event type to a topic.
+   * @param topic Target topic.
+   * @returns The route.
+   */
   to(topic: TopicDef): RouteDef {
     return new RouteDef(
       MessageKind.Event,

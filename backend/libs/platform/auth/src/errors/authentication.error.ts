@@ -28,7 +28,11 @@ export class AuthenticationError extends PlatformError {
     this.code = code;
   }
 
-  /** Invalid format, algorithm, signature, issuer, audience or key. The exact reason does not reach the client. */
+  /**
+   * Invalid format, algorithm, signature, issuer, audience or key. The exact reason does not reach the client.
+   * @param reason Reason kept in the logs.
+   * @returns The error.
+   */
   static unauthenticated(reason: string): AuthenticationError {
     return new AuthenticationError(
       PlatformErrorCode.AuthUnauthenticated,
@@ -37,6 +41,10 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
+  /**
+   * The access token expired; the client refreshes it.
+   * @returns The error.
+   */
   static tokenExpired(): AuthenticationError {
     return new AuthenticationError(
       AuthErrorCode.TokenExpired,
@@ -48,6 +56,10 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
+  /**
+   * The session expired; the client signs in again.
+   * @returns The error.
+   */
   static sessionExpired(): AuthenticationError {
     return AuthenticationError.permanent(
       IdentityErrorCode.SessionExpired,
@@ -55,6 +67,10 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
+  /**
+   * The session was revoked.
+   * @returns The error.
+   */
   static sessionRevoked(): AuthenticationError {
     return AuthenticationError.permanent(
       IdentityErrorCode.SessionRevoked,
@@ -62,6 +78,10 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
+  /**
+   * The token was revoked by a user or tenant epoch.
+   * @returns The error.
+   */
   static tokenRevoked(): AuthenticationError {
     return AuthenticationError.permanent(
       IdentityErrorCode.TokenRevoked,
@@ -69,6 +89,10 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
+  /**
+   * The user is suspended.
+   * @returns The error.
+   */
   static userSuspended(): AuthenticationError {
     return AuthenticationError.permanent(
       IdentityErrorCode.UserSuspended,
@@ -76,6 +100,10 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
+  /**
+   * The tenant is suspended.
+   * @returns The error.
+   */
   static tenantSuspended(): AuthenticationError {
     return AuthenticationError.permanent(
       IdentityErrorCode.TenantSuspended,
@@ -83,6 +111,10 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
+  /**
+   * The token carries an old permissions version; the client refreshes it.
+   * @returns The error.
+   */
   static stalePermissions(): AuthenticationError {
     return AuthenticationError.permanent(
       IdentityErrorCode.TokenStalePermissions,
@@ -90,7 +122,11 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
-  /** Revocation cannot be checked or the issuer key cannot be obtained: it rejects instead of accepting an unchecked token. */
+  /**
+   * Revocation cannot be checked or the issuer key cannot be obtained: it rejects instead of accepting an unchecked token.
+   * @param cause Failure of the state store.
+   * @returns The error.
+   */
   static stateUnavailable(cause: unknown): AuthenticationError {
     return new AuthenticationError(
       PlatformErrorCode.ResilienceCircuitOpen,

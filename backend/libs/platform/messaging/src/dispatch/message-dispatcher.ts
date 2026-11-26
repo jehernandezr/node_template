@@ -86,6 +86,9 @@ export class MessageDispatcher {
   /**
    * Registers the handler of an event or command from the contracts kit
    * (`defineEvent`, `defineCommand`). One handler per type.
+   * @param contract Message contract.
+   * @param handler Handler.
+   * @returns The dispatcher.
    */
   register<M extends MessageDefinition>(
     contract: M,
@@ -99,6 +102,9 @@ export class MessageDispatcher {
    * Processes a raw delivery (JSON as text or a decoded value) and
    * reports what the transport must do with it. The handler runs in a
    * consumer span that continues the envelope `traceparent`.
+   * @param raw Raw delivery.
+   * @param options Dispatch options.
+   * @returns The result.
    */
   async dispatch(
     raw: unknown,

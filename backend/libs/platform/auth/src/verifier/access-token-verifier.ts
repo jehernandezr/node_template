@@ -51,7 +51,13 @@ export class AccessTokenVerifier {
     private readonly issuer: string,
   ) {}
 
-  /** @throws AuthenticationError with the code of the step that failed. */
+  /**
+   * Verifies an access token and its revocation, suspension and permissions version.
+   * @param token Compact JWT.
+   * @param options Audience and checks of the route.
+   * @returns The user actor.
+   * @throws AuthenticationError with the code of the step that failed.
+   */
   async verify(token: string, options: VerifyOptions): Promise<UserActor> {
     const parsed = this.parseToken(token);
     await this.checkSignature(parsed);

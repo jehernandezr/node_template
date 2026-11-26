@@ -14,7 +14,11 @@ export class ApiKeyFormat {
   private static readonly PATTERN =
     /^sk_(live|test)_([A-Za-z0-9]{8,16})_([A-Za-z0-9]{32,64})$/;
 
-  /** `undefined` if `raw` does not match the format. Never throws. */
+  /**
+   * `undefined` if `raw` does not match the format. Never throws.
+   * @param raw Text to parse.
+   * @returns The prefix and secret, or `undefined`.
+   */
   static parse(raw: string): ParsedApiKey | undefined {
     if (raw.length > ApiKeyFormat.MAX_LENGTH) {
       return undefined;
@@ -33,7 +37,11 @@ export class ApiKeyFormat {
     };
   }
 
-  /** Hex SHA-256 of the secret: the field of the `auth:apikey:{prefix}` hash. */
+  /**
+   * Hex SHA-256 of the secret: the field of the `auth:apikey:{prefix}` hash.
+   * @param secret Secret part of the key.
+   * @returns The hex hash.
+   */
   static hashSecret(secret: string): string {
     return createHash('sha256').update(secret).digest('hex');
   }

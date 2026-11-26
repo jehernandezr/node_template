@@ -22,6 +22,10 @@ export interface ProcessedMessage {
  * handler effects, with the dispatcher `runInContext`.
  */
 export abstract class ProcessedMessageStore extends IdempotencyStore<ProcessedMessage> {
-  /** Deletes messages finished before `before`. Returns how many it removed. */
+  /**
+   * Deletes messages finished before `before`. Returns how many it removed.
+   * @param before Instant the completion must predate.
+   * @returns How many were removed.
+   */
   abstract purgeCompleted(before: Date): Promise<number>;
 }

@@ -25,13 +25,20 @@ export class EndpointDecorator {
       [HttpMethod.Delete]: RequestMethod.DELETE,
     };
 
-  /** Converts the contract's `{param}` to Express `:param`. */
+  /**
+   * Converts the contract's `{param}` to Express `:param`.
+   * @param path Contract path.
+   * @returns The Express path.
+   */
   static expressPath(path: string): string {
     return path.replace(/\{([A-Za-z][A-Za-z0-9]*)\}/g, ':$1');
   }
 
   /**
    * Registers the contract method and path, the success code and the route metadata.
+   * @param route Route definition.
+   * @param options Tier and access options.
+   * @returns The decorator.
    * @throws Error if a public route declares `auth`: detected when the class loads.
    */
   static apply(

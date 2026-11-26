@@ -48,6 +48,11 @@ export class DeliveryExecution {
 
   /**
    * The effects may have been rolled back along with the complete failure.
+   * @param envelope Delivered envelope.
+   * @param delivery Handler and parsed data.
+   * @param fingerprint Fingerprint of the message.
+   * @param options Dispatch options.
+   * @returns The result.
    */
   async execute(
     envelope: MessageEnvelope,

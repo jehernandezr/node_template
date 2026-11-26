@@ -1,6 +1,10 @@
 /** Reads the `Cookie` header per RFC 6265: only `name=value` pairs, separated by `;`. */
 export class CookieParser {
-  /** The first occurrence of each name wins. Pairs without `=` or with an empty name are ignored. */
+  /**
+   * The first occurrence of each name wins. Pairs without `=` or with an empty name are ignored.
+   * @param header `Cookie` header.
+   * @returns The cookies by name.
+   */
   static parse(header: string | undefined): ReadonlyMap<string, string> {
     const cookies = new Map<string, string>();
     if (header === undefined) {

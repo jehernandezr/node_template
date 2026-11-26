@@ -8,17 +8,29 @@ import { messageEnvelopeSchema } from './message-envelope.schema.js';
 export class EnvelopeValidator {
   private readonly encoder = new TextEncoder();
 
-  /** Size of `value` serialized as JSON, in bytes. */
+  /**
+   * Size of `value` serialized as JSON, in bytes.
+   * @param value Value to measure.
+   * @returns The size.
+   */
   sizeBytes(value: unknown): number {
     return this.encoder.encode(JSON.stringify(value)).byteLength;
   }
 
-  /** Size in bytes of an already serialized text. */
+  /**
+   * Size in bytes of an already serialized text.
+   * @param text Serialized text.
+   * @returns The size.
+   */
   textBytes(text: string): number {
     return this.encoder.encode(text).byteLength;
   }
 
-  /** @throws MessagingError `PayloadTooLarge` if `size` exceeds the maximum; without `size`, the message does not mention it. */
+  /**
+   * Checks that a message fits in the limit.
+   * @param size Size in bytes.
+   * @throws MessagingError `PayloadTooLarge` if `size` exceeds the maximum; without `size`, the message does not mention it.
+   */
   assertSize(size?: number): void {
     if (size !== undefined && size <= EnvelopeLimits.MAX_BYTES) {
       return;
@@ -35,6 +47,8 @@ export class EnvelopeValidator {
    * Checks the envelope attributes against the schema. `data` is left to the
    * message contract.
    * Zod infers `data` as optional; the contract validates it later.
+   * @param candidate Value to check.
+   * @returns The envelope.
    * @throws MessagingError `InvalidEnvelope`.
    */
   validate(candidate: unknown): MessageEnvelope {
@@ -48,6 +62,8 @@ export class EnvelopeValidator {
   /**
    * Validates an envelope, round-trips it through JSON (the returned value is exactly what
    * a transport would carry) and applies the size and attribute limits.
+   * @param envelope Envelope to check.
+   * @returns The wire envelope.
    * @throws MessagingError `InvalidEnvelope` or `PayloadTooLarge`.
    */
   toWire<T>(envelope: MessageEnvelope<T>): MessageEnvelope<T> {
@@ -60,7 +76,11 @@ export class EnvelopeValidator {
     return wire as MessageEnvelope<T>;
   }
 
-  /** `InvalidEnvelope` error with the text `invalid envelope: <reason>`. */
+  /**
+   * `InvalidEnvelope` error with the text `invalid envelope: <reason>`.
+   * @param reason Why it is invalid.
+   * @returns The error.
+   */
   invalid(reason: string): MessagingError {
     return new MessagingError(
       MessagingErrorCode.InvalidEnvelope,

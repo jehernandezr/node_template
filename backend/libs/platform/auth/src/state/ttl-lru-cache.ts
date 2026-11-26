@@ -14,7 +14,11 @@ export class TtlLruCache<V> {
 
   constructor(private readonly maxEntries: number) {}
 
-  /** Returns the entry, expired or not, and marks it as the most recent. */
+  /**
+   * Returns the entry, expired or not, and marks it as the most recent.
+   * @param key Key to read.
+   * @returns The entry, or `undefined`.
+   */
   get(key: string): TtlEntry<V> | undefined {
     const entry = this.entries.get(key);
     if (entry === undefined) {
@@ -25,6 +29,12 @@ export class TtlLruCache<V> {
     return entry;
   }
 
+  /**
+   * Stores an entry, evicting the least recent beyond the capacity.
+   * @param key Key to write.
+   * @param value Value to store.
+   * @param nowMs Instant of the write.
+   */
   set(key: string, value: V, nowMs: number): void {
     this.entries.delete(key);
     this.entries.set(key, { value, storedAtMs: nowMs });
@@ -37,7 +47,13 @@ export class TtlLruCache<V> {
     }
   }
 
-  /** `true` if the entry was stored less than `ttlMs` ago. */
+  /**
+   * `true` if the entry was stored less than `ttlMs` ago.
+   * @param entry Entry to check.
+   * @param nowMs Current instant.
+   * @param ttlMs Freshness window.
+   * @returns `true` when fresh.
+   */
   isFresh(entry: TtlEntry<V>, nowMs: number, ttlMs: number): boolean {
     return nowMs - entry.storedAtMs < ttlMs;
   }

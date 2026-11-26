@@ -160,6 +160,8 @@ export class Topology {
   /**
    * Returns all structural problems, both errors and warnings.
    * SNS FIFO topics can feed standard queues; a FIFO queue needs a FIFO topic.
+   * @param options Validation options.
+   * @returns The issues.
    */
   validate(options: ValidateOptions = {}): TopologyIssue[] {
     const issues: TopologyIssue[] = [];
@@ -327,7 +329,10 @@ export class Topology {
     return issues;
   }
 
-  /** Throws a {@link TopologyError} with every error-level problem. Warnings do not throw. */
+  /**
+   * Throws a {@link TopologyError} with every error-level problem. Warnings do not throw.
+   * @param options Validation options.
+   */
   assertValid(options: ValidateOptions = {}): void {
     const errors = this.validate(options).filter(
       (issue) => issue.severity === TopologySeverity.Error,
@@ -335,17 +340,28 @@ export class Topology {
     if (errors.length > 0) throw new TopologyError(errors);
   }
 
-  /** Returns the route of a message type, if it exists. */
+  /**
+   * Returns the route of a message type, if it exists.
+   * @param type Message type.
+   * @returns The route, or `undefined`.
+   */
   routeFor(type: string): RouteDef | undefined {
     return this.routesByType.get(type);
   }
 
-  /** Returns a queue by name, if it is declared. */
+  /**
+   * Returns a queue by name, if it is declared.
+   * @param name Queue name.
+   * @returns The queue, or `undefined`.
+   */
   queueFor(name: string): QueueDef | undefined {
     return this.queuesByName.get(name);
   }
 
-  /** Exports the topology with a stable order. Validates first. */
+  /**
+   * Exports the topology with a stable order. Validates first.
+   * @returns The topology document.
+   */
   toJSON(): TopologyDocument {
     this.assertValid();
 

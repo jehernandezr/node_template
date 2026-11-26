@@ -20,6 +20,12 @@ export class ProblemDetailsMapper {
     private readonly factory: ProblemDetailsFactory,
   ) {}
 
+  /**
+   * Turns an error into its Problem Details answer.
+   * @param error Error of the request.
+   * @param context Path and trace of the request.
+   * @returns The status and body.
+   */
   map(
     error: unknown,
     context: { readonly instance: string; readonly traceId?: string },

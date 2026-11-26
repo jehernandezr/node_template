@@ -29,6 +29,8 @@ export class DeliveryClassifier {
    * (the claim protects a repeated delivery); `Permanent` and
    * `ProtocolViolation` go to the dead-letter queue, where they can be inspected
    * and redriven.
+   * @param error Failure of the handler.
+   * @returns The disposition.
    */
   disposition(error: unknown): ErrorDisposition {
     if (this.isPermanent !== undefined) {
@@ -56,6 +58,11 @@ export class DeliveryClassifier {
    * handler failure goes to the dead-letter queue when it is permanent, when there is no
    * policy or when `receiveCount` reached `maxAttempts`. The wait is
    * `Backoff.delay(receiveCount)`, with the attempt capped to what `Backoff` accepts.
+   * @param id Message id.
+   * @param error Failure.
+   * @param options Dispatch options.
+   * @param infrastructureFailure Whether the failure came from the store or the transport.
+   * @returns The result.
    */
   failure(
     id: string,
