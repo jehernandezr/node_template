@@ -56,7 +56,8 @@ mapping what they affect elsewhere.
   `review only`; a test fails when a rule has no row or a row names a rule that is gone.
 - New lint rules in `backend/eslint.guards.mjs`: no Jest doubles (`jest.fn`, `jest.spyOn`, `jest.mock`,
   `jest.replaceProperty` and kin); no `new` of a collaborator, recognized by its role suffix, outside tests, Nest
-  modules and wiring, selectors, factories and entry points; no `@Global()` outside `libs/platform`. The front
+  modules and wiring, selectors, factories and entry points; no `@Global()` outside `libs/platform`; no harness that
+  starts its own PostgreSQL or Valkey container outside `DedicatedValkeyHost` and `RegionServers`. The front
   structure check rejects mocking libraries.
 - The comment rule reads overloads as one method with its JSDoc on the first signature, checks the JSDoc an override
   carries, rejects delegation filler on facades, repositories, stores, adapters and clients, counts parameter names
