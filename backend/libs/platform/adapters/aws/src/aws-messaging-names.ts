@@ -28,6 +28,17 @@ export class AwsMessagingNames {
   ) {}
 
   /**
+   * Physical name of a topic or queue under a messaging prefix: `<prefix>-<name>[.fifo]`.
+   * @param prefix Messaging name prefix of the environment.
+   * @param name Logical name.
+   * @param fifo Whether it is FIFO.
+   * @returns The physical name.
+   */
+  static physicalName(prefix: string, name: string, fifo: boolean): string {
+    return `${prefix}-${name}${fifo ? AwsMessagingNames.FIFO_SUFFIX : ''}`;
+  }
+
+  /**
    * Physical name of a topic.
    * @param name Logical name.
    * @param fifo Whether it is FIFO.
@@ -106,6 +117,10 @@ export class AwsMessagingNames {
   }
 
   private physical(name: string, fifo: boolean): string {
-    return `${this.settings.MESSAGING_NAME_PREFIX}-${name}${fifo ? AwsMessagingNames.FIFO_SUFFIX : ''}`;
+    return AwsMessagingNames.physicalName(
+      this.settings.MESSAGING_NAME_PREFIX,
+      name,
+      fifo,
+    );
   }
 }
