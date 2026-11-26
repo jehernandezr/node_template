@@ -9,7 +9,6 @@ import {
 } from '../cursor.js';
 import { CriteriaErrorCode } from '../errors/criteria-error-code.enum.js';
 import { CriteriaError } from '../errors/criteria-error.js';
-import { CriteriaValidator } from '../criteria-validator.js';
 
 function b64(value: unknown): string {
   return Buffer.from(JSON.stringify(value), 'utf8').toString('base64url');
@@ -36,9 +35,8 @@ describe('cursor bounds and tampering', () => {
     );
   });
 
-  it('uses the limits of the pagination contract', () => {
+  it('uses the cursor length limit of the pagination contract', () => {
     expect(MAX_CURSOR_LENGTH).toBe(Pagination.maxCursorLength);
-    expect(CriteriaValidator.MAX_LIMIT).toBe(Pagination.maxLimit);
   });
 
   it('rejects encoding oversized ids, texts, value lists and tokens', () => {

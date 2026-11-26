@@ -4,9 +4,6 @@ import {
   ErrorDescriptor,
   IdGenerator,
   RandomSource,
-  SystemClock,
-  SystemRandomSource,
-  UuidV7IdGenerator,
 } from '@platform/kernel';
 import { ServiceConfig, type ServiceSettings } from '@platform/config';
 import { LoggerPort } from '@platform/observability';
@@ -43,14 +40,6 @@ import { VALKEY_CLIENT, VALKEY_MODULE_OPTIONS } from './valkey.tokens.js';
 export class ValkeyProviders {
   static build(extras: ValkeyModuleExtras): Provider[] {
     return [
-      { provide: Clock, useFactory: () => new SystemClock() },
-      { provide: RandomSource, useFactory: () => new SystemRandomSource() },
-      {
-        provide: IdGenerator,
-        useFactory: (clock: Clock, random: RandomSource) =>
-          new UuidV7IdGenerator(clock, random),
-        inject: [Clock, RandomSource],
-      },
       ...(extras.authToken === undefined
         ? []
         : [

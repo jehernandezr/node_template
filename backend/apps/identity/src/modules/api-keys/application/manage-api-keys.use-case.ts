@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   ApiKeyCreatedEvent,
@@ -22,7 +23,6 @@ import { IdentitySettings } from '../../../config/identity-settings.js';
 import { SecretGenerator } from '../../../security/secret-generator.js';
 import { IdentityDefaults } from '../../../shared/constants/identity-defaults.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import {
   ApiKeyDirectory,
   ApiKeyRepository,
@@ -59,7 +59,7 @@ export class ManageApiKeys {
     private readonly generator: SecretGenerator,
     private readonly state: AuthStateWriter,
     private readonly bus: MessageBus,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,

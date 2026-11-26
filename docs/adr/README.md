@@ -19,41 +19,42 @@ Numbers are not reused. File names use kebab-case and are in English.
 
 ## Index
 
-| Number | Title                                                                                                               | Status                 |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| 0001   | [Nx monorepo with pnpm and one microservice per app](0001-nx-monorepo-pnpm-microservices.md)                        | Accepted               |
-| 0002   | [Hexagonal architecture and platform-agnostic design](0002-hexagonal-architecture-platform-agnostic.md)             | Accepted               |
-| 0003   | [UUIDv7 identifiers and traceId](0003-uuidv7-identifiers-traceid.md)                                                | Accepted               |
-| 0004   | [Observability with OpenTelemetry and OpenObserve](0004-observability-opentelemetry-openobserve.md)                 | Accepted               |
-| 0005   | [In-house authentication with sessions and JWT](0005-authentication-sessions-jwt.md)                                | Accepted               |
-| 0006   | [MFA with a registered device and passkeys](0006-mfa-registered-device-passkeys.md)                                 | Accepted               |
-| 0007   | [Messaging with a typed topology, SNS/SQS and CloudEvents](0007-messaging-typed-topology-sns-sqs-cloudevents.md)    | Accepted               |
-| 0008   | [Orchestrated sagas with a persistent log](0008-orchestrated-sagas-persistent-log.md)                               | Accepted               |
-| 0009   | [RDS PostgreSQL with an in-house persistence layer](0009-rds-postgresql-in-house-persistence-layer.md)              | Superseded by ADR 0024 |
-| 0010   | [Logical sharding by groups and residency by region](0010-logical-sharding-region-residency.md)                     | Amended by ADR 0032    |
-| 0011   | [Real time with Socket.IO and SSE](0011-real-time-socketio-sse.md)                                                  | Amended by ADR 0034    |
-| 0012   | [Flutter front with shells and microfrontends](0012-front-flutter-shells-microfrontends.md)                         | Accepted               |
-| 0013   | [AI module with ports and Claude by default](0013-ai-module-ports-claude.md)                                        | Accepted, not built    |
-| 0014   | [Agreements and signed documents](0014-agreements-signed-documents.md)                                              | Accepted, not built    |
-| 0015   | [Repository structure and shared code per application](0015-repository-structure-and-shared-code.md)                | Accepted               |
-| 0016   | [Internet egress with NAT only for the application subnets](0016-network-egress.md)                                 | Accepted               |
-| 0017   | [Contract export](0017-contract-export.md)                                                                          | Accepted               |
-| 0018   | [Microfrontend contract](0018-microfrontend-contract.md)                                                            | Accepted               |
-| 0019   | [CI and toolchain](0019-ci-and-toolchain.md)                                                                        | Accepted               |
-| 0020   | [Terraform by stacks and API runtime chosen per service](0020-terraform-stacks-and-runtime-per-service.md)          | Accepted               |
-| 0021   | [Valkey as the adapter for cache, routing, Bloom and invalidation](0021-valkey-adapter.md)                          | Accepted               |
-| 0022   | [Token verification and shared revocation state](0022-token-verification-shared-revocation-state.md)                | Accepted               |
-| 0023   | [Routing identity data across shards](0023-identity-data-routing.md)                                                | Accepted               |
-| 0024   | [Persistence on TypeORM with sharding and persistent sagas](0024-typeorm-persistence-sharding-persistent-sagas.md)  | Accepted               |
-| 0025   | [NestJS layer per sub-entry point and ports as abstract classes](0025-nestjs-layer-per-sub-entry-abstract-ports.md) | Accepted               |
-| 0026   | [Scheduled jobs: ScheduledJob, JobLock and @platform/scheduling](0026-scheduled-jobs-scheduledjob-joblock.md)       | Accepted               |
-| 0027   | [Screen patterns and shared front tests](0027-front-screen-patterns-and-tests.md)                                   | Accepted               |
-| 0028   | [Real time over one stream per user](0028-real-time-one-stream-per-user.md)                                         | Accepted               |
-| 0029   | [Cross-tenant maintenance with RLS and per-shard search](0029-cross-tenant-maintenance-search-per-shard.md)         | Accepted               |
-| 0030   | [Identity email through notifications](0030-identity-email-through-notifications.md)                                | Accepted               |
-| 0031   | [Reports, billing and identity sagas](0031-reports-billing-identity-sagas.md)                                       | Amended by ADR 0036    |
-| 0032   | [Moving tenants and regions](0032-tenant-moves-and-regions.md)                                                      | Accepted               |
-| 0033   | [Service and module generators, and OpenAPI from the contracts](0033-generators-and-openapi.md)                     | Accepted               |
-| 0034   | [Live front repositories, SSE and region in the client](0034-live-front-repositories-sse-region.md)                 | Accepted               |
-| 0035   | [End-to-end flow of the platform](0035-end-to-end-platform-flow.md)                                                 | Accepted               |
-| 0036   | [Identity security: factors, access and lifecycle](0036-identity-security-factors-access-lifecycle.md)              | Accepted               |
+| Number | Title                                                                                                                 | Status                 |
+| ------ | --------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| 0001   | [Nx monorepo with pnpm and one microservice per app](0001-nx-monorepo-pnpm-microservices.md)                          | Accepted               |
+| 0002   | [Hexagonal architecture and platform-agnostic design](0002-hexagonal-architecture-platform-agnostic.md)               | Accepted               |
+| 0003   | [UUIDv7 identifiers and traceId](0003-uuidv7-identifiers-traceid.md)                                                  | Accepted               |
+| 0004   | [Observability with OpenTelemetry and OpenObserve](0004-observability-opentelemetry-openobserve.md)                   | Accepted               |
+| 0005   | [In-house authentication with sessions and JWT](0005-authentication-sessions-jwt.md)                                  | Accepted               |
+| 0006   | [MFA with a registered device and passkeys](0006-mfa-registered-device-passkeys.md)                                   | Accepted               |
+| 0007   | [Messaging with a typed topology, SNS/SQS and CloudEvents](0007-messaging-typed-topology-sns-sqs-cloudevents.md)      | Accepted               |
+| 0008   | [Orchestrated sagas with a persistent log](0008-orchestrated-sagas-persistent-log.md)                                 | Accepted               |
+| 0009   | [RDS PostgreSQL with an in-house persistence layer](0009-rds-postgresql-in-house-persistence-layer.md)                | Superseded by ADR 0024 |
+| 0010   | [Logical sharding by groups and residency by region](0010-logical-sharding-region-residency.md)                       | Amended by ADR 0032    |
+| 0011   | [Real time with Socket.IO and SSE](0011-real-time-socketio-sse.md)                                                    | Amended by ADR 0034    |
+| 0012   | [Flutter front with shells and microfrontends](0012-front-flutter-shells-microfrontends.md)                           | Accepted               |
+| 0013   | [AI module with ports and Claude by default](0013-ai-module-ports-claude.md)                                          | Accepted, not built    |
+| 0014   | [Agreements and signed documents](0014-agreements-signed-documents.md)                                                | Accepted, not built    |
+| 0015   | [Repository structure and shared code per application](0015-repository-structure-and-shared-code.md)                  | Accepted               |
+| 0016   | [Internet egress with NAT only for the application subnets](0016-network-egress.md)                                   | Accepted               |
+| 0017   | [Contract export](0017-contract-export.md)                                                                            | Accepted               |
+| 0018   | [Microfrontend contract](0018-microfrontend-contract.md)                                                              | Accepted               |
+| 0019   | [CI and toolchain](0019-ci-and-toolchain.md)                                                                          | Accepted               |
+| 0020   | [Terraform by stacks and API runtime chosen per service](0020-terraform-stacks-and-runtime-per-service.md)            | Accepted               |
+| 0021   | [Valkey as the adapter for cache, routing, Bloom and invalidation](0021-valkey-adapter.md)                            | Accepted               |
+| 0022   | [Token verification and shared revocation state](0022-token-verification-shared-revocation-state.md)                  | Accepted               |
+| 0023   | [Routing identity data across shards](0023-identity-data-routing.md)                                                  | Accepted               |
+| 0024   | [Persistence on TypeORM with sharding and persistent sagas](0024-typeorm-persistence-sharding-persistent-sagas.md)    | Amended by ADR 0037    |
+| 0025   | [NestJS layer per sub-entry point and ports as abstract classes](0025-nestjs-layer-per-sub-entry-abstract-ports.md)   | Accepted               |
+| 0026   | [Scheduled jobs: ScheduledJob, JobLock and @platform/scheduling](0026-scheduled-jobs-scheduledjob-joblock.md)         | Accepted               |
+| 0027   | [Screen patterns and shared front tests](0027-front-screen-patterns-and-tests.md)                                     | Accepted               |
+| 0028   | [Real time over one stream per user](0028-real-time-one-stream-per-user.md)                                           | Accepted               |
+| 0029   | [Cross-tenant maintenance with RLS and per-shard search](0029-cross-tenant-maintenance-search-per-shard.md)           | Accepted               |
+| 0030   | [Identity email through notifications](0030-identity-email-through-notifications.md)                                  | Accepted               |
+| 0031   | [Reports, billing and identity sagas](0031-reports-billing-identity-sagas.md)                                         | Amended by ADR 0036    |
+| 0032   | [Moving tenants and regions](0032-tenant-moves-and-regions.md)                                                        | Accepted               |
+| 0033   | [Service and module generators, and OpenAPI from the contracts](0033-generators-and-openapi.md)                       | Accepted               |
+| 0034   | [Live front repositories, SSE and region in the client](0034-live-front-repositories-sse-region.md)                   | Accepted               |
+| 0035   | [End-to-end flow of the platform](0035-end-to-end-platform-flow.md)                                                   | Accepted               |
+| 0036   | [Identity security: factors, access and lifecycle](0036-identity-security-factors-access-lifecycle.md)                | Accepted               |
+| 0037   | [Composition, shared platform pieces and domain events](0037-composition-shared-platform-pieces-and-domain-events.md) | Accepted               |

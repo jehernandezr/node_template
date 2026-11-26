@@ -1,11 +1,18 @@
 import { TokenAudience } from '@contracts/identity';
-import { UuidV7IdGenerator } from '@platform/kernel';
+import {
+  UuidV7IdGenerator,
+  SystemClock,
+  SystemRandomSource,
+} from '@platform/kernel';
 import { ActorType } from '@platform/observability';
 import type { ServiceAccountActor, UserActor } from '../../actor/actor.js';
 
 /** Authenticated actors of a tenant for the guard and interceptor tests, with new ids. */
 export class TestActors {
-  private static readonly ids = new UuidV7IdGenerator();
+  private static readonly ids = new UuidV7IdGenerator(
+    new SystemClock(),
+    new SystemRandomSource(),
+  );
 
   static serviceAccount(tenantId: string): ServiceAccountActor {
     return {

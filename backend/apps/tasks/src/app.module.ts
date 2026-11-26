@@ -17,7 +17,7 @@ import {
 } from '@platform/tenant-move/nest';
 import { TasksTenantMoveManifest } from './database/tasks-tenant-move.manifest.js';
 import { TASKS_ERROR_CATALOGS } from './shared/constants/tasks-error-catalogs.constants.js';
-import { PrivacyModule } from './modules/privacy/index.js';
+import { PrivacyModule } from './modules/privacy/module.js';
 import { TasksModule } from './modules/tasks/presentation/tasks.module.js';
 // generated:modules:imports
 

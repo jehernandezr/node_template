@@ -451,43 +451,44 @@ TypeORM is the ORM, and `backend/libs/platform/persistence` wraps it and adds wh
 export class UsersModule {}
 
 export class TypeOrmUserRepository
-  extends ShardedRepository<User, UserEntity>
+  extends UserShardRepository
   implements UserRepository
 {
-  constructor(kit: RepositoryKit, mapper: UserMapper) {
-    super(UserEntity, kit, mapper);
+  constructor(kit: RepositoryKit) {
+    super(kit);
   }
 
-  async findByEmail(email: Email): Promise<User | null> {
-    const tenantId = this.tenantId();
+  async findById(userId: string): Promise<User | undefined> {
     const entity = await this.read((manager) =>
-      manager.findOneBy(UserEntity, { email: email.value, tenantId }),
+      manager.findOneBy(UserEntity, { id: userId }),
     );
-    return entity ? this.mapper.toDomain(entity) : null;
+    return entity === null ? undefined : UserMapper.toDomain(entity);
   }
 }
 ```
 
+Tenant tables extend `TenantIsolatedRepository` instead: each query filters by `this.tenantId()`, the tenant of the `ShardScope` the use case opened with `ShardScopes.inTenantShard`, and RLS fails closed without it ([ADR 0037](adr/0037-composition-shared-platform-pieces-and-domain-events.md)).
+
 **Pieces of `@platform/persistence`**
 
-| Class                                       | Responsibility                                                                                                                                                                              |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ShardDataSources`                          | One TypeORM `DataSource` per physical database (instance plus logical shard), with primary and replicas. It creates them on first use and closes the old one when a shard changes instance  |
-| `CatalogDataSource`                         | The catalog's `DataSource`                                                                                                                                                                  |
-| `ShardResolver`                             | Takes the key from the context according to the module, calls `ShardRouter` and returns the shard's `DataSource`                                                                            |
-| `TypeOrmTransactionManager`                 | Implements the `TransactionManager` port from `@platform/kernel` with a `QueryRunner` on the shard. Runs the `afterCommit` hooks and refuses to touch another shard in the same transaction |
-| `EntityManagerProvider`                     | The current transaction's `EntityManager` or, outside one, the replica's. `this.readPrimary(fn)` forces the primary                                                                         |
-| `ShardedRepository` and `CatalogRepository` | Base of the repositories: tenant, optimistic version (`@VersionColumn`), soft delete (`@DeleteDateColumn`), auditing and `Criteria` with UUIDv7 cursor pagination                           |
-| `RepositoryKit`                             | What a repository needs besides its mapper: the module's declaration, the manager provider, the optimistic writer, the context and the `ShardScope`. `forFeature` builds it                 |
-| `PersistenceFeature`                        | A module's already validated sharding declaration (`ShardKey`, strategy) with its entities. `forFeature` creates it                                                                         |
-| `OptimisticWriter`                          | `UPDATE` that only applies if the version is still current. If no row changes it throws `OptimisticLockError`                                                                               |
-| `ShardLister`                               | Port that lists the service's logical shards with their instance. The directory implements it and `forRoot` requires it                                                                     |
-| `TypeOrmCriteriaTranslator`                 | Translates the `Criteria` AST into a `QueryBuilder`: parameterized filters, ordering, cursor pagination and a field allowlist                                                               |
-| `MigrationGenerator`                        | Generates a migration by comparing the entities with a temporary database to which the existing migrations are applied                                                                      |
-| `ShardScope`                                | Runs a block on the shard of an explicit key, such as a user from another tenant ([ADR 0023](adr/0023-identity-data-routing.md))                                                            |
-| `AcrossShards`                              | Walks several shards for reports and maintenance, with a deadline and bounded concurrency                                                                                                   |
-| `ShardedMigrationRunner`                    | Runs the migrations of each logical shard and of the catalog, each one under `pg_advisory_lock`                                                                                             |
-| `PersistenceModule`                         | `forRoot(config)` sets everything up with defaults, and `forFeature({ entities, sharding })` registers a module's repositories with its key                                                 |
+| Class                       | Responsibility                                                                                                                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ShardDataSources`          | One TypeORM `DataSource` per physical database (instance plus logical shard), with primary and replicas. It creates them on first use and closes the old one when a shard changes instance  |
+| `CatalogDataSource`         | The catalog's `DataSource`                                                                                                                                                                  |
+| `ShardResolver`             | Takes the key from the context according to the module, calls `ShardRouter` and returns the shard's `DataSource`                                                                            |
+| `TypeOrmTransactionManager` | Implements the `TransactionManager` port from `@platform/kernel` with a `QueryRunner` on the shard. Runs the `afterCommit` hooks and refuses to touch another shard in the same transaction |
+| `EntityManagerProvider`     | The current transaction's `EntityManager` or, outside one, the replica's. `this.readPrimary(fn)` forces the primary                                                                         |
+| `TenantIsolatedRepository`  | The only base of tenant repositories: tenant of the `ShardScope`, `app.tenant_id` set in every transaction for RLS, replica reads in read-only transactions and audited writes              |
+| `ShardScopes`               | Opens a tenant's shard (with the tenant in the request context) or a user's shard for a block                                                                                               |
+| `RepositoryKit`             | What a repository needs besides its mapper: the module's declaration, the manager provider, the optimistic writer, the context and the `ShardScope`. `forFeature` builds it                 |
+| `PersistenceFeature`        | A module's already validated sharding declaration (`ShardKey`, strategy) with its entities. `forFeature` creates it                                                                         |
+| `OptimisticWriter`          | `UPDATE` that only applies if the version is still current. If no row changes it throws `OptimisticLockError`                                                                               |
+| `ShardLister`               | Port that lists the service's logical shards with their instance. The directory implements it and `forRoot` requires it                                                                     |
+| `MigrationGenerator`        | Generates a migration by comparing the entities with a temporary database to which the existing migrations are applied                                                                      |
+| `ShardScope`                | Runs a block on the shard of an explicit key, such as a user from another tenant ([ADR 0023](adr/0023-identity-data-routing.md))                                                            |
+| `AcrossShards`              | Walks several shards for reports and maintenance, with a deadline and bounded concurrency                                                                                                   |
+| `ShardedMigrationRunner`    | Runs the migrations of each logical shard and of the catalog, each one under `pg_advisory_lock`                                                                                             |
+| `PersistenceModule`         | `forRoot(config)` sets everything up with defaults, and `forFeature({ entities, sharding })` registers a module's repositories with its key                                                 |
 
 **Entities and migrations**
 
@@ -641,7 +642,7 @@ export class TaskEntity { ... }
 const results = await this.taskSearch.search({
   query: 'facturas vencidas de proveedores',
   mode: SearchMode.Hybrid,
-  filter: Criteria.where(TaskField.Status).eq(TaskStatus.Open),
+  filter: { status: TaskStatus.Open },
   limit: 20,
 });
 ```

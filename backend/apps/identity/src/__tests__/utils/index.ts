@@ -8,7 +8,6 @@ export {
   type EphemeralStoreFixture,
 } from './ephemeral-store-contract.js';
 export { AccessMatrix } from './access-matrix.js';
-export { TestShardScopes } from './test-shard-scopes.js';
 export { ShardProbe } from './shard-probe.js';
 export { ShardedUsers, type PlacedUser } from './sharded-users.js';
 export { PresetIdGenerator } from './preset-id-generator.js';

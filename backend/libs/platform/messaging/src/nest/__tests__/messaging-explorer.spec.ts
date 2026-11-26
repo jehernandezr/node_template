@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import {
@@ -60,7 +61,12 @@ describe('MessagingExplorer', () => {
 
   it('registers @Subscribe methods without a manual register call', async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [TestPlatformModule, messagingRoot(), ConsumerModule],
+      imports: [
+        KernelModule,
+        TestPlatformModule,
+        messagingRoot(),
+        ConsumerModule,
+      ],
     }).compile();
     await moduleRef.init();
 
@@ -74,7 +80,12 @@ describe('MessagingExplorer', () => {
 
   it('keeps the consumer instance as this when the handler runs', async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [TestPlatformModule, messagingRoot(), ConsumerModule],
+      imports: [
+        KernelModule,
+        TestPlatformModule,
+        messagingRoot(),
+        ConsumerModule,
+      ],
     }).compile();
     await moduleRef.init();
 
@@ -88,6 +99,7 @@ describe('MessagingExplorer', () => {
   it('fails the bootstrap when two handlers subscribe to the same contract', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         TestPlatformModule,
         messagingRoot(),
         ConflictingConsumersModule,
@@ -101,7 +113,12 @@ describe('MessagingExplorer', () => {
 
   it('registers a provider exposed under two tokens only once', async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [TestPlatformModule, messagingRoot(), AliasedConsumerModule],
+      imports: [
+        KernelModule,
+        TestPlatformModule,
+        messagingRoot(),
+        AliasedConsumerModule,
+      ],
     }).compile();
 
     await moduleRef.init();

@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   ReportsErrorCode,
@@ -6,11 +7,9 @@ import {
   type ExecuteRunPayload,
   type ReportResult,
 } from '@contracts/reports';
-import { AppConfig } from '@platform/config';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import type { ReportsConfig } from '../../../config/reports.config.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
+import { ReportsSettings } from '../../../config/reports-settings.js';
 import { ReportDefinitionRegistry } from '../../catalog/index.js';
 import { ReportResultStore } from '../domain/report-result-store.js';
 import { ReportRunRepository } from '../domain/report-run.repository.js';
@@ -32,18 +31,17 @@ export class ExecuteRun {
     private readonly results: ReportResultStore,
     private readonly registry: ReportDefinitionRegistry,
     private readonly bus: MessageBus,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
-    config: AppConfig,
+    settings: ReportsSettings,
   ) {
-    const settings = config.root<ReportsConfig>();
-    this.maxBytes = settings.REPORTS_MAX_RESULT_BYTES;
-    this.ttlMs = settings.REPORTS_RESULT_TTL_DAYS * ExecuteRun.DAY_MS;
+    this.maxBytes = settings.values.REPORTS_MAX_RESULT_BYTES;
+    this.ttlMs = settings.values.REPORTS_RESULT_TTL_DAYS * ExecuteRun.DAY_MS;
   }
 
   execute(command: ExecuteRunPayload): Promise<void> {
-    return this.shard.run(command.tenantId, async () => {
+    return this.shard.inTenantShard(command.tenantId, async () => {
       const pending = await this.runs.find(command.runId);
       if (pending === undefined || !pending.isPending()) {
         return;

@@ -1,5 +1,5 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { FinanceProjection } from '../domain/finance-projection.js';
 import type {
   ActivityPoint,
@@ -17,7 +17,7 @@ export class LocalProjectionsFacade extends ProjectionsFacade {
   constructor(
     private readonly tasks: TaskProjection,
     private readonly finance: FinanceProjection,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
   ) {
     super();
   }
@@ -26,27 +26,33 @@ export class LocalProjectionsFacade extends ProjectionsFacade {
     tenantId: string,
     range: ReportRange,
   ): Promise<readonly StatusCount[]> {
-    return this.shard.run(tenantId, () => this.tasks.statusCounts(range));
+    return this.shard.inTenantShard(tenantId, () =>
+      this.tasks.statusCounts(range),
+    );
   }
 
   taskActivity(
     tenantId: string,
     range: BucketedRange,
   ): Promise<readonly ActivityPoint[]> {
-    return this.shard.run(tenantId, () => this.tasks.activity(range));
+    return this.shard.inTenantShard(tenantId, () => this.tasks.activity(range));
   }
 
   invoiceSummary(
     tenantId: string,
     range: BucketedRange,
   ): Promise<readonly InvoicePoint[]> {
-    return this.shard.run(tenantId, () => this.finance.invoices(range));
+    return this.shard.inTenantShard(tenantId, () =>
+      this.finance.invoices(range),
+    );
   }
 
   deliverySummary(
     tenantId: string,
     range: BucketedRange,
   ): Promise<readonly DeliveryPoint[]> {
-    return this.shard.run(tenantId, () => this.finance.deliveries(range));
+    return this.shard.inTenantShard(tenantId, () =>
+      this.finance.deliveries(range),
+    );
   }
 }

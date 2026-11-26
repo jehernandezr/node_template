@@ -1,4 +1,4 @@
-import { SystemClock, type Clock } from '@platform/kernel';
+import { type Clock } from '@platform/kernel';
 import { CachePort } from './cache-port.js';
 import type { InMemoryCacheOptions } from './in-memory-cache.options.js';
 
@@ -16,9 +16,9 @@ export class InMemoryCache extends CachePort {
   private readonly entries = new Map<string, Entry>();
   private readonly clock: Clock;
 
-  constructor(options: InMemoryCacheOptions = {}) {
+  constructor(options: InMemoryCacheOptions) {
     super();
-    this.clock = options.clock ?? new SystemClock();
+    this.clock = options.clock;
   }
 
   async get(key: string): Promise<string | undefined> {

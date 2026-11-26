@@ -18,7 +18,7 @@ ADR 0007 (typed messaging, CloudEvents), ADR 0008 (sagas), ADR 0023 (idempotency
 - Publish with `MessageBus.publish(event, data)` or `send(command, data)` inside `runInTransaction`. `OutboxMessageBus` stores with `OutboxWriter.append` in that transaction; without a transaction it throws `MessagingError` with `MessagingTransactionRequired`.
 - `OutboxRelayJob` publishes after the commit and marks as sent.
 - Never publish to SNS from the use case, before the commit, or in `afterCommit` without an outbox.
-- Events with `pullDomainEvents()`, translated by an application mapper to the zod contract in `@contracts/<service>/events`.
+- The use case builds the event data with an application mapper to the zod contract in `@contracts/<service>/events`; from an aggregate that raises domain events, it takes them with `pullDomainEvents()` first.
 - Type and queue from topology enums (`TopicDef`, `QueueDef`, `Route`).
 - The outbox stores `traceparent`, `tenantid` and `actorid`.
 

@@ -1,14 +1,12 @@
-import type { ConfigEnv } from '@platform/config';
 import { HttpApplicationSetup } from '@platform/http/nest';
-import { HttpTestClient } from '@platform/http/test-utils';
-import { MigrationTarget } from '@platform/service';
+import type { ConfigEnv } from '@platform/config';
+import type { HttpTestClient } from '@platform/http/test-utils';
 import { ShardRouter } from '@platform/sharding';
-import { InternalOperationsClient } from '@platform/service/test-utils';
 import {
-  ServiceBootstrap,
-  ServiceMigrator,
-  type RunningService,
-} from '@platform/service/nest';
+  InternalOperationsClient,
+  ServiceTestApp,
+} from '@platform/service/test-utils';
+import type { RunningService } from '@platform/service/nest';
 import { identityService } from '../../identity.service.js';
 import { MemoryIdentityMailer } from '../../modules/alerts/index.js';
 import { SeedRegionTenants } from '../../modules/tenants/index.js';
@@ -18,9 +16,10 @@ import { PeerServicesStub } from './peer-services-stub.js';
 import { ShardProbe } from './shard-probe.js';
 
 /**
- * Full identity on real PostgreSQL and Valkey: migrates the catalog and both shards, seeds the
- * region's tenants and serves HTTP on a free port. The services it calls are `peers`. It is
- * shared by the integration and e2e tests.
+ * Full identity on real PostgreSQL and Valkey: migrates the catalog and both shards, seeds the region's tenants and
+ * serves HTTP on a free port. The services it calls are `peers`. It is shared by the integration and e2e tests.
+ * A proxy sits in front: each test client declares its IP in `X-Forwarded-For`, so the per-IP limit of the public
+ * routes is not shared among all tests.
  */
 export class IdentityTestApp implements IdentityEntry {
   /** Web origin allowed by the test environment. */
@@ -29,62 +28,39 @@ export class IdentityTestApp implements IdentityEntry {
 
   readonly peers = new PeerServicesStub();
   private readonly servers = new IdentityTestServers();
-  private running: RunningService | undefined;
-  private environment: ConfigEnv = {};
+  private readonly app = new ServiceTestApp({
+    definition: identityService,
+    servers: this.servers,
+    configurer: new HttpApplicationSetup(),
+    peers: [this.peers],
+    peerUrls: () => this.peers.baseUrls(),
+    environment: () => ({ TRUST_PROXY_HOPS: '1' }),
+  });
 
+  /** Starts the databases, the peer stubs and identity, and seeds the region's tenants. */
   async start(overrides: ConfigEnv = {}): Promise<void> {
-    await this.servers.start();
-    await this.peers.start();
-    // A proxy in front: each test client declares its IP in `X-Forwarded-For`, so the per-IP limit
-    // of the public routes is not shared among all tests.
-    this.environment = {
-      ...this.servers.environment(),
-      TRUST_PROXY_HOPS: '1',
-      INTERNAL_API_BASE_URLS: JSON.stringify(this.peers.baseUrls()),
-      ...overrides,
-    };
-    const migrator = new ServiceMigrator();
-    await migrator.run(identityService, MigrationTarget.Catalog, {
-      env: this.environment,
-    });
-    await this.servers.registerShards();
-    await migrator.run(identityService, MigrationTarget.Shards, {
-      env: this.environment,
-    });
-    this.running = await ServiceBootstrap.http(identityService, {
-      env: this.environment,
-      http: {
-        port: 0,
-        host: '127.0.0.1',
-        configurer: new HttpApplicationSetup(),
-      },
-    });
-    await this.running.app.get(SeedRegionTenants).execute();
+    await this.app.start(overrides);
+    await this.get(SeedRegionTenants).execute();
   }
 
-  async stop(): Promise<void> {
-    try {
-      await this.running?.stop();
-    } finally {
-      try {
-        await this.peers.stop();
-      } finally {
-        await this.servers.stop();
-      }
-    }
+  /** Stops identity, the peer stubs and the databases. */
+  stop(): Promise<void> {
+    return this.app.stop();
   }
 
+  /** The environment identity started with. */
   env(): ConfigEnv {
-    return this.environment;
+    return this.app.environment();
   }
 
+  /** The base URL of the identity HTTP server. */
   baseUrl(): string {
-    return `http://127.0.0.1:${this.service().address?.port ?? 0}`;
+    return this.app.baseUrl();
   }
 
   /** Client without channel headers: the request counts as web. `ip` is the one the proxy declares. */
   client(ip = IdentityTestApp.DEFAULT_IP): HttpTestClient {
-    return new HttpTestClient(this.baseUrl(), { 'X-Forwarded-For': ip });
+    return this.app.client({ 'X-Forwarded-For': ip });
   }
 
   /** Native app client: the session token travels in the body. */
@@ -94,11 +70,7 @@ export class IdentityTestApp implements IdentityEntry {
 
   /** Signed client for this app's internal API. */
   internal(): InternalOperationsClient {
-    return new InternalOperationsClient(
-      'identity',
-      this.baseUrl(),
-      String(this.environment['INTERNAL_API_SHARED_SECRET']),
-    );
+    return this.app.internal();
   }
 
   /** What is visible of both shards and the catalog from outside the app. */
@@ -106,18 +78,18 @@ export class IdentityTestApp implements IdentityEntry {
     return new ShardProbe(this.servers, this.get(ShardRouter));
   }
 
+  /** The mailer that keeps identity's email in memory. */
   mailer(): MemoryIdentityMailer {
-    return this.service().app.get(MemoryIdentityMailer);
+    return this.get(MemoryIdentityMailer);
   }
 
+  /** A provider of the running application. */
   get<T>(token: abstract new (...args: never[]) => T): T {
-    return this.service().app.get(token, { strict: false });
+    return this.app.get(token);
   }
 
+  /** The running service. */
   service(): RunningService {
-    if (this.running === undefined) {
-      throw new Error('IdentityTestApp is not started');
-    }
-    return this.running;
+    return this.app.service();
   }
 }

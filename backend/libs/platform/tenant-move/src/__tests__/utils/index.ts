@@ -7,3 +7,4 @@ export * from './tenant-move-rehearsal.js';
 export * from './ticking-clock.js';
 export * from './transfer-test-databases.js';
 export * from './delegating-transfer.js';
+export * from './assigned-shard-connections.js';

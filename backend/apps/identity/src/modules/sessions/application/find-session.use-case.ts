@@ -1,5 +1,5 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SessionState } from '../domain/session.js';
 import { SessionRef } from '../domain/session-ref.js';
 import { SessionRepository } from '../domain/session.repository.js';
@@ -9,7 +9,7 @@ import { SessionRepository } from '../domain/session.repository.js';
 export class FindSession {
   constructor(
     private readonly sessions: SessionRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   async execute(ref: SessionRef): Promise<SessionState | undefined> {

@@ -1,3 +1,9 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
+import {
+  SystemClock,
+  SystemRandomSource,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import { RecordingEnvelopePublisher } from '@platform/messaging/test-utils';
 import { defineCommand } from '@contracts/platform';
 import {
@@ -34,7 +40,7 @@ function setup() {
     source: '/services/reports',
     clock: new FixedClock(),
     ids: new SequentialIdGenerator(),
-    traceparent: () => undefined,
+    restorer: new FixedTraceContextRestorer(),
   });
   return { bus, publisher };
 }
@@ -76,9 +82,12 @@ describe('SnsSqsMessageBus', () => {
   it('rejects a message whose route is not in the topology', async () => {
     const { publisher } = setup();
     const isolated = new SnsSqsMessageBus({
+      clock: new SystemClock(),
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
       topology: topologyFromContracts([tasksContract]),
       publisher,
       source: '/services/reports',
+      restorer: new FixedTraceContextRestorer(),
     });
 
     await expect(isolated.send(Unrouted, {})).rejects.toMatchObject({

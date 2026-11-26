@@ -1,16 +1,10 @@
-import { randomBytes } from 'node:crypto';
-import type { ConfigEnv } from '@platform/config';
 import { HttpApplicationSetup } from '@platform/http/nest';
-import { HttpTestClient } from '@platform/http/test-utils';
-import { MigrationTarget } from '@platform/service';
-import {
-  ServiceBootstrap,
-  ServiceMigrator,
-  type RunningService,
-} from '@platform/service/nest';
+import { randomBytes } from 'node:crypto';
+import type { HttpTestClient } from '@platform/http/test-utils';
 import {
   IdentityStub,
   InternalOperationsClient,
+  ServiceTestApp,
   ServiceTestServers,
   type StubMember,
 } from '@platform/service/test-utils';
@@ -19,8 +13,8 @@ import { notificationsService } from '../../notifications.service.js';
 import { EmailSenderKind } from '../../shared/enums/email-sender-kind.enum.js';
 
 /**
- * Full notifications on real PostgreSQL and Valkey, with Mailpit as the mail server and identity's internal
- * API answered by `IdentityStub`. Places a tenant in each shard.
+ * Full notifications on real PostgreSQL and Valkey, with Mailpit as the mail server and identity's internal API answered
+ * by `IdentityStub`. Places a tenant in each shard.
  */
 export class NotificationsTestApp {
   static readonly TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
@@ -30,49 +24,37 @@ export class NotificationsTestApp {
   readonly servers = new ServiceTestServers('notifications');
   readonly identity = new IdentityStub();
   readonly mailpit = new MailpitServer();
-  private readonly internalSecret = randomBytes(32).toString('base64url');
-  private running: RunningService | undefined;
-
-  async start(): Promise<void> {
-    await this.servers.start();
-    await this.identity.start(this.servers.valkey);
-    await this.mailpit.start();
-    const env: ConfigEnv = {
-      ...this.servers.environment(),
-      ...this.identity.environment(),
-      NODE_ENV: 'test',
-      OTEL_SDK_DISABLED: 'true',
-      INTERNAL_API_SHARED_SECRET: this.internalSecret,
+  private readonly app = new ServiceTestApp({
+    definition: notificationsService,
+    servers: this.servers,
+    configurer: new HttpApplicationSetup(),
+    identity: this.identity,
+    peers: [this.mailpit],
+    tenants: {
+      [NotificationsTestApp.TENANT_A]: 0,
+      [NotificationsTestApp.TENANT_B]: 1,
+    },
+    environment: () => ({
       NOTIFICATIONS_EMAIL_SENDER: EmailSenderKind.Smtp,
       SMTP_URL: this.mailpit.smtpUrl(),
       NOTIFICATIONS_FROM_ADDRESS: NotificationsTestApp.FROM,
       NOTIFICATIONS_EMAIL_PEPPER: randomBytes(32).toString('base64url'),
-    };
-    const migrator = new ServiceMigrator();
-    await migrator.run(notificationsService, MigrationTarget.Catalog, { env });
-    await this.servers.registerShards();
-    await migrator.run(notificationsService, MigrationTarget.Shards, { env });
-    await this.servers.placeTenant(NotificationsTestApp.TENANT_A, 0);
-    await this.servers.placeTenant(NotificationsTestApp.TENANT_B, 1);
-    this.running = await ServiceBootstrap.http(notificationsService, {
-      env,
-      http: {
-        port: 0,
-        host: '127.0.0.1',
-        configurer: new HttpApplicationSetup(),
-      },
-    });
+    }),
+  });
+
+  /** Starts the databases, identity, Mailpit and notifications. */
+  start(): Promise<void> {
+    return this.app.start();
   }
 
-  async stop(): Promise<void> {
-    await this.running?.stop();
-    await this.mailpit.stop();
-    await this.identity.stop();
-    await this.servers.stop();
+  /** Stops notifications, Mailpit, identity and the databases. */
+  stop(): Promise<void> {
+    return this.app.stop();
   }
 
+  /** The base URL of the notifications HTTP server. */
   baseUrl(): string {
-    return `http://127.0.0.1:${this.service().address?.port ?? 0}`;
+    return this.app.baseUrl();
   }
 
   /** Registers the user in identity and returns their access token. */
@@ -80,32 +62,23 @@ export class NotificationsTestApp {
     return this.identity.tokenFor(member);
   }
 
+  /** A client that acts as the member. */
   async clientOf(member: StubMember): Promise<HttpTestClient> {
-    return new HttpTestClient(this.baseUrl(), {
-      Authorization: `Bearer ${await this.tokenOf(member)}`,
-    });
+    return this.app.bearer(await this.tokenOf(member));
   }
 
+  /** A client without credentials. */
   anonymous(): HttpTestClient {
-    return new HttpTestClient(this.baseUrl());
+    return this.app.client();
   }
 
+  /** A client of the notifications internal API. */
   internal(): InternalOperationsClient {
-    return new InternalOperationsClient(
-      'notifications',
-      this.baseUrl(),
-      this.internalSecret,
-    );
+    return this.app.internal();
   }
 
+  /** A provider of the running application. */
   get<T>(token: abstract new (...args: never[]) => T): T {
-    return this.service().app.get(token, { strict: false });
-  }
-
-  private service(): RunningService {
-    if (this.running === undefined) {
-      throw new Error('NotificationsTestApp is not started');
-    }
-    return this.running;
+    return this.app.get(token);
   }
 }

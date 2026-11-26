@@ -10,8 +10,6 @@ Long examples the skill cites. Read them only when the topic applies to you.
     SignInUseCase,
     { provide: UserRepository, useClass: TypeOrmUserRepository },
     { provide: PasswordHasher, useClass: Argon2PasswordHasher },
-    { provide: Clock, useClass: SystemClock },
-    { provide: IdGenerator, useClass: UuidV7IdGenerator },
   ],
   exports: [UsersFacade],
 })

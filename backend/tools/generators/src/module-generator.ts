@@ -102,7 +102,7 @@ export class ModuleGenerator {
     const content = new MarkedFile(path, await this.writer.read(path))
       .insertBefore(
         'modules:imports',
-        `import { ${module.pascal}Module } from './modules/${module.kebab}/index.js';`,
+        `import { ${module.pascal}Module } from './modules/${module.kebab}/module.js';`,
       )
       .insertBefore('modules', `${module.pascal}Module,`)
       .content();

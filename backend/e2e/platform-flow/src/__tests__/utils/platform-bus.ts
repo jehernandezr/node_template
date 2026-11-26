@@ -1,5 +1,10 @@
 import type { ServiceContract } from '@contracts/platform';
 import {
+  Redactor,
+  TraceContextRestorer,
+  Tracing,
+} from '@platform/observability';
+import {
   topologyFromContracts,
   type MessageDispatcher,
 } from '@platform/messaging';
@@ -26,6 +31,7 @@ export class PlatformBus {
   constructor(contracts: readonly ServiceContract[]) {
     this.bus = new InMemoryBus(topologyFromContracts(contracts), {
       source: 'platform-flow',
+      restorer: new TraceContextRestorer(new Tracing(new Redactor())),
     });
     this.queues = contracts.flatMap((contract) =>
       Object.values(contract.queues).map((queue) => ({

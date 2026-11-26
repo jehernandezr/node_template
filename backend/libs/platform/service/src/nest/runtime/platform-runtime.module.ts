@@ -42,6 +42,8 @@ import { AppConfig, type ConfigEnv } from '@platform/config';
 import { ConfigModule } from '@platform/config/nest';
 import { BloomModule } from '@platform/bloom/nest';
 import { CacheModule } from '@platform/cache/nest';
+import { CriteriaModule } from '@platform/criteria/nest';
+import { KernelModule } from '@platform/kernel/nest';
 import { Clock, TransactionManager } from '@platform/kernel';
 import {
   LoggerPort,
@@ -91,7 +93,6 @@ import type { ServiceDefinition } from '../../service-definition.js';
 import { ServiceDatabaseSets } from '../../service-database-sets.js';
 import { ServiceInternalTransport } from '../../service-internal-api.js';
 import { UseCaseRunner } from '../../use-case-runner.js';
-import { PlatformKernelModule } from './platform-kernel.module.js';
 import type {
   PlatformRuntimeOptions,
   RuntimeAdapters,
@@ -148,7 +149,8 @@ export class PlatformRuntimeModule {
       module: PlatformRuntimeModule,
       global: true,
       imports: [
-        PlatformKernelModule,
+        KernelModule,
+        CriteriaModule,
         ConfigModule.forRoot({
           schema: definition.configSchema,
           env: options.env,
@@ -371,12 +373,14 @@ export class PlatformRuntimeModule {
       return InternalApiModule.forRootAsync({
         useFactory: (
           config: AppConfig,
+          clock: Clock,
           credentials?: AwsCredentialsProvider,
           aws?: AwsSettings,
         ) => ({
           operations,
           remoteOperations,
           http: resolveHttp(config, {
+            clock,
             ...(credentials === undefined || aws === undefined
               ? {}
               : { aws: { credentials, region: aws.AWS_REGION } }),
@@ -384,6 +388,7 @@ export class PlatformRuntimeModule {
         }),
         inject: [
           AppConfig,
+          Clock,
           { token: AwsCredentialsProvider, optional: true },
           { token: AwsConfig.token, optional: true },
         ],

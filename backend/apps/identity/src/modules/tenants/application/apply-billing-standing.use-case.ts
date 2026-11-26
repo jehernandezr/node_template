@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { IdentityErrorCode, type PlanFeature } from '@contracts/identity';
 import { TransactionManager } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { AccessFacade } from '../../access/index.js';
 import { TenantRepository } from '../domain/tenant.repository.js';
 import { ChangeTenantStatus } from './change-tenant-status.use-case.js';
@@ -17,7 +17,7 @@ export class ApplyBillingStanding {
     private readonly tenants: TenantRepository,
     private readonly status: ChangeTenantStatus,
     private readonly access: AccessFacade,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 

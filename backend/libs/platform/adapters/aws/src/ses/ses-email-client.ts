@@ -37,6 +37,7 @@ export class SesEmailClient {
     }
   }
 
+  /** Destroys the SDK client. Called once, by whoever owns the client. */
   close(): void {
     this.client.destroy();
   }

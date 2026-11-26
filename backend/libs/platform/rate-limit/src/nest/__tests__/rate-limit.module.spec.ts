@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import { RateLimitMetricName } from '../../rate-limit-metric-name.enum.js';
@@ -24,7 +25,7 @@ describe('RateLimitModule', () => {
 
   it('uses the in-memory limiter by default', async () => {
     const ref = await Test.createTestingModule({
-      imports: [RateLimitModule.forRoot()],
+      imports: [KernelModule, RateLimitModule.forRoot()],
     }).compile();
     expect(ref.get(RateLimiter)).toBeInstanceOf(InMemoryRateLimiter);
   });
@@ -32,6 +33,7 @@ describe('RateLimitModule', () => {
   it('answers from the local limiter when the shared one fails and counts the degradation', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         RateLimitTestModule,
         RateLimitModule.forRoot({
           limiter: FakeRateLimiter,
@@ -55,6 +57,7 @@ describe('RateLimitModule', () => {
   it('uses the shared limiter as is without degradeLocally', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         RateLimitTestModule,
         RateLimitModule.forRoot({ limiter: FakeRateLimiter }),
       ],
@@ -65,6 +68,7 @@ describe('RateLimitModule', () => {
   it('applies forRootAsync options and the local divisor', async () => {
     const ref = await Test.createTestingModule({
       imports: [
+        KernelModule,
         RateLimitTestModule,
         RateLimitModule.forRootAsync({
           useFactory: () => ({ degradeLocally: true, localDivisor: 2 }),

@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { CreateSession } from '../application/create-session.use-case.js';
@@ -20,14 +20,18 @@ import { TypeOrmSessionRepository } from '../infrastructure/persistence/typeorm-
 import { SessionsController } from './sessions.controller.js';
 import { SessionsInternalOperations } from './sessions.internal-operations.js';
 
-/**
- * Sessions, rotation, refresh, sign-out, revocation and tenant switch. It is global only to export its
- * facade: the identity facades are used in a cycle (sessions and users need each other) and Nest does not
- * resolve a cycle between modules without `forwardRef`.
- */
-@Global()
+import { AccessCoreModule } from '../../access/module.js';
+import { TenantsCoreModule } from '../../tenants/module.js';
+import { TokensModule } from '../../tokens/module.js';
+import { UsersCoreModule } from '../../users/module.js';
+
+/** Sessions, rotation, refresh, sign-out, revocation and tenant switch. */
 @Module({
   imports: [
+    AccessCoreModule,
+    TenantsCoreModule,
+    TokensModule,
+    UsersCoreModule,
     PersistenceModule.forFeature({
       entities: [SessionEntity],
       sharding: { key: ShardKey.User },

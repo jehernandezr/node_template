@@ -41,7 +41,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
     });
 
     it('records insert, update, soft delete and hard delete with actor, tenant and trace', async () => {
-      await db.runAs(ShardedTestDatabase.TENANT_A, async () => {
+      await db.inTenant(ShardedTestDatabase.TENANT_A, async () => {
         const saved = await repository.save(new Probe(ID, 'audited', 1, 0));
         await repository.save(saved.rename('renamed'));
         await repository.remove(ID);

@@ -1,7 +1,6 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
-import { UserShard } from '../../../shared/utils/user-shard.js';
 import { InboxFacade } from '../application/inbox.facade.js';
 import { ManageInbox } from '../application/manage-inbox.use-case.js';
 import { PurgeReadNotificationsJob } from '../application/purge-read-notifications.job.js';
@@ -11,11 +10,13 @@ import { NotificationEntity } from '../infrastructure/persistence/entities/notif
 import { TypeOrmInboxMaintenance } from '../infrastructure/persistence/typeorm-inbox-maintenance.js';
 import { TypeOrmInboxRepository } from '../infrastructure/persistence/typeorm-inbox.repository.js';
 import { InboxController } from './inbox.controller.js';
+import { NotificationsSettings } from '../../../config/notifications-settings.js';
+import { NotificationsRealtimeModule } from '../../realtime/module.js';
 
-/** Per-user notification inbox. Global only for its facade. */
-@Global()
+/** Per-user notification inbox. */
 @Module({
   imports: [
+    NotificationsRealtimeModule,
     PersistenceModule.forFeature({
       entities: [NotificationEntity],
       sharding: { key: ShardKey.User },
@@ -23,7 +24,7 @@ import { InboxController } from './inbox.controller.js';
   ],
   controllers: [InboxController],
   providers: [
-    UserShard,
+    NotificationsSettings,
     { provide: InboxRepository, useClass: TypeOrmInboxRepository },
     { provide: InboxMaintenance, useClass: TypeOrmInboxMaintenance },
     ManageInbox,

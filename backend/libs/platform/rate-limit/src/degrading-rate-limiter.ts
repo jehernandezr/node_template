@@ -1,14 +1,11 @@
-import { SystemClock } from '@platform/kernel';
 import { PrimitivesGuard } from '@platform/primitives';
 import type { DegradingRateLimiterOptions } from './degrading-rate-limiter.options.js';
-import { InMemoryRateLimiter } from './in-memory-rate-limiter.js';
 import type { RateLimitDegradationReporter } from './rate-limit-degradation-reporter.js';
 import type { RateLimitDegradedListener } from './rate-limit-degraded-listener.js';
 import { RateLimitOperation } from './rate-limit-operation.enum.js';
 import type { RateLimitResult } from './rate-limit-result.js';
 import type { RateLimitRule } from './rate-limit-rule.js';
 import { RateLimitCallValidator } from './rate-limit-call-validator.js';
-import { NoopRateLimitDegradationReporter } from './noop-rate-limit-degradation-reporter.js';
 import { RateLimiter } from './rate-limiter.js';
 
 /**
@@ -36,13 +33,12 @@ export class DegradingRateLimiter extends RateLimiter {
       options.localDivisor,
     );
     this.primary = options.primary;
-    this.fallback =
-      options.fallback ??
-      new InMemoryRateLimiter({ clock: options.clock ?? new SystemClock() });
+    this.fallback = options.fallback;
     this.onDegraded = options.onDegraded;
-    this.reporter = options.reporter ?? new NoopRateLimitDegradationReporter();
+    this.reporter = options.reporter;
   }
 
+  /** Consumes from the shared limiter, or from the local one with the divided limit if it fails. */
   async consume(
     key: string,
     rule: RateLimitRule,
@@ -59,6 +55,7 @@ export class DegradingRateLimiter extends RateLimiter {
     }
   }
 
+  /** Reads the shared limiter's state, or the local one's if it fails. */
   async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
     RateLimitCallValidator.validate(key, rule);
     try {

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { AppConfig } from '@platform/config';
 import { LoggerPort, RequestContextStore } from '@platform/observability';
-import type { NotificationsConfig } from '../../../config/notifications.config.js';
+import { NotificationsSettings } from '../../../config/notifications-settings.js';
 import {
   EmailLedger,
   EmailReservationKind,
@@ -45,10 +44,10 @@ export class SendEmail extends EmailFacade {
     private readonly context: RequestContextStore,
     private readonly logger: LoggerPort,
     private readonly retryWait: LedgerRetryWait,
-    config: AppConfig,
+    settings: NotificationsSettings,
   ) {
     super();
-    this.from = config.root<NotificationsConfig>().NOTIFICATIONS_FROM_ADDRESS;
+    this.from = settings.values.NOTIFICATIONS_FROM_ADDRESS;
   }
 
   /**

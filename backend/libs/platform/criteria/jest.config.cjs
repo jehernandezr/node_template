@@ -16,6 +16,9 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?uuid@|uuid/)'],
+  // @nestjs/* is ESM only: Jest has to transform it to load it.
+  transformIgnorePatterns: [
+    '/node_modules/(?!(\\.pnpm/)?(@nestjs\\+|@nestjs/|uid@|uid/|load-esm@|load-esm/|uuid@|uuid/))',
+  ],
   coverageDirectory: 'test-output/jest/coverage',
 };

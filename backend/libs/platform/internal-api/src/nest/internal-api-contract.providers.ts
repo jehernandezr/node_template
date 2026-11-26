@@ -11,7 +11,7 @@ import { PublishedContracts } from './published-contracts.js';
 
 /**
  * Providers of the operation catalogs and of the pieces shared by client and server. The `CallOutcomeFactory`
- * uses the service's `FailureClassifier` if there is one, with the rules of its adapters: without them a transient
+ * uses the service's required `FailureClassifier`, with the rules of its adapters: without them a transient
  * database error would be permanent and the server would respond `protocol-violation`.
  */
 export class InternalApiContractProviders {
@@ -21,9 +21,9 @@ export class InternalApiContractProviders {
       { provide: JsonSafetyChecker, useFactory: () => new JsonSafetyChecker() },
       {
         provide: CallOutcomeFactory,
-        useFactory: (failures?: FailureClassifier) =>
-          new CallOutcomeFactory(failures ?? new FailureClassifier()),
-        inject: [{ token: FailureClassifier, optional: true }],
+        useFactory: (failures: FailureClassifier) =>
+          new CallOutcomeFactory(failures),
+        inject: [FailureClassifier],
       },
       {
         provide: PayloadLimit,
@@ -40,11 +40,8 @@ export class InternalApiContractProviders {
         ) =>
           InternalApiContractProviders.registryOf(
             new ContractRegistry(
-              InternalApiContractProviders.registryOptions(
-                options,
-                resolver,
-                jsonSafety,
-              ),
+              { resolver, jsonSafety },
+              InternalApiContractProviders.registryOptions(options),
             ),
             [...options.operations, ...(options.remoteOperations ?? [])],
           ),
@@ -59,11 +56,8 @@ export class InternalApiContractProviders {
         ) =>
           InternalApiContractProviders.registryOf(
             new PublishedContracts(
-              InternalApiContractProviders.registryOptions(
-                options,
-                resolver,
-                jsonSafety,
-              ),
+              { resolver, jsonSafety },
+              InternalApiContractProviders.registryOptions(options),
             ),
             options.operations,
           ),
@@ -74,16 +68,10 @@ export class InternalApiContractProviders {
 
   private static registryOptions(
     options: InternalApiModuleOptions,
-    resolver: OperationResolver,
-    jsonSafety: JsonSafetyChecker,
   ): ContractRegistryOptions {
-    return {
-      ...(options.maxCallBudgetMs !== undefined && {
-        maxCallBudgetMs: options.maxCallBudgetMs,
-      }),
-      resolver,
-      jsonSafety,
-    };
+    return options.maxCallBudgetMs === undefined
+      ? {}
+      : { maxCallBudgetMs: options.maxCallBudgetMs };
   }
 
   /** An invalid registry makes the service startup fail. */

@@ -1,6 +1,6 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { BillingErrorCode } from '@contracts/billing';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { TestTenantShard } from '../../../../__tests__/utils/test-tenant-shard.js';
 import type { PaymentAttempt } from '../../domain/payment-attempt.js';
 import { PaymentStatus } from '../../domain/payment-status.enum.js';
 import { InMemoryPaymentAttempts } from '../../__tests__/utils/index.js';
@@ -32,7 +32,7 @@ class NoticeHarness {
   get record(): RecordPaymentResult {
     return new RecordPaymentResult(
       this.attempts,
-      TestTenantShard.create(),
+      UnroutedShardScopes.create(),
       new SequentialIdGenerator(),
       new FixedClock(REQUESTED_AT),
     );

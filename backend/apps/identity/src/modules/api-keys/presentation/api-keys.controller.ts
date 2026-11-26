@@ -1,3 +1,4 @@
+import { ActingMember } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
 import {
@@ -22,7 +23,6 @@ import {
   type UpdateServiceAccountRequest,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { tenantOfActor } from '../../../shared/utils/user-actor.js';
 import { ManageApiKeys } from '../application/manage-api-keys.use-case.js';
 import { ManageServiceAccounts } from '../application/manage-service-accounts.use-case.js';
 
@@ -43,7 +43,7 @@ export class ApiKeysController {
   listServiceAccounts(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<ServiceAccountPage> {
-    return this.accounts.list(tenantOfActor(actor));
+    return this.accounts.list(ActingMember.of(actor).tenantId);
   }
 
   /**
@@ -57,7 +57,7 @@ export class ApiKeysController {
     @Input() input: CreateServiceAccountRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<ServiceAccountSummary> {
-    return this.accounts.create(tenantOfActor(actor), actor, input);
+    return this.accounts.create(ActingMember.of(actor).tenantId, actor, input);
   }
 
   /**
@@ -71,7 +71,7 @@ export class ApiKeysController {
     @Input() input: UpdateServiceAccountRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<ServiceAccountSummary> {
-    return this.accounts.update(tenantOfActor(actor), actor, input);
+    return this.accounts.update(ActingMember.of(actor).tenantId, actor, input);
   }
 
   /**
@@ -84,7 +84,10 @@ export class ApiKeysController {
     @Input() input: DeleteServiceAccountRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    await this.accounts.disable(tenantOfActor(actor), input.serviceAccountId);
+    await this.accounts.disable(
+      ActingMember.of(actor).tenantId,
+      input.serviceAccountId,
+    );
   }
 
   /**
@@ -98,7 +101,10 @@ export class ApiKeysController {
     @Input() input: ListApiKeysRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<ApiKeyPage> {
-    return this.keys.list(tenantOfActor(actor), input.serviceAccountId);
+    return this.keys.list(
+      ActingMember.of(actor).tenantId,
+      input.serviceAccountId,
+    );
   }
 
   /**
@@ -112,7 +118,7 @@ export class ApiKeysController {
     @Input() input: CreateApiKeyRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<CreatedApiKey> {
-    return this.keys.create(tenantOfActor(actor), actor, input);
+    return this.keys.create(ActingMember.of(actor).tenantId, actor, input);
   }
 
   /**
@@ -126,7 +132,11 @@ export class ApiKeysController {
     @Input() input: RotateApiKeyRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<CreatedApiKey> {
-    return this.keys.rotate(tenantOfActor(actor), actor, input.apiKeyId);
+    return this.keys.rotate(
+      ActingMember.of(actor).tenantId,
+      actor,
+      input.apiKeyId,
+    );
   }
 
   /**
@@ -139,6 +149,6 @@ export class ApiKeysController {
     @Input() input: RevokeApiKeyRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    await this.keys.revoke(tenantOfActor(actor), input.apiKeyId);
+    await this.keys.revoke(ActingMember.of(actor).tenantId, input.apiKeyId);
   }
 }

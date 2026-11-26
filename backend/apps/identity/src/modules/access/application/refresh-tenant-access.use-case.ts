@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { TransactionManager } from '@platform/kernel';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
 import { AccessVersionPublisher } from './access-version-publisher.js';
 
@@ -13,7 +13,7 @@ export class RefreshTenantAccess {
   constructor(
     private readonly tenantAccess: TenantAccessRepository,
     private readonly versions: AccessVersionPublisher,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 

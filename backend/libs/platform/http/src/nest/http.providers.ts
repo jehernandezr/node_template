@@ -7,7 +7,7 @@ import {
   ApiKeyAuthenticator,
 } from '@platform/auth';
 import { TokenAudience } from '@contracts/identity';
-import { Clock, SystemClock } from '@platform/kernel';
+import { Clock } from '@platform/kernel';
 import { RateLimiter } from '@platform/rate-limit';
 import { ApiVersionPolicy } from '../api-version.policy.js';
 import { EndpointAuthorizer } from '../endpoint-authorizer.js';
@@ -87,7 +87,6 @@ export class HttpProviders {
           new RateLimitGate(limiter, rules),
         inject: [RateLimiter, RateLimitTierRules],
       },
-      { provide: Clock, useFactory: () => new SystemClock() },
       HttpEndpointReader,
       HttpRouteExplorer,
       { provide: APP_GUARD, useClass: EndpointGuard },

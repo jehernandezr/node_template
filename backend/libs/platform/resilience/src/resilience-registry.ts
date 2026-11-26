@@ -1,18 +1,14 @@
-import { SystemClock, SystemRandomSource } from '@platform/kernel';
-import { FailureClassifier } from '@platform/primitives';
-import { PolicyExecutor } from './execution/policy-executor.js';
+import type { PolicyExecutor } from './execution/policy-executor.js';
 import type {
   ResilienceCallOptions,
   ResilientOperation,
 } from './execution/resilience-call.options.js';
-import { RetryAfterHint } from './execution/retry-after-hint.js';
-import { ResilienceEventBus } from './events/resilience-event-bus.js';
+import type { ResilienceEventBus } from './events/resilience-event-bus.js';
 import type { ResilienceEventListener } from './events/resilience-event.js';
-import { PolicyRegistry } from './policy/policy-registry.js';
+import type { PolicyRegistry } from './policy/policy-registry.js';
 import type { PolicyName } from './policy/policy-name.js';
-import type { ResilienceOverrides } from './policy/resilience-overrides.js';
 import type { ResiliencePolicyConfig } from './policy/resilience-policy-config.js';
-import type { ResilienceRegistryOptions } from './resilience-registry.options.js';
+import type { ResilienceRegistryParts } from './resilience-registry.options.js';
 
 /**
  * Runs outgoing calls under the policy declared for each one and
@@ -26,31 +22,12 @@ export class ResilienceRegistry {
   private readonly executor: PolicyExecutor;
 
   /**
-   * The defaults allow using the library without NestJS; the module
-   * passes all the collaborators.
-   * @param overrides Overrides by name over the base policies.
-   * @param options Optional collaborators.
-   * @throws InvalidPolicyError if a merged policy is not valid.
+   * @param parts The event bus, the policy registry and the executor, sharing the same bus.
    */
-  constructor(
-    overrides: ResilienceOverrides = {},
-    options: ResilienceRegistryOptions = {},
-  ) {
-    const clock = options.clock ?? new SystemClock();
-    const classifier = options.classifier ?? new FailureClassifier();
-    this.events = options.events ?? new ResilienceEventBus(clock);
-    this.policies =
-      options.policies ??
-      new PolicyRegistry(clock, this.events, overrides, classifier);
-    this.executor =
-      options.executor ??
-      new PolicyExecutor(
-        clock,
-        options.random ?? new SystemRandomSource(),
-        this.events,
-        classifier,
-        new RetryAfterHint(clock),
-      );
+  constructor(parts: ResilienceRegistryParts) {
+    this.events = parts.events;
+    this.policies = parts.policies;
+    this.executor = parts.executor;
   }
 
   /**

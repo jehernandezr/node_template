@@ -1,4 +1,3 @@
-import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { PolicyName } from '@platform/resilience';
 import type { CachePort } from './cache-port.js';
 import { CallerWait } from './caller-wait.js';
@@ -7,8 +6,6 @@ import type { CallerWaitOptions } from './caller-wait.options.js';
 import type { CacheErrorReporter } from './cache-error-reporter.js';
 import { CacheCorruptEntryError } from './errors/cache-corrupt-entry.error.js';
 import { CacheValueTooLargeError } from './errors/cache-value-too-large.error.js';
-import { NoopCacheErrorReporter } from './noop-cache-error-reporter.js';
-import { NoTransactionScope } from './no-transaction-scope.js';
 import { SingleFlight } from './single-flight.js';
 import { TtlJitter } from './ttl-jitter.js';
 import type {
@@ -48,16 +45,13 @@ export class CacheAside {
     private readonly cache: CachePort,
     private readonly keyspace: VersionedKeyspace,
     options: CacheAsideOptions,
-    collaborators: CacheAsideCollaborators = {},
+    collaborators: CacheAsideCollaborators,
   ) {
-    // The defaults exist to use the class without NestJS; in the application they are injected.
-    this.wait = collaborators.wait ?? new CallerWait(new SystemClock());
-    this.singleFlight =
-      collaborators.singleFlight ?? new SingleFlight(this.wait);
-    this.jitter =
-      collaborators.jitter ?? new TtlJitter(new SystemRandomSource());
-    this.transactions = options.transactions ?? new NoTransactionScope();
-    this.reporter = options.reporter ?? new NoopCacheErrorReporter();
+    this.wait = collaborators.wait;
+    this.singleFlight = collaborators.singleFlight;
+    this.jitter = collaborators.jitter;
+    this.transactions = collaborators.transactions;
+    this.reporter = collaborators.reporter;
     this.resilience = options.resilience;
     this.dependencyKey = options.dependencyKey;
   }

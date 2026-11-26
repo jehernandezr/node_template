@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import {
   Global,
   Module,
@@ -97,10 +98,12 @@ describe('SchedulingModule', () => {
 
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
             logger: FakeLogger,
+            metrics: RecordingMetrics,
           }),
           JobsModule,
         ],
@@ -124,10 +127,12 @@ describe('SchedulingModule', () => {
       });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
             logger: FakeLogger,
+            metrics: RecordingMetrics,
           }),
         ],
         providers: [{ provide: RecordingJob, useValue: job }],
@@ -147,8 +152,12 @@ describe('SchedulingModule', () => {
       });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
-          SchedulingModule.forRoot({ logger: FakeLogger }),
+          SchedulingModule.forRoot({
+            logger: FakeLogger,
+            metrics: RecordingMetrics,
+          }),
         ],
         providers: [{ provide: RecordingJob, useValue: job }],
       }).compile();
@@ -166,9 +175,11 @@ describe('SchedulingModule', () => {
       });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             logger: FakeLogger,
+            metrics: RecordingMetrics,
             shutdownGraceMs: 5,
           }),
         ],
@@ -192,9 +203,14 @@ describe('SchedulingModule', () => {
       const resource = new ClosingResource(job);
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           ResourceModule.global(resource),
-          SchedulingModule.forRoot({ logger: FakeLogger, shutdownGraceMs: 5 }),
+          SchedulingModule.forRoot({
+            logger: FakeLogger,
+            metrics: RecordingMetrics,
+            shutdownGraceMs: 5,
+          }),
         ],
         providers: [{ provide: RecordingJob, useValue: job }],
       }).compile();
@@ -217,11 +233,13 @@ describe('SchedulingModule', () => {
       });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestLockModule,
           TestObservabilityModule,
           SchedulingModule.forRootAsync({
             useFactory: () => ({ mode: SchedulingMode.External }),
             logger: FakeLogger,
+            metrics: RecordingMetrics,
             lock: TestJobLock,
           }),
         ],
@@ -240,8 +258,21 @@ describe('SchedulingModule', () => {
 
   describe('when the logger is missing', () => {
     it('rejects the module definition', () => {
-      expect(() => SchedulingModule.forRoot({})).toThrow(
+      expect(() =>
+        SchedulingModule.forRoot({ metrics: RecordingMetrics }),
+      ).toThrow(
         expect.objectContaining({ code: PrimitivesErrorCode.InvalidArgument }),
+      );
+    });
+  });
+
+  describe('when the metrics are missing', () => {
+    it('rejects the module definition', () => {
+      expect(() => SchedulingModule.forRoot({ logger: FakeLogger })).toThrow(
+        expect.objectContaining({
+          code: PrimitivesErrorCode.InvalidArgument,
+          message: expect.stringContaining('metrics'),
+        }),
       );
     });
   });
@@ -250,10 +281,12 @@ describe('SchedulingModule', () => {
     it('provides InProcessJobLock by default', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
             logger: FakeLogger,
+            metrics: RecordingMetrics,
           }),
         ],
       }).compile();
@@ -263,11 +296,13 @@ describe('SchedulingModule', () => {
     it('provides the configured lock class', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestLockModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,
             logger: FakeLogger,
+            metrics: RecordingMetrics,
             lock: TestJobLock,
           }),
         ],
@@ -281,6 +316,7 @@ describe('SchedulingModule', () => {
       const job = new RecordingJob({ name: 'job-a' });
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestObservabilityModule,
           SchedulingModule.forRoot({
             mode: SchedulingMode.External,

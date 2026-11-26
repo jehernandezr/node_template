@@ -7,6 +7,7 @@ import type { TenantMoveManifest } from '../manifest/tenant-move-manifest.js';
 import { BatchTenantDataTransfer } from './batch/batch-tenant-data-transfer.js';
 import { CompositeTenantDataTransfer } from './composite-tenant-data-transfer.js';
 import { LogicalReplicationTransfer } from './logical/logical-replication-transfer.js';
+import type { ShardConnections } from './typeorm/shard-connections.js';
 import type { TenantDataTransfer } from './tenant-data-transfer.js';
 
 /**
@@ -17,14 +18,20 @@ import type { TenantDataTransfer } from './tenant-data-transfer.js';
  * saga step log reaches the tenant through its saga.
  */
 export class TenantDataTransferSelector {
+  constructor(
+    private readonly connections: ShardConnections,
+    private readonly clock: Clock,
+  ) {}
+
+  /** The copy the settings and the manifest allow, with the platform tables always copied by batch. */
   select(
     settings: TenantMoveSettings,
     manifest: TenantMoveManifest,
-    clock: Clock,
   ): TenantDataTransfer {
+    const clock = this.clock;
     const platform = new PlatformTenantMoveManifest();
     const batchOf = (tables: TenantMoveManifest) =>
-      new BatchTenantDataTransfer(tables, clock, {
+      new BatchTenantDataTransfer(tables, this.connections, clock, {
         batchSize: settings.TENANT_MOVE_BATCH_SIZE,
         callBudgetMs: settings.TENANT_MOVE_CALL_BUDGET_MS,
         deltaMarginMs: settings.TENANT_MOVE_DELTA_MARGIN_MS,
@@ -38,13 +45,19 @@ export class TenantDataTransferSelector {
     }
     return new CompositeTenantDataTransfer(
       [
-        new LogicalReplicationTransfer(manifest, batchOf(manifest), clock, {
-          callBudgetMs: settings.TENANT_MOVE_CALL_BUDGET_MS,
-          caughtUpBytes: settings.TENANT_MOVE_CAUGHT_UP_BYTES,
-          lockTimeoutMs: settings.TENANT_MOVE_LOCK_TIMEOUT_MS,
-          sourceHost: settings.TENANT_MOVE_REPLICATION_HOST,
-          sourcePort: settings.TENANT_MOVE_REPLICATION_PORT,
-        }),
+        new LogicalReplicationTransfer(
+          manifest,
+          batchOf(manifest),
+          this.connections,
+          clock,
+          {
+            callBudgetMs: settings.TENANT_MOVE_CALL_BUDGET_MS,
+            caughtUpBytes: settings.TENANT_MOVE_CAUGHT_UP_BYTES,
+            lockTimeoutMs: settings.TENANT_MOVE_LOCK_TIMEOUT_MS,
+            sourceHost: settings.TENANT_MOVE_REPLICATION_HOST,
+            sourcePort: settings.TENANT_MOVE_REPLICATION_PORT,
+          },
+        ),
         batchOf(platform),
       ],
       clock,

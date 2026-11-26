@@ -1,3 +1,5 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
+import { SystemRandomSource } from '@platform/kernel';
 import {
   defineCommand,
   defineEvent,
@@ -84,6 +86,7 @@ function setup() {
     },
   };
   const relay = new OutboxRelay({
+    random: new SystemRandomSource(),
     store,
     publisher,
     topology,
@@ -99,7 +102,7 @@ function setup() {
     source: '/services/orders',
     clock,
     ids: new SequentialIdGenerator(),
-    traceparent: () => undefined,
+    restorer: new FixedTraceContextRestorer(),
     onCommitted: async () => {
       commits.notify();
       await relay.relayOnce();

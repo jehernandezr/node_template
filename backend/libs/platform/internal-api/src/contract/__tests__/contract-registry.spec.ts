@@ -1,3 +1,5 @@
+import { OperationResolver } from '../../contract/operation-resolver.js';
+import { JsonSafetyChecker } from '../../contract/json-safety-checker.js';
 import {
   Compensation,
   defineOperation,
@@ -8,6 +10,11 @@ import { InternalApiError } from '../../errors/internal-api-error.js';
 import { InternalApiErrorCode } from '../../errors/internal-api-error-code.enum.js';
 import { ContractRegistry } from '../contract-registry.js';
 import { RegistryIssueCode } from '../registry-issue-code.enum.js';
+
+const REGISTRY_COLLABORATORS = {
+  resolver: new OperationResolver(),
+  jsonSafety: new JsonSafetyChecker(),
+};
 
 const schema = z.object({});
 
@@ -66,14 +73,14 @@ const RawDate = op({
 
 describe('ContractRegistry', () => {
   it('reports no issues for a valid registry', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Reserve, Release, Read);
     expect(registry.validate()).toEqual([]);
     expect(() => registry.assertValid()).not.toThrow();
   });
 
   it('reports duplicate ids', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Reserve, ReserveDuplicate, Release);
     const issues = registry.validate();
     expect(issues.map((issue) => issue.code)).toContain(
@@ -86,7 +93,7 @@ describe('ContractRegistry', () => {
   });
 
   it('reports a mutating operation without compensatedBy', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(CreateWithoutCompensation);
     expect(registry.validate()).toEqual([
       expect.objectContaining({
@@ -97,13 +104,13 @@ describe('ContractRegistry', () => {
   });
 
   it('accepts a non-mutating operation without compensatedBy', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Read);
     expect(registry.validate()).toEqual([]);
   });
 
   it('reports compensatedBy pointing to an unregistered id', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Orphan);
     expect(registry.validate()).toEqual([
       expect.objectContaining({
@@ -114,7 +121,7 @@ describe('ContractRegistry', () => {
   });
 
   it('reports a call whose attempts exceed the default 25 000 ms budget', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(SlowIdempotent, SlowOnce);
     // 10 000 ms x 3 attempts + 2 backoffs = 34 000 ms; the non-idempotent op gets one attempt of 30 000 ms.
     expect(registry.validate()).toEqual([
@@ -139,7 +146,7 @@ describe('ContractRegistry', () => {
       timeoutMs: 8_000,
       description: 'Fits with timeout x attempts, not with the backoffs.',
     });
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Tight);
 
     // 8 000 ms x 3 attempts = 24 000 ms, plus 2 backoffs of up to 2 000 ms = 28 000 ms.
@@ -157,13 +164,15 @@ describe('ContractRegistry', () => {
   });
 
   it('honours a configurable call budget', () => {
-    const registry = new ContractRegistry({ maxCallBudgetMs: 40_000 });
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS, {
+      maxCallBudgetMs: 40_000,
+    });
     registry.register(SlowIdempotent, SlowOnce);
     expect(registry.validate()).toEqual([]);
   });
 
   it('throws InternalApiError with the matching code from assertValid', () => {
-    const duplicates = new ContractRegistry();
+    const duplicates = new ContractRegistry(REGISTRY_COLLABORATORS);
     duplicates.register(Reserve, ReserveDuplicate);
     expect(() => duplicates.assertValid()).toThrow(InternalApiError);
     expect(() => duplicates.assertValid()).toThrow(
@@ -172,7 +181,7 @@ describe('ContractRegistry', () => {
       }),
     );
 
-    const missing = new ContractRegistry();
+    const missing = new ContractRegistry(REGISTRY_COLLABORATORS);
     missing.register(CreateWithoutCompensation);
     expect(() => missing.assertValid()).toThrow(
       expect.objectContaining({
@@ -182,7 +191,7 @@ describe('ContractRegistry', () => {
   });
 
   it('refuses to register a contract whose schema is not JSON-safe', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     expect(() => registry.register(RawDate)).toThrow(
       expect.objectContaining({
         code: InternalApiErrorCode.NonJsonSafeSchema,
@@ -192,7 +201,7 @@ describe('ContractRegistry', () => {
   });
 
   it('gets registered contracts by id', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Reserve, Release);
     expect(registry.get('a.reserve.v1')?.contract.input).toBe(schema);
     expect(registry.get('a.reserve.v1')?.descriptor.id).toBe('a.reserve.v1');
@@ -204,7 +213,7 @@ describe('ContractRegistry', () => {
   });
 
   it('rejects something that is not a descriptor with InvalidOperation', () => {
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     expect(() =>
       registry.register({ id: 'a.plain.v1' } as unknown as OperationDefinition),
     ).toThrow(
@@ -225,7 +234,7 @@ describe('ContractRegistry', () => {
       timeoutMs: 1000,
       description: 'Reverts a reservation.',
     });
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Revert, Reserve, Release);
 
     expect(registry.validate()).toEqual([]);
@@ -249,7 +258,7 @@ describe('ContractRegistry', () => {
       compensatedBy: 'a.missing.v1',
       description: 'Has no registered compensation.',
     });
-    const registry = new ContractRegistry();
+    const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
     registry.register(Orphan);
 
     expect(registry.validate().map((issue) => issue.code)).toEqual([

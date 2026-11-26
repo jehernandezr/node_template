@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -10,7 +11,6 @@ import { AuthStateWriter } from '@platform/auth';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { AccessFacade } from '../../access/index.js';
 import { TenantDirectory } from '../domain/tenant-directory.js';
 import { TenantRepository } from '../domain/tenant.repository.js';
@@ -29,7 +29,7 @@ export class ChangeTenantStatus {
     private readonly directory: TenantDirectory,
     private readonly access: AccessFacade,
     private readonly state: AuthStateWriter,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
     private readonly clock: Clock,

@@ -1,6 +1,6 @@
 import type { Provider, Type } from '@nestjs/common';
 import type { SQSClient } from '@aws-sdk/client-sqs';
-import { Clock, SystemClock } from '@platform/kernel';
+import { Clock } from '@platform/kernel';
 import {
   MessageDispatcher,
   MessagingError,
@@ -32,7 +32,6 @@ export class SqsConsumerProviders {
       );
     }
     const providers: Provider[] = [
-      { provide: Clock, useFactory: () => new SystemClock() },
       {
         provide: SqsDeadLetterRedriver,
         useFactory: (

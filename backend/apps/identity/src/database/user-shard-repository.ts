@@ -7,7 +7,7 @@ import type { EntityManager, EntityTarget } from 'typeorm';
 
 /**
  * Base for user data repositories: they have no tenant column, so they do not use
- * `ShardedRepository`. The shard comes from the `ShardScope` the use case opens with `inUserShard`.
+ * `TenantIsolatedRepository`. The shard comes from the `ShardScope` the use case opens with `inUserShard`.
  */
 export abstract class UserShardRepository {
   protected constructor(protected readonly kit: RepositoryKit) {}

@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Compensation, defineOperation } from '@contracts/platform';
 import { Global, Injectable, Module, type DynamicModule } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -9,6 +10,7 @@ import {
   TraceContextRestorer,
   Tracing,
 } from '@platform/observability';
+import { FailureClassifier } from '@platform/primitives';
 import { z } from 'zod';
 import { SagaDefinition } from '../../definition/saga-definition.js';
 import type { SagaFlow } from '../../definition/saga-flow.js';
@@ -37,7 +39,8 @@ class FixedRandom extends FixedRandomSource {
 
 /**
  * What `SagaModule` needs from its environment and that in an app another
- * module would provide: the store, the invoker, the trace and the logger.
+ * module would provide: the store, the invoker, the trace, the failure classifier and
+ * the logger.
  */
 @Global()
 @Module({
@@ -51,6 +54,7 @@ class FixedRandom extends FixedRandomSource {
       useFactory: (tracing: Tracing) => new TraceContextRestorer(tracing),
       inject: [Tracing],
     },
+    { provide: FailureClassifier, useFactory: () => new FailureClassifier() },
     { provide: LoggerPort, useFactory: () => new RecordingLogger() },
   ],
   exports: [
@@ -59,6 +63,7 @@ class FixedRandom extends FixedRandomSource {
     FixedRandom,
     Tracing,
     TraceContextRestorer,
+    FailureClassifier,
     LoggerPort,
   ],
 })
@@ -120,7 +125,7 @@ function rootOptions(
 /** Test module with the given `SagaModule` and the use case. */
 async function compile(imports: DynamicModule[]): Promise<TestingModule> {
   return Test.createTestingModule({
-    imports: [SagaTestEnvironment, ...imports],
+    imports: [KernelModule, SagaTestEnvironment, ...imports],
     providers: [CreateOnboarding],
   }).compile();
 }

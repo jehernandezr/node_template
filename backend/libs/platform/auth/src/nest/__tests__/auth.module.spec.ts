@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import 'reflect-metadata';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { RevocationReason } from '@contracts/identity';
@@ -52,6 +53,7 @@ describe('AuthModule', () => {
   ) {
     return Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({ env }),
         AuthTestInfra,
         AuthModule.forRoot(options),

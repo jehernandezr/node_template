@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import { RateLimitErrorCode } from '../../errors/rate-limit-error-code.enum.js';
@@ -30,7 +31,7 @@ describe('RateLimitGuard', () => {
 
   async function guard(): Promise<RateLimitGuard> {
     const ref = await Test.createTestingModule({
-      imports: [RateLimitModule.forRoot()],
+      imports: [KernelModule, RateLimitModule.forRoot()],
     }).compile();
     return ref.get(RateLimitGuard);
   }

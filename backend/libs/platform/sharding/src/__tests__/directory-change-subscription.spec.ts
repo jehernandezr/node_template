@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '../sharding-strategy.js';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { DirectoryChangeSubscription } from '../directory-change-subscription.js';
 import { InProcessDirectoryChannel } from '../in-process-directory-channel.js';
@@ -30,6 +31,7 @@ describe('DirectoryChangeSubscription', () => {
     directory.setInstance('shard-1', 'db-1');
     channel = new InProcessDirectoryChannel();
     router = new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       directory,
       clock: new FixedClock(),
     });

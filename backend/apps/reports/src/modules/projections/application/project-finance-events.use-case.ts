@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   InvoiceStatus,
@@ -8,7 +9,6 @@ import {
 } from '@contracts/billing';
 import type { NotificationCreatedPayload } from '@contracts/notifications';
 import { TransactionManager } from '@platform/kernel';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import {
   FinanceProjection,
   InvoiceProgress,
@@ -20,7 +20,7 @@ import {
 export class ProjectFinanceEvents {
   constructor(
     private readonly projection: FinanceProjection,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 
@@ -58,7 +58,7 @@ export class ProjectFinanceEvents {
   }
 
   notificationCreated(event: NotificationCreatedPayload): Promise<void> {
-    return this.shard.run(event.tenantId, () =>
+    return this.shard.inTenantShard(event.tenantId, () =>
       this.transactions.runInTransaction(() =>
         this.projection.applyDelivery({
           notificationId: event.notificationId,
@@ -74,7 +74,7 @@ export class ProjectFinanceEvents {
     tenantId: string,
     change: Omit<InvoiceProjectionChange, 'progress'>,
   ): Promise<void> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(() =>
         this.projection.applyInvoice({
           ...change,

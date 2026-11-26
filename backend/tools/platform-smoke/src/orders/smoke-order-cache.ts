@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CacheAside } from '@platform/cache';
 import { cacheAsideToken } from '@platform/cache/nest';
+import { ShardScopes } from '@platform/persistence';
 import { SmokeCacheNamespace } from './smoke-cache-namespace.enum.js';
 import { SmokeOrderRepository } from './smoke-order.repository.js';
 import type { SmokeOrderView } from './smoke-order-view.js';
@@ -14,6 +15,7 @@ export class SmokeOrderCache {
     @Inject(cacheAsideToken(SmokeCacheNamespace.Orders))
     private readonly aside: CacheAside,
     private readonly orders: SmokeOrderRepository,
+    private readonly scopes: ShardScopes,
   ) {}
 
   async read(
@@ -25,7 +27,9 @@ export class SmokeOrderCache {
       params: { orderId },
       ttlMs: SmokeOrderCache.TTL_MS,
       load: async () => {
-        const order = await this.orders.findById(orderId);
+        const order = await this.scopes.inTenantShard(tenantId, () =>
+          this.orders.findById(orderId),
+        );
         return order === null
           ? null
           : { id: order.id, customer: order.customer, status: order.status };

@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { BillingErrorCode } from '@contracts/billing';
 import { BillingError } from '../../../shared/errors/billing.error.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { PlansFacade } from '../../plans/index.js';
 import type { Entitlements } from '../domain/entitlements.js';
 import { SubscriptionMaintenance } from '../domain/subscription-maintenance.js';
@@ -26,7 +26,7 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
     private readonly openSubscription: OpenSubscription,
     private readonly closing: CloseSubscriptionPeriod,
     private readonly standing: SubscriptionStanding,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
   ) {
     super();
   }
@@ -36,11 +36,13 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
   }
 
   remove(tenantId: string): Promise<boolean> {
-    return this.shard.run(tenantId, () => this.subscriptions.remove());
+    return this.shard.inTenantShard(tenantId, () =>
+      this.subscriptions.remove(),
+    );
   }
 
   current(tenantId: string): Promise<CurrentSubscription> {
-    return this.shard.run(tenantId, async () => {
+    return this.shard.inTenantShard(tenantId, async () => {
       const subscription = await this.subscriptions.find();
       if (subscription === undefined) {
         throw new BillingError(BillingErrorCode.SubscriptionNotFound);
@@ -53,7 +55,7 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
   }
 
   entitlements(tenantId: string): Promise<Entitlements> {
-    return this.shard.run(tenantId, async () => {
+    return this.shard.inTenantShard(tenantId, async () => {
       const subscription = await this.subscriptions.find();
       if (subscription === undefined) {
         throw new BillingError(BillingErrorCode.SubscriptionNotFound);
@@ -85,7 +87,7 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
    * @param tenantId Tenant of the subscription.
    */
   lock(tenantId: string): Promise<void> {
-    return this.shard.run(tenantId, () => this.subscriptions.lock());
+    return this.shard.inTenantShard(tenantId, () => this.subscriptions.lock());
   }
 
   settle(tenantId: string): Promise<void> {

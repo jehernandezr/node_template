@@ -1,4 +1,3 @@
-import type { Clock } from '@platform/kernel';
 import type { RateLimitDegradationReporter } from './rate-limit-degradation-reporter.js';
 import type { RateLimitDegradedListener } from './rate-limit-degraded-listener.js';
 import type { RateLimiter } from './rate-limiter.js';
@@ -13,15 +12,13 @@ export interface DegradingRateLimiterOptions {
    * traffic, and together they should not let through much more than the global limit.
    */
   readonly localDivisor: number;
-  /** Local limiter. Defaults to an `InMemoryRateLimiter` with `clock`. */
-  readonly fallback?: RateLimiter;
-  /** Clock of the default local limiter. */
-  readonly clock?: Clock;
+  /** Local limiter, usually an `InMemoryRateLimiter`. */
+  readonly fallback: RateLimiter;
   /**
    * Called with each failure of the shared limiter. An exception inside
    * it is ignored.
    */
   readonly onDegraded?: RateLimitDegradedListener;
-  /** Reports each failure. Does nothing by default. */
-  readonly reporter?: RateLimitDegradationReporter;
+  /** Reports each failure. `NoopRateLimitDegradationReporter` discards them. */
+  readonly reporter: RateLimitDegradationReporter;
 }

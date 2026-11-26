@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import type { Actor } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import {
@@ -6,7 +7,6 @@ import {
   type SagaSummary,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { requireUserActor } from '../../../shared/utils/user-actor.js';
 import { IdentitySagas } from '../application/identity-sagas.js';
 
 @Resource(IdentityResource.Sagas)
@@ -18,6 +18,6 @@ export class SagasController {
     @Input() input: GetSagaRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<SagaSummary> {
-    return this.sagas.summary(input.sagaId, requireUserActor(actor).userId);
+    return this.sagas.summary(input.sagaId, ActingUser.of(actor).userId);
   }
 }

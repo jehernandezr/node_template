@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -10,7 +11,6 @@ import { IdentitySettings } from '../../../config/identity-settings.js';
 import { SecretGenerator } from '../../../security/secret-generator.js';
 import { SecretHasher } from '../../../security/secret-hasher.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { encodeBase32 } from '../../../shared/utils/base32.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { SecurityAlerts } from '../../alerts/index.js';
@@ -34,7 +34,7 @@ export class ManageMfaFactors {
     private readonly generator: SecretGenerator,
     private readonly hasher: SecretHasher,
     private readonly alerts: SecurityAlerts,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly settings: IdentitySettings,
     private readonly clock: Clock,

@@ -4,10 +4,7 @@ import {
   Clock,
   IdGenerator,
   RandomSource,
-  SystemClock,
-  SystemRandomSource,
   TransactionManager,
-  UuidV7IdGenerator,
 } from '@platform/kernel';
 import {
   LoggerPort,
@@ -47,14 +44,7 @@ export class SagaProviders {
     // `SagaModule` already checked that the store exists.
     const { store } = extras as Required<Pick<SagaModuleExtras, 'store'>>;
     return [
-      { provide: Clock, useFactory: () => new SystemClock() },
-      SagaProviders.random(extras),
-      {
-        provide: IdGenerator,
-        useFactory: (clock: Clock, random: RandomSource) =>
-          new UuidV7IdGenerator(clock, random),
-        inject: [Clock, RandomSource],
-      },
+      ...SagaProviders.random(extras),
       SagaProviders.settings(),
       { provide: SagaStore, useExisting: store },
       ...SagaProviders.scopes(extras),
@@ -83,10 +73,10 @@ export class SagaProviders {
     ];
   }
 
-  private static random(extras: SagaModuleExtras): Provider {
+  private static random(extras: SagaModuleExtras): Provider[] {
     return extras.random === undefined
-      ? { provide: RandomSource, useFactory: () => new SystemRandomSource() }
-      : { provide: RandomSource, useExisting: extras.random };
+      ? []
+      : [{ provide: RandomSource, useExisting: extras.random }];
   }
 
   /** Default owner: a new id. The rest takes the values of `SagaSettings`. */
@@ -177,7 +167,7 @@ export class SagaProviders {
         clock: Clock,
         tracing: Tracing,
         restorer: TraceContextRestorer,
-        failures?: FailureClassifier,
+        failures: FailureClassifier,
         logger?: LoggerPort,
       ) =>
         new StepCaller({
@@ -188,7 +178,7 @@ export class SagaProviders {
           clock,
           tracing,
           restorer,
-          outcomes: new CallOutcomeFactory(failures ?? new FailureClassifier()),
+          outcomes: new CallOutcomeFactory(failures),
           ...(logger === undefined ? {} : { logger }),
         }),
       inject: [
@@ -199,7 +189,7 @@ export class SagaProviders {
         Clock,
         Tracing,
         TraceContextRestorer,
-        { token: FailureClassifier, optional: true },
+        FailureClassifier,
         { token: LoggerPort, optional: true },
       ],
     };

@@ -1,3 +1,5 @@
+import { ActingUser } from '@platform/auth';
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -8,8 +10,6 @@ import {
 import type { UserActor } from '@platform/auth';
 import { TransactionManager } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
-import { userRefOf } from '../../../shared/utils/user-actor.js';
 import { SecurityAlerts } from '../../alerts/index.js';
 import { SessionsFacade } from '../../sessions/index.js';
 import { UsersFacade } from '../../users/index.js';
@@ -25,7 +25,7 @@ export class ChangePassword {
     private readonly users: UsersFacade,
     private readonly sessions: SessionsFacade,
     private readonly alerts: SecurityAlerts,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 
@@ -33,7 +33,7 @@ export class ChangePassword {
     actor: UserActor,
     request: ChangePasswordRequest,
   ): Promise<void> {
-    const ref = userRefOf(actor);
+    const ref = ActingUser.refOf(actor);
     if (!(await this.verifier.verify(ref, request.currentPassword))) {
       throw new IdentityError(IdentityErrorCode.PasswordCurrentInvalid);
     }

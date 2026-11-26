@@ -62,7 +62,7 @@ runtime.describeIfAvailable('TenantWriteFence over PostgreSQL', () => {
   const save = (tenantId: string): Promise<Probe> => {
     sequence += 1;
     const id = `0193f1c2-0000-7000-8000-${String(sequence).padStart(12, '0')}`;
-    return db.runAs(tenantId, () => repo.save(new Probe(id, 'probe', 1, 0)));
+    return db.inTenant(tenantId, () => repo.save(new Probe(id, 'probe', 1, 0)));
   };
 
   const shardA = () =>

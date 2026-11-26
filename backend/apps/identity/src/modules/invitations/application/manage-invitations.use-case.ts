@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type { InvitationPage } from '@contracts/identity';
 import { Clock, TransactionManager } from '@platform/kernel';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { InvitationRepository } from '../domain/invitation.repository.js';
 import { InvitationView } from './invitation-view.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
@@ -11,7 +11,7 @@ import { IdentityError } from '../../../shared/errors/identity.error.js';
 export class ManageInvitations {
   constructor(
     private readonly invitations: InvitationRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
   ) {}

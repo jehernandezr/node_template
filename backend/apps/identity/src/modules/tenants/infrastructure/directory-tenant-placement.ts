@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { TypeOrmDirectoryStore } from '@platform/adapters-postgres';
 import {
   DirectoryWriteResult,
-  LeastLoadedPlacementPolicy,
   ShardingError,
   ShardingErrorCode,
   TenantPlacer,
@@ -13,16 +12,16 @@ import type { PlacedTenant } from '../domain/placed-tenant.js';
 import { TenantPlacement } from '../domain/tenant-placement.js';
 
 /**
- * Places tenants with `TenantPlacer` and `LeastLoadedPlacementPolicy` over the catalog's shard directory.
+ * Places tenants with the injected `TenantPlacer` over the catalog's shard directory.
  * This deployment has one region, so every shard in the directory belongs to the requested region.
  */
 @Injectable()
 export class DirectoryTenantPlacement extends TenantPlacement {
-  private readonly placer: TenantPlacer;
-
-  constructor(private readonly directory: TypeOrmDirectoryStore) {
+  constructor(
+    private readonly directory: TypeOrmDirectoryStore,
+    private readonly placer: TenantPlacer,
+  ) {
     super();
-    this.placer = new TenantPlacer(new LeastLoadedPlacementPolicy(), directory);
   }
 
   async place(

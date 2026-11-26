@@ -1,10 +1,10 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { IdentityEvent, SecurityAlertType } from '@contracts/identity';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   InMemoryTransactionManager,
   RecordingMessageBus,
 } from '@platform/messaging/test-utils';
-import { TestShardScopes } from '../../../../__tests__/utils/index.js';
 import { OutboxSecurityAlerts } from '../outbox-security-alerts.js';
 
 const USER = {
@@ -18,7 +18,7 @@ describe('OutboxSecurityAlerts', () => {
     const bus = new RecordingMessageBus(transactions);
     const alerts = new OutboxSecurityAlerts(
       bus,
-      TestShardScopes.create(),
+      UnroutedShardScopes.create(),
       transactions,
       new SequentialIdGenerator(),
       new FixedClock(),

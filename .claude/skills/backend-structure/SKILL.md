@@ -31,7 +31,7 @@ paths:
 Example in `references/examples.md`, section "Layers inside a service".
 
 - Group by business module, not by technical type. Inside the module, by layer.
-- A module exposes to the rest only what its `index.ts` exports. Everything else is private.
+- A module exposes to the rest only what its `index.ts` (facades, types, tokens) and its `module.ts` (the Nest module classes other modules import) export. Everything else is private. `index.ts` never exports a Nest module: loading a facade must not load a module graph.
 - Dependency direction: `presentation` and `infrastructure` toward `application`, `application` toward `domain`, `domain` toward `@platform/kernel`. An architecture test (a lint rule or `dependency-cruiser`) checks it in CI.
 
 ## Code folders

@@ -1,9 +1,14 @@
+import { SystemClock } from '../../time/system-clock.js';
+import { SystemRandomSource } from '../../random/system-random-source.js';
 import { UuidV7IdGenerator } from '../uuid-v7-id-generator.js';
 import { Id } from '../id.js';
 import { KernelErrorCode } from '../../errors/kernel-error-code.enum.js';
 import { InvalidIdError } from '../../errors/invalid-id.error.js';
 
-const generator = new UuidV7IdGenerator();
+const generator = new UuidV7IdGenerator(
+  new SystemClock(),
+  new SystemRandomSource(),
+);
 
 describe('Id', () => {
   it('generates valid UUIDv7 values that are distinct', () => {

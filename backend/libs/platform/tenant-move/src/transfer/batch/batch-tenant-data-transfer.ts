@@ -8,11 +8,15 @@ import type { Clock } from '@platform/kernel';
 import type { DataSource, QueryRunner } from 'typeorm';
 import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
 import { TenantDataTransfer } from '../tenant-data-transfer.js';
+import type { ShardLocation } from '@platform/persistence';
+import type { ConnectedTransfer } from '../typeorm/connected-transfer.js';
+import type { ShardConnections } from '../typeorm/shard-connections.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 import { TransferBudget } from '../transfer-budget.js';
 import type { BatchTransferOptions } from './batch-transfer-options.js';
 import type { KeyRange } from './key-range.js';
 import type { RowPage } from './row-page.js';
+import { ForeignKeyRound } from './foreign-key-round.js';
 import { TableCopier } from './table-copier.js';
 import type { TableChecksum } from './table-checksum.js';
 import { TableShapeReader } from './table-shape-reader.js';
@@ -40,6 +44,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
 
   constructor(
     private readonly manifest: TenantMoveManifest,
+    private readonly connections: ShardConnections,
     private readonly clock: Clock,
     private readonly options: BatchTransferOptions,
   ) {
@@ -47,7 +52,24 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     this.filter = new TenantRowFilter(manifest);
   }
 
-  async sync(transfer: TenantTransfer): Promise<TenantMoveProgress> {
+  /**
+   * Copies the rows written since the last round, table by table.
+   * @throws TenantMoveError `RoundPending` if a child row reaches the target before its parent.
+   */
+  async sync(move: TenantTransfer): Promise<TenantMoveProgress> {
+    return ForeignKeyRound.run(() => this.syncRound(move));
+  }
+
+  /**
+   * Compares and reconciles each table with the tenant frozen.
+   * @throws TenantMoveError `RoundPending` if a child row reaches the target before its parent.
+   */
+  async verify(move: TenantTransfer): Promise<TenantMoveVerification> {
+    return ForeignKeyRound.run(() => this.verifyRound(move));
+  }
+
+  private async syncRound(move: TenantTransfer): Promise<TenantMoveProgress> {
+    const transfer = await this.connections.connect(move);
     const budget = transfer.budget ?? this.newBudget();
     const tables: TenantMoveTableProgress[] = [];
     let changed = 0;
@@ -64,7 +86,10 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     return { tables, caughtUp: changed <= this.options.caughtUpRows };
   }
 
-  async verify(transfer: TenantTransfer): Promise<TenantMoveVerification> {
+  private async verifyRound(
+    move: TenantTransfer,
+  ): Promise<TenantMoveVerification> {
+    const transfer = await this.connections.connect(move);
     const budget = transfer.budget ?? this.newBudget();
     const tables: TenantMoveTableCheck[] = [];
     for (const { table, copier } of await this.copiers(transfer.source)) {
@@ -83,7 +108,8 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     return { verified, tables };
   }
 
-  async abort(transfer: TenantTransfer): Promise<void> {
+  async abort(move: TenantTransfer): Promise<void> {
+    const transfer = await this.connections.connect(move);
     await this.purge(
       transfer.tenantId,
       transfer.target,
@@ -98,17 +124,18 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
 
   async cleanup(
     tenantId: string,
-    source: DataSource,
+    source: ShardLocation,
     budget: TransferBudget = this.newBudget(),
   ): Promise<void> {
-    await this.purge(tenantId, source, budget);
+    await this.purge(tenantId, await this.connections.get(source), budget);
   }
 
   async assignRegion(
     tenantId: string,
-    target: DataSource,
+    location: ShardLocation,
     region: string,
   ): Promise<void> {
+    const target = await this.connections.get(location);
     const columns = new Map(
       this.manifest
         .tables()
@@ -130,7 +157,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
 
   /** The last round of a table and its comparison, continuing where the previous call left off. */
   private async verifyTable(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     table: string,
     copier: TableCopier,
     budget: TransferBudget,
@@ -182,7 +209,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
    * would always exhaust the deadline on it. What changed or was deleted there is fixed by `verify` in ranges.
    */
   private async copy(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     table: string,
     copier: TableCopier,
     budget: TransferBudget,
@@ -196,7 +223,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   private async copyNewRows(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     table: string,
     copier: TableCopier,
     budget: TransferBudget,
@@ -237,7 +264,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
    * source key: identical rows are not rewritten.
    */
   private async copyChangedRows(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     table: string,
     copier: TableCopier,
     budget: TransferBudget,
@@ -287,7 +314,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
 
   /** Start of the delta round, or `undefined` to reread the whole table. */
   private async deltaStart(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     copier: TableCopier,
   ): Promise<string | undefined> {
     if (!copier.tracksUpdates()) {
@@ -310,7 +337,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
    * so it also deletes target rows left after the last source row.
    */
   private async reconcile(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     table: string,
     copier: TableCopier,
     budget: TransferBudget,
@@ -361,7 +388,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
 
   /** Deletes from the target the range rows the source no longer has. */
   private async deleteGone(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     table: string,
     copier: TableCopier,
     budget: TransferBudget,
@@ -394,7 +421,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   private async compare(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     table: string,
     copier: TableCopier,
     budget: TransferBudget,
@@ -455,14 +482,14 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   private onSource<T>(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     fn: (runner: QueryRunner) => Promise<T>,
   ): Promise<T> {
     return this.session.run(transfer.source, transfer.tenantId, fn);
   }
 
   private onTarget<T>(
-    transfer: TenantTransfer,
+    transfer: ConnectedTransfer,
     fn: (runner: QueryRunner) => Promise<T>,
   ): Promise<T> {
     return this.session.run(transfer.target, transfer.tenantId, fn);

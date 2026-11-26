@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Test } from '@nestjs/testing';
 import { AppConfig, ConfigErrorCode, ServiceConfig } from '@platform/config';
 import { ConfigModule } from '@platform/config/nest';
@@ -39,6 +40,7 @@ describe('ObservabilityModule', () => {
     const fake = new FakeTelemetryHandle(true);
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({ env: SERVICE_ENV }),
         ObservabilityModule.forRoot({ telemetry: fake }),
       ],
@@ -64,6 +66,7 @@ describe('ObservabilityModule', () => {
   it('compiles for a service without database variables and exposes only its sections', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         // An invalid database value does not break startup: nobody validates it.
         ConfigModule.forRoot({
           env: { ...SERVICE_ENV, DB_SLOW_QUERY_MS: 'not-a-number' },
@@ -93,6 +96,7 @@ describe('ObservabilityModule', () => {
   it('rejects compilation when SERVICE_NAME is missing, naming the variable', async () => {
     const compiling = Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({ env: {} }),
         ObservabilityModule.forRoot({
           telemetry: new FakeTelemetryHandle(true),
@@ -110,6 +114,7 @@ describe('ObservabilityModule', () => {
     const fake = new FakeTelemetryHandle(true);
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({ env: SERVICE_ENV }),
         ObservabilityModule.forRoot({ telemetry: fake }),
       ],
@@ -124,6 +129,7 @@ describe('ObservabilityModule', () => {
   it('keeps the request context across await and a timer', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({ env: SERVICE_ENV }),
         ObservabilityModule.forRoot({
           telemetry: new FakeTelemetryHandle(true),
@@ -147,6 +153,7 @@ describe('ObservabilityModule', () => {
   it('chooses the stdout sink when telemetry is disabled', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({ env: SERVICE_ENV }),
         ObservabilityModule.forRoot({
           telemetry: new FakeTelemetryHandle(false),
@@ -160,6 +167,7 @@ describe('ObservabilityModule', () => {
   it('chooses the OTLP sink when telemetry is enabled', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({ env: SERVICE_ENV }),
         ObservabilityModule.forRoot({
           telemetry: new FakeTelemetryHandle(true),
@@ -174,6 +182,7 @@ describe('ObservabilityModule', () => {
     const memorySink = new MemoryLogSink();
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({ env: SERVICE_ENV }),
         ObservabilityModule.forRoot({
           telemetry: new FakeTelemetryHandle(true),
@@ -197,6 +206,7 @@ describe('ObservabilityModule', () => {
   it('uses the no-op metrics when OTEL_SDK_DISABLED is set and no telemetry is passed', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ConfigModule.forRoot({
           env: { ...SERVICE_ENV, OTEL_SDK_DISABLED: 'true' },
         }),

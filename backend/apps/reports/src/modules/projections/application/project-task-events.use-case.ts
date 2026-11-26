@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   type TaskCreatedPayload,
@@ -5,7 +6,6 @@ import {
   type TaskUpdatedPayload,
 } from '@contracts/tasks';
 import { TransactionManager } from '@platform/kernel';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import {
   TaskCompletion,
   TaskProjection,
@@ -17,7 +17,7 @@ import {
 export class ProjectTaskEvents {
   constructor(
     private readonly projection: TaskProjection,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 
@@ -55,7 +55,7 @@ export class ProjectTaskEvents {
     tenantId: string,
     change: Omit<TaskProjectionChange, 'done'>,
   ): Promise<void> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(() =>
         this.projection.apply({
           ...change,

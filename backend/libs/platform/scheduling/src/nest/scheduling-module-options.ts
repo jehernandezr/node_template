@@ -23,6 +23,6 @@ export interface SchedulingModuleExtras {
   readonly logger?: Type<LoggerPort> | Abstract<LoggerPort>;
   /** `InProcessJobLock` by default; with several processes, `ValkeyJobLock`. */
   readonly lock?: Type<JobLock> | Abstract<JobLock>;
-  /** `MetricsPort` implementation. `NoopMetrics` by default. */
+  /** Required: `MetricsPort` implementation provided by the service observability. */
   readonly metrics?: Type<MetricsPort> | Abstract<MetricsPort>;
 }

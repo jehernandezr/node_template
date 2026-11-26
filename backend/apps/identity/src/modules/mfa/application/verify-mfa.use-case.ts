@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   AuthMethodReference,
@@ -6,7 +7,7 @@ import {
   type SignInResponse,
 } from '@contracts/identity';
 import { Clock } from '@platform/kernel';
-import { DeploymentRegion } from '../../../shared/utils/deployment-region.js';
+import { DeploymentRegion } from '../../../sign-in/deployment-region.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import type { PendingAuthentication } from '../../../shared/types/pending-authentication.type.js';
@@ -14,7 +15,6 @@ import {
   deviceNameFrom,
   platformFromUserAgent,
 } from '../../../shared/utils/client-platform.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SignInResponses } from '../../../shared/utils/sign-in-responses.js';
 import { DevicesFacade } from '../../devices/index.js';
 import { SessionsFacade } from '../../sessions/index.js';
@@ -35,7 +35,7 @@ export class VerifyMfa {
     private readonly devices: DevicesFacade,
     private readonly sessions: SessionsFacade,
     private readonly factors: MfaFactorRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly deployment: DeploymentRegion,
     private readonly clock: Clock,
   ) {}

@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
 import {
@@ -9,7 +10,6 @@ import {
   type PasswordResetRequest,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { requireUserActor } from '../../../shared/utils/user-actor.js';
 import { ChangePassword } from '../application/change-password.use-case.js';
 import { ConfirmPasswordReset } from '../application/confirm-password-reset.use-case.js';
 import { RequestPasswordReset } from '../application/request-password-reset.use-case.js';
@@ -27,7 +27,7 @@ export class PasswordsController {
     @Input() input: ChangePasswordRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    await this.change.execute(requireUserActor(actor), input);
+    await this.change.execute(ActingUser.of(actor), input);
   }
 
   @Endpoint(RequestPasswordResetRoute)

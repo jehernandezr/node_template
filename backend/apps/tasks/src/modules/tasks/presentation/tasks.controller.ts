@@ -1,3 +1,4 @@
+import { ActingMember } from '@platform/auth';
 import { UsageMetric } from '@contracts/billing';
 import type { Actor } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
@@ -17,7 +18,6 @@ import {
   type UpdateTaskRequest,
 } from '@contracts/tasks';
 import { TasksResource } from '../../../shared/enums/tasks-resource.enum.js';
-import { ActingMembers } from '../../../shared/utils/acting-member.js';
 import { CreateTask } from '../application/create-task.use-case.js';
 import { DeleteTask } from '../application/delete-task.use-case.js';
 import { GetTask } from '../application/get-task.query.js';
@@ -40,7 +40,7 @@ export class TasksController {
     @Input() input: ListTasksRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<TaskPage> {
-    return this.listTasks.execute(ActingMembers.of(actor).tenantId, input);
+    return this.listTasks.execute(ActingMember.of(actor).tenantId, input);
   }
 
   @Endpoint(GetTaskRoute)
@@ -49,7 +49,7 @@ export class TasksController {
     @Input() input: GetTaskRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<Task> {
-    return this.getTask.execute(ActingMembers.of(actor).tenantId, input.taskId);
+    return this.getTask.execute(ActingMember.of(actor).tenantId, input.taskId);
   }
 
   @Endpoint(CreateTaskRoute)
@@ -58,7 +58,7 @@ export class TasksController {
     @Input() input: CreateTaskRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<Task> {
-    const member = ActingMembers.of(actor);
+    const member = ActingMember.of(actor);
     return this.createTask.execute({
       tenantId: member.tenantId,
       actor: member.ref,
@@ -73,7 +73,7 @@ export class TasksController {
     @Input() input: UpdateTaskRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<Task> {
-    const member = ActingMembers.of(actor);
+    const member = ActingMember.of(actor);
     return this.updateTask.execute({
       tenantId: member.tenantId,
       actor: member.ref,
@@ -93,7 +93,7 @@ export class TasksController {
     @Input() input: DeleteTaskRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    const member = ActingMembers.of(actor);
+    const member = ActingMember.of(actor);
     await this.deleteTask.execute({
       tenantId: member.tenantId,
       actor: member.ref,

@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -6,7 +7,6 @@ import {
 } from '@contracts/identity';
 import { TransactionManager } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SessionRef } from '../domain/session-ref.js';
 import { SessionRepository } from '../domain/session.repository.js';
 import { SessionTokenIssuer } from './session-token-issuer.js';
@@ -17,7 +17,7 @@ export class MarkMfaVerified {
   constructor(
     private readonly sessions: SessionRepository,
     private readonly issuer: SessionTokenIssuer,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 

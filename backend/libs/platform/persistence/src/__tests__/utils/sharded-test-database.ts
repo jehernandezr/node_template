@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Secret } from '@platform/config';
@@ -139,6 +140,19 @@ export class ShardedTestDatabase {
     await this.container?.stop();
   }
 
+  /** Runs `fn` as a request of the given tenant (and user) with that tenant's `ShardScope` open, as a use case does. */
+  inTenant<T>(
+    tenantId: string,
+    fn: () => Promise<T>,
+    userId?: string,
+  ): Promise<T> {
+    return this.runAs(
+      tenantId,
+      () => this.scope.run({ tenantId, keyKind: ShardKey.Tenant }, fn),
+      userId,
+    );
+  }
+
   /** Runs `fn` as a request of the given tenant (and user), with actor and trace. */
   runAs<T>(
     tenantId: string,
@@ -232,6 +246,7 @@ export class ShardedTestDatabase {
       ShardedTestDatabase.INSTANCE,
     );
     this.router = new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       directory: this.directory,
       clock: new SystemClock(),
     });

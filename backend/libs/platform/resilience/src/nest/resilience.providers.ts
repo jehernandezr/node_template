@@ -1,14 +1,10 @@
 import type { Provider } from '@nestjs/common';
-import {
-  Clock,
-  RandomSource,
-  SystemClock,
-  SystemRandomSource,
-} from '@platform/kernel';
+import { Clock, RandomSource } from '@platform/kernel';
 import { FailureClassifier } from '@platform/primitives';
 import { ResilienceMetricsListener } from '../events/resilience-metrics-listener.js';
 import type { MetricsPort } from '@platform/observability';
 import { ResilienceRegistry } from '../resilience-registry.js';
+import { ResilienceRegistryFactory } from '../resilience-registry-factory.js';
 import { RESILIENCE_METRICS, RESILIENCE_OPTIONS } from './resilience-tokens.js';
 import type {
   ResilienceModuleExtras,
@@ -19,9 +15,8 @@ import type {
 export class ResilienceProviders {
   static build(extras: ResilienceModuleExtras): Provider[] {
     const providers: Provider[] = [
-      { provide: Clock, useClass: SystemClock },
-      { provide: RandomSource, useClass: SystemRandomSource },
       { provide: FailureClassifier, useFactory: () => new FailureClassifier() },
+      ResilienceRegistryFactory,
       {
         provide: ResilienceRegistry,
         useFactory: (
@@ -29,13 +24,16 @@ export class ResilienceProviders {
           clock: Clock,
           random: RandomSource,
           classifier: FailureClassifier,
+          factory: ResilienceRegistryFactory,
         ) =>
-          new ResilienceRegistry(options.policies ?? {}, {
-            clock,
-            random,
-            classifier,
-          }),
-        inject: [RESILIENCE_OPTIONS, Clock, RandomSource, FailureClassifier],
+          factory.create(options.policies ?? {}, { clock, random, classifier }),
+        inject: [
+          RESILIENCE_OPTIONS,
+          Clock,
+          RandomSource,
+          FailureClassifier,
+          ResilienceRegistryFactory,
+        ],
       },
     ];
     if (extras.metrics) {

@@ -1,10 +1,10 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { Clock, IdGenerator } from '@platform/kernel';
 import { SecretGenerator } from '../../../security/secret-generator.js';
 import { SecretHasher } from '../../../security/secret-hasher.js';
 import { IdentityDefaults } from '../../../shared/constants/identity-defaults.constants.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { PasswordResetToken } from '../domain/password-reset-token.js';
 import { PasswordReset } from '../domain/password-reset.js';
 import { PasswordResetRepository } from '../domain/password-reset.repository.js';
@@ -21,7 +21,7 @@ export class PasswordResetTokens {
     private readonly resets: PasswordResetRepository,
     private readonly generator: SecretGenerator,
     private readonly hasher: SecretHasher,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
   ) {}

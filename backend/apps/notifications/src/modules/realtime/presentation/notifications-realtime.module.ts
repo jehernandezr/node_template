@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import type { AppConfig } from '@platform/config';
 import {
   ValkeyPresenceTracker,
@@ -21,7 +21,6 @@ export const NotificationsStreamEndpoints = {
  * Real time for notifications. With `REALTIME_HOST=service` the API process also serves the
  * connections; with `app` it only publishes to the stream and `apps/realtime` serves them.
  */
-@Global()
 @Module({
   imports: [
     ValkeyRealtimeModule,

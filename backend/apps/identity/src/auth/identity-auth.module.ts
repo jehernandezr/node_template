@@ -13,6 +13,7 @@ import { IdentityApiKeyResolver } from '../modules/api-keys/index.js';
 import { SigningKeyJwksSource } from '../modules/tokens/index.js';
 import { AccessFacadeGrantSource } from './access-facade-grant-source.js';
 import { ClientIpMiddleware } from './client-ip.middleware.js';
+import { IdentityAccessGrantsModule } from './identity-access-grants.module.js';
 import { IdentityAuthSupportModule } from './identity-auth-support.module.js';
 
 /**
@@ -22,7 +23,9 @@ import { IdentityAuthSupportModule } from './identity-auth-support.module.js';
 @Module({
   imports: [
     IdentityAuthSupportModule,
-    AuthModule.forRoot({
+    AuthModule.forRootAsync({
+      imports: [IdentityAccessGrantsModule],
+      useFactory: () => ({}),
       source: ValkeyAuthStateReader,
       feed: ValkeyAuthRevocationFeed,
       accessGrants: AccessFacadeGrantSource,

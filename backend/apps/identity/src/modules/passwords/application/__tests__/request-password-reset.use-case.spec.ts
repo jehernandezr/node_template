@@ -1,9 +1,9 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { IdentityCommand } from '@contracts/identity';
 import { InMemoryTransactionManager } from '@platform/messaging/test-utils';
 import {
   RecordingMessageBus,
   StaticAppConfig,
-  TestShardScopes,
 } from '../../../../__tests__/utils/index.js';
 import { IdentitySettings } from '../../../../config/identity-settings.js';
 import { RequestPasswordReset } from '../request-password-reset.use-case.js';
@@ -17,7 +17,7 @@ class RequestHarness {
     new IdentitySettings(
       new StaticAppConfig({ IDENTITY_DEFAULT_TENANT_ID: DEFAULT_TENANT }),
     ),
-    TestShardScopes.create(),
+    UnroutedShardScopes.create(),
     new InMemoryTransactionManager(),
     this.bus,
   );

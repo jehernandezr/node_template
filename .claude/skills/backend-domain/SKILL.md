@@ -14,7 +14,7 @@ Pure TypeScript: it only imports `@platform/kernel`. No NestJS, TypeORM, zod, AW
 
 - Loaded, changed and saved whole in one transaction. Access only through the root.
 - Small aggregates. References to others by id (`ownerId: Id`), never by object.
-- Private constructor and two factories: `register(...)` validates, creates and emits an event; `rehydrate(...)` rebuilds without validating or emitting.
+- Private constructor and two factories: `register(...)` validates and creates; `rehydrate(...)` rebuilds without validating.
 - No public setters: methods with business names that check the rule before mutating.
 - `id` and `createdAt` are `readonly`.
 - Receives `now` and the event ids as parameters; the use case gets them from `Clock` and `IdGenerator`.
@@ -32,10 +32,10 @@ Pure TypeScript: it only imports `@platform/kernel`. No NestJS, TypeORM, zod, AW
 
 ## Domain events
 
-- A fact in past tense, emitted with `addDomainEvent`. Type from one enum per aggregate (`UserEventType.Registered = 'identity.user.registered'`).
-- `payload` of primitives, minimal and without sensitive data.
-- The use case takes them with `pullDomainEvents()` after saving and hands them to the outbox in the same transaction (see `backend-messaging-idempotency`).
-- What leaves the service is a versioned integration event with a zod schema in `@contracts/<service>` (`events/`), translated in an application mapper.
+- A domain without events is allowed ([ADR 0037](../../../docs/adr/0037-composition-shared-platform-pieces-and-domain-events.md)). The rule is that a fact leaves the service through `MessageBus` from the use case, in the same transaction as the change.
+- What leaves the service is a versioned integration event with a zod schema in `@contracts/<service>` (`events/`), translated in an application mapper (`TaskEvents.created(...)`).
+- An aggregate raises a domain event with `addDomainEvent` only when its own state decides which fact happened and the use case would otherwise repeat that decision. The use case then takes it with `pullDomainEvents()` after saving and publishes it in the same transaction (see `backend-messaging-idempotency`).
+- A domain event is a fact in past tense, typed by one enum per aggregate, with a `payload` of primitives, minimal and without sensitive data.
 
 ## Ports
 

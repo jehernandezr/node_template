@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -6,7 +7,6 @@ import {
 } from '@contracts/identity';
 import { TransactionManager } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { UserRepository } from '../domain/user.repository.js';
 import { UserProfileView } from './user-profile-view.js';
@@ -17,7 +17,7 @@ import { UserReader } from './user-reader.js';
 export class UpdateMyProfile {
   constructor(
     private readonly users: UserRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 

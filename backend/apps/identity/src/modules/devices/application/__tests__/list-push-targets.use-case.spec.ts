@@ -1,4 +1,4 @@
-import { TestShardScopes } from '../../../../__tests__/utils/index.js';
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { ClientPlatform, IdentityLimits } from '@contracts/identity';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { DeviceRepository } from '../../domain/device.repository.js';
@@ -51,7 +51,7 @@ describe('ListPushTargets', () => {
   const useCase = (devices: readonly Device[]): ListPushTargets =>
     new ListPushTargets(
       new ListedDevices(devices),
-      TestShardScopes.create(),
+      UnroutedShardScopes.create(),
       new FixedClock(now),
     );
 

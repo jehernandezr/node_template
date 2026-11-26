@@ -1,3 +1,6 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
+import { TestDispatcherParts } from '../../__tests__/utils/index.js';
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { context, trace } from '@opentelemetry/api';
 import {
@@ -106,19 +109,27 @@ const USER = '01941f29-7c00-7000-8000-000000000002';
 const TRACE_ID = '4bf92f3577b34da6a3ce929d0e0e4736';
 const TRACEPARENT = `00-${TRACE_ID}-00f067aa0ba902b7-01`;
 
-function setup(traceparent?: () => string | undefined) {
+function setup(
+  restorer: TraceContextRestorer = new TraceContextRestorer(
+    new Tracing(new Redactor()),
+  ),
+) {
   let now = 0;
   const topology = topologyFromContracts([identity, gateway, ledger]);
   const bus = new InMemoryBus(topology, {
     source: '/services/identity',
     clock: { now: () => new Date(now) },
-    ...(traceparent ? { traceparent } : {}),
+    restorer,
   });
-  const dispatcher = new MessageDispatcher({
-    consumer: 'gateway-inbox',
-    processed: new InMemoryProcessedMessageStore(),
-    topology,
-  });
+  const dispatcher = new MessageDispatcher(
+    {
+      clock: new SystemClock(),
+      consumer: 'gateway-inbox',
+      processed: new InMemoryProcessedMessageStore(),
+      topology,
+    },
+    TestDispatcherParts.with(new SystemRandomSource()),
+  );
   return {
     bus,
     dispatcher,
@@ -271,7 +282,7 @@ describe('trace propagation through the bus', () => {
   });
 
   it('keeps an explicit traceparent', async () => {
-    const { bus } = setup(() => TRACEPARENT);
+    const { bus } = setup(new FixedTraceContextRestorer(TRACEPARENT));
     const other = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
     const envelope = await bus.publish(
       SessionRevoked,
@@ -282,7 +293,9 @@ describe('trace propagation through the bus', () => {
   });
 
   it('runs the handler inside the trace of the envelope', async () => {
-    const { bus, dispatcher } = setup(() => TRACEPARENT);
+    const { bus, dispatcher } = setup(
+      new FixedTraceContextRestorer(TRACEPARENT),
+    );
     let seen: string | undefined;
     dispatcher.register(SessionRevoked, () => {
       seen = trace.getActiveSpan()?.spanContext().traceId;

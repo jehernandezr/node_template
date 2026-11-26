@@ -1,3 +1,4 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import {
   IdentityErrorCode,
   IdentityOperation,
@@ -17,7 +18,6 @@ import { IdentitySettings } from '../../../../config/identity-settings.js';
 import {
   RecordingParticipants,
   StaticAppConfig,
-  TestShardScopes,
 } from '../../../../__tests__/utils/index.js';
 import { IdentitySagas } from '../../../sagas/index.js';
 import { InMemorySagaDirectory } from '../../../sagas/__tests__/utils/index.js';
@@ -72,7 +72,7 @@ describe('StartTenantMove', () => {
         kit.sagas,
         kit.store,
         new InMemorySagaDirectory(),
-        TestShardScopes.create(),
+        UnroutedShardScopes.create(),
       ),
       new SequentialIdGenerator(),
       new FixedClock(),

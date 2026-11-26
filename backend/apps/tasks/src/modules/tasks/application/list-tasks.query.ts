@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   TasksLimits,
@@ -5,7 +6,6 @@ import {
   type TaskPage,
 } from '@contracts/tasks';
 import { TasksDefaults } from '../../../shared/constants/tasks-defaults.constants.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { TaskRepository } from '../domain/task.repository.js';
 import { TaskSearch } from '../domain/task-search.js';
 import { TasksError } from '../domain/tasks.error.js';
@@ -16,18 +16,17 @@ import { TaskViews } from './task-view.js';
 /** Lists the tenant's tasks, from newest to oldest, or searches them by text if `q` is present. */
 @Injectable()
 export class ListTasks {
-  private readonly cursors = new TaskCursors();
-
   constructor(
     private readonly tasks: TaskRepository,
     private readonly search: TaskSearch,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
+    private readonly cursors: TaskCursors,
   ) {}
 
   /** @throws TasksError `TASKS.SEARCH.QUERY_TOO_SHORT` if `q` does not reach the minimum. */
   execute(tenantId: string, request: ListTasksRequest): Promise<TaskPage> {
     const limit = request.limit ?? TasksDefaults.pageSize;
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       request.q === undefined
         ? this.list(request, limit)
         : this.find(request.q, request, limit),

@@ -1,5 +1,5 @@
 import type { Clock } from '@platform/kernel';
-import { FailureClassifier } from '@platform/primitives';
+import type { FailureClassifier } from '@platform/primitives';
 import { BulkheadFullError } from '../errors/bulkhead-full.error.js';
 import { CircuitOpenError } from '../errors/circuit-open.error.js';
 import { InvalidPolicyError } from '../errors/invalid-policy.error.js';
@@ -36,15 +36,15 @@ export class PolicyRegistry {
   /**
    * @param clock Clock of the breaker and the deadlines.
    * @param events Bus to which each dependency's events are published.
-   * @param overrides Overrides by name over the base policies.
    * @param classifier Decides which errors are transient when the policy does not say.
+   * @param overrides Overrides by name over the base policies.
    * @throws InvalidPolicyError if a key or a policy is not valid.
    */
   constructor(
     private readonly clock: Clock,
     private readonly events: ResilienceEventBus,
+    private readonly classifier: FailureClassifier,
     overrides: ResilienceOverrides = {},
-    private readonly classifier: FailureClassifier = new FailureClassifier(),
   ) {
     for (const key of Object.keys(overrides)) {
       PolicyName.of(key);

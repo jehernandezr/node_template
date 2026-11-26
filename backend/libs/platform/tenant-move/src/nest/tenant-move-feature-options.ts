@@ -1,4 +1,4 @@
-import type { Type } from '@nestjs/common';
+import type { ModuleMetadata, Type } from '@nestjs/common';
 import type { TenantMoveOperations } from '@contracts/platform';
 import type { TenantMoveListener } from '../application/tenant-move-listener.js';
 import type { TenantMoveManifest } from '../manifest/tenant-move-manifest.js';
@@ -11,7 +11,9 @@ export interface TenantMoveFeatureOptions {
   readonly manifest: Type<TenantMoveManifest>;
   /**
    * What the service also does when switching directory or canceling. Instantiated in the module with what
-   * the service global modules export.
+   * `imports` and the global modules export.
    */
   readonly listener?: Type<TenantMoveListener>;
+  /** The service modules whose exports the listener injects. */
+  readonly imports?: ModuleMetadata['imports'];
 }

@@ -1,5 +1,10 @@
 import { FixedClock, FixedRandomSource } from '@platform/kernel/test-utils';
-import { JobScheduleKind } from '@platform/kernel';
+import {
+  JobScheduleKind,
+  SystemClock,
+  SystemRandomSource,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { defineEvent } from '@contracts/platform';
 import { z } from 'zod';
@@ -45,6 +50,7 @@ function setup() {
   const store = new InMemoryOutboxStore({ clock });
   const publisher = new RecordingEnvelopePublisher();
   const relay = new OutboxRelay({
+    ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
     store,
     publisher,
     topology,

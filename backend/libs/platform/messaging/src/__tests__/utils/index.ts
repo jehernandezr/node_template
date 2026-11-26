@@ -27,3 +27,4 @@ export {
   RecordingMessageBus,
   type RecordedMessage,
 } from './recording-message-bus.js';
+export { TestDispatcherParts } from './test-dispatcher-parts.js';

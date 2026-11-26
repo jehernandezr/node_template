@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { SessionPage } from '@contracts/identity';
 import { UseCase } from '@platform/kernel';
 import { UserActor } from '@platform/auth';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { Clock } from '@platform/kernel';
 import { SessionRepository } from '../domain/session.repository.js';
 
@@ -11,7 +11,7 @@ import { SessionRepository } from '../domain/session.repository.js';
 export class ListMySessions implements UseCase<UserActor, SessionPage> {
   constructor(
     private readonly sessions: SessionRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly clock: Clock,
   ) {}
 

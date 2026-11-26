@@ -1,5 +1,7 @@
+import { FailureClassifier } from '@platform/primitives';
+import { ResilienceRegistryFactory } from '@platform/resilience';
+import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { defineOperation } from '@contracts/platform';
-import { ResilienceRegistry } from '@platform/resilience';
 import { z } from 'zod';
 import { OperationResolver } from '../../contract/operation-resolver.js';
 import { ExternalApiPolicy } from '../external-api-policy.js';
@@ -29,7 +31,14 @@ function operation(
 
 describe('OperationPolicyResolver', () => {
   function setup() {
-    const registry = new ResilienceRegistry();
+    const registry = new ResilienceRegistryFactory().create(
+      {},
+      {
+        clock: new SystemClock(),
+        random: new SystemRandomSource(),
+        classifier: new FailureClassifier(),
+      },
+    );
     registry.register(ExternalApiPolicy.NAME, ExternalApiPolicy.CONFIG);
     return { registry, resolver: new OperationPolicyResolver(registry) };
   }

@@ -6,6 +6,6 @@ export interface VersionedKeyspaceOptions {
   readonly prefix?: string;
   /** Maximum length of an accepted key. Defaults to `VersionedKeyspace.DEFAULT_MAX_KEY_LENGTH`. */
   readonly maxKeyLength?: number;
-  /** Generates the version tokens. Defaults to UUIDv7 with the system clock. */
-  readonly ids?: IdGenerator;
+  /** Generates the version tokens. */
+  readonly ids: IdGenerator;
 }

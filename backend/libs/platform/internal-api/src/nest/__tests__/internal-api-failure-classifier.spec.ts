@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { Global, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { CallOutcomeKind, FailureClassifier } from '@platform/primitives';
 import { InMemoryProcessedOperationStore } from '../../__tests__/utils/index.js';
@@ -11,29 +10,12 @@ import { FailoverHandlers } from './utils/failover-handlers.js';
 import { InternalApiPlatformTestingModule } from './utils/internal-api-platform-testing.module.js';
 import { SqlStateFailureRule } from './utils/sql-state-failure-rule.js';
 
-/** The service provides its classifier with the rules of its adapters, like the platform runtime. */
-@Global()
-@Module({
-  providers: [
-    {
-      provide: FailureClassifier,
-      useFactory: () =>
-        new FailureClassifier([
-          new SqlStateFailureRule(new Set([FailoverHandlers.ADMIN_SHUTDOWN])),
-        ]),
-    },
-  ],
-  exports: [FailureClassifier],
-})
-class ServiceFailuresModule {}
-
 async function greetDuringFailover(
-  imports: readonly unknown[],
+  failures: FailureClassifier,
 ): Promise<unknown> {
   const ref = await Test.createTestingModule({
     imports: [
       InternalApiPlatformTestingModule,
-      ...(imports as []),
       InternalApiModule.forRoot({
         transport: InternalTransportKind.InProcess,
         processedStore: InMemoryProcessedOperationStore,
@@ -41,7 +23,10 @@ async function greetDuringFailover(
       }),
     ],
     providers: [FailoverHandlers],
-  }).compile();
+  })
+    .overrideProvider(FailureClassifier)
+    .useValue(failures)
+    .compile();
   await ref.init();
   try {
     return await ref.get(InternalRouter).handle(
@@ -59,14 +44,20 @@ async function greetDuringFailover(
 }
 
 describe('InternalApiModule failure classification', () => {
-  it('answers a handler that lost its database connection as a transient failure the caller retries', async () => {
+  it('answers a handler that lost its database connection as a transient failure with the classifier of the service', async () => {
     await expect(
-      greetDuringFailover([ServiceFailuresModule]),
+      greetDuringFailover(
+        new FailureClassifier([
+          new SqlStateFailureRule(new Set([FailoverHandlers.ADMIN_SHUTDOWN])),
+        ]),
+      ),
     ).resolves.toMatchObject({ kind: CallOutcomeKind.TransientFailure });
   });
 
-  it('answers the same failure as a protocol violation without the classifier of the service', async () => {
-    await expect(greetDuringFailover([])).resolves.toMatchObject({
+  it('answers the same failure as a protocol violation with a classifier that lacks the database rules', async () => {
+    await expect(
+      greetDuringFailover(new FailureClassifier()),
+    ).resolves.toMatchObject({
       kind: CallOutcomeKind.ProtocolViolation,
     });
   });

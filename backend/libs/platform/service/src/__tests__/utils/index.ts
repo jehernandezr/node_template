@@ -16,3 +16,6 @@ export { IdentityStub, type StubMember } from './identity-stub.js';
 export { ProvisionedService } from './provisioned-service.js';
 export { ServiceTestServers } from './service-test-servers.js';
 export { InternalOperationsClient } from './internal-operations-client.js';
+export { ServiceTestApp } from './service-test-app.js';
+export type { ServiceTestAppOptions } from './service-test-app-options.js';
+export type { TestServer } from './test-server.js';

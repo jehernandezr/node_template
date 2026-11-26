@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { IdentityErrorCode } from '@contracts/identity';
 import { ShardingError, ShardingErrorCode } from '@platform/sharding';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { TenantSnapshot } from '../domain/tenant-snapshot.js';
 import { TenantRepository } from '../domain/tenant.repository.js';
 import { TenantSummaryView } from './tenant-summary-view.js';
@@ -12,7 +12,7 @@ import { TenantSummaryView } from './tenant-summary-view.js';
 export class TenantReader {
   constructor(
     private readonly tenants: TenantRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   /** @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if it does not exist. */

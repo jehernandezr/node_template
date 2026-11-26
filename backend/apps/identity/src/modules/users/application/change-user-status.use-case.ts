@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -10,7 +11,6 @@ import { AuthStateWriter } from '@platform/auth';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { AccessFacade } from '../../access/index.js';
 import { SessionsFacade } from '../../sessions/index.js';
@@ -32,7 +32,7 @@ export class ChangeUserStatus {
     private readonly sessions: SessionsFacade,
     private readonly access: AccessFacade,
     private readonly state: AuthStateWriter,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
     private readonly clock: Clock,

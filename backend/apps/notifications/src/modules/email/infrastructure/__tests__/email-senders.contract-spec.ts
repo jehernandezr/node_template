@@ -27,13 +27,13 @@ runEmailSenderContract('SesEmailSender', () => {
 });
 
 describe('SesEmailSender', () => {
-  it('closes the SES client when the service stops', () => {
+  it('leaves the SES client open on close, for AwsModule to destroy it', () => {
     const ses = new FakeSesClient();
 
     new SesEmailSender(
       new SesEmailClient(ses, new AwsErrorTranslator()),
     ).close();
 
-    expect(ses.closes).toBe(1);
+    expect(ses.closes).toBe(0);
   });
 });

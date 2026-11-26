@@ -1,5 +1,5 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { LoginAttemptRepository } from '../domain/login-attempt.repository.js';
 
@@ -8,7 +8,7 @@ import { LoginAttemptRepository } from '../domain/login-attempt.repository.js';
 export class LoginAttemptHistory {
   constructor(
     private readonly attempts: LoginAttemptRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   /**

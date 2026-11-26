@@ -25,7 +25,8 @@ The ORM is TypeORM on PostgreSQL. Use its capabilities (entities, `DataSource`, 
 
 ## Repositories and mappers
 
-- The domain declares the port (`UserRepository`). Infrastructure implements it with `TypeOrmUserRepository`, which extends `ShardedRepository<User, UserEntity>` and receives a `UserMapper` (`toDomain`, `toPersistence`).
+- The domain declares the port (`TaskRepository`). Infrastructure implements it with `TypeOrmTaskRepository`, which extends `TenantIsolatedRepository` (the only repository base, [ADR 0037](../../../docs/adr/0037-composition-shared-platform-pieces-and-domain-events.md)) and maps with a `TaskMapper`. Each query filters by `this.tenantId()`, the tenant of the `ShardScope` the use case opened with `ShardScopes.inTenantShard`; without it the repository fails closed. User data without a tenant column uses identity's `UserShardRepository` pattern inside `ShardScopes.inUserShard`.
+- Pages are keyset pages written by the repository. The cursor comes from the injected `IdCursor`, or from a cursor class of the service built on the injected `CursorCodec`.
 - Saving is per whole aggregate. The mapper rebuilds with `User.rehydrate(...)`, never with the public constructor or with `Object.assign`.
 - The repository gets the `EntityManager` of the current transaction from `@platform/persistence`. It never opens connections or a `QueryRunner` on its own, nor uses the global `dataSource.manager` inside a transaction (it would step outside it).
 - A repository method expresses a business need (`findActiveByEmail`), not a generic filter.
@@ -75,7 +76,7 @@ Example in `references/examples.md`, section "Repositories and mappers".
 
 ## Current decision
 
-Persistence is TypeORM with `@platform/persistence` ([ADR 0024](../../../docs/adr/0024-typeorm-persistence-sharding-persistent-sagas.md)), which replaces the custom layer over `pg` from ADR 0009. The platform provides shard routing, the single-shard transaction (`ShardScope`, error `CROSS_SHARD_TX`), replica reads and migrations per shard and catalog; the service writes entities, mappers, repositories that extend `ShardedRepository` and migrations. The platform tables (outbox, processed messages, idempotency, shard directory and saga log) live in `@platform/adapters-postgres`.
+Persistence is TypeORM with `@platform/persistence` ([ADR 0024](../../../docs/adr/0024-typeorm-persistence-sharding-persistent-sagas.md)), which replaces the custom layer over `pg` from ADR 0009. The platform provides shard routing, the single-shard transaction (`ShardScope`, error `CROSS_SHARD_TX`), replica reads and migrations per shard and catalog; the service writes entities, mappers, repositories that extend `TenantIsolatedRepository` and migrations. The platform tables (outbox, processed messages, idempotency, shard directory and saga log) live in `@platform/adapters-postgres`.
 
 Repository integration tests use Testcontainers with `ContainerRuntime` and `INTEGRATION_TESTS=require` in CI (see `backend-testing`).
 

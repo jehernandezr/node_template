@@ -1,6 +1,6 @@
 import { Module, type DynamicModule, type Provider } from '@nestjs/common';
 import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Clock, SystemClock } from '@platform/kernel';
+import { Clock } from '@platform/kernel';
 import { DirectoryChangeSubscription } from '../directory-change-subscription.js';
 import { ShardingError } from '../errors/sharding-error.js';
 import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
@@ -16,6 +16,7 @@ import type { TenantWriteWaiterOptions } from '../write-gate/tenant-write-waiter
 import { RoutingCache } from '../ports/routing-cache.js';
 import { ShardDirectoryChannel } from '../ports/shard-directory-channel.js';
 import { ShardRouter } from '../shard-router.js';
+import { ConsistentHashStrategy } from '../sharding-strategy.js';
 import {
   SHARDING_OPTIONS,
   ShardingModuleClass,
@@ -113,18 +114,14 @@ export class ShardingModule
         useFactory: (
           options: ShardingModuleOptions,
           gate: TenantWriteGate,
-          clock: Clock | undefined,
+          clock: Clock,
         ) =>
           new TenantWriteWaiter(
             gate,
-            clock ?? new SystemClock(),
+            clock,
             options.writeWait ?? ShardingModule.DEFAULT_WRITE_WAIT,
           ),
-        inject: [
-          SHARDING_OPTIONS,
-          TenantWriteGate,
-          { token: Clock, optional: true },
-        ],
+        inject: [SHARDING_OPTIONS, TenantWriteGate, Clock],
       },
     ];
   }
@@ -154,27 +151,34 @@ export class ShardingModule
         useExisting: extras.channel ?? InProcessDirectoryChannel,
       },
       {
+        provide: ConsistentHashStrategy,
+        useFactory: () => new ConsistentHashStrategy(),
+      },
+      {
         provide: ShardRouter,
         useFactory: (
           options: ShardingModuleOptions,
           directory: DirectoryStore,
           cache: RoutingCache,
           channel: ShardDirectoryChannel,
-          clock: Clock | undefined,
+          clock: Clock,
+          consistentHash: ConsistentHashStrategy,
         ) =>
           new ShardRouter({
             ...options.router,
+            strategy: options.router?.strategy ?? consistentHash,
             directory,
             sharedCache: cache,
             changes: channel,
-            clock: clock ?? new SystemClock(),
+            clock: clock,
           }),
         inject: [
           SHARDING_OPTIONS,
           DirectoryStore,
           RoutingCache,
           ShardDirectoryChannel,
-          { token: Clock, optional: true },
+          Clock,
+          ConsistentHashStrategy,
         ],
       },
       {

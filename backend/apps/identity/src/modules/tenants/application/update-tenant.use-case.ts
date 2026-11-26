@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -6,7 +7,6 @@ import {
 } from '@contracts/identity';
 import { TransactionManager } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { TenantRepository } from '../domain/tenant.repository.js';
 import { TenantSummaryView } from './tenant-summary-view.js';
 
@@ -15,7 +15,7 @@ import { TenantSummaryView } from './tenant-summary-view.js';
 export class UpdateTenant {
   constructor(
     private readonly tenants: TenantRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 

@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { FixedClock } from '@platform/kernel/test-utils';
 import {
   PersistenceError,
@@ -14,6 +15,7 @@ import { ShardedSagaScopes } from '../sharded-saga-scopes.js';
 function scopeOf(): ShardScope {
   return new ShardScope(
     new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       directory: new InMemoryDirectoryStore(),
       clock: new FixedClock(),
     }),

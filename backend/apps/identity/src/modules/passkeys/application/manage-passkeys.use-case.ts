@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type {
   PasskeyOptions,
@@ -7,7 +8,6 @@ import type {
 } from '@contracts/identity';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { IdentitySettings } from '../../../config/identity-settings.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { UsersFacade } from '../../users/index.js';
 import type { Passkey } from '../domain/passkey.js';
@@ -29,7 +29,7 @@ export class ManagePasskeys {
     private readonly directory: PasskeyDirectory,
     private readonly webauthn: WebAuthnVerifier,
     private readonly users: UsersFacade,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,

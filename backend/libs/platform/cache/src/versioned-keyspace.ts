@@ -1,4 +1,4 @@
-import { IdGenerator, SystemClock, UuidV7IdGenerator } from '@platform/kernel';
+import { IdGenerator } from '@platform/kernel';
 import { CanonicalJson } from '@platform/primitives';
 import type { CachePort } from './cache-port.js';
 import { CacheInvalidArgumentError } from './errors/cache-invalid-argument.error.js';
@@ -33,7 +33,7 @@ export class VersionedKeyspace {
 
   constructor(
     private readonly cache: CachePort,
-    options: VersionedKeyspaceOptions = {},
+    options: VersionedKeyspaceOptions,
   ) {
     const prefix = options.prefix ?? 'cache';
     if (prefix === '' || prefix.includes(':')) {
@@ -47,8 +47,7 @@ export class VersionedKeyspace {
       'maxKeyLength',
       options.maxKeyLength ?? VersionedKeyspace.DEFAULT_MAX_KEY_LENGTH,
     );
-    // The system clock only comes in when the caller does not bring its own generator (use without NestJS).
-    this.ids = options.ids ?? new UuidV7IdGenerator(new SystemClock());
+    this.ids = options.ids;
   }
 
   /** Returns the current version token of a namespace. It is created on first use. */

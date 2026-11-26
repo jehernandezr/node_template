@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type { Permission } from '@contracts/identity';
 import type { Actor } from '@platform/auth';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
 import { EffectiveAccessCalculator } from '../domain/effective-access-calculator.js';
 import type { Group } from '../domain/group.js';
@@ -21,7 +21,7 @@ export class GrantCeiling {
   constructor(
     private readonly actorPermissions: ActorPermissions,
     private readonly tenantAccess: TenantAccessRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   /**

@@ -1,4 +1,6 @@
-import { ResilienceRegistry } from '@platform/resilience';
+import { FailureClassifier } from '@platform/primitives';
+import { ResilienceRegistryFactory } from '@platform/resilience';
+import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { OperationMetadata } from '../../contract/operation-metadata.js';
 import { ExternalApiPolicy } from '../external-api-policy.js';
 
@@ -17,7 +19,14 @@ describe('ExternalApiPolicy', () => {
   });
 
   it('registers and executes an operation in a resilience registry', async () => {
-    const registry = new ResilienceRegistry();
+    const registry = new ResilienceRegistryFactory().create(
+      {},
+      {
+        clock: new SystemClock(),
+        random: new SystemRandomSource(),
+        classifier: new FailureClassifier(),
+      },
+    );
 
     expect(() =>
       registry.register(ExternalApiPolicy.NAME, ExternalApiPolicy.CONFIG),

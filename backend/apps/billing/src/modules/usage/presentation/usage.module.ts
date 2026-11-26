@@ -1,7 +1,6 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { LocalUsageFacade } from '../application/local-usage.facade.js';
 import { RecordUsage } from '../application/record-usage.use-case.js';
 import { TrackMembership } from '../application/track-membership.use-case.js';
@@ -15,8 +14,7 @@ import { TypeOrmMemberRoster } from '../infrastructure/persistence/typeorm-membe
 import { TypeOrmUsageLedger } from '../infrastructure/persistence/typeorm-usage-ledger.js';
 import { UsageConsumer } from './usage.consumer.js';
 
-/** Metered usage of each tenant and its member count. Global only for its facade. */
-@Global()
+/** Metered usage of each tenant and its member count. */
 @Module({
   imports: [
     PersistenceModule.forFeature({
@@ -25,7 +23,6 @@ import { UsageConsumer } from './usage.consumer.js';
     }),
   ],
   providers: [
-    TenantShard,
     { provide: UsageLedger, useClass: TypeOrmUsageLedger },
     { provide: MemberRoster, useClass: TypeOrmMemberRoster },
     RecordUsage,

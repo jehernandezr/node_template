@@ -17,13 +17,14 @@ import { InternalApiModule } from '@platform/internal-api/nest';
 import { SagaModule } from '@platform/saga/nest';
 import { SmokeAppModule } from '../smoke-app.module.js';
 import { SmokeOrdersModule } from '../orders/smoke-orders.module.js';
+import { SmokeFailuresModule } from '../smoke-failures.module.js';
 import { SmokeTenancyModule } from '../smoke-tenancy.module.js';
-import { SmokeKernelModule } from '../smoke-kernel.module.js';
+import { KernelModule } from '@platform/kernel/nest';
 
 /** Modules of the reference composition, in import order. */
 const EXPECTED_ORDER: readonly unknown[] = [
   ConfigModule,
-  SmokeKernelModule,
+  KernelModule,
   ObservabilityModule,
   ResilienceModule,
   SchedulingModule,
@@ -39,6 +40,7 @@ const EXPECTED_ORDER: readonly unknown[] = [
   InternalApiModule,
   SagaPostgresModule,
   SagaModule,
+  SmokeFailuresModule,
   SmokeTenancyModule,
   SmokeOrdersModule,
 ];

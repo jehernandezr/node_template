@@ -18,6 +18,7 @@ describe('ModuleGenerator', () => {
       expect.arrayContaining(
         [
           `${MODULE_ROOT}/index.ts`,
+          `${MODULE_ROOT}/module.ts`,
           `${MODULE_ROOT}/domain/.gitkeep`,
           `${MODULE_ROOT}/application/stock-items.facade.ts`,
           `${MODULE_ROOT}/infrastructure/persistence/migrations/index.ts`,
@@ -35,6 +36,17 @@ describe('ModuleGenerator', () => {
     );
   });
 
+  it('exposes the facade in the index and the Nest module apart, so loading a facade never loads a module', async () => {
+    await workspace.modules.generate('inventory', 'stock-items');
+
+    await expect(
+      workspace.file(`${MODULE_ROOT}/index.ts`),
+    ).resolves.not.toContain('StockItemsModule');
+    await expect(workspace.file(`${MODULE_ROOT}/module.ts`)).resolves.toContain(
+      "export { StockItemsModule } from './presentation/stock-items.module.js';",
+    );
+  });
+
   it('registers the module in the app and its migrations in the shard list, keeping the markers', async () => {
     await workspace.modules.generate('inventory', 'stock-items');
 
@@ -43,7 +55,7 @@ describe('ModuleGenerator', () => {
       'apps/inventory/src/database/shard-migrations.ts',
     );
     expect(app).toContain(
-      "import { StockItemsModule } from './modules/stock-items/index.js';\n// generated:modules:imports",
+      "import { StockItemsModule } from './modules/stock-items/module.js';\n// generated:modules:imports",
     );
     expect(app).toContain('    StockItemsModule,\n    // generated:modules');
     expect(migrations).toContain(

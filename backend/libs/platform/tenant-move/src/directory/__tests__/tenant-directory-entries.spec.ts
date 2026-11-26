@@ -1,3 +1,5 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
+import { SystemClock } from '@platform/kernel';
 import {
   DirectoryWriteResult,
   ShardRouter,
@@ -44,7 +46,11 @@ const entriesOver = (
   new TenantDirectoryEntries(
     directory,
     directory,
-    new ShardRouter({ directory }),
+    new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
+      clock: new SystemClock(),
+      directory,
+    }),
     new TenantShardGroups(
       'tasks',
       new TenantMoveTargets({

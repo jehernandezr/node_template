@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { LocalPlansFacade } from '../application/local-plans.facade.js';
 import { PlansFacade } from '../application/plans.facade.js';
@@ -9,8 +9,7 @@ import { PlanEntity } from '../infrastructure/persistence/entities/plan.entity.j
 import { TypeOrmPlanCatalog } from '../infrastructure/persistence/typeorm-plan-catalog.js';
 import { PlansController } from './plans.controller.js';
 
-/** Plan catalog and its seed. Global only for its facade. */
-@Global()
+/** Plan catalog and its seed. */
 @Module({
   imports: [
     PersistenceModule.forFeature({

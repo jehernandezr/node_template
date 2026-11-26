@@ -1,9 +1,11 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
+import { KernelModule } from '@platform/kernel/nest';
 import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Global, Injectable, Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@platform/config/nest';
 import { FixedClock } from '@platform/kernel/test-utils';
-import { Clock, TransactionManager } from '@platform/kernel';
+import { Clock, TransactionManager, SystemClock } from '@platform/kernel';
 import {
   ActorType,
   LoggerPort,
@@ -32,6 +34,7 @@ import { RepositoryKit } from '../../repository-kit.js';
 import { ShardDataSources } from '../../shard-data-sources.js';
 import { ShardResolver } from '../../shard-resolver.js';
 import { ShardScope } from '../../shard-scope.js';
+import { ShardScopes } from '../../shard-scopes.js';
 import { ShardedMigrationRunner } from '../../sharded-migration-runner.js';
 import { TypeOrmTransactionManager } from '../../typeorm-transaction-manager.js';
 import { FakeDataSourceFactory } from '../../__tests__/utils/fake-data-source-factory.js';
@@ -90,7 +93,11 @@ class UserFeatureConsumer {
     },
     {
       provide: ShardRouter,
-      useValue: new ShardRouter({ directory: new InMemoryDirectoryStore() }),
+      useValue: new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
+        clock: new SystemClock(),
+        directory: new InMemoryDirectoryStore(),
+      }),
     },
     { provide: LoggerPort, useValue: new RecordingLogger() },
     SpecShardLister,
@@ -176,6 +183,7 @@ describe('PersistenceModule', () => {
     it('resolves the persistence services and the transaction port', async () => {
       const moduleRef: TestingModule = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRoot(rootOptions()),
@@ -193,6 +201,9 @@ describe('PersistenceModule', () => {
       );
       expect(moduleRef.get(ShardScope, { strict: false })).toBeInstanceOf(
         ShardScope,
+      );
+      expect(moduleRef.get(ShardScopes, { strict: false })).toBeInstanceOf(
+        ShardScopes,
       );
       expect(
         moduleRef.get(EntityManagerProvider, { strict: false }),
@@ -223,6 +234,7 @@ describe('PersistenceModule', () => {
     it('builds the options with the factory and uses the endpoint resolver it receives', async () => {
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRootAsync({
@@ -256,6 +268,7 @@ describe('PersistenceModule', () => {
     it('routes a transaction without a module by the declared default key', async () => {
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           SpecClockModule,
           CONFIG,
@@ -312,6 +325,7 @@ describe('PersistenceModule', () => {
 
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRoot(rootOptions()),
@@ -361,6 +375,7 @@ describe('PersistenceModule', () => {
 
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRoot(rootOptions()),
@@ -387,6 +402,7 @@ describe('PersistenceModule', () => {
       const catalog = new ClosableCatalogDataSource();
       const moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           SpecGlobalModule,
           CONFIG,
           PersistenceModule.forRoot(rootOptions()),

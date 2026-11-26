@@ -1,6 +1,6 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { Currency } from '@contracts/billing';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { TestTenantShard } from '../../../../__tests__/utils/test-tenant-shard.js';
 import type { PaymentAttempts } from '../../domain/payment-attempts.js';
 import { PaymentStatus } from '../../domain/payment-status.enum.js';
 import {
@@ -33,7 +33,7 @@ class ChargeHarness {
     return new ChargeInvoice(
       this.provider,
       this.attempts,
-      TestTenantShard.create(),
+      UnroutedShardScopes.create(),
       this.ids,
       this.clock,
     );

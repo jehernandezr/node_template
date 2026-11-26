@@ -2,7 +2,11 @@ import type {
   TenantMoveRef,
   TenantMoveVerification,
 } from '@contracts/platform';
-import { SystemClock, UuidV7IdGenerator } from '@platform/kernel';
+import {
+  SystemClock,
+  UuidV7IdGenerator,
+  SystemRandomSource,
+} from '@platform/kernel';
 import { platformSagaShardMigrations } from '@platform/adapters-postgres';
 import { TenantWriteFence, type MigrationClass } from '@platform/persistence';
 import { SagaStatus } from '@platform/saga';
@@ -14,6 +18,8 @@ import {
 } from '@platform/sharding';
 import { PlacementBuilder } from '@platform/sharding/test-utils';
 import type { DataSource } from 'typeorm';
+import { ShardTenantMoveFence } from '../../fence/shard-tenant-move-fence.js';
+import { PooledShardConnections } from '../../transfer/typeorm/pooled-shard-connections.js';
 import { OpenSagaActivity } from '../../activity/open-saga-activity.js';
 import { TenantMoveShards } from '../../application/tenant-move-shards.js';
 import { TenantMoves } from '../../application/tenant-moves.js';
@@ -101,7 +107,10 @@ export class TenantMoveRehearsal {
   /** The service manifest with the platform tables, as the module copies it. */
   readonly manifest: TenantMoveManifest;
   readonly db: ShardedTestDatabase;
-  private readonly ids = new UuidV7IdGenerator();
+  private readonly ids = new UuidV7IdGenerator(
+    new SystemClock(),
+    new SystemRandomSource(),
+  );
   private readonly seeder: ManifestRowSeeder;
   private readonly filter: TenantRowFilter;
   private readonly session = new TenantSession();
@@ -155,18 +164,18 @@ export class TenantMoveRehearsal {
       ),
     );
     this.parts = {
-      shards: new TenantMoveShards(
-        this.db.router,
-        this.db.directory,
-        this.db.sources,
-        targets,
+      shards: new TenantMoveShards(this.db.router, this.db.directory, targets),
+      transfer: new BatchTenantDataTransfer(
+        this.manifest,
+        this.connections(),
+        new SystemClock(),
+        {
+          batchSize: this.options.batchSize ?? 500,
+          callBudgetMs: 4_000,
+          deltaMarginMs: 60_000,
+          caughtUpRows: 0,
+        },
       ),
-      transfer: new BatchTenantDataTransfer(this.manifest, new SystemClock(), {
-        batchSize: this.options.batchSize ?? 500,
-        callBudgetMs: 4_000,
-        deltaMarginMs: 60_000,
-        caughtUpRows: 0,
-      }),
       gate: new DirectoryWriteGate(this.db.router, transition),
       transition,
     };
@@ -351,12 +360,15 @@ export class TenantMoveRehearsal {
       parts.shards,
       transfer,
       parts.gate,
-      this.fence,
+      new ShardTenantMoveFence(this.fence, this.connections()),
       parts.transition,
       this.db.lister,
-      this.db.sources,
-      new OpenSagaActivity(),
+      new OpenSagaActivity(this.connections()),
     );
+  }
+
+  private connections(): PooledShardConnections {
+    return new PooledShardConnections(this.db.sources);
   }
 
   private started(): TenantMoves {

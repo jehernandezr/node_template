@@ -21,6 +21,6 @@ export interface SagaModuleExtras {
   readonly invoker?: Type<OperationInvoker> | Abstract<OperationInvoker>;
   /** By default, `AmbientSagaScopes`: a single database. With shards, `ShardedSagaScopes`. */
   readonly scopes?: Type<SagaScopes> | Abstract<SagaScopes>;
-  /** Source of randomness for the lease tokens and the retry wait. By default, `SystemRandomSource`. */
+  /** Source of randomness for the lease tokens and the retry wait. By default, the global one of `KernelModule`. */
   readonly random?: Type<RandomSource> | Abstract<RandomSource>;
 }

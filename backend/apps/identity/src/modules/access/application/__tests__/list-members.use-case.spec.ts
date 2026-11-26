@@ -1,5 +1,5 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { UserStatus } from '@contracts/identity';
-import { TestShardScopes } from '../../../../__tests__/utils/index.js';
 import { InMemoryUsersFacade } from '../../../users/__tests__/utils/index.js';
 import { InMemoryTenantAccessRepository } from '../../__tests__/utils/index.js';
 import type { Membership } from '../../domain/membership.js';
@@ -25,7 +25,7 @@ describe('ListMembers', () => {
   const listing = new ListMembers(
     tenantAccess,
     users,
-    TestShardScopes.create(),
+    UnroutedShardScopes.create(),
   );
 
   beforeAll(async () => {

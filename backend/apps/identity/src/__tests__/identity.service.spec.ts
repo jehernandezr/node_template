@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { identityContract } from '@contracts/identity';
 import {
   AwsCredentialsProvider,
@@ -41,7 +42,7 @@ describe('identityService', () => {
 
     const settings = identityService.internalApi?.http?.(
       new StaticAppConfig(config),
-      {},
+      { clock: new SystemClock() },
     );
 
     expect(Secret.is(config.INTERNAL_API_SHARED_SECRET)).toBe(true);
@@ -62,7 +63,9 @@ describe('identityService', () => {
     });
 
     expect(() =>
-      identityService.internalApi?.http?.(new StaticAppConfig(config), {}),
+      identityService.internalApi?.http?.(new StaticAppConfig(config), {
+        clock: new SystemClock(),
+      }),
     ).toThrow('INTERNAL_API_BASE_URLS does not have the URL of billing');
   });
 
@@ -75,12 +78,14 @@ describe('identityService', () => {
 
     const settings = identityService.internalApi?.http?.(
       new StaticAppConfig(config),
-      { aws: { credentials, region: 'us-east-1' } },
+      { clock: new SystemClock(), aws: { credentials, region: 'us-east-1' } },
     );
 
     expect(settings?.signer).toBeInstanceOf(SigV4Signer);
     expect(() =>
-      identityService.internalApi?.http?.(new StaticAppConfig(config), {}),
+      identityService.internalApi?.http?.(new StaticAppConfig(config), {
+        clock: new SystemClock(),
+      }),
     ).toThrow(/INTERNAL_API_SIGNER=sigv4/);
   });
 });

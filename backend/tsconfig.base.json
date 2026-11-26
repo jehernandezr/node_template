@@ -79,6 +79,7 @@
       "@platform/config": ["./libs/platform/config/src/index.ts"],
       "@platform/config/nest": ["./libs/platform/config/src/nest/index.ts"],
       "@platform/criteria": ["./libs/platform/criteria/src/index.ts"],
+      "@platform/criteria/nest": ["./libs/platform/criteria/src/nest/index.ts"],
       "@platform/flags": ["./libs/platform/flags/src/index.ts"],
       "@platform/flags/nest": ["./libs/platform/flags/src/nest/index.ts"],
       "@platform/flags/test-utils": [
@@ -92,6 +93,7 @@
         "./libs/platform/internal-api/src/__tests__/utils/index.ts"
       ],
       "@platform/kernel": ["./libs/platform/kernel/src/index.ts"],
+      "@platform/kernel/nest": ["./libs/platform/kernel/src/nest/index.ts"],
       "@platform/kernel/test-utils": [
         "./libs/platform/kernel/src/__tests__/utils/index.ts"
       ],

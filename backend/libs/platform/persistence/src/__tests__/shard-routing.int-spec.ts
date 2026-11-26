@@ -54,7 +54,7 @@ runtime.describeIfAvailable('shard routing over PostgreSQL', () => {
   });
 
   it('stores a tenant row only in the shard of that tenant', async () => {
-    await db.runAs(TENANT_A, () =>
+    await db.inTenant(TENANT_A, () =>
       repo.save(new Probe(PROBE_ID, 'alpha', 1, 0)),
     );
 
@@ -63,13 +63,13 @@ runtime.describeIfAvailable('shard routing over PostgreSQL', () => {
   });
 
   it('reads the row back by id inside its tenant', async () => {
-    const found = await db.runAs(TENANT_A, () => repo.findById(PROBE_ID));
+    const found = await db.inTenant(TENANT_A, () => repo.findById(PROBE_ID));
 
     expect(found).toMatchObject({ id: PROBE_ID, name: 'alpha' });
   });
 
   it('routes the other tenant to the other shard', async () => {
-    await db.runAs(TENANT_B, () =>
+    await db.inTenant(TENANT_B, () =>
       repo.save(new Probe(OTHER_PROBE_ID, 'beta', 2, 0)),
     );
 
@@ -104,7 +104,7 @@ runtime.describeIfAvailable('shard routing over PostgreSQL', () => {
   it('runs afterCommit hooks only after a commit', async () => {
     const events: string[] = [];
 
-    await db.runAs(TENANT_A, () =>
+    await db.inTenant(TENANT_A, () =>
       db.transactions.runInTransaction((uow) => {
         uow.afterCommit(() => {
           events.push('commit');

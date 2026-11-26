@@ -1,5 +1,7 @@
 export * from './actor/actor.js';
 export * from './actor/actor-guards.js';
+export * from './actor/acting-member.js';
+export * from './actor/acting-user.js';
 export * from './errors/auth-error-code.enum.js';
 export * from './errors/auth-error-catalog.js';
 export * from './errors/authentication.error.js';

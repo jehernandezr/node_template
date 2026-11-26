@@ -1,7 +1,6 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { IdentityTenantMoveOperations } from '@contracts/identity';
 import { ConfigModule } from '@platform/config/nest';
-import { PersistenceModule } from '@platform/persistence/nest';
 import { SagaModule } from '@platform/saga/nest';
 import {
   TenantMoveConfig,
@@ -15,32 +14,40 @@ import { IdentityTenantMoveListener } from '../application/identity-tenant-move.
 import { MoveTenantSaga } from '../application/move-tenant.saga.js';
 import { StartTenantMove } from '../application/start-tenant-move.use-case.js';
 import { TenantMoveCleanupJob } from '../application/tenant-move-cleanup.job.js';
-import { TenantMoveLog } from '../domain/tenant-move-log.js';
-import { TenantMoveEntity } from '../infrastructure/persistence/entities/tenant-move.entity.js';
-import { TypeOrmTenantMoveLog } from '../infrastructure/persistence/typeorm-tenant-move-log.js';
+import { TenantMovesCoreModule } from './tenant-moves-core.module.js';
 import { TenantMovesInternalOperations } from './tenant-moves.internal-operations.js';
+
+import { ApiKeysModule } from '../../api-keys/module.js';
+import { PasskeysCoreModule } from '../../passkeys/module.js';
+import { SagasModule } from '../../sagas/module.js';
+import { TenantsCoreModule } from '../../tenants/module.js';
+import { UsersCoreModule } from '../../users/module.js';
 
 /**
  * Tenant moves: the `MoveTenant` saga, its log, the source cleanup and identity's move
- * operations. It is global so that the listener of those operations, which lives in `TenantMoveModule`, reaches the log.
+ * operations. The listener of those operations lives in `TenantMoveModule`, which imports the modules it needs.
  */
-@Global()
 @Module({
   imports: [
-    PersistenceModule.forFeature({
-      entities: [TenantMoveEntity],
-      catalog: true,
-    }),
+    TenantMovesCoreModule,
+    SagasModule,
+    TenantsCoreModule,
     ConfigModule.forFeature(TenantMoveConfig),
     SagaModule.forFeature([MoveTenantSaga]),
     TenantMoveModule.forFeature({
       operations: IdentityTenantMoveOperations,
       manifest: IdentityTenantMoveManifest,
       listener: IdentityTenantMoveListener,
+      imports: [
+        TenantMovesCoreModule,
+        TenantsCoreModule,
+        UsersCoreModule,
+        PasskeysCoreModule,
+        ApiKeysModule,
+      ],
     }),
   ],
   providers: [
-    { provide: TenantMoveLog, useClass: TypeOrmTenantMoveLog },
     {
       provide: TenantMoveTargets,
       useFactory: (settings: TenantMoveSettings) =>
@@ -52,6 +59,5 @@ import { TenantMovesInternalOperations } from './tenant-moves.internal-operation
     TenantMovesInternalOperations,
     TenantMoveCleanupJob,
   ],
-  exports: [TenantMoveLog],
 })
 export class TenantMovesModule {}

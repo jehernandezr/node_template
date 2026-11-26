@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   FeatureFlag,
@@ -8,7 +9,6 @@ import {
 import { FlagEvaluator, type FlagContext } from '@platform/flags';
 import { AdministrativePermissions } from '../../../shared/constants/system-roles.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { EntitlementsProvider, TenantsFacade } from '../../tenants/index.js';
 import {
@@ -28,7 +28,7 @@ export class AccessResolver {
     private readonly userAccess: UserAccessRepository,
     private readonly tenants: TenantsFacade,
     private readonly entitlements: EntitlementsProvider,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly flags: FlagEvaluator,
   ) {}
 

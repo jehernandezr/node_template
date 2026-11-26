@@ -1,6 +1,4 @@
-import { SystemRandomSource } from '../random/system-random-source.js';
 import type { RandomSource } from '../random/random-source.js';
-import { SystemClock } from '../time/system-clock.js';
 import type { Clock } from '../time/clock.js';
 import { Id } from './id.js';
 import { IdGenerator } from './id-generator.js';
@@ -19,8 +17,8 @@ export class UuidV7IdGenerator extends IdGenerator {
   private counter = 0;
 
   constructor(
-    private readonly clock: Clock = new SystemClock(),
-    private readonly random: RandomSource = new SystemRandomSource(),
+    private readonly clock: Clock,
+    private readonly random: RandomSource,
   ) {
     super();
   }

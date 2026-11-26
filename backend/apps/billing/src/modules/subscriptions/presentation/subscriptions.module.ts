@@ -1,7 +1,6 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { AdvanceDunningJob } from '../application/advance-dunning.job.js';
 import { ChangePlan } from '../application/change-plan.use-case.js';
 import { CloseSubscriptionPeriod } from '../application/close-subscription-period.use-case.js';
@@ -16,11 +15,15 @@ import { SubscriptionEntity } from '../infrastructure/persistence/entities/subsc
 import { TypeOrmSubscriptionMaintenance } from '../infrastructure/persistence/typeorm-subscription-maintenance.js';
 import { TypeOrmSubscriptionRepository } from '../infrastructure/persistence/typeorm-subscription.repository.js';
 import { SubscriptionsController } from './subscriptions.controller.js';
+import { BillingSettings } from '../../../config/billing-settings.js';
+import { PlansModule } from '../../plans/module.js';
+import { UsageModule } from '../../usage/module.js';
 
-/** Each tenant's subscription: plan, periods, proration and delinquency. Global only for its facade. */
-@Global()
+/** Each tenant's subscription: plan, periods, proration and delinquency. */
 @Module({
   imports: [
+    PlansModule,
+    UsageModule,
     PersistenceModule.forFeature({
       entities: [SubscriptionEntity],
       sharding: { key: ShardKey.Tenant },
@@ -28,7 +31,7 @@ import { SubscriptionsController } from './subscriptions.controller.js';
   ],
   controllers: [SubscriptionsController],
   providers: [
-    TenantShard,
+    BillingSettings,
     {
       provide: SubscriptionRepository,
       useClass: TypeOrmSubscriptionRepository,

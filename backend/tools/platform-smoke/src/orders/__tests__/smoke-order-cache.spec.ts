@@ -1,3 +1,4 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { FakeSmokeOrderRepository } from '../../__tests__/utils/fake-smoke-order-repository.js';
 import { RecordingCacheAside } from '../../__tests__/utils/recording-cache-aside.js';
 import { SmokeOrder } from '../smoke-order.js';
@@ -16,6 +17,7 @@ describe('SmokeOrderCache', () => {
     const cache = new SmokeOrderCache(
       new RecordingCacheAside().asCacheAside(),
       orders,
+      UnroutedShardScopes.create(),
     );
 
     await expect(cache.read(TENANT, 'o-1')).resolves.toEqual({
@@ -29,6 +31,7 @@ describe('SmokeOrderCache', () => {
     const cache = new SmokeOrderCache(
       new RecordingCacheAside().asCacheAside(),
       new FakeSmokeOrderRepository(),
+      UnroutedShardScopes.create(),
     );
 
     await expect(cache.read(TENANT, 'missing')).resolves.toBeNull();
@@ -39,6 +42,7 @@ describe('SmokeOrderCache', () => {
     const cache = new SmokeOrderCache(
       aside.asCacheAside(),
       new FakeSmokeOrderRepository(),
+      UnroutedShardScopes.create(),
     );
 
     await cache.invalidate(TENANT);

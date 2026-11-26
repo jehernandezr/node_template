@@ -30,7 +30,7 @@ describe('TriggersConsumer', () => {
     const harness = new DispatchHarness();
     const consumer = new TriggersConsumer(
       new TriggerNotifications(
-        harness.notifyUser,
+        harness.facade,
         harness.recipients,
         new NoMembers(),
       ),

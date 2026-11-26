@@ -1,3 +1,5 @@
+import { ActingMember } from '@platform/auth';
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { PlatformErrorCode } from '@contracts/platform';
 import {
@@ -9,8 +11,6 @@ import {
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { ReportsError } from '../../../shared/errors/reports.error.js';
-import type { ActingMember } from '../../../shared/utils/acting-member.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { ReportDefinitionRegistry } from '../../catalog/index.js';
 import { ReportEntitlements } from '../domain/report-entitlements.js';
 import { ReportRangePolicy } from '../domain/report-range-policy.js';
@@ -29,7 +29,7 @@ export class CreateRun {
     private readonly registry: ReportDefinitionRegistry,
     private readonly entitlements: ReportEntitlements,
     private readonly bus: MessageBus,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
@@ -54,7 +54,7 @@ export class CreateRun {
       requestedBy: member.ref,
       now: this.clock.now(),
     });
-    return this.shard.run(member.tenantId, () =>
+    return this.shard.inTenantShard(member.tenantId, () =>
       this.transactions.runInTransaction(async () => {
         await this.runs.insert(run);
         await this.bus.send(

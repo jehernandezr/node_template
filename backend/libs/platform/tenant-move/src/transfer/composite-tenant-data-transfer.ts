@@ -3,7 +3,7 @@ import type {
   TenantMoveVerification,
 } from '@contracts/platform';
 import type { Clock } from '@platform/kernel';
-import type { DataSource } from 'typeorm';
+import type { ShardLocation } from '@platform/persistence';
 import { TenantDataTransfer } from './tenant-data-transfer.js';
 import type { TenantTransfer } from './tenant-transfer.js';
 import { TransferBudget } from './transfer-budget.js';
@@ -55,7 +55,7 @@ export class CompositeTenantDataTransfer extends TenantDataTransfer {
 
   async cleanup(
     tenantId: string,
-    source: DataSource,
+    source: ShardLocation,
     budget: TransferBudget = this.newBudget(),
   ): Promise<void> {
     for (const part of this.parts) {
@@ -65,7 +65,7 @@ export class CompositeTenantDataTransfer extends TenantDataTransfer {
 
   async assignRegion(
     tenantId: string,
-    target: DataSource,
+    target: ShardLocation,
     region: string,
   ): Promise<void> {
     for (const part of this.parts) {

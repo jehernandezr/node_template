@@ -1,3 +1,4 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { EnvelopeFactory, OutboxStatus } from '@platform/messaging';
 import {
@@ -26,6 +27,7 @@ describe('RegisterSmokeOrder', () => {
       new EnvelopeFactory(clock, ids),
       ids,
       clock,
+      UnroutedShardScopes.create(),
     );
     return { useCase, orders, outbox, clock };
   }

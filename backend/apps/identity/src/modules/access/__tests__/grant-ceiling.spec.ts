@@ -1,5 +1,5 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { FlagEvaluator, InMemoryFlagStore } from '@platform/flags';
-import { TestShardScopes } from '../../../__tests__/utils/index.js';
 import { Permission, TenantRole } from '@contracts/identity';
 import { PlatformErrorCode } from '@contracts/platform';
 import { InMemoryAuthState } from '@platform/auth/test-utils';
@@ -43,7 +43,7 @@ const ADMIN_PERMISSIONS = SystemRolePermissions[TenantRole.Admin];
 
 describe('GrantCeiling', () => {
   const tenantAccess = new InMemoryTenantAccessRepository();
-  const scopes = TestShardScopes.create();
+  const scopes = UnroutedShardScopes.create();
   const transactions = new InMemoryTransactionManager();
   const bus = new UnreachableMessageBus();
   const clock = new FixedClock();

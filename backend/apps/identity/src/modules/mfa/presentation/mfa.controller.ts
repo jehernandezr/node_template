@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import {
   CurrentActor,
   Endpoint,
@@ -39,11 +40,7 @@ import {
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
-import { SessionDelivery } from '../../../shared/utils/session-delivery.js';
-import {
-  requireUserActor,
-  userRefOf,
-} from '../../../shared/utils/user-actor.js';
+import { SessionDelivery } from '../../../sign-in/session-delivery.js';
 import { ManageMfaFactors } from '../application/manage-mfa-factors.use-case.js';
 import { MfaRecoveryUseCase } from '../application/mfa-recovery.use-case.js';
 import { RequestMfaChallenge } from '../application/request-mfa-challenge.use-case.js';
@@ -99,7 +96,7 @@ export class MfaController {
     @CurrentActor() actor: Actor | undefined,
     @Exchange() http: HttpExchange,
   ): Promise<PendingMfa> {
-    return this.stepUp.begin(requireUserActor(actor), http.client);
+    return this.stepUp.begin(ActingUser.of(actor), http.client);
   }
 
   /**
@@ -113,7 +110,7 @@ export class MfaController {
     @Input() input: MfaChallengeRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<MfaChallenge> {
-    requireUserActor(actor);
+    ActingUser.of(actor);
     return this.challenge.execute(input, PendingPurpose.StepUp);
   }
 
@@ -128,7 +125,7 @@ export class MfaController {
     @Input() input: StepUpVerifyRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<StepUpResult> {
-    return this.stepUp.verify(requireUserActor(actor), input);
+    return this.stepUp.verify(ActingUser.of(actor), input);
   }
 
   /**
@@ -140,7 +137,7 @@ export class MfaController {
   startTotpEnrollment(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<TotpEnrollment> {
-    return this.factors.startTotp(userRefOf(requireUserActor(actor)));
+    return this.factors.startTotp(ActingUser.refOf(ActingUser.of(actor)));
   }
 
   /**
@@ -155,7 +152,7 @@ export class MfaController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<RecoveryCodes> {
     return this.factors.confirmTotp(
-      userRefOf(requireUserActor(actor)),
+      ActingUser.refOf(ActingUser.of(actor)),
       input.code,
     );
   }
@@ -166,7 +163,7 @@ export class MfaController {
    */
   @Endpoint(RemoveTotpRoute)
   async removeTotp(@CurrentActor() actor: Actor | undefined): Promise<void> {
-    await this.factors.removeTotp(userRefOf(requireUserActor(actor)));
+    await this.factors.removeTotp(ActingUser.refOf(ActingUser.of(actor)));
   }
 
   /**
@@ -179,7 +176,7 @@ export class MfaController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<RecoveryCodes> {
     return this.factors.regenerateRecoveryCodes(
-      userRefOf(requireUserActor(actor)),
+      ActingUser.refOf(ActingUser.of(actor)),
     );
   }
 

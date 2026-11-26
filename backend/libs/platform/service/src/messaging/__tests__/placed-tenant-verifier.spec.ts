@@ -1,3 +1,5 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
+import { SystemClock } from '@platform/kernel';
 import {
   ShardRouter,
   ShardingError,
@@ -38,7 +40,12 @@ class VerifierHarness {
     );
     directory.setInstance(VerifierHarness.SHARD, 'instance');
     return new PlacedTenantVerifier(
-      new ShardRouter({ directory, currentRegion }),
+      new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
+        clock: new SystemClock(),
+        directory,
+        currentRegion,
+      }),
     );
   }
 }
@@ -68,7 +75,11 @@ describe('PlacedTenantVerifier', () => {
   describe('when the directory fails', () => {
     it('lets the error out so the delivery is retried', async () => {
       const verifier = new PlacedTenantVerifier(
-        new ShardRouter({ directory: new UnavailableDirectoryStore() }),
+        new ShardRouter({
+          strategy: new ConsistentHashStrategy(),
+          clock: new SystemClock(),
+          directory: new UnavailableDirectoryStore(),
+        }),
       );
 
       await expect(verifier.verify(TestTenants.One)).rejects.toMatchObject({

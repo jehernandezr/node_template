@@ -1,3 +1,5 @@
+import { OperationResolver } from '../../contract/operation-resolver.js';
+import { JsonSafetyChecker } from '../../contract/json-safety-checker.js';
 import { defineOperation, type OperationDefinition } from '@contracts/platform';
 import { context as otelContext } from '@opentelemetry/api';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
@@ -10,6 +12,11 @@ import { InternalApiErrorCode } from '../../errors/internal-api-error-code.enum.
 import { TraceCapturingHandler } from './utils/trace-capturing-handler.js';
 import { ScriptedHandler } from './utils/scripted-handler.js';
 import { ServerHarness } from './utils/server-harness.js';
+
+const REGISTRY_COLLABORATORS = {
+  resolver: new OperationResolver(),
+  jsonSafety: new JsonSafetyChecker(),
+};
 
 const Reserve = defineOperation({
   id: 'stock.reserve.v1',
@@ -50,7 +57,7 @@ describe('InternalRouter', () => {
   describe('registration', () => {
     it('assertComplete, every registered operation has a handler, passes', () => {
       const harness = new ServerHarness();
-      const registry = new ContractRegistry();
+      const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
       registry.register(Reserve, Release);
       harness.router.register(Reserve, new ScriptedHandler<typeof Reserve>());
       harness.router.register(Release, new ScriptedHandler<typeof Release>());
@@ -60,7 +67,7 @@ describe('InternalRouter', () => {
 
     it('assertComplete, operations without handler, throws MissingHandler naming only those', () => {
       const harness = new ServerHarness();
-      const registry = new ContractRegistry();
+      const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
       registry.register(Reserve, Release, Count);
       harness.router.register(Reserve, new ScriptedHandler<typeof Reserve>());
 

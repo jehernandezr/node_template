@@ -1,3 +1,4 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { HealthState } from '@platform/kernel';
@@ -44,6 +45,7 @@ runtime.describeIfAvailable('ValkeyModule against a real server', () => {
   async function instance(): Promise<TestingModule> {
     const app = await Test.createTestingModule({
       imports: [
+        KernelModule,
         ValkeyTestPlatformModule.with(
           new RecordingLogger(),
           server.environment(),

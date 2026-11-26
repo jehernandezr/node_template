@@ -3,7 +3,7 @@ import type {
   TenantMoveVerification,
 } from '@contracts/platform';
 import { FixedClock } from '@platform/kernel/test-utils';
-import type { DataSource } from 'typeorm';
+import type { ShardLocation } from '@platform/persistence';
 import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import { CompositeTenantDataTransfer } from '../composite-tenant-data-transfer.js';
 import { TenantDataTransfer } from '../tenant-data-transfer.js';
@@ -55,7 +55,7 @@ class ScriptedTransfer extends TenantDataTransfer {
 
   async assignRegion(
     tenantId: string,
-    _target: DataSource,
+    _target: ShardLocation,
     region: string,
   ): Promise<void> {
     this.journal.push(`region ${this.table} ${tenantId} ${region}`);
@@ -90,7 +90,7 @@ class SlowTransfer extends TenantDataTransfer {
 
   async cleanup(
     _tenantId: string,
-    _source: DataSource,
+    _source: ShardLocation,
     budget?: TransferBudget,
   ): Promise<void> {
     this.spend(budget);
@@ -107,7 +107,7 @@ class SlowTransfer extends TenantDataTransfer {
 }
 
 const BUDGET_MS = 1_000;
-const SHARD = {} as DataSource;
+const SHARD: ShardLocation = { logicalShard: 'shard_a', instance: 'test' };
 const MOVE: TenantTransfer = {
   moveId: 'move-1',
   tenantId: 'tenant-1',

@@ -1,11 +1,4 @@
-import {
-  Clock,
-  JobLock,
-  RandomSource,
-  SystemClock,
-  SystemRandomSource,
-  type JobLease,
-} from '@platform/kernel';
+import { Clock, JobLock, RandomSource, type JobLease } from '@platform/kernel';
 
 interface StoredLease {
   readonly token: string;
@@ -21,8 +14,8 @@ export class InProcessJobLock extends JobLock {
   private sequence = 0;
 
   constructor(
-    private readonly clock: Clock = new SystemClock(),
-    private readonly random: RandomSource = new SystemRandomSource(),
+    private readonly clock: Clock,
+    private readonly random: RandomSource,
   ) {
     super();
   }

@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type { RecordUsagePayload } from '@contracts/billing';
 import { IdGenerator, TransactionManager } from '@platform/kernel';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { UsageLedger } from '../domain/usage-ledger.js';
 
 /**
@@ -12,13 +12,13 @@ import { UsageLedger } from '../domain/usage-ledger.js';
 export class RecordUsage {
   constructor(
     private readonly ledger: UsageLedger,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
   ) {}
 
   execute(batch: RecordUsagePayload): Promise<number> {
-    return this.shard.run(batch.tenantId, () =>
+    return this.shard.inTenantShard(batch.tenantId, () =>
       this.transactions.runInTransaction(async () => {
         let applied = 0;
         for (const record of batch.records) {

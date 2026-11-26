@@ -1,14 +1,14 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { RepositoryKit } from '@platform/persistence';
 import { SearchIndex, SearchIndexFactory } from '@platform/search';
 import { ShardKey } from '@platform/sharding';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { CreateTask } from '../application/create-task.use-case.js';
 import { DeleteTask } from '../application/delete-task.use-case.js';
 import { GetTask } from '../application/get-task.query.js';
 import { ListTaskChanges } from '../application/list-task-changes.query.js';
 import { ListTasks } from '../application/list-tasks.query.js';
+import { TaskCursors } from '../application/task-cursors.js';
 import { LocalTasksFacade } from '../application/local-tasks.facade.js';
 import { PurgeDeletedTasksJob } from '../application/purge-deleted-tasks.job.js';
 import { TasksFacade } from '../application/tasks.facade.js';
@@ -21,9 +21,9 @@ import { TaskEntity } from '../infrastructure/persistence/entities/task.entity.j
 import { TypeOrmTaskMaintenance } from '../infrastructure/persistence/typeorm-task-maintenance.js';
 import { TypeOrmTaskRepository } from '../infrastructure/persistence/typeorm-task.repository.js';
 import { TasksController } from './tasks.controller.js';
+import { TasksSettings } from '../../../config/tasks-settings.js';
 
-/** Tenant tasks: routes, search, events and the purge of deleted ones. Global only for its facade. */
-@Global()
+/** Tenant tasks: routes, search, events and the purge of deleted ones. */
 @Module({
   imports: [
     PersistenceModule.forFeature({
@@ -33,7 +33,7 @@ import { TasksController } from './tasks.controller.js';
   ],
   controllers: [TasksController],
   providers: [
-    TenantShard,
+    TasksSettings,
     { provide: TaskRepository, useClass: TypeOrmTaskRepository },
     { provide: TaskMaintenance, useClass: TypeOrmTaskMaintenance },
     {
@@ -43,6 +43,7 @@ import { TasksController } from './tasks.controller.js';
       inject: [SearchIndexFactory, RepositoryKit],
     },
     { provide: TaskSearch, useClass: PlatformTaskSearch },
+    TaskCursors,
     ListTasks,
     GetTask,
     CreateTask,

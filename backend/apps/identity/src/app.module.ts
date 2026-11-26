@@ -11,7 +11,7 @@ import { IdentityEphemeralModule } from './ephemeral/identity-ephemeral.module.j
 import { IdentitySecurityModule } from './security/identity-security.module.js';
 import { IdentityConsumersModule } from './messaging/identity.consumers.js';
 import { IDENTITY_ERROR_CATALOGS } from './shared/constants/identity-error-catalogs.constants.js';
-import { IdentitySharedModule } from './shared/identity-shared.module.js';
+import { IdentitySignInModule } from './sign-in/identity-sign-in.module.js';
 import { AccessModule } from './modules/access/presentation/access.module.js';
 import { AlertsModule } from './modules/alerts/presentation/alerts.module.js';
 import { ApiKeysModule } from './modules/api-keys/presentation/api-keys.module.js';
@@ -32,7 +32,7 @@ import { UsersModule } from './modules/users/presentation/users.module.js';
 @Module({
   imports: [
     IdentityAuthModule,
-    IdentitySharedModule,
+    IdentitySignInModule,
     IdentitySecurityModule,
     IdentityEphemeralModule,
     FlagsModule.forRoot(),

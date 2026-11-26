@@ -1,4 +1,9 @@
-import { SystemClock, UuidV7IdGenerator } from '@platform/kernel';
+import { AssignedShardConnections } from '../../__tests__/utils/assigned-shard-connections.js';
+import {
+  SystemClock,
+  UuidV7IdGenerator,
+  SystemRandomSource,
+} from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { TenantWriteFence } from '@platform/persistence';
 import type { DataSource } from 'typeorm';
@@ -6,6 +11,7 @@ import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js
 import {
   LedgerManifest,
   LedgerWithAttemptsManifest,
+  LedgerWithPostingsManifest,
   LedgerWriter,
   TickingClock,
   TransferTestDatabases,
@@ -13,7 +19,7 @@ import {
 import { BatchTenantDataTransfer } from '../batch/batch-tenant-data-transfer.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 
-const ids = new UuidV7IdGenerator();
+const ids = new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource());
 const newId = (): string => ids.next().toString();
 
 const OPTIONS = {
@@ -85,8 +91,10 @@ new ContainerRuntime(process.env).describeIfAvailable(
   () => {
     jest.setTimeout(180_000);
     const databases = new TransferTestDatabases();
+    const connections = new AssignedShardConnections();
     const transfer = new BatchTenantDataTransfer(
       new LedgerManifest(),
+      connections,
       new SystemClock(),
       OPTIONS,
     );
@@ -108,7 +116,12 @@ new ContainerRuntime(process.env).describeIfAvailable(
     beforeEach(async () => {
       ({ source, target, sourceAdmin, targetAdmin } = await databases.pair());
       tenantId = newId();
-      move = { moveId: newId(), tenantId, source, target };
+      move = {
+        moveId: newId(),
+        tenantId,
+        source: connections.locationOf(source),
+        target: connections.locationOf(target),
+      };
     });
 
     it('copies every row of the tenant with its exact values and nothing of other tenants', async () => {
@@ -203,7 +216,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       await transfer.sync(move);
 
       await transfer.abort(move);
-      await transfer.cleanup(tenantId, source);
+      await transfer.cleanup(tenantId, connections.locationOf(source));
 
       for (const admin of [sourceAdmin, targetAdmin]) {
         await expect(snapshot(admin, tenantId)).resolves.toEqual({
@@ -219,6 +232,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       }
       const hurried = new BatchTenantDataTransfer(
         new LedgerManifest(),
+        connections,
         new SystemClock(),
         { ...OPTIONS, batchSize: 1, callBudgetMs: 1 },
       );
@@ -252,6 +266,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       }
       const hurried = new BatchTenantDataTransfer(
         new LedgerWithAttemptsManifest(),
+        connections,
         new TickingClock(),
         { ...OPTIONS, batchSize: 3, callBudgetMs: 6 },
       );
@@ -304,6 +319,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       );
       const hurried = new BatchTenantDataTransfer(
         new LedgerManifest(),
+        connections,
         new TickingClock(),
         { ...OPTIONS, batchSize: 3, callBudgetMs: 12, deltaMarginMs: 0 },
       );
@@ -332,6 +348,39 @@ new ContainerRuntime(process.env).describeIfAvailable(
       await expect(
         targetAdmin.query('SELECT 1 FROM tenant_move_checkpoints'),
       ).resolves.toEqual([]);
+    });
+
+    it('leaves the round pending when a child row reaches the target before a parent the round did not copy', async () => {
+      const lateLedger = newId();
+      await seedLedger(source, tenantId, '1', []);
+      const withPostings = new BatchTenantDataTransfer(
+        new LedgerWithPostingsManifest(),
+        connections,
+        new SystemClock(),
+        OPTIONS,
+      );
+      await withPostings.sync(move);
+      await sourceAdmin.query(
+        "INSERT INTO ledgers (id, tenant_id, name, total, updated_at) VALUES ($1, $2, 'late', 2, '2000-01-01T00:00:00Z')",
+        [lateLedger, tenantId],
+      );
+      await sourceAdmin.query(
+        'INSERT INTO postings (id, ledger_id, amount) VALUES ($1, $2, 5)',
+        [newId(), lateLedger],
+      );
+
+      await expect(withPostings.sync(move)).rejects.toMatchObject({
+        code: TenantMoveErrorCode.RoundPending,
+        retryable: true,
+      });
+
+      const verification = await withPostings.verify(move);
+      expect(verification.verified).toBe(true);
+      await expect(
+        targetAdmin.query(
+          'SELECT p.ledger_id FROM postings p JOIN ledgers l ON l.id = p.ledger_id',
+        ),
+      ).resolves.toEqual([{ ledger_id: lateLedger }]);
     });
 
     it('neither loses nor duplicates any row written while the tenant moves', async () => {

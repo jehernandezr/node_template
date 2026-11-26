@@ -3,7 +3,7 @@ import { VersionedEntity } from './versioned-entity.js';
 
 /**
  * Tenant entity: adds the tenant that owns the row and who created it and last changed it.
- * `ShardedRepository` fills the three fields from the request context.
+ * `TenantIsolatedRepository.insertOwned` and `updateOwned` fill the three fields from the scope and the request context.
  */
 export abstract class AuditedEntity extends VersionedEntity {
   @Column({ type: 'uuid', name: 'tenant_id', nullable: false })

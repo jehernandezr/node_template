@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import { RateLimitTier } from '@platform/http';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
@@ -13,10 +14,6 @@ import {
   type UpdateTenantRequest,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import {
-  requireUserActor,
-  userRefOf,
-} from '../../../shared/utils/user-actor.js';
 import { ListMyTenants } from '../application/list-my-tenants.use-case.js';
 import { StartTenantOnboarding } from '../application/start-tenant-onboarding.use-case.js';
 import { TenantReader } from '../application/tenant-reader.js';
@@ -44,7 +41,10 @@ export class TenantsController {
     @Input() input: CreateTenantRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<TenantCreation> {
-    return this.onboarding.execute(userRefOf(requireUserActor(actor)), input);
+    return this.onboarding.execute(
+      ActingUser.refOf(ActingUser.of(actor)),
+      input,
+    );
   }
 
   /**
@@ -56,7 +56,7 @@ export class TenantsController {
   async getTenant(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<TenantSummary> {
-    const user = requireUserActor(actor);
+    const user = ActingUser.of(actor);
     return TenantSummaryView.summary(await this.reader.get(user.tenantId));
   }
 
@@ -71,7 +71,7 @@ export class TenantsController {
     @Input() input: UpdateTenantRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<TenantSummary> {
-    return this.update.execute(requireUserActor(actor).tenantId, input);
+    return this.update.execute(ActingUser.of(actor).tenantId, input);
   }
 
   /**
@@ -83,6 +83,6 @@ export class TenantsController {
   listMyTenants(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<MyTenantPage> {
-    return this.mine.execute(userRefOf(requireUserActor(actor)));
+    return this.mine.execute(ActingUser.refOf(ActingUser.of(actor)));
   }
 }

@@ -1,3 +1,4 @@
+import { ActingMember } from '@platform/auth';
 import type { Actor } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import {
@@ -9,7 +10,6 @@ import {
   type ListInvoicesRequest,
 } from '@contracts/billing';
 import { BillingResource } from '../../../shared/enums/billing-resource.enum.js';
-import { ActingTenant } from '../../../shared/utils/acting-tenant.js';
 import { InvoiceQueries } from '../application/invoice-queries.js';
 
 @Resource(BillingResource.Invoices)
@@ -21,7 +21,7 @@ export class InvoicesController {
     @Input() input: ListInvoicesRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<InvoicePage> {
-    return this.queries.list(ActingTenant.of(actor), input);
+    return this.queries.list(ActingMember.of(actor).tenantId, input);
   }
 
   @Endpoint(GetInvoiceRoute)
@@ -29,6 +29,6 @@ export class InvoicesController {
     @Input() input: GetInvoiceRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<Invoice> {
-    return this.queries.get(ActingTenant.of(actor), input.invoiceId);
+    return this.queries.get(ActingMember.of(actor).tenantId, input.invoiceId);
   }
 }

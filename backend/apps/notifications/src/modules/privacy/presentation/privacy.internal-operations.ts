@@ -7,8 +7,7 @@ import {
 import type { HandlerResult } from '@platform/internal-api';
 import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
-import { UserShard } from '../../../shared/utils/user-shard.js';
-import { DeliveryRepository } from '../../dispatch/index.js';
+import { DispatchFacade } from '../../dispatch/index.js';
 import { InboxFacade } from '../../inbox/index.js';
 import { PreferencesFacade } from '../../preferences/index.js';
 
@@ -18,8 +17,7 @@ export class PrivacyInternalOperations {
   constructor(
     private readonly inbox: InboxFacade,
     private readonly preferences: PreferencesFacade,
-    private readonly deliveries: DeliveryRepository,
-    private readonly shard: UserShard,
+    private readonly dispatch: DispatchFacade,
   ) {}
 
   /** Repeating it changes nothing: nothing of the user remains. */
@@ -27,9 +25,7 @@ export class PrivacyInternalOperations {
   async eraseUserData(
     input: EraseNotificationsUserInput,
   ): Promise<HandlerResult<EraseNotificationsUserResult>> {
-    const deliveries = await this.shard.run(input.user, () =>
-      this.deliveries.erase(input.user.userId),
-    );
+    const deliveries = await this.dispatch.eraseUser(input.user);
     const notifications = await this.inbox.erase(input.user);
     const preferences = await this.preferences.erase(input.user);
     return {

@@ -1,4 +1,11 @@
-import { type Clock, type IdGenerator, SystemClock } from '@platform/kernel';
+import {
+  type Clock,
+  type IdGenerator,
+  SystemClock,
+  UuidV7IdGenerator,
+  SystemRandomSource,
+} from '@platform/kernel';
+import type { TraceContextRestorer } from '@platform/observability';
 import type {
   CommandDefinition,
   EventDefinition,
@@ -28,8 +35,8 @@ export interface InMemoryBusOptions {
   readonly clock?: Clock;
   /** Envelope id generator. Defaults to UUIDv7. */
   readonly ids?: IdGenerator;
-  /** Source of the default `traceparent`. Defaults to the one of the active span. */
-  readonly traceparent?: () => string | undefined;
+  /** Source of the default `traceparent`. */
+  readonly restorer: TraceContextRestorer;
 }
 
 /** Message waiting in a queue. */
@@ -76,8 +83,10 @@ export class InMemoryBus implements MessageBus {
     this.factory = new OutboundMessageFactory(topology, {
       source: options.source,
       clock: this.clockSource,
-      ...(options.ids ? { ids: options.ids } : {}),
-      ...(options.traceparent ? { traceparent: options.traceparent } : {}),
+      ids:
+        options.ids ??
+        new UuidV7IdGenerator(this.clockSource, new SystemRandomSource()),
+      restorer: options.restorer,
     });
     for (const queue of topology.queues) {
       this.queues.set(queue.name, []);

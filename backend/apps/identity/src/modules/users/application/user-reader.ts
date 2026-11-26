@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { IdentityErrorCode } from '@contracts/identity';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { normalizeEmail } from '../../../shared/utils/email-normalization.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { EmailFingerprinter } from '../domain/email-fingerprinter.js';
@@ -18,7 +18,7 @@ export class UserReader {
     private readonly users: UserRepository,
     private readonly directory: UserDirectory,
     private readonly fingerprints: EmailFingerprinter,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   async findByEmail(email: string): Promise<UserSnapshot | undefined> {

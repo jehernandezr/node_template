@@ -6,6 +6,7 @@ export * from './config-loader.js';
 export * from './config-registry.js';
 export * from './config-section.js';
 export * from './registry-app-config.js';
+export * from './root-settings.js';
 export * from './enums/deploy-environment.enum.js';
 export * from './enums/node-env.enum.js';
 export * from './env.js';

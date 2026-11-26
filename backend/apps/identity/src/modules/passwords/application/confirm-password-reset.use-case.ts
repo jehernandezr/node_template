@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -7,7 +8,6 @@ import {
 } from '@contracts/identity';
 import { TransactionManager } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SecurityAlerts } from '../../alerts/index.js';
 import { SessionsFacade } from '../../sessions/index.js';
 import { UsersFacade } from '../../users/index.js';
@@ -30,7 +30,7 @@ export class ConfirmPasswordReset {
     private readonly users: UsersFacade,
     private readonly sessions: SessionsFacade,
     private readonly alerts: SecurityAlerts,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 

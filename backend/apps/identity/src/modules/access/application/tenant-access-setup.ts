@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { UsageMetric } from '@contracts/billing';
 import {
@@ -11,7 +12,6 @@ import { MessageBus } from '@platform/messaging';
 import { QuotaExceededError } from '@platform/quotas';
 import { SystemRolePermissions } from '../../../shared/constants/system-roles.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import {
   TenantAccessRepository,
@@ -41,7 +41,7 @@ export class TenantAccessSetup {
     private readonly tenantAccess: TenantAccessRepository,
     private readonly userAccess: UserAccessRepository,
     private readonly versions: AccessVersionPublisher,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
     private readonly ids: IdGenerator,

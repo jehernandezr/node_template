@@ -1,5 +1,7 @@
+import { KernelModule } from '@platform/kernel/nest';
 import { Global, Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { MetricsPort } from '@platform/observability';
 import { ResilienceModule } from '@platform/resilience/nest';
 import { JobRunner, SchedulingMode } from '@platform/scheduling';
 import { SchedulingModule } from '@platform/scheduling/nest';
@@ -129,7 +131,11 @@ describe('MessagingModule', () => {
   describe('when the module is imported with the outbox bus', () => {
     beforeEach(async () => {
       moduleRef = await Test.createTestingModule({
-        imports: [TestPlatformModule, MessagingModule.forRoot(rootOptions())],
+        imports: [
+          KernelModule,
+          TestPlatformModule,
+          MessagingModule.forRoot(rootOptions()),
+        ],
       }).compile();
     });
 
@@ -153,6 +159,7 @@ describe('MessagingModule', () => {
   it('uses the bus given in the bus option instead of the outbox bus', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         TestPlatformModule,
         DirectBusModule,
         MessagingModule.forRoot(rootOptions({ bus: DirectBus })),
@@ -165,6 +172,7 @@ describe('MessagingModule', () => {
   it('builds the options with a factory in forRootAsync and dispatches', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        KernelModule,
         TestPlatformModule,
         ConsumerModule,
         MessagingModule.forRootAsync({
@@ -191,10 +199,12 @@ describe('MessagingModule', () => {
     beforeEach(async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestPlatformModule,
           ResilienceModule.forRoot(),
           SchedulingModule.forRoot({
             logger: SilentLogger,
+            metrics: MetricsPort,
             mode: SchedulingMode.External,
           }),
           MessagingModule.forRoot(
@@ -234,6 +244,7 @@ describe('MessagingModule', () => {
     it('sends a message of another tenant to the dead letter with TenantMismatch', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestPlatformModule,
           ConsumerModule,
           MessagingModule.forRoot(
@@ -256,6 +267,7 @@ describe('MessagingModule', () => {
     it('sends a message to the dead letter when the tenant verifier rejects it', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestPlatformModule,
           TenantVerifierModule,
           ConsumerModule,
@@ -281,6 +293,7 @@ describe('MessagingModule', () => {
     it('claims and runs the handler inside the context opened for the envelope', async () => {
       moduleRef = await Test.createTestingModule({
         imports: [
+          KernelModule,
           TestPlatformModule,
           DeliveryContextModule,
           ConsumerModule,

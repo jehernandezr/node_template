@@ -1,5 +1,9 @@
 import { FixedClock } from '@platform/kernel/test-utils';
-import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
+import {
+  BackoffStrategy,
+  FailureClassifier,
+  RetryPolicy,
+} from '@platform/primitives';
 import { BulkheadFullError } from '../../errors/bulkhead-full.error.js';
 import { CircuitOpenError } from '../../errors/circuit-open.error.js';
 import { InvalidPolicyError } from '../../errors/invalid-policy.error.js';
@@ -22,7 +26,12 @@ function build(
   overrides: Record<string, Partial<ResiliencePolicyConfig>> = {},
 ): PolicyRegistry {
   const clock = new FixedClock();
-  return new PolicyRegistry(clock, new ResilienceEventBus(clock), overrides);
+  return new PolicyRegistry(
+    clock,
+    new ResilienceEventBus(clock),
+    new FailureClassifier(),
+    overrides,
+  );
 }
 
 describe('PolicyRegistry', () => {

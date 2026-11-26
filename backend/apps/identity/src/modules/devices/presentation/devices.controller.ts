@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import { HttpProblemError } from '@platform/http';
 import type { Actor } from '@platform/auth';
@@ -17,10 +18,6 @@ import {
   type UntrustDeviceRequest,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import {
-  requireUserActor,
-  userRefOf,
-} from '../../../shared/utils/user-actor.js';
 import { DeviceApprovalsUseCase } from '../application/device-approvals.use-case.js';
 import { ManageMyDevices } from '../application/manage-my-devices.use-case.js';
 
@@ -33,7 +30,7 @@ export class DevicesController {
 
   @Endpoint(ListDevicesRoute)
   listDevices(@CurrentActor() actor: Actor | undefined): Promise<DevicePage> {
-    return this.mine.list(userRefOf(requireUserActor(actor)));
+    return this.mine.list(ActingUser.refOf(ActingUser.of(actor)));
   }
 
   @Endpoint(RemoveDeviceRoute)
@@ -41,7 +38,10 @@ export class DevicesController {
     @Input() input: RemoveDeviceRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    await this.mine.remove(userRefOf(requireUserActor(actor)), input.deviceId);
+    await this.mine.remove(
+      ActingUser.refOf(ActingUser.of(actor)),
+      input.deviceId,
+    );
   }
 
   @Endpoint(UntrustDeviceRoute)
@@ -49,7 +49,10 @@ export class DevicesController {
     @Input() input: UntrustDeviceRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    await this.mine.untrust(userRefOf(requireUserActor(actor)), input.deviceId);
+    await this.mine.untrust(
+      ActingUser.refOf(ActingUser.of(actor)),
+      input.deviceId,
+    );
   }
 
   /** The current device is the session's (`did`); a session without a device has no one to notify. */
@@ -58,12 +61,12 @@ export class DevicesController {
     @Input() input: PushTokenRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    const user = requireUserActor(actor);
+    const user = ActingUser.of(actor);
     if (user.deviceId === undefined) {
       throw HttpProblemError.notFound();
     }
     await this.mine.setPushToken(
-      userRefOf(user),
+      ActingUser.refOf(user),
       user.deviceId,
       input.pushToken,
     );

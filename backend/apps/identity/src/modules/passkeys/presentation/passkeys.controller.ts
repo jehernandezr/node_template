@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import {
   CurrentActor,
   Endpoint,
@@ -36,11 +37,7 @@ import {
   type StepUpResult,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { SessionDelivery } from '../../../shared/utils/session-delivery.js';
-import {
-  requireUserActor,
-  userRefOf,
-} from '../../../shared/utils/user-actor.js';
+import { SessionDelivery } from '../../../sign-in/session-delivery.js';
 import { ManagePasskeys } from '../application/manage-passkeys.use-case.js';
 import { PasskeyAuthentication } from '../application/passkey-authentication.use-case.js';
 
@@ -123,7 +120,7 @@ export class PasskeysController {
   ): Promise<PasskeyOptions> {
     return this.authentication.stepUpOptions(
       input.mfaToken,
-      requireUserActor(actor).sessionId,
+      ActingUser.of(actor).sessionId,
     );
   }
 
@@ -140,7 +137,7 @@ export class PasskeysController {
   ): Promise<StepUpResult> {
     return this.authentication.stepUpVerify(
       input,
-      requireUserActor(actor).sessionId,
+      ActingUser.of(actor).sessionId,
     );
   }
 
@@ -151,7 +148,7 @@ export class PasskeysController {
    */
   @Endpoint(ListPasskeysRoute)
   listPasskeys(@CurrentActor() actor: Actor | undefined): Promise<PasskeyPage> {
-    return this.passkeys.list(userRefOf(requireUserActor(actor)));
+    return this.passkeys.list(ActingUser.refOf(ActingUser.of(actor)));
   }
 
   /**
@@ -164,7 +161,7 @@ export class PasskeysController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<PasskeyOptions> {
     return this.passkeys.registrationOptions(
-      userRefOf(requireUserActor(actor)),
+      ActingUser.refOf(ActingUser.of(actor)),
     );
   }
 
@@ -179,7 +176,10 @@ export class PasskeysController {
     @Input() input: RegisterPasskeyRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<PasskeySummary> {
-    return this.passkeys.register(userRefOf(requireUserActor(actor)), input);
+    return this.passkeys.register(
+      ActingUser.refOf(ActingUser.of(actor)),
+      input,
+    );
   }
 
   /**
@@ -193,7 +193,7 @@ export class PasskeysController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.passkeys.remove(
-      userRefOf(requireUserActor(actor)),
+      ActingUser.refOf(ActingUser.of(actor)),
       input.passkeyId,
     );
   }

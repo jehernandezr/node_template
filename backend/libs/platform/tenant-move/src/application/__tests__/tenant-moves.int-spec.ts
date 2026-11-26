@@ -1,5 +1,9 @@
 import { platformShardMigrations } from '@platform/adapters-postgres';
-import { UuidV7IdGenerator } from '@platform/kernel';
+import {
+  UuidV7IdGenerator,
+  SystemClock,
+  SystemRandomSource,
+} from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { SagaStatus } from '@platform/saga';
 import { TenantStatus } from '@platform/sharding';
@@ -13,7 +17,7 @@ import {
 } from '../../__tests__/utils/index.js';
 import { LedgerShardMigration1900000000030 } from '../../nest/__tests__/utils/index.js';
 
-const ids = new UuidV7IdGenerator();
+const ids = new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource());
 const newId = (): string => ids.next().toString();
 
 /** Repeats the step while its round does not finish within the call's deadline, like the saga. */

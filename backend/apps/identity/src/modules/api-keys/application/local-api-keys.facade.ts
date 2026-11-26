@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { ServiceAccountStatus, type Permission } from '@contracts/identity';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { ApiKeyDirectory, ApiKeyRepository } from '../domain/api-key-store.js';
 import { ApiKeysFacade } from './api-keys.facade.js';
 
@@ -10,7 +10,7 @@ export class LocalApiKeysFacade extends ApiKeysFacade {
   constructor(
     private readonly directory: ApiKeyDirectory,
     private readonly repository: ApiKeyRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {
     super();
   }

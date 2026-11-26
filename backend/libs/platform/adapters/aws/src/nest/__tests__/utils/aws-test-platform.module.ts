@@ -1,3 +1,5 @@
+import { TestDispatcherParts } from '@platform/messaging/test-utils';
+import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@platform/config/nest';
 import { MessageDispatcher } from '@platform/messaging';
@@ -29,11 +31,15 @@ import { TestTopology } from '../../../__tests__/utils/test-topology.js';
     },
     {
       provide: MessageDispatcher,
-      useValue: new MessageDispatcher({
-        consumer: 'reports-work',
-        processed: new InMemoryProcessedMessageStore(),
-        topology: TestTopology.topology,
-      }),
+      useValue: new MessageDispatcher(
+        {
+          clock: new SystemClock(),
+          consumer: 'reports-work',
+          processed: new InMemoryProcessedMessageStore(),
+          topology: TestTopology.topology,
+        },
+        TestDispatcherParts.with(new SystemRandomSource()),
+      ),
     },
   ],
   exports: [LoggerPort, TraceContextRestorer, MessageDispatcher],

@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import { ShardingErrorCode } from '../../errors/sharding-error-code.enum.js';
 import {
   InMemoryDirectoryStore,
@@ -13,7 +14,11 @@ describe('ShardRouterAssembler', () => {
 
   describe('assemble', () => {
     it('builds every part from a directory alone', () => {
-      const parts = ShardRouterAssembler.assemble({ directory });
+      const parts = ShardRouterAssembler.assemble({
+        clock: new SystemClock(),
+        strategy: new ConsistentHashStrategy(),
+        directory,
+      });
 
       expect(parts).toMatchObject({
         clock: expect.anything(),
@@ -41,7 +46,12 @@ describe('ShardRouterAssembler', () => {
       async (option, overrides) => {
         await expect(
           AsyncCall.run(() =>
-            ShardRouterAssembler.assemble({ directory, ...overrides }),
+            ShardRouterAssembler.assemble({
+              clock: new SystemClock(),
+              strategy: new ConsistentHashStrategy(),
+              directory,
+              ...overrides,
+            }),
           ),
         ).rejects.toMatchObject({
           code: ShardingErrorCode.InvalidConfiguration,
@@ -51,7 +61,11 @@ describe('ShardRouterAssembler', () => {
     );
 
     it('accepts the default tenant pattern for TestTenants.One and rejects a short id', async () => {
-      const { normalizer } = ShardRouterAssembler.assemble({ directory });
+      const { normalizer } = ShardRouterAssembler.assemble({
+        clock: new SystemClock(),
+        strategy: new ConsistentHashStrategy(),
+        directory,
+      });
 
       expect(normalizer.tenantId(TestTenants.One)).toBe(TestTenants.One);
       await expect(
@@ -63,6 +77,7 @@ describe('ShardRouterAssembler', () => {
       const strategy = new ConsistentHashStrategy();
 
       const parts = ShardRouterAssembler.assemble({
+        clock: new SystemClock(),
         directory,
         currentRegion: 'eu',
         strategy,

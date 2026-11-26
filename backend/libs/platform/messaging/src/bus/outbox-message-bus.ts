@@ -1,6 +1,5 @@
 import {
   type Clock,
-  SystemClock,
   type TransactionManager,
   type UnitOfWork,
 } from '@platform/kernel';
@@ -56,7 +55,7 @@ export class OutboxMessageBus implements MessageBus {
   constructor(options: OutboxMessageBusOptions) {
     options.topology.assertValid();
     this.options = options;
-    this.clock = options.clock ?? new SystemClock();
+    this.clock = options.clock;
     this.factory = new OutboundMessageFactory(options.topology, {
       ...options,
       clock: this.clock,

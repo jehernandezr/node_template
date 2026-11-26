@@ -1,10 +1,24 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
+import { FailureClassifier } from '@platform/primitives';
+import { PolicyName, ResilienceRegistryFactory } from '@platform/resilience';
 import { randomUUID } from 'node:crypto';
 import { PartitionedBloomFilter } from '@platform/bloom';
-import { CacheAside, VersionedKeyspace } from '@platform/cache';
+import {
+  CacheAside,
+  NoTransactionScope,
+  VersionedKeyspace,
+  CallerWait,
+  SingleFlight,
+  TtlJitter,
+} from '@platform/cache';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
-import { HealthState, SystemRandomSource } from '@platform/kernel';
-import { PolicyName, ResilienceRegistry } from '@platform/resilience';
+import {
+  HealthState,
+  SystemRandomSource,
+  SystemClock,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import {
   ShardAccess,
   ShardKey,
@@ -56,7 +70,12 @@ const PREFIX = 'orders';
  * lives much longer than the test and its expiry does not come into play.
  */
 const CACHE_ASIDE_ENTRY_TTL_MS = 10 * 60_000;
-const CACHE_ASIDE_CALL_BUDGET_MS = 10_000;
+/**
+ * Per-attempt and total budget of the cache policy in the CacheAside test. The default
+ * policy cuts a call at 100 ms, and a loaded server answering later would turn reads
+ * into absorbed direct loads.
+ */
+const CACHE_ASIDE_LOADED_SERVER_BUDGET_MS = 10_000;
 const keyspace = new ValkeyKeyspace(PREFIX);
 const T1 = '01941f29-7c00-7000-8000-000000000001';
 const READ = {
@@ -188,7 +207,13 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
     it('agrees on one version token among concurrent first readers', async () => {
       const keyspaces = Array.from(
         { length: 10 },
-        () => new VersionedKeyspace(cache()),
+        () =>
+          new VersionedKeyspace(cache(), {
+            ids: new UuidV7IdGenerator(
+              new SystemClock(),
+              new SystemRandomSource(),
+            ),
+          }),
       );
       const tokens = await Promise.all(
         keyspaces.map((versions) => versions.version(['t1', 'orders'])),
@@ -196,22 +221,40 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       expect(new Set(tokens).size).toBe(1);
     });
 
-    it('serves CacheAside reads and invalidations', async () => {
+    it('serves CacheAside reads and invalidations from the server without absorbing failures', async () => {
       const absorbed = new RecordingCacheErrorReporter();
       const store = cache();
-      const aside = new CacheAside(store, new VersionedKeyspace(store), {
-        // The default policy cuts each call at 100 ms and the whole call at 200 ms; with
-        // all the suites in parallel a Valkey reply takes longer, CacheAside absorbs it by loading
-        // directly and the load count changes. This test is about the round trip to the server, not the deadlines:
-        // both budgets are widened together (widening only the attempt one leaves the total at 200 ms).
-        resilience: new ResilienceRegistry({
-          [PolicyName.Cache.value]: {
-            timeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
-            totalTimeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
-          },
+      const aside = new CacheAside(
+        store,
+        new VersionedKeyspace(store, {
+          ids: new UuidV7IdGenerator(
+            new SystemClock(),
+            new SystemRandomSource(),
+          ),
         }),
-        reporter: absorbed,
-      });
+        {
+          resilience: new ResilienceRegistryFactory().create(
+            {
+              [PolicyName.Cache.value]: {
+                timeoutMs: CACHE_ASIDE_LOADED_SERVER_BUDGET_MS,
+                totalTimeoutMs: CACHE_ASIDE_LOADED_SERVER_BUDGET_MS,
+              },
+            },
+            {
+              clock: new SystemClock(),
+              random: new SystemRandomSource(),
+              classifier: new FailureClassifier(),
+            },
+          ),
+        },
+        {
+          transactions: new NoTransactionScope(),
+          reporter: absorbed,
+          wait: new CallerWait(new SystemClock()),
+          singleFlight: new SingleFlight(new CallerWait(new SystemClock())),
+          jitter: new TtlJitter(new SystemRandomSource()),
+        },
+      );
       const loader = new CountingLoader({ total: 3 });
       const read = () =>
         aside.getOrLoad({
@@ -222,7 +265,6 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
         });
 
       await expect(read()).resolves.toEqual({ total: 3 });
-      // The write is not awaited: it polls until a read comes from the cache.
       await PollUntil.run(async () => {
         const loads = loader.calls;
         await read();
@@ -235,7 +277,6 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       await aside.invalidate(['t1', 'orders']);
       await read();
       expect(loader.calls).toBe(cachedLoads + 1);
-      // If something was absorbed, the load count no longer proves the round trip to the server: say so.
       expect(absorbed.errors).toEqual([]);
     });
   });
@@ -286,10 +327,14 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
         getInstance: (shard: string) => store.getInstance(shard),
       };
       const reader = new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
+        clock: new SystemClock(),
         directory: slowDirectory,
         sharedCache: routingCache(),
       });
       const mover = new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
+        clock: new SystemClock(),
         directory: store,
         sharedCache: routingCache(),
       });
@@ -304,6 +349,8 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       });
 
       const fresh = new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
+        clock: new SystemClock(),
         directory: store,
         sharedCache: routingCache(),
       });
@@ -335,11 +382,15 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       };
 
       const mover = new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
+        clock: new SystemClock(),
         directory: store,
         sharedCache: routingCache(),
         changes: channel(),
       });
       const other = new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
+        clock: new SystemClock(),
         directory: store,
         sharedCache: routingCache(),
       });

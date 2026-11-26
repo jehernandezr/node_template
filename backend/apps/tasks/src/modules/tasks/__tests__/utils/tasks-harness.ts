@@ -1,24 +1,18 @@
+import { CursorCodec, IdCursor } from '@platform/criteria';
 import type { UserRef } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   InMemoryTransactionManager,
   RecordingMessageBus,
 } from '@platform/messaging/test-utils';
-import {
-  Redactor,
-  RequestContextStore,
-  Tracing,
-} from '@platform/observability';
-import { ShardScope } from '@platform/persistence';
-import { ShardRouter } from '@platform/sharding';
-import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
-import { TenantShard } from '../../../../shared/utils/tenant-shard.js';
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { CreateTask } from '../../application/create-task.use-case.js';
 import { DeleteTask } from '../../application/delete-task.use-case.js';
 import { GetTask } from '../../application/get-task.query.js';
 import { ListTaskChanges } from '../../application/list-task-changes.query.js';
 import { ListTasks } from '../../application/list-tasks.query.js';
 import { UpdateTask } from '../../application/update-task.use-case.js';
+import { TaskCursors } from '../../application/task-cursors.js';
 import { InMemoryTaskRepository } from './in-memory-task.repository.js';
 import { InMemoryTaskSearch } from './in-memory-task-search.js';
 
@@ -38,13 +32,9 @@ export class TasksHarness {
   readonly clock = new FixedClock(new Date('2026-11-20T10:00:00.000Z'));
   readonly transactions = new InMemoryTransactionManager();
   readonly bus = new RecordingMessageBus(this.transactions);
-  private readonly scope = new ShardScope(
-    new ShardRouter({ directory: new InMemoryDirectoryStore() }),
-  );
-  private readonly shard = new TenantShard(
-    this.scope,
-    new RequestContextStore(new Tracing(new Redactor())),
-  );
+  private readonly scopes = new UnroutedShardScopes();
+  private readonly scope = this.scopes.scope;
+  private readonly shard = this.scopes.scopes;
   readonly tasks = new InMemoryTaskRepository(this.scope);
   readonly search = new InMemoryTaskSearch(this.tasks);
   private readonly ids = new SequentialIdGenerator();
@@ -75,8 +65,18 @@ export class TasksHarness {
     this.clock,
   );
   readonly get = new GetTask(this.tasks, this.shard);
-  readonly list = new ListTasks(this.tasks, this.search, this.shard);
-  readonly changes = new ListTaskChanges(this.tasks, this.shard);
+  private readonly codec = new CursorCodec();
+  private readonly cursors = new TaskCursors(
+    new IdCursor(this.codec),
+    this.codec,
+  );
+  readonly list = new ListTasks(
+    this.tasks,
+    this.search,
+    this.shard,
+    this.cursors,
+  );
+  readonly changes = new ListTaskChanges(this.tasks, this.shard, this.cursors);
 
   /** Creates a task by Ana in the main tenant. */
   aTask(title = 'Prepare the meeting', description = 'With the client') {

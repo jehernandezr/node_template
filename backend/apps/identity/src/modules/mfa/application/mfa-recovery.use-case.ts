@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   AuthMethodReference,
@@ -15,7 +16,6 @@ import { IdentityDefaults } from '../../../shared/constants/identity-defaults.co
 import { IdentityEmailTemplate } from '../../../shared/enums/identity-email-template.enum.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { PendingAuthentication } from '../../../shared/types/pending-authentication.type.js';
 import { IdentityMailer, SecurityAlerts } from '../../alerts/index.js';
 import { DevicesFacade } from '../../devices/index.js';
@@ -47,7 +47,7 @@ export class MfaRecoveryUseCase {
     private readonly alerts: SecurityAlerts,
     private readonly generator: SecretGenerator,
     private readonly hasher: SecretHasher,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly settings: IdentitySettings,

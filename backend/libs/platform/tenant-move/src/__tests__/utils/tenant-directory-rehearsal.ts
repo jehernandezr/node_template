@@ -1,5 +1,9 @@
 import type { TenantDirectoryOperations } from '@contracts/platform';
-import { UuidV7IdGenerator } from '@platform/kernel';
+import {
+  UuidV7IdGenerator,
+  SystemClock,
+  SystemRandomSource,
+} from '@platform/kernel';
 import type { CallOutcome } from '@platform/primitives';
 import {
   ProvisionedService,
@@ -30,7 +34,10 @@ export interface TenantDirectoryReport {
  * tenant twice in the second group and removes it twice, like a repeated compensation.
  */
 export class TenantDirectoryRehearsal {
-  private readonly ids = new UuidV7IdGenerator();
+  private readonly ids = new UuidV7IdGenerator(
+    new SystemClock(),
+    new SystemRandomSource(),
+  );
 
   constructor(
     private readonly operations: TenantDirectoryOperations,

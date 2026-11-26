@@ -27,6 +27,10 @@ class RecordingDispatch extends DispatchFacade {
     this.commands.push(command);
     return [];
   }
+
+  async eraseUser(): Promise<number> {
+    return 0;
+  }
 }
 
 class FixedMembers extends TenantMembers {

@@ -1,3 +1,4 @@
+import { ActingMember, ActingUser } from '@platform/auth';
 import { RateLimitTier } from '@platform/http';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
@@ -13,11 +14,6 @@ import {
   type RevokeInvitationRequest,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import {
-  requireUserActor,
-  tenantOfActor,
-  userRefOf,
-} from '../../../shared/utils/user-actor.js';
 import { AcceptInvitation } from '../application/accept-invitation.use-case.js';
 import { InviteUser } from '../application/invite-user.use-case.js';
 import { ManageInvitations } from '../application/manage-invitations.use-case.js';
@@ -42,7 +38,7 @@ export class InvitationsController {
     @Input() input: InviteUserRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<InvitationSummary> {
-    return this.invite.execute(tenantOfActor(actor), actor, input);
+    return this.invite.execute(ActingMember.of(actor).tenantId, actor, input);
   }
 
   /**
@@ -54,7 +50,7 @@ export class InvitationsController {
   listInvitations(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<InvitationPage> {
-    return this.manage.list(tenantOfActor(actor));
+    return this.manage.list(ActingMember.of(actor).tenantId);
   }
 
   /**
@@ -67,7 +63,10 @@ export class InvitationsController {
     @Input() input: RevokeInvitationRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    await this.manage.revoke(tenantOfActor(actor), input.invitationId);
+    await this.manage.revoke(
+      ActingMember.of(actor).tenantId,
+      input.invitationId,
+    );
   }
 
   /**
@@ -80,6 +79,9 @@ export class InvitationsController {
     @Input() input: AcceptInvitationRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    await this.accept.execute(userRefOf(requireUserActor(actor)), input.token);
+    await this.accept.execute(
+      ActingUser.refOf(ActingUser.of(actor)),
+      input.token,
+    );
   }
 }

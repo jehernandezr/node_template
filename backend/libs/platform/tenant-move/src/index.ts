@@ -1,5 +1,6 @@
 export * from './activity/open-saga-activity.js';
 export * from './application/tenant-move-activity.js';
+export * from './application/tenant-move-fence.js';
 export * from './application/tenant-move-listener.js';
 export * from './application/tenant-move-shards.js';
 export * from './application/tenant-moves.js';
@@ -10,6 +11,7 @@ export * from './directory/tenant-data-presence.js';
 export * from './directory/tenant-directory-entries.js';
 export * from './directory/tenant-shard-groups.js';
 export * from './errors/tenant-move-error-catalog.js';
+export * from './fence/shard-tenant-move-fence.js';
 export * from './errors/tenant-move-error-code.enum.js';
 export * from './errors/tenant-move.error.js';
 export * from './manifest/merged-tenant-move-manifest.js';

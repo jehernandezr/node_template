@@ -5,6 +5,7 @@ import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js
 import {
   LedgerManifest,
   LedgersOnlyManifest,
+  AssignedShardConnections,
 } from '../../__tests__/utils/index.js';
 import { MergedTenantMoveManifest } from '../../manifest/merged-tenant-move-manifest.js';
 import { PlatformTenantMoveManifest } from '../../manifest/platform-tenant-move-manifest.js';
@@ -18,22 +19,21 @@ const settingsFor = (strategy: TenantMoveStrategy) =>
   tenantMoveConfigSchema.parse({ TENANT_MOVE_STRATEGY: strategy });
 
 describe('TenantDataTransferSelector', () => {
-  const selector = new TenantDataTransferSelector();
   const clock = new FixedClock();
+  const connections = new AssignedShardConnections();
+  const selector = new TenantDataTransferSelector(connections, clock);
 
   it('copies by batches unless the logical replication is chosen, and then copies the platform tables by batches', () => {
     expect(
       selector.select(
         settingsFor(TenantMoveStrategy.Batch),
         new LedgerManifest(),
-        clock,
       ),
     ).toBeInstanceOf(BatchTenantDataTransfer);
     expect(
       selector.select(
         settingsFor(TenantMoveStrategy.LogicalReplication),
         new LedgersOnlyManifest(),
-        clock,
       ),
     ).toBeInstanceOf(CompositeTenantDataTransfer);
   });
@@ -59,7 +59,6 @@ describe('TenantDataTransferSelector', () => {
       selector.select(
         settingsFor(TenantMoveStrategy.LogicalReplication),
         new LedgerManifest(),
-        clock,
       ),
     ).toBeInstanceOf(BatchTenantDataTransfer);
   });
@@ -69,12 +68,18 @@ describe('TenantDataTransferSelector', () => {
       () =>
         new LogicalReplicationTransfer(
           new LedgerManifest(),
-          new BatchTenantDataTransfer(new LedgerManifest(), clock, {
-            batchSize: 1,
-            callBudgetMs: 1_000,
-            deltaMarginMs: 0,
-            caughtUpRows: 0,
-          }),
+          new BatchTenantDataTransfer(
+            new LedgerManifest(),
+            connections,
+            clock,
+            {
+              batchSize: 1,
+              callBudgetMs: 1_000,
+              deltaMarginMs: 0,
+              caughtUpRows: 0,
+            },
+          ),
+          connections,
           clock,
           { callBudgetMs: 1_000, caughtUpBytes: 0, lockTimeoutMs: 1_000 },
         ),

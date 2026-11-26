@@ -2,7 +2,7 @@ import type {
   TenantMoveProgress,
   TenantMoveVerification,
 } from '@contracts/platform';
-import type { DataSource } from 'typeorm';
+import type { ShardLocation } from '@platform/persistence';
 import type { TenantTransfer } from './tenant-transfer.js';
 import type { TransferBudget } from './transfer-budget.js';
 
@@ -32,14 +32,14 @@ export abstract class TenantDataTransfer {
    */
   abstract cleanup(
     tenantId: string,
-    source: DataSource,
+    source: ShardLocation,
     budget?: TransferBudget,
   ): Promise<void>;
 
   /** Sets to `region` the region columns the manifest declares, in the tenant rows on `target`. */
   abstract assignRegion(
     tenantId: string,
-    target: DataSource,
+    target: ShardLocation,
     region: string,
   ): Promise<void>;
 }

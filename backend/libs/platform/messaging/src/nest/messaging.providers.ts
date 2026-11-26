@@ -3,10 +3,7 @@ import {
   Clock,
   IdGenerator,
   RandomSource,
-  SystemClock,
-  SystemRandomSource,
   TransactionManager,
-  UuidV7IdGenerator,
 } from '@platform/kernel';
 import { TraceContextRestorer, Tracing } from '@platform/observability';
 import { FailureClassifier } from '@platform/primitives';
@@ -35,14 +32,6 @@ export class MessagingProviders {
       Pick<MessagingModuleExtras, 'outboxStore' | 'processedStore'>
     >;
     return [
-      { provide: Clock, useFactory: () => new SystemClock() },
-      { provide: RandomSource, useFactory: () => new SystemRandomSource() },
-      {
-        provide: IdGenerator,
-        useFactory: (clock: Clock, random: RandomSource) =>
-          new UuidV7IdGenerator(clock, random),
-        inject: [Clock, RandomSource],
-      },
       { provide: OutboxStore, useExisting: outboxStore },
       { provide: OutboxWriter, useExisting: outboxStore },
       { provide: ProcessedMessageStore, useExisting: processedStore },
@@ -68,8 +57,8 @@ export class MessagingProviders {
         random: RandomSource,
         tracing: Tracing,
         restorer: TraceContextRestorer,
+        failures: FailureClassifier,
         verifier: TenantVerifier | undefined,
-        failures: FailureClassifier | undefined,
         deliveryContext: DeliveryContext | undefined,
       ) =>
         new MessageDispatcher(
@@ -93,7 +82,7 @@ export class MessagingProviders {
             random,
             tracing,
             restorer,
-            ...(failures === undefined ? {} : { failures }),
+            failures,
           },
         ),
       inject: [
@@ -103,8 +92,8 @@ export class MessagingProviders {
         RandomSource,
         Tracing,
         TraceContextRestorer,
+        FailureClassifier,
         { token: TenantVerifier, optional: true },
-        { token: FailureClassifier, optional: true },
         { token: DeliveryContext, optional: true },
       ],
     };
@@ -133,7 +122,7 @@ export class MessagingProviders {
           transactions,
           clock,
           ids,
-          traceparent: () => restorer.current(),
+          restorer,
           ...(relay && runner !== undefined
             ? { onCommitted: () => runner.trigger(MessagingJob.OutboxRelay) }
             : {}),

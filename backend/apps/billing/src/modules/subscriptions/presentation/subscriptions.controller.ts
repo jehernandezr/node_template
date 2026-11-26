@@ -1,3 +1,4 @@
+import { ActingMember } from '@platform/auth';
 import type { Actor } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import {
@@ -7,7 +8,6 @@ import {
   type Subscription,
 } from '@contracts/billing';
 import { BillingResource } from '../../../shared/enums/billing-resource.enum.js';
-import { ActingTenant } from '../../../shared/utils/acting-tenant.js';
 import { ChangePlan } from '../application/change-plan.use-case.js';
 import { SubscriptionViews } from '../application/subscription-views.js';
 import { SubscriptionsFacade } from '../application/subscriptions.facade.js';
@@ -22,7 +22,7 @@ export class SubscriptionsController {
   @Endpoint(GetSubscriptionRoute)
   async get(@CurrentActor() actor: Actor | undefined): Promise<Subscription> {
     return SubscriptionViews.of(
-      await this.subscriptions.current(ActingTenant.of(actor)),
+      await this.subscriptions.current(ActingMember.of(actor).tenantId),
     );
   }
 
@@ -32,7 +32,10 @@ export class SubscriptionsController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<Subscription> {
     return SubscriptionViews.of(
-      await this.changePlan.execute(ActingTenant.of(actor), input.planId),
+      await this.changePlan.execute(
+        ActingMember.of(actor).tenantId,
+        input.planId,
+      ),
     );
   }
 }

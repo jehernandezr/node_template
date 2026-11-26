@@ -31,28 +31,29 @@ export interface CacheAsideOptions {
    */
   readonly resilience: CacheResilience;
   /**
-   * Inside a transaction the cache is skipped and `load` runs directly: the
-   * transaction may see uncommitted rows that must not reach other
-   * readers, and a cached value would hide its own writes.
-   */
-  readonly transactions?: CacheTransactions;
-  /** Receives the failures absorbed by loading directly. Does nothing by default. */
-  readonly reporter?: CacheErrorReporter;
-  /**
    * Key of the circuit and of the isolation bulkhead within the policy,
    * for example one per Valkey cluster. Defaults to the policy name.
    */
   readonly dependencyKey?: string;
 }
 
-/** Optional dependencies of `CacheAside`. If missing, they are created with system values. */
+/** Collaborators of `CacheAside`, all required and built by the caller. */
 export interface CacheAsideCollaborators {
   /** Shared load deduplicator. */
-  readonly singleFlight?: SingleFlight;
+  readonly singleFlight: SingleFlight;
   /** Random spread of the TTL. */
-  readonly jitter?: TtlJitter;
+  readonly jitter: TtlJitter;
   /** Wait of each caller. */
-  readonly wait?: CallerWait;
+  readonly wait: CallerWait;
+  /**
+   * Inside a transaction the cache is skipped and `load` runs directly: the
+   * transaction may see uncommitted rows that must not reach other
+   * readers, and a cached value would hide its own writes. `NoTransactionScope`
+   * keeps the cache always active.
+   */
+  readonly transactions: CacheTransactions;
+  /** Receives the failures absorbed by loading directly. `NoopCacheErrorReporter` discards them. */
+  readonly reporter: CacheErrorReporter;
 }
 
 /**

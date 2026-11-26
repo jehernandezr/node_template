@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { IdentityErrorCode } from '@contracts/identity';
 import { Clock, TransactionManager, UseCase } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import {
   EmailProofPurpose,
   EmailProofStore,
@@ -15,7 +15,7 @@ export class ConfirmEmailVerification implements UseCase<string, void> {
   constructor(
     private readonly proofs: EmailProofStore,
     private readonly users: UserRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
   ) {}

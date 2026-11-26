@@ -1,11 +1,10 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { InvoiceIssuedEvent } from '@contracts/billing';
-import { AppConfig } from '@platform/config';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import type { BillingConfig } from '../../../config/billing.config.js';
+import { BillingSettings } from '../../../config/billing-settings.js';
 import { BillingDefaults } from '../../../shared/constants/billing-defaults.constants.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { SubscriptionsFacade } from '../../subscriptions/index.js';
 import { UsageFacade } from '../../usage/index.js';
 import { InvoiceComposer } from '../domain/invoice-composer.js';
@@ -27,17 +26,17 @@ export class IssueInvoice {
     private readonly subscriptions: SubscriptionsFacade,
     private readonly usage: UsageFacade,
     private readonly bus: MessageBus,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
-    config: AppConfig,
+    settings: BillingSettings,
   ) {
-    this.series = config.root<BillingConfig>().BILLING_INVOICE_SERIES;
+    this.series = settings.values.BILLING_INVOICE_SERIES;
   }
 
   execute(tenantId: string, today: string): Promise<InvoiceState | undefined> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         const closed = await this.subscriptions.closePeriod(tenantId, today);
         if (closed === undefined) {

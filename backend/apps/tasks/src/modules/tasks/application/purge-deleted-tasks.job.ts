@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { AppConfig } from '@platform/config';
 import {
   Clock,
   JobScheduleKind,
   ScheduledJob,
   type JobSchedule,
 } from '@platform/kernel';
-import type { TasksConfig } from '../../../config/tasks.config.js';
+import { TasksSettings } from '../../../config/tasks-settings.js';
 import { TasksJob } from '../../../shared/enums/tasks-job.enum.js';
 import { TaskMaintenance } from '../domain/task-maintenance.js';
 
@@ -26,11 +25,11 @@ export class PurgeDeletedTasksJob extends ScheduledJob {
   constructor(
     private readonly maintenance: TaskMaintenance,
     private readonly clock: Clock,
-    config: AppConfig,
+    settings: TasksSettings,
   ) {
     super();
     this.retentionMs =
-      config.root<TasksConfig>().TASKS_DELETED_RETENTION_DAYS *
+      settings.values.TASKS_DELETED_RETENTION_DAYS *
       PurgeDeletedTasksJob.DAY_MS;
   }
 

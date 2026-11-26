@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { TransactionManager } from '@platform/kernel';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { PlansFacade } from '../../plans/index.js';
 import { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { ClosedSubscriptionPeriod } from './current-subscription.js';
@@ -11,7 +11,7 @@ export class CloseSubscriptionPeriod {
   constructor(
     private readonly subscriptions: SubscriptionRepository,
     private readonly plans: PlansFacade,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 
@@ -20,7 +20,7 @@ export class CloseSubscriptionPeriod {
     tenantId: string,
     today: string,
   ): Promise<ClosedSubscriptionPeriod | undefined> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         const subscription = await this.subscriptions.find();
         if (

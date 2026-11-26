@@ -1,5 +1,10 @@
+import { FixedTraceContextRestorer } from '@platform/observability/test-utils';
 import { defineEvent } from '@contracts/platform';
-import { SystemClock, SystemRandomSource } from '@platform/kernel';
+import {
+  SystemClock,
+  SystemRandomSource,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { NoopMetrics } from '@platform/observability';
 import { InProcessJobLock, JobRunner } from '@platform/scheduling';
@@ -57,6 +62,7 @@ describe('OutboxRelayJob woken by a commit', () => {
       routes: [Route.event(UserRegistered).to(events)],
     });
     const relay = new OutboxRelay({
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
       store,
       publisher,
       topology,
@@ -75,12 +81,13 @@ describe('OutboxRelayJob woken by a commit', () => {
     instance.register(new OutboxRelayJob(relay, new SingleRelayScope()));
     instance.start();
     const bus = new OutboxMessageBus({
+      ids: new UuidV7IdGenerator(new SystemClock(), new SystemRandomSource()),
       topology,
       writer: store,
       transactions,
       source: '/services/users',
       clock,
-      traceparent: () => undefined,
+      restorer: new FixedTraceContextRestorer(),
       onCommitted: () => instance.trigger(MessagingJob.OutboxRelay),
     });
 

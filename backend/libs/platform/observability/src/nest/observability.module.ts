@@ -1,13 +1,6 @@
 import { AppConfig, ServiceConfig } from '@platform/config';
 import { ConfigModule } from '@platform/config/nest';
-import {
-  Clock,
-  IdGenerator,
-  RandomSource,
-  SystemClock,
-  SystemRandomSource,
-  UuidV7IdGenerator,
-} from '@platform/kernel';
+import { Clock, IdGenerator, RandomSource } from '@platform/kernel';
 import { Global, Module, type DynamicModule } from '@nestjs/common';
 import { RequestContextStore } from '../context/request-context-store.js';
 import { LoggingConfig } from '../config/logging.config.js';
@@ -54,14 +47,6 @@ import { TelemetryShutdownHook } from './telemetry-shutdown.hook.js';
     ConfigModule.forFeature(TelemetryConfig),
   ],
   providers: [
-    { provide: Clock, useFactory: () => new SystemClock() },
-    { provide: RandomSource, useFactory: () => new SystemRandomSource() },
-    {
-      provide: IdGenerator,
-      useFactory: (clock: Clock, random: RandomSource) =>
-        new UuidV7IdGenerator(clock, random),
-      inject: [Clock, RandomSource],
-    },
     { provide: Redactor, useFactory: () => new Redactor() },
     {
       provide: Tracing,

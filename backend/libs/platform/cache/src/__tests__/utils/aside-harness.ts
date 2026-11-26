@@ -3,7 +3,10 @@ import {
   FixedRandomSource,
   SequentialIdGenerator,
 } from '@platform/kernel/test-utils';
+import { SystemClock } from '@platform/kernel';
 import { CacheAside } from '../../cache-aside.js';
+import { CallerWait } from '../../caller-wait.js';
+import { SingleFlight } from '../../single-flight.js';
 import { TtlJitter } from '../../ttl-jitter.js';
 import { VersionedKeyspace } from '../../versioned-keyspace.js';
 import { FakeCachePort } from './fake-cache-port.js';
@@ -18,18 +21,21 @@ export class AsideHarness {
   readonly resilience = new FakeResilience();
   readonly transactions = new FakeTransactionManager();
   readonly reporter = new RecordingCacheErrorReporter();
+  private readonly wait = new CallerWait(new SystemClock());
   readonly keyspace = new VersionedKeyspace(this.cache, {
     ids: new SequentialIdGenerator(),
   });
   readonly aside = new CacheAside(
     this.cache,
     this.keyspace,
+    { resilience: this.resilience },
     {
-      resilience: this.resilience,
       transactions: this.transactions,
       reporter: this.reporter,
+      jitter: new TtlJitter(new FixedRandomSource([0.5])),
+      wait: this.wait,
+      singleFlight: new SingleFlight(this.wait),
     },
-    { jitter: new TtlJitter(new FixedRandomSource([0.5])) },
   );
 
   /** Lets background writes run: microtasks only, no timers. */

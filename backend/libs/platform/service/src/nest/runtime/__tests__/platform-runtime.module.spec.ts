@@ -1,3 +1,5 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
+import { SystemClock } from '@platform/kernel';
 import { FailureClassifier } from '@platform/primitives';
 import type { FactoryProvider } from '@nestjs/common';
 import {
@@ -46,7 +48,7 @@ import {
 import type { Provider } from '@nestjs/common';
 import { ServiceDefinitionBuilder } from '../../../__tests__/utils/index.js';
 import { HealthModule } from '../../health/health.module.js';
-import { PlatformKernelModule } from '../platform-kernel.module.js';
+import { KernelModule } from '@platform/kernel/nest';
 import { PlatformRuntimeModule } from '../platform-runtime.module.js';
 import { ImportedModules } from './utils/index.js';
 
@@ -67,7 +69,7 @@ describe('PlatformRuntimeModule', () => {
           UseCaseRunner,
           ServiceRegions,
         ]);
-        expect(ImportedModules.of(dynamic)[0]).toBe(PlatformKernelModule);
+        expect(ImportedModules.of(dynamic)[0]).toBe(KernelModule);
       });
 
       it('does not import the Valkey or AWS adapters', () => {
@@ -198,6 +200,8 @@ describe('PlatformRuntimeModule', () => {
         const factoryOf = (token: unknown) =>
           providers.find((provider) => provider.provide === token)?.useFactory;
         const router = new ShardRouter({
+          strategy: new ConsistentHashStrategy(),
+          clock: new SystemClock(),
           directory: new InMemoryDirectoryStore(),
         });
         const built = [

@@ -1,5 +1,5 @@
 import type { TenantMoveRef } from '@contracts/platform';
-import type { ShardDataSources } from '@platform/persistence';
+import type { ShardLocation } from '@platform/persistence';
 import {
   ShardAccess,
   ShardKey,
@@ -7,18 +7,16 @@ import {
   type ShardRouter,
   type TenantPlacement,
 } from '@platform/sharding';
-import type { DataSource } from 'typeorm';
 import { TenantMoveErrorCode } from '../errors/tenant-move-error-code.enum.js';
 import { TenantMoveError } from '../errors/tenant-move.error.js';
 import type { TenantMoveTarget } from '../targets/tenant-move-target.js';
 import type { TenantMoveTargets } from '../targets/tenant-move-targets.js';
 
-/** The source shard of a tenant and its target shard, with their `DataSource`. */
+/** The source shard of a tenant and its target shard. */
 export class TenantMoveShards {
   constructor(
     private readonly router: ShardRouter,
     private readonly directory: DirectoryStore,
-    private readonly sources: ShardDataSources,
     private readonly targets: TenantMoveTargets,
   ) {}
 
@@ -26,7 +24,7 @@ export class TenantMoveShards {
    * @throws TenantMoveError `NotMovable` if the tenant spreads its data across several shards or already lives on the target.
    * @throws WrongRegionError if the tenant does not live in this process's region.
    */
-  async source(move: TenantMoveRef): Promise<DataSource> {
+  async source(move: TenantMoveRef): Promise<ShardLocation> {
     const target = this.targets.of(move);
     const placement = await this.router.placement(move.tenantId);
     const [only, ...rest] = placement.shardGroup;
@@ -42,11 +40,11 @@ export class TenantMoveShards {
       keyKind: ShardKey.Tenant,
       access: ShardAccess.Read,
     });
-    return this.sources.get(resolved);
+    return { logicalShard: resolved.logicalShard, instance: resolved.instance };
   }
 
   /** @throws TenantMoveError `UnknownTarget` if the group is not configured or its shard is not in the directory. */
-  async target(move: TenantMoveRef): Promise<DataSource> {
+  async target(move: TenantMoveRef): Promise<ShardLocation> {
     const target = this.targets.of(move);
     const instance = await this.directory.getInstance(target.shard);
     if (instance === undefined) {
@@ -56,7 +54,7 @@ export class TenantMoveShards {
         { shard: target.shard },
       );
     }
-    return this.sources.get({ logicalShard: target.shard, instance });
+    return { logicalShard: target.shard, instance };
   }
 
   /** The tenant placement as the service directory stores it, bypassing the router cache. */

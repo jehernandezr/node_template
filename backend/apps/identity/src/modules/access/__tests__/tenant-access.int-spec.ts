@@ -11,7 +11,7 @@ import {
   MessageDispatcher,
   MessagingErrorCode,
 } from '@platform/messaging';
-import { SessionSetting } from '@platform/persistence';
+import { SessionSetting, ShardScopes } from '@platform/persistence';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { DataSource } from 'typeorm';
 import {
@@ -22,7 +22,6 @@ import {
 } from '../../../__tests__/utils/index.js';
 import { SystemRolePermissions } from '../../../shared/constants/system-roles.constants.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { AccessFacade } from '../application/access.facade.js';
 import { ManageMembers } from '../application/manage-members.use-case.js';
 import { TenantAccessSetup } from '../application/tenant-access-setup.js';
@@ -279,7 +278,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
     }
 
     const memberships = await app
-      .get(IdentityShardScopes)
+      .get(ShardScopes)
       .inTenantShard(first.tenantId, () =>
         app.get(TenantAccessRepository).listMemberships(),
       );
@@ -295,7 +294,7 @@ runtime.describeIfAvailable('tenant access on two shards', () => {
     const [lower, higher] = [firstOwner.userId, secondOwner.userId].sort();
     const page = (after: string | undefined) =>
       app
-        .get(IdentityShardScopes)
+        .get(ShardScopes)
         .inTenantShard(tenantId, () =>
           app.get(TenantAccessRepository).listMembershipsAfter(after, 1),
         );

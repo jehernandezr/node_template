@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -7,7 +8,6 @@ import {
 } from '@contracts/identity';
 import { IdGenerator, TransactionManager } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
 import type { Group } from '../domain/group.js';
 import { AccessVersionPublisher } from './access-version-publisher.js';
@@ -23,7 +23,7 @@ export class ManageGroups {
     private readonly tenantAccess: TenantAccessRepository,
     private readonly versions: AccessVersionPublisher,
     private readonly ceiling: GrantCeiling,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
   ) {}

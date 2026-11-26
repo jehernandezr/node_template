@@ -5,12 +5,11 @@ import {
   InMemoryTransactionManager,
   RecordingMessageBus,
 } from '@platform/messaging/test-utils';
-import { ShardScope } from '@platform/persistence';
-import { ShardRouter } from '@platform/sharding';
-import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
-import { UserShard } from '../../../../shared/utils/user-shard.js';
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { ChannelDeliverer } from '../../application/channel-deliverer.js';
 import type { NotifyCommand } from '../../application/notify-command.js';
+import { EraseUserDeliveries } from '../../application/erase-user-deliveries.use-case.js';
+import { LocalDispatchFacade } from '../../application/local-dispatch.facade.js';
 import { NotifyUser } from '../../application/notify-user.use-case.js';
 import { RetryDeliveriesJob } from '../../application/retry-deliveries.job.js';
 import { DeliveryStatus } from '../../domain/delivery.js';
@@ -69,11 +68,7 @@ export class DispatchHarness {
   readonly push = new RecordingPush();
   readonly transactions = new InMemoryTransactionManager();
   readonly bus = new RecordingMessageBus(this.transactions);
-  private readonly shard = new UserShard(
-    new ShardScope(
-      new ShardRouter({ directory: new InMemoryDirectoryStore() }),
-    ),
-  );
+  private readonly shard = UnroutedShardScopes.create();
   private readonly deliverer = new ChannelDeliverer(
     this.email,
     this.push,
@@ -93,6 +88,10 @@ export class DispatchHarness {
     this.transactions,
     this.ids,
     this.clock,
+  );
+  readonly facade = new LocalDispatchFacade(
+    this.notifyUser,
+    new EraseUserDeliveries(this.deliveries, this.shard),
   );
   readonly retry = new RetryDeliveriesJob(
     new InMemoryFailedDeliveries(this.deliveries),

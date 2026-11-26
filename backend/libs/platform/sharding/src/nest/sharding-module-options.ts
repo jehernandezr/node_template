@@ -4,14 +4,18 @@ import type { DirectoryWriter } from '../ports/directory-writer.js';
 import type { RoutingCache } from '../ports/routing-cache.js';
 import type { ShardDirectoryChannel } from '../ports/shard-directory-channel.js';
 import type { ShardRouterOptions } from '../router/shard-router-options.js';
+import type { ShardingStrategy } from '../sharding-strategy.js';
 import type { TenantWriteGate } from '../ports/tenant-write-gate.js';
 import type { TenantWriteWaiterOptions } from '../write-gate/tenant-write-waiter-options.js';
 
 /** `ShardRouter` settings the service can change; the module wires the rest. */
 export type ShardRouterTuning = Omit<
   ShardRouterOptions,
-  'directory' | 'sharedCache' | 'changes' | 'clock'
->;
+  'directory' | 'sharedCache' | 'changes' | 'clock' | 'strategy'
+> & {
+  /** Picks the shard within a group. Defaults to the module's `ConsistentHashStrategy`. */
+  readonly strategy?: ShardingStrategy;
+};
 
 /**
  * `ShardingModule` options that can come from configuration, so

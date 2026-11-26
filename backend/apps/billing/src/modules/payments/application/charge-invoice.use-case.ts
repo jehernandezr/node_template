@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { Clock, IdGenerator } from '@platform/kernel';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import type { PaymentAttempt } from '../domain/payment-attempt.js';
 import { PaymentAttempts } from '../domain/payment-attempts.js';
 import {
@@ -24,7 +24,7 @@ export class ChargeInvoice {
   constructor(
     private readonly provider: PaymentProvider,
     private readonly attempts: PaymentAttempts,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
   ) {}
@@ -37,7 +37,7 @@ export class ChargeInvoice {
    *   its result.
    */
   async execute(request: ChargeRequest): Promise<PaymentResult> {
-    const existing = await this.shard.run(request.tenantId, () =>
+    const existing = await this.shard.inTenantShard(request.tenantId, () =>
       this.attempts.find(request.invoiceId, request.attempt),
     );
     if (existing === undefined) {
@@ -57,7 +57,7 @@ export class ChargeInvoice {
       status: PaymentStatus.Requested,
       requestedAt: this.clock.now(),
     };
-    const reserved = await this.shard.run(request.tenantId, () =>
+    const reserved = await this.shard.inTenantShard(request.tenantId, () =>
       this.attempts.reserve(attempt),
     );
     if (!reserved) {
@@ -96,7 +96,7 @@ export class ChargeInvoice {
     attemptId: string,
     result: PaymentResult,
   ): Promise<void> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.attempts.resolve(attemptId, result),
     );
   }

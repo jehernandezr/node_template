@@ -1,4 +1,4 @@
-import { TestShardScopes } from '../../../../__tests__/utils/index.js';
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { Permission, TenantRole } from '@contracts/identity';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { TenantAccessRepository } from '../../domain/access-store.js';
@@ -132,7 +132,7 @@ describe('ListMembersByPermission', () => {
       [admins, reading],
       [managers, readers],
     ),
-    TestShardScopes.create(),
+    UnroutedShardScopes.create(),
   );
   const refOf = (membership: Membership): object => ({
     userId: membership.userId,
