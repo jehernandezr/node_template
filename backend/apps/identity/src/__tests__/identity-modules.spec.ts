@@ -1,10 +1,11 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Type } from '@nestjs/common';
+import type { DynamicModule, ForwardReference, Type } from '@nestjs/common';
 import {
   GLOBAL_MODULE_METADATA,
   MODULE_METADATA,
 } from '@nestjs/common/constants.js';
+import { AppModule } from '../app.module.js';
 import { AlertsModule } from '../modules/alerts/presentation/alerts.module.js';
 
 /** A business module found in `modules/<name>/presentation/<file>.module.ts`. */
@@ -67,6 +68,100 @@ class BusinessModules {
   }
 }
 
+/** A module import resolved to its class, whether it is global and the imports it brings. */
+interface ResolvedImport {
+  readonly type: Type<unknown>;
+  readonly global: boolean;
+  readonly imports: readonly unknown[];
+}
+
+/** Resolves module imports as Nest accepts them: a class, a dynamic module, a forward reference or a promise of one. */
+class ModuleImports {
+  /** Resolves one import entry, or returns `undefined` when it is not a module. */
+  static async resolve(entry: unknown): Promise<ResolvedImport | undefined> {
+    const awaited: unknown = await entry;
+    if (ModuleImports.isForwardReference(awaited)) {
+      return ModuleImports.resolve(awaited.forwardRef());
+    }
+    if (typeof awaited === 'function') {
+      const type = awaited as Type<unknown>;
+      return {
+        type,
+        global: ModuleImports.isGlobal(type),
+        imports: ModuleImports.declaredImports(type),
+      };
+    }
+    if (ModuleImports.isDynamicModule(awaited)) {
+      return {
+        type: awaited.module,
+        global:
+          awaited.global === true || ModuleImports.isGlobal(awaited.module),
+        imports: [
+          ...ModuleImports.declaredImports(awaited.module),
+          ...(awaited.imports ?? []),
+        ],
+      };
+    }
+    return undefined;
+  }
+
+  /** Resolves every module reachable from `root`, each class or dynamic module once. */
+  static async reachableFrom(root: Type<unknown>): Promise<ResolvedImport[]> {
+    const seen = new Set<unknown>();
+    const found: ResolvedImport[] = [];
+    const pending: unknown[] = [root];
+    while (pending.length > 0) {
+      const entry = await ModuleImports.unwrap(pending.pop());
+      if (seen.has(entry)) {
+        continue;
+      }
+      seen.add(entry);
+      const resolved = await ModuleImports.resolve(entry);
+      if (resolved !== undefined) {
+        found.push(resolved);
+        pending.push(...resolved.imports);
+      }
+    }
+    return found;
+  }
+
+  private static async unwrap(entry: unknown): Promise<unknown> {
+    const awaited: unknown = await entry;
+    return ModuleImports.isForwardReference(awaited)
+      ? ModuleImports.unwrap(awaited.forwardRef())
+      : awaited;
+  }
+
+  private static declaredImports(type: Type<unknown>): readonly unknown[] {
+    return (
+      (Reflect.getMetadata(MODULE_METADATA.IMPORTS, type) as
+        unknown[] | undefined) ?? []
+    );
+  }
+
+  private static isGlobal(type: Type<unknown>): boolean {
+    return Reflect.getMetadata(GLOBAL_MODULE_METADATA, type) === true;
+  }
+
+  private static isForwardReference(
+    value: unknown,
+  ): value is ForwardReference<() => unknown> {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      typeof (value as Partial<ForwardReference>).forwardRef === 'function'
+    );
+  }
+
+  private static isDynamicModule(value: unknown): value is DynamicModule {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      typeof (value as Partial<DynamicModule>).module === 'function'
+    );
+  }
+}
+
 describe('identity business modules', () => {
   let modules: BusinessModule[];
 
@@ -81,33 +176,35 @@ describe('identity business modules', () => {
     ).toBeGreaterThanOrEqual(7);
   });
 
-  it('are not global: each one imports the modules whose facades it uses', () => {
-    const globals = modules.filter(
-      (module) =>
-        Reflect.getMetadata(GLOBAL_MODULE_METADATA, module.type) === true,
-    );
+  it('are not global: each one imports the modules whose facades it uses', async () => {
+    const business = new Set(modules.map((module) => module.type));
+    const globals = (await ModuleImports.reachableFrom(AppModule))
+      .filter((module) => business.has(module.type) && module.global)
+      .map((module) => module.type.name);
 
-    expect(globals.map((module) => module.type.name)).toEqual([]);
+    expect(globals).toEqual([]);
   });
 
-  it('keep the core modules importing only other core modules or the alerts', () => {
+  it('keep the core modules importing only other core modules or the alerts', async () => {
     const business = new Map(modules.map((module) => [module.type, module]));
-    const crossings = modules
-      .filter((module) => module.core)
-      .flatMap((module) =>
-        (
-          (Reflect.getMetadata(MODULE_METADATA.IMPORTS, module.type) as
-            unknown[] | undefined) ?? []
-        )
-          .map((imported) => business.get(imported as Type<unknown>))
-          .filter(
-            (imported): imported is BusinessModule =>
-              imported !== undefined &&
-              !imported.core &&
-              imported.type !== AlertsModule,
-          )
-          .map((imported) => `${module.type.name} -> ${imported.type.name}`),
-      );
+    const crossings: string[] = [];
+    for (const module of modules.filter((candidate) => candidate.core)) {
+      const declared =
+        (Reflect.getMetadata(MODULE_METADATA.IMPORTS, module.type) as
+          unknown[] | undefined) ?? [];
+      for (const entry of declared) {
+        const imported = business.get(
+          (await ModuleImports.resolve(entry))?.type as Type<unknown>,
+        );
+        if (
+          imported !== undefined &&
+          !imported.core &&
+          imported.type !== AlertsModule
+        ) {
+          crossings.push(`${module.type.name} -> ${imported.type.name}`);
+        }
+      }
+    }
 
     expect(crossings).toEqual([]);
   });
