@@ -1190,7 +1190,7 @@ If the process dies between step 1 and step 3, the record stays in `Dispatched`.
 **Recovery**
 
 - Whoever runs a saga takes a lease (`lease_owner`, `lease_until` = now + 30 s) and renews it while working.
-- `SagaRecoveryJob` runs every minute and when each instance starts, as a `ScheduledJob` in the worker in every environment ([ADR 0039](adr/0039-runtime-matrix-per-service.md)). It walks the shards with `AcrossShards`, takes with `FOR UPDATE SKIP LOCKED` the active sagas with an expired lease or a due `next_attempt_at` and resumes them from the log. The owning service resumes it, without depending on whoever invoked it.
+- `SagaRecoveryJob` runs every 5 seconds ([ADR 0008](adr/0008-orchestrated-sagas-persistent-log.md), [ADR 0026](adr/0026-scheduled-jobs-scheduledjob-joblock.md)) and when each instance starts, as a `ScheduledJob` in the worker in every environment ([ADR 0039](adr/0039-runtime-matrix-per-service.md)). It walks the shards with `AcrossShards`, takes with `FOR UPDATE SKIP LOCKED` the active sagas with an expired lease or a due `next_attempt_at` and resumes them from the log. The owning service resumes it, without depending on whoever invoked it.
 - Asynchronous steps (reply through a queue) stay in `WaitingReply`, correlated by the key. If the reply takes longer than the contract declares, recovery resends the command with the same key.
 
 **How it reacts to each result**
@@ -1341,22 +1341,22 @@ The `billing` service computes what each tenant must pay and tracks the status o
 
 The infrastructure lives in `backend/infra/terraform` and is organized in reusable modules, stacks with their own state and per-environment values ([ADR 0020](adr/0020-terraform-stacks-and-runtime-per-service.md)). The details of variables, outputs and commands are in the [Terraform README](../backend/infra/terraform/README.md).
 
-| Stack                            | Resources                                                                                                                                                                                                     |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `global`                         | One per account: GitHub OIDC provider and roles, ECR repositories, the artifacts bucket, the environment hosted zone and the CloudFront certificate (F12, [ADR 0042](adr/0042-region-and-catalog-model.md))   |
-| `network`                        | VPC with public, private and data subnets, NAT according to `egress`, VPC endpoints and flow logs                                                                                                             |
-| `platform`                       | Alarm topic and budget; ECS cluster; OpenObserve; HTTP API Gateway with its origin authorizer; internal ALB for Fargate APIs and VPC link; real-time ALB; VPC Lattice service network (F12); file bucket; SES |
-| `data`                           | RDS PostgreSQL with RDS Proxy and replicas, one database per shard and one catalog per service; Valkey; client security group                                                                                 |
-| `messaging`                      | Topics, queues and DLQs read from `topology.json`, and the SES events queue                                                                                                                                   |
-| `edge`                           | CloudFront with WAF for the Flutter web app and the API, and the DNS records                                                                                                                                  |
-| `service-base` (one per service) | Roles, log groups, the service's secrets and the settings of its one-off tasks (`migrate`, `seed`), applied before `service` (F12, [ADR 0043](adr/0043-deploy-migrations-and-rollback.md))                    |
-| `service` (one per service)      | API (Lambda or Fargate) and its routes, real time, Fargate workers, Lambda consumers, IAM derived from the topology, logs and alarms                                                                          |
+| Stack                            | Resources                                                                                                                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `global`                         | One per account: GitHub OIDC provider and roles, ECR repositories, the artifacts bucket, the environment hosted zone and the CloudFront certificate (F12, [ADR 0042](adr/0042-region-and-catalog-model.md))         |
+| `network`                        | VPC with public, private and data subnets, NAT according to `egress`, VPC endpoints and flow logs                                                                                                                   |
+| `platform`                       | Alarm topic and budget; ECS cluster; OpenObserve; HTTP API Gateway with its origin authorizer; internal ALB for Fargate APIs and VPC link; real-time ALB; VPC Lattice service network (F12); file bucket; SES       |
+| `data`                           | RDS PostgreSQL with RDS Proxy and replicas, one database per shard and one catalog per service; Valkey; client security group                                                                                       |
+| `messaging`                      | Topics, queues and DLQs read from `topology.json`, and the SES events queue                                                                                                                                         |
+| `edge`                           | CloudFront with WAF for the Flutter web app and the API, and the DNS records                                                                                                                                        |
+| `service-base` (one per service) | Roles, log groups, security groups, the service's secrets, its shared environment and its one-off tasks (`migrate`, `seed`), applied before `service` (F12, [ADR 0043](adr/0043-deploy-migrations-and-rollback.md)) |
+| `service` (one per service)      | API (Lambda or Fargate) and its routes, real time, Fargate workers, Lambda consumers, IAM derived from the topology, logs and alarms                                                                                |
 
 **Stacks and environments**
 
-- Each stack has its `config.tf` with an empty S3 backend, its `remote_state.tf` to read the previous ones and the same `variables_common.tf`. The values live in `environments/<environment>/<stack>/{backend.tfvars,terraform.tfvars}`; a service's, in `environments/<environment>/services/<service>/`.
+- Each stack has its `config.tf` with an empty S3 backend, its `remote_state.tf` to read the previous ones and the same `variables_common.tf`. The values live in `environments/<environment>/<stack>/{backend.tfvars,terraform.tfvars}`; a service's, in `environments/<environment>/services/<service>/` for `service` and `environments/<environment>/services/<service>/base/` for `service-base`.
 - The deployment order is global, network, platform, data, messaging, edge and then, per service, `service-base`, its one-off tasks and `service`. Deploying a service neither plans nor applies the network, the database or the platform.
-- Environments `local` (LocalStack), `dev`, `staging` and `prod`. The key of each state is `<region>/<stack>/terraform.tfstate`, and `global/terraform.tfstate` for the `global` stack of each account: another region is another set of states with the same code.
+- Environments `local` (LocalStack), `dev`, `staging` and `prod`. The key of each state is `<region>/<stack>/terraform.tfstate`, `<region>/services/<service>/terraform.tfstate` and `<region>/services/<service>/base/terraform.tfstate` for a service's two stacks, and `global/terraform.tfstate` for the `global` stack of each account: another region is another set of states with the same code.
 - `backend/infra/scripts/deploy-aws.sh` runs plan, apply or destroy per stack or per service, with `environments/<env>/common.tfvars` before the stack's own values (F12); `local.sh` starts Docker and applies the local environment.
 - Terraform `>= 1.11` and AWS provider `>= 6.0, < 7.0`. CI uses the version in `.terraform-version` and tflint the one in `.tflint-version`.
 
@@ -1390,7 +1390,7 @@ The `terraform` job in `ci.yml` runs when `backend/infra/**` changes: `terraform
 
 **Deployment pipeline**
 
-`deploy.yml` runs on GitHub Actions with OIDC to AWS, on top of `deploy-aws.sh`. Today it plans and applies in one job; F12 rebuilds it as [ADR 0043](adr/0043-deploy-migrations-and-rollback.md) sets: one artifact per commit promoted by digest, saved plans applied after approval, migrations as a one-off Fargate task, rollback by digest and smoke tests after each deploy. The cycles are in the [F12 plan](plan/f12-infra-and-deployment.md).
+`deploy.yml` runs on GitHub Actions with OIDC to AWS, on top of `deploy-aws.sh`. Today it plans and applies in one job; F12 rebuilds it as [ADR 0043](adr/0043-deploy-migrations-and-rollback.md) sets: one artifact per commit promoted by digest, a preview and one approval per environment, then each stack planned and applied in order, migrations as a one-off Fargate task, rollback by digest and smoke tests after each deploy. The cycles are in the [F12 plan](plan/f12-infra-and-deployment.md).
 
 **Local development**
 
