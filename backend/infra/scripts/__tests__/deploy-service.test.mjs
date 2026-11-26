@@ -35,13 +35,17 @@ describe('deploy-service.sh dry run', () => {
     assert.doesNotMatch(output, /aws s3 cp/);
     assert.doesNotMatch(output, /s3api/);
     assert.match(output, /docker build .*--platform linux\/arm64 /);
+    assert.doesNotMatch(output, /create-repository|describe-repositories/);
   });
 
   it('fixture-lambda publishes the package to S3, no image, then migrates, plans and applies', () => {
     const { status, lines } = runner.run(DEPLOY, ['dev', 'fixture-lambda']);
     assert.equal(status, 0);
     const output = lines.join('\n');
-    assert.match(output, /aws s3 cp .*fixture-lambda-abc1234\.zip/);
+    assert.match(
+      output,
+      /aws s3 cp \S+fixture-lambda-abc1234\.zip s3:\/\/fixture-artifacts\/lambda\/fixture-lambda\/abc1234\.zip/,
+    );
     assert.match(output, /zip -qr/);
     assert.match(
       output,
