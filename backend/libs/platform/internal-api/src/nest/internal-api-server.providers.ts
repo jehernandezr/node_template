@@ -36,6 +36,11 @@ import { INTERNAL_API_OPTIONS } from './internal-api.module-definition.js';
 
 /** Server-side providers: router, idempotency, unit of work, authentication and retention. */
 export class InternalApiServerProviders {
+  /**
+   * Builds the providers of the internal server: router, idempotency gate and authenticator.
+   * @param extras Store and signer adapters.
+   * @returns The providers.
+   */
   static build(extras: ResolvedInternalApiExtras): Provider[] {
     return [
       { provide: ProcessedOperationStore, useExisting: extras.processedStore },

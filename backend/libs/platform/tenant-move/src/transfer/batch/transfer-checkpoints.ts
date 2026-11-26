@@ -19,6 +19,13 @@ export interface TableCheckpoint {
  * in one call's budget finishes over several.
  */
 export class TransferCheckpoints {
+  /**
+   * Reads what a previous call left done of a table's verification.
+   * @param runner Connection of the target.
+   * @param moveId Move.
+   * @param table Table to read.
+   * @returns The checkpoint.
+   */
   async read(
     runner: QueryRunner,
     moveId: string,
@@ -52,7 +59,13 @@ export class TransferCheckpoints {
     };
   }
 
-  /** Records up to which key the table was reconciled; without a key, reconciliation starts over. */
+  /**
+   * Records up to which key the table was reconciled; without a key, reconciliation starts over.
+   * @param runner Connection of the target.
+   * @param moveId Move.
+   * @param table Table reconciled.
+   * @param key Last reconciled key.
+   */
   async reconciledUpTo(
     runner: QueryRunner,
     moveId: string,
@@ -91,6 +104,13 @@ export class TransferCheckpoints {
     );
   }
 
+  /**
+   * Records that a table matched the frozen source with its count and checksum.
+   * @param runner Connection of the target.
+   * @param moveId Move.
+   * @param table Verified table.
+   * @param checksum Count and checksum.
+   */
   async verified(
     runner: QueryRunner,
     moveId: string,
@@ -108,6 +128,9 @@ export class TransferCheckpoints {
   /**
    * Deletes the move's progress on those tables, when it is no longer needed or the copy is discarded. Only those of one
    * manifest: another copy of the same move may have its own progress on the same shard.
+   * @param dataSource Target shard.
+   * @param moveId Move.
+   * @param tables Tables of the manifest.
    */
   async forget(
     dataSource: DataSource,

@@ -17,7 +17,13 @@ interface KeyRow {
 export class TableShapeReader {
   private static readonly UPDATED_AT = 'updated_at';
 
-  /** @throws TenantMoveError `InvalidManifest` if the table does not exist or has no primary key. */
+  /**
+   * Reads the columns, primary key and `updated_at` of a table.
+   * @param runner Connection of the shard.
+   * @param table Table to read.
+   * @returns The table shape.
+   * @throws TenantMoveError `InvalidManifest` if the table does not exist or has no primary key.
+   */
   async read(runner: QueryRunner, table: string): Promise<TableShape> {
     const columns: ColumnRow[] = await runner.query(
       `SELECT a.attname AS name, a.attgenerated <> '' AS generated

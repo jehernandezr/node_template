@@ -37,6 +37,8 @@ export class HttpOutcomeReader {
    * - Any other status: `protocol-violation` `unexpected-status`, without a code.
    * On non-200 responses it discards the body to free the connection.
    * It never throws.
+   * @param response HTTP response.
+   * @returns The outcome.
    */
   async read(response: Response): Promise<Outcome<unknown>> {
     if (response.status === HttpOutcomeReader.OK) {

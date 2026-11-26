@@ -20,6 +20,8 @@ export class IdempotencyKeyPolicy {
    * Returns the store key: the canonical JSON array `[tenantId, operationId, key]`
    * (a missing tenant is `null`). JSON escapes each segment, so
    * no value collides with another partition, unlike text joined with `|`.
+   * @param segments Tenant, operation and key.
+   * @returns The store key.
    */
   static storeKey(segments: IdempotencyKeySegments): string {
     return CanonicalJson.stringify([
@@ -29,7 +31,12 @@ export class IdempotencyKeyPolicy {
     ]);
   }
 
-  /** Whether the key and the tenant the caller sends are within the limits. */
+  /**
+   * Whether the key and the tenant the caller sends are within the limits.
+   * @param idempotencyKey Key of the caller.
+   * @param tenantId Tenant of the caller.
+   * @returns `true` when valid.
+   */
   static isValid(idempotencyKey: unknown, tenantId: unknown): boolean {
     if (
       typeof idempotencyKey !== 'string' ||
@@ -46,7 +53,11 @@ export class IdempotencyKeyPolicy {
     );
   }
 
-  /** Whether the store key fits in the idempotency store. */
+  /**
+   * Whether the store key fits in the idempotency store.
+   * @param storeKey Store key.
+   * @returns `true` when it fits.
+   */
   static fitsStore(storeKey: string): boolean {
     return storeKey.length <= ClaimRules.MAX_KEY_LENGTH;
   }

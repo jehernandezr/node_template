@@ -26,12 +26,20 @@ export class TableCopier {
     private readonly filter: TenantRowFilter,
   ) {}
 
-  /** Whether the table has `updated_at` for the delta rounds. */
+  /**
+   * Whether the table has `updated_at` for the delta rounds.
+   * @returns `true` when it has `updated_at`.
+   */
   tracksUpdates(): boolean {
     return this.shape.hasUpdatedAt;
   }
 
-  /** Key of the tenant's last row, or `undefined` if it has none. */
+  /**
+   * Key of the tenant's last row, or `undefined` if it has none.
+   * @param runner Connection of the shard.
+   * @param tenantId Tenant to read.
+   * @returns The key, or `undefined`.
+   */
   async lastKey(
     runner: QueryRunner,
     tenantId: string,
@@ -44,7 +52,12 @@ export class TableCopier {
     return row === undefined ? undefined : this.keyOf(row);
   }
 
-  /** Latest `updated_at` of the tenant rows, as text. */
+  /**
+   * Latest `updated_at` of the tenant rows, as text.
+   * @param runner Connection of the shard.
+   * @param tenantId Tenant to read.
+   * @returns The latest update, or `undefined`.
+   */
   async latestUpdate(
     runner: QueryRunner,
     tenantId: string,
@@ -56,7 +69,15 @@ export class TableCopier {
     return rows[0]?.latest ?? undefined;
   }
 
-  /** Tenant rows with a key greater than `after` and up to `upTo`, in key order. */
+  /**
+   * Tenant rows with a key greater than `after` and up to `upTo`, in key order.
+   * @param runner Connection of the source.
+   * @param tenantId Tenant to read.
+   * @param after Key to start after.
+   * @param limit Page size.
+   * @param upTo Last key to read.
+   * @returns The page, or `undefined` when empty.
+   */
   async readAfterKey(
     runner: QueryRunner,
     tenantId: string,
@@ -75,7 +96,14 @@ export class TableCopier {
     return this.page(rows);
   }
 
-  /** Key of the tenant row that is `position` rows after `after`, or `undefined` if there are not that many. */
+  /**
+   * Key of the tenant row that is `position` rows after `after`, or `undefined` if there are not that many.
+   * @param runner Connection of the shard.
+   * @param tenantId Tenant to read.
+   * @param after Key to start after.
+   * @param position Rows to skip.
+   * @returns The key, or `undefined` past the end.
+   */
   async keyAt(
     runner: QueryRunner,
     tenantId: string,
@@ -94,7 +122,15 @@ export class TableCopier {
     return row === undefined ? undefined : this.keyOf(row);
   }
 
-  /** Tenant rows changed between `since` and `until`, in `updated_at` and key order, after the cursor. */
+  /**
+   * Tenant rows changed between `since` and `until`, in `updated_at` and key order, after the cursor.
+   * @param runner Connection of the source.
+   * @param tenantId Tenant to read.
+   * @param window Changes window.
+   * @param after Page to start after.
+   * @param limit Page size.
+   * @returns The page, or `undefined` when empty.
+   */
   async readChangedSince(
     runner: QueryRunner,
     tenantId: string,
@@ -124,6 +160,8 @@ export class TableCopier {
   /**
    * Writes the rows to the target: inserts the new ones and updates only those that changed.
    * @returns how many rows it inserted or changed.
+   * @param runner Connection of the target.
+   * @param rows Rows as JSON text.
    */
   async upsert(runner: QueryRunner, rows: readonly string[]): Promise<number> {
     if (rows.length === 0) {
@@ -150,7 +188,14 @@ export class TableCopier {
     return written.length;
   }
 
-  /** Keys of the tenant rows in the range, as row text, to look them up on the other side. */
+  /**
+   * Keys of the tenant rows in the range, as row text, to look them up on the other side.
+   * @param runner Connection of the shard.
+   * @param tenantId Tenant to read.
+   * @param range Key range.
+   * @param limit Page size.
+   * @returns The keys and the last one, or `undefined`.
+   */
   async keysIn(
     runner: QueryRunner,
     tenantId: string,
@@ -174,7 +219,13 @@ export class TableCopier {
       : { ids: rows.map((row) => row.id), lastKey: this.keyOf(last) };
   }
 
-  /** Of the given keys, those that exist for the tenant. */
+  /**
+   * Of the given keys, those that exist for the tenant.
+   * @param runner Connection of the shard.
+   * @param tenantId Tenant to read.
+   * @param ids Keys to look for.
+   * @returns The keys that exist.
+   */
   async existing(
     runner: QueryRunner,
     tenantId: string,
@@ -187,7 +238,12 @@ export class TableCopier {
     return new Set(rows.map((row) => row.id));
   }
 
-  /** Deletes the tenant rows with those keys. */
+  /**
+   * Deletes the tenant rows with those keys.
+   * @param runner Connection of the target.
+   * @param tenantId Tenant of the rows.
+   * @param ids Keys to delete.
+   */
   async deleteKeys(
     runner: QueryRunner,
     tenantId: string,
@@ -202,7 +258,13 @@ export class TableCopier {
     );
   }
 
-  /** Deletes up to `limit` tenant rows. Returns how many it deleted. */
+  /**
+   * Deletes up to `limit` tenant rows. Returns how many it deleted.
+   * @param runner Connection of the shard.
+   * @param tenantId Tenant of the rows.
+   * @param limit Maximum to delete.
+   * @returns How many were deleted.
+   */
   async deleteBatch(
     runner: QueryRunner,
     tenantId: string,
@@ -220,6 +282,10 @@ export class TableCopier {
    * Count and checksum of the tenant rows, of the whole table or of a key range. The sum is
    * computed over the columns in name order, not over the whole row: the physical column order can
    * differ between source and target if a migration added them in a different order.
+   * @param runner Connection of the shard.
+   * @param tenantId Tenant to read.
+   * @param range Key range; the whole table when empty.
+   * @returns The count and checksum.
    */
   async checksum(
     runner: QueryRunner,
@@ -237,7 +303,13 @@ export class TableCopier {
     return { rows: Number(row?.rows ?? 0), checksum: row?.checksum ?? '' };
   }
 
-  /** Sets `column` to `value` in the tenant rows that have a different value. */
+  /**
+   * Sets `column` to `value` in the tenant rows that have a different value.
+   * @param runner Connection of the target.
+   * @param tenantId Tenant of the rows.
+   * @param column Region column.
+   * @param value New region.
+   */
   async assign(
     runner: QueryRunner,
     tenantId: string,

@@ -22,6 +22,9 @@ export class HandlerOutcomeChecker {
    * - a business error outside `route.allowedCodes`: `protocol-violation`
    *   `undeclared-error` with that code;
    * - any other result, unchanged.
+   * @param route Operation route.
+   * @param outcome Outcome of the handler.
+   * @returns The checked outcome.
    */
   check(
     route: OperationRoute,
@@ -68,6 +71,8 @@ export class HandlerOutcomeChecker {
   /**
    * Extracts the `CallOutcome` from what a handler returned. A value that is not a
    * `HandlerResult` stays as it is and `check` rejects it as `invalid-handler-result`.
+   * @param result Handler result.
+   * @returns The outcome.
    */
   static outcomeOf(result: unknown): CallOutcome<unknown> {
     if (typeof result === 'object' && result !== null) {

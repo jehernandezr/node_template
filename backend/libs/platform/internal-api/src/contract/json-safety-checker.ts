@@ -16,6 +16,9 @@ export class JsonSafetyChecker {
   ]);
 
   /**
+   * Checks that the input and output schemas round-trip through JSON.
+   * @param contract Input and output schemas.
+   * @param label Name used in the error.
    * @throws InternalApiError `NonJsonSafeSchema` if the input or output schema is not safe.
    */
   assertSafe(contract: OperationSchemas, label = 'contract'): void {

@@ -26,6 +26,11 @@ export interface TenantMoveInternalOperations {
  * so the class is created per service and its methods are marked with `@InternalHandler` for those operations.
  */
 export class TenantMoveOperationsFactory {
+  /**
+   * Builds the class that handles the service's move operations.
+   * @param operations Contracts of the move operations.
+   * @returns The handler class.
+   */
   static create(
     operations: TenantMoveOperations,
   ): new (moves: TenantMoves) => TenantMoveInternalOperations {

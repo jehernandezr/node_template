@@ -39,6 +39,9 @@ export class CallAttempt {
    * `RetryableOutcomeError` so it is retried; otherwise, it returns it. A transport
    * error propagates: the resilience registry classifies it.
    * The attempt deadline is already the child of the call deadline that the resilience registry computed.
+   * @param signal Abort signal of the attempt.
+   * @param attempt Number and deadline of the attempt.
+   * @returns The outcome.
    */
   async run(
     signal: AbortSignal,

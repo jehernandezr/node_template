@@ -14,6 +14,12 @@ export interface InputViolationOutcome extends BusinessErrorOutcome {
 
 /** Builds the result of an input that breaks the contract, the same on both sides of the call. */
 export class InputViolation {
+  /**
+   * Builds the protocol violation outcome of an input that does not match the contract.
+   * @param operationId Operation id.
+   * @param fieldErrors Field errors.
+   * @returns The outcome.
+   */
   static outcome(
     operationId: string,
     fieldErrors: readonly FieldError[],

@@ -32,6 +32,11 @@ export class IdempotencyGate {
    * - `InProgress`: `Respond` with `transient-failure` `in-progress`.
    * - `Acquired`: `Proceed` with the key and its token.
    * A claim acquired with a different hash is used by nobody: it is released so the key is free.
+   * @param key Idempotency key.
+   * @param fingerprint Fingerprint of the input.
+   * @param deadline Call deadline.
+   * @param tenantId Tenant of the call.
+   * @returns The decision.
    */
   async claim(
     key: string,
@@ -97,6 +102,8 @@ export class IdempotencyGate {
   /**
    * Stores the final result with the token. Propagates `StaleClaimError` if another
    * attempt took the key.
+   * @param claimed Claimed operation.
+   * @param outcome Final outcome.
    */
   complete(
     claimed: ClaimedOperation,
@@ -109,6 +116,7 @@ export class IdempotencyGate {
    * Releases the claim. A stale token means another attempt owns the
    * key: it never throws, because the result of this call is already decided.
    * The lease expires on its own: failing here does not change the response already decided.
+   * @param claimed Claimed operation.
    */
   async release(claimed: ClaimedOperation): Promise<void> {
     try {

@@ -18,12 +18,21 @@ export class TenantMoveTargets {
     );
   }
 
-  /** The target of a group, or `undefined` if it is not configured. */
+  /**
+   * The target of a group, or `undefined` if it is not configured.
+   * @param group Group name.
+   * @returns The target, or `undefined`.
+   */
   find(group: string): TenantMoveTarget | undefined {
     return this.byGroup.get(group);
   }
 
-  /** The region group that leads to this service's logical shard, or `undefined` if none names it. */
+  /**
+   * The region group that leads to this service's logical shard, or `undefined` if none names it.
+   * @param region Region of the shard.
+   * @param shard Logical shard.
+   * @returns The group, or `undefined`.
+   */
   groupOf(region: string, shard: string): string | undefined {
     for (const target of this.byGroup.values()) {
       if (target.region === region && target.shard === shard) {
@@ -34,6 +43,9 @@ export class TenantMoveTargets {
   }
 
   /**
+   * Reads the target of a move.
+   * @param move Tenant, group and region.
+   * @returns The target.
    * @throws TenantMoveError `UnknownTarget` if the group does not exist or its region is not the requested one.
    */
   of(move: TenantMoveRef): TenantMoveTarget {

@@ -5,5 +5,9 @@ import type { TenantMoveTable } from './tenant-move-table.js';
  * before children. The copy follows that order and the deletion, the reverse.
  */
 export abstract class TenantMoveManifest {
+  /**
+   * Lists the tables of the tenant in copy order, parents before children.
+   * @returns The tables.
+   */
   abstract tables(): readonly TenantMoveTable[];
 }

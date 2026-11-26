@@ -25,6 +25,11 @@ import { TenantDirectoryOperationsFactory } from './tenant-directory-operations.
  */
 @Module({})
 export class TenantDirectoryModule {
+  /**
+   * Registers the directory operations of a service.
+   * @param options Contracts and shard groups.
+   * @returns The module.
+   */
   static forFeature(options: TenantDirectoryFeatureOptions): DynamicModule {
     const operations = TenantDirectoryOperationsFactory.create(
       options.operations,

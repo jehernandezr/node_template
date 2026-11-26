@@ -19,6 +19,9 @@ export class CallErrorTranslator {
    * - `ResilienceTimeoutError` with `Attempt` scope: `uncertain` `timeout`.
    * - `ResilienceTimeoutError` with `Total` scope: `uncertain` `timeout` if `started`; otherwise, `transient-failure` `deadline-exceeded`.
    * - Anything else: `outcomes.fromError(error)`.
+   * @param error Failure of the attempt.
+   * @param context Operation, signal and deadline.
+   * @returns The outcome.
    */
   translate(error: unknown, context: CallErrorContext): Outcome<unknown> {
     if (error instanceof RetryableOutcomeError) {

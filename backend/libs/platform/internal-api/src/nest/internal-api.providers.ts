@@ -10,6 +10,11 @@ import { InternalApiServerProviders } from './internal-api-server.providers.js';
 
 /** Providers of the internal API module and what it exports. */
 export class InternalApiProviders {
+  /**
+   * Builds the providers of the internal API.
+   * @param extras Store and signer adapters.
+   * @returns The providers.
+   */
   static build(extras: ResolvedInternalApiExtras): Provider[] {
     return [
       ...InternalApiContractProviders.build(),
@@ -18,6 +23,10 @@ export class InternalApiProviders {
     ];
   }
 
+  /**
+   * Lists the tokens the internal API exports.
+   * @returns The tokens.
+   */
   static exports(): Array<Abstract<unknown> | Type<unknown>> {
     return [InternalClient, InternalRouter, Transport, ContractRegistry];
   }

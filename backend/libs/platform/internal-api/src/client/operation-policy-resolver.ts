@@ -16,6 +16,8 @@ export class OperationPolicyResolver {
    * with that `timeoutMs` and that `RetryPolicy`. The registered configuration is
    * stored by name in the instance: the registry compares by reference and
    * does not allow registering the same name twice with different objects.
+   * @param metadata Operation metadata.
+   * @returns The policy name.
    */
   resolve(metadata: OperationMetadata): PolicyName {
     if (metadata.retry === undefined && metadata.timeoutMs === undefined) {

@@ -22,6 +22,11 @@ export interface TenantDirectoryInternalOperations {
  * so the class is created per service and its methods are marked with `@InternalHandler` for those operations.
  */
 export class TenantDirectoryOperationsFactory {
+  /**
+   * Builds the class that handles the service's directory operations.
+   * @param operations Contracts of the directory operations.
+   * @returns The handler class.
+   */
   static create(
     operations: TenantDirectoryOperations,
   ): new (

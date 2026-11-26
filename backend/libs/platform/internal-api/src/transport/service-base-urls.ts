@@ -21,6 +21,8 @@ export class ServiceBaseUrls {
 
   /**
    * Returns the base URL, without a trailing slash, of the service that owns `operationId`.
+   * @param operationId Operation id.
+   * @returns The base URL.
    * @throws InternalApiError `UnknownService` if there is no URL for that service.
    */
   urlFor(operationId: string): string {

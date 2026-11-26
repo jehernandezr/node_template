@@ -46,6 +46,10 @@ export class InternalClient {
    * `protocol-violation` with its code.
    * The translator converts the contract error into its result; its output does not have the operation type.
    * The output already went through `descriptor.output`, so its shape matches the operation's.
+   * @param operation Operation contract.
+   * @param input Operation input.
+   * @param options Idempotency key, tenant and deadline.
+   * @returns The outcome.
    */
   async call<S extends OperationDefinition>(
     operation: S,
@@ -67,7 +71,13 @@ export class InternalClient {
     )) as CallOutcome<OperationOutputOf<S>>;
   }
 
-  /** Calls a registered operation by its id. Used by generic callers such as the saga engine. */
+  /**
+   * Calls a registered operation by its id. Used by generic callers such as the saga engine.
+   * @param operationId Operation id.
+   * @param input Operation input.
+   * @param options Idempotency key, tenant and deadline.
+   * @returns The outcome.
+   */
   callById(
     operationId: string,
     input: unknown,

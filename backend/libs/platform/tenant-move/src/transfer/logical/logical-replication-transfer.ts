@@ -57,7 +57,11 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   private static readonly LOCK_NOT_AVAILABLE = '55P03';
   private readonly tables: readonly ReplicatedTable[];
 
-  /** Whether the manifest can be copied with logical replication: all its tables have a tenant column. */
+  /**
+   * Whether the manifest can be copied with logical replication: all its tables have a tenant column.
+   * @param manifest Manifest to check.
+   * @returns `true` when supported.
+   */
   static supports(manifest: TenantMoveManifest): boolean {
     return manifest
       .tables()

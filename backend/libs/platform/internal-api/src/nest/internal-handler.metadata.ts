@@ -5,12 +5,20 @@ import type { OperationDefinition } from '@contracts/platform';
 export class InternalHandlerMetadata {
   static readonly KEY = Symbol.for('platform.internal-api.handler');
 
-  /** Marks a method as the handler of `operation`. */
+  /**
+   * Marks a method as the handler of `operation`.
+   * @param operation Operation contract.
+   * @returns The decorator.
+   */
   static decorator(operation: OperationDefinition): MethodDecorator {
     return SetMetadata(InternalHandlerMetadata.KEY, operation);
   }
 
-  /** Returns the operation `method` handles, or `undefined` if it has no `@InternalHandler`. */
+  /**
+   * Returns the operation `method` handles, or `undefined` if it has no `@InternalHandler`.
+   * @param method Method to read.
+   * @returns The operation, or `undefined`.
+   */
   static read(method: unknown): OperationDefinition | undefined {
     if (typeof method !== 'function') {
       return undefined;

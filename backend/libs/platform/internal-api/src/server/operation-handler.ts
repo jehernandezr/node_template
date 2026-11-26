@@ -15,6 +15,12 @@ import type { HandlerResult } from './handler-result.js';
 export abstract class OperationHandler<
   S extends OperationDefinition = OperationDefinition,
 > {
+  /**
+   * Runs the operation.
+   * @param input Validated input.
+   * @param context Call metadata with its signal.
+   * @returns The result.
+   */
   abstract handle(
     input: HandlerInputOf<S>,
     context: CallMeta,

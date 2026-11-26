@@ -45,6 +45,11 @@ export class UnitOfWorkRunner {
    * - `complete` failed with `StaleClaimError`: `transient-failure` `stale-claim` with
    *   a transaction, `uncertain` `stale-claim` without one;
    * - the commit failed: `uncertain` `commit-failed`.
+   * @param route Operation route.
+   * @param claimed Claimed operation.
+   * @param input Validated input.
+   * @param meta Call metadata.
+   * @returns The outcome.
    */
   async run(
     route: OperationRoute,

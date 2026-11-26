@@ -44,6 +44,8 @@ export class InternalRouter {
 
   /**
    * Binds a handler to an operation declared with `defineOperation`.
+   * @param operation Operation contract.
+   * @param handler Handler.
    * @throws InternalApiError `InvalidOperation` for any other value and
    *   `DuplicateOperation` if the operation already has a handler.
    */
@@ -68,7 +70,11 @@ export class InternalRouter {
     }
   }
 
-  /** @throws InternalApiError `MissingHandler` with every registry operation that has no handler. */
+  /**
+   * Checks that every registered operation has a handler.
+   * @param registry Contract registry.
+   * @throws InternalApiError `MissingHandler` with every registry operation that has no handler.
+   */
   assertComplete(registry: ContractRegistry): void {
     const missing = registry
       .operations()
@@ -86,6 +92,10 @@ export class InternalRouter {
    * Handles a call. Unknown operation: `protocol-violation` `unknown-operation`.
    * Otherwise, `dispatcher.dispatch` runs it inside a server span with the
    * attributes of `InternalApiSpanAttribute`, with the registered operations this one compensates.
+   * @param operationId Operation id.
+   * @param rawInput Raw input.
+   * @param meta Call metadata.
+   * @returns The outcome.
    */
   handle(
     operationId: string,

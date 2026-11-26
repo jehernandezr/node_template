@@ -5,10 +5,18 @@ import type { TenantTransfer } from '../tenant-transfer.js';
 
 /** Opens the connection of a shard for the adapters of a move; the application layer only knows shard locations. */
 export abstract class ShardConnections {
-  /** The initialized connection of the shard. */
+  /**
+   * The initialized connection of the shard.
+   * @param location Shard location.
+   * @returns The connection.
+   */
   abstract get(location: ShardLocation): Promise<DataSource>;
 
-  /** The move with the connections of its source and target shards. */
+  /**
+   * The move with the connections of its source and target shards.
+   * @param transfer Move with its shards.
+   * @returns The connected move.
+   */
   async connect(transfer: TenantTransfer): Promise<ConnectedTransfer> {
     return {
       moveId: transfer.moveId,

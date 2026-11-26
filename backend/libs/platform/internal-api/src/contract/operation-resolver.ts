@@ -13,6 +13,9 @@ export class OperationResolver {
   private readonly resolved = new WeakMap<object, OperationDescriptor>();
 
   /**
+   * Resolves a `defineOperation` descriptor into its schemas and metadata.
+   * @param definition Operation descriptor.
+   * @returns The resolved descriptor.
    * @throws InternalApiError `InvalidOperation` if the value is not a `defineOperation`
    *   descriptor (only an untyped caller can pass it) and
    *   `MissingCompensation` if it uses `Compensation.None` without a reason.
@@ -33,7 +36,11 @@ export class OperationResolver {
     return descriptor;
   }
 
-  /** Whether `value` has the shape of a `defineOperation` descriptor. */
+  /**
+   * Whether `value` has the shape of a `defineOperation` descriptor.
+   * @param value Value to check.
+   * @returns `true` for a descriptor.
+   */
   static isDefinition(value: unknown): value is OperationDefinition {
     if (typeof value !== 'object' || value === null) {
       return false;
