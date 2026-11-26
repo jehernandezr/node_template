@@ -1,6 +1,6 @@
 # 0024. Persistence on TypeORM with sharding and persistent sagas
 
-- Status: Accepted, amended by [ADR 0037](0037-composition-shared-platform-pieces-and-domain-events.md) on the repository base
+- Status: Accepted, amended by [ADR 0037](0037-composition-shared-platform-pieces-and-domain-events.md) on the repository base, [ADR 0031](0031-reports-billing-identity-sagas.md) (identity's sagas are in `identity_sagas`, no `saga_directory`), [ADR 0041](0041-secrets-and-database-credentials.md) (`DB_USER` and `DB_PASSWORD` only with `DB_AUTH=password`; IAM tokens in AWS) and [ADR 0043](0043-deploy-migrations-and-rollback.md) (no down migrations run in the pipeline)
 - Date: 2026-11-14
 - Supersedes: [ADR 0009](0009-rds-postgresql-in-house-persistence-layer.md) in the persistence layer. The database is still RDS PostgreSQL with RDS Proxy and replicas.
 - Design: [persistence on TypeORM with sharding and persistent sagas](../design/typeorm-persistence-and-sagas.md)

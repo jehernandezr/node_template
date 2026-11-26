@@ -1,6 +1,6 @@
 # 0019. CI, security and tool versions
 
-- Status: accepted
+- Status: Accepted, amended by [ADR 0043](0043-deploy-migrations-and-rollback.md) (deploy after a green CI; `artifact-smoke`, `local-smoke`, `migration-safety`, `contract-compat` and `actionlint` join `ci-ok`)
 - Date: 2026-11-12
 
 ## Context

@@ -1,6 +1,6 @@
 # 0028. Real time over one stream per user
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0045](0045-edge-domains-and-real-time.md) (bearer only, `CookieStreamAuthenticator` removed, heartbeat 20 s)
 - Date: 2026-11-22
 - Related: [ADR 0011](0011-real-time-socketio-sse.md), [ADR 0021](0021-valkey-adapter.md), [ADR 0022](0022-token-verification-shared-revocation-state.md)
 

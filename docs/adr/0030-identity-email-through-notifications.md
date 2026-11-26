@@ -1,6 +1,6 @@
 # 0030. Identity email through notifications
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0040](0040-internal-routing-and-authentication.md) (`INTERNAL_API_BASE_URLS` holds Lattice URLs built by the `service` stack)
 - Date: 2026-11-23
 - Related: [ADR 0008](0008-orchestrated-sagas-persistent-log.md), [ADR 0020](0020-terraform-stacks-and-runtime-per-service.md)
 
