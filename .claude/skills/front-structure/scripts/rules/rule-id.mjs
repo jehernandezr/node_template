@@ -17,4 +17,5 @@ export class RuleId {
   static DATETIME_NOW = 'datetime-now';
   static PUBSPEC_CARET_VERSION = 'pubspec-caret-version';
   static INLINE_COMMENT = 'inline-comment';
+  static MOCK_LIBRARY = 'mock-library';
 }

@@ -59,6 +59,26 @@ describe('check-structure', () => {
     assert.match(result.stderr, /pubspec-caret-version/);
   });
 
+  it('--all fails with a test that imports a mocking library', () => {
+    repo.current.write(
+      'front/packages/ui/test/a_test.dart',
+      "import 'package:mocktail/mocktail.dart';\n",
+    );
+    const result = repo.current.runCheck('--all');
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /mock-library/);
+  });
+
+  it('--all fails with a pubspec that depends on a mocking library', () => {
+    repo.current.write(
+      'front/packages/ui/pubspec.yaml',
+      'name: ui\ndev_dependencies:\n  mockito: 5.4.4\n',
+    );
+    const result = repo.current.runCheck('--all');
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /mock-library/);
+  });
+
   it('rejects an unknown mode with code 2', () => {
     repo.current.write(SCREEN, CLEAN);
     const result = repo.current.runCheck('--bogus');
