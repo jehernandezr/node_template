@@ -32,4 +32,5 @@ export * from './events/resilience-metric-name.enum.js';
 export * from './events/resilience-metric-attribute.enum.js';
 export * from './events/resilience-metrics-listener.js';
 export * from './resilience-registry.js';
+export * from './resilience-registry-factory.js';
 export * from './resilience-registry.options.js';

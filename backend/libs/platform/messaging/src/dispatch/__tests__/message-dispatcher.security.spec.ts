@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from '../../__tests__/utils/index.js';
 import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { defineEvent } from '@contracts/platform';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
@@ -43,7 +44,7 @@ function setup(extra: Partial<MessageDispatcherOptions> = {}) {
       processed: new InMemoryProcessedMessageStore(),
       ...extra,
     },
-    { random: new SystemRandomSource() },
+    TestDispatcherParts.with(new SystemRandomSource()),
   );
   dispatcher.register(TaskUpdated, handler.handle);
   return { dispatcher, handler };

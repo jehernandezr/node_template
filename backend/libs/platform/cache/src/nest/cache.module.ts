@@ -6,6 +6,8 @@ import { CallerWait } from '../caller-wait.js';
 import { CacheAside } from '../cache-aside.js';
 import { CacheMetrics } from '../cache-metrics.js';
 import { MetricsCacheErrorReporter } from '../metrics-cache-error-reporter.js';
+import { NoTransactionScope } from '../no-transaction-scope.js';
+import { NoopCacheErrorReporter } from '../noop-cache-error-reporter.js';
 import { SingleFlight } from '../single-flight.js';
 import { TtlJitter } from '../ttl-jitter.js';
 import { VersionedKeyspace } from '../versioned-keyspace.js';
@@ -24,6 +26,7 @@ import type {
  */
 @Module({})
 export class CacheModule extends CacheConfigurableModule {
+  /** Registers the cache port and the collaborators shared by every namespace. */
   static override forRoot(
     options: CacheModuleOptions & Partial<CacheModuleExtras> = {},
   ): DynamicModule {
@@ -46,20 +49,24 @@ export class CacheModule extends CacheConfigurableModule {
             singleFlight: SingleFlight,
             jitter: TtlJitter,
             ids: IdGenerator,
+            noTransactions: NoTransactionScope,
+            noopReporter: NoopCacheErrorReporter,
             transactions?: TransactionManager,
             metrics?: CacheMetrics,
           ) =>
             new CacheAside(
               cache,
               new VersionedKeyspace(cache, { prefix: namespace, ids }),
+              { resilience },
               {
-                resilience,
-                transactions,
+                singleFlight,
+                jitter,
+                wait,
+                transactions: transactions ?? noTransactions,
                 reporter: metrics
                   ? new MetricsCacheErrorReporter(metrics, namespace)
-                  : undefined,
+                  : noopReporter,
               },
-              { singleFlight, jitter, wait },
             ),
           inject: [
             CachePort,
@@ -68,6 +75,8 @@ export class CacheModule extends CacheConfigurableModule {
             SingleFlight,
             TtlJitter,
             IdGenerator,
+            NoTransactionScope,
+            NoopCacheErrorReporter,
             { token: TransactionManager, optional: true },
             { token: CacheMetrics, optional: true },
           ],

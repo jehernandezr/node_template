@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from './utils/index.js';
 import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { defineCommand, defineEvent } from '@contracts/platform';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
@@ -75,7 +76,7 @@ function setup() {
       consumer: 'notifications',
       processed: new InMemoryProcessedMessageStore(),
     },
-    { random: new SystemRandomSource() },
+    TestDispatcherParts.with(new SystemRandomSource()),
   );
   return {
     bus,
@@ -247,7 +248,7 @@ describe('InMemoryBus', () => {
         consumer: 'reports',
         processed: new InMemoryProcessedMessageStore(),
       },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     );
     reportDispatcher.register(GenerateReport, () => undefined);
     await bus.send(GenerateReport, { reportId: 'r1' }, { delayMs: 5_000 });

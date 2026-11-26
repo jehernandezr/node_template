@@ -2,6 +2,8 @@ import { SystemClock } from '@platform/kernel';
 import { ContainerRuntime, FixedClock } from '@platform/kernel/test-utils';
 import {
   DegradingRateLimiter,
+  InMemoryRateLimiter,
+  NoopRateLimitDegradationReporter,
   RateLimitOperation,
   SlidingWindow,
   type RateLimitRule,
@@ -225,7 +227,8 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
     ).create();
     const errors: unknown[] = [];
     const degrading = new DegradingRateLimiter({
-      clock: new SystemClock(),
+      fallback: new InMemoryRateLimiter({ clock: new SystemClock() }),
+      reporter: new NoopRateLimitDegradationReporter(),
       primary: new ValkeyRateLimiter(
         ValkeyExecutors.over(unreachable),
         keyspace,

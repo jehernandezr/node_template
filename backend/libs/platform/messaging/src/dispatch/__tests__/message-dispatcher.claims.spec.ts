@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from '../../__tests__/utils/index.js';
 import { defineEvent } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { Deadline, BackoffStrategy, RetryPolicy } from '@platform/primitives';
@@ -66,7 +67,7 @@ function setup(minLeaseMs?: number) {
       clock,
       ...(minLeaseMs === undefined ? {} : { minLeaseMs }),
     },
-    { random: new SystemRandomSource() },
+    TestDispatcherParts.with(new SystemRandomSource()),
   );
   return { clock, store, dispatcher };
 }
@@ -166,7 +167,7 @@ describe('MessageDispatcher three-state claims', () => {
         topology,
         clock,
       },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     );
     dispatcher.register(TaskUpdated, new RecordingMessageHandler().handle);
 
@@ -201,7 +202,7 @@ describe('MessageDispatcher three-state claims', () => {
             processed: store,
             minLeaseMs: 0,
           },
-          { random: new SystemRandomSource() },
+          TestDispatcherParts.with(new SystemRandomSource()),
         ),
     ).toThrow(
       expect.objectContaining({
@@ -224,7 +225,7 @@ describe('MessageDispatcher three-state claims', () => {
         clock,
         minLeaseMs: 30_000,
       },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     ).register(
       TaskUpdated,
       new RecordingMessageHandler({ gates: [neverSettles()] }).handle,
@@ -332,7 +333,7 @@ describe('MessageDispatcher three-state claims', () => {
         ),
         clock,
       },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     );
     const handler = new RecordingMessageHandler();
     dispatcher.register(TaskUpdated, handler.handle);

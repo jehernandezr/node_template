@@ -16,6 +16,7 @@ describe('ShardRouterAssembler', () => {
     it('builds every part from a directory alone', () => {
       const parts = ShardRouterAssembler.assemble({
         clock: new SystemClock(),
+        strategy: new ConsistentHashStrategy(),
         directory,
       });
 
@@ -47,6 +48,7 @@ describe('ShardRouterAssembler', () => {
           AsyncCall.run(() =>
             ShardRouterAssembler.assemble({
               clock: new SystemClock(),
+              strategy: new ConsistentHashStrategy(),
               directory,
               ...overrides,
             }),
@@ -61,6 +63,7 @@ describe('ShardRouterAssembler', () => {
     it('accepts the default tenant pattern for TestTenants.One and rejects a short id', async () => {
       const { normalizer } = ShardRouterAssembler.assemble({
         clock: new SystemClock(),
+        strategy: new ConsistentHashStrategy(),
         directory,
       });
 

@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from '../../__tests__/utils/index.js';
 import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { defineCommand, defineEvent } from '@contracts/platform';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
@@ -52,7 +53,7 @@ function setup(
       processed,
       ...extra,
     },
-    { random: new SystemRandomSource() },
+    TestDispatcherParts.with(new SystemRandomSource()),
   );
   return { processed, dispatcher };
 }
@@ -107,7 +108,7 @@ describe('MessageDispatcher', () => {
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
     const failing = new MessageDispatcher(
       { clock: new SystemClock(), consumer: 'notifications', processed },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     ).register(
       TaskUpdated,
       new RecordingMessageHandler({ error: transient('transient') }).handle,
@@ -115,7 +116,7 @@ describe('MessageDispatcher', () => {
     const handler = new RecordingMessageHandler();
     const recovering = new MessageDispatcher(
       { clock: new SystemClock(), consumer: 'notifications', processed },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     ).register(TaskUpdated, handler.handle);
 
     expect(
@@ -407,11 +408,11 @@ describe('MessageDispatcher', () => {
         consumer: 'notifications',
         processed: shared,
       },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     );
     const second = new MessageDispatcher(
       { clock: new SystemClock(), consumer: 'audit', processed: shared },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     );
     const handler = new RecordingMessageHandler();
     first.register(TaskUpdated, handler.handle);

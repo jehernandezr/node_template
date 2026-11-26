@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Secret } from '@platform/config';
@@ -245,6 +246,7 @@ export class ShardedTestDatabase {
       ShardedTestDatabase.INSTANCE,
     );
     this.router = new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       directory: this.directory,
       clock: new SystemClock(),
     });

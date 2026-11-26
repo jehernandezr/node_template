@@ -82,7 +82,7 @@ export class MessagingProviders {
             random,
             tracing,
             restorer,
-            ...(failures === undefined ? {} : { failures }),
+            failures: failures ?? new FailureClassifier(),
           },
         ),
       inject: [

@@ -48,6 +48,7 @@ describe('ShardRouter', () => {
     overrides: Partial<ShardRouterOptions> = {},
   ): ShardRouter {
     return new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       directory,
       clock,
       onCacheError: (error) => errors.push(error),
@@ -413,6 +414,7 @@ describe('ShardRouter', () => {
           AsyncCall.run(
             () =>
               new ShardRouter({
+                strategy: new ConsistentHashStrategy(),
                 clock: new SystemClock(),
                 directory,
                 ...overrides,

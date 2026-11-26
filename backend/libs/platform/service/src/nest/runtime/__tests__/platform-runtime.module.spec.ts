@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { SystemClock } from '@platform/kernel';
 import { FailureClassifier } from '@platform/primitives';
 import type { FactoryProvider } from '@nestjs/common';
@@ -199,6 +200,7 @@ describe('PlatformRuntimeModule', () => {
         const factoryOf = (token: unknown) =>
           providers.find((provider) => provider.provide === token)?.useFactory;
         const router = new ShardRouter({
+          strategy: new ConsistentHashStrategy(),
           clock: new SystemClock(),
           directory: new InMemoryDirectoryStore(),
         });

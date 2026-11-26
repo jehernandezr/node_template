@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { SystemClock } from '@platform/kernel';
 import {
   Redactor,
@@ -16,6 +17,7 @@ import { ShardScopes } from '../../shard-scopes.js';
 export class UnroutedShardScopes {
   readonly scope = new ShardScope(
     new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       clock: new SystemClock(),
       directory: new InMemoryDirectoryStore(),
     }),

@@ -1,3 +1,4 @@
+import { ResilienceRegistryFactory } from '@platform/resilience';
 import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { ClaimKeeper } from '../../server/claim-keeper.js';
 import { CompensationTombstones } from '../../server/compensation-tombstones.js';
@@ -9,13 +10,13 @@ import {
   Tracing,
 } from '@platform/observability';
 import { CallOutcomeFactory, FailureClassifier } from '@platform/primitives';
-import { ResilienceRegistry } from '@platform/resilience';
 import { CallErrorTranslator } from '../../client/call-error-translator.js';
 import { ClientOutcomeChecker } from '../../client/client-outcome-checker.js';
 import { ExternalApiPolicy } from '../../client/external-api-policy.js';
 import { InternalClient } from '../../client/internal-client.js';
 import { OperationPolicyResolver } from '../../client/operation-policy-resolver.js';
 import { ContractRegistry } from '../../contract/contract-registry.js';
+import { JsonSafetyChecker } from '../../contract/json-safety-checker.js';
 import { OperationResolver } from '../../contract/operation-resolver.js';
 import { PayloadLimit } from '../../contract/payload-limit.js';
 import { HandlerOutcomeChecker } from '../../server/handler-outcome-checker.js';
@@ -47,9 +48,13 @@ export class InProcessInternalApi {
   readonly registry: ContractRegistry;
   readonly router: InternalRouter;
   readonly transport: InProcessTransport;
-  readonly resilience = new ResilienceRegistry(
+  readonly resilience = new ResilienceRegistryFactory().create(
     {},
-    { clock: new SystemClock(), random: new SystemRandomSource() },
+    {
+      clock: new SystemClock(),
+      random: new SystemRandomSource(),
+      classifier: new FailureClassifier(),
+    },
   );
   readonly client: InternalClient;
 
@@ -63,7 +68,10 @@ export class InProcessInternalApi {
       options.clock,
       options.ids,
     );
-    this.registry = new ContractRegistry({ resolver });
+    this.registry = new ContractRegistry({
+      resolver,
+      jsonSafety: new JsonSafetyChecker(),
+    });
     this.registry.register(...options.operations);
     this.registry.assertValid();
     const gate = new IdempotencyGate(this.store, outcomes);

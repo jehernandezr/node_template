@@ -1,3 +1,5 @@
+import { FailureClassifier } from '@platform/primitives';
+import { ResilienceRegistryFactory } from '../../resilience-registry-factory.js';
 import { SystemClock } from '@platform/kernel';
 import { FixedRandomSource } from '@platform/kernel/test-utils';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
@@ -34,11 +36,12 @@ export class TestPolicies {
     overrides: Partial<ResiliencePolicyConfig> = {},
     options: Partial<ResilienceRegistryOptions> = {},
   ): ResilienceRegistry {
-    return new ResilienceRegistry(
+    return new ResilienceRegistryFactory().create(
       { [TestPolicies.API.value]: TestPolicies.config(overrides) },
       {
         clock: new SystemClock(),
         random: new FixedRandomSource([0.5]),
+        classifier: new FailureClassifier(),
         ...options,
       },
     );

@@ -40,11 +40,8 @@ export class InternalApiContractProviders {
         ) =>
           InternalApiContractProviders.registryOf(
             new ContractRegistry(
-              InternalApiContractProviders.registryOptions(
-                options,
-                resolver,
-                jsonSafety,
-              ),
+              { resolver, jsonSafety },
+              InternalApiContractProviders.registryOptions(options),
             ),
             [...options.operations, ...(options.remoteOperations ?? [])],
           ),
@@ -59,11 +56,8 @@ export class InternalApiContractProviders {
         ) =>
           InternalApiContractProviders.registryOf(
             new PublishedContracts(
-              InternalApiContractProviders.registryOptions(
-                options,
-                resolver,
-                jsonSafety,
-              ),
+              { resolver, jsonSafety },
+              InternalApiContractProviders.registryOptions(options),
             ),
             options.operations,
           ),
@@ -74,16 +68,10 @@ export class InternalApiContractProviders {
 
   private static registryOptions(
     options: InternalApiModuleOptions,
-    resolver: OperationResolver,
-    jsonSafety: JsonSafetyChecker,
   ): ContractRegistryOptions {
-    return {
-      ...(options.maxCallBudgetMs !== undefined && {
-        maxCallBudgetMs: options.maxCallBudgetMs,
-      }),
-      resolver,
-      jsonSafety,
-    };
+    return options.maxCallBudgetMs === undefined
+      ? {}
+      : { maxCallBudgetMs: options.maxCallBudgetMs };
   }
 
   /** An invalid registry makes the service startup fail. */

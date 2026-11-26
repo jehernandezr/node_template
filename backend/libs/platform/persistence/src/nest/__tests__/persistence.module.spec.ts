@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { KernelModule } from '@platform/kernel/nest';
 import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Global, Injectable, Module } from '@nestjs/common';
@@ -93,6 +94,7 @@ class UserFeatureConsumer {
     {
       provide: ShardRouter,
       useValue: new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
         clock: new SystemClock(),
         directory: new InMemoryDirectoryStore(),
       }),

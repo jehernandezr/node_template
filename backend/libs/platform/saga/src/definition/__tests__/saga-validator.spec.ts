@@ -3,13 +3,22 @@ import {
   defineOperation,
   type OperationDefinition,
 } from '@contracts/platform';
-import { ContractRegistry, OperationResolver } from '@platform/internal-api';
+import {
+  ContractRegistry,
+  JsonSafetyChecker,
+  OperationResolver,
+} from '@platform/internal-api';
 import { z } from 'zod';
 import { SagaDefinition } from '../saga-definition.js';
 import type { CompiledSaga } from '../compiled-saga.js';
 import type { SagaFlow } from '../saga-flow.js';
 import { SagaDefinitionIssueCode } from '../saga-definition-issue-code.enum.js';
 import { SagaValidator } from '../saga-validator.js';
+
+const REGISTRY_COLLABORATORS = {
+  resolver: new OperationResolver(),
+  jsonSafety: new JsonSafetyChecker(),
+};
 
 const FAST = {
   timeoutMs: 500,
@@ -63,7 +72,7 @@ function compiled(): CompiledSaga<unknown>[] {
 
 /** Registry with the given operations; the rest do not exist for the validator. */
 function registryWith(...definitions: OperationDefinition[]): ContractRegistry {
-  const registry = new ContractRegistry();
+  const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
   registry.register(...definitions);
   return registry;
 }

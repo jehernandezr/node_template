@@ -2,6 +2,8 @@ import { SystemClock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { InvalidArgumentError } from '@platform/primitives';
 import { DegradingRateLimiter } from '../degrading-rate-limiter.js';
+import { InMemoryRateLimiter } from '../in-memory-rate-limiter.js';
+import { NoopRateLimitDegradationReporter } from '../noop-rate-limit-degradation-reporter.js';
 import { RateLimitOperation } from '../rate-limit-operation.enum.js';
 import type { RateLimitRule } from '../rate-limit-rule.js';
 import {
@@ -16,7 +18,12 @@ const DOWN = new Error('valkey down');
 function setup(): { primary: FakeRateLimiter; limiter: DegradingRateLimiter } {
   const clock = new FixedClock(START);
   const primary = new FakeRateLimiter(clock);
-  const limiter = new DegradingRateLimiter({ primary, localDivisor: 2, clock });
+  const limiter = new DegradingRateLimiter({
+    primary,
+    localDivisor: 2,
+    fallback: new InMemoryRateLimiter({ clock }),
+    reporter: new NoopRateLimitDegradationReporter(),
+  });
   return { primary, limiter };
 }
 
@@ -71,9 +78,9 @@ describe('DegradingRateLimiter', () => {
     const reporter = new RecordingDegradationReporter();
     const seen: RateLimitOperation[] = [];
     const limiter = new DegradingRateLimiter({
-      clock: new SystemClock(),
       primary,
       localDivisor: 1,
+      fallback: new InMemoryRateLimiter({ clock: new SystemClock() }),
       reporter,
       onDegraded: (operation) => {
         seen.push(operation);
@@ -106,9 +113,9 @@ describe('DegradingRateLimiter', () => {
       }
     })();
     const limiter = new DegradingRateLimiter({
-      clock: new SystemClock(),
       primary,
       localDivisor: 1,
+      fallback: new InMemoryRateLimiter({ clock: new SystemClock() }),
       reporter: throwing,
       onDegraded: () => {
         throw new Error('listener broke');
@@ -124,36 +131,24 @@ describe('DegradingRateLimiter', () => {
     const primary = new FakeRateLimiter(new FixedClock(START));
     const fallback = new FakeRateLimiter(new FixedClock(START));
     const limiter = new DegradingRateLimiter({
-      clock: new SystemClock(),
       primary,
       localDivisor: 1,
       fallback,
+      reporter: new NoopRateLimitDegradationReporter(),
     });
     primary.failWith(DOWN);
     await limiter.consume('k', RULE);
     expect(fallback.callsOf(RateLimitOperation.Consume)).toHaveLength(1);
   });
 
-  it('uses the system clock when no fallback or clock is given', async () => {
-    const primary = new FakeRateLimiter(new FixedClock(START));
-    const limiter = new DegradingRateLimiter({
-      clock: new SystemClock(),
-      primary,
-      localDivisor: 1,
-    });
-    primary.failWith(DOWN);
-    await expect(limiter.consume('k', RULE)).resolves.toMatchObject({
-      allowed: true,
-    });
-  });
-
   it.each([0, 1.5, -2])('rejects localDivisor %p', (localDivisor) => {
     expect(
       () =>
         new DegradingRateLimiter({
-          clock: new SystemClock(),
           primary: new FakeRateLimiter(),
           localDivisor,
+          fallback: new FakeRateLimiter(),
+          reporter: new NoopRateLimitDegradationReporter(),
         }),
     ).toThrow(InvalidArgumentError);
   });

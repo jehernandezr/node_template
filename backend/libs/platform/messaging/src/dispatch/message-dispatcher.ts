@@ -1,9 +1,3 @@
-import {
-  Redactor,
-  TraceContextRestorer,
-  Tracing,
-} from '@platform/observability';
-import { FailureClassifier } from '@platform/primitives';
 import { MessageKind } from '../contracts/message-contract.js';
 import type {
   MessageDefinition,
@@ -64,7 +58,6 @@ export class MessageDispatcher {
         ? Math.ceil(queue.visibilityTimeoutSeconds * 1000)
         : ClaimGuard.DEFAULT_LEASE_MS);
 
-    const tracing = parts.tracing ?? new Tracing(new Redactor());
     this.claimGuard = new ClaimGuard(options.processed, options.clock, guard, {
       baseLeaseMs,
       ...(options.leaseMarginMs === undefined
@@ -76,15 +69,15 @@ export class MessageDispatcher {
       options.verifyTenant,
     );
     this.classifier = new DeliveryClassifier(
-      parts.failures ?? new FailureClassifier(),
+      parts.failures,
       parts.random,
       options.isPermanent,
     );
     this.execution = new DeliveryExecution(
       this.claimGuard,
       this.classifier,
-      tracing,
-      parts.restorer ?? new TraceContextRestorer(tracing),
+      parts.tracing,
+      parts.restorer,
       options.runInContext,
       options.consumer,
     );

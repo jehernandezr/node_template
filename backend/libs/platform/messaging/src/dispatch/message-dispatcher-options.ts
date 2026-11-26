@@ -42,12 +42,12 @@ export interface MessageDispatcherOptions {
 
 /** Optional collaborators of the dispatcher; without them it builds the default ones. */
 export interface MessageDispatcherParts {
-  /** Consumer spans. Defaults to its own `Tracing` with no registered SDK (no-op). */
-  readonly tracing?: Tracing;
-  /** Continues the trace of the envelope `traceparent`. Defaults to one over `tracing`. */
-  readonly restorer?: TraceContextRestorer;
+  /** Consumer spans. */
+  readonly tracing: Tracing;
+  /** Continues the trace of the envelope `traceparent`. */
+  readonly restorer: TraceContextRestorer;
   /** Source of the retry wait jitter. */
   readonly random: RandomSource;
-  /** Failure classifier. Defaults to `FailureClassifier` with no rules. */
-  readonly failures?: FailureClassifier;
+  /** Decides which handler failures are transient. */
+  readonly failures: FailureClassifier;
 }

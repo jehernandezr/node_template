@@ -1,9 +1,12 @@
 import { Compensation, type OperationDefinition } from '@contracts/platform';
 import { InternalApiError } from '../errors/internal-api-error.js';
 import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js';
-import type { ContractRegistryOptions } from './contract-registry.options.js';
-import { JsonSafetyChecker } from './json-safety-checker.js';
-import { OperationResolver } from './operation-resolver.js';
+import type {
+  ContractRegistryCollaborators,
+  ContractRegistryOptions,
+} from './contract-registry.options.js';
+import type { JsonSafetyChecker } from './json-safety-checker.js';
+import type { OperationResolver } from './operation-resolver.js';
 import type { RegisteredContract } from './registered-contract.js';
 import type { RegistryIssue } from './registry-issue.js';
 import { RegistryIssueCode } from './registry-issue-code.enum.js';
@@ -18,11 +21,18 @@ export class ContractRegistry {
   private readonly resolver: OperationResolver;
   private readonly jsonSafety: JsonSafetyChecker;
 
-  constructor(options: ContractRegistryOptions = {}) {
+  /**
+   * @param collaborators The descriptor resolver and the JSON-safety checker.
+   * @param options The cap of the default call budget.
+   */
+  constructor(
+    collaborators: ContractRegistryCollaborators,
+    options: ContractRegistryOptions = {},
+  ) {
     this.maxCallBudgetMs =
       options.maxCallBudgetMs ?? ContractRegistry.DEFAULT_MAX_CALL_BUDGET_MS;
-    this.resolver = options.resolver ?? new OperationResolver();
-    this.jsonSafety = options.jsonSafety ?? new JsonSafetyChecker();
+    this.resolver = collaborators.resolver;
+    this.jsonSafety = collaborators.jsonSafety;
   }
 
   /**

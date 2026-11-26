@@ -28,12 +28,10 @@ export class AsideHarness {
   readonly aside = new CacheAside(
     this.cache,
     this.keyspace,
+    { resilience: this.resilience },
     {
-      resilience: this.resilience,
       transactions: this.transactions,
       reporter: this.reporter,
-    },
-    {
       jitter: new TtlJitter(new FixedRandomSource([0.5])),
       wait: this.wait,
       singleFlight: new SingleFlight(this.wait),

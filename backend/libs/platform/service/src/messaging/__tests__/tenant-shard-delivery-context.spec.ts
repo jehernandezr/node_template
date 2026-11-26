@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { SystemClock } from '@platform/kernel';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import {
@@ -16,6 +17,7 @@ import { TenantShardDeliveryContext } from '../tenant-shard-delivery-context.js'
 class DeliveryHarness {
   readonly scope = new ShardScope(
     new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       clock: new SystemClock(),
       directory: new InMemoryDirectoryStore(),
     }),

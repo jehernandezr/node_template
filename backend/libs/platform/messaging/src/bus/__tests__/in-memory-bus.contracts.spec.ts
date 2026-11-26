@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from '../../__tests__/utils/index.js';
 import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { context, trace } from '@opentelemetry/api';
@@ -122,7 +123,7 @@ function setup(traceparent?: () => string | undefined) {
       processed: new InMemoryProcessedMessageStore(),
       topology,
     },
-    { random: new SystemRandomSource() },
+    TestDispatcherParts.with(new SystemRandomSource()),
   );
   return {
     bus,

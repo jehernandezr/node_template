@@ -1,3 +1,4 @@
+import { ResilienceRegistryFactory } from '@platform/resilience';
 import { SystemClock, type Clock, SystemRandomSource } from '@platform/kernel';
 import {
   Redactor,
@@ -5,7 +6,6 @@ import {
   TraceContextRestorer,
 } from '@platform/observability';
 import { CallOutcomeFactory, FailureClassifier } from '@platform/primitives';
-import { ResilienceRegistry } from '@platform/resilience';
 import { ContractRegistry } from '../../../contract/contract-registry.js';
 import { PayloadLimit } from '../../../contract/payload-limit.js';
 import { OperationResolver } from '../../../contract/operation-resolver.js';
@@ -22,9 +22,13 @@ import { ScriptedTransport } from './scripted-transport.js';
  */
 export class InternalClientHarness {
   readonly transport = new ScriptedTransport();
-  readonly resilience = new ResilienceRegistry(
+  readonly resilience = new ResilienceRegistryFactory().create(
     {},
-    { clock: new SystemClock(), random: new SystemRandomSource() },
+    {
+      clock: new SystemClock(),
+      random: new SystemRandomSource(),
+      classifier: new FailureClassifier(),
+    },
   );
   readonly clock: Clock;
   readonly client: InternalClient;

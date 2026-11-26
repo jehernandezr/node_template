@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from '@platform/messaging/test-utils';
 import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import {
   ChangeMessageVisibilityCommand,
@@ -51,7 +52,7 @@ function setup(queueName = 'reports-work') {
       processed: new InMemoryProcessedMessageStore(),
       topology,
     },
-    { random: new SystemRandomSource() },
+    TestDispatcherParts.with(new SystemRandomSource()),
   );
   const logger = new RecordingLogger();
   const redriver = new SqsDeadLetterRedriver(
@@ -269,7 +270,7 @@ describe('SqsDeliveryProcessor', () => {
           processed: new InMemoryProcessedMessageStore(),
           topology,
         },
-        { random: new SystemRandomSource() },
+        TestDispatcherParts.with(new SystemRandomSource()),
       ),
       queue,
       new SqsDeadLetterRedriver(sqs, names, queue, logger, errors),

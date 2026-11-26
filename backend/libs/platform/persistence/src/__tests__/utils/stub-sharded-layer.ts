@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { SystemClock } from '@platform/kernel';
 import { ActorType } from '@platform/observability';
 import { FixedClock } from '@platform/kernel/test-utils';
@@ -72,6 +73,7 @@ export class StubShardedLayer {
     );
 
     this.router = new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       clock: new SystemClock(),
       directory: this.directory,
     });

@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { BillingCommand, UsageMetric } from '@contracts/billing';
 import type { CommandDefinition } from '@contracts/platform';
 import { FixedClock } from '@platform/kernel/test-utils';
@@ -61,7 +62,11 @@ const setup = (failingTenant?: string) => {
     bus,
     transactions,
     scope: new ShardScope(
-      new ShardRouter({ directory: new InMemoryDirectoryStore(), clock }),
+      new ShardRouter({
+        strategy: new ConsistentHashStrategy(),
+        directory: new InMemoryDirectoryStore(),
+        clock,
+      }),
     ),
     context: new RequestContextStore(new Tracing(new Redactor())),
     logger: new SilentLogger(),

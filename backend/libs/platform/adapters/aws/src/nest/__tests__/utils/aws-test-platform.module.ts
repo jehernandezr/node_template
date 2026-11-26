@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from '@platform/messaging/test-utils';
 import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@platform/config/nest';
@@ -37,7 +38,7 @@ import { TestTopology } from '../../../__tests__/utils/test-topology.js';
           processed: new InMemoryProcessedMessageStore(),
           topology: TestTopology.topology,
         },
-        { random: new SystemRandomSource() },
+        TestDispatcherParts.with(new SystemRandomSource()),
       ),
     },
   ],

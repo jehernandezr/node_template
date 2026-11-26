@@ -1,6 +1,10 @@
+import { FailureClassifier } from '@platform/primitives';
+import {
+  CircuitOpenError,
+  ResilienceRegistryFactory,
+} from '@platform/resilience';
 import { SystemRandomSource } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
-import { CircuitOpenError, ResilienceRegistry } from '@platform/resilience';
 import {
   EnvelopeBuilder,
   RecordingEnvelopePublisher,
@@ -24,9 +28,13 @@ const OTHER_QUEUE: OutboundTarget = {
 const envelope = EnvelopeBuilder.anEnvelope({ id: 'msg-1' });
 
 function setup() {
-  const registry = new ResilienceRegistry(
+  const registry = new ResilienceRegistryFactory().create(
     {},
-    { clock: new FixedClock(), random: new SystemRandomSource() },
+    {
+      clock: new FixedClock(),
+      random: new SystemRandomSource(),
+      classifier: new FailureClassifier(),
+    },
   );
   registry.register(MessagingPolicies.Queue, MessagingPolicies.queue);
   const inner = new RecordingEnvelopePublisher();

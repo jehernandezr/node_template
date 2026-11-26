@@ -1,6 +1,13 @@
+import { FailureClassifier } from '@platform/primitives';
+import {
+  ResilienceEventKind,
+  ResilienceRegistryFactory,
+} from '@platform/resilience';
 import { ConfigValidationError } from '@platform/config';
 import {
   CacheAside,
+  NoopCacheErrorReporter,
+  NoTransactionScope,
   VersionedKeyspace,
   CallerWait,
   SingleFlight,
@@ -12,7 +19,6 @@ import {
   SystemRandomSource,
   UuidV7IdGenerator,
 } from '@platform/kernel';
-import { ResilienceEventKind, ResilienceRegistry } from '@platform/resilience';
 import { ValkeyAuthMode } from '../valkey-auth-mode.enum.js';
 import type { ValkeyAuthRequest } from '../valkey-auth-request.js';
 import { ValkeyAuthTokenProvider } from '../valkey-auth-token-provider.js';
@@ -105,9 +111,13 @@ describe('ValkeyClientFactory', () => {
         failureKind: FailureKind.Transient,
       });
 
-      const registry = new ResilienceRegistry(
+      const registry = new ResilienceRegistryFactory().create(
         {},
-        { clock: new SystemClock(), random: new SystemRandomSource() },
+        {
+          clock: new SystemClock(),
+          random: new SystemRandomSource(),
+          classifier: new FailureClassifier(),
+        },
       );
       const events: ResilienceEventKind[] = [];
       registry.subscribe((event) => {
@@ -125,6 +135,8 @@ describe('ValkeyClientFactory', () => {
           resilience: registry,
         },
         {
+          transactions: new NoTransactionScope(),
+          reporter: new NoopCacheErrorReporter(),
           wait: new CallerWait(new SystemClock()),
           singleFlight: new SingleFlight(new CallerWait(new SystemClock())),
           jitter: new TtlJitter(new SystemRandomSource()),

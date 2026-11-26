@@ -1,3 +1,4 @@
+import { ConsistentHashStrategy } from '@platform/sharding';
 import { SystemClock } from '@platform/kernel';
 import { TaskStatus } from '@contracts/tasks';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
@@ -18,6 +19,7 @@ const PAGE = 2;
 const setup = () => {
   const scope = new ShardScope(
     new ShardRouter({
+      strategy: new ConsistentHashStrategy(),
       clock: new SystemClock(),
       directory: new InMemoryDirectoryStore(),
     }),

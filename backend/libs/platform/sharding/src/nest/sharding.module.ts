@@ -16,6 +16,7 @@ import type { TenantWriteWaiterOptions } from '../write-gate/tenant-write-waiter
 import { RoutingCache } from '../ports/routing-cache.js';
 import { ShardDirectoryChannel } from '../ports/shard-directory-channel.js';
 import { ShardRouter } from '../shard-router.js';
+import { ConsistentHashStrategy } from '../sharding-strategy.js';
 import {
   SHARDING_OPTIONS,
   ShardingModuleClass,
@@ -150,6 +151,10 @@ export class ShardingModule
         useExisting: extras.channel ?? InProcessDirectoryChannel,
       },
       {
+        provide: ConsistentHashStrategy,
+        useFactory: () => new ConsistentHashStrategy(),
+      },
+      {
         provide: ShardRouter,
         useFactory: (
           options: ShardingModuleOptions,
@@ -157,9 +162,11 @@ export class ShardingModule
           cache: RoutingCache,
           channel: ShardDirectoryChannel,
           clock: Clock,
+          consistentHash: ConsistentHashStrategy,
         ) =>
           new ShardRouter({
             ...options.router,
+            strategy: options.router?.strategy ?? consistentHash,
             directory,
             sharedCache: cache,
             changes: channel,
@@ -171,6 +178,7 @@ export class ShardingModule
           RoutingCache,
           ShardDirectoryChannel,
           Clock,
+          ConsistentHashStrategy,
         ],
       },
       {

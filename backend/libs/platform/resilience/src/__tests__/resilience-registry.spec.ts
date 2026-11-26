@@ -1,3 +1,5 @@
+import { FailureClassifier } from '@platform/primitives';
+import { ResilienceRegistryFactory } from '../resilience-registry-factory.js';
 import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
@@ -11,7 +13,6 @@ import { ResilienceEventKind } from '../events/resilience-event-kind.enum.js';
 import { TimeoutScope } from '../errors/timeout-scope.enum.js';
 import type { ResilienceEvent } from '../events/resilience-event.js';
 import { PolicyName } from '../policy/policy-name.js';
-import { ResilienceRegistry } from '../resilience-registry.js';
 import {
   Deferred,
   FlakyOperation,
@@ -384,9 +385,13 @@ describe('ResilienceRegistry', () => {
   });
 
   it('rejects an unknown policy with UnknownPolicyError', async () => {
-    const registry = new ResilienceRegistry(
+    const registry = new ResilienceRegistryFactory().create(
       {},
-      { clock: new SystemClock(), random: new SystemRandomSource() },
+      {
+        clock: new SystemClock(),
+        random: new SystemRandomSource(),
+        classifier: new FailureClassifier(),
+      },
     );
     await expect(
       registry.execute(PolicyName.of('missing'), async () => 'x'),
@@ -394,9 +399,13 @@ describe('ResilienceRegistry', () => {
   });
 
   it('runs the built-in cache policy without configuration', async () => {
-    const registry = new ResilienceRegistry(
+    const registry = new ResilienceRegistryFactory().create(
       {},
-      { clock: new SystemClock(), random: new SystemRandomSource() },
+      {
+        clock: new SystemClock(),
+        random: new SystemRandomSource(),
+        classifier: new FailureClassifier(),
+      },
     );
     await expect(
       registry.execute(PolicyName.Cache, async () => 'cached'),
@@ -404,9 +413,13 @@ describe('ResilienceRegistry', () => {
   });
 
   it('registers a policy for a service and runs it', async () => {
-    const registry = new ResilienceRegistry(
+    const registry = new ResilienceRegistryFactory().create(
       {},
-      { clock: new SystemClock(), random: new SystemRandomSource() },
+      {
+        clock: new SystemClock(),
+        random: new SystemRandomSource(),
+        classifier: new FailureClassifier(),
+      },
     );
     const payments = PolicyName.of('payments');
     registry.register(payments, TestPolicies.config());
@@ -416,9 +429,13 @@ describe('ResilienceRegistry', () => {
   });
 
   it('accepts the same registration twice and rejects another configuration for the name', () => {
-    const registry = new ResilienceRegistry(
+    const registry = new ResilienceRegistryFactory().create(
       {},
-      { clock: new SystemClock(), random: new SystemRandomSource() },
+      {
+        clock: new SystemClock(),
+        random: new SystemRandomSource(),
+        classifier: new FailureClassifier(),
+      },
     );
     const payments = PolicyName.of('payments');
     const config = TestPolicies.config();
@@ -432,33 +449,43 @@ describe('ResilienceRegistry', () => {
   });
 
   it('rejects an invalid override when built', () => {
-    expect(
-      () =>
-        new ResilienceRegistry(
-          { cache: { timeoutMs: 0 } },
-          { clock: new SystemClock(), random: new SystemRandomSource() },
-        ),
+    expect(() =>
+      new ResilienceRegistryFactory().create(
+        { cache: { timeoutMs: 0 } },
+        {
+          clock: new SystemClock(),
+          random: new SystemRandomSource(),
+          classifier: new FailureClassifier(),
+        },
+      ),
     ).toThrow(InvalidPolicyError);
   });
 
   it('rejects an override key that is not a valid policy name', () => {
-    expect(
-      () =>
-        new ResilienceRegistry(
-          { 'Not Valid': { timeoutMs: 10 } },
-          { clock: new SystemClock(), random: new SystemRandomSource() },
-        ),
+    expect(() =>
+      new ResilienceRegistryFactory().create(
+        { 'Not Valid': { timeoutMs: 10 } },
+        {
+          clock: new SystemClock(),
+          random: new SystemRandomSource(),
+          classifier: new FailureClassifier(),
+        },
+      ),
     ).toThrow(
       expect.objectContaining({ code: ResilienceErrorCode.InvalidPolicy }),
     );
   });
 
   it('applies a partial override to the built-in cache policy', async () => {
-    const registry = new ResilienceRegistry(
+    const registry = new ResilienceRegistryFactory().create(
       {
         cache: { totalTimeoutMs: 5_000 },
       },
-      { clock: new SystemClock(), random: new SystemRandomSource() },
+      {
+        clock: new SystemClock(),
+        random: new SystemRandomSource(),
+        classifier: new FailureClassifier(),
+      },
     );
     await expect(
       registry.execute(PolicyName.Cache, async () => 'ok'),

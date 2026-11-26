@@ -75,14 +75,12 @@ export class RateLimitProviders {
         options: RateLimitModuleOptions,
         inMemory: InMemoryRateLimiter,
         reporter: RateLimitDegradationReporter,
-        clock: Clock,
       ) =>
         options.degradeLocally === true
           ? new DegradingRateLimiter({
               primary,
               localDivisor: options.localDivisor ?? 1,
               fallback: inMemory,
-              clock,
               reporter,
             })
           : primary,
@@ -91,7 +89,6 @@ export class RateLimitProviders {
         RATE_LIMIT_OPTIONS,
         InMemoryRateLimiter,
         RateLimitDegradationReporter,
-        Clock,
       ],
     };
   }

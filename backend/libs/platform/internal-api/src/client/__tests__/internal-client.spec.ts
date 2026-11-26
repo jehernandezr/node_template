@@ -1,3 +1,5 @@
+import { OperationResolver } from '../../contract/operation-resolver.js';
+import { JsonSafetyChecker } from '../../contract/json-safety-checker.js';
 import { defineOperation } from '@contracts/platform';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { CallOutcome, CallOutcomeKind, Deadline } from '@platform/primitives';
@@ -7,6 +9,11 @@ import { InternalApiReason } from '../../contract/internal-api-reason.enum.js';
 import { OperationMetadata } from '../../contract/operation-metadata.js';
 import { InternalApiErrorCode } from '../../errors/internal-api-error-code.enum.js';
 import { InternalClientHarness } from './utils/internal-client-harness.js';
+
+const REGISTRY_COLLABORATORS = {
+  resolver: new OperationResolver(),
+  jsonSafety: new JsonSafetyChecker(),
+};
 
 const NO_FUNDS = 'BILLING.INVOICES.NO_FUNDS';
 const ok = CallOutcome.success({ id: 'i-1' });
@@ -288,7 +295,7 @@ describe('InternalClient', () => {
 
   describe('catalogue', () => {
     it('rejects an operation that is not in the catalogue', async () => {
-      const registry = new ContractRegistry();
+      const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
       registry.register(Create);
       const harness = new InternalClientHarness({ registry });
 
@@ -302,7 +309,7 @@ describe('InternalClient', () => {
     });
 
     it('calls a registered operation by id', async () => {
-      const registry = new ContractRegistry();
+      const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
       registry.register(Create);
       const harness = new InternalClientHarness({ registry });
       harness.transport.thenReturn(ok);
@@ -328,7 +335,7 @@ describe('InternalClient', () => {
     });
 
     it('answers unknown operation by id when the id is not in the catalogue', async () => {
-      const registry = new ContractRegistry();
+      const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
       registry.register(Create);
       const harness = new InternalClientHarness({ registry });
 
@@ -343,7 +350,7 @@ describe('InternalClient', () => {
     });
 
     it('exposes the catalogue it was given', () => {
-      const registry = new ContractRegistry();
+      const registry = new ContractRegistry(REGISTRY_COLLABORATORS);
       const harness = new InternalClientHarness({ registry });
 
       expect(harness.client.contracts).toBe(registry);

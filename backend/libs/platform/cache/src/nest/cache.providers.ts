@@ -5,6 +5,8 @@ import { CachePort } from '../cache-port.js';
 import { CallerWait } from '../caller-wait.js';
 import { CacheMetrics } from '../cache-metrics.js';
 import { InMemoryCache } from '../in-memory-cache.js';
+import { NoTransactionScope } from '../no-transaction-scope.js';
+import { NoopCacheErrorReporter } from '../noop-cache-error-reporter.js';
 import { SingleFlight } from '../single-flight.js';
 import { TtlJitter } from '../ttl-jitter.js';
 import { CACHE_METRICS, CACHE_OPTIONS } from './cache-tokens.js';
@@ -41,6 +43,8 @@ export class CacheProviders {
         useFactory: (random: RandomSource) => new TtlJitter(random),
         inject: [RandomSource],
       },
+      NoTransactionScope,
+      NoopCacheErrorReporter,
       ...CacheProviders.metricsProviders(extras),
     ];
   }
@@ -53,6 +57,8 @@ export class CacheProviders {
       CallerWait,
       SingleFlight,
       TtlJitter,
+      NoTransactionScope,
+      NoopCacheErrorReporter,
     ];
     return extras.metrics === undefined ? base : [...base, CacheMetrics];
   }

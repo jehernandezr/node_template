@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from '@platform/messaging/test-utils';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { ReceiveMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import {
@@ -122,7 +123,7 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
         processed: new InMemoryProcessedMessageStore(),
         topology,
       },
-      { random: new SystemRandomSource() },
+      TestDispatcherParts.with(new SystemRandomSource()),
     );
     const processor = new SqsDeliveryProcessor(
       sqs,

@@ -1,3 +1,4 @@
+import { TestDispatcherParts } from '@platform/messaging/test-utils';
 import { SystemRandomSource, SystemClock } from '@platform/kernel';
 import {
   DeleteMessageBatchCommand,
@@ -44,7 +45,7 @@ function setup(
       processed: new InMemoryProcessedMessageStore(),
       topology: TestTopology.topology,
     },
-    { random: new SystemRandomSource() },
+    TestDispatcherParts.with(new SystemRandomSource()),
   );
   const processor = new SqsDeliveryProcessor(
     sqs,
