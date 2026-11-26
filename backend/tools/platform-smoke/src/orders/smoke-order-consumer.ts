@@ -9,6 +9,11 @@ import { SmokeOrderLedger } from './smoke-order-ledger.js';
 export class SmokeOrderConsumer {
   constructor(private readonly ledger: SmokeOrderLedger) {}
 
+  /**
+   * Records each delivery of `OrderCreated`, to check it is processed once.
+   * @param _data Event payload.
+   * @param envelope Event envelope.
+   */
   @Subscribe(SmokeOrderCreated)
   onOrderCreated(
     _data: { readonly orderId: string; readonly customer: string },

@@ -2,6 +2,7 @@ import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, sep } from 'node:path';
 import { FileSystem } from './file-system.js';
 
+/** `FileSystem` over the Node file system. */
 export class NodeFileSystem extends FileSystem {
   override async exists(path: string): Promise<boolean> {
     try {

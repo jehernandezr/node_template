@@ -9,6 +9,11 @@ export class ArtifactWriter {
     private readonly mode: ExportMode,
   ) {}
 
+  /**
+   * Writes or checks every artifact through the export mode.
+   * @param artifacts Artifacts to write.
+   * @returns What was written or found stale.
+   */
   async write(artifacts: readonly Artifact[]): Promise<ExportReport> {
     for (const artifact of artifacts) {
       const content = await this.renderer.render(artifact.path, artifact.value);

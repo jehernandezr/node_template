@@ -39,6 +39,11 @@ export class OpenApiBuilder {
   };
   private static readonly BEARER = 'bearerAuth';
 
+  /**
+   * Builds the OpenAPI document of a service from its exported contract.
+   * @param contract Exported contract.
+   * @returns The OpenAPI document.
+   */
   build(contract: JsonObject): JsonObject {
     const routes = (contract['routes'] ?? []) as unknown as ExportedRoute[];
     const paths: Record<string, Record<string, Json>> = {};

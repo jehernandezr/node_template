@@ -47,6 +47,8 @@ export class TopologyBuilder {
   /**
    * The format extends that of `Topology.toJSON()` from `@platform/messaging` with
    * `owner`, `producers`, `consumer` and `retry`, to derive IAM permissions.
+   * @param contracts Contracts of every service.
+   * @returns The topology document.
    */
   build(contracts: readonly ServiceContract[]): JsonObject {
     this.uniqueness.check(contracts);

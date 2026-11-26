@@ -23,6 +23,10 @@ export class DecoratorMetadataPlugin {
     module: { type: 'es6' },
   };
 
+  /**
+   * Builds the esbuild plugin that compiles decorated files with SWC so their metadata survives.
+   * @returns The plugin.
+   */
   toPlugin(): Plugin {
     return {
       name: 'decorator-metadata',

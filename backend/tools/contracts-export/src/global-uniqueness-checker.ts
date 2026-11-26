@@ -7,6 +7,10 @@ import { ExportError } from './export-error.js';
  * queue names. Within each contract `defineServiceContract` already validates it.
  */
 export class GlobalUniquenessChecker {
+  /**
+   * Checks that error codes, operation names and event types are unique across services.
+   * @param contracts Contracts of every service.
+   */
   check(contracts: readonly ServiceContract[]): void {
     const seen = new Map<string, string>();
     const claim = (kind: string, id: string, service: string) => {

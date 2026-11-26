@@ -31,6 +31,11 @@ export class RegisterSmokeOrder {
     private readonly scopes: ShardScopes,
   ) {}
 
+  /**
+   * Registers an order and publishes `OrderCreated` through the outbox.
+   * @param input Tenant and customer.
+   * @returns The stored order.
+   */
   execute(input: RegisterSmokeOrderInput): Promise<SmokeOrder> {
     return this.scopes.inTenantShard(input.tenantId, () =>
       this.transactions.runInTransaction(async () => {

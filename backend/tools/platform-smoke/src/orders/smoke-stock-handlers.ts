@@ -9,6 +9,11 @@ import { PAYMENT_DECLINED, SmokeOperations } from './smoke-operations.js';
 export class SmokeStockHandlers {
   private readonly reserved = new Set<string>();
 
+  /**
+   * Reserves stock for an order.
+   * @param input Order to reserve.
+   * @returns The reservation.
+   */
   @InternalHandler(SmokeOperations.Reserve)
   reserve(input: {
     readonly orderId: string;
@@ -19,6 +24,11 @@ export class SmokeStockHandlers {
     });
   }
 
+  /**
+   * Releases the stock of an order, the compensation of reserving it.
+   * @param input Order to release.
+   * @returns The release.
+   */
   @InternalHandler(SmokeOperations.Release)
   release(input: {
     readonly orderId: string;
@@ -29,6 +39,11 @@ export class SmokeStockHandlers {
     });
   }
 
+  /**
+   * Verifies an order, failing when asked to, so the saga compensates.
+   * @param input Order and whether to fail.
+   * @returns The verification.
+   */
   @InternalHandler(SmokeOperations.Verify)
   verify(input: {
     readonly orderId: string;
@@ -44,6 +59,11 @@ export class SmokeStockHandlers {
     });
   }
 
+  /**
+   * Tells whether an order holds a reservation.
+   * @param orderId Order to check.
+   * @returns `true` when reserved.
+   */
   isReserved(orderId: string): boolean {
     return this.reserved.has(orderId);
   }

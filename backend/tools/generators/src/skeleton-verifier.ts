@@ -30,7 +30,10 @@ export class SkeletonVerifier {
     private readonly writer: GeneratedFileWriter,
   ) {}
 
-  /** The paths the template does not reproduce identically, or does not generate. Empty if everything matches. */
+  /**
+   * The paths the template does not reproduce identically, or does not generate. Empty if everything matches.
+   * @returns The differing paths.
+   */
   async differences(): Promise<string[]> {
     const rendered = new Map(
       this.generator

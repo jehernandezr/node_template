@@ -12,7 +12,13 @@ export class MarkedFile {
     private text: string,
   ) {}
 
-  /** @throws GeneratorError `MissingMarker` if the file does not have the marker. */
+  /**
+   * Inserts a line before a generator marker.
+   * @param marker Marker comment text.
+   * @param line Line to insert.
+   * @returns The same file, to chain edits.
+   * @throws GeneratorError `MissingMarker` if the file does not have the marker.
+   */
   insertBefore(marker: string, line: string): this {
     const lines = this.text.split('\n');
     const tag = `${MarkedFile.PREFIX}${marker}`;
@@ -30,6 +36,10 @@ export class MarkedFile {
     return this;
   }
 
+  /**
+   * Returns the text with the edits.
+   * @returns The content.
+   */
   content(): string {
     return this.text;
   }

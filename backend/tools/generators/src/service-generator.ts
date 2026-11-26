@@ -17,6 +17,9 @@ export class ServiceGenerator {
   ) {}
 
   /**
+   * Generates a new service from the templates and registers it in the shared files.
+   * @param name Name of the service, in kebab-case.
+   * @returns The written paths.
    * @throws GeneratorError `InvalidName` if the name is not in kebab-case.
    * @throws GeneratorError `AlreadyExists` if any service file already exists.
    */
@@ -27,7 +30,12 @@ export class ServiceGenerator {
     return ServiceGenerator.sharedLines(forms);
   }
 
-  /** The files produced from the templates with the given name, without writing them. */
+  /**
+   * The files produced from the templates with the given name, without writing them.
+   * @param templates Templates of a service.
+   * @param forms Forms of the name.
+   * @returns The rendered files.
+   */
   render(
     templates: readonly TemplateFile[],
     forms: NameForms,

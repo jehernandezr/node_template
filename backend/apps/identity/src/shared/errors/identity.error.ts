@@ -21,7 +21,7 @@ export class IdentityError extends DomainError {
 
   /**
    * The resource does not exist or is not visible to the requester: does not reveal which of the two.
-   * @returns The `PLATFORM.RESOURCE.NOT_FOUND` error.
+   * @returns The `PlatformErrorCode.ResourceNotFound` error.
    */
   static notFound(): IdentityError {
     return new IdentityError(PlatformErrorCode.ResourceNotFound);
@@ -30,7 +30,7 @@ export class IdentityError extends DomainError {
   /**
    * The actor lacks the `missing` permissions.
    * @param missing Permissions it lacks.
-   * @returns The `PLATFORM.ACCESS.FORBIDDEN` error.
+   * @returns The `PlatformErrorCode.AuthForbidden` error.
    */
   static forbidden(missing: readonly string[]): IdentityError {
     return new IdentityError(PlatformErrorCode.AuthForbidden, 'Access denied', {

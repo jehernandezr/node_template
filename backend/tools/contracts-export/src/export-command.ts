@@ -24,6 +24,11 @@ export class ExportCommand {
     private readonly output: Output,
   ) {}
 
+  /**
+   * Runs the export from its command-line arguments.
+   * @param args Arguments without the node and script paths.
+   * @returns The exit code.
+   */
   async run(args: readonly string[]): Promise<ExitCode> {
     const selection = this.selectionOf(args[0]);
     if (selection === null) {
