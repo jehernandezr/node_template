@@ -21,7 +21,7 @@ The method comes from pstack and the rules from the `backend-*` and `front-*` sk
 2. Non-trivial code: `architect` fixes ports, types, enums and modules, and leaves them compiling.
 3. Verifiable units (`principle-sequence-verifiable-units`): each one compiles, has green tests and its own commit. A bug starts with `tdd`.
 4. `principle-prove-it-works` with the commands under "Verification".
-5. Review: `interrogate` over `main...HEAD`, then `no-comments`, and `blast-radius` if it touches platform, contracts, authentication or data. The rules are the "Review rules" of `backend-code` or `front-code` plus those of the topic skill.
+5. Review: `interrogate` over `main...HEAD`, then `no-comments` and `blast-radius`. In the backend, `blast-radius` is always run: the review maps what the diff affects explicitly (importers, callers, subclasses, port implementations) and implicitly (DI tokens, event names and payloads, migrations, environment variables, contracts, routes, error codes, key formats), as in [cycle 3, package C](../../../docs/plan/cycle-3-test-speed-and-guards.md#package-c-impact-review). The rules are the "Review rules" of `backend-code` or `front-code` plus those of the topic skill.
 6. Docs, ADRs, commits and PRs go through `unslop`.
 
 ## Verification
