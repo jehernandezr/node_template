@@ -91,6 +91,9 @@ export interface RehearsalReport {
  * its own region, so each move changes shard and region.
  */
 export class TenantMoveRehearsal {
+  /** Pending rounds a step may report before the rehearsal fails, the tolerance of the move saga. */
+  static readonly ROUND_LIMIT = 20;
+
   static readonly REGIONS: Readonly<Record<RehearsalShard, string>> = {
     [RehearsalShard.A]: 'rehearsal-a',
     [RehearsalShard.B]: 'rehearsal-b',
@@ -387,14 +390,19 @@ export class TenantMoveRehearsal {
     );
   }
 
+  /**
+   * Repeats a step while its round is pending, as the move saga does, but only as many times as the saga tolerates
+   * pending rounds: a step that never converges fails the rehearsal instead of hanging it.
+   */
   private static async untilDone<T>(step: () => Promise<T>): Promise<T> {
-    for (;;) {
+    for (let round = 1; ; round++) {
       try {
         return await step();
       } catch (error) {
         if (
           (error as { code?: unknown }).code !==
-          TenantMoveErrorCode.RoundPending
+            TenantMoveErrorCode.RoundPending ||
+          round >= TenantMoveRehearsal.ROUND_LIMIT
         ) {
           throw error;
         }
