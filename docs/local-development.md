@@ -115,6 +115,10 @@ pnpm nx run identity:worker    # outbox relay, consumers and jobs
 
 `IDENTITY_MAILER=console` writes emails with codes and links to the log; with `memory` they stay only in the process, as in the tests. The identity end-to-end tests (`backend/apps/identity/e2e`) start their own PostgreSQL and Valkey with Testcontainers and do not use this infrastructure.
 
+## Smoke tests of the service images
+
+`pnpm nx run deploy-smoke:local` builds the bundles and the image of each service, starts them on `backend/infra/local/smoke.compose.yml` (its own compose project, apart from the stack above, with the gateway on `127.0.0.1:18480`), and twice seeds identity with the fixed smoke account of `backend/infra/local/smoke.env` and runs the deploy smoke tests of `backend/e2e/deploy-smoke`. It removes its containers, volumes and images when it ends. The details are in the artifacts section of `backend/infra/terraform/README.md`.
+
 ## Terraform against the local environment
 
 The Terraform `local` environment points to LocalStack. From the root:

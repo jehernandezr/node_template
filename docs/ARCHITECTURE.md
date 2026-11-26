@@ -38,6 +38,7 @@ backend/                       backend: all its external dependencies in backend
     platform/adapters/         aws, postgres and valkey: one adapter per provider
   apps/<service>/              identity, tasks, notifications, reports, billing and realtime
   e2e/platform-flow/           the five services in one process (platform-flow:e2e)
+  e2e/deploy-smoke/            HTTP smoke tests of a deployed environment (deploy-smoke:run, :local)
   tools/contracts-export/      exports the contracts to JSON (Nx project contracts-export)
   tools/app-bundler/           bundles the apps with esbuild into backend/dist/<app>/
   tools/generators/            service and module generators (ADR 0033)
@@ -1465,6 +1466,7 @@ It runs on every PR, every push to `main` and on Mondays at 06:00 UTC:
 
 - Each service brings its e2e tests in `backend/apps/<service>/e2e`, against the complete app with real PostgreSQL and Valkey and a per-route access matrix.
 - `backend/e2e/platform-flow` (`pnpm nx run platform-flow:e2e`) starts the five services in one process, joined by an in-memory bus, and walks through tenant onboarding, tasks, notices, reports, invoice and tenant move, without simulating any platform step ([ADR 0035](adr/0035-end-to-end-platform-flow.md)).
+- `backend/e2e/deploy-smoke` is the HTTP-only suite each deploy runs against the public API with the smoke account ([ADR 0043](adr/0043-deploy-migrations-and-rollback.md)). `pnpm nx run deploy-smoke:local` runs it twice against the five service images on `backend/infra/local/smoke.compose.yml`; the CI job `local-smoke` does the same.
 
 Load tests with k6 against staging are left for after F12.
 
