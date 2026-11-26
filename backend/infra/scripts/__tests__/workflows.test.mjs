@@ -87,6 +87,14 @@ describe('deployment workflows', () => {
     }
   });
 
+  it('deploy.yml publishes the services on a native ARM64 runner by default', () => {
+    const services = read('deploy.yml').split('\n  services:\n')[1] ?? '';
+    assert.match(
+      services,
+      /runs-on: \$\{\{ vars\.DEPLOY_RUNNER \|\| 'ubuntu-24\.04-arm' \}\}/,
+    );
+  });
+
   it('deploy.yml references the deploy and publish roles', () => {
     const text = read('deploy.yml');
     assert.match(text, /vars\.AWS_DEPLOY_ROLE_ARN/);

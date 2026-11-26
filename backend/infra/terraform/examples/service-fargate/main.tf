@@ -51,7 +51,8 @@ module "realtime" {
   tags = { Environment = "dev" }
 }
 
-# Worker with no inbound traffic that scales on the queue, with a minimum of zero.
+# Worker with no inbound traffic that scales on the queue, with a minimum of zero. Without
+# container_port and command it runs node worker.mjs.
 module "reports_worker" {
   source = "../../modules/service-fargate"
 
@@ -64,8 +65,7 @@ module "reports_worker" {
   vpc_id       = "vpc-0123456789abcdef0"
   subnet_ids   = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
 
-  image   = "123456789012.dkr.ecr.us-east-1.amazonaws.com/reports:0.1.0"
-  command = ["node", "worker.js"]
+  image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/reports:0.1.0"
 
   capacity_provider_strategy = [{ capacity_provider = "FARGATE_SPOT", weight = 1 }]
 

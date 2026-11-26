@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -94,6 +95,11 @@ describe('ArtifactSmoke', () => {
     assert.ok(index('INSERT INTO shard_instances') > index('migrate.mjs all'));
     assert.ok(index('/health/ready') > docker.calls.lastIndexOf(migrations[1]));
     assert.ok(index("import('./lambda.mjs')") > index('--target lambda'));
+    const builds = docker.calls.filter((call) => call.startsWith('build '));
+    assert.equal(builds.length, 2);
+    for (const build of builds) {
+      assert.match(build, /--platform linux\/arm64 /);
+    }
     assert.deepEqual(docker.calls.slice(-4), [
       'rm -f unit-valkey',
       'rm -f unit-postgres',
@@ -132,6 +138,43 @@ describe('ArtifactSmoke', () => {
     assert.equal(smokeWith(docker, workDir()).run(), 1);
     assert.ok(
       !docker.calls.some((call) => call.includes("import('./lambda.mjs')")),
+    );
+  });
+
+  it('loads the Lambda handler in the Lambda Node.js runtime image, not in the service image', () => {
+    const docker = new FakeDocker(new FixedArtifacts().entries());
+
+    assert.equal(smokeWith(docker, workDir()).run(), 0);
+
+    const load = docker.calls.find((call) =>
+      call.includes("import('./lambda.mjs')"),
+    );
+    assert.ok(load.includes('--platform linux/arm64 '));
+    assert.ok(
+      load.includes(`--entrypoint node ${ArtifactSmoke.LAMBDA_RUNTIME} -e`),
+    );
+    assert.ok(!load.includes('unit/tasks:smoke'));
+  });
+
+  it('pins the Lambda runtime image by digest on the Node major of .nvmrc and the service-lambda runtime', () => {
+    const major = readFileSync(join(ROOT, '.nvmrc'), 'utf8')
+      .trim()
+      .split('.')[0];
+    assert.match(
+      ArtifactSmoke.LAMBDA_RUNTIME,
+      new RegExp(
+        `^public\\.ecr\\.aws/lambda/nodejs:${major}@sha256:[0-9a-f]{64}$`,
+      ),
+    );
+    assert.match(
+      readFileSync(
+        join(
+          ROOT,
+          'backend/infra/terraform/modules/service-lambda/variables.tf',
+        ),
+        'utf8',
+      ),
+      new RegExp(`default\\s+= "nodejs${major}\\.x"`),
     );
   });
 
@@ -256,6 +299,23 @@ describe('service.Dockerfile', () => {
       /COPY --from=dependencies \/deploy\/node_modules \/node_modules/,
     );
     assert.match(lambda, /COPY backend\/dist\/\$\{SERVICE\}\/ \//);
+  });
+});
+
+describe('terraform entry points', () => {
+  const files = (dir) =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      if (entry.name.startsWith('.')) return [];
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return files(path);
+      return entry.name.endsWith('.tf') ? [path] : [];
+    });
+
+  it('no module, stack or example runs a .js bundle, since the bundler emits .mjs', () => {
+    const offenders = files(join(ROOT, 'backend/infra/terraform')).filter(
+      (file) => /"node",\s*"[\w./-]+\.js"/.test(readFileSync(file, 'utf8')),
+    );
+    assert.deepEqual(offenders, []);
   });
 });
 

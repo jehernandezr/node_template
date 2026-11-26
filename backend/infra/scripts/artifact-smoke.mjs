@@ -190,7 +190,8 @@ export class SmokeEnvironment {
 /**
  * Builds the ARM64 image and the Lambda package of every backend service and proves they start: inside each image
  * `node migrate.mjs all` exits 0, `node main.mjs` answers `HealthRoute.Ready` against the PostgreSQL and Valkey of
- * `backend/docker-compose.yml`, and the Lambda package holds every entry point and loads its handler. It starts its
+ * `backend/docker-compose.yml`, and the Lambda package holds every entry point and loads its handler in the Lambda
+ * Node.js runtime image. It starts its
  * own network and containers, named after `prefix`, and removes them, and the images it built, when it ends.
  */
 export class ArtifactSmoke {
@@ -199,6 +200,9 @@ export class ArtifactSmoke {
   static READY_PATH = '/health/ready';
   static PORT = 3000;
   static LAMBDA_TARGET = 'lambda';
+  static PLATFORM = 'linux/arm64';
+  static LAMBDA_RUNTIME =
+    'public.ecr.aws/lambda/nodejs:24@sha256:5f161369102f24d3b088ca52e8e83eeee55e701080ee91af858b4cb2f762b6ef';
   static PROBE_ATTEMPTS = 60;
   static PROBE_DELAY_MS = 2_000;
 
@@ -291,11 +295,11 @@ export class ArtifactSmoke {
     this.registerShards(service);
     this.migrate(service, image, envFile);
     this.checkReady(service, image, envFile);
-    this.checkLambdaPackage(service, image, envFile);
+    this.checkLambdaPackage(service, envFile);
   }
 
   /**
-   * The arguments of `docker build` for a service.
+   * The arguments of `docker build` for a service, for the platform the deploy publishes.
    * @param {string} service App name.
    * @param {string[]} extra Tag or target and output.
    * @returns {string[]} Arguments.
@@ -305,6 +309,8 @@ export class ArtifactSmoke {
       'build',
       '-f',
       ArtifactSmoke.DOCKERFILE,
+      '--platform',
+      ArtifactSmoke.PLATFORM,
       '--build-arg',
       `SERVICE=${service}`,
       ...extra,
@@ -401,12 +407,12 @@ export class ArtifactSmoke {
 
   /**
    * Exports the Lambda package of a service, checks that it holds every entry point and `node_modules`, and loads
-   * its handler with the Node of the image. The exported package is removed once checked.
+   * its handler in the Lambda Node.js runtime image, so a native addon built for the musl Node of the service image
+   * fails here as it would in Lambda. The exported package is removed once checked.
    * @param {string} service App name.
-   * @param {string} image Image reference.
    * @param {string} envFile Environment file of the service.
    */
-  checkLambdaPackage(service, image, envFile) {
+  checkLambdaPackage(service, envFile) {
     const dir = join(this.workDir, `${service}-lambda`);
     mkdirSync(dir, { recursive: true });
     try {
@@ -432,12 +438,15 @@ export class ArtifactSmoke {
         '--rm',
         '--env-file',
         envFile,
+        '--platform',
+        ArtifactSmoke.PLATFORM,
         '-v',
         `${dir}:/var/task:ro`,
         '-w',
         '/var/task',
-        image,
+        '--entrypoint',
         'node',
+        ArtifactSmoke.LAMBDA_RUNTIME,
         '-e',
         "import('./lambda.mjs').then((m) => process.exit(typeof m.handler === 'function' ? 0 : 1))",
       ]);

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Publishes the artifact of a service: image in ECR (Fargate, workers, real time) and/or package
 # in S3 (Lambda, consumers). Both come from service.Dockerfile: the package is its lambda stage, the
-# bundles with their production node_modules. Writes .artifacts/<service>.env with TF_VAR_image and
+# bundles with their production node_modules. Both are built for linux/arm64, the architecture of
+# the Fargate tasks and Lambda functions. Writes .artifacts/<service>.env with TF_VAR_image and
 # TF_VAR_lambda_package so the service stack uses them when planning.
 # Usage: publish-service.sh <environment> <service>
 # Variables: ARTIFACTS_BUCKET, ECR_PREFIX, AWS_REGION (required), GIT_SHA (HEAD by default).
@@ -20,6 +21,7 @@ require_identifier "service" "$SERVICE"
 : "${AWS_REGION:?missing AWS_REGION}"
 cd "$REPO_ROOT"
 GIT_SHA="${GIT_SHA:-$(git rev-parse HEAD)}"
+PLATFORM="linux/arm64"
 
 entry="$(node "$SCRIPTS_DIR/service-catalog-cli.mjs" entry "$ENVIRONMENT" "$SERVICE")"
 needs_image="$(json_get "$entry" 'o.needsImage')"
@@ -49,7 +51,7 @@ if [[ "$needs_image" == "true" ]]; then
   fi
 
   if ! probe aws ecr describe-images --repository-name "$repo" --image-ids "imageTag=$tag"; then
-    run docker build -f backend/infra/scripts/service.Dockerfile \
+    run docker build -f backend/infra/scripts/service.Dockerfile --platform "$PLATFORM" \
       --build-arg "SERVICE=$SERVICE" -t "$registry/$repo:$tag" .
     run docker push "$registry/$repo:$tag"
   fi
@@ -64,7 +66,7 @@ if [[ "$needs_package" == "true" ]]; then
   zip_file="$artifacts_dir/$SERVICE-$GIT_SHA.zip"
   key="services/$SERVICE/$GIT_SHA.zip"
 
-  run docker build -f backend/infra/scripts/service.Dockerfile \
+  run docker build -f backend/infra/scripts/service.Dockerfile --platform "$PLATFORM" \
     --build-arg "SERVICE=$SERVICE" --target lambda \
     --output "type=local,dest=$package_dir" .
   if is_dry; then
@@ -96,5 +98,5 @@ if ! is_dry; then
   done
   log "Artifacts of $SERVICE written to $env_file"
 else
-  dry_text "escribir .artifacts/$SERVICE.env"
+  dry_text "write .artifacts/$SERVICE.env"
 fi
