@@ -71,19 +71,19 @@ Before the prerequisites exist, items 1 and 2 are reachable; items 3 to 7 wait f
 
 ## 4. Prerequisites
 
-| #   | Prerequisite                                                                                                                                                                                                                                                                 | Owner                                        | Needed by                                    |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
-| P1  | AWS accounts for `dev`, `staging` and `prod` (one per environment), and an IAM Identity Center admin profile per account on the build machine (`aws sso login --profile <env>-admin`). The agent uses the short-lived session through `AWS_PROFILE`; no access key is stored | User                                         | F12-18 (`dev`), F12-19 (`staging`, `prod`)   |
-| P2  | AWS region and region code, if not `us-east-1` and `us`                                                                                                                                                                                                                      | User                                         | F12-18                                       |
-| P3  | A domain whose apex public hosted zone lives in the `prod` account (ADR 0042). After each `global` apply of `dev` and `staging`, the user adds the NS records it prints for `dev.<domain>` and `staging.<domain>` to the apex zone                                           | User                                         | F12-18 (`dev`), F12-19 (`staging`)           |
-| P4  | GitHub environments `dev`, `staging`, `prod` and `mobile-release`, with reviewers on `staging`, `prod` and `mobile-release`, and the variables listed by `deploy.yml` (account ids, region)                                                                                  | User                                         | F12-18 (`dev`), F12-19 (`staging` reviewers) |
-| P5  | `main` branch protection requiring `ci-ok`                                                                                                                                                                                                                                   | User                                         | F12-18                                       |
-| P6  | SES production access in the `staging` account, and the alarm email                                                                                                                                                                                                          | User                                         | F12-19                                       |
-| P7  | Android upload keystore and its passwords in `mobile-release`                                                                                                                                                                                                                | User                                         | Store publishing (backlog)                   |
-| P8  | Apple and Google Play developer accounts                                                                                                                                                                                                                                     | User                                         | Store publishing (backlog)                   |
-| P9  | Bootstrap per account: run `bootstrap-account.sh` (state bucket) and the first `global` apply, following `first-deploy.md` (both built in F12-3)                                                                                                                             | Agent, with the P1 session, once per account | F12-18 (`dev`), F12-19 (`staging`, `prod`)   |
+| #   | Prerequisite                                                                                                                                                                                                                                                                      | Owner                                        | Needed by                                    |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
+| P1  | AWS accounts for `dev`, `staging` and `prod` (one per environment), and an IAM Identity Center admin profile per account on the build machine (`aws sso login --profile <env>-admin`). The agent uses the short-lived session through `AWS_PROFILE`; no access key is stored      | User                                         | F12-20 (`dev`), F12-21 (`staging`, `prod`)   |
+| P2  | AWS region and region code, if not `us-east-1` and `us`                                                                                                                                                                                                                           | User                                         | F12-20                                       |
+| P3  | A domain whose apex public hosted zone lives in the `prod` account (ADR 0042). After each `global` apply of `dev` and `staging`, the user adds the NS records it prints for `dev.<domain>` and `staging.<domain>` to the apex zone                                                | User                                         | F12-20 (`dev`), F12-21 (`staging`)           |
+| P4  | GitHub environments `dev`, `staging`, `prod` and `mobile-release`, with reviewers on `staging`, `prod` and `mobile-release`; the unreviewed `dev-plan`, `staging-plan` and `prod-plan` for the preview (ADR 0043); and the variables listed by `deploy.yml` (account ids, region) | User                                         | F12-20 (`dev`), F12-21 (`staging` reviewers) |
+| P5  | `main` branch protection requiring `ci-ok`                                                                                                                                                                                                                                        | User                                         | F12-20                                       |
+| P6  | SES production access in the `staging` account, and the alarm email                                                                                                                                                                                                               | User                                         | F12-21                                       |
+| P7  | Android upload keystore and its passwords in `mobile-release`                                                                                                                                                                                                                     | User                                         | Store publishing (backlog)                   |
+| P8  | Apple and Google Play developer accounts                                                                                                                                                                                                                                          | User                                         | Store publishing (backlog)                   |
+| P9  | Bootstrap per account: run `bootstrap-account.sh` (state bucket) and the first `global` apply, following `first-deploy.md` (both built in F12-3)                                                                                                                                  | Agent, with the P1 session, once per account | F12-20 (`dev`), F12-21 (`staging`, `prod`)   |
 
-F12-1 to F12-17 need none of the above.
+F12-1 to F12-19 need none of the above.
 
 ## 5. Cycles
 
@@ -107,118 +107,132 @@ One PR per cycle, in this order. Each runs after the previous one is merged. A c
 
 - **Scope.** The `global` stack (state key `global/terraform.tfstate`): the GitHub OIDC provider and roles moved out of `platform`; one ECR repository per service with immutable tags, a lifecycle policy and, in `dev`, a repository policy that lets the `staging` and `prod` deploy roles pull; the `<prefix>-artifacts` bucket for Lambda zips with the same cross-account read; the environment hosted zone (`dev` and `staging`) or a data source on the apex zone (`prod`); the CloudFront certificate in `us-east-1`. `publish-service.sh` stops creating repositories. `backend/infra/scripts/bootstrap-account.sh` creates the state bucket (versioned, KMS, S3 native locking) and is idempotent. Runbook `docs/runbooks/first-deploy.md`: P1 session, bootstrap, first `global` apply, NS delegation (P3), GitHub variables (P4). Docs: the stacks section of `backend/infra/terraform/README.md` and the ARCHITECTURE stack table.
 - **Depends on.** F12-2.
-- **Acceptance.** `global` stack tests with mocked providers assert the repository policy principals, the lifecycle rule and the bucket policy; `bootstrap-account.sh` passes shellcheck and a dry-run test that prints the calls it would make.
+- **Acceptance.** `global` stack tests with mocked providers assert the repository policy principals, the lifecycle rule, the bucket policy, the environment hosted zone in `dev` and `staging`, the apex data source in `prod`, and the certificate in `us-east-1` validated by DNS; `bootstrap-account.sh` passes shellcheck and a dry-run test that prints the calls it would make.
 - **Guard.** Those tests in the CI `terraform` job.
 
 ### F12-4 Consistent Terraform (B18 and the tfvars)
 
-- **Scope.** B18: target group names with `name_prefix` and `create_before_destroy`, and a test with the real prefix of each environment. `environments/<env>/common.tfvars` (ADR 0042) passed by `deploy-aws.sh`. The `service` stack split into `service-base` (roles, log groups, secret containers and the one-off task settings: ADR 0043) and `service` (runtime). Remove `fargate_api_enabled`; listener priorities computed (ADR 0039). Worker `min_count = 1`. `tasks` API on Lambda in `dev`. A `service` stack validation that rejects route prefixes under `/internal`. `tf-validate.mjs` runs `terraform test` against each environment's real tfvars with mocked providers. The CI `terraform` filter adds `.github/workflows/**` and `.nvmrc`. Docs: `backend/infra/terraform/README.md` (no `fargate_api_enabled`, the two service stacks).
+- **Scope.** B18: target group names with `name_prefix` and `create_before_destroy`, and a test with the real prefix of each environment. `environments/<env>/common.tfvars` (ADR 0042) passed by `deploy-aws.sh`. Remove `fargate_api_enabled`; listener priorities computed (ADR 0039). Worker `min_count = 1`. `tasks` API on Lambda in `dev`. A `service` stack validation that rejects route prefixes under `/internal`. `tf-validate.mjs` runs `terraform test` against each environment's real tfvars with mocked providers. The CI `terraform` filter adds `.github/workflows/**` and `.nvmrc`. Docs: `backend/infra/terraform/README.md` (no `fargate_api_enabled`).
 - **Depends on.** F12-3.
-- **Acceptance.** `node backend/infra/scripts/tf-validate.mjs` passes with the real tfvars of `dev`, `staging` and `prod`; reverting the B18 fix makes the notifications test fail; a `service` stack test reads `service-base` outputs from a mocked remote state.
+- **Acceptance.** `node backend/infra/scripts/tf-validate.mjs` passes with the real tfvars of `dev`, `staging` and `prod`; reverting the B18 fix makes the notifications test fail; a `service` stack test rejects a route prefix under `/internal`.
 - **Guard.** The per-environment `terraform test` runs in the CI `terraform` job.
 
-### F12-5 Configuration safeguards and providers (ADR 0046)
+### F12-5 Service stack split (ADR 0043)
+
+- **Scope.** The `service` stack split into `service-base` (task, execution and function roles, log groups, security groups, the shared environment with the `DB_*` variables, and `one_off_task`) and `service` (runtime), which reads `service-base` through remote state. State keys `<region>/services/<service>/base/terraform.tfstate` and `<region>/services/<service>/terraform.tfstate`; values in `environments/<env>/services/<service>/base/` and `environments/<env>/services/<service>/`. `deploy-aws.sh` applies `service-base` before `service`. Later cycles add the region variables (F12-8), the secrets (F12-11) and `INTERNAL_API_BASE_URLS` (F12-12) to `service-base`. Docs: `backend/infra/terraform/README.md` (the two service stacks).
+- **Depends on.** F12-4.
+- **Acceptance.** A `service` stack test reads `service-base` outputs from a mocked remote state; a `service-base` test asserts that `one_off_task` has the cluster, subnets, security group, roles and log group, and that `one_off_task.environment` carries the `DB_*` keys and equals the environment `service` uses.
+- **Guard.** Those tests in the CI `terraform` job.
+
+### F12-6 Configuration safeguards and providers (ADR 0046)
 
 - **Scope.** `DEPLOY_ENVIRONMENT` replaces `NODE_ENV` as the safeguard source. The provider rules of ADR 0046: `dev` allows `BILLING_PAYMENT_PROVIDER=fake` and `NOTIFICATIONS_PUSH_SENDER=memory`; `staging` and `prod` reject every `fake`, `console`, `memory` and `smtp` adapter. New `none` payment provider and `none` push sender. `IDENTITY_SMOKE_ACCOUNT` rejected in `prod`. The `dev`, `staging` and `prod` tfvars updated.
-- **Depends on.** F12-4.
+- **Depends on.** F12-5.
 - **Acceptance.** Starting identity with `DEPLOY_ENVIRONMENT=prod` and `IDENTITY_MAILER=console` fails; billing with `none` closes a period and leaves the invoice `Issued`; notifications with the `none` push sender delivers to the inbox and email only.
 - **Guard.** A config test per service that loads its `staging` and `prod` tfvars environment and rejects any fake.
 
-### F12-6 Valkey failure policy (ADR 0044)
+### F12-7 Valkey failure policy (ADR 0044)
 
 - **Scope.** Valkey required outside `local`; no silent `NullRoutingCache` or in-process directory channel. Fail-closed checks and 503 instead of 401 in real time. Readiness without Valkey. Deadline and circuit breaker on every Valkey call, including the rate limiter. The `JobLock` and directory channel rows of ADR 0044.
-- **Depends on.** F12-5.
-- **Acceptance.** Each row of the ADR 0044 table has an integration test that stops Valkey and checks the outcome.
-- **Guard.** Those tests.
-
-### F12-7 Catalogs and regions (ADR 0042)
-
-- **Scope.** One `<service>_catalog` per service in `init.sql`, the `data` stack and the bootstrap Lambda; drop `catalog_owner` and `catalog_reader`. `REGIONS`, `SERVICE_REGION` and `IDENTITY_REGION` set by the `service` stack; `TENANT_MOVE_STRATEGY=batch` set explicitly and `TENANT_MOVE_TARGETS` left unset. Docs: `docs/local-development.md` and `docs/runbooks/service-operations.md` (per-service catalogs), the `data` section of `backend/infra/terraform/README.md`.
 - **Depends on.** F12-6.
-- **Acceptance.** `platform-flow:e2e` and `local-smoke` pass with per-service catalogs; a `service` stack test asserts the region variables and the absence of `TENANT_MOVE_TARGETS`.
+- **Acceptance.** Each row of the ADR 0044 table has an integration test that stops Valkey and checks the outcome; with Valkey stopped, `HealthRoute.Ready` stays ready and reports Valkey as `degraded`.
 - **Guard.** Those tests.
 
-### F12-8 Database roles and IAM authentication (ADR 0041)
+### F12-8 Catalogs and regions (ADR 0042)
+
+- **Scope.** One `<service>_catalog` per service in `init.sql`, the `data` stack and the bootstrap Lambda; drop `catalog_owner` and `catalog_reader`. `REGIONS`, `SERVICE_REGION` and `IDENTITY_REGION` set in the `service-base` shared environment; `TENANT_MOVE_STRATEGY=batch` set explicitly and `TENANT_MOVE_TARGETS` left unset. Docs: `docs/local-development.md` and `docs/runbooks/service-operations.md` (per-service catalogs), the `data` section of `backend/infra/terraform/README.md`.
+- **Depends on.** F12-7.
+- **Acceptance.** `platform-flow:e2e` and `local-smoke` pass with per-service catalogs; a `data` stack test asserts one catalog database per service; a `service-base` stack test asserts the region keys in `one_off_task.environment` and the absence of `TENANT_MOVE_TARGETS`.
+- **Guard.** Those tests.
+
+### F12-9 Database roles and IAM authentication (ADR 0041)
 
 - **Scope.** Roles `<svc>_owner`, `<svc>_app` and `<svc>_reader`, created by the bootstrap Lambda with the passwords of ADR 0041. RDS Proxy `iam_auth = "REQUIRED"`; IAM database auth on the instance. `DatabaseTokenProvider` port and RDS signer adapter, `DB_AUTH`. `DB_*` names in Terraform equal to the code schema; `DB_CREDENTIALS` removed. Pinned-connection alarm. Docs: the `DB_CREDENTIALS` parts of `backend/infra/terraform/README.md`.
-- **Depends on.** F12-7.
-- **Acceptance.** An integration test shows `<svc>_app` cannot run DDL and sees only its tenant's rows; a `data` stack test asserts IAM auth and the roles.
-- **Guard.** Those tests; a `service` stack test asserts that the environment's `DB_*` keys equal the keys of `databaseConfigSchema` (exported as JSON by the contract export).
+- **Depends on.** F12-8.
+- **Acceptance.** An integration test shows `<svc>_app` cannot run DDL and sees only its tenant's rows; a `data` stack test asserts IAM auth, the roles and the pinned-connection alarm; a pool test with `DB_AUTH=iam` and a fake signer sees a fresh token on each new connection.
+- **Guard.** Those tests; a `service-base` stack test asserts that the shared environment's `DB_*` keys equal the keys of `databaseConfigSchema` (exported as JSON by the contract export).
 
-### F12-9 Database deadlines and backups
+### F12-10 Database deadlines and backups
 
 - **Scope.** Per-shard `connectTimeoutMS` and `sources.get` inside the deadline in `AcrossShards` (general review 2.1). Backup retention 7, 14 and 35 days (ADR 0043).
-- **Depends on.** F12-8.
+- **Depends on.** F12-9.
 - **Acceptance.** An integration test with an unreachable shard sees `AcrossShards` return within its deadline; a `data` stack test asserts the retention per environment.
 - **Guard.** Those tests.
 
-### F12-10 Secrets (ADR 0041, B20)
+### F12-11 Secrets (ADR 0041, B20)
 
-- **Scope.** Each owner stack creates its secrets with `ephemeral "random_password"` and `secret_string_wo`, including the OpenObserve root password; identity's signing-key container and the `identity:signing-keys` one-off task. `SECRETS_MAP` and the `SecretSource` port with `SecretsManagerSecretSource`, resolved by `LambdaBootstrap` before config validation. X-Origin-Verify accepts current and previous values. `WEB_ORIGINS` from `common.tfvars`, validated as a list of URL origins. A `config-coverage` script reads each service's config schema and the planned task environment and secrets, and fails on a required variable with no source; it writes `docs/runbooks/configuration.md` (variable, source, environments). Docs: `docs/runbooks/secret-rotation.md` (`_PREVIOUS` overlap instead of the HMAC cutover, proxy-managed database passwords, no `secrets` block) and `docs/runbooks/identity-key-rotation.md` (the `identity:signing-keys` task).
-- **Depends on.** F12-9.
-- **Acceptance.** `terraform test` shows no secret value in plan output; a Lambda test with LocalStack Secrets Manager starts identity from `SECRETS_MAP`; `config-coverage` passes for every service and environment; `WEB_ORIGINS=not-a-url` fails config validation.
-- **Guard.** `config-coverage` in the CI `terraform` job, with a drift check on `configuration.md`.
-
-### F12-11 Internal routing and authentication (ADR 0040, B19)
-
-- **Scope.** Lattice service network and services in `platform`; listener rules, target groups and auth policies in `service`; `callees` in `topology.json`, extracted by the contract export from the callee list each service passes to `SignedInternalHttp`; `INTERNAL_API_BASE_URLS` built by the stack. `SigV4Service.VpcLattice`, `INTERNAL_API_AUTH`, `LatticeIdentityAuthenticator`, `INTERNAL_API_SHARED_SECRET_PREVIOUS`. `LambdaBootstrap` accepts the Lattice event (version 2.0) for `/internal/operations/*`. One SigV4 implementation: `SigV4Signer` on `@smithy/signature-v4` stays, and `ElastiCacheIamAuthTokenProvider` moves onto its `presign`.
+- **Scope.** Each owner stack creates its secrets with `ephemeral "random_password"` and `secret_string_wo`, including the OpenObserve root password; identity's signing-key container and the `identity:signing-keys` one-off task; identity's empty `SMOKE_ACCOUNT` container outside `prod`, written only by the deploy role and read by the deploy role and the `seed` execution role (ADR 0043). `SECRETS_MAP` and the `SecretSource` port with `SecretsManagerSecretSource`, resolved by `LambdaBootstrap` before config validation. X-Origin-Verify accepts current and previous values. `WEB_ORIGINS` from `common.tfvars`, validated as a list of URL origins. Docs: `docs/runbooks/secret-rotation.md` (`_PREVIOUS` overlap instead of the HMAC cutover, proxy-managed database passwords, no `secrets` block) and `docs/runbooks/identity-key-rotation.md` (the `identity:signing-keys` task).
 - **Depends on.** F12-10.
-- **Acceptance.** Unit tests of the authenticator (known role, unknown role, missing header); a `SigV4Signer` test that signs for `vpc-lattice-svcs` with `x-amz-content-sha256`; a `LambdaBootstrap` test that routes a Lattice 2.0 event to `InternalApiController`; the existing ElastiCache token tests pass unchanged on `presign`; a `service` stack test that the auth policy lists exactly the callers from `topology.json`; `local-smoke` still passes with HMAC.
+- **Acceptance.** `terraform test` shows no secret value in plan output; a Lambda test with LocalStack Secrets Manager starts identity from `SECRETS_MAP`; `WEB_ORIGINS=not-a-url` fails config validation; an authorizer test accepts the current and previous X-Origin-Verify values and rejects any other; the `identity:signing-keys` task fills an empty container and leaves a filled one unchanged; a `service-base` test asserts `SMOKE_ACCOUNT` in `dev` and `staging`, its absence in `prod`, and that only the deploy role may write it.
+- **Guard.** Those tests, the stack tests in the CI `terraform` job.
+
+### F12-12 Internal routing and authentication (ADR 0040, B19)
+
+- **Scope.** Lattice service network and services in `platform`; listener rules, target groups and auth policies in `service`; `callees` in `topology.json`, extracted by the contract export from the callee list each service passes to `SignedInternalHttp`; `INTERNAL_API_BASE_URLS` built by `service-base`. `SigV4Service.VpcLattice`, `INTERNAL_API_AUTH`, `LatticeIdentityAuthenticator`, `INTERNAL_API_SHARED_SECRET_PREVIOUS`. `LambdaBootstrap` accepts the Lattice event (version 2.0) for `/internal/operations/*`. One SigV4 implementation: `SigV4Signer` on `@smithy/signature-v4` stays, and `ElastiCacheIamAuthTokenProvider` moves onto its `presign`.
+- **Depends on.** F12-11.
+- **Acceptance.** Unit tests of the authenticator (known role, unknown role, missing header); a `SigV4Signer` test that signs for `vpc-lattice-svcs` with `x-amz-content-sha256`; a `LambdaBootstrap` test that routes a Lattice 2.0 event to `InternalApiController`; the existing ElastiCache token tests pass unchanged on `presign`; a `service` stack test that the auth policy lists exactly the role name patterns of the callers from `topology.json`; `local-smoke` still passes with HMAC.
 - **Guard.** Those tests and the topology drift check, which now covers `callees`.
 
-### F12-12 Runtime hardening for rolling deploys
+### F12-13 Configuration coverage
+
+- **Scope.** A `config-coverage` script reads each service's config schema and the planned `service-base` and `service` environment and secrets, and fails on a required variable with no source; it writes `docs/runbooks/configuration.md` (variable, source, environments).
+- **Depends on.** F12-12.
+- **Acceptance.** `config-coverage` passes for every service and environment; a fixture plan without the source of a required variable fails it.
+- **Guard.** `config-coverage` in the CI `terraform` job, with a drift check on `configuration.md`.
+
+### F12-14 Runtime hardening for rolling deploys
 
 - **Scope.** Shutdown order: the HTTP server drains before the `DataSource`s close (general review 2.7). SQS batches processed with visibility extension instead of serially under a fixed 30 s (2.7). Lambda consumer entry `lambda.consumer` and the `consumers` map wiring (ADR 0039).
-- **Depends on.** F12-11.
+- **Depends on.** F12-13.
 - **Acceptance.** An integration test sends SIGTERM during in-flight requests and sees them complete; a test with a slow handler sees no redelivery within the batch; a `lambda.consumer` test with an SQS batch reports the failed message ids as partial failures; a `service` stack test that a queue in `consumers` has an event source mapping and is absent from the worker's queues.
 - **Guard.** Those tests.
 
-### F12-13 Edge and real time (ADR 0045)
+### F12-15 Edge and real time (ADR 0045)
 
 - **Scope.** Real-time routes in the API distribution; ALB restricted to the CloudFront prefix list and `X-Origin-Verify`; `CloudFront-Viewer-Address` as client IP, `TRUST_PROXY_HOPS` removed; the regional real-time certificate and origin record in `platform`; CloudFront standard access logs to the log bucket; `HttpApplicationSetup` in the real-time app; cookie authenticator removed; SSE heartbeat 20 s. Docs: the real-time parts of `backend/infra/terraform/README.md`.
-- **Depends on.** F12-12.
+- **Depends on.** F12-14.
 - **Acceptance.** `edge` and `platform` stack tests for the behaviours, the prefix list, the listener rule, the origin certificate and the access logs; a realtime test that rejects a spoofed `X-Forwarded-For`; `REALTIME_AUTH=cookie` fails config validation; a heartbeat test with a fake clock sees a frame every 20 s; a real-time app test sees the CORS and security headers of `HttpApplicationSetup`.
 - **Guard.** Those tests.
 
-### F12-14 Pipeline (ADR 0043)
+### F12-16 Pipeline (ADR 0043)
 
-- **Scope.** `deploy.yml` rewritten: `workflow_run` after CI, build once, digest promotion with the cross-account copy, the preview job, one `deploy` job per environment that plans and applies each stack in order from its own saved plan, the one-off tasks (`signing-keys`, `migrate`, `seed`), ECS stability checks, smoke at the end, and `rollback_to`. OIDC `job_workflow_ref` and permission boundary; a read-only PR plan role. Plan files written to the runner's temporary directory and deleted in an `always()` step. The workflow pinning test parses every workflow and requires a full commit SHA on every action. The pipeline reads the service list and runtimes from `service-base` outputs; `service-catalog.mjs` and `tfvars-block-reader.mjs` are removed. Runbook `docs/runbooks/deploy-and-rollback.md`. Docs: the deploy section of `backend/infra/terraform/README.md` (no runner in the VPC).
-- **Depends on.** F12-13.
-- **Acceptance.** `actionlint` passes; `deploy-aws.sh` and the pipeline scripts pass their tests in dry-run mode, including a run that stops on a destroy missing from the preview, and a `rollback_to` run that plans only the `service` stacks with the target commit's digests and skips `migrate`; a `global` stack test asserts the trust conditions, the boundary and that the PR plan role has no write action.
+- **Scope.** `deploy.yml` rewritten: `workflow_run` after CI, build once with the `dev` deploy role, digest promotion with the cross-account copy, the preview job in `<env>-plan`, one `deploy` job per environment that plans and applies each stack in order from its own saved plan, fresh smoke credentials written to `SMOKE_ACCOUNT` before `seed`, the one-off tasks (`signing-keys`, `migrate`, `seed`), ECS stability checks, smoke at the end, and `rollback_to`. `plan-pr.yml` for pull requests. The three OIDC trusts of ADR 0043 (deploy, read-only plan, PR plan) and the permission boundary. Plan files written to the runner's temporary directory and deleted in an `always()` step. The workflow pinning test parses every workflow and requires a full commit SHA on every action. The pipeline takes the service list and order from the directory names under `environments/<env>/services/`, and each service's runtime and one-off settings from its `service-base` outputs after its apply; `service-catalog.mjs` and `tfvars-block-reader.mjs` are removed. Runbook `docs/runbooks/deploy-and-rollback.md`. Docs: the deploy section of `backend/infra/terraform/README.md` (no runner in the VPC).
+- **Depends on.** F12-15.
+- **Acceptance.** `actionlint` passes; `deploy-aws.sh` and the pipeline scripts pass their tests in dry-run mode, including a run with empty state that orders `service-base`, `signing-keys`, `migrate` and `service` for identity, a run that stops on a destroy missing from the preview, a run that stops on a digest mismatch before any apply, and a `rollback_to` run that plans only the `service` stacks with the target commit's digests and skips `migrate` and `seed`; a `global` stack test asserts the three trusts, the boundary and that the two plan roles have no write action.
 - **Guard.** `actionlint` and the pinning test in `ci-ok`.
 
-### F12-15 Migration and contract checks (ADR 0043)
+### F12-17 Migration and contract checks (ADR 0043)
 
 - **Scope.** A `migration-safety` check rejects destructive statements outside `MigrationPhase.Contract`. A `contract-compat` check compares the contract export with `main` and rejects removed versions still referenced in the topology.
-- **Depends on.** F12-14.
+- **Depends on.** F12-16.
 - **Acceptance.** A fixture migration with `DROP COLUMN` fails `migration-safety`, and the same in a `Contract` migration passes; removing an event version still consumed fails `contract-compat`.
 - **Guard.** `migration-safety` and `contract-compat` in `ci-ok`.
 
-### F12-16 Front delivery
+### F12-18 Front delivery
 
 - **Scope.** `publish-web.sh` caching rules, no source maps, no `--delete`, a lifecycle rule; `API_BASE_URL` per environment. `mobile-release` environment, branch and tag restriction, failure without keystore. `AndroidManifest.xml` with `INTERNET` and `allowBackup="false"` (general review 2.10).
-- **Depends on.** F12-15.
-- **Acceptance.** Script tests assert the `Cache-Control` per file type; `flutter build appbundle --release` without keystore fails; the release manifest has the permission.
+- **Depends on.** F12-17.
+- **Acceptance.** Script tests assert the `Cache-Control` per file type and that each environment's build gets its own `API_BASE_URL`; a workflow test asserts that `mobile-release.yml` runs in the `mobile-release` environment only from `main` and release tags; `flutter build appbundle --release` without keystore fails; the release manifest has the permission.
 - **Guard.** The script tests and a manifest check in `check-structure`.
 
-### F12-17 Observability and recovery minimum (ADR 0046)
+### F12-19 Observability and recovery minimum (ADR 0046)
 
 - **Scope.** OTLP/HTTP from the OpenTelemetry SDK in each process straight to OpenObserve, in Fargate and Lambda, with head sampling per environment; OpenObserve reachable only from the VPC, through SSM port forwarding for operators. The alarm catalog of ADR 0046. HTTP spans without query strings (2.8). Runbook `restore-drill.md`. Docs: `docs/runbooks/service-operations.md` (no Collector in AWS).
-- **Depends on.** F12-16.
+- **Depends on.** F12-18.
 - **Acceptance.** An exporter test against a local OTLP receiver sees spans sampled at `OTEL_TRACES_SAMPLER_ARG`; a `platform` stack test that OpenObserve admits only the VPC CIDR and has no public listener; `service` stack tests list the alarms; an observability test shows `token=` absent from span attributes.
 - **Guard.** Those tests.
 
-### F12-18 First deploy to `dev` (needs P1 to P5, P9)
+### F12-20 First deploy to `dev` (needs P1 to P5, P9)
 
 - **Scope.** Follow `first-deploy.md` for `dev`: bootstrap, the first `global` apply, NS delegation; then `deploy.yml` for `dev` from `main`. Each failure the real apply finds is fixed in its own PR, with a test or check that would have caught it, merged before the deploy is retried.
-- **Depends on.** F12-17 and the prerequisites.
+- **Depends on.** F12-19 and the prerequisites.
 - **Acceptance.** Definition of done item 3, with `tasks` on Lambda.
 - **Guard.** `deploy.yml` on every merge to `main`.
 
-### F12-19 Staging, rollback, drill and prod preview (needs P3, P4 and P6 for `staging`, P9 for `staging` and `prod`)
+### F12-21 Staging, rollback, drill and prod preview (needs P1 and P9 for `staging` and `prod`; P3, P4 and P6 for `staging`)
 
-- **Scope.** Bootstrap `staging` and `prod` with `first-deploy.md`. Promote to `staging`, roll back and forward again, run the restore drill, produce the `prod` preview. Fixes follow the F12-18 rule.
-- **Depends on.** F12-18.
+- **Scope.** Bootstrap `staging` and `prod` with `first-deploy.md`. Promote to `staging`, roll back and forward again, run the restore drill, produce the `prod` preview. Fixes follow the F12-20 rule.
+- **Depends on.** F12-20.
 - **Acceptance.** Definition of done items 4 to 7.
 - **Guard.** A promotion is a `workflow_dispatch` of `deploy.yml` for a commit already deployed to `dev`; `deploy-smoke` runs at the end of every promotion and rollback.
 
@@ -229,19 +243,19 @@ One PR per cycle, in this order. Each runs after the previous one is merged. A c
 | B17; base image digest and `.dockerignore` (general review 3)                                                                                                            | F12-1                                           |
 | OIDC out of `platform`; ECR created by the CLI without lifecycle (3)                                                                                                     | F12-3                                           |
 | B18; tfvars contradictions and real tfvars not planned (2.11); CI `terraform` filter (2.11)                                                                              | F12-4                                           |
-| `NODE_ENV` safeguards (2.8); prod `fake` payment (2.11)                                                                                                                  | F12-5                                           |
-| Silent `NullRoutingCache` (2.1); rate limiter without breaker (2.8); Valkey outage answers 401 in SSE (2.4)                                                              | F12-6                                           |
-| Terraform catalog and region variables (2.2); `TENANT_MOVE_*` not set by Terraform                                                                                       | F12-7                                           |
-| Fence locks versus RDS Proxy (2.1); rotation versus injected credentials (2.11)                                                                                          | F12-8                                           |
-| `AcrossShards` without connect timeout (2.1)                                                                                                                             | F12-9                                           |
-| B20; secrets of B19; `WEB_ORIGINS` (B19) and its URL validation (3)                                                                                                      | F12-10                                          |
-| B19 routing; no SigV4 verifier on the server (2.7); two SigV4 implementations (3, 7)                                                                                     | F12-11                                          |
-| Shutdown order (2.7); serial SQS batch (2.7)                                                                                                                             | F12-12                                          |
-| Real-time ALB without CloudFront and WAF (2.11, 7); real-time app without `HttpApplicationSetup` and cookie mode (2.4); CloudFront without access logs (3)               | F12-13                                          |
-| OIDC trust (2.11); plan and apply in one job, deploy before CI (2.11); `.tfplan` left on disk (3); workflow pinning test (3); `service-catalog.mjs` reimplements HCL (3) | F12-14                                          |
-| Web caching (2.11); keystore and debug signing (2.11); Android manifest (2.10)                                                                                           | F12-16                                          |
-| Unredacted query in HTTP spans (2.8)                                                                                                                                     | F12-17                                          |
-| Group convention without `TENANT_MOVE_TARGETS` has only unit tests (wave 9)                                                                                              | F12-18: the `dev` deploy runs on the convention |
+| `NODE_ENV` safeguards (2.8); prod `fake` payment (2.11)                                                                                                                  | F12-6                                           |
+| Silent `NullRoutingCache` (2.1); rate limiter without breaker (2.8); Valkey outage answers 401 in SSE (2.4)                                                              | F12-7                                           |
+| Terraform catalog and region variables (2.2); `TENANT_MOVE_*` not set by Terraform                                                                                       | F12-8                                           |
+| Fence locks versus RDS Proxy (2.1); rotation versus injected credentials (2.11)                                                                                          | F12-9                                           |
+| `AcrossShards` without connect timeout (2.1)                                                                                                                             | F12-10                                          |
+| B20; secrets of B19; `WEB_ORIGINS` (B19) and its URL validation (3); X-Origin-Verify rotation (audit BE-32)                                                              | F12-11                                          |
+| B19 routing; no SigV4 verifier on the server (2.7); two SigV4 implementations (3, 7)                                                                                     | F12-12                                          |
+| Shutdown order (2.7); serial SQS batch (2.7)                                                                                                                             | F12-14                                          |
+| Real-time ALB without CloudFront and WAF (2.11, 7); real-time app without `HttpApplicationSetup` and cookie mode (2.4); CloudFront without access logs (3)               | F12-15                                          |
+| OIDC trust (2.11); plan and apply in one job, deploy before CI (2.11); `.tfplan` left on disk (3); workflow pinning test (3); `service-catalog.mjs` reimplements HCL (3) | F12-16                                          |
+| Web caching (2.11); keystore and debug signing (2.11); Android manifest (2.10)                                                                                           | F12-18                                          |
+| Unredacted query in HTTP spans (2.8)                                                                                                                                     | F12-19                                          |
+| Group convention without `TENANT_MOVE_TARGETS` has only unit tests (wave 9)                                                                                              | F12-20: the `dev` deploy runs on the convention |
 
 Closed before F12: `check-structure.mjs` runs in CI since cycle 2a (general review 2.11).
 
@@ -249,7 +263,7 @@ Closed before F12: `check-structure.mjs` runs in CI since cycle 2a (general revi
 
 - Each cycle runs with the [`phase-cycle`](../../.claude/workflows/phase-cycle.js) workflow on the pstack method of `CLAUDE.md`: an Opus builder, an independent Opus reviewer with the impact map of cycle 3, up to two correction rounds. The general merges with green checks and starts the next cycle.
 - User approval points: the prerequisites; every bootstrap and first `global` apply (they create IAM roles); every `staging` and `prod` deploy through the environment reviewers.
-- F12-1 to F12-17 never call AWS. A cycle that finds it needs AWS records the gap for F12-18 instead.
+- F12-1 to F12-19 never call AWS. A cycle that finds it needs AWS records the gap for F12-20 instead.
 
 ## 7. Backlog
 
@@ -277,4 +291,4 @@ Not in F12. Each item is checked against `main` before it is scheduled, because 
 | General review items in sections 2.1 to 2.11, 3 and 7 not listed in section 5 and not closed by cycles 1a to 2b       | General review             |
 | Executive summary in Claude Docs: refreshed when a stage closes                                                       | Plan review m-7            |
 
-Closed since their hand-off, per ADR 0032: `tenant-directory.remove.v1` without a status check (now `TENANT_HAS_DATA`), the cleanup without pause (now `TENANT_MOVE_CLEANUP_PAUSE_MS`), `processed_messages` left in the source, the doubled logical-move budget, and `IDENTITY_REGION` validated only with `SERVICE_REGION` declared.
+Closed since their hand-off, per ADR 0032: `tenant-directory.remove.v1` without a status check (now `TENANT_HAS_DATA`), the cleanup without pause (now `TENANT_MOVE_CLEANUP_PAUSE_MS`), `processed_messages` left in the source, the doubled logical-move budget, and `IDENTITY_REGION` validated only with `SERVICE_REGION` declared. Closed on `main` from the 2026-11-14 quality audit: BE-30 (`check_vendor.py` compares `vendor/` with `requirements.txt`), BE-31 (the bootstrap Lambda verifies the RDS certificate) and BE-33 (Lambda on `nodejs24.x`, with a precondition on the `.nvmrc` major).
