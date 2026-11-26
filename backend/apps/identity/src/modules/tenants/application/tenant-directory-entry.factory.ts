@@ -8,6 +8,12 @@ import type { PlacedTenant } from '../domain/placed-tenant.js';
 export class TenantDirectoryEntryFactory {
   constructor(private readonly groups: TenantShardGroups) {}
 
+  /**
+   * Builds the directory entry of a placed tenant.
+   * @param tenantId Placed tenant.
+   * @param placed Its region and shard.
+   * @returns The entry.
+   */
   of(tenantId: string, placed: PlacedTenant): TenantDirectoryEntry {
     return {
       tenantId,

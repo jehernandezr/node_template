@@ -49,6 +49,9 @@ export class StartTenantMove {
   ) {}
 
   /**
+   * Launches the move of an organization tenant to another shard group or region.
+   * @param request Tenant and target.
+   * @returns The move and its saga.
    * @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if the tenant does not exist.
    * @throws IdentityError `IDENTITY.TENANT_MOVE.NOT_MOVABLE` if it is not an organization.
    * @throws IdentityError `IDENTITY.TENANT_MOVE.UNKNOWN_TARGET` if the group is not configured or its region is not part of the

@@ -12,7 +12,7 @@ import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { UsersFacade } from '../../users/index.js';
 import { RevokeSessions } from '../application/revoke-sessions.use-case.js';
 
-/** Internal operations of sessions. */
+/** Internal operation other services call to revoke every session of a user. */
 @Injectable()
 export class SessionsInternalOperations {
   constructor(
@@ -20,6 +20,11 @@ export class SessionsInternalOperations {
     private readonly users: UsersFacade,
   ) {}
 
+  /**
+   * Internal operation that revokes every session of a user.
+   * @param input User and reason.
+   * @returns How many were revoked.
+   */
   @InternalHandler(RevokeUserSessionsOperation)
   async revokeUserSessions(
     input: RevokeUserSessionsInput,

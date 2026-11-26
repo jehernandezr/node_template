@@ -18,16 +18,28 @@ import { ApplyBillingStanding } from '../application/apply-billing-standing.use-
 export class BillingStandingConsumer {
   constructor(private readonly standing: ApplyBillingStanding) {}
 
+  /**
+   * Suspends the tenant of a suspended subscription.
+   * @param data Event payload.
+   */
   @Subscribe(SubscriptionSuspendedEvent)
   onSuspended(data: SubscriptionSuspendedPayload): Promise<void> {
     return this.standing.suspended(data.tenantId);
   }
 
+  /**
+   * Reactivates the tenant of a reactivated subscription.
+   * @param data Event payload.
+   */
   @Subscribe(SubscriptionReactivatedEvent)
   onReactivated(data: SubscriptionReactivatedPayload): Promise<void> {
     return this.standing.reactivated(data.tenantId);
   }
 
+  /**
+   * Applies the features of a plan change to the tenant.
+   * @param data Event payload.
+   */
   @Subscribe(EntitlementsChangedEvent)
   onEntitlementsChanged(data: EntitlementsChangedPayload): Promise<void> {
     return this.standing.planChanged(

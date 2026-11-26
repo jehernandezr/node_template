@@ -4,6 +4,11 @@ import { UserEntity } from './entities/user.entity.js';
 
 /** Converts between `User` and its row. */
 export class UserMapper {
+  /**
+   * Rebuilds a user from its row.
+   * @param row Stored row.
+   * @returns The domain user.
+   */
   toDomain(row: UserEntity): User {
     return User.rehydrate({
       id: row.id,
@@ -21,6 +26,11 @@ export class UserMapper {
     });
   }
 
+  /**
+   * Turns a user into its row.
+   * @param user Domain user.
+   * @returns The row to store.
+   */
   toPersistence(user: User): UserEntity {
     const state = user.snapshot();
     const row = new UserEntity();

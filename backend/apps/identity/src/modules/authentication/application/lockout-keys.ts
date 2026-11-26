@@ -10,17 +10,30 @@ import { normalizeEmail } from '../../../shared/utils/email-normalization.js';
 export class LockoutKeys {
   constructor(private readonly hasher: SecretHasher) {}
 
-  /** The account of an email, for protected mode. */
+  /**
+   * The account of an email, for protected mode.
+   * @param email Email of the account.
+   * @returns The account key.
+   */
   account(email: string): string {
     return this.hasher.digest(`account:${normalizeEmail(email)}`);
   }
 
-  /** The origin of an attempt: the account, or the API key, from an IP. */
+  /**
+   * The origin of an attempt: the account, or the API key, from an IP.
+   * @param subject Account or API key key.
+   * @param ip IP of the attempt.
+   * @returns The origin key.
+   */
   origin(subject: string, ip: string): string {
     return `${subject}:${ip}`;
   }
 
-  /** An API key by its prefix: its failures count like those of an account. */
+  /**
+   * An API key by its prefix: its failures count like those of an account.
+   * @param prefix Public prefix.
+   * @returns The key of the API key.
+   */
   apiKey(prefix: string): string {
     return this.hasher.digest(`api-key:${prefix}`);
   }

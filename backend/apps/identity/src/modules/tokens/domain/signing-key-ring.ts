@@ -17,15 +17,27 @@ export class SigningKeyRing {
     this.activeKey = active[0];
   }
 
+  /**
+   * Returns the key that signs new tokens.
+   * @returns The active key.
+   */
   active(): SigningKey {
     return this.activeKey;
   }
 
-  /** The keys the JWKS publishes: the active one and the verification ones, never the retired ones. */
+  /**
+   * The keys the JWKS publishes: the active one and the verification ones, never the retired ones.
+   * @returns The published keys.
+   */
   published(): readonly SigningKey[] {
     return this.keys.filter((key) => key.state !== SigningKeyState.Retired);
   }
 
+  /**
+   * Finds a key by its `kid`.
+   * @param kid Key id.
+   * @returns The key, or `undefined`.
+   */
   find(kid: string): SigningKey | undefined {
     return this.published().find((key) => key.kid === kid);
   }

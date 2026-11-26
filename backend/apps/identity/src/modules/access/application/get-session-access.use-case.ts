@@ -12,6 +12,11 @@ export class GetSessionAccess {
     private readonly sessions: SessionsFacade,
   ) {}
 
+  /**
+   * Reads the tenant, roles and permissions of the signed-in user for the front.
+   * @param actor Signed-in user.
+   * @returns The access of the session.
+   */
   async execute(actor: UserActor): Promise<SessionAccess> {
     const access = await this.resolver.resolve(actor.userId, actor.tenantId);
     const mfaVerifiedAt = await this.sessions.mfaVerifiedAt({

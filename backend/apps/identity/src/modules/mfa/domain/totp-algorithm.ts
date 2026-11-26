@@ -10,11 +10,22 @@ export class TotpAlgorithm {
   /** Tolerance steps on each side, for skewed clocks. */
   static readonly WINDOW = 1;
 
+  /**
+   * Computes the TOTP step of an instant.
+   * @param atMs Instant in milliseconds.
+   * @returns The step.
+   */
   step(atMs: number): number {
     return Math.floor(atMs / 1000 / TotpAlgorithm.STEP_SECONDS);
   }
 
-  /** HOTP code of the counter. */
+  /**
+   * HOTP code of the counter.
+   * @param secret TOTP secret.
+   * @param counter Step or counter.
+   * @param digits Length of the code.
+   * @returns The code.
+   */
   code(secret: Buffer, counter: number, digits = TotpAlgorithm.DIGITS): string {
     const message = Buffer.alloc(8);
     message.writeBigUInt64BE(BigInt(counter));
@@ -28,7 +39,13 @@ export class TotpAlgorithm {
     return String(binary % 10 ** digits).padStart(digits, '0');
   }
 
-  /** The step that matches the code within the window, or `undefined`. */
+  /**
+   * The step that matches the code within the window, or `undefined`.
+   * @param secret TOTP secret.
+   * @param code Code to check.
+   * @param atMs Instant of the check.
+   * @returns The matching step, or `undefined`.
+   */
   match(secret: Buffer, code: string, atMs: number): number | undefined {
     const current = this.step(atMs);
     for (

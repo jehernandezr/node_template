@@ -55,7 +55,12 @@ export class AuthenticateApiKey {
     private readonly clock: Clock,
   ) {}
 
-  /** With the full key, as the internal operation receives it. */
+  /**
+   * With the full key, as the internal operation receives it.
+   * @param rawKey Full key as the client sent it.
+   * @param clientIp IP of the client, when known.
+   * @returns The principal of the key.
+   */
   async execute(rawKey: string, clientIp?: string): Promise<ApiKeyPrincipal> {
     const parsed = ApiKeyFormat.parse(rawKey);
     if (parsed === undefined) {
@@ -71,6 +76,10 @@ export class AuthenticateApiKey {
   /**
    * With the prefix and the SHA-256 of the secret, as `@platform/auth` resolves it.
    * Without an IP, failures count only for the prefix: they do not share a counter with other clients without an IP.
+   * @param prefix Public prefix of the key.
+   * @param secretSha256 SHA-256 of the secret part.
+   * @param clientIp IP of the client, when known.
+   * @returns The principal of the key.
    * @throws IdentityError `IDENTITY.API_KEY.INVALID` with `Retry-After` while the prefix is locked
    * from that IP, even if the secret is correct.
    */

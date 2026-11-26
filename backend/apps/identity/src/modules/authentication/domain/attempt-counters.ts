@@ -10,15 +10,28 @@ export interface AttemptCounts {
  * sliding window. It only counts: deciding a lockout belongs to `LockoutPolicy`.
  */
 export abstract class AttemptCounters {
+  /**
+   * Counts a failure for the origin, the account and the IP.
+   * @param origin Origin key.
+   * @param account Account key.
+   * @param ip IP of the attempt.
+   * @returns The counts after the failure.
+   */
   abstract recordFailure(
     origin: string,
     account: string,
     ip: string,
   ): Promise<AttemptCounts>;
 
-  /** Forgets the origin's failures: a successful sign-in or a newly activated lockout. */
+  /**
+   * Forgets the origin's failures: a successful sign-in or a newly activated lockout.
+   * @param origin Origin key.
+   */
   abstract clearOrigin(origin: string): Promise<void>;
 
-  /** Forgets the account's failures from any origin. */
+  /**
+   * Forgets the account's failures from any origin.
+   * @param account Account key.
+   */
   abstract clearAccount(account: string): Promise<void>;
 }

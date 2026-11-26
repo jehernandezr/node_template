@@ -4,6 +4,11 @@ import type { ServiceAccount } from '../domain/service-account.js';
 
 /** What the service accounts and API keys contract responds. */
 export class ApiKeyViews {
+  /**
+   * Builds the API view of a service account.
+   * @param account Service account.
+   * @returns Its summary.
+   */
   static account(account: ServiceAccount): ServiceAccountSummary {
     return {
       id: account.id,
@@ -15,6 +20,11 @@ export class ApiKeyViews {
     };
   }
 
+  /**
+   * Builds the API view of a key, without its secret.
+   * @param key API key.
+   * @returns Its summary.
+   */
   static key(key: ApiKey): ApiKeySummary {
     const state = key.snapshot();
     return {

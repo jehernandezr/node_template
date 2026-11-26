@@ -31,6 +31,12 @@ export class StepUp {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Starts a step-up of the session: a pending authentication with the user's methods.
+   * @param actor Signed-in user.
+   * @param client Client of the request.
+   * @returns The pending authentication.
+   */
   begin(actor: UserActor, client: ClientInfo): Promise<PendingMfa> {
     return this.start.execute({
       user: ActingUser.refOf(actor),
@@ -42,6 +48,12 @@ export class StepUp {
     });
   }
 
+  /**
+   * Verifies the second factor of a step-up and raises the session's last MFA.
+   * @param actor Signed-in user.
+   * @param request Pending token, method and proof.
+   * @returns The new tokens of the session.
+   */
   async verify(
     actor: UserActor,
     request: StepUpVerifyRequest,
@@ -62,7 +74,12 @@ export class StepUp {
     return this.complete(request.mfaToken, method);
   }
 
-  /** Consumes the pending step-up and raises the last MFA of its session. */
+  /**
+   * Consumes the pending step-up and raises the last MFA of its session.
+   * @param mfaToken Pending step-up token.
+   * @param method Method that was verified.
+   * @returns The new tokens of the session.
+   */
   async complete(
     mfaToken: string,
     method: AuthMethodReference,

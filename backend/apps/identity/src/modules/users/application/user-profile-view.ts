@@ -3,6 +3,11 @@ import type { UserSnapshot } from '../domain/user-snapshot.js';
 
 /** The profile the contract returns, built from the user view. */
 export class UserProfileView {
+  /**
+   * Builds the API view of a user profile.
+   * @param user User snapshot.
+   * @returns The profile.
+   */
   static of(user: UserSnapshot): UserProfile {
     return {
       id: user.id,

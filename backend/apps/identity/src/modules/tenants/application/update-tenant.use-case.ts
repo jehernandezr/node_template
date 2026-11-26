@@ -19,6 +19,12 @@ export class UpdateTenant {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Renames a tenant.
+   * @param tenantId Tenant to change.
+   * @param changes New name.
+   * @returns The changed tenant.
+   */
   async execute(
     tenantId: string,
     changes: UpdateTenantRequest,

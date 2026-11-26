@@ -8,13 +8,23 @@ export enum EmailProofPurpose {
 
 /** Single-use tokens that prove the user controls an email. They live 24 hours. */
 export abstract class EmailProofStore {
-  /** Saves the proof and returns the token that travels in the email. */
+  /**
+   * Saves the proof and returns the token that travels in the email.
+   * @param purpose What the proof is for.
+   * @param proof Data of the proof.
+   * @returns The token.
+   */
   abstract issue(
     purpose: EmailProofPurpose,
     proof: PendingEmailProof,
   ): Promise<string>;
 
-  /** Consumes the token: a second time returns `undefined`. */
+  /**
+   * Consumes the token: a second time returns `undefined`.
+   * @param purpose What the proof is for.
+   * @param token Token from the email.
+   * @returns The proof, or `undefined`.
+   */
   abstract consume(
     purpose: EmailProofPurpose,
     token: string,

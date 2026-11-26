@@ -12,6 +12,12 @@ export enum PasswordPolicyViolation {
  * rules; breached passwords are checked by `BreachedPasswordList`.
  */
 export class PasswordPolicy {
+  /**
+   * Lists the rules a password breaks.
+   * @param password Candidate password.
+   * @param email Email of the user.
+   * @returns The violations; empty when acceptable.
+   */
   violations(password: string, email: string): PasswordPolicyViolation[] {
     const length = [...password].length;
     const violations: PasswordPolicyViolation[] = [];

@@ -21,6 +21,13 @@ export class MarkMfaVerified {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Records a verified second factor in the session and issues its new tokens.
+   * @param ref User and session.
+   * @param at Instant of the verification.
+   * @param amr Methods used.
+   * @returns The new tokens.
+   */
   async execute(
     ref: SessionRef,
     at: Date,

@@ -26,6 +26,7 @@ import { RevokeSessions } from '../application/revoke-sessions.use-case.js';
 import { SignOut } from '../application/sign-out.use-case.js';
 import { SwitchTenant } from '../application/switch-tenant.use-case.js';
 
+/** HTTP routes of the user's sessions: refresh, sign-out, listing, revocation and tenant switch. */
 @Resource(IdentityResource.Sessions)
 export class SessionsController {
   constructor(
@@ -36,6 +37,12 @@ export class SessionsController {
     private readonly switchTenantUseCase: SwitchTenant,
   ) {}
 
+  /**
+   * Rotates the session and issues new tokens; the session token comes from the cookie, the body or the bearer header.
+   * @param input Session token on the web channel.
+   * @param authorization Bearer header on the native channel.
+   * @returns The new tokens.
+   */
   @Endpoint(RefreshSessionRoute, { sessionCookie: SessionCookieMode.Rotate })
   refreshSession(
     @Input() input: SessionTokenRequest,
@@ -46,6 +53,11 @@ export class SessionsController {
     );
   }
 
+  /**
+   * Signs out, revoking the session of the token.
+   * @param input Session token on the web channel.
+   * @param authorization Bearer header on the native channel.
+   */
   @Endpoint(SignOutRoute, { sessionCookie: SessionCookieMode.Clear })
   async signOut(
     @Input() input: SessionTokenRequest,
@@ -56,11 +68,21 @@ export class SessionsController {
     );
   }
 
+  /**
+   * Lists the user's active sessions.
+   * @param actor Signed-in user.
+   * @returns Its sessions.
+   */
   @Endpoint(ListSessionsRoute)
   listSessions(@CurrentActor() actor: Actor | undefined): Promise<SessionPage> {
     return this.list.execute(ActingUser.of(actor));
   }
 
+  /**
+   * Revokes one session of the user.
+   * @param input Session id.
+   * @param actor Signed-in user.
+   */
   @Endpoint(RevokeSessionRoute)
   async revokeSession(
     @Input() input: RevokeSessionRequest,
@@ -77,6 +99,11 @@ export class SessionsController {
     }
   }
 
+  /**
+   * Revokes every session of the user but the current one.
+   * @param actor Signed-in user.
+   * @returns How many were revoked.
+   */
   @Endpoint(RevokeOtherSessionsRoute)
   async revokeOtherSessions(
     @CurrentActor() actor: Actor | undefined,
@@ -90,6 +117,12 @@ export class SessionsController {
     return { revoked };
   }
 
+  /**
+   * Switches the active tenant of the session and issues new tokens.
+   * @param input Tenant to switch to.
+   * @param actor Signed-in user, a member of that tenant.
+   * @returns The new tokens.
+   */
   @Endpoint(SwitchTenantRoute)
   switchTenant(
     @Input() input: SwitchTenantRequest,

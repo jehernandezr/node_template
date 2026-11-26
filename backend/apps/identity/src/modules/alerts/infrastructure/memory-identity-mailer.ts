@@ -20,7 +20,12 @@ export class MemoryIdentityMailer extends IdentityMailer {
     }
   }
 
-  /** The last email of that template to that address. */
+  /**
+   * The last email of that template to that address.
+   * @param to Recipient address.
+   * @param template Template sent.
+   * @returns The email, or `undefined` when none was sent.
+   */
   lastTo(
     to: string,
     template: IdentityEmailTemplate,
@@ -30,6 +35,10 @@ export class MemoryIdentityMailer extends IdentityMailer {
       .find((email) => email.to === to && email.template === template);
   }
 
+  /**
+   * Lists every email sent, oldest first.
+   * @returns The emails.
+   */
   sent(): readonly OutgoingEmail[] {
     return this.outbox;
   }

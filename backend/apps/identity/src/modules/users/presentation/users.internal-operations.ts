@@ -29,6 +29,11 @@ export class UsersInternalOperations {
     private readonly eraser: EraseUser,
   ) {}
 
+  /**
+   * Internal operation that suspends a user and revokes its sessions.
+   * @param input User and reason.
+   * @returns The outcome.
+   */
   @InternalHandler(SuspendUserOperation)
   async suspendUser(
     input: SuspendUserInput,
@@ -40,6 +45,11 @@ export class UsersInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that reactivates a suspended user.
+   * @param input User to reactivate.
+   * @returns The outcome.
+   */
   @InternalHandler(ReactivateUserOperation)
   async reactivateUser(
     input: ReactivateUserInput,
@@ -49,6 +59,11 @@ export class UsersInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that returns the profile of a user.
+   * @param input User to read.
+   * @returns The profile.
+   */
   @InternalHandler(GetUserProfileOperation)
   async getUserProfile(
     input: GetUserProfileInput,
@@ -61,6 +76,11 @@ export class UsersInternalOperations {
     };
   }
 
+  /**
+   * Internal operation that erases a user's personal data.
+   * @param input User to erase.
+   * @returns The outcome.
+   */
   @InternalHandler(EraseUserOperation)
   async eraseUser(
     input: EraseUserInput,

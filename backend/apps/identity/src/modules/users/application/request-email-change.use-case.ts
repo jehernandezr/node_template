@@ -21,6 +21,11 @@ export class RequestEmailChange {
     private readonly mailer: IdentityMailer,
   ) {}
 
+  /**
+   * Sends a confirmation link to the new address; the change happens when it is confirmed.
+   * @param ref Signed-in user.
+   * @param newEmail New address.
+   */
   async execute(ref: UserRef, newEmail: string): Promise<void> {
     const email = normalizeEmail(newEmail);
     if ((await this.reader.findByEmail(email)) !== undefined) {

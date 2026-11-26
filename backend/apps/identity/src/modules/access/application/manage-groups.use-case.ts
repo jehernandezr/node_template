@@ -28,6 +28,11 @@ export class ManageGroups {
     private readonly ids: IdGenerator,
   ) {}
 
+  /**
+   * Lists the groups of a tenant.
+   * @param tenantId Tenant to read.
+   * @returns Its groups with their roles.
+   */
   async list(tenantId: string): Promise<GroupPage> {
     return this.scopes.inTenantShard(tenantId, async () => {
       const memberships = await this.tenantAccess.listMemberships();
@@ -44,6 +49,12 @@ export class ManageGroups {
     });
   }
 
+  /**
+   * Creates an empty group.
+   * @param tenantId Tenant of the group.
+   * @param name Name of the group.
+   * @returns The new group.
+   */
   async create(tenantId: string, name: string): Promise<GroupSummary> {
     return this.inTransaction(tenantId, async (groups) => {
       this.assertNameFree(groups, name);
@@ -59,6 +70,13 @@ export class ManageGroups {
     });
   }
 
+  /**
+   * Renames a group.
+   * @param tenantId Tenant of the group.
+   * @param groupId Group to rename.
+   * @param name New name.
+   * @returns The renamed group.
+   */
   async rename(
     tenantId: string,
     groupId: string,
@@ -75,6 +93,12 @@ export class ManageGroups {
     });
   }
 
+  /**
+   * Deletes a group, checking the actor can grant what its members lose.
+   * @param tenantId Tenant of the group.
+   * @param groupId Group to delete.
+   * @param granted Permissions of the actor.
+   */
   async delete(
     tenantId: string,
     groupId: string,
@@ -104,6 +128,13 @@ export class ManageGroups {
     });
   }
 
+  /**
+   * Replaces the roles of a group within the actor's grant ceiling and bumps the access version of its members.
+   * @param tenantId Tenant of the group.
+   * @param groupId Group to change.
+   * @param roleIds New roles.
+   * @param granted Permissions of the actor.
+   */
   async setRoles(
     tenantId: string,
     groupId: string,

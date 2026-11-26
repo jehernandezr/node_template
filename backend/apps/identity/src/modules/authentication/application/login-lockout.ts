@@ -21,7 +21,12 @@ export class LoginLockout {
     private readonly keys: LockoutKeys,
   ) {}
 
-  /** Milliseconds left of the account lockout from that IP or of the IP lockout; `undefined` without a lockout. */
+  /**
+   * Milliseconds left of the account lockout from that IP or of the IP lockout; `undefined` without a lockout.
+   * @param account Account key.
+   * @param ip IP of the attempt.
+   * @returns The remaining milliseconds, or `undefined`.
+   */
   async remainingLockMs(
     account: string,
     ip: string,
@@ -29,6 +34,11 @@ export class LoginLockout {
     return this.store.remainingLockMs(await this.originOf(account, ip), ip);
   }
 
+  /**
+   * Tells whether the account is in protected mode, which asks for the second factor on every sign-in.
+   * @param account Account key.
+   * @returns `true` when protected.
+   */
   isProtected(account: string): Promise<boolean> {
     return this.store.isProtected(account);
   }
@@ -36,6 +46,9 @@ export class LoginLockout {
   /**
    * Counts the failure and activates the corresponding lockouts.
    * Only whoever activates protected mode reports it: subsequent failures already find it active.
+   * @param account Account key.
+   * @param ip IP of the attempt.
+   * @returns The lockouts the failure caused.
    */
   async recordFailure(account: string, ip: string): Promise<FailureOutcome> {
     const origin = await this.originOf(account, ip);
@@ -60,12 +73,19 @@ export class LoginLockout {
     return { lockedForMs, protectedModeEnabled };
   }
 
-  /** A successful sign-in forgets the failures of its origin. */
+  /**
+   * A successful sign-in forgets the failures of its origin.
+   * @param account Account key.
+   * @param ip IP of the attempt.
+   */
   async clear(account: string, ip: string): Promise<void> {
     await this.counters.clearOrigin(await this.originOf(account, ip));
   }
 
-  /** Removes the lockouts of all the account's origins, its protected mode and its failures. */
+  /**
+   * Removes the lockouts of all the account's origins, its protected mode and its failures.
+   * @param account Account key.
+   */
   async unlock(account: string): Promise<void> {
     await this.store.unlock(account, LockoutRules.unlockEpochTtlMs);
     await this.counters.clearAccount(account);

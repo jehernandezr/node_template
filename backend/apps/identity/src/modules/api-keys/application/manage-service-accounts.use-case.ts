@@ -30,6 +30,11 @@ export class ManageServiceAccounts {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Lists the service accounts of a tenant.
+   * @param tenantId Tenant to read.
+   * @returns Its service accounts.
+   */
   async list(tenantId: string): Promise<ServiceAccountPage> {
     const accounts = await this.scopes.inTenantShard(tenantId, () =>
       this.repository.listServiceAccounts(),
@@ -40,6 +45,13 @@ export class ManageServiceAccounts {
     };
   }
 
+  /**
+   * Creates a service account with permissions the actor can grant.
+   * @param tenantId Tenant of the account.
+   * @param actor Actor that creates it.
+   * @param request Name and permissions.
+   * @returns The new service account.
+   */
   async create(
     tenantId: string,
     actor: Actor | undefined,
@@ -65,6 +77,13 @@ export class ManageServiceAccounts {
     return ApiKeyViews.account(account);
   }
 
+  /**
+   * Changes a service account within the actor's grant ceiling.
+   * @param tenantId Tenant of the account.
+   * @param actor Actor that changes it.
+   * @param request Account id, name and permissions.
+   * @returns The changed service account.
+   */
   async update(
     tenantId: string,
     actor: Actor | undefined,
@@ -94,6 +113,11 @@ export class ManageServiceAccounts {
     return ApiKeyViews.account(updated.account);
   }
 
+  /**
+   * Disables a service account and revokes its keys.
+   * @param tenantId Tenant of the account.
+   * @param serviceAccountId Account to disable.
+   */
   async disable(tenantId: string, serviceAccountId: string): Promise<void> {
     const disabled = await this.change(
       tenantId,

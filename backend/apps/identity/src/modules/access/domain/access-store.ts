@@ -76,7 +76,7 @@ export abstract class TenantAccessRepository {
   abstract listGroups(): Promise<readonly Group[]>;
 
   /**
-   * Inserts a group.
+   * Stores a new group of the tenant in scope.
    * @param group New group.
    */
   abstract insertGroup(group: Group): Promise<void>;
@@ -100,7 +100,7 @@ export abstract class TenantAccessRepository {
   abstract listRoles(): Promise<readonly Role[]>;
 
   /**
-   * Inserts a role.
+   * Stores a new role of the tenant in scope.
    * @param role New role.
    */
   abstract insertRole(role: Role): Promise<void>;

@@ -29,6 +29,7 @@ import { TokensModule } from './modules/tokens/presentation/tokens.module.js';
 import { UsersModule } from './modules/users/presentation/users.module.js';
 // generated:modules:imports
 
+/** Root module of identity: users, credentials, sessions, tenants, access and their internal operations over the platform runtime. */
 @Module({
   imports: [
     IdentityAuthModule,

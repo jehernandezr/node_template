@@ -17,6 +17,10 @@ export class RefreshTenantAccess {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Bumps the access version of the whole tenant, so every token of it reloads its permissions.
+   * @param tenantId Tenant to refresh.
+   */
   execute(tenantId: string): Promise<void> {
     return this.scopes.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {

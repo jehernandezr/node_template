@@ -41,6 +41,12 @@ export class RequestMfaChallenge {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Starts a challenge of a second factor method for a pending sign-in or step-up, sending its code when the method needs one.
+   * @param request Pending token and method.
+   * @param purpose Sign-in or step-up.
+   * @returns The challenge.
+   */
   async execute(
     request: MfaChallengeRequest,
     purpose: PendingPurpose,

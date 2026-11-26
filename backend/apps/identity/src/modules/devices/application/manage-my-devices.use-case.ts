@@ -25,6 +25,11 @@ export class ManageMyDevices {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Lists the user's active devices.
+   * @param ref Signed-in user.
+   * @returns Its devices.
+   */
   async list(ref: UserRef): Promise<DevicePage> {
     const devices = await this.scopes.inUserShard(ref, () =>
       this.devices.listActive(ref.userId),
@@ -48,7 +53,11 @@ export class ManageMyDevices {
     };
   }
 
-  /** Removes the device and closes its sessions. */
+  /**
+   * Removes the device and closes its sessions.
+   * @param ref Signed-in user.
+   * @param deviceId Device to remove.
+   */
   async remove(ref: UserRef, deviceId: string): Promise<void> {
     const now = this.clock.now();
     await this.change(ref, deviceId, async (device) => {
@@ -68,6 +77,11 @@ export class ManageMyDevices {
     );
   }
 
+  /**
+   * Stops trusting a device, so its next sign-in asks for a second factor.
+   * @param ref Signed-in user.
+   * @param deviceId Device to untrust.
+   */
   async untrust(ref: UserRef, deviceId: string): Promise<void> {
     await this.change(ref, deviceId, async (device) => {
       device.untrust(this.clock.now());
@@ -75,6 +89,12 @@ export class ManageMyDevices {
     });
   }
 
+  /**
+   * Registers the push token of a device.
+   * @param ref Signed-in user.
+   * @param deviceId Device of the token.
+   * @param pushToken Token of the push provider.
+   */
   async setPushToken(
     ref: UserRef,
     deviceId: string,

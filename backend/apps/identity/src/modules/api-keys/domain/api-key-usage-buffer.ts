@@ -10,7 +10,14 @@ export interface ApiKeyUsage {
  * each time would load its tenant's shard. A job flushes what was accumulated.
  */
 export abstract class ApiKeyUsageBuffer {
+  /**
+   * Accumulates one use of a key, written later in bulk.
+   * @param usage Key and instant.
+   */
   abstract record(usage: ApiKeyUsage): Promise<void>;
-  /** Returns what was accumulated and empties it; what arrives afterwards is kept for next time. */
+  /**
+   * Returns what was accumulated and empties it; what arrives afterwards is kept for next time.
+   * @returns The accumulated uses.
+   */
   abstract drain(): Promise<readonly ApiKeyUsage[]>;
 }

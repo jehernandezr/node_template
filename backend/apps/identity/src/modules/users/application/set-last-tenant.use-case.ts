@@ -13,6 +13,11 @@ export class SetLastTenant {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Records the last tenant the user worked in, used as the default at sign-in.
+   * @param ref User.
+   * @param tenantId Last tenant.
+   */
   async execute(ref: UserRef, tenantId: string): Promise<void> {
     await this.scopes.inUserShard(ref, () =>
       this.transactions.runInTransaction(async () => {

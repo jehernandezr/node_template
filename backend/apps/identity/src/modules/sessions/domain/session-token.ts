@@ -20,7 +20,11 @@ export class SessionToken {
     readonly secret: Buffer,
   ) {}
 
-  /** `undefined` if the text is not a well-formed session token. */
+  /**
+   * `undefined` if the text is not a well-formed session token.
+   * @param text Token text.
+   * @returns The token, or `undefined`.
+   */
   static parse(text: string): SessionToken | undefined {
     const parsed = parseOpaqueToken(
       text,
@@ -49,6 +53,10 @@ export class SessionToken {
     );
   }
 
+  /**
+   * Formats the token for the cookie or the bearer header.
+   * @returns The token text.
+   */
   format(): string {
     return encodeOpaqueToken(
       SessionToken.PREFIX,

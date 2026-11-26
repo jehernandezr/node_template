@@ -19,7 +19,10 @@ import {
 export class KnownBreachedPasswordsSource extends BloomRebuildSourceProvider {
   private static readonly BATCH = 250;
 
-  /** All passwords, normalized and without duplicates. */
+  /**
+   * All passwords, normalized and without duplicates.
+   * @returns The passwords.
+   */
   passwords(): readonly string[] {
     const combined = [
       ...KNOWN_BREACHED_PASSWORDS,
@@ -53,7 +56,11 @@ export class KnownBreachedPasswordsSource extends BloomRebuildSourceProvider {
     return batches;
   }
 
-  /** Public lists are compared case-insensitively. */
+  /**
+   * Public lists are compared case-insensitively.
+   * @param password Password to normalize.
+   * @returns The lowercase password.
+   */
   static normalize(password: string): string {
     return password.toLowerCase();
   }

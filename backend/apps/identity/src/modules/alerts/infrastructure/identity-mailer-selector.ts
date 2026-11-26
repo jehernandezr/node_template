@@ -9,7 +9,11 @@ export class IdentityMailerSelector {
     private readonly notifications: IdentityMailer,
   ) {}
 
-  /** The mailer of the configured kind. */
+  /**
+   * The mailer of the configured kind.
+   * @param kind Configured mailer kind.
+   * @returns The mailer to inject.
+   */
   select(kind: IdentityMailerKind): IdentityMailer {
     switch (kind) {
       case IdentityMailerKind.Memory:

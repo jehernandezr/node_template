@@ -21,10 +21,18 @@ export class ApplyBillingStanding {
     private readonly transactions: TransactionManager,
   ) {}
 
+  /**
+   * Suspends a tenant whose subscription billing suspended.
+   * @param tenantId Suspended tenant.
+   */
   async suspended(tenantId: string): Promise<void> {
     await this.status.suspend(tenantId);
   }
 
+  /**
+   * Reactivates a tenant whose subscription billing reactivated.
+   * @param tenantId Reactivated tenant.
+   */
   async reactivated(tenantId: string): Promise<void> {
     await this.status.reactivate(tenantId);
   }
@@ -33,6 +41,9 @@ export class ApplyBillingStanding {
    * Saves the plan's features and bumps the tenant's permissions version, unless the change arrives
    * after a later one. The version is bumped after committing: if the process crashes before, the retry
    * of the same decision applies it again and bumps it.
+   * @param tenantId Tenant whose plan changed.
+   * @param features Features of the new plan.
+   * @param changedAt Instant billing decided it.
    */
   async planChanged(
     tenantId: string,

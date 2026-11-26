@@ -15,6 +15,11 @@ export class DeviceRoute {
     readonly deviceId: string,
   ) {}
 
+  /**
+   * Parses a device id of the form `dv1_<sub>_<htid>_<did>`.
+   * @param text Device id.
+   * @returns The route, or `undefined` when malformed.
+   */
   static parse(text: string): DeviceRoute | undefined {
     const parts = text.split('_');
     if (parts.length !== 4 || parts[0] !== DeviceRoute.PREFIX) {
@@ -34,6 +39,10 @@ export class DeviceRoute {
     return new DeviceRoute({ userId, homeTenantId }, deviceId);
   }
 
+  /**
+   * Formats the route as a device id.
+   * @returns The device id.
+   */
   format(): string {
     return [
       DeviceRoute.PREFIX,

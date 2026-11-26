@@ -18,19 +18,37 @@ export interface InvitationState {
 export class Invitation {
   private constructor(private state: InvitationState) {}
 
+  /**
+   * Issues a pending invitation in version 1.
+   * @param state Invitation data.
+   * @returns The invitation.
+   */
   static issue(state: Omit<InvitationState, 'status' | 'version'>): Invitation {
     return new Invitation({ ...state, status: InvitationStatus.Pending });
   }
 
+  /**
+   * Rebuilds an invitation from its state.
+   * @param state Stored invitation.
+   * @returns The invitation.
+   */
   static rehydrate(state: InvitationState): Invitation {
     return new Invitation(state);
   }
 
+  /**
+   * Copies the invitation state.
+   * @returns The invitation state.
+   */
   snapshot(): InvitationState {
     return this.state;
   }
 
-  /** The state at time `now`: an expired pending one counts as expired even if no one has marked it. */
+  /**
+   * The state at time `now`: an expired pending one counts as expired even if no one has marked it.
+   * @param now Instant to check.
+   * @returns The status.
+   */
   statusAt(now: Date): InvitationStatus {
     return this.state.status === InvitationStatus.Pending &&
       now.getTime() >= this.state.expiresAt.getTime()
@@ -38,15 +56,25 @@ export class Invitation {
       : this.state.status;
   }
 
+  /**
+   * Tells whether the invitation can still be accepted.
+   * @param now Instant to check.
+   * @returns `true` when pending and not expired.
+   */
   isUsable(now: Date): boolean {
     return this.statusAt(now) === InvitationStatus.Pending;
   }
 
+  /** Marks the invitation accepted. */
   accept(): void {
     this.state = { ...this.state, status: InvitationStatus.Accepted };
   }
 
-  /** Returns `false` if it was no longer pending. */
+  /**
+   * Returns `false` if it was no longer pending.
+   * @param now Instant of the revocation.
+   * @returns Whether it changed.
+   */
   revoke(now: Date): boolean {
     if (!this.isUsable(now)) {
       return false;

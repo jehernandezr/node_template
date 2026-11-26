@@ -14,6 +14,11 @@ export class FinishTenantMove {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Marks a move switched when its saga reaches the switch, so its cleanup can be scheduled.
+   * @param move Tenant and move.
+   * @returns The acknowledgment.
+   */
   async execute(move: TenantMoveRef): Promise<TenantMoveAck> {
     await this.log.markSwitched(move.moveId, this.clock.now());
     return { moveId: move.moveId };

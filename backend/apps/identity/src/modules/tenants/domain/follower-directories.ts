@@ -4,6 +4,7 @@ import type { TenantDirectoryEntry } from '@contracts/platform';
 export abstract class FollowerDirectories {
   /**
    * Records the tenant in each service's directory; if a service already has it, it leaves it as is.
+   * @param entry Tenant with its placement.
    * @throws FollowerDirectoryUnavailableError if a service does not confirm the placement.
    */
   abstract place(entry: TenantDirectoryEntry): Promise<void>;

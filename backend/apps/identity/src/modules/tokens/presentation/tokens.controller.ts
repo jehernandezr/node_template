@@ -4,6 +4,7 @@ import { GetJwksRoute, type Jwks } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
 import { GetJwks } from '../application/get-jwks.use-case.js';
 
+/** HTTP route of the public signing keys. */
 @Resource(IdentityResource.Tokens)
 export class TokensController {
   /** The other services cache the JWKS for five minutes; a new key enters as a verification key before signing. */
@@ -11,6 +12,11 @@ export class TokensController {
 
   constructor(private readonly jwks: GetJwks) {}
 
+  /**
+   * Publishes the JWKS with cache headers.
+   * @param http Exchange whose response gets the cache headers.
+   * @returns The public keys.
+   */
   @Endpoint(GetJwksRoute)
   async getJwks(@Exchange() http: HttpExchange): Promise<Jwks> {
     const jwks = await this.jwks.execute();

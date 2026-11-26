@@ -11,7 +11,10 @@ export class DeploymentRegion {
     private readonly regions: ServiceRegions,
   ) {}
 
-  /** Returns this deployment's region and, if declared, its API URL. */
+  /**
+   * Returns this deployment's region and, if declared, its API URL.
+   * @returns The region location.
+   */
   location(): RegionLocation {
     const region = this.settings.values.IDENTITY_REGION;
     const apiBaseUrl = this.regions.apiBaseUrlOf(region);

@@ -21,6 +21,11 @@ export class ListMembersByPermission {
     private readonly scopes: ShardScopes,
   ) {}
 
+  /**
+   * Lists the members of a tenant that hold a permission, one page at a time.
+   * @param input Tenant, permission, cursor and page size.
+   * @returns One page of members.
+   */
   async execute(input: ListMembersByPermissionInput): Promise<UserRefPage> {
     const limit = input.limit ?? Pagination.defaultLimit;
     const holders = await this.scopes.inTenantShard(

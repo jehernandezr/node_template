@@ -46,6 +46,11 @@ export class ProvisionTenant {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Creates a tenant in provisioning: places it, reserves its slug, records it in every service directory and sets up its owner.
+   * @param input Tenant data and owner.
+   * @returns The new tenant.
+   */
   async execute(input: ProvisionTenantInput): Promise<TenantSummary> {
     const owner = await this.ownerOf(input.ownerUserId);
     if (

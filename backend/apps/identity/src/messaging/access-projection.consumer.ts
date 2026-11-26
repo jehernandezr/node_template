@@ -20,6 +20,10 @@ export class AccessProjectionConsumer {
     private readonly access: AccessFacade,
   ) {}
 
+  /**
+   * Projects a membership change into the user's list of tenants.
+   * @param data Member who joined, changed or left.
+   */
   @Subscribe(MembershipChangedEvent)
   async onMembershipChanged(data: MembershipChangedPayload): Promise<void> {
     const ref = await this.users.refOf(data.userId);

@@ -40,7 +40,11 @@ export class ManageMfaFactors {
     private readonly clock: Clock,
   ) {}
 
-  /** A new unconfirmed secret; replaces a previous unconfirmed one. */
+  /**
+   * A new unconfirmed secret; replaces a previous unconfirmed one.
+   * @param ref Signed-in user.
+   * @returns The secret and its URI for the app.
+   */
   async startTotp(ref: UserRef): Promise<TotpEnrollment> {
     const secret = this.generator.bytes(ManageMfaFactors.TOTP_SECRET_BYTES);
     await this.inUserTransaction(ref, async () => {
@@ -67,7 +71,12 @@ export class ManageMfaFactors {
     };
   }
 
-  /** Confirms the TOTP with a code from the app and delivers new recovery codes. */
+  /**
+   * Confirms the TOTP with a code from the app and delivers new recovery codes.
+   * @param ref Signed-in user.
+   * @param code Code from the app.
+   * @returns The new recovery codes.
+   */
   async confirmTotp(ref: UserRef, code: string): Promise<RecoveryCodes> {
     const codes = this.newRecoveryCodes();
     await this.inUserTransaction(ref, async () => {
@@ -99,6 +108,10 @@ export class ManageMfaFactors {
     return { codes };
   }
 
+  /**
+   * Removes the user's TOTP factor.
+   * @param ref Signed-in user.
+   */
   async removeTotp(ref: UserRef): Promise<void> {
     await this.inUserTransaction(ref, async () => {
       const factor = await this.factors.findTotp(ref.userId);
@@ -113,6 +126,11 @@ export class ManageMfaFactors {
     });
   }
 
+  /**
+   * Replaces the user's recovery codes with new ones.
+   * @param ref Signed-in user.
+   * @returns The new codes, shown once.
+   */
   async regenerateRecoveryCodes(ref: UserRef): Promise<RecoveryCodes> {
     const codes = this.newRecoveryCodes();
     await this.inUserTransaction(ref, () =>

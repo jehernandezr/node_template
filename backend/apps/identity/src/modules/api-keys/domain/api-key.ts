@@ -22,19 +22,37 @@ export interface ApiKeyState {
 export class ApiKey {
   private constructor(private state: ApiKeyState) {}
 
+  /**
+   * Issues an active key in version 1.
+   * @param state Key data.
+   * @returns The key.
+   */
   static issue(state: Omit<ApiKeyState, 'status' | 'version'>): ApiKey {
     return new ApiKey({ ...state, status: ApiKeyStatus.Active });
   }
 
+  /**
+   * Rebuilds a key from its state.
+   * @param state Stored key.
+   * @returns The key.
+   */
   static rehydrate(state: ApiKeyState): ApiKey {
     return new ApiKey(state);
   }
 
+  /**
+   * Copies the key state.
+   * @returns The key state.
+   */
   snapshot(): ApiKeyState {
     return this.state;
   }
 
-  /** Whether it is valid at time `now`: active or rotated within its grace period, and not expired. */
+  /**
+   * Whether it is valid at time `now`: active or rotated within its grace period, and not expired.
+   * @param now Instant to check.
+   * @returns `true` when usable.
+   */
   isUsable(now: Date): boolean {
     const ms = now.getTime();
     if (this.state.status === ApiKeyStatus.Revoked) {
@@ -50,6 +68,11 @@ export class ApiKey {
     return !this.isExpired(now);
   }
 
+  /**
+   * Tells whether the key's validity ended.
+   * @param now Instant to check.
+   * @returns `true` when expired.
+   */
   isExpired(now: Date): boolean {
     return (
       this.state.expiresAt !== undefined &&
@@ -57,11 +80,18 @@ export class ApiKey {
     );
   }
 
+  /**
+   * Marks the key rotated; it stays valid until `validUntil`.
+   * @param validUntil End of the grace period.
+   */
   rotate(validUntil: Date): void {
     this.state = { ...this.state, status: ApiKeyStatus.Rotated, validUntil };
   }
 
-  /** Returns `false` if it was already revoked. */
+  /**
+   * Returns `false` if it was already revoked.
+   * @returns Whether it changed.
+   */
   revoke(): boolean {
     if (this.state.status === ApiKeyStatus.Revoked) {
       return false;

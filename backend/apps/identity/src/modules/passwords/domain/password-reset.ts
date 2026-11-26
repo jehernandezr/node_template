@@ -13,20 +13,35 @@ export interface PasswordResetState {
 export class PasswordReset {
   private constructor(private state: PasswordResetState) {}
 
+  /**
+   * Issues an unused reset in version 1.
+   * @param state Reset data.
+   * @returns The reset.
+   */
   static issue(
     state: Omit<PasswordResetState, 'usedAt' | 'version'>,
   ): PasswordReset {
     return new PasswordReset(state);
   }
 
+  /**
+   * Rebuilds a reset from its state.
+   * @param state Stored reset.
+   * @returns The reset.
+   */
   static rehydrate(state: PasswordResetState): PasswordReset {
     return new PasswordReset(state);
   }
 
+  /** Id of the reset. */
   get id(): string {
     return this.state.id;
   }
 
+  /**
+   * Copies the reset state.
+   * @returns The reset state.
+   */
   snapshot(): PasswordResetState {
     return this.state;
   }
@@ -35,6 +50,9 @@ export class PasswordReset {
    * Marks the recovery as used if it is still valid. `secretMatches` compares the presented secret with the
    * hash in constant time. Returns `false`, without changing anything, if it was already used, expired or the secret does not
    * match: all three respond the same so as not to reveal which one it was.
+   * @param secretMatches Constant-time comparison with the stored hash.
+   * @param now Current instant.
+   * @returns Whether it was redeemed now.
    */
   redeem(secretMatches: (tokenHash: string) => boolean, now: Date): boolean {
     if (

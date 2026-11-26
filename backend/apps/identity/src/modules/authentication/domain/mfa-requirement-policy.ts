@@ -10,6 +10,11 @@ export interface MfaRequirementFacts {
 
 /** Decides whether a sign-in needs a second factor. */
 export class MfaRequirementPolicy {
+  /**
+   * Decides whether a sign-in needs a second factor: an unrecognized device, a privileged member or protected mode.
+   * @param facts What is known of the sign-in.
+   * @returns `true` when a second factor is needed.
+   */
   requiresSecondFactor(facts: MfaRequirementFacts): boolean {
     return !facts.deviceRecognized || facts.privileged || facts.protectedMode;
   }

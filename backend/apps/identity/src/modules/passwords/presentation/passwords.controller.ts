@@ -14,6 +14,7 @@ import { ChangePassword } from '../application/change-password.use-case.js';
 import { ConfirmPasswordReset } from '../application/confirm-password-reset.use-case.js';
 import { RequestPasswordReset } from '../application/request-password-reset.use-case.js';
 
+/** HTTP routes of password change and reset. */
 @Resource(IdentityResource.Passwords)
 export class PasswordsController {
   constructor(
@@ -22,6 +23,11 @@ export class PasswordsController {
     private readonly confirm: ConfirmPasswordReset,
   ) {}
 
+  /**
+   * Changes the signed-in user's password.
+   * @param input Current and new password.
+   * @param actor Signed-in user.
+   */
   @Endpoint(ChangePasswordRoute)
   async changePassword(
     @Input() input: ChangePasswordRequest,
@@ -30,6 +36,10 @@ export class PasswordsController {
     await this.change.execute(ActingUser.of(actor), input);
   }
 
+  /**
+   * Requests a reset link for an email; answers the same whether or not the account exists.
+   * @param input Email.
+   */
   @Endpoint(RequestPasswordResetRoute)
   async requestPasswordReset(
     @Input() input: PasswordResetRequest,
@@ -37,6 +47,10 @@ export class PasswordsController {
     await this.request.execute(input.email);
   }
 
+  /**
+   * Sets a new password with a reset token and revokes the user's sessions.
+   * @param input Token and new password.
+   */
   @Endpoint(ConfirmPasswordResetRoute)
   async confirmPasswordReset(
     @Input() input: PasswordResetConfirmRequest,

@@ -14,6 +14,12 @@ export interface OpenedSession {
 
 /** The two responses of a sign-in: open session or pending second factor. */
 export class SignInResponses {
+  /**
+   * Builds the response of a sign-in that opened a session.
+   * @param session Opened session with its tokens.
+   * @param location Region of the user.
+   * @returns The response.
+   */
   static authenticated(
     session: OpenedSession,
     location: RegionLocation,
@@ -29,6 +35,11 @@ export class SignInResponses {
     };
   }
 
+  /**
+   * Builds the response of a sign-in that needs a second factor.
+   * @param pending Pending authentication.
+   * @returns The response.
+   */
   static mfaRequired(pending: PendingMfa): SignInResponse {
     return { status: SignInStatus.MfaRequired, mfa: pending };
   }
