@@ -151,15 +151,15 @@ The `deploy.yml`, `publish-web.yml` and `publish-mobile.yml` workflows access AW
 
 Roles and variables of the GitHub repository. Each GitHub environment, named like the environment (`dev`, `staging`, `prod`), stores these variables:
 
-| Variable                    | Use                                                                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `vars.AWS_DEPLOY_ROLE_ARN`  | Role for Terraform and for reading the state, of the stacks and of each service.                |
-| `vars.AWS_PUBLISH_ROLE_ARN` | Role that pushes images to ECR and artifacts to the artifacts bucket.                           |
-| `vars.AWS_WEB_ROLE_ARN`     | Role that publishes the web and invalidates CloudFront.                                         |
-| `vars.AWS_REGION`           | AWS region of the environment.                                                                  |
-| `vars.NAME_PREFIX`          | Name prefix, for example `node-template-dev`. Used by the web.                                  |
-| `vars.ARTIFACTS_BUCKET`     | Artifacts bucket. Read by `publish-mobile.yml`; the services pipeline takes it from `platform`. |
-| `vars.DEPLOY_RUNNER`        | Optional. Label of a self-hosted runner inside the VPC; without it `ubuntu-latest` is used.     |
+| Variable                    | Use                                                                                                                                                                                                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vars.AWS_DEPLOY_ROLE_ARN`  | Role for Terraform and for reading the state, of the stacks and of each service.                                                                                                                                                                               |
+| `vars.AWS_PUBLISH_ROLE_ARN` | Role that pushes images to ECR and artifacts to the artifacts bucket.                                                                                                                                                                                          |
+| `vars.AWS_WEB_ROLE_ARN`     | Role that publishes the web and invalidates CloudFront.                                                                                                                                                                                                        |
+| `vars.AWS_REGION`           | AWS region of the environment.                                                                                                                                                                                                                                 |
+| `vars.NAME_PREFIX`          | Name prefix, for example `node-template-dev`. Used by the web.                                                                                                                                                                                                 |
+| `vars.ARTIFACTS_BUCKET`     | Artifacts bucket. Read by `publish-mobile.yml`; the services pipeline takes it from `platform`.                                                                                                                                                                |
+| `vars.DEPLOY_RUNNER`        | Optional. Label of a self-hosted runner inside the VPC. Without it the stacks job uses `ubuntu-latest` and the services job uses the native `ubuntu-24.04-arm`; a custom runner still builds `linux/arm64`, because the build passes `--platform linux/arm64`. |
 
 Order per service. Services are discovered by walking `environments/<environment>/services/*`: every folder with `terraform.tfvars` and `backend.tfvars` is a service, and the workflow has no fixed list. For each one, four steps run in order: publish the artifact (an image tagged `sha-<commit>` or a Lambda package in S3), migrate the database, plan and apply the `service` stack. The artifact goes first because the `apply` needs `TF_VAR_image` or `TF_VAR_lambda_package`. Before the services, the stacks job applies `network`, `platform`, `data`, `messaging` and `edge`, in that order, planning and applying each one before the next because it reads their outputs.
 
