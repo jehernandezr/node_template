@@ -112,7 +112,9 @@ class BackendStructureCheck {
           ],
     );
     return [...changed].filter(
-      (f) => f.startsWith('backend/') && existsSync(join(this.root, f)),
+      (f) =>
+        f.startsWith('backend/') &&
+        (this.mode === '--staged' || existsSync(join(this.root, f))),
     );
   }
 
@@ -177,11 +179,12 @@ class BackendStructureCheck {
   /**
    * With --changed only new lines count: moving a file does not force refactoring it,
    * but what is written today does follow the rules. A new untracked file is checked whole; one moved without
-   * changes contributes no lines.
+   * changes contributes no lines. With --staged only the index counts: the added lines come from the staged diff, so
+   * unstaged edits of a partly staged file are left to the next commit.
    */
   sourceToCheck(file) {
-    const full = readFileSync(join(this.root, file), 'utf8');
-    if (this.mode === '--all') return full;
+    if (this.mode === '--all')
+      return readFileSync(join(this.root, file), 'utf8');
     this.addedLines ??= this.readAddedLines();
     this.untracked ??= new Set(
       this.mode === '--staged'
@@ -194,7 +197,9 @@ class BackendStructureCheck {
             .split('\n')
             .filter(Boolean),
     );
-    return this.untracked.has(file) ? full : (this.addedLines.get(file) ?? '');
+    return this.untracked.has(file)
+      ? readFileSync(join(this.root, file), 'utf8')
+      : (this.addedLines.get(file) ?? '');
   }
 
   /** A single diff of the whole tree, so git detects moved files as renames. */
