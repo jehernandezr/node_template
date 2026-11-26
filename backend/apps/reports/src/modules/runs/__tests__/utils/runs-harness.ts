@@ -4,6 +4,7 @@ import {
   RegistryAppConfig,
 } from '@platform/config';
 import { ActingMember } from '@platform/auth';
+import { CursorCodec, IdCursor } from '@platform/criteria';
 import { TestActors } from '@platform/auth/test-utils';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
@@ -14,6 +15,7 @@ import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { ReportsSettings } from '../../../../config/reports-settings.js';
 import { CreateRun } from '../../application/create-run.use-case.js';
 import { ExecuteRun } from '../../application/execute-run.use-case.js';
+import { RunQueries } from '../../application/run-queries.js';
 import { ReportEntitlements } from '../../domain/report-entitlements.js';
 import { FixedDefinitions } from './fixed-definitions.js';
 import { InMemoryResults } from './in-memory-results.js';
@@ -42,6 +44,7 @@ export class RunsHarness {
   readonly bus = new RecordingMessageBus(this.transactions);
   readonly member = ActingMember.of(TestActors.user(RunsHarness.TENANT));
   private readonly shard = UnroutedShardScopes.create();
+  private readonly ids = new SequentialIdGenerator();
   private readonly settings: ReportsSettings;
 
   constructor() {
@@ -64,8 +67,19 @@ export class RunsHarness {
       this.bus,
       this.shard,
       this.transactions,
-      new SequentialIdGenerator(),
+      this.ids,
       this.clock,
+    );
+  }
+
+  /** The reads of the tenant's runs. */
+  queries(): RunQueries {
+    return new RunQueries(
+      this.runs,
+      this.results,
+      this.shard,
+      this.clock,
+      new IdCursor(new CursorCodec()),
     );
   }
 

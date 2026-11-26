@@ -1,4 +1,7 @@
-import { ReportRunRepository } from '../../domain/report-run.repository.js';
+import {
+  ReportRunRepository,
+  type ReportRunPageRequest,
+} from '../../domain/report-run.repository.js';
 import { ReportRun } from '../../domain/report-run.js';
 
 /** Runs of one tenant kept in memory as snapshots. */
@@ -19,8 +22,20 @@ export class InMemoryRuns extends ReportRunRepository {
     return run;
   }
 
-  override async page(): Promise<readonly ReportRun[]> {
-    return [...this.stored.values()];
+  override async page(
+    request: ReportRunPageRequest,
+  ): Promise<readonly ReportRun[]> {
+    return [...this.stored.values()]
+      .map((run) => run.snapshot())
+      .filter(
+        (state) =>
+          (request.type === undefined || state.type === request.type) &&
+          (request.status === undefined || state.status === request.status) &&
+          (request.afterId === undefined || state.id < request.afterId),
+      )
+      .sort((left, right) => right.id.localeCompare(left.id))
+      .slice(0, request.limit)
+      .map((state) => ReportRun.rehydrate(state));
   }
 
   /** The stored state of a run. */
