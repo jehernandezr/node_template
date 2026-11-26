@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { identityContract } from '@contracts/identity';
+import { TypeOrmDirectoryStore } from '@platform/adapters-postgres';
 import { ConfigModule } from '@platform/config/nest';
 import { SagaModule } from '@platform/saga/nest';
+import { LeastLoadedPlacementPolicy, TenantPlacer } from '@platform/sharding';
 import {
   TenantMoveConfig,
   TenantMoveTargets,
@@ -45,6 +47,12 @@ import { UsersCoreModule } from '../../users/module.js';
   ],
   controllers: [TenantsController],
   providers: [
+    {
+      provide: TenantPlacer,
+      useFactory: (directory: TypeOrmDirectoryStore) =>
+        new TenantPlacer(new LeastLoadedPlacementPolicy(), directory),
+      inject: [TypeOrmDirectoryStore],
+    },
     { provide: TenantPlacement, useClass: DirectoryTenantPlacement },
     { provide: FollowerDirectories, useClass: InternalFollowerDirectories },
     {
