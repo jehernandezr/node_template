@@ -260,7 +260,7 @@ const wordsOf = (text) =>
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .toLowerCase()
     .split(/[^a-z0-9]+/)
-    .filter((word) => word.length > 0)
+    .filter((word) => word.length > 1)
     .map((word) => word.replace(/(ies|es|s)$/, ''));
 
 const vagueWords = new Set(
@@ -274,11 +274,39 @@ const isVague = (summary) => {
   return said.length === 0 || said.every((word) => vagueWords.has(word));
 };
 
+const showsFormat = (summary) =>
+  [...summary.matchAll(/`([^`]+)`/g)].some((span) => /[^\w.\s]/.test(span[1]));
+
 const repeatsName = (summary, name) => {
+  if (showsFormat(summary)) return false;
   const named = new Set(wordsOf(name));
   const said = wordsOf(summary).filter((word) => !fillerWords.has(word));
   return said.length > 0 && said.every((word) => named.has(word));
 };
+
+const delegationWords = new Set(
+  wordsOf(
+    'delegate delegates forward forwards call calls pass passes wrap wraps proxy proxies real inner underlying wrapped through port ports use uses case cases repository repositories facade facades adapter adapters client clients method methods module modules caller callers same process processes each local own run runs internal operation operations',
+  ),
+);
+
+const delegatingOwner = /(Facade|Repository|Store|Adapter|Client|Gateway)$/;
+
+const onlyDelegates = (summary, name) => {
+  const named = new Set(wordsOf(name));
+  const said = wordsOf(summary).filter((word) => !fillerWords.has(word));
+  return (
+    said.length > 0 &&
+    said.some((word) => delegationWords.has(word)) &&
+    said.every((word) => named.has(word) || delegationWords.has(word))
+  );
+};
+
+const parameterNames = (fn) =>
+  fn.params
+    .map((parameter) => parameterName(parameter))
+    .filter((param) => param !== undefined)
+    .join(' ');
 
 const ownerName = (member) => {
   for (let node = member.parent; node; node = node.parent) {
@@ -306,22 +334,35 @@ const methodLabel = (sourceCode, member) =>
     ? 'constructor'
     : sourceCode.getText(member.key);
 
+const overloadKey = (sourceCode, member) =>
+  `${member.static ? 'static ' : ''}${methodLabel(sourceCode, member)}`;
+
 const requirePublicJsDoc = {
   meta: {
     type: 'suggestion',
-    schema: [],
+    schema: [
+      {
+        type: 'object',
+        properties: { privateMethods: { type: 'boolean' } },
+        additionalProperties: false,
+      },
+    ],
     messages: {
       classMissing:
         'Exported class `{{name}}` needs a JSDoc line with its role.',
-      methodMissing: 'Public method `{{name}}` needs a JSDoc.',
+      methodMissing: 'Method `{{name}}` needs a JSDoc.',
       summaryMissing: 'The JSDoc of `{{name}}` needs a summary sentence.',
       summaryRepeatsName:
         'The JSDoc of `{{name}}` only repeats its name: say what it does, for whom or why.',
+      summaryDelegates:
+        'The JSDoc of `{{name}}` only says it delegates: say what the caller gets, when it fails or why it exists.',
       summaryVague:
         'The JSDoc of `{{name}}` says nothing specific: say what it does, for whom or why.',
       fieldRepeatsName:
         'The JSDoc of `{{name}}` only repeats its name: say something the name does not, or delete it.',
       paramMissing: 'The JSDoc of `{{name}}` needs `@param {{param}}`.',
+      overloadDocPlacement:
+        'The JSDoc of the overloaded `{{name}}` goes on its first signature, where editors show it.',
       returnsMissing: 'The JSDoc of `{{name}}` needs `@returns`.',
     },
   },
@@ -330,6 +371,7 @@ const requirePublicJsDoc = {
     const services = sourceCode.parserServices;
     const checker = services?.program?.getTypeChecker();
     const javaScript = /\.[cm]?js$/.test(context.filename);
+    const privateMethods = context.options[0]?.privateMethods === true;
     let names = new Set();
     const implementsMember = (member) => {
       const owner = member.parent.parent;
@@ -347,13 +389,45 @@ const requirePublicJsDoc = {
         return declared.getProperty(name) !== undefined;
       });
     };
-    const checkMethod = (member) => {
-      if (!isPublicMember(member)) return;
+    const checkSummary = (node, name, summary, named, owner) => {
+      if (summary.length === 0) {
+        context.report({ node, messageId: 'summaryMissing', data: { name } });
+      } else if (repeatsName(summary, named)) {
+        context.report({
+          node,
+          messageId: 'summaryRepeatsName',
+          data: { name },
+        });
+      } else if (delegatingOwner.test(owner) && onlyDelegates(summary, named)) {
+        context.report({
+          node,
+          messageId: 'summaryDelegates',
+          data: { name },
+        });
+      } else if (isVague(summary)) {
+        context.report({ node, messageId: 'summaryVague', data: { name } });
+      }
+    };
+    const checkMethod = (member, overloads) => {
+      if (!privateMethods && !isPublicMember(member)) return;
       if (member.kind === 'constructor' || member.kind === 'set') return;
-      if (member.override || implementsMember(member)) return;
       const fn = member.value;
       const name = methodLabel(sourceCode, member);
-      const comment = jsDocOf(sourceCode, member);
+      const group = overloads.get(overloadKey(sourceCode, member)) ?? [member];
+      if (group[0] !== member) return;
+      const comment = group
+        .map((declaration) => jsDocOf(sourceCode, declaration))
+        .find((found) => found !== undefined);
+      const owner = ownerName(member);
+      const named = `${name} ${owner} ${group.map((declaration) => parameterNames(declaration.value)).join(' ')}`;
+      const inherited = member.override || implementsMember(member);
+      if (inherited) {
+        const summary = comment ? summaryOf(comment) : '';
+        if (summary.length > 0 && !/@override\b/.test(comment.value)) {
+          checkSummary(member.key, name, summary, named, owner);
+        }
+        return;
+      }
       if (javaScript && comment && /@override\b/.test(comment.value)) return;
       if (!comment) {
         context.report({
@@ -363,28 +437,19 @@ const requirePublicJsDoc = {
         });
         return;
       }
-      const summary = summaryOf(comment);
-      if (summary.length === 0) {
+      if (jsDocOf(sourceCode, member) !== comment) {
         context.report({
           node: member.key,
-          messageId: 'summaryMissing',
-          data: { name },
-        });
-      } else if (repeatsName(summary, `${name} ${ownerName(member)}`)) {
-        context.report({
-          node: member.key,
-          messageId: 'summaryRepeatsName',
-          data: { name },
-        });
-      } else if (isVague(summary)) {
-        context.report({
-          node: member.key,
-          messageId: 'summaryVague',
+          messageId: 'overloadDocPlacement',
           data: { name },
         });
       }
+      checkSummary(member.key, name, summaryOf(comment), named, owner);
       const documented = documentedParameters(comment);
-      for (const parameter of fn.params) {
+      const parameters = group.flatMap(
+        (declaration) => declaration.value.params,
+      );
+      for (const parameter of fn.params.length > 0 ? fn.params : parameters) {
         const param = parameterName(parameter);
         if (param && !param.startsWith('_') && !documented.has(param)) {
           context.report({
@@ -450,6 +515,30 @@ const requirePublicJsDoc = {
           messageId: 'summaryRepeatsName',
           data: { name: className },
         });
+      } else if (
+        delegatingOwner.test(className) &&
+        onlyDelegates(
+          summaryOf(comment),
+          `${className} ${node.superClass?.name ?? ''}`,
+        )
+      ) {
+        context.report({
+          node: node.id ?? node,
+          messageId: 'summaryDelegates',
+          data: { name: className },
+        });
+      }
+      const overloads = new Map();
+      for (const member of node.body.body) {
+        if (
+          (member.type === 'MethodDefinition' ||
+            member.type === 'TSAbstractMethodDefinition') &&
+          member.kind === 'method' &&
+          !member.computed
+        ) {
+          const key = overloadKey(sourceCode, member);
+          overloads.set(key, [...(overloads.get(key) ?? []), member]);
+        }
       }
       for (const member of node.body.body) {
         if (
@@ -457,7 +546,7 @@ const requirePublicJsDoc = {
           member.type === 'TSAbstractMethodDefinition' ||
           functionValued(member)
         ) {
-          checkMethod(member);
+          checkMethod(member, overloads);
         } else if (
           member.type === 'PropertyDefinition' ||
           member.type === 'TSAbstractPropertyDefinition'

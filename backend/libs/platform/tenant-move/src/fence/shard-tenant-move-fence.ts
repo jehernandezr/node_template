@@ -49,7 +49,7 @@ export class ShardTenantMoveFence extends TenantMoveFence {
     return this.fence.unswitchedBy(await this.connections.get(shard), tenantId);
   }
 
-  /** Lowers the fence of the move on the shard. */
+  /** Lets the tenant write again on the shard by removing only the fence this move raised. */
   override async lower(
     shard: ShardLocation,
     tenantId: string,
@@ -58,7 +58,7 @@ export class ShardTenantMoveFence extends TenantMoveFence {
     await this.fence.lower(await this.connections.get(shard), tenantId, moveId);
   }
 
-  /** Lowers any fence of the tenant on the shard. */
+  /** Removes every fence of the tenant on the shard, such as one an earlier move left on the shard it now returns to. */
   override async lowerAny(
     shard: ShardLocation,
     tenantId: string,

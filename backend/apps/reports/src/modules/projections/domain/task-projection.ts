@@ -37,7 +37,7 @@ export abstract class TaskProjection {
    */
   abstract apply(change: TaskProjectionChange): Promise<void>;
   /**
-   * Counts the tasks by status in the range.
+   * Aggregates how many tasks ended each status in the range, for the status report.
    * @param range Report range.
    * @returns One count per status.
    */

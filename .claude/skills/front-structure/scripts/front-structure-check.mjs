@@ -30,6 +30,11 @@ export class FrontStructureCheck {
     return { violations: this.#evaluate(files) };
   }
 
+  /**
+   * Runs every rule that applies to each file, skipping generated files.
+   * @param {string[]} files Paths from the repository root.
+   * @returns {import('./violation.mjs').Violation[]} Every violation found.
+   */
   #evaluate(files) {
     const violations = [];
     for (const file of files) {
@@ -42,11 +47,20 @@ export class FrontStructureCheck {
     return violations;
   }
 
+  /**
+   * Reads the files the rules inspect as text; other files reach the rules empty.
+   * @param {string} file Path from the repository root.
+   * @returns {string} The Dart source or `pubspec.yaml`, or an empty string.
+   */
   #readText(file) {
     const isText = FrontPaths.isDart(file) || file.endsWith('/pubspec.yaml');
     return isText ? readFileSync(join(this.root, file), 'utf8') : '';
   }
 
+  /**
+   * Front files changed against `HEAD` or not yet tracked, which still exist.
+   * @returns {string[]} Paths from the repository root.
+   */
   #changedFrontFiles() {
     const changed = new Set([
       ...this.#git(['diff', '--name-only', '--diff-filter=ACMR', 'HEAD']),
@@ -57,7 +71,10 @@ export class FrontStructureCheck {
     );
   }
 
-  /** Only tracked or new files: ignored artifacts do not count as code. */
+  /**
+   * Every tracked or new front file; ignored artifacts do not count as code.
+   * @returns {string[]} Paths from the repository root.
+   */
   #allFrontFiles() {
     return this.#git([
       'ls-files',
@@ -67,6 +84,11 @@ export class FrontStructureCheck {
     ]).filter((f) => existsSync(join(this.root, f)));
   }
 
+  /**
+   * Runs git in the repository and splits its output into lines.
+   * @param {string[]} args Git arguments.
+   * @returns {string[]} The non-empty output lines.
+   */
   #git(args) {
     return execFileSync('git', args, { cwd: this.root, encoding: 'utf8' })
       .split('\n')

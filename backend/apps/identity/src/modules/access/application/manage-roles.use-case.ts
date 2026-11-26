@@ -30,7 +30,7 @@ export class ManageRoles {
   ) {}
 
   /**
-   * Lists the roles of a tenant.
+   * Reads every role with the permissions it grants, for the administration screens.
    * @param tenantId Tenant to read.
    * @returns Its roles with their permissions.
    */

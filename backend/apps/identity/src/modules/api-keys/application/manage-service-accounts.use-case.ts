@@ -31,7 +31,7 @@ export class ManageServiceAccounts {
   ) {}
 
   /**
-   * Lists the service accounts of a tenant.
+   * Reads every machine identity an administrator manages, with its status.
    * @param tenantId Tenant to read.
    * @returns Its service accounts.
    */

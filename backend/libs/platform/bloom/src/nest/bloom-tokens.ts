@@ -4,7 +4,7 @@ export const BLOOM_OPTIONS = Symbol('BLOOM_OPTIONS');
 /** Injection tokens that depend on a filter's name. */
 export class BloomTokens {
   /**
-   * Returns the token of the filter with that name.
+   * Injection token of one named Bloom filter, the same symbol on every call.
    * @param name Filter name.
    * @returns The token.
    */

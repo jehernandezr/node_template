@@ -26,7 +26,7 @@ export abstract class ApiKeyRepository {
   abstract updateServiceAccount(account: ServiceAccount): Promise<void>;
 
   /**
-   * Lists the keys of a service account.
+   * Reads every key, active or revoked, of one machine identity.
    * @param serviceAccountId Owner of the keys.
    * @returns The keys.
    */

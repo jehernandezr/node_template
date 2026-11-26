@@ -6,7 +6,7 @@ import { EraseUserDeliveries } from './erase-user-deliveries.use-case.js';
 import type { NotifyCommand } from './notify-command.js';
 import { NotifyUser } from './notify-user.use-case.js';
 
-/** `DispatchFacade` in process: each method delegates to its use case. */
+/** Sends notices to users and erases their deliveries for the other modules of the process. */
 @Injectable()
 export class LocalDispatchFacade extends DispatchFacade {
   constructor(

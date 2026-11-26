@@ -17,7 +17,7 @@ export class ManageInvitations {
   ) {}
 
   /**
-   * Lists the invitations of a tenant.
+   * Reads every invitation an administrator follows up on, whatever its status.
    * @param tenantId Tenant to read.
    * @returns Its invitations with their status.
    */

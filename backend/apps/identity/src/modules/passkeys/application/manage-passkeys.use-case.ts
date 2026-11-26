@@ -105,7 +105,7 @@ export class ManagePasskeys {
   }
 
   /**
-   * Lists the user's passkeys.
+   * Shows the signed-in user the authenticators they can sign in with, to rename or remove them.
    * @param user Signed-in user.
    * @returns Its passkeys.
    */

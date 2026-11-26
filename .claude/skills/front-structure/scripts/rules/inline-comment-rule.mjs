@@ -43,6 +43,11 @@ export class InlineCommentRule extends Rule {
       .map((comment) => this.violation(file, comment.line));
   }
 
+  /**
+   * Keeps analyzer directives and `///` documentation outside code; every other comment is a violation.
+   * @param {object} comment Comment found by the scanner, with its text and where it sits.
+   * @returns {boolean} `true` when the comment may stay.
+   */
   #isAllowed(comment) {
     if (comment.block) return false;
     if (InlineCommentRule.DIRECTIVE.test(comment.text)) return true;

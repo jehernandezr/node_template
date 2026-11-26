@@ -9,7 +9,7 @@ import type { BucketedRange, ReportRange } from '../domain/report-range.js';
 /** What `projections` offers the reports: aggregates over the projections of the tenant's shard. */
 export abstract class ProjectionsFacade {
   /**
-   * Counts the tenant tasks by status in the range.
+   * Aggregates how many tasks ended each status in the range, for the status report.
    * @param tenantId Tenant to read.
    * @param range Report range.
    * @returns One count per status.

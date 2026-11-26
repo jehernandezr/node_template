@@ -34,7 +34,7 @@ export class SigningKeyRing {
   }
 
   /**
-   * Finds a key by its `kid`.
+   * Picks the key that the `kid` header of a token names.
    * @param kid Key id.
    * @returns The key, or `undefined`.
    */

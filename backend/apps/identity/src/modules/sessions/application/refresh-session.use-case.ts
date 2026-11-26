@@ -52,7 +52,7 @@ export class RefreshSession implements UseCase<
   ) {}
 
   /**
-   * Refreshes a session.
+   * Trades a session token for a new access token and the next session token, revoking the session on reuse.
    * @param text Session token presented by the client.
    * @returns The new access token and, unless the web cookie carries it, the current session token.
    * @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` for an unknown or malformed token.

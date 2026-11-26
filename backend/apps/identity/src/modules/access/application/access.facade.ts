@@ -44,7 +44,7 @@ export abstract class AccessFacade {
   ): Promise<boolean>;
 
   /**
-   * Adds a member to a tenant.
+   * Grants a user a membership in its groups, within the seats of the plan and keeping at least one owner.
    * @param tenantId Tenant.
    * @param ref New member.
    * @param groupIds Groups of the member; the members group if empty.

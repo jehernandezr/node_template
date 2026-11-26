@@ -25,7 +25,7 @@ export class BillingPeriod {
   }
 
   /**
-   * The `days`-day period that starts on `start`.
+   * The period that runs from its first day through the last of its days, both included.
    * @param start First day, `YYYY-MM-DD`.
    * @param days Length in days.
    * @returns The period.
