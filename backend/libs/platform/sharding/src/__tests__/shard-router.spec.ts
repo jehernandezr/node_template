@@ -379,6 +379,88 @@ describe('ShardRouter', () => {
     });
   });
 
+  describe('when several tenants share a shard', () => {
+    const tenants = [TestTenants.One, TestTenants.Two, TestTenants.Three];
+    const readOf = (tenantId: string): ResolveRequest => ({
+      ...READ,
+      tenantId,
+    });
+    const instancesOf = async (router: ShardRouter): Promise<string[]> =>
+      (
+        await Promise.all(
+          tenants.map((tenantId) => router.resolve(readOf(tenantId))),
+        )
+      ).map((placement) => placement.instance);
+
+    beforeEach(() => {
+      for (const tenantId of tenants) {
+        directory.setPlacement(
+          PlacementBuilder.aPlacement().withTenantId(tenantId).build(),
+        );
+      }
+    });
+
+    it('routes every tenant of the shard to its instance, reading the instance once, and all of them to the new one once the shard moves', async () => {
+      const router = routerWith();
+
+      for (const tenantId of tenants) {
+        await expect(router.resolve(readOf(tenantId))).resolves.toMatchObject({
+          logicalShard: 'shard-1',
+          instance: 'node-a',
+        });
+      }
+      expect(directory.instanceReads).toBe(1);
+
+      directory.setInstance('shard-1', 'node-b');
+      router.invalidateShard('shard-1');
+
+      await expect(instancesOf(router)).resolves.toEqual([
+        'node-b',
+        'node-b',
+        'node-b',
+      ]);
+    });
+
+    it('moves one tenant to another shard and leaves the others where they were', async () => {
+      const router = routerWith();
+      await instancesOf(router);
+      directory.setPlacement(
+        PlacementBuilder.aPlacement()
+          .withTenantId(TestTenants.Two)
+          .withShardGroup('shard-2')
+          .withVersion(2)
+          .build(),
+      );
+      directory.setInstance('shard-2', 'node-c');
+
+      await router.invalidate(TestTenants.Two);
+
+      await expect(instancesOf(router)).resolves.toEqual([
+        'node-a',
+        'node-c',
+        'node-a',
+      ]);
+      expect(directory.placementReads).toBe(tenants.length + 1);
+    });
+
+    it('never keeps the old instance cached when the shard moves while reads of its tenants are in flight', async () => {
+      const router = routerWith();
+      const release = directory.hold();
+      const inFlight = instancesOf(router);
+
+      directory.setInstance('shard-1', 'node-b');
+      router.invalidateShard('shard-1');
+      release();
+      await inFlight;
+
+      await expect(instancesOf(router)).resolves.toEqual([
+        'node-b',
+        'node-b',
+        'node-b',
+      ]);
+    });
+  });
+
   describe('single flight', () => {
     it('one hundred concurrent resolves of one tenant read the directory once', async () => {
       const router = routerWith();
