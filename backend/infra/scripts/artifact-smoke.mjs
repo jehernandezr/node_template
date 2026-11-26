@@ -12,25 +12,31 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-/** Runs a command and returns its exit code and output, without throwing on a non-zero exit. */
+/**
+ * Runs a command and returns its exit code and output, without throwing on a non-zero exit. With `inherit` the command
+ * writes to this process's output and nothing is returned; without `env` it gets the current environment.
+ */
 export class CommandRunner {
   /**
+   * Runs a command to its end.
    * @param {string} command Executable.
    * @param {string[]} args Arguments.
-   * @param {{ cwd?: string }} [options] Working directory.
+   * @param {object} [options] `cwd`, `env` and `inherit`, the flag that hands the output to this process.
    * @returns {{ status: number, stdout: string, stderr: string }} The result.
    */
   run(command, args, options = {}) {
     const result = spawnSync(command, args, {
       cwd: options.cwd,
+      env: options.env,
+      stdio: options.inherit ? 'inherit' : 'pipe',
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
     });
     if (result.error) throw result.error;
     return {
       status: result.status ?? 1,
-      stdout: result.stdout,
-      stderr: result.stderr,
+      stdout: result.stdout ?? '',
+      stderr: result.stderr ?? '',
     };
   }
 }
@@ -38,6 +44,7 @@ export class CommandRunner {
 /** Waits between readiness probes. */
 export class Sleeper {
   /**
+   * Blocks this process for a while.
    * @param {number} ms Milliseconds to wait.
    */
   sleep(ms) {
