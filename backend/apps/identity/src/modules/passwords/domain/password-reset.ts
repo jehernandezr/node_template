@@ -33,7 +33,7 @@ export class PasswordReset {
     return new PasswordReset(state);
   }
 
-  /** Id of the reset. */
+  /** UUIDv7 that identifies the reset request; the emailed token carries it. */
   get id(): string {
     return this.state.id;
   }

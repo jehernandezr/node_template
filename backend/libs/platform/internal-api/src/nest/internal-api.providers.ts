@@ -11,7 +11,7 @@ import { InternalApiServerProviders } from './internal-api-server.providers.js';
 /** Providers of the internal API module and what it exports. */
 export class InternalApiProviders {
   /**
-   * Builds the providers of the internal API.
+   * Wires the router, the client and the signer of the internal API over the given store and signer adapters.
    * @param extras Store and signer adapters.
    * @returns The providers.
    */

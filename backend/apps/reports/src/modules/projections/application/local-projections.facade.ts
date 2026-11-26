@@ -11,7 +11,7 @@ import type { BucketedRange, ReportRange } from '../domain/report-range.js';
 import { TaskProjection } from '../domain/task-projection.js';
 import { ProjectionsFacade } from './projections.facade.js';
 
-/** `ProjectionsFacade` for callers in the same process: each method runs the module's use case or repository. */
+/** Gives the report definitions the task, invoice and delivery figures of a tenant, read from the projections of its shard. */
 @Injectable()
 export class LocalProjectionsFacade extends ProjectionsFacade {
   constructor(

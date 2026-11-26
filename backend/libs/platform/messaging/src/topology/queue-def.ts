@@ -127,7 +127,7 @@ export class QueueDef {
     return this.fifoEnabled;
   }
 
-  /** Visibility timeout of the queue, in seconds. */
+  /** Seconds a received message stays hidden from other consumers before SQS delivers it again. */
   get visibilityTimeoutSeconds(): number {
     return this.visibilitySeconds;
   }

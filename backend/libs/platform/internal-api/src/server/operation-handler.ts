@@ -16,7 +16,7 @@ export abstract class OperationHandler<
   S extends OperationDefinition = OperationDefinition,
 > {
   /**
-   * Runs the operation.
+   * Applies the operation to its validated input; the router has already checked the caller and the idempotency key.
    * @param input Validated input.
    * @param context Call metadata with its signal.
    * @returns The result.

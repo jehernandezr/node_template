@@ -63,7 +63,6 @@ runtime.describeIfAvailable(
     let tenants: SmokeTenantContext;
     let closed = false;
 
-    /** Bodies published to SNS, in order: what SQS would receive. */
     function published(): string[] {
       return sns
         .sentOf(PublishCommand)
@@ -72,10 +71,6 @@ runtime.describeIfAvailable(
         );
     }
 
-    /**
-     * Published body of the order event. The commit triggers the relay in the background and the explicit
-     * pass may find nothing to take, so it waits for either of the two to publish.
-     */
     async function publishedFor(orderId: string): Promise<string> {
       await app.get(OutboxRelayJob, { strict: false }).run();
       await PollUntil.run(() =>

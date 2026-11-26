@@ -4,7 +4,7 @@ import type { InvitationPreview } from '../domain/invitation-preview.js';
 import { AcceptInvitation } from './accept-invitation.use-case.js';
 import { InvitationsFacade } from './invitations.facade.js';
 
-/** `InvitationsFacade` for callers in the same process: each method runs the module's use case or repository. */
+/** Lets the registration of a new user preview, check and accept an invitation through `AcceptInvitation`. */
 @Injectable()
 export class LocalInvitationsFacade extends InvitationsFacade {
   constructor(private readonly accept: AcceptInvitation) {

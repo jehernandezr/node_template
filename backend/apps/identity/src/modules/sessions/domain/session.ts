@@ -50,7 +50,7 @@ export class Session {
   private constructor(private state: SessionState) {}
 
   /**
-   * Opens a new session.
+   * Starts a session at its first generation, with the expiries and methods of the sign-in that opened it.
    * @param state Session data.
    * @returns The session.
    */
@@ -67,7 +67,7 @@ export class Session {
     return new Session(state);
   }
 
-  /** Id of the session. */
+  /** UUIDv7 that identifies the session; the session token carries it. */
   get id(): string {
     return this.state.id;
   }

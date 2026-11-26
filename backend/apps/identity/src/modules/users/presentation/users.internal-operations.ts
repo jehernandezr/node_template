@@ -60,7 +60,7 @@ export class UsersInternalOperations {
   }
 
   /**
-   * Internal operation that returns the profile of a user.
+   * Answers another service with the profile of a user: email and its verification, display name, locale and status.
    * @param input User to read.
    * @returns The profile.
    */

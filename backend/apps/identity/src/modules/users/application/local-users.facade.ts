@@ -10,7 +10,7 @@ import { UsersFacade } from './users.facade.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityErrorCode } from '@contracts/identity';
 
-/** `UsersFacade` for callers in the same process: each method runs the module's use case or repository. */
+/** Lets sign-in, registration and tenant moves find, register and relocate users, and remember their last tenant. */
 @Injectable()
 export class LocalUsersFacade extends UsersFacade {
   constructor(

@@ -34,7 +34,6 @@ describe('InternalApiController', () => {
       new CallMetaReader(),
     );
     const signer = new HmacSigner(secret, clock);
-    /** Signs the given headers and body, as the other service's transport would. */
     async function signedHeaders(body: unknown, headers = baseHeaders()) {
       const signature = await signer.sign({
         method: 'POST',

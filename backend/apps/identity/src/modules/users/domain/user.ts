@@ -42,7 +42,7 @@ export class User {
     return new User(state);
   }
 
-  /** Id of the user. */
+  /** UUIDv7 that identifies the user, together with the home tenant the key its shard routes by. */
   get id(): string {
     return this.state.id;
   }

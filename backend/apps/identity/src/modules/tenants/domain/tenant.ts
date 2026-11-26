@@ -42,7 +42,7 @@ export class Tenant {
     return new Tenant(state);
   }
 
-  /** Id of the tenant. */
+  /** UUIDv7 that identifies the tenant, the key every shard routes by. */
   get id(): string {
     return this.state.id;
   }

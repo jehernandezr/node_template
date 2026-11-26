@@ -35,7 +35,8 @@ export class ConfirmPasswordReset {
   ) {}
 
   /**
-   * Confirms a password reset.
+   * Stores the new password of an emailed reset token, revokes every session of the user and raises the recovery
+   * alert.
    * @param request Emailed token and the new password.
    * @throws IdentityError `IDENTITY.PASSWORD.RESET_INVALID` if the token is unknown, used or expired.
    * @throws IdentityError `IDENTITY.PASSWORD.POLICY_VIOLATION` or `IDENTITY.PASSWORD.BREACHED` for a weak password.

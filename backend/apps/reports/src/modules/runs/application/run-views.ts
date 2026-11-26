@@ -27,7 +27,7 @@ export class RunViews {
   }
 
   /**
-   * Builds the detail of a run.
+   * Shapes a stored run for the API, with its result only once it is ready.
    * @param state Stored run.
    * @param result Its result when ready.
    * @returns The detail.

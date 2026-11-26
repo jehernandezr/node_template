@@ -5,7 +5,7 @@ import { PlanCatalog } from '../domain/plan-catalog.js';
 import type { Plan } from '../domain/plan.js';
 import { PlansFacade } from './plans.facade.js';
 
-/** `PlansFacade` for callers in the same process: each method runs the module's use case or repository. */
+/** Answers the plans on offer and resolves a plan by id or code from the catalog, for subscriptions and invoices. */
 @Injectable()
 export class LocalPlansFacade extends PlansFacade {
   constructor(private readonly catalog: PlanCatalog) {

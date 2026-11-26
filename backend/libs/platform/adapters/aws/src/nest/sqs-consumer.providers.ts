@@ -24,7 +24,7 @@ import { SQS_CLIENT } from './aws.tokens.js';
  */
 export class SqsConsumerProviders {
   /**
-   * Builds the providers of the SQS consumer.
+   * Wires the SQS client, the poller and the dispatcher of the consumer for the given queue settings.
    * @param options Queue and consumer settings.
    * @returns The providers.
    */

@@ -11,7 +11,7 @@ export class NameForms {
     readonly camel: string,
     /** `ApiKeys`: classes and enums, `__Name__`. */
     readonly pascal: string,
-    /** `API_KEYS`: constantes, `__NAME__`. */
+    /** `API_KEYS`: constants, `__NAME__`. */
     readonly upperSnake: string,
     /** `api_keys`: databases, `__name_snake__`. */
     readonly snake: string,

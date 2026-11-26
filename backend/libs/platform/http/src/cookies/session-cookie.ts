@@ -14,9 +14,9 @@ export class SessionCookie {
   }
 
   /**
-   * Builds the `Set-Cookie` value of the session cookie.
+   * Writes the `Set-Cookie` value that stores the session token in an `HttpOnly`, `Secure`, `SameSite=Strict` cookie.
    * @param token Session token.
-   * @param maxAgeMs Lifetime.
+   * @param maxAgeMs Lifetime, rounded down to whole seconds.
    * @returns The header value.
    */
   serialize(token: string, maxAgeMs: number): string {

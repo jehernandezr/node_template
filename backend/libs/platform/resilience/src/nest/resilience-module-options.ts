@@ -12,7 +12,7 @@ export interface ResilienceModuleOptions {
 
 /** Extras of `ResilienceModule.forRoot` that are not registry options. */
 export interface ResilienceModuleExtras {
-  /** The module is global by default. */
+  /** `false` registers the module only where it is imported; it is global by default. */
   isGlobal?: boolean;
   /** Metrics port. Its class must be registered by the caller. */
   metrics?: Type<MetricsPort> | Abstract<MetricsPort>;

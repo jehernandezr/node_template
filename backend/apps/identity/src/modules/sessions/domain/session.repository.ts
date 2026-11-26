@@ -3,8 +3,8 @@ import type { Session } from './session.js';
 /** Sessions of a user, in the user shard. The use case opens the `ShardScope`. */
 export abstract class SessionRepository {
   /**
-   * Inserts a new session.
-   * @param session Session to insert.
+   * Stores a session that was just opened, in the shard of its user.
+   * @param session Session to store.
    */
   abstract insert(session: Session): Promise<void>;
 

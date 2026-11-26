@@ -6,7 +6,7 @@ import {
 } from './issue-access-token.use-case.js';
 import { TokensFacade } from './tokens.facade.js';
 
-/** `TokensFacade` for callers in the same process: each method runs the module's use case or repository. */
+/** Signs the access tokens that sessions and API keys hand out, through `IssueAccessToken`. */
 @Injectable()
 export class LocalTokensFacade extends TokensFacade {
   constructor(private readonly issueToken: IssueAccessToken) {

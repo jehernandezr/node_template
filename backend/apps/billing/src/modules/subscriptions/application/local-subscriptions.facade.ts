@@ -16,7 +16,7 @@ import { OpenSubscription } from './open-subscription.use-case.js';
 import { SubscriptionStanding } from './subscription-standing.js';
 import { SubscriptionsFacade } from './subscriptions.facade.js';
 
-/** `SubscriptionsFacade` for callers in the same process: each method runs the module's use case or repository. */
+/** Lets accounts, entitlements and invoices open, read, lock, close and settle the subscription of a tenant on its shard. */
 @Injectable()
 export class LocalSubscriptionsFacade extends SubscriptionsFacade {
   constructor(

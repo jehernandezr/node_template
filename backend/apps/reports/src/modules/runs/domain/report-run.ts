@@ -83,7 +83,10 @@ export class ReportRun {
     );
   }
 
-  /** Marks the run as running. */
+  /**
+   * Moves the run to `Running` when a worker begins computing it. A running run is still pending, so another worker
+   * takes it over if this one dies halfway.
+   */
   start(): void {
     this.state = { ...this.state, status: ReportRunStatus.Running };
   }

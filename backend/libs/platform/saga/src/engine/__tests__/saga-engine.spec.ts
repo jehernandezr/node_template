@@ -276,7 +276,6 @@ describe('SagaEngine', () => {
   });
 
   describe('acceptance: a crash halfway through compensation does not change the result', () => {
-    /** Runs the three-step saga that fails on the third, with or without a crash in the compensation. */
     async function runFailingSaga(crash: boolean) {
       const store = crash ? new CrashOnCompensation() : new CrashingSagaStore();
       const { kit, participant } = setup(store);

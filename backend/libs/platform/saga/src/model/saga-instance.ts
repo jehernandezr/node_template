@@ -91,11 +91,11 @@ export class SagaInstance {
     return this.data;
   }
 
-  /** Id of the saga. */
+  /** UUIDv7 that identifies the run, the key of its row in the saga store. */
   get id(): string {
     return this.data.id;
   }
-  /** Type of the saga. */
+  /** Name of the definition the run follows, by which the registry finds its steps. */
   get type(): string {
     return this.data.type;
   }
@@ -103,11 +103,11 @@ export class SagaInstance {
   get idempotencyKey(): string | null {
     return this.data.idempotencyKey;
   }
-  /** Status of the saga. */
+  /** Where the run is: running, suspended, compensating, finished either way, or waiting for a person. */
   get status(): SagaStatus {
     return this.data.status;
   }
-  /** State of the saga. */
+  /** Data the steps accumulate as the run advances, stored as JSON. */
   get state(): unknown {
     return this.data.state;
   }

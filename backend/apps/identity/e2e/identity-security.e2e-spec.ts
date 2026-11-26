@@ -63,7 +63,6 @@ runtime.describeIfAvailable('identity security end to end', () => {
     await app.stop();
   });
 
-  /** Opens an organization owned by the user of that session and returns a client switched into it. */
   const organizationOf = async (
     owner: IdentityJourney,
     session: SessionTokensBody,

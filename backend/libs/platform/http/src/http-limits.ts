@@ -12,7 +12,7 @@ export class HttpLimits {
   static readonly API_KEY_PREFIX = 'sk_';
   /** Value of the `X-Session-Transport` header with which the native app declares its channel. */
   static readonly SESSION_TRANSPORT_BEARER = 'bearer';
-  /** Current API version. */
+  /** Version a request gets when it sends no `Api-Version` header and its route pins none. */
   static readonly CURRENT_API_VERSION = '2026-11-01';
   /** Route that carries the `Cache-Control: no-store` header. */
   static readonly NO_STORE_PATH_PREFIX = '/v1/auth';

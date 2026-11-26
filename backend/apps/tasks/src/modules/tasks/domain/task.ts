@@ -44,7 +44,7 @@ export class Task {
     return new Task(state);
   }
 
-  /** Id of the task. */
+  /** UUIDv7 that identifies the task within its tenant. */
   get id(): string {
     return this.state.id;
   }

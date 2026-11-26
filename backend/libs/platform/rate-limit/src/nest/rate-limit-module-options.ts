@@ -13,7 +13,7 @@ export interface RateLimitModuleOptions {
 
 /** Extras of `RateLimitModule.forRoot` that are not module options. */
 export interface RateLimitModuleExtras {
-  /** The module is global by default. */
+  /** `false` registers the module only where it is imported; it is global by default. */
   isGlobal?: boolean;
   /** Shared limiter. Its class must be registered by the caller. */
   limiter?: Type<RateLimiter> | Abstract<RateLimiter>;

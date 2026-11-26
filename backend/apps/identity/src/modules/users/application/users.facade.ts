@@ -24,7 +24,7 @@ export abstract class UsersFacade {
    */
   abstract refOf(userId: string): Promise<UserRef | undefined>;
   /**
-   * Registers a user.
+   * Creates a user with its first password in the shard of its home tenant, for signup and accepted invitations.
    * @param input Email, password, name and home tenant.
    * @returns The new user.
    */

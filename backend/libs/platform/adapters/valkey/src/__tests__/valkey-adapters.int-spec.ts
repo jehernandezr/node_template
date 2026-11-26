@@ -112,7 +112,6 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
   });
 
   describe('connections created by the factory', () => {
-    /** Returns the current password for each connection, like an IAM token that is renewed. */
     class RotatingPassword extends ValkeyAuthTokenProvider {
       current = server.password;
 
@@ -121,7 +120,6 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       }
     }
 
-    /** The test server does not speak TLS, which the resolver requires with IAM. */
     class PlainTextResolver extends ValkeyConnectionResolver {
       override resolve(
         ...args: Parameters<ValkeyConnectionResolver['resolve']>

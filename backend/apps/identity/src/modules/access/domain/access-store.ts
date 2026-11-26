@@ -70,8 +70,8 @@ export abstract class TenantAccessRepository {
   abstract purgeTenant(): Promise<void>;
 
   /**
-   * Lists the groups of the tenant.
-   * @returns The groups.
+   * Lists every group of the tenant in scope, for the members screen and the grant checks.
+   * @returns The groups, with their roles.
    */
   abstract listGroups(): Promise<readonly Group[]>;
 
@@ -94,7 +94,7 @@ export abstract class TenantAccessRepository {
   abstract deleteGroup(groupId: string): Promise<void>;
 
   /**
-   * Lists the roles of the tenant.
+   * Lists every role of the tenant in scope, with the permissions each grants.
    * @returns The roles.
    */
   abstract listRoles(): Promise<readonly Role[]>;
@@ -167,7 +167,7 @@ export abstract class UserAccessRepository {
   abstract platformRoles(userId: string): Promise<readonly PlatformRole[]>;
 
   /**
-   * Grants a platform role to a user.
+   * Gives a user a platform role, which works across every tenant; granting it again changes nothing.
    * @param userId User.
    * @param role Granted role.
    */

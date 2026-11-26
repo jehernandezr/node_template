@@ -54,7 +54,8 @@ export class TenantsInternalOperations {
   }
 
   /**
-   * Internal operation that suspends a tenant.
+   * Blocks a tenant on behalf of another service: announces it and raises the tenant epoch, so the access tokens
+   * issued before stop working.
    * @param input Tenant and reason.
    * @returns The outcome.
    */

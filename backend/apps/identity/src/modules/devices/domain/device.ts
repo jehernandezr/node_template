@@ -40,7 +40,7 @@ export class Device {
     return new Device(state);
   }
 
-  /** Id of the device. */
+  /** UUIDv7 that identifies the device, by which the app proves it holds its key. */
   get id(): string {
     return this.state.id;
   }

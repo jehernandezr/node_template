@@ -37,7 +37,6 @@ runtime.describeIfAvailable('ValkeyModule against a real server', () => {
     }
   });
 
-  /** An instance of the service, as another process would have it. */
   async function instance(): Promise<TestingModule> {
     const app = await Test.createTestingModule({
       imports: [

@@ -29,8 +29,8 @@ export class RevokedSessionRegistry {
   }
 
   /**
-   * Adds a revoked session.
-   * @param sessionId Session id.
+   * Records a revoked session in the filter, and in the pending set while the filter is still warming up.
+   * @param sessionId Session that can no longer be used.
    */
   async add(sessionId: string): Promise<void> {
     this.pending?.add(sessionId);

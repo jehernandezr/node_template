@@ -9,7 +9,7 @@ import {
 import { PasskeyCeremony } from './passkey-ceremony.js';
 import { PasskeysFacade } from './passkeys.facade.js';
 
-/** `PasskeysFacade` for callers in the same process: each method runs the module's use case or repository. */
+/** Tells the second factor whether a user has passkeys, and erases or relocates them with the account and its tenant. */
 @Injectable()
 export class LocalPasskeysFacade extends PasskeysFacade {
   constructor(
