@@ -12,7 +12,9 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { LanguageBaseline } from '../language-baseline.mjs';
+import { LanguageAllowlist } from '../language-allowlist.mjs';
 import { LanguageCheck } from '../language-check.mjs';
+import { LanguagePolicy } from '../language-policy.mjs';
 import { SpanishDetector } from '../spanish-detector.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -70,15 +72,49 @@ describe('SpanishDetector', () => {
     }
   });
 
-  it('leaves English, identifiers and a lone accented name alone', () => {
+  it('leaves English and identifiers alone', () => {
     for (const line of [
       '/** Returns the tasks that are still pending. */',
-      "const user = { name: 'José' };",
       'for (const item of items) { if (item.id) return item; }',
       'The tenant, its users and their sessions are erased.',
     ]) {
       assert.equal(detector.isSpanish(line), false, line);
     }
+  });
+
+  it('flags one whole word of the closed list or one accented character, and nothing inside a longer word', () => {
+    assert.equal(detector.isSpanish('Runs para once.'), true);
+    assert.equal(detector.isSpanish("const user = { name: 'José' };"), true);
+    assert.equal(
+      detector.isSpanish('Reads the paragraph and the queue.'),
+      false,
+    );
+  });
+
+  it('reads only the comments and strings of code', () => {
+    const code = { syntax: 'c' };
+    assert.equal(detector.isSpanish('const para = cada(esta);', code), false);
+    assert.equal(
+      detector.isSpanish("const label = 'una tarea'; // ok", code),
+      true,
+    );
+    assert.equal(
+      detector.isSpanish('total = count + 1 // suma para el total', code),
+      true,
+    );
+    assert.equal(
+      detector.isSpanish('desde = 1 # comentario para el valor', {
+        syntax: 'hash',
+      }),
+      true,
+    );
+    assert.equal(detector.isSpanish('desde = 1', { syntax: 'hash' }), false);
+  });
+
+  it('keeps a closed list of fifty words, which a false positive never widens', () => {
+    assert.equal(SpanishDetector.WORDS.length, 50);
+    assert.ok(Object.isFrozen(SpanishDetector.WORDS));
+    assert.equal(new Set(SpanishDetector.WORDS).size, 50);
   });
 
   it('lets a document quote a Spanish label of the interface', () => {
@@ -170,6 +206,64 @@ describe('LanguageCheck', () => {
         'fix: renew the session\n# Por favor escribe el mensaje\n',
       ).length,
       0,
+    );
+  });
+});
+
+describe('LanguageAllowlist', () => {
+  const allowlist = new LanguageAllowlist({
+    paths: [{ pattern: 'front/**/*.arb', reason: 'product text' }],
+    lines: [
+      {
+        file: 'src/store.ts',
+        text: "redis.call('DEL'",
+        reason: 'Redis command',
+      },
+    ],
+  });
+
+  it('allows a whole path by glob and a single line by its text', () => {
+    assert.equal(
+      allowlist.allowsFile('front/apps/web/lib/l10n/app_es.arb'),
+      true,
+    );
+    assert.equal(allowlist.allowsFile('front/apps/web/lib/main.dart'), false);
+    assert.equal(
+      allowlist.allowsLine('src/store.ts', "  redis.call('DEL', KEYS[1])"),
+      true,
+    );
+    assert.equal(
+      allowlist.allowsLine('src/other.ts', "  redis.call('DEL', KEYS[1])"),
+      false,
+    );
+  });
+
+  it('lets an allowed line pass the check while the rest of its file is still read', () => {
+    const fixture = new Fixture().write(
+      'src/store.ts',
+      'const script = "redis.call(\'DEL\', KEYS[1])";\n/** Borra la clave del usuario. */\n',
+    );
+    try {
+      const findings = new LanguageCheck(
+        fixture.root,
+        new LanguageBaseline({}),
+        new LanguagePolicy(allowlist),
+      ).checkFiles(['src/store.ts'], false);
+      assert.deepEqual(
+        findings.map((finding) => finding.line),
+        [2],
+      );
+    } finally {
+      fixture.dispose();
+    }
+  });
+
+  it('gives every entry of the repository allowlist a reason on one line', () => {
+    assert.deepEqual(
+      LanguageAllowlist.read(
+        join(ROOT, '.claude/guards/language-allowlist.json'),
+      ).unexplained(),
+      [],
     );
   });
 });

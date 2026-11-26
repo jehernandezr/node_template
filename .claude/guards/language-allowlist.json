@@ -1,0 +1,98 @@
+{
+  "paths": [
+    {
+      "pattern": "**/*.arb",
+      "reason": "product text in its locale"
+    },
+    {
+      "pattern": "front/packages/i18n/**",
+      "reason": "localizations of the product"
+    },
+    {
+      "pattern": "**/l10n/generated/**",
+      "reason": "localizations generated from the ARB files"
+    },
+    {
+      "pattern": "backend/apps/notifications/src/modules/email/domain/templates/**",
+      "reason": "email templates the user reads"
+    },
+    {
+      "pattern": "backend/apps/notifications/src/modules/dispatch/domain/notification-texts.ts",
+      "reason": "notification texts the user reads"
+    },
+    {
+      "pattern": "docs/audits/**",
+      "reason": "historical audit snapshots"
+    },
+    {
+      "pattern": "docs/plan/archive/**",
+      "reason": "archived hand-off notes"
+    },
+    {
+      "pattern": ".claude/guards/spanish-detector.mjs",
+      "reason": "holds the Spanish word list"
+    },
+    {
+      "pattern": ".claude/guards/language-allowlist.json",
+      "reason": "quotes the allowed lines"
+    },
+    {
+      "pattern": "**/pnpm-lock.yaml",
+      "reason": "generated lockfile"
+    },
+    {
+      "pattern": "**/pubspec.lock",
+      "reason": "generated lockfile"
+    },
+    {
+      "pattern": "backend/infra/terraform/modules/rds-postgres/lambda/db_bootstrap/vendor/**",
+      "reason": "vendored third-party packages"
+    },
+    {
+      "pattern": "backend/apps/identity/src/modules/passwords/infrastructure/known-breached-passwords.ts",
+      "reason": "breached passwords in the languages of the users"
+    }
+  ],
+  "lines": [
+    {
+      "file": "backend/apps/identity/src/ephemeral/valkey-ephemeral-store.ts",
+      "text": "redis.call('DEL', KEYS[1])",
+      "reason": "Redis DEL command"
+    },
+    {
+      "file": "backend/libs/platform/adapters/valkey/src/metering/valkey-usage-counter-store.ts",
+      "text": "redis.call('DEL', KEYS[1])",
+      "reason": "Redis DEL command"
+    },
+    {
+      "file": "backend/libs/platform/adapters/valkey/src/valkey-job-lock.ts",
+      "text": "redis.call('DEL', KEYS[1])",
+      "reason": "Redis DEL command"
+    },
+    {
+      "file": "backend/libs/platform/adapters/valkey/src/valkey-command.enum.ts",
+      "text": "Del = 'DEL'",
+      "reason": "Redis DEL command"
+    },
+    {
+      "file": "backend/apps/billing/src/modules/invoices/domain/invoice-composer.ts",
+      "text": "'Ajuste por cambio de plan'",
+      "reason": "invoice line the customer reads"
+    },
+    {
+      "file": "front/apps/mobile/lib/src/shell/mobile_shell_scaffold.dart",
+      "text": "/// \"Más\".",
+      "reason": "quotes a label of the interface"
+    },
+    {
+      "file": "front/microfrontends/backoffice/lib/src/shared/constants/backoffice_paths.dart",
+      "text": "'es': 'Administración'",
+      "reason": "menu label in the Spanish locale"
+    },
+    {
+      "file": "front/microfrontends/billing/lib/src/shared/constants/billing_paths.dart",
+      "text": "'es': 'Facturación'",
+      "reason": "menu label in the Spanish locale"
+    }
+  ]
+}

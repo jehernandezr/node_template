@@ -1,13 +1,1 @@
-{
-  "backend/infra/terraform/modules/alb/main.tf": 2,
-  "backend/infra/terraform/modules/cloudfront-waf/main.tf": 1,
-  "backend/infra/terraform/modules/http-api/main.tf": 3,
-  "backend/infra/terraform/modules/observability/main.tf": 1,
-  "backend/infra/terraform/modules/oidc-github/main.tf": 2,
-  "backend/infra/terraform/modules/rds-postgres/main.tf": 4,
-  "backend/infra/terraform/modules/service-fargate/main.tf": 2,
-  "backend/infra/terraform/modules/ses/main.tf": 1,
-  "backend/infra/terraform/stacks/data/main.tf": 2,
-  "backend/infra/terraform/stacks/platform/alarms.tf": 1,
-  "backend/infra/terraform/stacks/platform/compute.tf": 1
-}
+{}

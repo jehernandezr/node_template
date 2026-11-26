@@ -149,11 +149,15 @@ export class LanguageCheck {
     const kind = {
       prose: this.policy.isProse(file),
       dataStrings: this.policy.hasDataStrings(file),
+      syntax: this.policy.syntaxOf(file),
     };
     return text
       .split('\n')
       .map((line, index) =>
-        this.detector.isSpanish(line, kind) ? index + 1 : 0,
+        this.detector.isSpanish(line, kind) &&
+        !this.policy.allowsLine(file, line)
+          ? index + 1
+          : 0,
       )
       .filter((line) => line > 0);
   }
