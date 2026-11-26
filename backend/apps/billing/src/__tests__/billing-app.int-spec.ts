@@ -656,7 +656,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
         );
       });
 
-      it('reactivates a suspended tenant when two payments read its failed invoices at the same moment', async () => {
+      it('lets two concurrent payments of a suspended tenant read its failed invoices one at a time, so the last one reactivates it', async () => {
         await issueOverdue(TENANT_E, 100);
         const issue = () => app.get(IssueInvoice).execute(TENANT_E, today());
         const owed = [await issue(), await issue()];
@@ -671,8 +671,13 @@ new ContainerRuntime(process.env).describeIfAvailable(
           TENANT_E,
           `UPDATE subscriptions SET status = '${SubscriptionStatus.Suspended}'`,
         );
+        const rendezvous = new RendezvousInvoiceRepository(
+          app.get(InvoiceRepository),
+          2,
+          1_000,
+        );
         const settle = new SettleInvoice(
-          new RendezvousInvoiceRepository(app.get(InvoiceRepository), 2, 1_000),
+          rendezvous,
           app.get(SubscriptionsFacade),
           app.get(MessageBus),
           app.get(ShardScopes),
@@ -685,6 +690,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
           ),
         );
 
+        expect(rendezvous.mostAtOnce).toBe(1);
         await expect(statusOf(TENANT_E)).resolves.toBe(
           SubscriptionStatus.Active,
         );

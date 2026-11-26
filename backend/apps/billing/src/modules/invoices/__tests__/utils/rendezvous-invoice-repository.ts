@@ -7,9 +7,12 @@ import type { Invoice } from '../../domain/invoice.js';
  * Real `InvoiceRepository` that, in `any`, makes each transaction wait until `parties` arrive or
  * `patienceMs` elapses. This way two concurrent payments read the failed invoices at the same time, the exact write skew
  * ordering, unless a lock lets only one through: then the first continues alone when the patience runs out.
+ * `mostAtOnce` tells which of the two happened.
  */
 export class RendezvousInvoiceRepository extends InvoiceRepository {
   private arrived = 0;
+  private waiting = 0;
+  private most = 0;
   private release: () => void = () => undefined;
   private readonly everyone = new Promise<void>((resolve) => {
     this.release = resolve;
@@ -43,9 +46,16 @@ export class RendezvousInvoiceRepository extends InvoiceRepository {
     return this.inner.page(request);
   }
 
+  /** The most transactions that were inside `any` at the same moment: 1 when a lock let them through one by one. */
+  get mostAtOnce(): number {
+    return this.most;
+  }
+
   /** Waits for the other transactions, or for the patience to run out, and queries the real repository. */
   override async any(status?: InvoiceStatus): Promise<boolean> {
     this.arrived += 1;
+    this.waiting += 1;
+    this.most = Math.max(this.most, this.waiting);
     if (this.arrived >= this.parties) {
       this.release();
     }
@@ -57,6 +67,7 @@ export class RendezvousInvoiceRepository extends InvoiceRepository {
       await Promise.race([this.everyone, patience]);
     } finally {
       clearTimeout(timer);
+      this.waiting -= 1;
     }
     return this.inner.any(status);
   }
