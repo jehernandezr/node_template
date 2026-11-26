@@ -117,12 +117,10 @@ jobs:
 
       - run: pnpm nx affected -t lint typecheck build analyze format-check
 
-      # The coverage threshold lives in backend/jest.preset.js. The run-commands executor of each inferred test target
-      # forwards --coverage to Jest, so a project under the threshold fails this step, and the same command does locally.
-      - name: Backend tests with minimum coverage
-        run: >-
-          pnpm nx affected -t test --exclude='tag:lang:dart' --coverage
-          --coverageReporters=text-summary
+      # Unit tests only, with parallel workers and no containers. Coverage is enforced by the test-int shards, which
+      # run each project's unit and container tests together.
+      - name: Backend unit tests
+        run: pnpm nx affected -t test --exclude='tag:lang:dart'
 
       # The five services in one process with real PostgreSQL and Valkey: tenant signup, tasks, notices, reports,
       # invoice and tenant move. Without Docker it must fail, not pass with zero tests.
@@ -139,6 +137,107 @@ jobs:
       # A freshly generated service and module pass lint, test, typecheck and build in a copy of the workspace.
       - name: Generator smoke test
         run: pnpm nx run generators:smoke
+
+  # The container suites of the affected projects, split by project across runners. Each shard runs test-int:ci,
+  # which runs a project's unit and container tests together over one PostgreSQL and one Valkey per project, and
+  # enforces the coverage threshold of backend/jest.preset.js on that project.
+  test-int:
+    name: Backend tests with coverage (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .nx/cache
+          key: nx-test-int-${{ matrix.shard }}-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            nx-test-int-${{ matrix.shard }}-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            nx-test-int-${{ matrix.shard }}-${{ runner.os }}-
+
+      - uses: nrwl/nx-set-shas@e602fada7ad5987b0f7b1905e7a99ea1c661514c # v5.1.0
+
+      - name: Projects of this shard
+        id: shard
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: 3
+        run: |
+          projects=$(pnpm nx show projects --affected --withTarget=test-int --json | node -e '
+            const all = JSON.parse(require("fs").readFileSync(0, "utf8")).sort();
+            const [shard, shards] = [Number(process.env.SHARD), Number(process.env.SHARDS)];
+            console.log(all.filter((_, index) => index % shards === shard - 1).join(","));
+          ')
+          echo "projects=$projects" >> "$GITHUB_OUTPUT"
+          echo "Shard $SHARD: ${projects:-none}"
+
+      - name: Unit and container tests with minimum coverage
+        if: steps.shard.outputs.projects != ''
+        env:
+          INTEGRATION_TESTS: require
+          PROJECTS: ${{ steps.shard.outputs.projects }}
+        run: >-
+          pnpm nx run-many -t test-int -c ci --projects="$PROJECTS" --parallel=1
+          --coverage --coverageReporters=text-summary
+
+  # The guards of the repository: the language check, the guard and rule tests (rule-checks.md covers every rule,
+  # each guard fails on its fixture) and the commit messages of a pull request.
+  guards:
+    name: Guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Language of the developer text
+        run: node .claude/guards/check-language.mjs --all .
+
+      - name: Guard, rule and tool tests
+        run: pnpm nx run backend-tooling:tooling-test --skip-nx-cache
+
+      - name: Tooling lint
+        run: pnpm nx run backend-tooling:lint --skip-nx-cache
+
+      - name: Commit messages of the pull request
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pnpm exec commitlint --from "$BASE" --to "$HEAD"
+          for sha in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/message"
+            node .claude/guards/check-language.mjs --commit-msg "$RUNNER_TEMP/message"
+          done
 
   contracts:
     name: Contracts
@@ -281,6 +380,8 @@ jobs:
     needs:
       - changes
       - nx
+      - test-int
+      - guards
       - contracts
       - web-deferred
       - terraform
