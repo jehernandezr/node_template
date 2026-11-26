@@ -105,6 +105,8 @@
         "inputs": [
           "{workspaceRoot}/.claude/**/*",
           "{workspaceRoot}/CLAUDE.md",
+          "{workspaceRoot}/nx.json",
+          "{workspaceRoot}/backend/tsconfig.base.json",
           "{workspaceRoot}/docs/quality/**/*",
           "{workspaceRoot}/backend/eslint.*",
           "{workspaceRoot}/eslint.tooling.config.mjs",
