@@ -70,7 +70,7 @@ variable "tracking_redirect_domain" {
 variable "events_topic_display_name" {
   description = "Display name of the events SNS topic."
   type        = string
-  default     = "Eventos de SES para el seguimiento de correo"
+  default     = "SES events for email tracking"
 }
 
 variable "suppressed_reasons" {

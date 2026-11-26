@@ -9,12 +9,10 @@ import { CreateSearchDocuments1794800000001 } from './create-search-documents.mi
 
 /** Two shards with pgvector and `search_documents`, and a helper to run in a tenant's shard. */
 export class SearchTestDatabase {
-  static readonly IMAGE = 'pgvector/pgvector:0.8.7-pg17';
   static readonly TENANT_A = ShardedTestDatabase.TENANT_A;
   static readonly TENANT_B = ShardedTestDatabase.TENANT_B;
 
   private readonly db = new ShardedTestDatabase({
-    image: SearchTestDatabase.IMAGE,
     shard: {
       entities: [],
       migrations: [

@@ -1,3 +1,7 @@
+/**
+ * @isolated-server Two regions, each with its own PostgreSQL and Valkey that must not see each other, rehearse a move
+ * between two instances behind the write gate.
+ */
 import type { INestApplicationContext } from '@nestjs/common';
 import type { OperationDefinition, TenantMoveRef } from '@contracts/platform';
 import { InternalClient } from '@platform/internal-api';

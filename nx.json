@@ -10,6 +10,7 @@
       "!{projectRoot}/.spec.swcrc",
       "!{projectRoot}/eslint.config.mjs"
     ],
+    "testUtils": ["{projectRoot}/src/**/__tests__/utils/**/*"],
     "sharedGlobals": [
       "{workspaceRoot}/.nvmrc",
       "{workspaceRoot}/pnpm-lock.yaml",
@@ -25,6 +26,13 @@
       "include": ["backend/**/*"]
     },
     {
+      "plugin": "@nx/jest/plugin",
+      "options": {
+        "targetName": "test-int"
+      },
+      "include": ["backend/**/*"]
+    },
+    {
       "plugin": "@nx/eslint/plugin",
       "options": {
         "targetName": "lint"
@@ -36,6 +44,24 @@
   ],
   "analytics": false,
   "targetDefaults": {
+    "lint": [
+      {
+        "filter": {
+          "plugin": "@nx/eslint/plugin"
+        },
+        "cache": true,
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/backend/eslint.*",
+          "{workspaceRoot}/backend/tsconfig.base.json",
+          "{workspaceRoot}/tools/eslint-rules/**/*",
+          {
+            "externalDependencies": ["eslint"]
+          }
+        ]
+      }
+    ],
     "analyze": {
       "cache": true
     },
@@ -73,6 +99,53 @@
         }
       ],
       "outputs": ["{workspaceRoot}/backend/dist/{projectName}"]
+    },
+    "test": [
+      {
+        "filter": {
+          "plugin": "@nx/jest/plugin"
+        },
+        "cache": true,
+        "inputs": [
+          "default",
+          "^production",
+          "^testUtils",
+          "{workspaceRoot}/backend/jest.preset.js",
+          "{workspaceRoot}/backend/jest.servers.cjs",
+          "{workspaceRoot}/backend/jest.global-setup.cjs",
+          "{workspaceRoot}/backend/jest.global-teardown.cjs",
+          {
+            "externalDependencies": ["jest", "@nx/jest", "ts-jest", "@swc/jest"]
+          }
+        ]
+      }
+    ],
+    "test-int": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production",
+        "^testUtils",
+        "{workspaceRoot}/backend/jest.preset.js",
+        "{workspaceRoot}/backend/jest.servers.cjs",
+        "{workspaceRoot}/backend/jest.global-setup.cjs",
+        "{workspaceRoot}/backend/jest.global-teardown.cjs",
+        {
+          "env": "INTEGRATION_TESTS"
+        },
+        {
+          "externalDependencies": [
+            "jest",
+            "@nx/jest",
+            "@swc/jest",
+            "testcontainers",
+            "@testcontainers/postgresql"
+          ]
+        }
+      ],
+      "configurations": {
+        "ci": {}
+      }
     }
   }
 }

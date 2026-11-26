@@ -22,7 +22,7 @@ Rules for working in this repository. Read [docs/ARCHITECTURE.md](docs/ARCHITECT
 
 ## Commands
 
-- Nx runs from the root and covers backend and front. Set up with `pnpm install` at the root and `flutter pub get` in `front/`. Examples: `pnpm nx affected -t lint test typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
+- Nx runs from the root and covers backend and front. Set up with `pnpm install` at the root and `flutter pub get` in `front/`. Examples: `pnpm nx affected -t lint test test-int typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
 - A new service comes from `pnpm nx run generators:service -- --name=<n>` and a module from `pnpm nx run generators:module -- --service=<n> --name=<m>` ([ADR 0033](docs/adr/0033-generators-and-openapi.md)); a microfrontend from `front/tools/new_microfrontend.dart` (skill `front-new-microfrontend`). Backend libraries follow the `backend-structure` skill (an Nx project without `package.json`).
 - Jest configs are `jest.config.cjs`.
 

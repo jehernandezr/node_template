@@ -28,11 +28,16 @@ class TempRepository {
     return this;
   }
 
-  check() {
-    const result = spawnSync('node', [SCRIPT, '--all', this.root], {
+  check(mode = '--all') {
+    const result = spawnSync('node', [SCRIPT, mode, this.root], {
       encoding: 'utf8',
     });
     return { status: result.status, output: result.stderr };
+  }
+
+  git(...args) {
+    execFileSync('git', args, { cwd: this.root });
+    return this;
   }
 
   dispose() {
@@ -48,6 +53,21 @@ describe('check-structure.mjs', () => {
     repo = new TempRepository();
   });
   afterEach(() => repo.dispose());
+
+  describe('--staged', () => {
+    it('checks the staged files and leaves the unstaged ones to the next commit', () => {
+      repo
+        .write('backend/libs/platform/cache/src/staged.ts', LOOSE_FUNCTION)
+        .write('backend/libs/platform/cache/src/unstaged.ts', LOOSE_FUNCTION)
+        .git('add', 'backend/libs/platform/cache/src/staged.ts');
+
+      const { status, output } = repo.check('--staged');
+
+      assert.equal(status, 1);
+      assert.match(output, /staged\.ts/);
+      assert.doesNotMatch(output, /unstaged\.ts/);
+    });
+  });
 
   describe('integration tests', () => {
     it('rejects a *.integration.spec.ts file', () => {

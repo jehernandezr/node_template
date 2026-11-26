@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Checks the front-structure, front-code and front-testing rules.
- * Usage: node check-structure.mjs [--changed | --all] [repository root]
+ * Usage: node check-structure.mjs [--changed | --all | --staged] [repository root]
  *   --changed (default) checks the files changed against HEAD, including new ones.
+ *   --staged checks the files staged for the next commit, as the pre-commit hook does.
  *   --all checks all of front/.
  * Exits with code 1 and the list of violations if it finds any, and with 2 on an unknown mode, so a mistyped flag
  * never falls back to another mode silently.

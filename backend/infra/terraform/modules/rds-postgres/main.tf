@@ -75,7 +75,7 @@ module "kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-rds"
-  description = "Cifrado de RDS, Performance Insights y secretos de ${var.name_prefix}"
+  description = "Encryption of RDS, Performance Insights and secrets of ${var.name_prefix}"
   log_group_arns = [
     "${local.log_group_arn_base}:/aws/rds/instance/${local.instance_identifier}*",
     "${local.log_group_arn_base}:/aws/lambda/${var.name_prefix}-db-*",
@@ -96,7 +96,7 @@ resource "aws_db_subnet_group" "this" {
 
 resource "aws_security_group" "rds" {
   name        = "${var.name_prefix}-rds"
-  description = "PostgreSQL de ${var.name_prefix}, solo desde el proxy y las herramientas de base de datos"
+  description = "PostgreSQL of ${var.name_prefix}, only from the proxy and the database tooling"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-rds" })
@@ -108,7 +108,7 @@ resource "aws_security_group" "replica" {
   count = var.read_replica_count > 0 ? 1 : 0
 
   name        = "${var.name_prefix}-rds-replica"
-  description = "Réplicas de lectura de ${var.name_prefix}, solo desde clientes autorizados"
+  description = "Read replicas of ${var.name_prefix}, only from authorized clients"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-rds-replica" })
@@ -122,12 +122,12 @@ resource "aws_vpc_security_group_ingress_rule" "replica_from_clients" {
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
-  description                  = "PostgreSQL de lectura desde un cliente autorizado"
+  description                  = "Read PostgreSQL from an authorized client"
 }
 
 resource "aws_security_group" "proxy" {
   name        = "${var.name_prefix}-rds-proxy"
-  description = "RDS Proxy de ${var.name_prefix}, solo desde clientes autorizados"
+  description = "RDS Proxy of ${var.name_prefix}, only from authorized clients"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-rds-proxy" })
@@ -136,7 +136,7 @@ resource "aws_security_group" "proxy" {
 # Admin Lambdas (user creation and rotation). They only talk to RDS and Secrets Manager.
 resource "aws_security_group" "tooling" {
   name        = "${var.name_prefix}-rds-tooling"
-  description = "Lambdas de bootstrap y rotación de usuarios de ${var.name_prefix}"
+  description = "Bootstrap and user rotation Lambdas of ${var.name_prefix}"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-rds-tooling" })
@@ -148,7 +148,7 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_proxy" {
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
-  description                  = "PostgreSQL desde el proxy"
+  description                  = "PostgreSQL from the proxy"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "rds_from_tooling" {
@@ -157,7 +157,7 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_tooling" {
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
-  description                  = "PostgreSQL desde las lambdas de bootstrap y rotación"
+  description                  = "PostgreSQL from the bootstrap and rotation Lambdas"
 }
 
 resource "aws_vpc_security_group_egress_rule" "tooling_to_rds" {
@@ -166,7 +166,7 @@ resource "aws_vpc_security_group_egress_rule" "tooling_to_rds" {
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
-  description                  = "Hacia PostgreSQL"
+  description                  = "To PostgreSQL"
 }
 
 resource "aws_vpc_security_group_egress_rule" "tooling_to_endpoints" {
@@ -175,7 +175,7 @@ resource "aws_vpc_security_group_egress_rule" "tooling_to_endpoints" {
   from_port                    = 443
   to_port                      = 443
   ip_protocol                  = "tcp"
-  description                  = "HTTPS hacia Secrets Manager y Logs por endpoints de VPC"
+  description                  = "HTTPS to Secrets Manager and Logs through VPC endpoints"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "proxy_from_clients" {
@@ -186,7 +186,7 @@ resource "aws_vpc_security_group_ingress_rule" "proxy_from_clients" {
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
-  description                  = "PostgreSQL desde un cliente autorizado"
+  description                  = "PostgreSQL from an authorized client"
 }
 
 resource "aws_vpc_security_group_egress_rule" "proxy_to_rds" {
@@ -195,7 +195,7 @@ resource "aws_vpc_security_group_egress_rule" "proxy_to_rds" {
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
-  description                  = "Hacia PostgreSQL"
+  description                  = "To PostgreSQL"
 }
 
 resource "aws_vpc_security_group_egress_rule" "proxy_to_endpoints" {
@@ -204,7 +204,7 @@ resource "aws_vpc_security_group_egress_rule" "proxy_to_endpoints" {
   from_port                    = 443
   to_port                      = 443
   ip_protocol                  = "tcp"
-  description                  = "Hacia Secrets Manager por endpoint de VPC"
+  description                  = "To Secrets Manager through a VPC endpoint"
 }
 
 # ---------------------------------------------------------------------------
@@ -214,7 +214,7 @@ resource "aws_vpc_security_group_egress_rule" "proxy_to_endpoints" {
 resource "aws_db_parameter_group" "this" {
   name_prefix = "${var.name_prefix}-pg-"
   family      = local.parameter_group_family
-  description = "Parámetros de PostgreSQL de ${var.name_prefix}"
+  description = "PostgreSQL parameters of ${var.name_prefix}"
 
   # Needed to move shards without downtime using logical replication (ADR 0010). Requires a reboot.
   parameter {
@@ -398,7 +398,7 @@ resource "aws_secretsmanager_secret" "service" {
   for_each = local.users
 
   name                    = "${var.name_prefix}/db/${each.key}"
-  description             = "Credenciales de PostgreSQL del servicio ${each.key}"
+  description             = "PostgreSQL credentials of the ${each.key} service"
   kms_key_id              = module.kms.arn
   recovery_window_in_days = var.secret_recovery_window_days
 
@@ -672,7 +672,7 @@ resource "aws_db_proxy_target" "this" {
 
 resource "aws_cloudwatch_metric_alarm" "cpu" {
   alarm_name          = "${var.name_prefix}-rds-cpu-high"
-  alarm_description   = "CPU de la instancia primaria de RDS por encima del umbral"
+  alarm_description   = "CPU of the primary RDS instance above the threshold"
   namespace           = "AWS/RDS"
   metric_name         = "CPUUtilization"
   statistic           = "Average"
@@ -692,7 +692,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu" {
 
 resource "aws_cloudwatch_metric_alarm" "free_storage" {
   alarm_name          = "${var.name_prefix}-rds-free-storage-low"
-  alarm_description   = "Espacio libre de RDS por debajo del umbral"
+  alarm_description   = "RDS free storage below the threshold"
   namespace           = "AWS/RDS"
   metric_name         = "FreeStorageSpace"
   statistic           = "Minimum"
@@ -712,7 +712,7 @@ resource "aws_cloudwatch_metric_alarm" "free_storage" {
 
 resource "aws_cloudwatch_metric_alarm" "freeable_memory" {
   alarm_name          = "${var.name_prefix}-rds-memory-low"
-  alarm_description   = "Memoria liberable de RDS por debajo del umbral"
+  alarm_description   = "RDS freeable memory below the threshold"
   namespace           = "AWS/RDS"
   metric_name         = "FreeableMemory"
   statistic           = "Minimum"
@@ -734,7 +734,7 @@ resource "aws_cloudwatch_metric_alarm" "replica_lag" {
   count = var.read_replica_count
 
   alarm_name          = "${var.name_prefix}-rds-replica-${count.index + 1}-lag-high"
-  alarm_description   = "Retraso de la réplica por encima del umbral"
+  alarm_description   = "Replica lag above the threshold"
   namespace           = "AWS/RDS"
   metric_name         = "ReplicaLag"
   statistic           = "Maximum"

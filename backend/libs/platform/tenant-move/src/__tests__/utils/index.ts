@@ -11,3 +11,4 @@ export * from './assigned-shard-connections.js';
 export * from './recording-budget.js';
 export * from './pending-rounds.js';
 export * from './manifest-row-writer.js';
+export * from './rehearsal-transfer-options.js';

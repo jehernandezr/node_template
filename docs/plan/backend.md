@@ -770,8 +770,8 @@ New WP-01 dependencies, with an exact version like the rest of `package.json` (t
 **Standard closing criteria (SCC).** Every package meets them, in addition to its own criteria. `<projects>` is the list of the package's Nx projects.
 
 1. `pnpm nx run-many -t lint test typecheck --projects=<projects>` green.
-2. `pnpm nx run-many -t test --projects=<projects> --coverage` meets 80 for lines, 80 for statements, 80 for functions and 75 for branches.
-3. `INTEGRATION_TESTS=require pnpm nx run-many -t test --projects=<projects>` green where the package has `.int-spec.ts` tests.
+2. `INTEGRATION_TESTS=require pnpm nx run-many -t test-int -c ci --projects=<projects> --coverage --parallel=1` green: `test-int:ci` runs the unit and `.int-spec.ts` tests together and meets 80 for lines, 80 for statements, 80 for functions and 75 for branches.
+3. No other command runs the `.int-spec.ts` tests: `test` runs only the unit tests.
 4. `node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .` with no violations.
 5. Public `index.ts` files do not export test doubles or `InMemory*` classes that D9 sends to `test-utils`.
 6. JSDoc and docs in English, one public class per file, names with a role suffix.
@@ -791,7 +791,7 @@ Nx project names: `platform-<lib>` (`platform-kernel`, `platform-primitives`, `p
   - `grep -rn "@contracts" backend/libs/platform/kernel/src` returns nothing.
   - The code pattern consistency test walks `platformErrorCatalog` and `kernelErrorCatalog`.
   - `Clock`, `IdGenerator`, `TransactionManager` and `IdempotencyStore` still accept an object literal as a double: the guide verifies it with `pnpm nx run-many -t typecheck` over **all** projects, without changes to them.
-  - `pnpm nx run-many -t test --projects=platform-kernel,platform-primitives,contracts-platform` with coverage and `INTEGRATION_TESTS=skip` green; `ContainerRuntime` has unit tests with a simulated `env`.
+  - `pnpm nx run-many -t test-int -c ci --projects=platform-kernel,platform-primitives,contracts-platform --coverage` with `INTEGRATION_TESTS=skip` green; `ContainerRuntime` has unit tests with a simulated `env`.
   - `pnpm install --frozen-lockfile` green and `pnpm nx show projects` lists `platform-scheduling`.
 - **Split:** Haiku 1 does the kernel (`RandomSource`, `Clock`, `IdGenerator`, `Guard`, `ErrorDescriptor`, `PlatformError`, `ErrorCode`, `HealthCheckable`, `TenantId`, `Money`, `ContainerRuntime`) and deletes `result.ts` and `shared/utils`. Haiku 2 does primitives (`RetryPolicy`, `Backoff`, `Deadline`, `FailureClassifier`, `RetryAfterParser`, `CanonicalJson`, `Hashes`), moves the ports to `kernel/src/ports/` with the re-exports, and edits the shared files (aliases, dependencies, `jest.preset.js`). The guide writes `ScheduledJob`, `JobLock`, the scheduling skeleton and the catalog mechanism.
 
@@ -995,7 +995,7 @@ The three squads start from the integrated wave 0 and do not share folders. Each
   - `platform-error-code.enum.ts` and `platform-error-catalog.ts` only have public and cross-cutting codes; no observable code was lost (the test compares the set of codes of each library before and after).
   - The smoke test, with real two-shard Postgres and Valkey (and SNS and SQS fakes): a use case saves an entity and an event in the same transaction, the `OutboxRelayJob` publishes it after commit, a `@Subscribe` consumes it only once even if it arrives duplicated, a two-step saga finishes, a `CacheAside` is invalidated after commit, and on closing the app all resources are released with no open handles (`--detectOpenHandles`).
   - `node .claude/skills/backend-structure/scripts/check-structure.mjs --all .` only reports the declared exceptions (about 12, from the contracts DSL and the `tools` `main()` functions).
-  - `pnpm nx run-many -t lint test typecheck build` over the whole backend, with 80/80/80/75 coverage per project.
+  - `pnpm nx run-many -t lint test typecheck build` and `pnpm nx run-many -t test-int -c ci --coverage` over the whole backend, with 80/80/80/75 coverage per project.
   - `contracts-export:check` and `contracts_gen --check` green.
 - **Split:** Haiku 1: catalog cleanup, re-exports and the code consistency test. Haiku 2: `platform-smoke`. The guide reviews documentation and ADRs.
 
@@ -1221,4 +1221,4 @@ export class UsersModule {}
 4. Consumers with `@Subscribe` and handlers with `@InternalHandler` in `presentation/`; the use case is injected, no logic is written in the class.
 5. One `forFeature` per business module and no platform class instantiated with `new`.
 6. A module test with `@nestjs/testing` and the doubles from `@platform/<lib>/test-utils`; integration tests are named `.int-spec.ts`.
-7. `pnpm nx run-many -t lint test typecheck --projects=<service>` and `node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .` green, with 80/80/80/75 coverage.
+7. `pnpm nx run-many -t lint test typecheck --projects=<service>`, `INTEGRATION_TESTS=require pnpm nx run-many -t test-int -c ci --projects=<service> --coverage` with 80/80/80/75 coverage, and `node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .` green.

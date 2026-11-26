@@ -46,7 +46,7 @@ export class ExportPaths {
   }
 
   /**
-   * Path of a service's contract index.
+   * Where the exporter loads a service's contract from: the `index.ts` of its contracts library.
    * @param service Service name.
    * @returns The path.
    */

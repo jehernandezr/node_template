@@ -286,7 +286,7 @@ new ContainerRuntime(process.env).describeIfAvailable('identity sagas', () => {
     await expect(
       probe.rowsIn(
         await probe.shardOfTenant(acme.tenantId),
-        `SELECT 1 FROM outbox WHERE envelope->>'type' = '${IdentityEvent.MembershipChanged}' AND envelope->'data'->>'userId' = '${userId}' AND envelope->'data'->>'kind' = '${MembershipChangeKind.Removed}'`,
+        `SELECT 1 FROM outbox WHERE envelope->>'type' = '${IdentityEvent.MembershipChanged}' AND envelope->'data'->>'tenantId' = '${acme.tenantId}' AND envelope->'data'->>'userId' = '${userId}' AND envelope->'data'->>'kind' = '${MembershipChangeKind.Removed}'`,
       ),
     ).resolves.toHaveLength(1);
   });

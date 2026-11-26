@@ -29,7 +29,7 @@ export class ManageGroups {
   ) {}
 
   /**
-   * Lists the groups of a tenant.
+   * Reads every group with the roles it grants, for the administration screens.
    * @param tenantId Tenant to read.
    * @returns Its groups with their roles.
    */

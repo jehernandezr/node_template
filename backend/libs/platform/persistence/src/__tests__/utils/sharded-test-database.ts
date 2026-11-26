@@ -1,5 +1,5 @@
 import { ConsistentHashStrategy } from '@platform/sharding';
-import { ContainerRuntime } from '@platform/kernel/test-utils';
+import type { SharedPostgres } from '@platform/kernel/test-utils';
 import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Secret } from '@platform/config';
 import { SystemClock } from '@platform/kernel';
@@ -14,11 +14,6 @@ import {
   InMemoryDirectoryStore,
   PlacementBuilder,
 } from '@platform/sharding/test-utils';
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
-import { DataSource } from 'typeorm';
 import { AcrossShards } from '../../across-shards.js';
 import { CatalogDataSource } from '../../catalog-data-source.js';
 import type { DatabaseSettings } from '../../config/database.config.js';
@@ -41,6 +36,7 @@ import type { TenantWriteFence } from '../../tenant-write-fence.js';
 import { TypeOrmTransactionManager } from '../../typeorm-transaction-manager.js';
 import { StaticShardLister } from './static-shard-lister.js';
 import { RecordingLogger } from './recording-logger.js';
+import { TestDatabaseServer } from './test-database-server.js';
 
 /** Options of {@link ShardedTestDatabase}. */
 export interface ShardedTestDatabaseOptions {
@@ -49,16 +45,21 @@ export interface ShardedTestDatabaseOptions {
   readonly catalog: DatabaseSetDefinition;
   /** `false` by default. */
   readonly requireScope?: boolean;
-  /** PostgreSQL image; `postgres:17-alpine` by default. Suites that use pgvector request their own image. */
-  readonly image?: string;
+  /**
+   * Suffix of the database names, for a second instance that lives at the same time as another one in the same
+   * suite. Without it the databases are `test_shard_0`, `test_shard_1` and `test_catalog`.
+   */
+  readonly namespace?: string;
+  /** Extensions that provisioning creates in each shard before migrating, such as `vector`. */
+  readonly shardExtensions?: readonly string[];
   /** Relocation barrier checked by writes; migrations must create `tenant_write_fences`. */
   readonly fence?: TenantWriteFence;
 }
 
-/** Resolves the single harness instance to the container that hosts it. */
-class ContainerEndpointResolver extends InstanceEndpointResolver {
+/** Resolves the single harness instance to the shared server that hosts it. */
+class SharedServerEndpointResolver extends InstanceEndpointResolver {
   constructor(
-    private readonly container: StartedPostgreSqlContainer,
+    private readonly server: SharedPostgres,
     private readonly instance: string,
   ) {
     super();
@@ -73,8 +74,8 @@ class ContainerEndpointResolver extends InstanceEndpointResolver {
     }
     return {
       primary: {
-        host: this.container.getHost(),
-        port: this.container.getPort(),
+        host: this.server.host,
+        port: this.server.port,
       },
       replicas: [],
     };
@@ -82,11 +83,11 @@ class ContainerEndpointResolver extends InstanceEndpointResolver {
 }
 
 /**
- * Test harness: a real PostgreSQL in a container with two logical shards and a catalog, and the whole
- * layer wired by hand (without NestJS). Tenant A lives in shard 0 and tenant B in shard 1.
+ * Test harness: two logical shards and a catalog on the PostgreSQL the Jest run shares, and the whole layer wired by
+ * hand (without NestJS). Tenant A lives in shard 0 and tenant B in shard 1. `migrate` clones databases migrated once
+ * per run instead of migrating each suite again.
  */
 export class ShardedTestDatabase {
-  static readonly DEFAULT_IMAGE = 'postgres:17-alpine';
   static readonly TENANT_A = '0193f1c2-0000-7000-8000-0000000000a1';
   static readonly TENANT_B = '0193f1c2-0000-7000-8000-0000000000b2';
   static readonly SHARD_A = 'test_shard_0';
@@ -107,37 +108,66 @@ export class ShardedTestDatabase {
   runner!: ShardedMigrationRunner;
   lister!: StaticShardLister;
 
-  private container?: StartedPostgreSqlContainer;
+  readonly shardA: string;
+  readonly shardB: string;
+  readonly catalogName: string;
+
+  private server: SharedPostgres | undefined;
+  private readonly databases = new TestDatabaseServer();
   private readonly store = new RequestContextStore(new Tracing(new Redactor()));
   private readonly contextProvider = new RequestPersistenceContextProvider(
     this.store,
   );
 
-  constructor(protected readonly options: ShardedTestDatabaseOptions) {}
+  constructor(protected readonly options: ShardedTestDatabaseOptions) {
+    const suffix =
+      options.namespace === undefined ? '' : `_${options.namespace}`;
+    this.shardA = `${ShardedTestDatabase.SHARD_A}${suffix}`;
+    this.shardB = `${ShardedTestDatabase.SHARD_B}${suffix}`;
+    this.catalogName = `${ShardedTestDatabase.CATALOG}${suffix}`;
+  }
 
-  /** Starts the container, creates the three databases and builds the layer. Does not migrate: call `migrate()`. */
+  /** Creates the three databases empty, replacing any a previous suite left, and builds the layer. Does not migrate: call `migrate()`. */
   async start(): Promise<void> {
-    const container = await new PostgreSqlContainer(
-      this.options.image ?? ShardedTestDatabase.DEFAULT_IMAGE,
-    )
-      .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
-      .start();
-    this.container = container;
-    await this.createDatabases(container);
-    this.wire(container);
+    this.server = this.databases.connection();
+    await this.databases.recreate(this.names());
+    await this.databases.createExtensions(
+      [this.shardA, this.shardB],
+      this.options.shardExtensions ?? [],
+    );
+    this.wire(this.server);
   }
 
-  /** Applies the migrations to the catalog and both shards with `ShardedMigrationRunner`. */
+  /**
+   * Leaves the catalog and both shards as `ShardedMigrationRunner` would: clones of templates that a first suite with
+   * the same migrations migrated, so the migrations run once per Jest run.
+   */
   async migrate(): Promise<void> {
-    this.requireStarted();
-    await this.runner.migrateAll();
+    const server = this.requireStarted();
+    await this.closeSources();
+    const key = TestDatabaseServer.templateKey(
+      [this.options.shard.migrations, this.options.catalog.migrations],
+      this.options.shardExtensions ?? [],
+    );
+    const builder = new ShardedTestDatabase({
+      ...this.options,
+      namespace: `tpl_${key}`,
+    });
+    await this.databases.cloneFromTemplates(
+      key,
+      this.names(),
+      builder.names(),
+      () => builder.buildTemplates(server),
+    );
+    this.wire(server);
   }
 
-  /** Closes the `DataSource`s and stops the container. */
+  /** Closes the `DataSource`s and drops the three databases. */
   async stop(): Promise<void> {
-    await this.sources?.close();
-    await this.catalog?.close();
-    await this.container?.stop();
+    await this.closeSources();
+    if (this.server !== undefined) {
+      await this.databases.drop(this.names());
+    }
   }
 
   /** Runs `fn` as a request of the given tenant (and user) with that tenant's `ShardScope` open, as a use case does. */
@@ -197,54 +227,46 @@ export class ShardedTestDatabase {
     );
   }
 
-  private async createDatabases(
-    container: StartedPostgreSqlContainer,
-  ): Promise<void> {
-    const admin = new DataSource({
-      type: 'postgres',
-      host: container.getHost(),
-      port: container.getPort(),
-      username: container.getUsername(),
-      password: container.getPassword(),
-      database: container.getDatabase(),
-    });
-    await admin.initialize();
+  private names(): readonly string[] {
+    return [this.shardA, this.shardB, this.catalogName];
+  }
+
+  private async closeSources(): Promise<void> {
+    await this.sources?.close();
+    await this.catalog?.close();
+  }
+
+  private async buildTemplates(server: SharedPostgres): Promise<void> {
+    this.server = server;
+    await this.databases.createExtensions(
+      [this.shardA, this.shardB],
+      this.options.shardExtensions ?? [],
+    );
+    this.wire(server);
     try {
-      for (const name of [
-        ShardedTestDatabase.SHARD_A,
-        ShardedTestDatabase.SHARD_B,
-        ShardedTestDatabase.CATALOG,
-      ]) {
-        await admin.query(`CREATE DATABASE "${name}"`);
-      }
+      await this.runner.migrateAll();
     } finally {
-      await admin.destroy();
+      await this.closeSources();
     }
   }
 
   /** Builds the layer by hand, with the same wiring as `PersistenceModule`. */
-  private wire(container: StartedPostgreSqlContainer): void {
+  private wire(server: SharedPostgres): void {
     this.directory = new InMemoryDirectoryStore();
     this.directory.setPlacement(
       PlacementBuilder.aPlacement()
         .withTenantId(ShardedTestDatabase.TENANT_A)
-        .withShardGroup(ShardedTestDatabase.SHARD_A)
+        .withShardGroup(this.shardA)
         .build(),
     );
     this.directory.setPlacement(
       PlacementBuilder.aPlacement()
         .withTenantId(ShardedTestDatabase.TENANT_B)
-        .withShardGroup(ShardedTestDatabase.SHARD_B)
+        .withShardGroup(this.shardB)
         .build(),
     );
-    this.directory.setInstance(
-      ShardedTestDatabase.SHARD_A,
-      ShardedTestDatabase.INSTANCE,
-    );
-    this.directory.setInstance(
-      ShardedTestDatabase.SHARD_B,
-      ShardedTestDatabase.INSTANCE,
-    );
+    this.directory.setInstance(this.shardA, ShardedTestDatabase.INSTANCE);
+    this.directory.setInstance(this.shardB, ShardedTestDatabase.INSTANCE);
     this.router = new ShardRouter({
       strategy: new ConsistentHashStrategy(),
       directory: this.directory,
@@ -252,17 +274,17 @@ export class ShardedTestDatabase {
     });
 
     const settings: DatabaseSettings = {
-      DB_USER: container.getUsername(),
-      DB_PASSWORD: new Secret(container.getPassword()),
+      DB_USER: server.username,
+      DB_PASSWORD: new Secret(server.password),
       DB_SSL: false,
       DB_POOL_MAX: 5,
       DB_STATEMENT_TIMEOUT_MS: 30_000,
-      DB_CATALOG_NAME: ShardedTestDatabase.CATALOG,
+      DB_CATALOG_NAME: this.catalogName,
       DB_CATALOG_INSTANCE: ShardedTestDatabase.INSTANCE,
       DB_INSTANCES: {},
     };
-    const endpoints = new ContainerEndpointResolver(
-      container,
+    const endpoints = new SharedServerEndpointResolver(
+      server,
       ShardedTestDatabase.INSTANCE,
     );
     const registry = new EntityRegistry();
@@ -295,11 +317,11 @@ export class ShardedTestDatabase {
     this.writer = new OptimisticWriter();
     this.lister = new StaticShardLister([
       {
-        logicalShard: ShardedTestDatabase.SHARD_A,
+        logicalShard: this.shardA,
         instance: ShardedTestDatabase.INSTANCE,
       },
       {
-        logicalShard: ShardedTestDatabase.SHARD_B,
+        logicalShard: this.shardB,
         instance: ShardedTestDatabase.INSTANCE,
       },
     ]);
@@ -316,9 +338,10 @@ export class ShardedTestDatabase {
     );
   }
 
-  private requireStarted(): void {
-    if (this.container === undefined) {
+  private requireStarted(): SharedPostgres {
+    if (this.server === undefined) {
       throw new Error('ShardedTestDatabase.start() was not called');
     }
+    return this.server;
   }
 }

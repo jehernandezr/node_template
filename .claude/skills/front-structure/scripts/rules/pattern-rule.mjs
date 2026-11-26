@@ -24,6 +24,8 @@ export class PatternRule extends Rule {
   /**
    * Line numbers (from 1, without repeats) where a match starts. Lines that are only a
    * comment are blanked before searching so they do not count.
+   * @param {string} text Dart source.
+   * @returns {number[]} The lines with a match.
    */
   #matchingLines(text) {
     const code = text

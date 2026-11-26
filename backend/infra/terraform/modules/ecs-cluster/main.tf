@@ -14,7 +14,7 @@ module "kms" {
   source = "../kms-key"
 
   alias          = "${var.name_prefix}-ecs"
-  description    = "Cifrado de logs de ECS Exec de ${var.name_prefix}"
+  description    = "Encryption of the ECS Exec logs of ${var.name_prefix}"
   log_group_arns = ["arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.name_prefix}/*"]
   tags           = var.tags
 }

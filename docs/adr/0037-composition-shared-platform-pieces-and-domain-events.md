@@ -57,7 +57,7 @@ A domain without events is allowed. The rule is that a fact leaves the service t
 
 ### CI
 
-`check-structure` (backend and front) and `generators:verify` run in the CI `nx` job. The backend test step passes `--coverage` to `nx affected -t test`; the `nx:run-commands` executor of the inferred `test` target forwards it to Jest (`> jest --coverage ...` in the task log), so the thresholds of `backend/jest.preset.js` fail the job.
+`check-structure` (backend and front) and `generators:verify` run in the CI `nx` job. The backend test step passes `--coverage` to `nx affected -t test`; the `nx:run-commands` executor of the inferred `test` target forwards it to Jest (`> jest --coverage ...` in the task log), so the thresholds of `backend/jest.preset.js` fail the job. [ADR 0047](0047-shared-test-servers-rule-guards-and-impact-review.md) replaces this step: coverage is now measured by `test-int:ci --coverage` in the CI `test-int` job.
 
 ## Consequences
 

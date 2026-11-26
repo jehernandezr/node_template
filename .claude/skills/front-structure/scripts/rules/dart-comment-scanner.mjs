@@ -18,6 +18,13 @@ export class DartCommentScanner {
     return comments;
   }
 
+  /**
+   * Walks code until the end of the source, or until the brace that closes an interpolation, dispatching comments
+   * and strings to their readers and tracking which blocks are open.
+   * @param {object} state Cursor over the source.
+   * @param {object[]} comments Where found comments are appended.
+   * @param {boolean} inInterpolation Whether the walk started inside `${...}`.
+   */
   #code(state, comments, inInterpolation) {
     let depth = 0;
     while (state.index < state.text.length) {
@@ -66,6 +73,11 @@ export class DartCommentScanner {
     }
   }
 
+  /**
+   * Reads a `//` comment up to the end of its line.
+   * @param {object} state Cursor at the first slash.
+   * @param {object[]} comments Where the comment is appended.
+   */
   #lineComment(state, comments) {
     const start = state.index;
     const line = state.line;
@@ -83,6 +95,11 @@ export class DartCommentScanner {
     });
   }
 
+  /**
+   * Reads a block comment, counting nested block comments as Dart does.
+   * @param {object} state Cursor at the opening slash.
+   * @param {object[]} comments Where the comment is appended.
+   */
   #blockComment(state, comments) {
     const start = state.index;
     const line = state.line;
@@ -107,6 +124,12 @@ export class DartCommentScanner {
     });
   }
 
+  /**
+   * Skips a string literal, scanning the code of its interpolations unless it is raw.
+   * @param {object} state Cursor at the opening quote.
+   * @param {object[]} comments Where comments inside interpolations are appended.
+   * @param {boolean} raw Whether the literal is raw, with no escapes or interpolations.
+   */
   #string(state, comments, raw) {
     const quote = state.text[state.index];
     const triple = state.text.startsWith(quote.repeat(3), state.index);
@@ -131,16 +154,31 @@ export class DartCommentScanner {
     }
   }
 
+  /**
+   * Tells whether the code before a brace opens a class, enum, mixin or extension body rather than a block of code.
+   * @param {string} head Code since the previous brace or semicolon.
+   * @returns {boolean} `true` for a declaration body.
+   */
   #isDeclarationBody(head) {
     const code = head.replace(/@[\w.]+(\([^)]*\))?/g, ' ');
     return /\b(class|enum|mixin|extension)\b/.test(code) && !/[(=]/.test(code);
   }
 
+  /**
+   * Moves the cursor one character, counting the line when it crosses a newline.
+   * @param {object} state Cursor over the source.
+   */
   #advance(state) {
     if (state.text[state.index] === '\n') state.line += 1;
     state.index += 1;
   }
 
+  /**
+   * Tells whether a character can be part of a Dart identifier, so an `r` before a quote is a raw prefix only after
+   * one that is not.
+   * @param {string | undefined} char Character before the quote.
+   * @returns {boolean} `true` for a letter, digit, underscore or dollar.
+   */
   #isIdentifierPart(char) {
     return char !== undefined && /[\w$]/.test(char);
   }

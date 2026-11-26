@@ -4,13 +4,14 @@
 export class CheckMode {
   static CHANGED = '--changed';
   static ALL = '--all';
+  static STAGED = '--staged';
 
   /**
    * Lists the flags the CLI accepts, for its usage message.
    * @returns {string[]} The flags.
    */
   static values() {
-    return [CheckMode.CHANGED, CheckMode.ALL];
+    return [CheckMode.CHANGED, CheckMode.ALL, CheckMode.STAGED];
   }
 
   /**

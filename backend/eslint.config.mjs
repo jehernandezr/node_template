@@ -1,5 +1,6 @@
 import nx from '@nx/eslint-plugin';
 import { commentsPlugin } from './eslint.comments.mjs';
+import { guardsPlugin } from './eslint.guards.mjs';
 
 const awsSdkPattern = {
   group: ['@aws-sdk/*'],
@@ -276,6 +277,16 @@ export default [
   {
     files: ['**/__tests__/**/*.ts'],
     rules: { '@typescript-eslint/no-empty-function': 'off' },
+  },
+  {
+    files: ['**/*.ts'],
+    plugins: { guards: guardsPlugin },
+    rules: {
+      'guards/no-jest-doubles': 'error',
+      'guards/no-new-collaborator': 'error',
+      'guards/no-global-module': 'error',
+      'guards/no-own-test-server': 'error',
+    },
   },
   {
     files: ['**/*.ts'],

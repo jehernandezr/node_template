@@ -94,7 +94,8 @@ describe('ConfigModule', () => {
   });
 
   it('falls back to the process environment when none is given', async () => {
-    jest.replaceProperty(process, 'env', { SERVICE_NAME: 'from-process-env' });
+    const previous = process.env['SERVICE_NAME'];
+    process.env['SERVICE_NAME'] = 'from-process-env';
     try {
       const moduleRef = await Test.createTestingModule({
         imports: [
@@ -108,7 +109,11 @@ describe('ConfigModule', () => {
       );
       await moduleRef.close();
     } finally {
-      jest.restoreAllMocks();
+      if (previous === undefined) {
+        delete process.env['SERVICE_NAME'];
+      } else {
+        process.env['SERVICE_NAME'] = previous;
+      }
     }
   });
 

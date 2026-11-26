@@ -18,13 +18,13 @@ module "kms" {
   source = "../kms-key"
 
   alias       = "${var.name_prefix}-valkey"
-  description = "Cifrado en reposo de Valkey de ${var.name_prefix}"
+  description = "Encryption at rest of Valkey of ${var.name_prefix}"
   tags        = var.tags
 }
 
 resource "aws_security_group" "this" {
   name        = "${var.name_prefix}-valkey"
-  description = "Valkey de ${var.name_prefix}, solo desde clientes autorizados"
+  description = "Valkey of ${var.name_prefix}, only from authorized clients"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-valkey" })
@@ -38,7 +38,7 @@ resource "aws_vpc_security_group_ingress_rule" "from_clients" {
   from_port                    = 6379
   to_port                      = 6380
   ip_protocol                  = "tcp"
-  description                  = "Valkey desde un cliente autorizado"
+  description                  = "Valkey from an authorized client"
 }
 
 # Authentication: the default user is disabled and each service connects with its own
@@ -90,7 +90,7 @@ resource "aws_elasticache_serverless_cache" "this" {
   engine               = "valkey"
   major_engine_version = "8"
   name                 = "${var.name_prefix}-valkey"
-  description          = "Caché Valkey de ${var.name_prefix}"
+  description          = "Valkey cache of ${var.name_prefix}"
 
   subnet_ids         = var.subnet_ids
   security_group_ids = [aws_security_group.this.id]

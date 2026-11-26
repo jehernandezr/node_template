@@ -5,6 +5,7 @@ import { HardcodedColorRule } from './hardcoded-color-rule.mjs';
 import { InlineCommentRule } from './inline-comment-rule.mjs';
 import { L10nInterpolationRule } from './l10n-interpolation-rule.mjs';
 import { LibTestingRule } from './lib-testing-rule.mjs';
+import { MockLibraryRule } from './mock-library-rule.mjs';
 import { PhysicalDirectionRule } from './physical-direction-rule.mjs';
 import { PrintRule } from './print-rule.mjs';
 import { PubspecCaretVersionRule } from './pubspec-caret-version-rule.mjs';
@@ -37,6 +38,7 @@ export class RuleSet {
       new DatetimeNowRule(),
       new PubspecCaretVersionRule(),
       new InlineCommentRule(),
+      new MockLibraryRule(),
     ];
   }
 }

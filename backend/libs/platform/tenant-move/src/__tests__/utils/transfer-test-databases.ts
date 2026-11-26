@@ -1,34 +1,27 @@
 import { randomBytes } from 'node:crypto';
-import { ContainerRuntime } from '@platform/kernel/test-utils';
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
+import { TestDatabaseServer } from '@platform/persistence/test-utils';
 import { DataSource } from 'typeorm';
 import { LedgerSchema } from './ledger-schema.js';
 
 /**
- * A PostgreSQL with `wal_level=logical` and two databases, source and target, with the test tables. The service connects
- * with its own unprivileged role, subject to RLS; logical replication connects as superuser.
+ * Pairs of databases, source and target, with the test tables, on the PostgreSQL the Jest run shares, which runs
+ * with `wal_level=logical`. The service connects with its own unprivileged role, subject to RLS; logical
+ * replication connects as superuser.
  */
 export class TransferTestDatabases {
-  static readonly IMAGE = 'postgres:17-alpine';
   private static readonly ROLE = 'ledger_service';
 
-  private container: StartedPostgreSqlContainer | undefined;
-  private readonly rolePassword = randomBytes(18).toString('base64url');
   private readonly open: DataSource[] = [];
-  private created = 0;
+  private readonly created: string[] = [];
 
+  /**
+   * @param databases Server the pairs go on: the one the Jest run shares unless the suite isolates its own.
+   */
+  constructor(private readonly databases = new TestDatabaseServer()) {}
+
+  /** Creates the service role unless an earlier suite of the run did. */
   async start(): Promise<void> {
-    this.container = await new PostgreSqlContainer(TransferTestDatabases.IMAGE)
-      .withCommand(['postgres', '-c', 'wal_level=logical'])
-      .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
-      .start();
-    const admin = await this.connect(this.started().getDatabase(), true);
-    await admin.query(
-      `CREATE ROLE ${TransferTestDatabases.ROLE} LOGIN PASSWORD '${this.rolePassword}'`,
-    );
+    await this.databases.ensureRole(TransferTestDatabases.ROLE);
   }
 
   /** A new pair of databases, source and target, with the schema created and owned by the service role. */
@@ -38,14 +31,10 @@ export class TransferTestDatabases {
     readonly sourceAdmin: DataSource;
     readonly targetAdmin: DataSource;
   }> {
-    this.created += 1;
-    const names = [`source_${this.created}`, `target_${this.created}`];
-    const admin = await this.connect(this.started().getDatabase(), true);
-    for (const name of names) {
-      await admin.query(
-        `CREATE DATABASE ${name} OWNER ${TransferTestDatabases.ROLE}`,
-      );
-    }
+    const suffix = randomBytes(4).toString('hex');
+    const names = [`source_${suffix}`, `target_${suffix}`];
+    await this.databases.recreate(names, TransferTestDatabases.ROLE);
+    this.created.push(...names);
     const [source, target] = await Promise.all(
       names.map((name) => this.connect(name, false)),
     );
@@ -65,36 +54,56 @@ export class TransferTestDatabases {
     };
   }
 
+  /** Closes every connection, removes the subscriptions and slots the pairs left and drops the pairs. */
   async stop(): Promise<void> {
     try {
       await Promise.all(
         this.open.splice(0).map((dataSource) => dataSource.destroy()),
       );
     } finally {
-      await this.container?.stop();
+      const created = this.created.splice(0);
+      for (const name of created) {
+        await this.releaseReplication(name);
+      }
+      await this.databases.drop(created);
+    }
+  }
+
+  private async releaseReplication(database: string): Promise<void> {
+    const admin = await this.connect(database, true);
+    try {
+      const subscriptions: { subname: string }[] = await admin.query(
+        'SELECT subname FROM pg_subscription WHERE subdbid = (SELECT oid FROM pg_database WHERE datname = current_database())',
+      );
+      for (const { subname } of subscriptions) {
+        await admin.query(`ALTER SUBSCRIPTION "${subname}" DISABLE`);
+        await admin.query(
+          `ALTER SUBSCRIPTION "${subname}" SET (slot_name = NONE)`,
+        );
+        await admin.query(`DROP SUBSCRIPTION "${subname}"`);
+      }
+      await admin.query(
+        'SELECT pg_drop_replication_slot(slot_name) FROM pg_replication_slots WHERE database = current_database() AND NOT active',
+      );
+    } finally {
+      this.open.splice(this.open.indexOf(admin), 1);
+      await admin.destroy();
     }
   }
 
   private async connect(database: string, admin: boolean): Promise<DataSource> {
-    const container = this.started();
+    const server = this.databases.connection();
     const dataSource = new DataSource({
       type: 'postgres',
-      host: container.getHost(),
-      port: container.getPort(),
-      username: admin ? container.getUsername() : TransferTestDatabases.ROLE,
-      password: admin ? container.getPassword() : this.rolePassword,
+      host: server.host,
+      port: server.port,
+      username: admin ? server.username : TransferTestDatabases.ROLE,
+      password: admin ? server.password : this.databases.rolePassword(),
       database,
       poolSize: 12,
     });
     await dataSource.initialize();
     this.open.push(dataSource);
     return dataSource;
-  }
-
-  private started(): StartedPostgreSqlContainer {
-    if (this.container === undefined) {
-      throw new Error('TransferTestDatabases is not started');
-    }
-    return this.container;
   }
 }

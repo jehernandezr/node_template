@@ -34,7 +34,7 @@ module "cloudfront_waf" {
 
   api_origin_domain_name         = "api-origin.dev.example.com"
   api_aliases                    = ["api.dev.example.com"]
-  api_origin_verify_header_value = "ejemplo-no-usar-en-produccion"
+  api_origin_verify_header_value = "example-do-not-use-in-production"
 
   waf_block_mode = false
 

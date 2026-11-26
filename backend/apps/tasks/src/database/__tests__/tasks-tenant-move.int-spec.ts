@@ -1,6 +1,5 @@
 import { platformShardMigrations } from '@platform/adapters-postgres';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
-import { ServicePostgresServer } from '@platform/service/test-utils';
 import { TenantMoveRehearsal } from '@platform/tenant-move/test-utils';
 import { tasksShardMigrations } from '../shard-migrations.js';
 import { TasksTenantMoveManifest } from '../tasks-tenant-move.manifest.js';
@@ -12,7 +11,6 @@ runtime.describeIfAvailable('tasks tenant move over its migrations', () => {
   const rehearsal = new TenantMoveRehearsal({
     manifest: new TasksTenantMoveManifest(),
     shardMigrations: [...platformShardMigrations, ...tasksShardMigrations],
-    image: ServicePostgresServer.PGVECTOR_IMAGE,
     extensions: ['vector'],
     batchSize: 1,
   });

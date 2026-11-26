@@ -19,7 +19,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Versión de Flutter fijada en front/.flutter-version",
+      "description": "Flutter version pinned in front/.flutter-version",
       "managerFilePatterns": ["/^front/\\.flutter-version$/"],
       "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
       "depNameTemplate": "flutter/flutter",
@@ -27,7 +27,7 @@
     },
     {
       "customType": "regex",
-      "description": "Versión de tflint fijada en backend/infra/terraform/.tflint-version",
+      "description": "tflint version pinned in backend/infra/terraform/.tflint-version",
       "managerFilePatterns": ["/^backend/infra/terraform/\\.tflint-version$/"],
       "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
       "depNameTemplate": "terraform-linters/tflint",
@@ -37,7 +37,7 @@
   ],
   "packageRules": [
     {
-      "description": "Las dependencias de npm se declaran con versión exacta en package.json y backend/package.json",
+      "description": "npm dependencies are declared with an exact version in package.json and backend/package.json",
       "matchManagers": ["npm"],
       "matchFileNames": ["package.json", "backend/package.json"],
       "rangeStrategy": "pin"

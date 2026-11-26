@@ -49,6 +49,19 @@ describe('check-structure', () => {
     assert.match(all.stderr, /screens\/b\.dart/);
   });
 
+  it('--staged checks only what is staged for the next commit', () => {
+    repo.current.write(SCREEN, CLEAN);
+    repo.current.commitAll();
+    repo.current.write(SCREEN, ONE);
+    repo.current.write(OTHER, ONE);
+    repo.current.git('add', SCREEN);
+
+    const staged = repo.current.runCheck('--staged');
+    assert.equal(staged.status, 1);
+    assert.match(staged.stderr, /screens\/a\.dart/);
+    assert.doesNotMatch(staged.stderr, /screens\/b\.dart/);
+  });
+
   it('--all fails with a pubspec that uses ^ in a dependency', () => {
     repo.current.write(
       'front/packages/ui/pubspec.yaml',
@@ -57,6 +70,26 @@ describe('check-structure', () => {
     const result = repo.current.runCheck('--all');
     assert.equal(result.status, 1);
     assert.match(result.stderr, /pubspec-caret-version/);
+  });
+
+  it('--all fails with a test that imports a mocking library', () => {
+    repo.current.write(
+      'front/packages/ui/test/a_test.dart',
+      "import 'package:mocktail/mocktail.dart';\n",
+    );
+    const result = repo.current.runCheck('--all');
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /mock-library/);
+  });
+
+  it('--all fails with a pubspec that depends on a mocking library', () => {
+    repo.current.write(
+      'front/packages/ui/pubspec.yaml',
+      'name: ui\ndev_dependencies:\n  mockito: 5.4.4\n',
+    );
+    const result = repo.current.runCheck('--all');
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /mock-library/);
   });
 
   it('rejects an unknown mode with code 2', () => {

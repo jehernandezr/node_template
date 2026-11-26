@@ -1,41 +1,45 @@
-import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { randomUUID } from 'node:crypto';
 import { Valkey } from 'iovalkey';
-import {
-  GenericContainer,
-  Wait,
-  type StartedTestContainer,
-} from 'testcontainers';
+import { SharedValkeyHost } from './shared-valkey-host.js';
+import type { ValkeyTestHost } from './valkey-test-host.js';
 
 /**
- * Real Valkey with the bloom module, started with Testcontainers. The
- * service connections log in as a user with the same ACL that Terraform
- * gives each service (`~<prefix>:* &<prefix>:*`), so a key or a channel
- * outside the namespace fails here as it would fail on AWS.
+ * Real Valkey with the bloom module: by default the one the Jest run shares. Suites run one at a time on it and Jest
+ * loads this class again for each test file, so the first server a suite starts empties Valkey and the suite sees
+ * it as fresh as its own container. The service connections log in as a user with the same ACL that Terraform gives each service
+ * (`~<prefix>:* &<prefix>:*`), so a key or a channel outside the namespace fails here as it would fail on AWS.
  */
 export class ValkeyTestServer {
-  static readonly IMAGE = 'valkey/valkey-bundle:8.1';
-
   /** Password of the service user. It is generated on each run and is not written anywhere. */
   readonly password = randomUUID();
 
-  private container: StartedTestContainer | undefined;
+  private static suiteStarted = false;
+
   private admin: Valkey | undefined;
   private readonly clients: Valkey[] = [];
 
-  constructor(readonly prefix: string) {}
+  /**
+   * @param prefix Key prefix and user name of the service.
+   * @param server Where the Valkey runs: the shared one unless the test needs one of its own.
+   */
+  constructor(
+    readonly prefix: string,
+    private readonly server: ValkeyTestHost = new SharedValkeyHost(),
+  ) {}
 
+  /** Connects, empties Valkey if this is the suite's first server, and creates the service user. */
   async start(): Promise<void> {
-    this.container = await new GenericContainer(ValkeyTestServer.IMAGE)
-      .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
-      .withExposedPorts(6379)
-      .withWaitStrategy(Wait.forLogMessage(/Ready to accept connections/))
-      .start();
+    await this.server.start();
     this.admin = new Valkey(this.adminUrl);
+    if (!ValkeyTestServer.suiteStarted) {
+      ValkeyTestServer.suiteStarted = true;
+      await this.flush();
+    }
     await this.admin.call(
       'ACL',
       'SETUSER',
       this.prefix,
+      'reset',
       'on',
       `>${this.password}`,
       `~${this.prefix}:*`,
@@ -45,20 +49,21 @@ export class ValkeyTestServer {
     );
   }
 
+  /** Closes every connection and releases the server. */
   async stop(): Promise<void> {
     await Promise.all(
       this.clients.map((client) => client.quit().catch(() => 0)),
     );
     await this.admin?.quit().catch(() => 0);
-    await this.container?.stop();
+    await this.server.stop();
   }
 
   get host(): string {
-    return this.started.getHost();
+    return this.server.host();
   }
 
   get port(): number {
-    return this.started.getMappedPort(6379);
+    return this.server.port();
   }
 
   /**
@@ -95,10 +100,16 @@ export class ValkeyTestServer {
     return this.admin;
   }
 
+  /** Empties the whole server, including what other servers of the same suite wrote. */
   async flush(): Promise<void> {
     await this.superuser.call('FLUSHALL');
   }
 
+  /**
+   * Lists the keys that match a pattern.
+   * @param pattern `KEYS` glob.
+   * @returns The matching keys.
+   */
   async keys(pattern: string): Promise<string[]> {
     return (await this.superuser.call('KEYS', pattern)) as string[];
   }
@@ -117,12 +128,5 @@ export class ValkeyTestServer {
 
   private get adminUrl(): string {
     return `redis://${this.host}:${this.port}`;
-  }
-
-  private get started(): StartedTestContainer {
-    if (this.container === undefined) {
-      throw new Error('the server is not started');
-    }
-    return this.container;
   }
 }

@@ -9,7 +9,7 @@ export class TenantDirectoryEntryFactory {
   constructor(private readonly groups: TenantShardGroups) {}
 
   /**
-   * Builds the directory entry of a placed tenant.
+   * Describes where a placed tenant lives in the form the other services' directories store.
    * @param tenantId Placed tenant.
    * @param placed Its region and shard.
    * @returns The entry.

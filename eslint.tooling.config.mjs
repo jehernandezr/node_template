@@ -2,7 +2,8 @@ import { commentsPlugin } from './backend/eslint.comments.mjs';
 
 /**
  * Comment rules of the backend applied to the JavaScript tooling of the repository: the skill scripts and hooks under
- * `.claude` and the front tools. The workflow scripts under `.claude/workflows` are run by the agent harness and are
+ * `.claude` and the front tools. Tooling scripts are read more than they are called, so their private methods carry a
+ * JSDoc too. The workflow scripts under `.claude/workflows` are run by the agent harness and are
  * not part of the repository tooling.
  */
 export default [
@@ -22,6 +23,8 @@ export default [
   {
     files: ['**/*.mjs', '**/*.js', '**/*.cjs'],
     ignores: ['**/__tests__/**', '**/*.test.mjs'],
-    rules: { 'comments/require-public-jsdoc': 'error' },
+    rules: {
+      'comments/require-public-jsdoc': ['error', { privateMethods: true }],
+    },
   },
 ];

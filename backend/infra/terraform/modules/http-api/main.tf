@@ -24,7 +24,7 @@ module "kms" {
   source = "../kms-key"
 
   alias       = local.name
-  description = "Cifrado de logs y del secreto de origen de ${local.name}"
+  description = "Encryption of the logs and origin secret of ${local.name}"
   log_group_arns = [
     "${local.log_group_arn_base}:${local.access_log_group}",
     "${local.log_group_arn_base}:${local.authorizer_log_group}",
@@ -37,7 +37,7 @@ module "kms" {
 resource "aws_apigatewayv2_api" "this" {
   name          = local.name
   protocol_type = "HTTP"
-  description   = "API HTTP de ${var.name_prefix}. Cada servicio agrega sus rutas desde su stack."
+  description   = "HTTP API of ${var.name_prefix}. Each service adds its routes from its own stack."
 
   tags = var.tags
 }
@@ -87,7 +87,7 @@ resource "aws_security_group" "vpc_link" {
   count = local.vpc_link_enabled ? 1 : 0
 
   name        = "${local.name}-vpc-link"
-  description = "VPC link de ${local.name} hacia el ALB interno"
+  description = "VPC link of ${local.name} to the internal ALB"
   vpc_id      = var.vpc_link.vpc_id
 
   tags = merge(var.tags, { Name = "${local.name}-vpc-link" })
@@ -121,7 +121,7 @@ resource "aws_secretsmanager_secret" "origin_verify" {
   count = var.origin_verify_enabled ? 1 : 0
 
   name                    = "${local.name}/origin-verify"
-  description             = "Valor de X-Origin-Verify que CloudFront envía a ${local.name}"
+  description             = "X-Origin-Verify value that CloudFront sends to ${local.name}"
   kms_key_id              = module.kms.arn
   recovery_window_in_days = var.secret_recovery_window_days
 
@@ -207,7 +207,7 @@ resource "aws_lambda_function" "authorizer" {
   count = var.origin_verify_enabled ? 1 : 0
 
   function_name = local.authorizer_function
-  description   = "Verifica que la petición llegó por CloudFront"
+  description   = "Checks that the request came through CloudFront"
   role          = aws_iam_role.authorizer[0].arn
   runtime       = "python3.13"
   architectures = ["arm64"]

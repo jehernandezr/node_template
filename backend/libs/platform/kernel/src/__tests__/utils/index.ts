@@ -9,3 +9,7 @@ export { JestSuiteApi } from './jest-suite-api.js';
 export { JobContexts } from './job-contexts.js';
 export { SequentialIdGenerator } from './sequential-id-generator.js';
 export { SuiteApi } from './suite-api.js';
+export type { SharedPostgres } from './shared-postgres.js';
+export { SharedServerVariable } from './shared-server-variable.enum.js';
+export { SharedTestServers } from './shared-test-servers.js';
+export type { SharedValkey } from './shared-valkey.js';

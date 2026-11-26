@@ -12,3 +12,6 @@ export { StaticTokenProvider } from './static-token-provider.js';
 export { ValkeyExecutors } from './valkey-executors.js';
 export { RecordingChangeHandler } from './recording-change-handler.js';
 export { RecordingErrorListener } from './recording-error-listener.js';
+export { DedicatedValkeyHost } from './dedicated-valkey-host.js';
+export { SharedValkeyHost } from './shared-valkey-host.js';
+export { ValkeyTestHost } from './valkey-test-host.js';

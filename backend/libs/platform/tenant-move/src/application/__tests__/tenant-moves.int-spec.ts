@@ -13,6 +13,7 @@ import {
   LedgerManifest,
   ProbedAbortTransfer,
   RehearsalShard,
+  RehearsalTransferOptions,
   TenantMoveRehearsal,
 } from '../../__tests__/utils/index.js';
 import { LedgerShardMigration1900000000030 } from '../../nest/__tests__/utils/index.js';
@@ -277,5 +278,17 @@ runtime.describeIfAvailable('TenantMoves back and forth between shards', () => {
 
     expect(seen).toEqual({ fence: undefined, status: TenantStatus.Active });
     await expect(ledgerIds(RehearsalShard.B, tenant)).resolves.toEqual([]);
+  });
+
+  it('copies a tenant that keeps writing in the service batch, though the quiet moves copy three rows per batch', async () => {
+    const report = await rehearsal.rehearseUnderWrites();
+
+    expect(report.copyBatchSize).toBe(
+      RehearsalTransferOptions.SERVICE_BATCH_SIZE,
+    );
+    expect(report.verified).toBe(true);
+    expect(report.rejected).toBeGreaterThan(0);
+    expect(report.verifiedTarget).toEqual(report.verifiedSource);
+    expect(report.sourceAfterSwitch).toEqual(report.verifiedSource);
   });
 });

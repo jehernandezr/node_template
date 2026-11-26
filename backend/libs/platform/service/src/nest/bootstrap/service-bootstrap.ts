@@ -1,9 +1,10 @@
-import { NestFactory } from '@nestjs/core';
 import type { DynamicModule, NestApplicationOptions } from '@nestjs/common';
 import type { ServiceDefinition } from '../../service-definition.js';
 import { ServiceDefinitionValidator } from '../../service-definition-validator.js';
 import { ServiceHostModule } from '../runtime/service-host.module.js';
+import { NestServiceApplicationFactory } from './nest-service-application-factory.js';
 import { RunningService, type ServiceAddress } from './running-service.js';
+import type { ServiceApplicationFactory } from './service-application-factory.js';
 import type { ServiceBootstrapOptions } from './service-bootstrap-options.js';
 
 /** Startup of a service process. `main.ts` calls `http`; `worker.ts` calls `worker`. */
@@ -27,15 +28,11 @@ export class ServiceBootstrap {
     options: ServiceBootstrapOptions = {},
   ): Promise<RunningService> {
     const host = ServiceBootstrap.host(definition, options);
-    const adapter = options.http?.adapter;
-    const app =
-      adapter === undefined
-        ? await NestFactory.create(host, ServiceBootstrap.NEST_OPTIONS)
-        : await NestFactory.create(
-            host,
-            adapter,
-            ServiceBootstrap.NEST_OPTIONS,
-          );
+    const app = await ServiceBootstrap.applications(options).http(
+      host,
+      options.http?.adapter,
+      ServiceBootstrap.NEST_OPTIONS,
+    );
     await options.http?.configurer?.configure(app);
     app.enableShutdownHooks();
     await app.listen(
@@ -60,7 +57,7 @@ export class ServiceBootstrap {
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions = {},
   ): Promise<RunningService> {
-    const app = await NestFactory.createApplicationContext(
+    const app = await ServiceBootstrap.applications(options).worker(
       ServiceBootstrap.host(definition, options),
       ServiceBootstrap.NEST_OPTIONS,
     );
@@ -70,6 +67,12 @@ export class ServiceBootstrap {
       app,
       options.shutdownGraceMs ?? ServiceBootstrap.DEFAULT_GRACE_MS,
     );
+  }
+
+  private static applications(
+    options: ServiceBootstrapOptions,
+  ): ServiceApplicationFactory {
+    return options.applications ?? new NestServiceApplicationFactory();
   }
 
   private static host(

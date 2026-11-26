@@ -1,19 +1,24 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { AbstractHttpAdapter } from '@nestjs/core';
-import type { INestApplicationContext } from '@nestjs/common';
 import { SchedulingMode } from '@platform/scheduling';
 import { ApiGatewayEventBuilder } from '../../../__tests__/utils/api-gateway-event.builder.js';
 import { ServiceDefinitionBuilder } from '../../../__tests__/utils/service-definition.builder.js';
-import type { HttpApplicationConfigurer } from '../../bootstrap/http-application-configurer.js';
-import { RunningService } from '../../bootstrap/running-service.js';
-import { ServiceBootstrap } from '../../bootstrap/service-bootstrap.js';
+import { BootstrapStep } from '../../bootstrap/__tests__/utils/bootstrap-step.enum.js';
+import { FakeNestApplication } from '../../bootstrap/__tests__/utils/fake-nest-application.js';
+import { ModuleTree } from '../../bootstrap/__tests__/utils/module-tree.js';
+import { RecordingApplicationFactory } from '../../bootstrap/__tests__/utils/recording-application-factory.js';
+import { RecordingHttpConfigurer } from '../../bootstrap/__tests__/utils/recording-http-configurer.js';
 import { LambdaBootstrap } from '../lambda-bootstrap.js';
 
 describe('LambdaBootstrap', () => {
   const definition = ServiceDefinitionBuilder.aDefinition('billing').build();
+  const env = { SERVICE_NAME: 'billing' };
   let server: Server;
   let port: number;
+  let steps: BootstrapStep[];
+  let app: FakeNestApplication;
+  let applications: RecordingApplicationFactory;
 
   beforeAll(async () => {
     server = createServer((_request, response) => {
@@ -32,32 +37,28 @@ describe('LambdaBootstrap', () => {
     });
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
+  beforeEach(() => {
+    steps = [];
+    app = new FakeNestApplication(steps, {
+      address: () => ({ address: '127.0.0.1', port }),
+    });
+    applications = new RecordingApplicationFactory(app);
   });
 
-  function runningOnLoopback(): RunningService {
-    return new RunningService('billing', {} as INestApplicationContext, 1000, {
-      host: '127.0.0.1',
-      port,
-    });
-  }
+  const schedulingModes = (): unknown[] =>
+    new ModuleTree(applications.requests[0]?.module).valuesOf('mode');
 
   it('starts the service once for several invocations', async () => {
-    const start = jest
-      .spyOn(ServiceBootstrap, 'http')
-      .mockResolvedValue(runningOnLoopback());
-    const handler = LambdaBootstrap.http(definition);
+    const handler = LambdaBootstrap.http(definition, { env, applications });
 
     await handler(ApiGatewayEventBuilder.aRequest().build());
     await handler(ApiGatewayEventBuilder.aRequest().build());
 
-    expect(start).toHaveBeenCalledTimes(1);
+    expect(applications.requests).toHaveLength(1);
   });
 
   it('forwards each event to the running service and answers its response', async () => {
-    jest.spyOn(ServiceBootstrap, 'http').mockResolvedValue(runningOnLoopback());
-    const handler = LambdaBootstrap.http(definition);
+    const handler = LambdaBootstrap.http(definition, { env, applications });
 
     const response = await handler(ApiGatewayEventBuilder.aRequest().build());
 
@@ -65,58 +66,47 @@ describe('LambdaBootstrap', () => {
   });
 
   it('forces loopback on port 0 and external scheduling, and keeps the caller options', async () => {
-    const start = jest
-      .spyOn(ServiceBootstrap, 'http')
-      .mockResolvedValue(runningOnLoopback());
-    const configurer: HttpApplicationConfigurer = { configure: jest.fn() };
     const adapter = {} as AbstractHttpAdapter;
 
     await LambdaBootstrap.http(definition, {
-      http: { configurer, adapter, port: 3000, host: '0.0.0.0' },
+      env,
+      applications,
+      http: {
+        configurer: new RecordingHttpConfigurer(steps),
+        adapter,
+        port: 3000,
+        host: '0.0.0.0',
+      },
     })(ApiGatewayEventBuilder.aRequest().build());
 
-    expect(start).toHaveBeenCalledWith(
-      definition,
-      expect.objectContaining({
-        schedulingMode: SchedulingMode.External,
-        http: expect.objectContaining({
-          host: '127.0.0.1',
-          port: 0,
-          configurer,
-          adapter,
-        }),
-      }),
-    );
+    expect(app.listened).toEqual([{ port: 0, host: '127.0.0.1' }]);
+    expect(applications.requests[0]?.adapter).toBe(adapter);
+    expect(steps).toContain(BootstrapStep.Configure);
+    expect(schedulingModes()).toContain(SchedulingMode.External);
+    expect(schedulingModes()).not.toContain(SchedulingMode.InProcess);
   });
 
   it('keeps an explicit scheduling mode of the caller', async () => {
-    const start = jest
-      .spyOn(ServiceBootstrap, 'http')
-      .mockResolvedValue(runningOnLoopback());
-
     await LambdaBootstrap.http(definition, {
+      env,
+      applications,
       schedulingMode: SchedulingMode.InProcess,
     })(ApiGatewayEventBuilder.aRequest().build());
 
-    expect(start).toHaveBeenCalledWith(
-      definition,
-      expect.objectContaining({ schedulingMode: SchedulingMode.InProcess }),
-    );
+    expect(schedulingModes()).toContain(SchedulingMode.InProcess);
+    expect(schedulingModes()).not.toContain(SchedulingMode.External);
   });
 
   it('retries the start after a failed first invocation', async () => {
-    const start = jest
-      .spyOn(ServiceBootstrap, 'http')
-      .mockRejectedValueOnce(new Error('database unreachable'))
-      .mockResolvedValue(runningOnLoopback());
-    const handler = LambdaBootstrap.http(definition);
+    applications.failNext(new Error('database unreachable'));
+    const handler = LambdaBootstrap.http(definition, { env, applications });
 
     await expect(
       handler(ApiGatewayEventBuilder.aRequest().build()),
     ).rejects.toThrow('database unreachable');
     const response = await handler(ApiGatewayEventBuilder.aRequest().build());
 
-    expect(start).toHaveBeenCalledTimes(2);
+    expect(applications.requests).toHaveLength(2);
     expect(response).toMatchObject({ statusCode: 200 });
   });
 });

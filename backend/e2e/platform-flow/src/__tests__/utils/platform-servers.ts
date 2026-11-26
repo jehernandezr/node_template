@@ -11,14 +11,12 @@ import { PlatformService } from './platform-service.enum.js';
  * shards and its role, and all over the same Valkey, where identity writes the access the others read.
  */
 export class PlatformServers {
-  /** Tasks stores search vectors; the pgvector image serves everyone. */
+  /** Tasks stores search vectors: its shards get the pgvector extension. */
   private static readonly SHARD_EXTENSIONS: Readonly<
     Partial<Record<PlatformService, readonly string[]>>
   > = { [PlatformService.Tasks]: ['vector'] };
 
-  private readonly postgres = new ServicePostgresServer(
-    ServicePostgresServer.PGVECTOR_IMAGE,
-  );
+  private readonly postgres = new ServicePostgresServer();
   private readonly valkey = new ValkeyTestServer('platform');
 
   async start(): Promise<void> {

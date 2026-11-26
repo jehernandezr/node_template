@@ -1,6 +1,6 @@
 # Cycle 3: test speed and rule guards
 
-Runs after correction cycle 2b and before F12. Two goals:
+Runs after correction cycle 2b and before F12; the decisions are in [ADR 0047](../adr/0047-shared-test-servers-rule-guards-and-impact-review.md). Two goals:
 
 - every cycle gets faster to verify, with less load on the build machine;
 - a rule that was fixed once cannot silently come back.
@@ -13,17 +13,26 @@ Runs after correction cycle 2b and before F12. Two goals:
 
 ## Package A: test speed
 
-Measure before and after: time and peak load of a full run, an affected-only run and identity alone. Record the numbers in the PR.
+| #   | Change                                                                                                                                                                                                                                                 | Expected effect                                         |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| A1  | One PostgreSQL and one Valkey per Jest run, started by a `globalSetup`. Each suite gets its own new databases and its own Valkey key prefix, so isolation stays the same. Suites that change server-level state get a dedicated container (see below). | Removes almost every container start                    |
+| A2  | A migrated template database per service, created once per run. Each suite clones it with `CREATE DATABASE … TEMPLATE`.                                                                                                                                | Migrations run once instead of once per suite           |
+| A3  | The test PostgreSQL runs with `fsync=off`, `synchronous_commit=off` and `full_page_writes=off`, with its data on tmpfs. Only the test image changes.                                                                                                   | Faster writes and migrations                            |
+| A4  | Separate `test` (unit, parallel workers) and `test-int` (containers, one at a time) targets. The Nx cache is on for both, with explicit inputs.                                                                                                        | Unit tests use the idle cores; unchanged projects skip  |
+| A5  | Jest and Nx caches in one folder shared by every worktree.                                                                                                                                                                                             | The first round of each cycle starts warm               |
+| A6  | CI runs `test-int` as a matrix of shards, split by project across runners, and restores the Nx cache. Each shard uploads its coverage summaries; one `coverage` job merges them and enforces the threshold.                                            | The full suite runs on GitHub, not on the build machine |
+| A7  | The workflow runs only affected projects without coverage in intermediate rounds. It runs the full suite with coverage only in the final round, and CI repeats that suite.                                                                             | Intermediate rounds in minutes                          |
 
-| #   | Change                                                                                                                                                                     | Expected effect                                         |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| A1  | One PostgreSQL and one Valkey per Jest run, started by a `globalSetup`. Each suite gets its own new databases and its own Valkey key prefix, so isolation stays the same.  | Removes almost every container start                    |
-| A2  | A migrated template database per service, created once per run. Each suite clones it with `CREATE DATABASE … TEMPLATE`.                                                    | Migrations run once instead of once per suite           |
-| A3  | The test PostgreSQL runs with `fsync=off`, `synchronous_commit=off` and `full_page_writes=off`, with its data on tmpfs. Only the test image changes.                       | Faster writes and migrations                            |
-| A4  | Separate `test` (unit, parallel workers) and `test-int` (containers, one at a time) targets. The Nx cache is on for both, with explicit inputs.                            | Unit tests use the idle cores; unchanged projects skip  |
-| A5  | Jest and Nx caches in one folder shared by every worktree.                                                                                                                 | The first round of each cycle starts warm               |
-| A6  | CI runs `test-int` split into shards across several runners (`--shard`), restores the Nx cache, and enforces coverage there.                                               | The full suite runs on GitHub, not on the build machine |
-| A7  | The workflow runs only affected projects without coverage in intermediate rounds. It runs the full suite with coverage only in the final round, and CI repeats that suite. | Intermediate rounds in minutes                          |
+Server isolation:
+
+- Suites that need server-level state run on a dedicated container. They are tagged `@isolated-server` and listed in `backend/isolated-server-suites.json`, which a guard test checks against the tags and against the statements that change server state:
+  - role creation;
+  - logical replication and publications;
+  - the tenant-move rehearsal with two instances;
+  - the write-gate tests with two PostgreSQL and two Valkey servers.
+- Every other suite shares the single server of its run.
+- Each CI shard is its own set of Jest runs, one per project, each with its own `globalSetup` container. No container is shared across shards.
+- The `test-int` shards are matrix jobs. `ci-ok` requires them and the `coverage` job.
 
 Limits:
 
@@ -32,15 +41,15 @@ Limits:
 
 ## Package B: rule guards
 
-| #   | Change                                                                                                                                                                                                                                                                                                          |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1  | `docs/quality/rule-checks.md` lists every rule of CLAUDE.md and the skills next to the check that enforces it, or marks it explicitly as "review only". A script test fails when a rule has no entry.                                                                                                           |
-| B2  | Close the gaps of `eslint.comments.mjs`: JSDoc required on public arrow-function properties, getters and overloads; filler JSDoc detected on facades. The rule tests include the cases that escaped in cycles 2a and 2b.                                                                                        |
-| B3  | New backend lint rules: <br>• no `jest.fn`, `jest.spyOn` or `jest.mock` (test doubles are classes); <br>• no `new` of an injectable collaborator outside selectors, factories, Nest modules and tests; <br>• no `@Global` outside `libs/platform`. <br>The front gets the same analyzer rules where they apply. |
-| B4  | Language check: a script flags Spanish text in developer-facing files (code, comments, JSDoc, docs, skills, commit messages). It uses an allowlist of product-text paths: ARB files, email templates, invoices, plan names and test data that is Spanish on purpose.                                            |
-| B5  | Every guard runs in three places: <br>• the pre-commit hook, on staged files through lint-staged; <br>• CI, as a required check; <br>• the `phase-cycle` workflow, as a gate run by the script itself before each review. If the gate fails, the builder fixes it first; the reviewer never sees a red gate.    |
-| B6  | Baseline ratchet: when a new rule cannot be fixed everywhere in this cycle, the current count is recorded and may only go down.                                                                                                                                                                                 |
-| B7  | A finding is closed only with its guard: a lint rule, a structure check, the language check or a test that fails when the change is reverted. The builder names the guard of each closed finding, and the reviewer checks that it exists and fails on the revert.                                               |
+| #   | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| B1  | `docs/quality/rule-checks.md` lists every rule of CLAUDE.md and the skills next to the check that enforces it, or marks it explicitly as "review only". A rule is one bullet of CLAUDE.md, or one rule bullet of a skill's SKILL.md, with a stable id such as `claude.code.3` or `backend-testing.2`. A script test fails when an id has no row.                                                                                                                                                                                           |
+| B2  | Close the gaps of `eslint.comments.mjs`: JSDoc required on public arrow-function properties, getters and overloads; filler JSDoc detected on facades. The rule tests include the cases that escaped in cycles 2a and 2b.                                                                                                                                                                                                                                                                                                                   |
+| B3  | New backend lint rules: <br>• no `jest.fn`, `jest.spyOn` or `jest.mock` (test doubles are classes); <br>• no `new` of an injectable collaborator outside selectors, factories, Nest modules and tests; <br>• no `@Global` outside `libs/platform`. <br>The front gets the same analyzer rules where they apply.                                                                                                                                                                                                                            |
+| B4  | Language check: a script flags Spanish text in developer-facing files (code, comments, JSDoc, docs, skills, commit messages). It matches whole words of a closed list of high-signal Spanish words (accented characters and about 50 common function words) in comments, strings, docs and commit messages. A false positive is fixed with a path entry or a one-line entry with its reason in the allowlist (ARB files, email templates, invoices, test data that is Spanish on purpose), never by widening the word list in the same PR. |
+| B5  | Every guard runs in three places: <br>• the pre-commit hook, on staged files only through lint-staged; anything that reads the whole repository or runs Nx moves to CI and the workflow gate; <br>• CI, as a required check; <br>• the `phase-cycle` workflow, as a gate run by the script itself before each review. If the gate fails, the builder fixes it first; the reviewer never sees a red gate.                                                                                                                                   |
+| B6  | Baseline ratchet: when a new rule cannot be fixed everywhere in this cycle, the current count is recorded in a checked-in baseline file and may only go down. Every guard passes on the repository, or on its baseline for a ratcheted rule.                                                                                                                                                                                                                                                                                               |
+| B7  | A finding is closed only with its guard: a lint rule, a structure check, the language check or a test that fails when the change is reverted. The builder names the guard of each closed finding, and the reviewer checks that it exists and fails on the revert.                                                                                                                                                                                                                                                                          |
 
 ## Package C: impact review
 
@@ -61,19 +70,25 @@ The reviewer reviews what the diff does to the rest of the backend, not only the
   - cache and Valkey key formats and TTLs;
   - timeouts, retries and idempotency keys;
   - generator templates;
-  - documentation and ADRs that describe the changed behaviour.
-- **Script support.** A script, `impact-map`, lists the affected projects, the importers of changed exports and every repository occurrence of string-keyed identifiers that the diff changed: event names, variable names, error codes, key prefixes and routes. The reviewer starts from its output and adds what only reading reveals.
+  - documentation and ADRs that describe the changed behaviour;
+  - in the front: the generated Dart, ARB keys, routes and `RepositoryBinding`;
+  - in the infrastructure: Terraform variables and outputs, `topology.json` and the workflows.
+- **Script support.** A script, `impact-map`, lists the affected projects, the importers of changed exports (resolved by module path, with importers inside the diff marked) and every repository occurrence of string-keyed identifiers that the diff changed: event names, variable names, error codes, key prefixes, routes, ARB keys, repository bindings, Terraform variables and outputs, topology entries and workflow jobs. It also lists the generated and configuration paths a changed path drags along. The reviewer starts from its output and adds what only reading reveals.
 - **Rule for findings.** An impact with no test or explicit check covering it is a finding. A behaviour change in a coupling consumed elsewhere, without a version bump or a migration path, is a blocker.
 - **Wiring.** The `blast-radius` review step becomes mandatory for every backend cycle, not only those that touch platform, contracts, authentication or data. The reviewer prompt in `phase-cycle.js` carries this package from now on.
 
 ## Package D: shorter review rounds
 
 - The reviewer receives the diff, the previous findings and `rule-checks.md`. It does not re-check what a green gate already proves, and it spends the round on design, behaviour and impact.
-- The F12 plan splits its work into smaller cycles, each with one PR, so every review covers a narrower diff.
+- The [F12 plan](f12-infra-and-deployment.md) splits its work into smaller cycles, each with one PR, so every review covers a narrower diff.
+
+## Order
+
+The packages run in order: A, then B, then C and D, all in one PR. Each package lands in its own commits, each with its own green gate.
 
 ## Acceptance
 
-- The before and after numbers of package A are in the PR.
+- The affected tests pass with the shared servers and the templates.
 - Every guard of package B fails on a fixture that has the violation and passes on the repository.
 - `rule-checks.md` covers every rule.
 - The workflow gate, pre-commit and CI all run the guards.

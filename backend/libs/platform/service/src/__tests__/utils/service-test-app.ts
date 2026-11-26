@@ -12,7 +12,8 @@ import type { TestServer } from './test-server.js';
 
 /**
  * A whole service over real PostgreSQL and Valkey for integration and end-to-end tests: it starts the databases and the
- * stubs, migrates the catalog and both shards, places the tenants and serves HTTP on a free port. Each service's test
+ * stubs, migrates the catalog and both shards (cloned from templates migrated once per run), places the tenants and
+ * serves HTTP on a free port. Each service's test
  * app composes one and adds what is its own, such as the default permissions of its clients.
  */
 export class ServiceTestApp {
@@ -32,9 +33,19 @@ export class ServiceTestApp {
     }
     this.env = { ...this.buildEnvironment(), ...overrides };
     const migrator = new ServiceMigrator();
-    await migrator.run(definition, MigrationTarget.Catalog, { env: this.env });
+    await servers.migrateFromTemplates(
+      {
+        catalog: definition.migrations.catalog.migrations,
+        shard: definition.migrations.shard.migrations,
+      },
+      async (databases, registerShards) => {
+        const env = { ...this.env, ...databases };
+        await migrator.run(definition, MigrationTarget.Catalog, { env });
+        await registerShards();
+        await migrator.run(definition, MigrationTarget.Shards, { env });
+      },
+    );
     await servers.registerShards();
-    await migrator.run(definition, MigrationTarget.Shards, { env: this.env });
     for (const [tenantId, shard] of Object.entries(
       this.options.tenants ?? {},
     )) {

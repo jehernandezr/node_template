@@ -1,0 +1,18 @@
+{
+  "categories": {
+    "roles": "creates, alters or drops database roles",
+    "replication": "creates publications, subscriptions or replication slots",
+    "two-instances": "rehearses a tenant move between two instances",
+    "two-regions": "runs the write gate over two PostgreSQL and two Valkey servers"
+  },
+  "suites": [
+    {
+      "suite": "libs/platform/tenant-move/src/transfer/__tests__/logical-replication-transfer.int-spec.ts",
+      "categories": ["replication"]
+    },
+    {
+      "suite": "libs/platform/tenant-move/src/nest/__tests__/tenant-move.int-spec.ts",
+      "categories": ["two-instances", "two-regions"]
+    }
+  ]
+}

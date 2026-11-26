@@ -1,5 +1,8 @@
 import { randomBytes } from 'node:crypto';
-import { ValkeyTestServer } from '@platform/adapters-valkey/test-utils';
+import {
+  DedicatedValkeyHost,
+  ValkeyTestServer,
+} from '@platform/adapters-valkey/test-utils';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import {
   PostgreSqlContainer,
@@ -8,14 +11,15 @@ import {
 import { DataSource } from 'typeorm';
 
 /**
- * What a region has: its PostgreSQL and its Valkey. The two PostgreSQL servers of the test share
- * user and password, as a service shares them across its instances.
+ * What a region has: its own PostgreSQL and its own Valkey, apart from the servers the Jest run shares, because two
+ * regions must not see each other's data. The two PostgreSQL servers of the test share user and password, as a
+ * service shares them across its instances.
  */
 export class RegionServers {
   private static readonly USER = 'ledger';
   private static readonly PASSWORD = randomBytes(18).toString('base64url');
 
-  readonly valkey = new ValkeyTestServer('ledger');
+  readonly valkey = new ValkeyTestServer('ledger', new DedicatedValkeyHost());
   private postgres: StartedPostgreSqlContainer | undefined;
   private readonly open: DataSource[] = [];
 

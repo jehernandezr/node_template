@@ -7,3 +7,5 @@ export * from './service-migrator-options.js';
 export * from './service-migrator.js';
 export * from './application-context-factory.js';
 export * from './nest-application-context-factory.js';
+export * from './service-application-factory.js';
+export * from './nest-service-application-factory.js';

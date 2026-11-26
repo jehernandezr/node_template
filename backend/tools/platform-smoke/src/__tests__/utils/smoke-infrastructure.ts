@@ -1,16 +1,13 @@
 import { SmokeService } from '../../smoke-service.enum.js';
 import type { SmokeEnvironment } from '../../smoke-environment.js';
 import { ValkeyTestServer } from '@platform/adapters-valkey/test-utils';
-import { ContainerRuntime } from '@platform/kernel/test-utils';
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
+import type { SharedPostgres } from '@platform/kernel/test-utils';
+import { TestDatabaseServer } from '@platform/persistence/test-utils';
 import { DataSource } from 'typeorm';
 
 /**
- * Real smoke test infrastructure: a PostgreSQL with the catalog and two shards, and a Valkey
- * with the service ACL. The app connects to both through environment variables, as in a deployment.
+ * Real smoke test infrastructure: the catalog and two shards on the PostgreSQL the Jest run shares, and a Valkey
+ * user with the service ACL. The app connects to both through environment variables, as in a deployment.
  */
 export class SmokeInfrastructure {
   static readonly INSTANCE = 'smoke-instance';
@@ -19,31 +16,39 @@ export class SmokeInfrastructure {
   static readonly SHARD_B = 'smoke_shard_1';
   static readonly TENANT_A = '0193f1c2-0000-7000-8000-0000000000a1';
   static readonly TENANT_B = '0193f1c2-0000-7000-8000-0000000000b2';
+  private static readonly DATABASES = [
+    SmokeInfrastructure.CATALOG,
+    SmokeInfrastructure.SHARD_A,
+    SmokeInfrastructure.SHARD_B,
+  ];
 
   readonly valkey = new ValkeyTestServer(SmokeService.Name);
-  private container: StartedPostgreSqlContainer | undefined;
+  private readonly databases = new TestDatabaseServer();
+  private server: SharedPostgres | undefined;
   private readonly sources = new Map<string, DataSource>();
 
+  /** Creates the three databases, replacing any a previous suite left, and the Valkey user. */
   async start(): Promise<void> {
-    this.container = await new PostgreSqlContainer('postgres:17-alpine')
-      .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
-      .start();
-    await this.createDatabases();
+    this.server = this.databases.connection();
+    await this.databases.recreate(SmokeInfrastructure.DATABASES);
     await this.valkey.start();
   }
 
+  /** Closes the connections, drops the databases and removes the Valkey user's keys. */
   async stop(): Promise<void> {
     for (const source of this.sources.values()) {
       await source.destroy();
     }
     this.sources.clear();
     await this.valkey.stop();
-    await this.container?.stop();
+    if (this.server !== undefined) {
+      await this.databases.drop(SmokeInfrastructure.DATABASES);
+    }
   }
 
   /** Variables the app receives: what the deployment would put in the process environment. */
   environment(): SmokeEnvironment {
-    const container = this.started;
+    const server = this.started;
     return {
       env: {
         SERVICE_NAME: SmokeService.Name,
@@ -51,13 +56,13 @@ export class SmokeInfrastructure {
         AWS_REGION: 'us-east-1',
         AWS_ACCOUNT_ID: '000000000000',
         MESSAGING_NAME_PREFIX: 'smoke',
-        DB_USER: container.getUsername(),
-        DB_PASSWORD: container.getPassword(),
+        DB_USER: server.username,
+        DB_PASSWORD: server.password,
         DB_CATALOG_NAME: SmokeInfrastructure.CATALOG,
         DB_CATALOG_INSTANCE: SmokeInfrastructure.INSTANCE,
         DB_INSTANCES: JSON.stringify({
           [SmokeInfrastructure.INSTANCE]: {
-            primary: { host: container.getHost(), port: container.getPort() },
+            primary: { host: server.host, port: server.port },
             replicas: [],
           },
         }),
@@ -76,22 +81,11 @@ export class SmokeInfrastructure {
     return source.query(sql);
   }
 
-  private get started(): StartedPostgreSqlContainer {
-    if (this.container === undefined) {
-      throw new Error('the database container is not started');
+  private get started(): SharedPostgres {
+    if (this.server === undefined) {
+      throw new Error('the smoke databases are not created');
     }
-    return this.container;
-  }
-
-  private async createDatabases(): Promise<void> {
-    const admin = await this.sourceFor(this.started.getDatabase());
-    for (const name of [
-      SmokeInfrastructure.CATALOG,
-      SmokeInfrastructure.SHARD_A,
-      SmokeInfrastructure.SHARD_B,
-    ]) {
-      await admin.query(`CREATE DATABASE "${name}"`);
-    }
+    return this.server;
   }
 
   private async sourceFor(database: string): Promise<DataSource> {
@@ -99,13 +93,13 @@ export class SmokeInfrastructure {
     if (cached !== undefined) {
       return cached;
     }
-    const container = this.started;
+    const server = this.started;
     const source = new DataSource({
       type: 'postgres',
-      host: container.getHost(),
-      port: container.getPort(),
-      username: container.getUsername(),
-      password: container.getPassword(),
+      host: server.host,
+      port: server.port,
+      username: server.username,
+      password: server.password,
       database,
     });
     await source.initialize();

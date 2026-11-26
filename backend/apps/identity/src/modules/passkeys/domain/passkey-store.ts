@@ -4,7 +4,7 @@ import type { Passkey } from './passkey.js';
 /** Passkeys in the user's shard. */
 export abstract class PasskeyRepository {
   /**
-   * Lists the passkeys of a user.
+   * Reads every registered authenticator a user can sign in with.
    * @param userId Owner.
    * @returns Its passkeys.
    */

@@ -9,3 +9,6 @@ export {
   type ShardedTestDatabaseOptions,
 } from './sharded-test-database.js';
 export { UnroutedShardScopes } from './unrouted-shard-scopes.js';
+export { TestDatabaseServer } from './test-database-server.js';
+export { IsolatedPostgresServer } from './isolated-postgres-server.js';
+export type { PostgresTestServers } from './postgres-test-servers.js';

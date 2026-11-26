@@ -182,11 +182,11 @@ resource "aws_vpc_endpoint" "dynamodb" {
 
 resource "aws_security_group" "endpoints" {
   name        = "${var.name_prefix}-endpoints"
-  description = "HTTPS desde la VPC hacia los endpoints de interfaz"
+  description = "HTTPS from the VPC to the interface endpoints"
   vpc_id      = aws_vpc.this.id
 
   ingress {
-    description = "HTTPS desde la VPC"
+    description = "HTTPS from the VPC"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -214,7 +214,7 @@ module "flow_logs_kms" {
   source = "../kms-key"
 
   alias          = "${var.name_prefix}-flow-logs"
-  description    = "Cifrado de los flow logs de ${var.name_prefix}"
+  description    = "Encryption of the flow logs of ${var.name_prefix}"
   log_group_arns = ["arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:${local.flow_log_group_name}"]
   tags           = var.tags
 }

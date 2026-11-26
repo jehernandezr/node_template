@@ -67,7 +67,7 @@ export class ManageApiKeys {
   ) {}
 
   /**
-   * Lists the keys of a service account.
+   * Shows the keys an administrator can rotate or revoke, without their secrets.
    * @param tenantId Tenant of the account.
    * @param serviceAccountId Account whose keys are listed.
    * @returns The keys, without their secrets.

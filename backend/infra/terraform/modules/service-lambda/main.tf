@@ -65,7 +65,7 @@ module "kms" {
   source = "../kms-key"
 
   alias              = local.full_name
-  description        = "Cifrado de ${local.full_name}: variables de entorno, logs y DLQ"
+  description        = "Encryption of ${local.full_name}: environment variables, logs and DLQ"
   log_group_arns     = ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"]
   service_principals = [{ sid = "AllowSqsUse", services = ["sqs.amazonaws.com"] }]
   tags               = var.tags
@@ -212,7 +212,7 @@ resource "aws_security_group" "this" {
   count = var.vpc_enabled ? 1 : 0
 
   name        = local.full_name
-  description = "Función Lambda ${local.full_name}"
+  description = "Lambda function ${local.full_name}"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = local.full_name })
@@ -228,7 +228,7 @@ resource "aws_vpc_security_group_egress_rule" "https" {
   from_port         = 443
   to_port           = 443
   ip_protocol       = "tcp"
-  description       = "HTTPS hacia endpoints de VPC y servicios externos"
+  description       = "HTTPS to VPC endpoints and external services"
 }
 
 # --- Function and event source ----------------------------------------------
@@ -327,7 +327,7 @@ resource "aws_lambda_event_source_mapping" "sqs" {
 
 resource "aws_cloudwatch_metric_alarm" "errors" {
   alarm_name          = "${local.full_name}-errors"
-  alarm_description   = "Errores de invocación en ${local.full_name}"
+  alarm_description   = "Invocation errors in ${local.full_name}"
   namespace           = "AWS/Lambda"
   metric_name         = "Errors"
   statistic           = "Sum"
@@ -348,7 +348,7 @@ resource "aws_cloudwatch_metric_alarm" "errors" {
 
 resource "aws_cloudwatch_metric_alarm" "async_dlq_not_empty" {
   alarm_name          = "${local.full_name}-async-dlq-not-empty"
-  alarm_description   = "Hay invocaciones asíncronas fallidas en la DLQ de ${local.full_name}"
+  alarm_description   = "Failed asynchronous invocations are waiting in the DLQ of ${local.full_name}"
   namespace           = "AWS/SQS"
   metric_name         = "ApproximateNumberOfMessagesVisible"
   statistic           = "Maximum"

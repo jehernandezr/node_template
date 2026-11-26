@@ -59,7 +59,7 @@ For a large piece of work, the `backend-lead` and `front-lead` agents split it i
 From the root, with `pnpm install` done and `flutter pub get` run in `front/`:
 
 ```bash
-pnpm nx affected -t lint test typecheck build analyze format-check
+pnpm nx affected -t lint test test-int typecheck build analyze format-check
 pnpm nx format:check
 ```
 

@@ -1,0 +1,14 @@
+{
+  "no-new-collaborator": [
+    "libs/platform/search/src/postgres/postgres-search-index.ts"
+  ],
+  "no-global-module": [
+    "apps/identity/src/sign-in/identity-sign-in.module.ts",
+    "apps/identity/src/ephemeral/identity-ephemeral.module.ts",
+    "apps/identity/src/security/identity-security.module.ts",
+    "apps/identity/src/auth/identity-auth-support.module.ts",
+    "apps/realtime/src/realtime-app.module.ts",
+    "tools/platform-smoke/src/smoke-tenancy.module.ts",
+    "tools/platform-smoke/src/smoke-failures.module.ts"
+  ]
+}
