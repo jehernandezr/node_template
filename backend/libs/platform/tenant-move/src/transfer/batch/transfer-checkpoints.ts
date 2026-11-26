@@ -105,6 +105,24 @@ export class TransferCheckpoints {
   }
 
   /**
+   * Starts the reconciliation and the pruning of a table over, for a table that still differs after both finished.
+   * @param runner Connection to the target shard.
+   * @param moveId Move whose progress is reset.
+   * @param table Table to start over.
+   */
+  async restart(
+    runner: QueryRunner,
+    moveId: string,
+    table: string,
+  ): Promise<void> {
+    await runner.query(
+      `UPDATE tenant_move_checkpoints SET reconciled_key = NULL, pruned_key = NULL, pruned = false, updated_at = now()
+         WHERE move_id = $1 AND table_name = $2`,
+      [moveId, table],
+    );
+  }
+
+  /**
    * Records that a table matched the frozen source with its count and checksum.
    * @param runner Connection of the target.
    * @param moveId Move.

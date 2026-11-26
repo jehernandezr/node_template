@@ -13,6 +13,8 @@ import {
   LedgerWithAttemptsManifest,
   LedgerWithPostingsManifest,
   LedgerWriter,
+  PendingRounds,
+  RecordingBudget,
   TickingClock,
   TransferTestDatabases,
 } from '../../__tests__/utils/index.js';
@@ -69,28 +71,6 @@ async function snapshot(
       [tenantId],
     ),
   };
-}
-
-const ROUND_LIMIT = 20;
-
-/**
- * Repeats the call while the round does not finish within its deadline, as the saga does, up to the saga's limit of
- * pending rounds: a round that never ends fails the test instead of hanging it.
- */
-async function untilRoundEnds<T>(call: () => Promise<T>): Promise<T> {
-  for (let round = 1; ; round++) {
-    try {
-      return await call();
-    } catch (error) {
-      if (
-        (error as { code?: unknown }).code !==
-          TenantMoveErrorCode.RoundPending ||
-        round >= ROUND_LIMIT
-      ) {
-        throw error;
-      }
-    }
-  }
 }
 
 new ContainerRuntime(process.env).describeIfAvailable(
@@ -356,6 +336,33 @@ new ContainerRuntime(process.env).describeIfAvailable(
       ).resolves.toEqual([]);
     });
 
+    it('verifies a table whose copy already matches without walking its keys again', async () => {
+      const ledgers: string[] = [];
+      for (let i = 0; i < 30; i++) {
+        ledgers.push(await seedLedger(source, tenantId, `${i}`, [`${i}`]));
+      }
+      await transfer.sync(move);
+      await targetAdmin.query(
+        'UPDATE entries SET amount = 0 WHERE ledger_id = $1',
+        [ledgers[3]],
+      );
+      const budget = new RecordingBudget();
+      const careful = new BatchTenantDataTransfer(
+        new LedgerManifest(),
+        connections,
+        new SystemClock(),
+        { ...OPTIONS, batchSize: 3, deltaMarginMs: 0 },
+      );
+
+      const verification = await careful.verify({ ...move, budget });
+
+      expect(verification.verified).toBe(true);
+      expect(await snapshot(targetAdmin, tenantId)).toEqual(
+        await snapshot(sourceAdmin, tenantId),
+      );
+      expect(budget.batchesOf('ledgers')).toBeLessThan(30 / 3);
+    });
+
     it('leaves the round pending when a child row reaches the target before a parent the round did not copy', async () => {
       const lateLedger = newId();
       await seedLedger(source, tenantId, '1', []);
@@ -410,7 +417,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       ]);
       await sourceAdmin.query('DELETE FROM ledgers WHERE id = $1', [removed]);
 
-      const verification = await untilRoundEnds(() =>
+      const verification = await PendingRounds.untilDone(() =>
         withPostings.verify(move),
       );
 
@@ -437,10 +444,12 @@ new ContainerRuntime(process.env).describeIfAvailable(
       });
       try {
         for (let round = 0; round < 3; round++) {
-          await untilRoundEnds(() => transfer.sync(move));
+          await PendingRounds.untilDone(() => transfer.sync(move));
         }
         await fence.raise(source, tenantId, move.moveId);
-        const verification = await untilRoundEnds(() => transfer.verify(move));
+        const verification = await PendingRounds.untilDone(() =>
+          transfer.verify(move),
+        );
         expect(verification.verified).toBe(true);
         await expect(writers[0]?.writeOnce()).resolves.toBe(false);
       } finally {

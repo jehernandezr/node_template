@@ -10,6 +10,7 @@ import {
 import { platformSagaShardMigrations } from '@platform/adapters-postgres';
 import { TenantWriteFence, type MigrationClass } from '@platform/persistence';
 import { SagaStatus } from '@platform/saga';
+import { PendingRounds } from './pending-rounds.js';
 import { ShardedTestDatabase } from '@platform/persistence/test-utils';
 import {
   DirectoryWriteGate,
@@ -23,7 +24,6 @@ import { PooledShardConnections } from '../../transfer/typeorm/pooled-shard-conn
 import { OpenSagaActivity } from '../../activity/open-saga-activity.js';
 import { TenantMoveShards } from '../../application/tenant-move-shards.js';
 import { TenantMoves } from '../../application/tenant-moves.js';
-import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import { MergedTenantMoveManifest } from '../../manifest/merged-tenant-move-manifest.js';
 import { PlatformTenantMoveManifest } from '../../manifest/platform-tenant-move-manifest.js';
 import type { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
@@ -91,9 +91,6 @@ export interface RehearsalReport {
  * its own region, so each move changes shard and region.
  */
 export class TenantMoveRehearsal {
-  /** Pending rounds a step may report before the rehearsal fails, the tolerance of the move saga. */
-  static readonly ROUND_LIMIT = 20;
-
   static readonly REGIONS: Readonly<Record<RehearsalShard, string>> = {
     [RehearsalShard.A]: 'rehearsal-a',
     [RehearsalShard.B]: 'rehearsal-b',
@@ -268,8 +265,8 @@ export class TenantMoveRehearsal {
   }> {
     const moves = this.started();
     const ref = this.refTo(tenantId, to);
-    await TenantMoveRehearsal.untilDone(() => moves.sync(ref));
-    const verification = await TenantMoveRehearsal.untilDone(() =>
+    await PendingRounds.untilDone(() => moves.sync(ref));
+    const verification = await PendingRounds.untilDone(() =>
       moves.finalize(ref),
     );
     await moves.switch(ref);
@@ -302,7 +299,7 @@ export class TenantMoveRehearsal {
   }
 
   async cleanup(ref: TenantMoveRef): Promise<void> {
-    await TenantMoveRehearsal.untilDone(() => this.started().cleanup(ref));
+    await PendingRounds.untilDone(() => this.started().cleanup(ref));
   }
 
   placement(tenantId: string): Promise<TenantPlacement> {
@@ -388,25 +385,5 @@ export class TenantMoveRehearsal {
         checksum.rows,
       ]),
     );
-  }
-
-  /**
-   * Repeats a step while its round is pending, as the move saga does, but only as many times as the saga tolerates
-   * pending rounds: a step that never converges fails the rehearsal instead of hanging it.
-   */
-  private static async untilDone<T>(step: () => Promise<T>): Promise<T> {
-    for (let round = 1; ; round++) {
-      try {
-        return await step();
-      } catch (error) {
-        if (
-          (error as { code?: unknown }).code !==
-            TenantMoveErrorCode.RoundPending ||
-          round >= TenantMoveRehearsal.ROUND_LIMIT
-        ) {
-          throw error;
-        }
-      }
-    }
   }
 }
