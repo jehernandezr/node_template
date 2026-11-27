@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SystemClock } from '@platform/kernel';
@@ -31,6 +31,10 @@ runtime.describeIfAvailable('MigrationGenerator against PostgreSQL', () => {
       new SystemClock(),
       new MigrationSourceRenderer(),
     );
+  });
+
+  afterAll(async () => {
+    await rm(outputDir, { recursive: true, force: true });
   });
 
   function requestFor(

@@ -115,6 +115,7 @@
           "{workspaceRoot}/backend/jest.servers.cjs",
           "{workspaceRoot}/backend/jest.global-setup.cjs",
           "{workspaceRoot}/backend/jest.global-teardown.cjs",
+          "{workspaceRoot}/backend/jest.temp-folder.cjs",
           {
             "externalDependencies": ["jest", "@nx/jest", "ts-jest", "@swc/jest"]
           }
@@ -131,6 +132,7 @@
         "{workspaceRoot}/backend/jest.servers.cjs",
         "{workspaceRoot}/backend/jest.global-setup.cjs",
         "{workspaceRoot}/backend/jest.global-teardown.cjs",
+        "{workspaceRoot}/backend/jest.temp-folder.cjs",
         {
           "env": "INTEGRATION_TESTS"
         },
