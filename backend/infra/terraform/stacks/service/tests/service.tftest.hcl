@@ -292,7 +292,7 @@ run "files_need_bucket" {
   expect_failures = [terraform_data.service_check]
 }
 
-run "listener_priorities_follow_the_sorted_service_catalog" {
+run "listener_priorities_come_from_the_fixed_registry" {
   command = plan
 
   variables {
@@ -301,29 +301,29 @@ run "listener_priorities_follow_the_sorted_service_catalog" {
   }
 
   assert {
-    condition     = local.listener_priorities == { billing = 10, identity = 20, notifications = 30, reports = 40, tasks = 50 }
-    error_message = "Each service of environments/dev/services takes its position in the sorted catalog times 10."
+    condition     = local.listener_priorities == jsondecode(file("../../listener-priorities.json")) && local.listener_priorities["identity"] == 20
+    error_message = "Each service takes its own entry of listener-priorities.json, which does not move when another service is added."
   }
 
   assert {
-    condition     = length(distinct(values(local.listener_priorities))) == length(local.listener_priorities)
-    error_message = "No two services share a listener priority."
+    condition     = length(distinct(values(local.listener_priorities))) == length(local.listener_priorities) && alltrue([for priority in values(local.listener_priorities) : priority >= 1 && priority <= 50000 && floor(priority) == priority])
+    error_message = "No two services share a listener priority, and each one is an integer from 1 to 50000, as ALB requires."
   }
 
   assert {
     condition     = module.api_fargate[0].listener_rule_priority == 20 && module.realtime[0].listener_rule_priority == 20
-    error_message = "The API and realtime rules of identity use its catalog priority, each on its own listener."
+    error_message = "The API and realtime rules of identity use its registry priority, each on its own listener."
   }
 }
 
-run "a_service_outside_the_catalog_has_no_listener_priority" {
+run "a_service_without_a_registry_entry_has_no_listener_priority" {
   command = plan
 
   variables {
-    service_name    = "ghost"
+    service_name    = "audit"
     database_access = false
     valkey_access   = false
-    api             = { runtime = "fargate", route_prefixes = ["/ghost"] }
+    api             = { runtime = "fargate", route_prefixes = ["/audit"] }
   }
 
   expect_failures = [terraform_data.service_check]

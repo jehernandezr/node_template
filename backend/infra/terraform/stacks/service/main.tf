@@ -22,9 +22,8 @@ locals {
   })
   component_queues = concat([for w in values(var.workers) : w.queue if w.queue != null], [for c in values(var.consumers) : c.queue])
 
-  # Listener priority: position of the service in the sorted catalog of its environment, times 10 (ADR 0039).
-  service_catalog     = sort([for file in fileset("${path.module}/../../environments/${var.environment}/services", "*/terraform.tfvars") : dirname(file)])
-  listener_priorities = { for index, service in local.service_catalog : service => (index + 1) * 10 }
+  # Listener priority: the fixed entry of the service in listener-priorities.json (ADR 0039).
+  listener_priorities = jsondecode(file("${path.module}/../../listener-priorities.json"))
   listener_priority   = lookup(local.listener_priorities, local.svc, null)
   uses_listener       = local.api_fargate || var.realtime != null
 
@@ -186,7 +185,7 @@ resource "terraform_data" "service_check" {
     }
     precondition {
       condition     = !local.uses_listener || local.listener_priority != null
-      error_message = "A Fargate API or realtime needs the folder environments/<environment>/services/<service>: its position in the catalog gives the listener priority."
+      error_message = "A Fargate API or realtime needs the service in listener-priorities.json, with a priority no other service uses."
     }
     precondition {
       condition     = alltrue([for w in values(var.workers) : w.queue != null]) || length(local.access.consume_queues) == 0

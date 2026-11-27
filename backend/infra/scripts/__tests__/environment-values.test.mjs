@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { TfvarsBlockReader } from '../tfvars-block-reader.mjs';
@@ -56,6 +56,25 @@ describe('environment values', () => {
       }
     });
   }
+
+  it('listener-priorities.json gives every service of every environment its own priority', () => {
+    const priorities = JSON.parse(
+      readFileSync(join(TERRAFORM, 'listener-priorities.json'), 'utf8'),
+    );
+    const services = readdirSync(ENVIRONMENTS).flatMap((environment) => {
+      const dir = join(ENVIRONMENTS, environment, 'services');
+      return existsSync(dir) ? readdirSync(dir) : [];
+    });
+
+    assert.deepEqual(
+      [...new Set(services)].filter((service) => !(service in priorities)),
+      [],
+    );
+    assert.equal(
+      new Set(Object.values(priorities)).size,
+      Object.keys(priorities).length,
+    );
+  });
 
   it('the service environment test mocks exactly the queues of topology.json', () => {
     const topology = JSON.parse(

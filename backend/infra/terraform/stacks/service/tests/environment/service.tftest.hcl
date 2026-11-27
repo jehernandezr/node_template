@@ -182,7 +182,7 @@ run "plans_with_the_environment_values" {
 
   assert {
     condition     = local.listener_priority != null && length(distinct(values(local.listener_priorities))) == length(local.listener_priorities)
-    error_message = "The service is in the catalog of its environment and no two services share a listener priority."
+    error_message = "The service has its entry in listener-priorities.json and no two services share a listener priority."
   }
 
   assert {

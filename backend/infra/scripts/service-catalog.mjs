@@ -8,8 +8,10 @@ const RUNTIME = Object.freeze({
   none: 'none',
 });
 
+const SERVICE_FILES = Object.freeze(['terraform.tfvars', 'backend.tfvars']);
+
 /**
- * Discovers the services of an environment by walking environments/<environment>/services/*. A service is a folder with terraform.tfvars and backend.tfvars; there is no list of names.
+ * Discovers the services of an environment by walking environments/<environment>/services/*. Every folder there is a service and must hold every file of SERVICE_FILES; a half-created folder is an error, not a skipped service. There is no list of names.
  */
 export class ServiceCatalog {
   #terraformRoot;
@@ -32,7 +34,7 @@ export class ServiceCatalog {
 
     return readdirSync(servicesDir)
       .filter((name) => statSync(join(servicesDir, name)).isDirectory())
-      .filter((name) => hasServiceFiles(join(servicesDir, name)))
+      .map((name) => requireServiceFiles(name, join(servicesDir, name)))
       .sort()
       .map((name) => describeService(name, join(servicesDir, name)));
   }
@@ -48,11 +50,14 @@ export class ServiceCatalog {
   }
 }
 
-function hasServiceFiles(serviceDir) {
-  return (
-    existsSync(join(serviceDir, 'terraform.tfvars')) &&
-    existsSync(join(serviceDir, 'backend.tfvars'))
+function requireServiceFiles(name, serviceDir) {
+  const missing = SERVICE_FILES.filter(
+    (file) => !existsSync(join(serviceDir, file)),
   );
+  if (missing.length > 0) {
+    throw new Error(`Service folder ${name} is missing ${missing.join(', ')}`);
+  }
+  return name;
 }
 
 function describeService(name, serviceDir) {

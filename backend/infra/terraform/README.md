@@ -20,6 +20,7 @@ backend/infra/
 │   │   └── <environment>/services/<service>/   Values for each service
 │   ├── examples/            A minimal usage of each module, validated in CI
 │   ├── topology.json        Topology exported by contracts-export (build-topology.ts)
+│   ├── listener-priorities.json  Fixed ALB listener priority of each service
 │   ├── .terraform-version   Terraform version used in CI
 │   ├── .tflint-version      tflint version used in CI
 │   └── .tflint.hcl          tflint rules (includes the AWS ruleset)
@@ -78,7 +79,7 @@ Parts of a service:
 - `workers`: Fargate with `worker.ts`, always at least one task, because the worker runs the outbox relay, the jobs and saga recovery. A worker with `queue` consumes only that queue and scales on its depth; a worker without `queue` consumes nothing and runs one task, for a service whose contract has no queues (`tasks`).
 - `consumers`: Lambdas that consume a queue, with partial batch failures.
 
-Listener priorities are not set by hand: the service stack takes the position of the service in the sorted catalog (the folders under `environments/<environment>/services`) times 10, for its API rule on the internal ALB and its realtime rule on the public ALB. Adding a service shifts the priorities of the services after it, and their next apply recreates the rules.
+Listener priorities come from `listener-priorities.json`: one fixed entry per service, the same in every environment, used for its API rule on the internal ALB and its realtime rule on the public ALB. A new service takes a value above every existing one, so adding it moves no existing rule (AWS rejects two rules with the same priority on a listener). The service stack test rejects duplicates and `environment-values.test.mjs` requires an entry for every service folder.
 
 Target groups are named with a prefix of up to 6 characters and a suffix that AWS makes unique, and are created before the old one is destroyed, so the API and realtime of one service never collide on the 32-character limit.
 
