@@ -34,7 +34,7 @@ Each stack has:
 - `variables_common.tf`: `region`, `environment`, `name_prefix`, `domain`, `aws_endpoint_url` and tags. It is identical in every stack; `tf-validate.mjs` fails if it differs.
 - `remote_state.tf`: reads the previous stacks from `<region>/<stack>/terraform.tfstate`. `global` reads none.
 - `tests/`: `terraform test` tests with mocked providers, without AWS.
-- `tests/environment/`: one plan with the real values of an environment and mocked providers. `tf-validate.mjs` runs it for every stack of every environment, passing `common.tfvars` and the stack's `terraform.tfvars`, so a contradiction between tfvars, a variable validation or a precondition fails in CI before any deploy.
+- `tests/environment/`: one plan with the real values of an environment and mocked providers. `tf-validate.mjs` runs it for every stack of every environment, passing `common.tfvars` and the stack's `terraform.tfvars`, so a contradiction between tfvars, a variable validation or a precondition fails in CI before any deploy. For the service stacks it mocks the remote states with `EnvironmentMocks` (`scripts/environment-mocks.mjs`), built from the same environment's tfvars and `topology.json`, so a service that needs what its environment's `platform` does not create (a realtime ALB without certificate, SES without `ses_domain`) fails too. A run listed in `KNOWN_GAPS` of `tf-validate.mjs` must fail with exactly its listed errors until the cycle named there removes the contradiction.
 
 ## Stacks and order
 

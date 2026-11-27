@@ -75,6 +75,52 @@ describe('TfvarsBlockReader', () => {
     assert.equal(indented.topLevelString('service_name'), undefined);
   });
 
+  it('tells a top-level assignment from a commented or nested one', () => {
+    const reader = new TfvarsBlockReader(
+      [
+        'compute_enabled = false',
+        '# ses_domain = "example.com"',
+        'api = {',
+        '  ses_domain = "nested.example.com"',
+        '}',
+      ].join('\n'),
+    );
+    assert.equal(reader.assigns('compute_enabled'), true);
+    assert.equal(reader.topLevelExpression('compute_enabled'), 'false');
+    assert.equal(reader.assigns('ses_domain'), false);
+    assert.equal(reader.topLevelExpression('ses_domain'), undefined);
+  });
+
+  it('lists the entry names of a block, without nested keys or comments', () => {
+    const reader = new TfvarsBlockReader(
+      [
+        'workers = {',
+        '  usage = { queue = "billing-usage", max_capacity = 2 }',
+        '  # old = { queue = "old" }',
+        '  "access-projection" = {',
+        '    queue = "identity-access-projection"',
+        '  }',
+        '}',
+      ].join('\n'),
+    );
+    assert.deepEqual(reader.entryNames('workers'), [
+      'usage',
+      'access-projection',
+    ]);
+    assert.deepEqual(reader.entryNames('consumers'), []);
+  });
+
+  it('reads a one-line list of strings at the top level', () => {
+    const reader = new TfvarsBlockReader(
+      'valkey_services = ["identity", "tasks"] # all\n# other = ["x"]\n',
+    );
+    assert.deepEqual(reader.topLevelStrings('valkey_services'), [
+      'identity',
+      'tasks',
+    ]);
+    assert.deepEqual(reader.topLevelStrings('other'), []);
+  });
+
   it('fails if a block is not closed', () => {
     const reader = new TfvarsBlockReader('api = {\n  runtime = "fargate"\n');
     assert.throws(() => reader.block('api'), /Unclosed block/);

@@ -240,24 +240,25 @@ One PR per cycle, in this order. Each runs after the previous one is merged. A c
 
 ### Carried items and audit findings per cycle
 
-| Item                                                                                                                                                                     | Cycle                                           |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| B17; base image digest and `.dockerignore` (general review 3)                                                                                                            | F12-1                                           |
-| OIDC out of `platform`; ECR created by the CLI without lifecycle (3)                                                                                                     | F12-3                                           |
-| B18; tfvars contradictions and real tfvars not planned (2.11); CI `terraform` filter (2.11)                                                                              | F12-4                                           |
-| `NODE_ENV` safeguards (2.8); prod `fake` payment (2.11)                                                                                                                  | F12-6                                           |
-| Silent `NullRoutingCache` (2.1); rate limiter without breaker (2.8); Valkey outage answers 401 in SSE (2.4)                                                              | F12-7                                           |
-| Terraform catalog and region variables (2.2); `TENANT_MOVE_*` not set by Terraform                                                                                       | F12-8                                           |
-| Fence locks versus RDS Proxy (2.1); rotation versus injected credentials (2.11)                                                                                          | F12-9                                           |
-| `AcrossShards` without connect timeout (2.1)                                                                                                                             | F12-10                                          |
-| B20; secrets of B19; `WEB_ORIGINS` (B19) and its URL validation (3); X-Origin-Verify rotation (audit BE-32)                                                              | F12-11                                          |
-| B19 routing; no SigV4 verifier on the server (2.7); two SigV4 implementations (3, 7)                                                                                     | F12-12                                          |
-| Shutdown order (2.7); serial SQS batch (2.7)                                                                                                                             | F12-14                                          |
-| Real-time ALB without CloudFront and WAF (2.11, 7); real-time app without `HttpApplicationSetup` and cookie mode (2.4); CloudFront without access logs (3)               | F12-15                                          |
-| OIDC trust (2.11); plan and apply in one job, deploy before CI (2.11); `.tfplan` left on disk (3); workflow pinning test (3); `service-catalog.mjs` reimplements HCL (3) | F12-16                                          |
-| Web caching (2.11); keystore and debug signing (2.11); Android manifest (2.10)                                                                                           | F12-18                                          |
-| Unredacted query in HTTP spans (2.8)                                                                                                                                     | F12-19                                          |
-| Group convention without `TENANT_MOVE_TARGETS` has only unit tests (wave 9)                                                                                              | F12-20: the `dev` deploy runs on the convention |
+| Item                                                                                                                                                                                | Cycle                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| B17; base image digest and `.dockerignore` (general review 3)                                                                                                                       | F12-1                                           |
+| OIDC out of `platform`; ECR created by the CLI without lifecycle (3)                                                                                                                | F12-3                                           |
+| B18; tfvars contradictions and real tfvars not planned (2.11); CI `terraform` filter (2.11)                                                                                         | F12-4                                           |
+| `NODE_ENV` safeguards (2.8); prod `fake` payment (2.11)                                                                                                                             | F12-6                                           |
+| Silent `NullRoutingCache` (2.1); rate limiter without breaker (2.8); Valkey outage answers 401 in SSE (2.4)                                                                         | F12-7                                           |
+| Terraform catalog and region variables (2.2); `TENANT_MOVE_*` not set by Terraform                                                                                                  | F12-8                                           |
+| Fence locks versus RDS Proxy (2.1); rotation versus injected credentials (2.11)                                                                                                     | F12-9                                           |
+| `AcrossShards` without connect timeout (2.1)                                                                                                                                        | F12-10                                          |
+| B20; secrets of B19; `WEB_ORIGINS` (B19) and its URL validation (3); X-Origin-Verify rotation (audit BE-32)                                                                         | F12-11                                          |
+| B19 routing; no SigV4 verifier on the server (2.7); two SigV4 implementations (3, 7)                                                                                                | F12-12                                          |
+| Shutdown order (2.7); serial SQS batch (2.7)                                                                                                                                        | F12-14                                          |
+| Real-time ALB without CloudFront and WAF (2.11, 7); real-time app without `HttpApplicationSetup` and cookie mode (2.4); CloudFront without access logs (3)                          | F12-15                                          |
+| `notifications` real time without `realtime_alb_certificate_arn` and `ses_send` without `ses_domain` in every platform tfvars (the `KNOWN_GAPS` of `tf-validate.mjs`, F12-4 review) | F12-15                                          |
+| OIDC trust (2.11); plan and apply in one job, deploy before CI (2.11); `.tfplan` left on disk (3); workflow pinning test (3); `service-catalog.mjs` reimplements HCL (3)            | F12-16                                          |
+| Web caching (2.11); keystore and debug signing (2.11); Android manifest (2.10)                                                                                                      | F12-18                                          |
+| Unredacted query in HTTP spans (2.8)                                                                                                                                                | F12-19                                          |
+| Group convention without `TENANT_MOVE_TARGETS` has only unit tests (wave 9)                                                                                                         | F12-20: the `dev` deploy runs on the convention |
 
 Closed before F12: `check-structure.mjs` runs in CI since cycle 2a (general review 2.11).
 

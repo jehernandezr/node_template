@@ -75,23 +75,4 @@ describe('environment values', () => {
       Object.keys(priorities).length,
     );
   });
-
-  it('the service environment test mocks exactly the queues of topology.json', () => {
-    const topology = JSON.parse(
-      readFileSync(join(TERRAFORM, 'topology.json'), 'utf8'),
-    );
-    const test = readFileSync(
-      join(TERRAFORM, 'stacks/service/tests/environment/service.tftest.hcl'),
-      'utf8',
-    );
-    const block = /queue_arns = \{([^}]*)\}/.exec(test)?.[1] ?? '';
-    const mocked = [...block.matchAll(/"([^"]+)"\s*=/g)].map(
-      ([, name]) => name,
-    );
-
-    assert.deepEqual(
-      mocked.sort(),
-      [...topology.queues.map((queue) => queue.name), 'ses-events'].sort(),
-    );
-  });
 });

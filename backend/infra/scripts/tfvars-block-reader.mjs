@@ -46,6 +46,60 @@ export class TfvarsBlockReader {
     return this.#stringAtDepthZero(0, this.#masked.length, key, '');
   }
 
+  /** Whether there is an unindented `key = ...` assignment outside comments. */
+  assigns(key) {
+    return this.#topLevelMatch(key) !== null;
+  }
+
+  /** Text after `key =` on its line, without its comment, for an unindented assignment; undefined if there is none. */
+  topLevelExpression(key) {
+    const match = this.#topLevelMatch(key);
+    if (match === null) return undefined;
+    const start = match.index + match[0].length;
+    const end = this.#masked.indexOf('\n', start);
+    const lineEnd = end === -1 ? this.#masked.length : end;
+    return this.#text
+      .slice(start, start + this.#masked.slice(start, lineEnd).trimEnd().length)
+      .trim();
+  }
+
+  /** Strings of an unindented one-line list `key = ["a", "b"]`, or an empty list if there is none. */
+  topLevelStrings(key) {
+    const expression = this.topLevelExpression(key) ?? '';
+    return [...expression.matchAll(/"([^"]*)"/g)].map(([, value]) => value);
+  }
+
+  /** Keys of the entries one level inside the block (`name = ...` or `"name" = ...`), in order; empty if the block does not exist. */
+  entryNames(blockName) {
+    const open = this.#openBrace(blockName);
+    if (open === -1) return [];
+    const close = this.#closeBrace(open);
+    const names = [];
+    let depth = 0;
+    let offset = open + 1;
+    for (const line of this.#masked.slice(open + 1, close).split('\n')) {
+      if (depth === 0) {
+        const original = this.#text.slice(offset, offset + line.length);
+        const match = /^\s*(?:"([^"]+)"|([A-Za-z0-9_-]+))\s*=/.exec(original);
+        if (match !== null && /^\s*("[^"]*"|[A-Za-z0-9_-]+)\s*=/.test(line)) {
+          names.push(match[1] ?? match[2]);
+        }
+      }
+      for (const character of line) {
+        if (character === '{') depth++;
+        if (character === '}') depth--;
+      }
+      offset += line.length + 1;
+    }
+    return names;
+  }
+
+  #topLevelMatch(key) {
+    return new RegExp(`^${TfvarsBlockReader.#escape(key)}\\s*=`, 'm').exec(
+      this.#masked,
+    );
+  }
+
   #openBrace(name) {
     const pattern = new RegExp(
       `^${TfvarsBlockReader.#escape(name)}\\s*=\\s*\\{`,
