@@ -1,17 +1,16 @@
 # Example of a service. To deploy one, copy this file to
 # environments/<environment>/services/<service>/terraform.tfvars and create next to it a
-# backend.tfvars with key = "<region>/services/<service>/terraform.tfstate".
+# backend.tfvars with key = "<region>/services/<service>/terraform.tfstate". environment, name_prefix and
+# domain come from environments/<environment>/common.tfvars.
 # The pipeline passes the artifacts with TF_VAR_image and TF_VAR_lambda_package.
 
 region       = "us-east-1"
-environment  = "dev"
-name_prefix  = "node-template-dev"
 state_bucket = "node-template-dev-tfstate"
 
 service_name = "identity"
 
 # Lambda API behind API Gateway HTTP, CloudFront and WAF. To move it to Fargate:
-# runtime = "fargate", a unique listener_rule_priority and fargate_api_enabled in platform.
+# runtime = "fargate". The listener priority comes from the position of the service in the catalog.
 api = {
   runtime        = "lambda"
   route_prefixes = ["/identity"]
@@ -22,11 +21,11 @@ api = {
 
 # Realtime always runs on Fargate behind the public ALB (realtime_alb_certificate_arn in platform).
 # realtime = {
-#   listener_rule_priority = 100
-#   path_patterns          = ["/identity/socket.io/*", "/identity/events/*"]
+#   path_patterns = ["/identity/socket.io/*", "/identity/events/*"]
 # }
 
-# Fargate workers that scale from zero on the depth of their queue.
+# Fargate workers: each keeps one task for the outbox relay and the jobs, and scales on the depth of its
+# queue. A service without queues uses one worker without queue: workers = { jobs = {} }.
 # workers = {
 #   reports = { queue = "identity-reports-commands", max_capacity = 4 }
 # }

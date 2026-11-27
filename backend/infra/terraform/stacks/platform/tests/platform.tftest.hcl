@@ -18,6 +18,7 @@ mock_provider "aws" {
 
 variables {
   region       = "us-east-1"
+  domain       = "example.test"
   name_prefix  = "nt-test"
   state_bucket = "nt-test-tfstate"
 }
@@ -60,19 +61,18 @@ run "local_without_compute" {
   }
 }
 
-run "dev_with_fargate_api" {
+run "dev_always_has_the_internal_api_alb" {
   command = plan
 
   variables {
-    environment         = "dev"
-    fargate_api_enabled = true
-    alarm_email         = "alarmas@empresa.test"
-    monthly_budget      = 200
+    environment    = "dev"
+    alarm_email    = "alarmas@empresa.test"
+    monthly_budget = 200
   }
 
   assert {
     condition     = length(module.api_alb) == 1 && length(aws_vpc_security_group_egress_rule.vpc_link_to_api_alb) == 1
-    error_message = "Fargate APIs have an internal ALB and a VPC link."
+    error_message = "Every deployed environment has the internal ALB and the VPC link for the Fargate APIs."
   }
 
   assert {

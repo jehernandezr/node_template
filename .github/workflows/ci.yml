@@ -54,7 +54,8 @@ jobs:
               - '.github/workflows/ci.yml'
             terraform:
               - 'backend/infra/**'
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
+              - '.nvmrc'
             # Everything that can change what a backend test-int target runs.
             backend:
               - 'backend/**'

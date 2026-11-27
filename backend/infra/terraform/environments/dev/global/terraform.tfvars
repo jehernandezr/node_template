@@ -1,10 +1,5 @@
 region       = "us-east-1"
-environment  = "dev"
-name_prefix  = "node-template-dev"
 state_bucket = "node-template-dev-tfstate"
-
-# Apex domain: the stack creates dev.<domain> and prints its name servers for the delegation.
-domain = "example.com"
 
 github_repository = "jehernandezr/node_template"
 

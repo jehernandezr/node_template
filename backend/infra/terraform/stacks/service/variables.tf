@@ -34,8 +34,9 @@ variable "api" {
   description = <<-EOT
     HTTP API of the service in the shared API, behind CloudFront and its WAF.
     runtime "lambda": function with the lambda.ts adapter; "fargate": container with main.ts behind
-    the internal ALB and the VPC link (requires fargate_api_enabled in platform and a listener_rule_priority
-    unique across services). Changing the runtime means changing this field and the artifact.
+    the internal ALB and the VPC link, with the listener priority of the service in the catalog.
+    route_prefixes never reach /internal, which only the internal routing serves (ADR 0040).
+    Changing the runtime means changing this field and the artifact.
   EOT
   type = object({
     runtime        = string
@@ -48,17 +49,16 @@ variable "api" {
     reserved_concurrent_executions = optional(number)
 
     # Fargate
-    command                = optional(list(string))
-    container_port         = optional(number, 3000)
-    cpu                    = optional(number, 512)
-    memory                 = optional(number, 1024)
-    desired_count          = optional(number, 1)
-    min_capacity           = optional(number, 1)
-    max_capacity           = optional(number, 4)
-    cpu_target_percent     = optional(number, 60)
-    health_check_path      = optional(string, "/health")
-    spot                   = optional(bool, false)
-    listener_rule_priority = optional(number)
+    command            = optional(list(string))
+    container_port     = optional(number, 3000)
+    cpu                = optional(number, 512)
+    memory             = optional(number, 1024)
+    desired_count      = optional(number, 1)
+    min_capacity       = optional(number, 1)
+    max_capacity       = optional(number, 4)
+    cpu_target_percent = optional(number, 60)
+    health_check_path  = optional(string, "/health")
+    spot               = optional(bool, false)
 
     # API's own permissions
     files_access = optional(bool, false)
@@ -72,29 +72,28 @@ variable "api" {
   }
 
   validation {
-    condition     = var.api == null || try(var.api.runtime, "") != "fargate" || try(var.api.listener_rule_priority, null) != null
-    error_message = "A Fargate API needs listener_rule_priority, unique across the services of the internal ALB."
+    condition     = var.api == null || alltrue([for prefix in try(var.api.route_prefixes, []) : !startswith(lower(prefix), "/internal")])
+    error_message = "api.route_prefixes cannot start with /internal: the internal API is never public (ADR 0040)."
   }
 }
 
 variable "realtime" {
-  description = "Realtime gateway (Socket.IO and SSE). Always on Fargate behind the platform public ALB. listener_rule_priority is unique across services. publish grants it the producer topics and queues from the topology."
+  description = "Realtime gateway (Socket.IO and SSE). Always on Fargate behind the platform public ALB, with the listener priority of the service in the catalog. publish grants it the producer topics and queues from the topology."
   type = object({
-    listener_rule_priority = number
-    path_patterns          = optional(list(string), [])
-    host_headers           = optional(list(string), [])
-    command                = optional(list(string))
-    container_port         = optional(number, 3000)
-    cpu                    = optional(number, 512)
-    memory                 = optional(number, 1024)
-    desired_count          = optional(number, 1)
-    min_capacity           = optional(number, 1)
-    max_capacity           = optional(number, 4)
-    cpu_target_percent     = optional(number, 60)
-    health_check_path      = optional(string, "/health")
-    publish                = optional(bool, false)
-    files_access           = optional(bool, false)
-    ses_send               = optional(bool, false)
+    path_patterns      = optional(list(string), [])
+    host_headers       = optional(list(string), [])
+    command            = optional(list(string))
+    container_port     = optional(number, 3000)
+    cpu                = optional(number, 512)
+    memory             = optional(number, 1024)
+    desired_count      = optional(number, 1)
+    min_capacity       = optional(number, 1)
+    max_capacity       = optional(number, 4)
+    cpu_target_percent = optional(number, 60)
+    health_check_path  = optional(string, "/health")
+    publish            = optional(bool, false)
+    files_access       = optional(bool, false)
+    ses_send           = optional(bool, false)
   })
   default = null
 
@@ -102,16 +101,21 @@ variable "realtime" {
     condition     = var.realtime == null || length(try(var.realtime.path_patterns, [])) + length(try(var.realtime.host_headers, [])) > 0
     error_message = "realtime needs path_patterns or host_headers."
   }
+
+  validation {
+    condition     = var.realtime == null || alltrue([for pattern in try(var.realtime.path_patterns, []) : !startswith(lower(pattern), "/internal")])
+    error_message = "realtime.path_patterns cannot start with /internal: the internal API is never public (ADR 0040)."
+  }
 }
 
 variable "workers" {
-  description = "Fargate workers (worker.ts) that consume a queue and scale on its depth, from zero."
+  description = "Fargate workers (worker.ts). Each runs the outbox relay, the jobs and saga recovery with at least one task (ADR 0039). With queue it consumes only that queue and scales on its depth; without queue it consumes nothing and runs one task, for a service whose contract has no queues."
   type = map(object({
-    queue               = string
+    queue               = optional(string)
     command             = optional(list(string))
     cpu                 = optional(number, 512)
     memory              = optional(number, 1024)
-    min_capacity        = optional(number, 0)
+    min_capacity        = optional(number, 1)
     max_capacity        = optional(number, 4)
     spot                = optional(bool, true)
     scale_out_threshold = optional(number, 1)
@@ -122,6 +126,11 @@ variable "workers" {
     ses_send            = optional(bool, false)
   }))
   default = {}
+
+  validation {
+    condition     = alltrue([for worker in values(var.workers) : worker.min_capacity >= 1])
+    error_message = "workers keep min_capacity >= 1: the worker owns the outbox relay, the jobs and saga recovery."
+  }
 }
 
 variable "consumers" {

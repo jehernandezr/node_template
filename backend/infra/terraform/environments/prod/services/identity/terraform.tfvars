@@ -1,21 +1,18 @@
 region       = "us-east-1"
-environment  = "prod"
-name_prefix  = "node-template-prod"
 state_bucket = "node-template-prod-tfstate"
 
 service_name = "identity"
 
-# API on Fargate behind the internal ALB (requires fargate_api_enabled in platform). To move it to Lambda:
-# runtime = "lambda" (uses lambda.handler) and remove listener_rule_priority.
+# API on Fargate behind the internal ALB. To move it to Lambda:
+# runtime = "lambda" (uses lambda.handler).
 api = {
-  runtime                = "fargate"
-  route_prefixes         = ["/v1/auth", "/v1/me", "/v1/tenant", "/v1/tenants", "/v1/invitations", "/v1/sagas"]
-  listener_rule_priority = 100
-  desired_count          = 2
-  min_capacity           = 2
-  max_capacity           = 6
-  spot                   = false
-  health_check_path      = "/health/ready"
+  runtime           = "fargate"
+  route_prefixes    = ["/v1/auth", "/v1/me", "/v1/tenant", "/v1/tenants", "/v1/invitations", "/v1/sagas"]
+  desired_count     = 2
+  min_capacity      = 2
+  max_capacity      = 6
+  spot              = false
+  health_check_path = "/health/ready"
 }
 
 # One worker per contract queue: each polls only the queue of its QUEUE_URL.

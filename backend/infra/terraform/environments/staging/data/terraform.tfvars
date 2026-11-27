@@ -1,6 +1,4 @@
 region       = "us-east-1"
-environment  = "staging"
-name_prefix  = "node-template-staging"
 state_bucket = "node-template-staging-tfstate"
 
 # Same shape as prod (Multi-AZ and replica) to test promotion, with less capacity.

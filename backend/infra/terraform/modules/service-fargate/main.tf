@@ -125,6 +125,8 @@ locals {
   }
 
   alb_count = var.enable_load_balancer ? 1 : 0
+
+  target_group_name_prefix = "${substr(replace(var.service_name, "/[^a-z0-9]/", ""), 0, 5)}-"
 }
 
 resource "terraform_data" "input_check" {
@@ -319,7 +321,7 @@ resource "aws_vpc_security_group_egress_rule" "https" {
 resource "aws_lb_target_group" "this" {
   count = local.alb_count
 
-  name                 = substr(local.full_name, 0, 32)
+  name_prefix          = local.target_group_name_prefix
   port                 = var.container_port
   protocol             = "HTTP"
   target_type          = "ip"
@@ -342,6 +344,10 @@ resource "aws_lb_target_group" "this" {
   }
 
   tags = merge(var.tags, { Name = local.full_name })
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_listener_rule" "this" {

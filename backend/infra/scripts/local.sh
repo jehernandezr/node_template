@@ -49,15 +49,18 @@ tf() {
     list=(messaging platform)
   fi
   for stack in "${list[@]}"; do
-    local values="$TF_DIR/environments/local/$stack"
+    local values="$TF_DIR/environments/local/$stack" common="$TF_DIR/environments/local/common.tfvars"
     echo "==> terraform $action $stack (local)"
     terraform -chdir="$TF_DIR/stacks/$stack" init -input=false -reconfigure \
       -backend-config="$values/backend.tfvars" >/dev/null
     case "$action" in
-      plan) terraform -chdir="$TF_DIR/stacks/$stack" plan -input=false -var-file="$values/terraform.tfvars" ;;
+      plan)
+        terraform -chdir="$TF_DIR/stacks/$stack" plan -input=false \
+          -var-file="$common" -var-file="$values/terraform.tfvars"
+        ;;
       apply | destroy)
         terraform -chdir="$TF_DIR/stacks/$stack" "$action" -input=false -auto-approve \
-          -var-file="$values/terraform.tfvars"
+          -var-file="$common" -var-file="$values/terraform.tfvars"
         ;;
       *) echo "Invalid action: $action" >&2; exit 1 ;;
     esac

@@ -1,23 +1,18 @@
 region       = "us-east-1"
-environment  = "dev"
-name_prefix  = "node-template-dev"
 state_bucket = "node-template-dev-tfstate"
 
-# Alarms and costs. Optional in dev; the budget needs an alarm destination.
-# alarm_email    = "alarmas-dev@tu-dominio"
+# Alarms and costs. Optional in dev; the budget needs an alarm destination. The mailbox is not committed: the
+# deploy passes it as TF_VAR_alarm_email.
 # monthly_budget = 150
 
-# true if any service runs its API on Fargate (VPC link and internal ALB).
-fargate_api_enabled = false
-
 # Realtime (Socket.IO and SSE): regional certificate for the public ALB.
-# realtime_alb_certificate_arn = "arn:aws:acm:us-east-1:111111111111:certificate/REEMPLAZAR"
+# realtime_alb_certificate_arn = "arn:aws:acm:us-east-1:111111111111:certificate/REPLACE"
 
 # Files, email and observability. Not created without a value.
 # files_cors_allowed_origins    = ["https://app.dev.example.com"]
 # ses_domain                    = "dev.example.com"
-# route53_zone_id               = "ZREEMPLAZAR"
-# observability_root_user_email = "observabilidad-dev@tu-dominio"
+# route53_zone_id               = "ZREPLACE"
+# observability_root_user_email = "observability-dev@your-domain"
 
 # Dev is disposable: allows deleting buckets, ALB and secrets immediately.
 force_destroy_buckets       = true

@@ -1,6 +1,4 @@
 region       = "us-east-1"
-environment  = "prod"
-name_prefix  = "node-template-prod"
 state_bucket = "node-template-prod-tfstate"
 
 service_name = "notifications"
@@ -8,24 +6,22 @@ service_name = "notifications"
 # API on Fargate behind the internal ALB. It also handles the transactional email operation, so it sends
 # through SES.
 api = {
-  runtime                = "fargate"
-  route_prefixes         = ["/v1/notifications", "/v1/notification-preferences"]
-  listener_rule_priority = 120
-  desired_count          = 2
-  min_capacity           = 2
-  max_capacity           = 6
-  spot                   = false
-  health_check_path      = "/health/ready"
-  ses_send               = true
+  runtime           = "fargate"
+  route_prefixes    = ["/v1/notifications", "/v1/notification-preferences"]
+  desired_count     = 2
+  min_capacity      = 2
+  max_capacity      = 6
+  spot              = false
+  health_check_path = "/health/ready"
+  ses_send          = true
 }
 
 # SSE and Socket.IO behind the public ALB, in the same process as the API (REALTIME_HOST = "service").
 realtime = {
-  listener_rule_priority = 130
-  path_patterns          = ["/v1/notifications/stream", "/socket.io/*"]
-  desired_count          = 2
-  min_capacity           = 2
-  max_capacity           = 6
+  path_patterns = ["/v1/notifications/stream", "/socket.io/*"]
+  desired_count = 2
+  min_capacity  = 2
+  max_capacity  = 6
 }
 
 # The workers turn events into notices (which send email) and close connections of revoked sessions.

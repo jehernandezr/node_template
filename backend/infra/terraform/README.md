@@ -16,7 +16,7 @@ backend/infra/
 │   │   ├── messaging/       Topics, queues and DLQs from topology.json and the SES events queue
 │   │   ├── edge/            CloudFront with WAF and DNS
 │   │   └── service/         One microservice: instantiated once per service
-│   ├── environments/        <environment>/<stack>/{backend.tfvars,terraform.tfvars}
+│   ├── environments/        <environment>/common.tfvars and <environment>/<stack>/{backend.tfvars,terraform.tfvars}
 │   │   └── <environment>/services/<service>/   Values for each service
 │   ├── examples/            A minimal usage of each module, validated in CI
 │   ├── topology.json        Topology exported by contracts-export (build-topology.ts)
@@ -30,9 +30,10 @@ backend/infra/
 Each stack has:
 
 - `config.tf`: versions, provider and an empty `backend "s3" {}`. The bucket and key come from `backend.tfvars`.
-- `variables_common.tf`: `region`, `environment`, `name_prefix`, `aws_endpoint_url` and tags. It is identical in every stack; `tf-validate.mjs` fails if it differs.
+- `variables_common.tf`: `region`, `environment`, `name_prefix`, `domain`, `aws_endpoint_url` and tags. It is identical in every stack; `tf-validate.mjs` fails if it differs.
 - `remote_state.tf`: reads the previous stacks from `<region>/<stack>/terraform.tfstate`. `global` reads none.
 - `tests/`: `terraform test` tests with mocked providers, without AWS.
+- `tests/environment/`: one plan with the real values of an environment and mocked providers. `tf-validate.mjs` runs it for every stack of every environment, passing `common.tfvars` and the stack's `terraform.tfvars`, so a contradiction between tfvars, a variable validation or a precondition fails in CI before any deploy.
 
 ## Stacks and order
 
@@ -45,6 +46,8 @@ Each stack has:
 | 4     | `messaging` | platform                           | local, dev, staging, prod |
 | 5     | `edge`      | platform                           | dev, staging, prod        |
 | 6     | `service`   | network, platform, data, messaging | dev, staging, prod        |
+
+`environments/<environment>/common.tfvars` sets `environment`, `name_prefix` and `domain` once for every stack of the environment ([ADR 0042](../../../docs/adr/0042-region-and-catalog-model.md)). `deploy-aws.sh` and `local.sh` pass it before the stack's `terraform.tfvars`, which never repeats those keys (a script test checks it).
 
 Each region has its own states with the same code: the region is part of the key. `global` is the exception: one per account, with state key `global/terraform.tfstate`, applied first and by hand on a new account ([first deploy](../../../docs/runbooks/first-deploy.md)). `deploy-aws.sh plan global` and `apply global` run it; `all` leaves it out.
 
@@ -70,10 +73,14 @@ A service is an instance of the `service` stack with its own state. To add one, 
 
 Parts of a service:
 
-- `api`: `runtime = "lambda"` (a function with `lambda.ts` behind API Gateway HTTP) or `"fargate"` (a container with `main.ts` behind the internal ALB, through the VPC link; requires `fargate_api_enabled = true` in `platform` and a unique `listener_rule_priority`). Both enter through the shared HTTP API, behind CloudFront and its WAF. Each prefix in `route_prefixes` creates `ANY <prefix>` and `ANY <prefix>/{proxy+}`.
-- `realtime`: Socket.IO and SSE, always on Fargate behind the public ALB from `platform` (`realtime_alb_certificate_arn`).
-- `workers`: Fargate with `worker.ts`, scales from zero on the depth of its queue.
+- `api`: `runtime = "lambda"` (a function with `lambda.ts` behind API Gateway HTTP) or `"fargate"` (a container with `main.ts` behind the internal ALB, which `platform` always creates, through the VPC link). Both enter through the shared HTTP API, behind CloudFront and its WAF. Each prefix in `route_prefixes` creates `ANY <prefix>` and `ANY <prefix>/{proxy+}`; a prefix under `/internal` is rejected, because the internal API is never public ([ADR 0040](../../../docs/adr/0040-internal-routing-and-authentication.md)). All APIs run on Fargate except `tasks` in `dev`, which runs on Lambda so both runtimes stay in acceptance ([ADR 0039](../../../docs/adr/0039-runtime-matrix-per-service.md)).
+- `realtime`: Socket.IO and SSE, always on Fargate behind the public ALB from `platform` (`realtime_alb_certificate_arn`). Its path patterns cannot start with `/internal` either.
+- `workers`: Fargate with `worker.ts`, always at least one task, because the worker runs the outbox relay, the jobs and saga recovery. A worker with `queue` consumes only that queue and scales on its depth; a worker without `queue` consumes nothing and runs one task, for a service whose contract has no queues (`tasks`).
 - `consumers`: Lambdas that consume a queue, with partial batch failures.
+
+Listener priorities are not set by hand: the service stack takes the position of the service in the sorted catalog (the folders under `environments/<environment>/services`) times 10, for its API rule on the internal ALB and its realtime rule on the public ALB. Adding a service shifts the priorities of the services after it, and their next apply recreates the rules.
+
+Target groups are named with a prefix of up to 6 characters and a suffix that AWS makes unique, and are created before the old one is destroyed, so the API and realtime of one service never collide on the 32-character limit.
 
 Permissions per part (least privilege): the API, the workers and the consumers publish and send according to `producers` in the topology; realtime only if `realtime.publish = true`. Each worker consumes only its queue and each consumer only its own (granted by the `service-lambda` module); the API and realtime do not consume. `files_access` and `ses_send` are requested per part (`api.files_access`, `workers.<x>.ses_send`...). `valkey_access` and `database_access` apply to the whole service, as does `task_policies`.
 
@@ -123,7 +130,7 @@ Subscription filters read the `type` field of the CloudEvents body; an empty lis
 
 ## Alarms and costs
 
-`platform` creates the alarms topic with `alarm_email` (or uses `alarm_topic_arn`) and a budget with `monthly_budget`. In staging and prod the destination is mandatory and `alarm_email` rejects example values (`REEMPLAZAR`, `example.com`).
+`platform` creates the alarms topic with `alarm_email` (or uses `alarm_topic_arn`) and a budget with `monthly_budget`. In staging and prod the destination is mandatory and `alarm_email` rejects example values (`REEMPLAZAR`, `example.com`). No mailbox is committed: the deploy passes it as `TF_VAR_alarm_email`.
 
 ## Commands
 

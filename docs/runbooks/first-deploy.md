@@ -9,13 +9,13 @@ Do `dev` first, then `staging` and `prod`. `staging` and `prod` can only promote
 - The account exists and you have an IAM Identity Center admin profile for it on this machine (`<env>-admin`). No access key is stored.
 - Terraform from `backend/infra/terraform/.terraform-version`, the AWS CLI v2 and Node from `.nvmrc`.
 - The apex domain is registered and its public hosted zone exists in the `prod` account.
+- In `backend/infra/terraform/environments/<env>/common.tfvars`, which every stack reads, `domain` is the apex domain, not `example.com`.
 - In `backend/infra/terraform/environments/<env>/global/terraform.tfvars`:
-  - `domain` is the apex domain, not `example.com`.
   - `github_repository` is the repository that deploys, `owner/name`.
   - `services` lists the directories under `environments/<env>/services` (a test checks this).
   - `deploy_policy_arns` lists what Terraform may create in the account. Without it the deploy role only reaches the state and the artifacts.
   - If the account already has a GitHub OIDC provider, `oidc_existing_provider_arn` holds its ARN; otherwise the stack creates it.
-- The state bucket name in `environments/<env>/global/backend.tfvars` is free in S3. Bucket names are global, so change `name_prefix` and the bucket names of every stack of the environment if it is taken.
+- The state bucket name in `environments/<env>/global/backend.tfvars` is free in S3. Bucket names are global, so change `name_prefix` in `common.tfvars` and the bucket names of every stack of the environment if it is taken.
 
 ## Steps
 
@@ -60,14 +60,14 @@ Do `dev` first, then `staging` and `prod`. `staging` and `prod` can only promote
    terraform -chdir=backend/infra/terraform/stacks/global output -raw artifacts_bucket
    ```
 
-   | Variable               | Value                              |
-   | ---------------------- | ---------------------------------- |
-   | `AWS_DEPLOY_ROLE_ARN`  | `github_oidc.deploy_role_arn`      |
-   | `AWS_PUBLISH_ROLE_ARN` | `github_oidc.publish_role_arn`     |
-   | `AWS_WEB_ROLE_ARN`     | `github_oidc.web_role_arn`         |
-   | `AWS_REGION`           | `region` of the global tfvars      |
-   | `NAME_PREFIX`          | `name_prefix` of the global tfvars |
-   | `ARTIFACTS_BUCKET`     | `artifacts_bucket`                 |
+   | Variable               | Value                            |
+   | ---------------------- | -------------------------------- |
+   | `AWS_DEPLOY_ROLE_ARN`  | `github_oidc.deploy_role_arn`    |
+   | `AWS_PUBLISH_ROLE_ARN` | `github_oidc.publish_role_arn`   |
+   | `AWS_WEB_ROLE_ARN`     | `github_oidc.web_role_arn`       |
+   | `AWS_REGION`           | `region` of the global tfvars    |
+   | `NAME_PREFIX`          | `name_prefix` of `common.tfvars` |
+   | `ARTIFACTS_BUCKET`     | `artifacts_bucket`               |
 
    The roles trust only `repo:<github_repository>:environment:<env>`. Give `staging` and `prod` required reviewers.
 

@@ -1,6 +1,7 @@
 # Variables and locals shared by all stacks. This file is identical in every stack;
-# backend/infra/scripts/tf-validate.mjs fails if any copy differs. Reading the state of
-# other stacks lives in remote_state.tf.
+# backend/infra/scripts/tf-validate.mjs fails if any copy differs. environments/<environment>/common.tfvars
+# sets environment, name_prefix and domain once for every stack. Reading the state of other stacks lives in
+# remote_state.tf.
 
 variable "region" {
   description = "AWS region of the stack. Each region has its own stacks and states."
@@ -24,6 +25,16 @@ variable "name_prefix" {
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{1,20}[a-z0-9]$", var.name_prefix))
     error_message = "name_prefix must use lowercase letters, digits and hyphens, and be 3 to 22 characters long."
+  }
+}
+
+variable "domain" {
+  description = "Apex domain of the product, for example example.com. Its public hosted zone lives in the prod account; dev and staging delegate <environment>.<domain> from it."
+  type        = string
+
+  validation {
+    condition     = can(regex("^([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,}$", var.domain))
+    error_message = "domain must be a lowercase DNS name such as example.com."
   }
 }
 

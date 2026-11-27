@@ -20,7 +20,13 @@ locals {
     send_queues    = []
     consume_queues = []
   })
-  component_queues = concat([for w in values(var.workers) : w.queue], [for c in values(var.consumers) : c.queue])
+  component_queues = concat([for w in values(var.workers) : w.queue if w.queue != null], [for c in values(var.consumers) : c.queue])
+
+  # Listener priority: position of the service in the sorted catalog of its environment, times 10 (ADR 0039).
+  service_catalog     = sort([for file in fileset("${path.module}/../../environments/${var.environment}/services", "*/terraform.tfvars") : dirname(file)])
+  listener_priorities = { for index, service in local.service_catalog : service => (index + 1) * 10 }
+  listener_priority   = lookup(local.listener_priorities, local.svc, null)
+  uses_listener       = local.api_fargate || var.realtime != null
 
   databases     = try(local.data.service_databases[local.svc], null)
   db_secret_arn = var.database_access ? try(local.data.db_service_secret_arns[local.svc], null) : null
@@ -155,6 +161,14 @@ locals {
   data_security_groups = [local.data.clients_security_group_id]
 
   api_path_patterns = local.api_fargate ? flatten([for p in var.api.route_prefixes : [p, "${p}/*"]]) : []
+
+  worker_environment = {
+    for k, w in var.workers : k => merge(
+      local.fargate_environment,
+      local.component_environment["worker-${k}"],
+      w.queue == null ? {} : { QUEUE_URL = local.messaging.queue_urls[w.queue] },
+    )
+  }
 }
 
 # References to other stacks that variable validation cannot check.
@@ -171,8 +185,16 @@ resource "terraform_data" "service_check" {
       error_message = "The Lambda API and consumers need lambda_package."
     }
     precondition {
+      condition     = !local.uses_listener || local.listener_priority != null
+      error_message = "A Fargate API or realtime needs the folder environments/<environment>/services/<service>: its position in the catalog gives the listener priority."
+    }
+    precondition {
+      condition     = alltrue([for w in values(var.workers) : w.queue != null]) || length(local.access.consume_queues) == 0
+      error_message = "A worker without queue polls every queue of the contract: give each worker its queue when the service consumes queues."
+    }
+    precondition {
       condition     = !local.api_fargate || local.platform.api_alb != null
-      error_message = "A Fargate API needs fargate_api_enabled = true in the platform stack."
+      error_message = "A Fargate API needs the internal ALB of the platform stack, which exists with compute_enabled."
     }
     precondition {
       condition     = var.realtime == null || local.platform.realtime_alb != null
@@ -277,7 +299,7 @@ module "api_fargate" {
   enable_load_balancer   = true
   alb_listener_arn       = local.platform.api_alb.listener_arn
   alb_security_group_id  = local.platform.api_alb.security_group_id
-  listener_rule_priority = var.api.listener_rule_priority
+  listener_rule_priority = local.listener_priority
   path_patterns          = local.api_path_patterns
   health_check_path      = var.api.health_check_path
   cpu_target_percent     = var.api.cpu_target_percent
@@ -350,7 +372,7 @@ module "realtime" {
   enable_load_balancer   = true
   alb_listener_arn       = local.platform.realtime_alb.listener_arn
   alb_security_group_id  = local.platform.realtime_alb.security_group_id
-  listener_rule_priority = var.realtime.listener_rule_priority
+  listener_rule_priority = local.listener_priority
   path_patterns          = var.realtime.path_patterns
   host_headers           = var.realtime.host_headers
   health_check_path      = var.realtime.health_check_path
@@ -386,11 +408,11 @@ module "worker" {
   memory        = each.value.memory
   desired_count = each.value.min_capacity
   min_capacity  = each.value.min_capacity
-  max_capacity  = each.value.max_capacity
+  max_capacity  = each.value.queue == null ? each.value.min_capacity : each.value.max_capacity
 
   capacity_provider_strategy = [{ capacity_provider = each.value.spot ? "FARGATE_SPOT" : "FARGATE", weight = 1, base = 0 }]
 
-  environment_variables = merge(local.fargate_environment, local.component_environment["worker-${each.key}"], { QUEUE_URL = local.messaging.queue_urls[each.value.queue] })
+  environment_variables = local.worker_environment[each.key]
   secrets               = local.fargate_secrets
   secrets_kms_key_arns  = local.secret_kms_keys
   task_policies         = local.policies["worker-${each.key}"]
@@ -399,7 +421,7 @@ module "worker" {
   otlp_authorization_secret = try(local.observability.otlp_authorization_value_from, null)
 
   cpu_target_percent = null
-  sqs_scaling = {
+  sqs_scaling = each.value.queue == null ? null : {
     queue_name          = local.messaging.queue_names[each.value.queue]
     scale_out_threshold = each.value.scale_out_threshold
     messages_per_task   = each.value.messages_per_task

@@ -21,6 +21,9 @@ class GlobalStackValues {
       readFileSync(join(dir, 'terraform.tfvars'), 'utf8'),
     );
     this.text = readFileSync(join(dir, 'terraform.tfvars'), 'utf8');
+    this.common = new TfvarsBlockReader(
+      readFileSync(join(ENVIRONMENTS, environment, 'common.tfvars'), 'utf8'),
+    );
   }
 
   services() {
@@ -48,7 +51,7 @@ describe('global stack values', () => {
         global.backend.topLevelString('bucket'),
         global.values.topLevelString('state_bucket'),
       );
-      assert.equal(global.values.topLevelString('environment'), environment);
+      assert.equal(global.common.topLevelString('environment'), environment);
     });
   }
 });

@@ -11,9 +11,6 @@ mock_provider "aws" {
   mock_data "aws_caller_identity" {
     defaults = { account_id = "111111111111" }
   }
-  mock_data "aws_iam_policy_document" {
-    defaults = { json = "{\"Version\":\"2012-10-17\",\"Statement\":[]}" }
-  }
   mock_data "aws_route53_zone" {
     defaults = { zone_id = "ZAPEX0000000000", name_servers = ["ns-1.example.test", "ns-2.example.test"] }
   }
@@ -65,6 +62,18 @@ run "dev_shares_artifacts_with_the_promotion_accounts" {
   assert {
     condition     = jsondecode(aws_s3_bucket_policy.artifacts.policy).Statement[1].Resource == ["arn:aws:s3:::nt-dev-artifacts/lambda/*"] && toset(jsondecode(aws_s3_bucket_policy.artifacts.policy).Statement[1].Action) == toset(["s3:GetObject", "s3:GetObjectVersion"])
     error_message = "The promotion roles only read the Lambda packages."
+  }
+
+  assert {
+    condition = contains(jsondecode(module.artifacts_kms.policy).Statement, {
+      Sid       = "AllowPromotionRead"
+      Effect    = "Allow"
+      Principal = { AWS = ["arn:aws:iam::333333333333:role/nt-prod-github-deploy", "arn:aws:iam::222222222222:role/nt-staging-github-deploy"] }
+      Action    = ["kms:Decrypt"]
+      Resource  = "*"
+      Condition = { StringEquals = { "kms:ViaService" = "s3.us-east-1.amazonaws.com" } }
+    })
+    error_message = "The artifacts key lets the staging and prod deploy roles decrypt the Lambda packages, only through S3 of the region."
   }
 
   assert {
@@ -132,6 +141,11 @@ run "every_repository_has_immutable_tags_and_the_lifecycle_rules" {
   assert {
     condition     = length(jsondecode(aws_s3_bucket_policy.artifacts.policy).Statement) == 1 && jsondecode(aws_s3_bucket_policy.artifacts.policy).Statement[0].Sid == "DenyInsecureTransport"
     error_message = "Without promotion accounts the bucket policy only denies insecure transport."
+  }
+
+  assert {
+    condition     = !contains([for statement in jsondecode(module.artifacts_kms.policy).Statement : statement.Sid], "AllowPromotionRead")
+    error_message = "Without promotion accounts the artifacts key grants no other account."
   }
 
   assert {

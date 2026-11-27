@@ -18,6 +18,7 @@ mock_provider "aws" {
 
 variables {
   region       = "us-east-1"
+  domain       = "example.test"
   environment  = "dev"
   name_prefix  = "nt-dev"
   state_bucket = "nt-dev-tfstate"
@@ -184,8 +185,8 @@ run "fargate_api_with_realtime_and_worker" {
   command = plan
 
   variables {
-    api      = { runtime = "fargate", route_prefixes = ["/identity"], listener_rule_priority = 100 }
-    realtime = { listener_rule_priority = 200, path_patterns = ["/identity/socket.io/*"] }
+    api      = { runtime = "fargate", route_prefixes = ["/identity"] }
+    realtime = { path_patterns = ["/identity/socket.io/*"] }
     workers = {
       commands = { queue = "identity-commands" }
       reports  = { queue = "identity-reports" }
@@ -240,7 +241,7 @@ run "files_only_where_asked" {
   command = plan
 
   variables {
-    api     = { runtime = "fargate", route_prefixes = ["/identity"], listener_rule_priority = 100, files_access = true }
+    api     = { runtime = "fargate", route_prefixes = ["/identity"], files_access = true }
     workers = { commands = { queue = "identity-commands" } }
   }
 
@@ -291,12 +292,114 @@ run "files_need_bucket" {
   expect_failures = [terraform_data.service_check]
 }
 
-run "fargate_api_needs_priority" {
+run "listener_priorities_follow_the_sorted_service_catalog" {
   command = plan
 
   variables {
-    api = { runtime = "fargate", route_prefixes = ["/identity"] }
+    api      = { runtime = "fargate", route_prefixes = ["/identity"] }
+    realtime = { path_patterns = ["/identity/socket.io/*"] }
+  }
+
+  assert {
+    condition     = local.listener_priorities == { billing = 10, identity = 20, notifications = 30, reports = 40, tasks = 50 }
+    error_message = "Each service of environments/dev/services takes its position in the sorted catalog times 10."
+  }
+
+  assert {
+    condition     = length(distinct(values(local.listener_priorities))) == length(local.listener_priorities)
+    error_message = "No two services share a listener priority."
+  }
+
+  assert {
+    condition     = module.api_fargate[0].listener_rule_priority == 20 && module.realtime[0].listener_rule_priority == 20
+    error_message = "The API and realtime rules of identity use its catalog priority, each on its own listener."
+  }
+}
+
+run "a_service_outside_the_catalog_has_no_listener_priority" {
+  command = plan
+
+  variables {
+    service_name    = "ghost"
+    database_access = false
+    valkey_access   = false
+    api             = { runtime = "fargate", route_prefixes = ["/ghost"] }
+  }
+
+  expect_failures = [terraform_data.service_check]
+}
+
+run "workers_keep_one_task_running" {
+  command = plan
+
+  variables {
+    workers = { commands = { queue = "identity-commands" } }
+  }
+
+  assert {
+    condition     = var.workers["commands"].min_capacity == 1 && module.worker["commands"].min_capacity == 1
+    error_message = "A worker runs at least one task: it owns the outbox relay, the jobs and saga recovery."
+  }
+}
+
+run "a_worker_cannot_scale_to_zero" {
+  command = plan
+
+  variables {
+    workers = { commands = { queue = "identity-commands", min_capacity = 0 } }
+  }
+
+  expect_failures = [var.workers]
+}
+
+run "a_worker_without_queue_runs_the_loops_of_a_service_that_consumes_none" {
+  command = plan
+
+  variables {
+    service_name    = "tasks"
+    database_access = false
+    valkey_access   = false
+    api             = { runtime = "lambda", route_prefixes = ["/v1/tasks"] }
+    workers         = { jobs = {} }
+  }
+
+  assert {
+    condition     = !contains(keys(local.worker_environment["jobs"]), "QUEUE_URL") && !strcontains(try(local.policies["worker-jobs"]["messaging"], ""), "sqs:ReceiveMessage")
+    error_message = "A worker without queue gets no QUEUE_URL and consumes nothing."
+  }
+
+  assert {
+    condition     = module.worker["jobs"].min_capacity == 1 && module.worker["jobs"].max_capacity == 1
+    error_message = "A worker without queue runs exactly one task: there is no queue to scale on."
+  }
+}
+
+run "a_worker_without_queue_is_rejected_where_the_service_consumes_queues" {
+  command = plan
+
+  variables {
+    workers = { jobs = {} }
+  }
+
+  expect_failures = [terraform_data.service_check]
+}
+
+run "route_prefixes_never_expose_the_internal_api" {
+  command = plan
+
+  variables {
+    api = { runtime = "lambda", route_prefixes = ["/v1/identity", "/internal/operations"] }
   }
 
   expect_failures = [var.api]
+}
+
+run "realtime_paths_never_expose_the_internal_api" {
+  command = plan
+
+  variables {
+    realtime = { path_patterns = ["/internal/*"] }
+  }
+
+  expect_failures = [var.realtime]
 }
