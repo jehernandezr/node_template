@@ -1,14 +1,19 @@
-import { FailureKind } from '@platform/kernel';
+import { PlatformErrorCode } from '@contracts/platform';
+import { FailureKind, SystemClock } from '@platform/kernel';
 import { LuaScript } from '../lua-script.js';
 import { ValkeyCommand } from '../valkey-command.enum.js';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
-import { ValkeyErrorCode } from '../valkey-error-code.enum.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyUnexpectedReplyError } from '../valkey-unexpected-reply.error.js';
 import { ReplyErrors, ScriptedValkeyRunner } from './utils/index.js';
 
 function executorOver(runner: ScriptedValkeyRunner): ValkeyCommandExecutor {
-  return new ValkeyCommandExecutor(runner, new ValkeyErrorTranslator());
+  return new ValkeyCommandExecutor(
+    runner,
+    new ValkeyErrorTranslator(),
+    new ValkeyCircuit(new SystemClock()),
+  );
 }
 
 describe('LuaScript', () => {
@@ -28,12 +33,12 @@ describe('ValkeyCommandExecutor', () => {
     expect(runner.calls).toEqual([['PING', []]]);
   });
 
-  it('wraps a failure so the classifier can tell it is transient', async () => {
+  it('answers a server that does not respond as an unavailable dependency', async () => {
     const runner = new ScriptedValkeyRunner(new Error('Connection is closed.'));
     await expect(
       executorOver(runner).run(ValkeyCommand.Get, ['k']),
     ).rejects.toMatchObject({
-      code: ValkeyErrorCode.CommandFailed,
+      code: PlatformErrorCode.DependencyUnavailable,
       failureKind: FailureKind.Transient,
       command: 'GET',
     });
@@ -73,7 +78,7 @@ describe('ValkeyCommandExecutor', () => {
       await expect(
         executorOver(runner).script(script, [], []),
       ).rejects.toMatchObject({
-        code: ValkeyErrorCode.CommandFailed,
+        code: PlatformErrorCode.DependencyUnavailable,
         failureKind: FailureKind.Transient,
         command: 'EVALSHA',
       });

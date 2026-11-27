@@ -1,6 +1,8 @@
+import { SystemClock } from '@platform/kernel';
 import { ValkeyCache } from '../valkey-cache.js';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeyUnexpectedReplyError } from '../valkey-unexpected-reply.error.js';
 import { ScriptedValkeyRunner } from './utils/index.js';
@@ -9,7 +11,11 @@ const keyspace = new ValkeyKeyspace('svc');
 
 function cacheOver(runner: ScriptedValkeyRunner): ValkeyCache {
   return new ValkeyCache(
-    new ValkeyCommandExecutor(runner, new ValkeyErrorTranslator()),
+    new ValkeyCommandExecutor(
+      runner,
+      new ValkeyErrorTranslator(),
+      new ValkeyCircuit(new SystemClock()),
+    ),
     keyspace,
   );
 }

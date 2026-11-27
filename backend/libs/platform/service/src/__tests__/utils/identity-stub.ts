@@ -23,6 +23,7 @@ import {
   ValkeyAuthStateWriter,
   ValkeyCommandExecutor,
   ValkeyErrorTranslator,
+  ValkeyCircuit,
 } from '@platform/adapters-valkey';
 import type { ValkeyTestServer } from '@platform/adapters-valkey/test-utils';
 import type { AccessGrant } from '@platform/auth';
@@ -71,7 +72,11 @@ export class IdentityStub {
 
   async start(valkey: ValkeyTestServer): Promise<void> {
     this.writer = new ValkeyAuthStateWriter(
-      new ValkeyCommandExecutor(valkey.superuser, new ValkeyErrorTranslator()),
+      new ValkeyCommandExecutor(
+        valkey.superuser,
+        new ValkeyErrorTranslator(),
+        new ValkeyCircuit(this.clock),
+      ),
       this.clock,
     );
     await new Promise<void>((resolve) =>

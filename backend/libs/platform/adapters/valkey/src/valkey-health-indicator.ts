@@ -6,7 +6,11 @@ import {
 import { ValkeyCommand } from './valkey-command.enum.js';
 import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
 
-/** Health of the Valkey connection: `PING` within the signal deadline. */
+/**
+ * Health of the Valkey connection: `PING` within the signal deadline. Valkey is not part of readiness: a failure
+ * reports `Degraded`, never `Down`, so an outage does not take every instance out of the load balancer while the
+ * checks that need Valkey fail closed and the rest degrade.
+ */
 export class ValkeyHealthIndicator extends HealthCheckable {
   readonly name = 'valkey';
 
@@ -16,7 +20,7 @@ export class ValkeyHealthIndicator extends HealthCheckable {
     super();
   }
 
-  /** `Up` if it answers `PONG`; `Down` with the error name if it fails or the signal is aborted. */
+  /** `Up` if it answers `PONG`; `Degraded` with the error name if it fails, replies otherwise or the signal is aborted. */
   override async check(signal?: AbortSignal): Promise<HealthReport> {
     try {
       signal?.throwIfAborted();
@@ -26,10 +30,10 @@ export class ValkeyHealthIndicator extends HealthCheckable {
       );
       return reply === ValkeyHealthIndicator.PONG
         ? { state: HealthState.Up }
-        : { state: HealthState.Down, detail: 'unexpected reply' };
+        : { state: HealthState.Degraded, detail: 'unexpected reply' };
     } catch (error) {
       return {
-        state: HealthState.Down,
+        state: HealthState.Degraded,
         detail: ValkeyHealthIndicator.nameOf(error),
       };
     }

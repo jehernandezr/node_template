@@ -1,13 +1,19 @@
+import { SystemClock } from '@platform/kernel';
 import { FixedRandomSource } from '@platform/kernel/test-utils';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyJobLock } from '../valkey-job-lock.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ScriptedValkeyRunner } from './utils/index.js';
 
 function lockOver(runner: ScriptedValkeyRunner): ValkeyJobLock {
   return new ValkeyJobLock(
-    new ValkeyCommandExecutor(runner, new ValkeyErrorTranslator()),
+    new ValkeyCommandExecutor(
+      runner,
+      new ValkeyErrorTranslator(),
+      new ValkeyCircuit(new SystemClock()),
+    ),
     new ValkeyKeyspace('svc'),
     new FixedRandomSource([0.5], 0xab),
   );

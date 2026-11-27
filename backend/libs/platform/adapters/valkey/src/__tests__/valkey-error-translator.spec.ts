@@ -1,7 +1,9 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { FailureKind } from '@platform/kernel';
 import { FailureClassifier } from '@platform/primitives';
 import { ValkeyCommandError } from '../valkey-command.error.js';
 import { ValkeyErrorCode } from '../valkey-error-code.enum.js';
+import { ValkeyUnavailableError } from '../valkey-unavailable.error.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
 import { ReplyErrors } from './utils/index.js';
 
@@ -55,13 +57,24 @@ describe('ValkeyErrorTranslator', () => {
     expect(translator.classify(new Error('Command timed out'))).toBeUndefined();
   });
 
-  it('wraps a client error and names the command, never keys or values', () => {
+  it('wraps a server that does not answer as unavailable and names the command, never keys or values', () => {
     const wrapped = translator.translate(new Error('secret-key'), 'GET');
-    expect(wrapped).toBeInstanceOf(ValkeyCommandError);
-    expect(wrapped.message).toBe('Valkey command GET failed');
-    expect(wrapped.code).toBe(ValkeyErrorCode.CommandFailed);
+    expect(wrapped).toBeInstanceOf(ValkeyUnavailableError);
+    expect(wrapped.message).toBe('Valkey is unavailable for GET');
+    expect(wrapped.code).toBe(PlatformErrorCode.DependencyUnavailable);
     expect(wrapped.retryable).toBe(true);
     expect(wrapped.cause).toEqual(new Error('secret-key'));
+  });
+
+  it('wraps a reply that rejects the command as a command failure', () => {
+    const wrapped = translator.translate(
+      ReplyErrors.of('ERR syntax error'),
+      'SET',
+    );
+    expect(wrapped).toBeInstanceOf(ValkeyCommandError);
+    expect(wrapped.message).toBe('Valkey command SET failed');
+    expect(wrapped.code).toBe(ValkeyErrorCode.CommandFailed);
+    expect(wrapped.retryable).toBe(false);
   });
 
   it('lets a platform error through unchanged', () => {

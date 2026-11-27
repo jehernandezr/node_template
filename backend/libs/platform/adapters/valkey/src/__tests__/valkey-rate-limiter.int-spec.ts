@@ -14,7 +14,7 @@ import {
   SlidingWindowScenario,
 } from '@platform/rate-limit/test-utils';
 import { ValkeyClientFactory } from '../valkey-client-factory.js';
-import { ValkeyCommandError } from '../valkey-command.error.js';
+import { ValkeyUnavailableError } from '../valkey-unavailable.error.js';
 import { ValkeyConnectionResolver } from '../valkey-connection-resolver.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeyRateLimiter } from '../valkey-rate-limiter.js';
@@ -241,6 +241,6 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
     }
     expect(results.filter((r) => r.allowed)).toHaveLength(5);
     expect(errors).toHaveLength(6);
-    expect(errors[0]).toBeInstanceOf(ValkeyCommandError);
+    expect(errors[0]).toBeInstanceOf(ValkeyUnavailableError);
   });
 });

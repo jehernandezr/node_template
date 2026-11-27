@@ -1,3 +1,5 @@
+import type { ValkeyCircuitOptions } from './valkey-circuit.options.js';
+
 /** Connection values that come from the runtime and not from the environment. */
 export interface ValkeyRuntimeOptions {
   /** Name shown by `CLIENT LIST`, for example the service name. */
@@ -10,4 +12,6 @@ export interface ValkeyRuntimeOptions {
    * keeps a command from hanging forever.
    */
   readonly commandTimeoutMs?: number;
+  /** Deadline and breaker of every command. Each value left out takes `ValkeyCircuit.DEFAULTS`. */
+  readonly circuit?: Partial<ValkeyCircuitOptions>;
 }
