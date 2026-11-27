@@ -47,6 +47,7 @@ describe('ServiceCatalog', () => {
     const [fargate, lambda, mixed] = catalog().discover('dev');
     assert.deepEqual(fargate, {
       name: 'fixture-fargate',
+      serviceName: 'fixture_fargate',
       runtime: 'fargate',
       needsImage: true,
       needsPackage: false,
@@ -56,6 +57,7 @@ describe('ServiceCatalog', () => {
     });
     assert.deepEqual(lambda, {
       name: 'fixture-lambda',
+      serviceName: 'fixture_lambda',
       runtime: 'lambda',
       needsImage: false,
       needsPackage: true,
@@ -98,13 +100,51 @@ describe('ServiceCatalog', () => {
     );
     writeFileSync(
       file,
-      readFileSync(file, 'utf8').replace('"fixture-lambda"', '"fixture-other"'),
+      readFileSync(file, 'utf8').replace('"fixture_lambda"', '"fixture_other"'),
     );
     assert.throws(
       () => new ServiceCatalog(root).discover('dev'),
       new Error(
-        'service_name fixture-other does not match the folder fixture-lambda',
+        'service_name fixture_other does not match the folder fixture-lambda: it must be fixture_lambda',
       ),
+    );
+  });
+
+  it('rejects the folder name as service_name of a two-word service', () => {
+    const root = join(workRoot, 'kebab-service-name');
+    cpSync(ScriptRunner.fixtureTerraformRoot, root, { recursive: true });
+    const file = join(
+      root,
+      'environments',
+      'dev',
+      'services',
+      'fixture-lambda',
+      'base',
+      'terraform.tfvars',
+    );
+    writeFileSync(
+      file,
+      readFileSync(file, 'utf8').replace(
+        '"fixture_lambda"',
+        '"fixture-lambda"',
+      ),
+    );
+    assert.throws(
+      () => new ServiceCatalog(root).discover('dev'),
+      /service_name fixture-lambda does not match the folder fixture-lambda: it must be fixture_lambda/,
+    );
+  });
+
+  it('rejects a service folder that is not kebab-case', () => {
+    const root = join(workRoot, 'snake-folder');
+    cpSync(ScriptRunner.fixtureTerraformRoot, root, { recursive: true });
+    const services = join(root, 'environments', 'dev', 'services');
+    cpSync(join(services, 'fixture-lambda'), join(services, 'fixture_snake'), {
+      recursive: true,
+    });
+    assert.throws(
+      () => new ServiceCatalog(root).discover('dev'),
+      /Service name fixture_snake is not kebab-case/,
     );
   });
 

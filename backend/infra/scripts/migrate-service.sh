@@ -7,7 +7,8 @@
 #
 # Reads the db, service_databases and db_service_secret_arns outputs of the data stack, gets the
 # credentials of the service from Secrets Manager, masks them in the logs and exports DB_PROXY_HOST,
-# DB_PORT, DB_DATABASES and DB_CREDENTIALS for pnpm nx run <service>:migrate.
+# DB_PORT, DB_DATABASES and DB_CREDENTIALS for pnpm nx run <service>:migrate. <service> is the folder and
+# Nx project name; the data stack keys it by the service_name the catalog gives it.
 # DRY_RUN=1 reads with capture, exports no real values and runs migrate only as a printed command.
 set -euo pipefail
 
@@ -19,6 +20,9 @@ SERVICE="${2:?usage: migrate-service.sh <environment> <service>}"
 require_identifier "environment" "$ENVIRONMENT"
 require_identifier "service" "$SERVICE"
 cd "$REPO_ROOT"
+
+entry="$(node "$SCRIPTS_DIR/service-catalog-cli.mjs" entry "$ENVIRONMENT" "$SERVICE")"
+service_name="$(json_get "$entry" 'o.serviceName')"
 
 data_stack="$TF_ROOT/stacks/data"
 data_backend="$TF_ROOT/environments/$ENVIRONMENT/data/backend.tfvars"
@@ -40,10 +44,10 @@ if is_dry; then
 else
   proxy_host="$(json_get "$db_json" 'o.proxy_endpoint')"
   port="$(json_get "$db_json" 'o.port')"
-  databases="$(json_get "$databases_json" "o['$SERVICE']")"
-  secret_arn="$(json_get "$secrets_json" "o['$SERVICE']")"
+  databases="$(json_get "$databases_json" "o['$service_name']")"
+  secret_arn="$(json_get "$secrets_json" "o['$service_name']")"
   if [[ -z "$databases" || -z "$secret_arn" ]]; then
-    log "The service $SERVICE is not in service_databases of $ENVIRONMENT: add it to the data stack"
+    log "The service $service_name is not in service_databases of $ENVIRONMENT: add it to the data stack"
     exit 1
   fi
   credentials="$(aws secretsmanager get-secret-value --secret-id "$secret_arn" \

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { ServiceName } from './service-name.mjs';
 import { TfvarsBlockReader } from './tfvars-block-reader.mjs';
 
 const RUNTIME = Object.freeze({
@@ -16,7 +17,7 @@ const SERVICE_FILES = Object.freeze([
 ]);
 
 /**
- * Discovers the services of an environment by walking environments/<environment>/services/*. Every folder there is a service and must hold every file of SERVICE_FILES (the service stack values and, in base/, the service-base values); a half-created folder is an error, not a skipped service. Its runtime and components come from base/terraform.tfvars. There is no list of names.
+ * Discovers the services of an environment by walking environments/<environment>/services/*. Every folder there is a service, named in kebab-case, and must hold every file of SERVICE_FILES (the service stack values and, in base/, the service-base values); a half-created folder is an error, not a skipped service. Its service_name is the snake_case form ServiceName gives the folder. Its runtime and components come from base/terraform.tfvars. There is no list of names.
  */
 export class ServiceCatalog {
   #terraformRoot;
@@ -31,8 +32,8 @@ export class ServiceCatalog {
   /**
    * Every service of an environment, sorted by folder name.
    * @param {string} environment Environment folder under environments/.
-   * @returns {object[]} One entry per service: name, runtime, needsImage, needsPackage, hasWorkers, hasConsumers and hasRealtime.
-   * @throws {Error} If the environment does not exist, a service folder lacks a file of SERVICE_FILES or a service_name differs from its folder.
+   * @returns {object[]} One entry per service: name (the folder), serviceName (the Terraform service_name), runtime, needsImage, needsPackage, hasWorkers, hasConsumers and hasRealtime.
+   * @throws {Error} If the environment does not exist, a service folder is not kebab-case or lacks a file of SERVICE_FILES, or a service_name is not the snake_case form of its folder.
    */
   discover(environment) {
     const environmentDir = join(
@@ -82,6 +83,7 @@ function requireServiceFiles(name, serviceDir) {
 }
 
 function describeService(name, serviceDir) {
+  const serviceName = new ServiceName(name).terraform;
   const declaredNames = ['terraform.tfvars', 'base/terraform.tfvars'].map(
     (file) =>
       new TfvarsBlockReader(
@@ -89,9 +91,9 @@ function describeService(name, serviceDir) {
       ).topLevelString('service_name'),
   );
   for (const declaredName of declaredNames) {
-    if (declaredName !== undefined && declaredName !== name) {
+    if (declaredName !== undefined && declaredName !== serviceName) {
       throw new Error(
-        `service_name ${declaredName} does not match the folder ${name}`,
+        `service_name ${declaredName} does not match the folder ${name}: it must be ${serviceName}`,
       );
     }
   }
@@ -108,6 +110,7 @@ function describeService(name, serviceDir) {
 
   return {
     name,
+    serviceName,
     runtime,
     needsImage: runtime === RUNTIME.fargate || hasWorkers || hasRealtime,
     needsPackage: runtime === RUNTIME.lambda || hasConsumers,
