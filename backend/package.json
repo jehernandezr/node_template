@@ -81,7 +81,7 @@
       "lint": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "eslint --config eslint.tooling.config.mjs .claude/skills .claude/hooks .claude/guards .claude/impact front/tools --ignore-pattern \"**/build/**\"",
+          "command": "eslint --config eslint.tooling.config.mjs .claude/skills .claude/hooks .claude/guards .claude/impact front/tools backend/infra/scripts --ignore-pattern \"**/build/**\"",
           "cwd": "{workspaceRoot}"
         },
         "cache": true,
@@ -92,7 +92,8 @@
           "{workspaceRoot}/.claude/hooks/**/*",
           "{workspaceRoot}/.claude/guards/**/*",
           "{workspaceRoot}/.claude/impact/**/*",
-          "{workspaceRoot}/front/tools/**/*"
+          "{workspaceRoot}/front/tools/**/*",
+          "{workspaceRoot}/backend/infra/scripts/**/*.mjs"
         ]
       },
       "tooling-test": {

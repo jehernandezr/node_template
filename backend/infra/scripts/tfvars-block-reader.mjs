@@ -7,17 +7,28 @@ export class TfvarsBlockReader {
   #text;
   #masked;
 
+  /**
+   * @param {string} text Contents of a terraform.tfvars file.
+   */
   constructor(text) {
     this.#text = text;
     this.#masked = TfvarsBlockReader.#mask(text);
   }
 
-  /** Whether there is an unindented `name = {` (or `name = {}`) block. */
+  /**
+   * Whether there is an unindented `name = {` (or `name = {}`) block.
+   * @param {string} name Name of the top-level block.
+   * @returns {boolean} True if the block exists outside comments.
+   */
   hasBlock(name) {
     return this.#openBrace(name) !== -1;
   }
 
-  /** Text between the braces of the top-level block, or undefined if it does not exist. */
+  /**
+   * Text between the braces of a top-level block.
+   * @param {string} name Name of the top-level block.
+   * @returns {string | undefined} The text inside the braces, or undefined if the block does not exist.
+   */
   block(name) {
     const open = this.#openBrace(name);
     if (open === -1) return undefined;
@@ -25,7 +36,11 @@ export class TfvarsBlockReader {
     return this.#text.slice(open + 1, close);
   }
 
-  /** Whether the block exists and has something inside other than whitespace or comments. */
+  /**
+   * Whether the block exists and has something inside other than whitespace or comments.
+   * @param {string} name Name of the top-level block.
+   * @returns {boolean} True if the block holds at least one value.
+   */
   hasContent(name) {
     const open = this.#openBrace(name);
     if (open === -1) return false;
@@ -33,7 +48,12 @@ export class TfvarsBlockReader {
     return this.#masked.slice(open + 1, close).trim() !== '';
   }
 
-  /** Value of `key = "value"` one level inside the block, or undefined. */
+  /**
+   * Value of `key = "value"` one level inside a top-level block.
+   * @param {string} blockName Name of the top-level block.
+   * @param {string} key Key inside the block.
+   * @returns {string | undefined} The quoted value, or undefined if the block or the key does not exist.
+   */
   stringIn(blockName, key) {
     const open = this.#openBrace(blockName);
     if (open === -1) return undefined;
@@ -41,17 +61,29 @@ export class TfvarsBlockReader {
     return this.#stringAtDepthZero(open + 1, close, key, '\\s*');
   }
 
-  /** Value of an unindented `key = "value"` at the top level, or undefined. */
+  /**
+   * Value of an unindented `key = "value"` at the top level.
+   * @param {string} key Top-level key.
+   * @returns {string | undefined} The quoted value, or undefined if there is none.
+   */
   topLevelString(key) {
     return this.#stringAtDepthZero(0, this.#masked.length, key, '');
   }
 
-  /** Whether there is an unindented `key = ...` assignment outside comments. */
+  /**
+   * Whether there is an unindented `key = ...` assignment outside comments.
+   * @param {string} key Top-level key.
+   * @returns {boolean} True if the key is assigned.
+   */
   assigns(key) {
     return this.#topLevelMatch(key) !== null;
   }
 
-  /** Text after `key =` on its line, without its comment, for an unindented assignment; undefined if there is none. */
+  /**
+   * Text after `key =` on its line, without its comment, for an unindented assignment.
+   * @param {string} key Top-level key.
+   * @returns {string | undefined} The expression, or undefined if the key is not assigned.
+   */
   topLevelExpression(key) {
     const match = this.#topLevelMatch(key);
     if (match === null) return undefined;
@@ -63,18 +95,30 @@ export class TfvarsBlockReader {
       .trim();
   }
 
-  /** Strings of an unindented one-line list `key = ["a", "b"]`, or an empty list if there is none. */
+  /**
+   * Strings of an unindented one-line list `key = ["a", "b"]`.
+   * @param {string} key Top-level key.
+   * @returns {string[]} The strings in order, or an empty list if the key is not assigned.
+   */
   topLevelStrings(key) {
     const expression = this.topLevelExpression(key) ?? '';
     return [...expression.matchAll(/"([^"]*)"/g)].map(([, value]) => value);
   }
 
-  /** Keys of the entries one level inside the block (`name = ...` or `"name" = ...`), in order; empty if the block does not exist. */
+  /**
+   * Keys of the entries one level inside a block (`name = ...` or `"name" = ...`).
+   * @param {string} blockName Name of the top-level block.
+   * @returns {string[]} The keys in order, or an empty list if the block does not exist.
+   */
   entryNames(blockName) {
     return this.entries(blockName).map((entry) => entry.name);
   }
 
-  /** Entries one level inside the block, in order: each name with the text of its value, comments masked out; empty if the block does not exist. */
+  /**
+   * Entries one level inside a block, each with the text of its value and its comments removed.
+   * @param {string} blockName Name of the top-level block.
+   * @returns {{ name: string, value: string }[]} The entries in order, or an empty list if the block does not exist.
+   */
   entries(blockName) {
     const open = this.#openBrace(blockName);
     if (open === -1) return [];

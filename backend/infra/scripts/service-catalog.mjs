@@ -21,10 +21,19 @@ const SERVICE_FILES = Object.freeze([
 export class ServiceCatalog {
   #terraformRoot;
 
+  /**
+   * @param {string} terraformRoot Root of the Terraform tree (backend/infra/terraform).
+   */
   constructor(terraformRoot) {
     this.#terraformRoot = terraformRoot;
   }
 
+  /**
+   * Every service of an environment, sorted by folder name.
+   * @param {string} environment Environment folder under environments/.
+   * @returns {object[]} One entry per service: name, runtime, needsImage, needsPackage, hasWorkers, hasConsumers and hasRealtime.
+   * @throws {Error} If the environment does not exist, a service folder lacks a file of SERVICE_FILES or a service_name differs from its folder.
+   */
   discover(environment) {
     const environmentDir = join(
       this.#terraformRoot,
@@ -44,6 +53,13 @@ export class ServiceCatalog {
       .map((name) => describeService(name, join(servicesDir, name)));
   }
 
+  /**
+   * The entry of one service of an environment.
+   * @param {string} environment Environment folder under environments/.
+   * @param {string} service Service folder under services/.
+   * @returns {object} The entry, as discover() describes it.
+   * @throws {Error} If the service is not in the environment, or discover() fails.
+   */
   find(environment, service) {
     const found = this.discover(environment).find(
       (entry) => entry.name === service,
