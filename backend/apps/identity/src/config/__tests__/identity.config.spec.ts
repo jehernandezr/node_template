@@ -1,5 +1,12 @@
 import { randomBytes } from 'node:crypto';
-import { Secret, type ConfigEnv } from '@platform/config';
+import { Test } from '@nestjs/testing';
+import {
+  ConfigErrorCode,
+  DeployEnvironment,
+  Secret,
+  type ConfigEnv,
+} from '@platform/config';
+import { ConfigModule } from '@platform/config/nest';
 import { IdentityTestEnvironment } from '../../__tests__/utils/index.js';
 import { identityConfigSchema } from '../identity.config.js';
 import { IdentityMailerKind } from '../identity-mailer-kind.enum.js';
@@ -27,29 +34,86 @@ describe('identityConfigSchema', () => {
     );
   });
 
-  it.each(['production', 'test'])(
-    'refuses the console mailer in %s',
-    (nodeEnv) => {
+  it.each([
+    DeployEnvironment.Dev,
+    DeployEnvironment.Staging,
+    DeployEnvironment.Prod,
+  ])('sends email only through notifications in %s', (environment) => {
+    for (const mailer of [
+      IdentityMailerKind.Memory,
+      IdentityMailerKind.Console,
+    ]) {
       expect(
         parseIssues(
           IdentityTestEnvironment.build({
-            NODE_ENV: nodeEnv,
-            IDENTITY_MAILER: 'console',
+            DEPLOY_ENVIRONMENT: environment,
+            IDENTITY_MAILER: mailer,
           }),
         ),
-      ).toContain('IDENTITY_MAILER');
-    },
-  );
+      ).toEqual(['IDENTITY_MAILER']);
+    }
+    expect(
+      parseIssues(
+        IdentityTestEnvironment.build({
+          DEPLOY_ENVIRONMENT: environment,
+          IDENTITY_MAILER: IdentityMailerKind.Notifications,
+        }),
+      ),
+    ).toEqual([]);
+  });
 
-  it('accepts the console mailer in development', () => {
+  it('accepts the console mailer locally, whatever NODE_ENV says', () => {
     const config = identityConfigSchema.parse(
       IdentityTestEnvironment.build({
-        NODE_ENV: 'development',
-        IDENTITY_MAILER: 'console',
+        NODE_ENV: 'production',
+        DEPLOY_ENVIRONMENT: DeployEnvironment.Local,
+        IDENTITY_MAILER: IdentityMailerKind.Console,
       }),
     );
 
     expect(config.IDENTITY_MAILER).toBe(IdentityMailerKind.Console);
+  });
+
+  it('refuses the smoke account in prod and accepts it in staging', () => {
+    const smokeAccount = JSON.stringify({ email: 'smoke@identity.test' });
+
+    expect(
+      parseIssues(
+        IdentityTestEnvironment.build({
+          DEPLOY_ENVIRONMENT: DeployEnvironment.Prod,
+          IDENTITY_MAILER: IdentityMailerKind.Notifications,
+          IDENTITY_SMOKE_ACCOUNT: smokeAccount,
+        }),
+      ),
+    ).toEqual(['IDENTITY_SMOKE_ACCOUNT']);
+    expect(
+      parseIssues(
+        IdentityTestEnvironment.build({
+          DEPLOY_ENVIRONMENT: DeployEnvironment.Staging,
+          IDENTITY_MAILER: IdentityMailerKind.Notifications,
+          IDENTITY_SMOKE_ACCOUNT: smokeAccount,
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('does not start in prod with the console mailer', async () => {
+    const starting = Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          schema: identityConfigSchema,
+          env: IdentityTestEnvironment.build({
+            DEPLOY_ENVIRONMENT: DeployEnvironment.Prod,
+            IDENTITY_MAILER: IdentityMailerKind.Console,
+          }),
+        }),
+      ],
+    }).compile();
+
+    await expect(starting).rejects.toMatchObject({
+      code: ConfigErrorCode.Invalid,
+    });
+    await expect(starting).rejects.toThrow(/IDENTITY_MAILER/);
   });
 
   it.each(['5m', '20m'])('refuses an access token lifetime of %s', (ttl) => {

@@ -6,15 +6,23 @@ import {
   regionsConfigSchema,
 } from '@platform/service';
 import {
+  DeployEnvironment,
+  EnvironmentAllowance,
   envDuration,
   envList,
   envNumber,
-  NodeEnv,
   secret,
   serviceConfigSchema,
 } from '@platform/config';
 import { IdentityDefaults } from '../shared/constants/identity-defaults.constants.js';
 import { IdentityMailerKind } from './identity-mailer-kind.enum.js';
+
+/** Outside `local`, identity sends its email through notifications only (ADR 0046). */
+const MAILER = new EnvironmentAllowance<IdentityMailerKind>('IDENTITY_MAILER', {
+  [DeployEnvironment.Dev]: [IdentityMailerKind.Notifications],
+  [DeployEnvironment.Staging]: [IdentityMailerKind.Notifications],
+  [DeployEnvironment.Prod]: [IdentityMailerKind.Notifications],
+});
 
 /**
  * Identity configuration. `WEB_ORIGINS` and `TRUST_PROXY_HOPS` are not here: `@platform/http` reads them.
@@ -42,7 +50,7 @@ export const identityConfigSchema = serviceConfigSchema
     IDENTITY_DATA_KEY: secret({ minLength: 32 }),
     /**
      * The smoke account as JSON, `{ "email", "password", "totpSecret" }`: when set, the seed creates or resets it.
-     * Only the seed task receives it.
+     * Only the seed task receives it, and `prod` rejects it.
      */
     IDENTITY_SMOKE_ACCOUNT: secret({ minLength: 2 }).optional(),
     ...internalHttpConfigSchema.shape,
@@ -102,15 +110,15 @@ export const identityConfigSchema = serviceConfigSchema
         message: 'SESSION_ABSOLUTE_TTL cannot be less than SESSION_IDLE_TTL',
       });
     }
+    MAILER.check(config.DEPLOY_ENVIRONMENT, config.IDENTITY_MAILER, ctx);
     if (
-      config.IDENTITY_MAILER === IdentityMailerKind.Console &&
-      config.NODE_ENV !== NodeEnv.Development
+      config.DEPLOY_ENVIRONMENT === DeployEnvironment.Prod &&
+      config.IDENTITY_SMOKE_ACCOUNT !== undefined
     ) {
       ctx.addIssue({
         code: 'custom',
-        path: ['IDENTITY_MAILER'],
-        message:
-          'IDENTITY_MAILER=console is only allowed with NODE_ENV=development',
+        path: ['IDENTITY_SMOKE_ACCOUNT'],
+        message: 'IDENTITY_SMOKE_ACCOUNT is not allowed in prod',
       });
     }
   });
