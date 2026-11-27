@@ -59,9 +59,9 @@ export class GuardGate {
         '--all',
         '.',
       ]),
-      new GateStep('guard and rule tests', 'sh', [
-        '-c',
-        `node --test ${GuardGate.TOOL_TESTS.join(' ')}`,
+      new GateStep('guard and rule tests', 'node', [
+        '.claude/guards/run-node-tests.mjs',
+        ...GuardGate.TOOL_TESTS,
       ]),
       new GateStep('tooling lint', 'pnpm', [
         'nx',

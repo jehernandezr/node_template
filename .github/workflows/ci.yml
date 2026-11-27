@@ -56,6 +56,8 @@ jobs:
               - 'backend/infra/**'
               - '.github/workflows/**'
               - '.nvmrc'
+              - '.claude/guards/node-test-run.mjs'
+              - '.claude/guards/run-node-tests.mjs'
             # Everything that can change what a backend test-int target runs.
             backend:
               - 'backend/**'
@@ -486,7 +488,7 @@ jobs:
           python3 -B -I -m unittest discover -s ../local/localstack -v
 
       - name: Pipeline script tests
-        run: node --test ../scripts/__tests__/*.test.mjs
+        run: node ../../../.claude/guards/run-node-tests.mjs ../scripts/__tests__/*.test.mjs
 
       - name: Bootstrap vendor/ matches requirements.txt
         run: python3 -B -I ../scripts/check_vendor.py modules/rds-postgres/lambda/db_bootstrap
