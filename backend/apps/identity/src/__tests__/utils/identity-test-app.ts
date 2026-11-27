@@ -53,6 +53,11 @@ export class IdentityTestApp implements IdentityEntry {
     return this.app.environment();
   }
 
+  /** Where the Valkey of the test listens, for a proxy that takes it down. */
+  valkeyAddress(): { readonly host: string; readonly port: number } {
+    return { host: this.servers.valkey.host, port: this.servers.valkey.port };
+  }
+
   /** The base URL of the identity HTTP server. */
   baseUrl(): string {
     return this.app.baseUrl();

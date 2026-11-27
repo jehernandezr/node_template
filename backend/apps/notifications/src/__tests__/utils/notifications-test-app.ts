@@ -1,3 +1,4 @@
+import type { ConfigEnv } from '@platform/config';
 import { HttpApplicationSetup } from '@platform/http/nest';
 import { randomBytes } from 'node:crypto';
 import type { HttpTestClient } from '@platform/http/test-utils';
@@ -42,9 +43,12 @@ export class NotificationsTestApp {
     }),
   });
 
-  /** Starts the databases, identity, Mailpit and notifications. */
-  start(): Promise<void> {
-    return this.app.start();
+  /**
+   * Starts the databases, identity, Mailpit and notifications.
+   * @param overrides Variables that replace those of the environment it builds.
+   */
+  start(overrides: ConfigEnv = {}): Promise<void> {
+    return this.app.start(overrides);
   }
 
   /** Stops notifications, Mailpit, identity and the databases. */
