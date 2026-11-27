@@ -3,6 +3,7 @@ import {
   NotificationsEvent,
   NotificationType,
 } from '@contracts/notifications';
+import { PushOutcome } from '../../../push/index.js';
 import { DeliveryStatus } from '../../domain/delivery.js';
 import { DeliveryRetrySchedule } from '../../domain/delivery-retry-schedule.js';
 import { DispatchHarness } from '../../__tests__/utils/index.js';
@@ -52,6 +53,28 @@ describe('NotifyUser', () => {
         }),
       ]);
     });
+  });
+
+  it('reaches the inbox and email only when the push sender delivers nothing, and never retries the skipped push', async () => {
+    const harness = new DispatchHarness();
+    harness.push.outcome = PushOutcome.Skipped;
+
+    await harness.notifyUser.notify(harness.command());
+    harness.clock.advance(ONE_DAY_MS);
+    await harness.retry.run();
+
+    expect(harness.inbox.stored.size).toBe(1);
+    expect(harness.email.sent).toHaveLength(1);
+    expect(
+      Object.fromEntries(
+        harness.deliveries.all().map((d) => [d.channel, d.status]),
+      ),
+    ).toEqual({
+      [NotificationChannel.InApp]: DeliveryStatus.Sent,
+      [NotificationChannel.Push]: DeliveryStatus.Skipped,
+      [NotificationChannel.Email]: DeliveryStatus.Sent,
+    });
+    expect(harness.push.sent).toHaveLength(1);
   });
 
   it('skips push for a user who is connected in real time', async () => {

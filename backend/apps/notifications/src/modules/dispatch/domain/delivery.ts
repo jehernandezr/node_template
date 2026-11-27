@@ -8,6 +8,8 @@ export enum DeliveryStatus {
   Failed = 'failed',
   /** Failed `NotificationsDefaults.maxDeliveryAttempts` times and is no longer retried. */
   Abandoned = 'abandoned',
+  /** Not delivered because the channel's sender delivers nothing (the `none` push sender); never retried. */
+  Skipped = 'skipped',
 }
 
 /** What is delivered keeps its text: the retry does not depend on the inbox, which the user can empty. */

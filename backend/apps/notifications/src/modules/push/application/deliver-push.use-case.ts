@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { UserRef } from '@contracts/platform';
 import type { PushMessage } from '../domain/push-message.js';
+import { PushOutcome } from '../domain/push-outcome.enum.js';
 import { PushSender } from '../domain/push-sender.js';
 import { PushTargetDirectory } from '../domain/push-target-directory.js';
 import { PushFacade } from './push.facade.js';
@@ -15,11 +16,16 @@ export class DeliverPush extends PushFacade {
     super();
   }
 
-  override async deliver(user: UserRef, message: PushMessage): Promise<number> {
+  override async deliver(
+    user: UserRef,
+    message: PushMessage,
+  ): Promise<PushOutcome> {
     const targets = await this.targets.targetsOf(user);
-    await Promise.all(
+    const ids = await Promise.all(
       targets.map((target) => this.sender.send(target, message)),
     );
-    return targets.length;
+    return ids.length > 0 && ids.every((id) => id === undefined)
+      ? PushOutcome.Skipped
+      : PushOutcome.Sent;
   }
 }

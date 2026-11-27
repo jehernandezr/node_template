@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import {
+  DeployEnvironment,
+  EnvironmentAllowance,
   envNumber,
-  NodeEnv,
   secret,
   serviceConfigSchema,
 } from '@platform/config';
@@ -10,6 +11,26 @@ import { NotificationsDefaults } from '../shared/constants/notifications-default
 import { EmailSenderKind } from '../shared/enums/email-sender-kind.enum.js';
 import { PushSenderKind } from '../shared/enums/push-sender-kind.enum.js';
 import { RealtimeHost } from '../shared/enums/realtime-host.enum.js';
+
+/** Outside `local`, email goes out through SES only: `smtp` neither authenticates nor encrypts (ADR 0046). */
+const EMAIL_SENDER = new EnvironmentAllowance<EmailSenderKind>(
+  'NOTIFICATIONS_EMAIL_SENDER',
+  {
+    [DeployEnvironment.Dev]: [EmailSenderKind.Ses],
+    [DeployEnvironment.Staging]: [EmailSenderKind.Ses],
+    [DeployEnvironment.Prod]: [EmailSenderKind.Ses],
+  },
+);
+
+/** `dev` may still keep pushes in memory; `staging` and `prod` skip them until a real provider lands (ADR 0046). */
+const PUSH_SENDER = new EnvironmentAllowance<PushSenderKind>(
+  'NOTIFICATIONS_PUSH_SENDER',
+  {
+    [DeployEnvironment.Dev]: [PushSenderKind.Memory, PushSenderKind.None],
+    [DeployEnvironment.Staging]: [PushSenderKind.None],
+    [DeployEnvironment.Prod]: [PushSenderKind.None],
+  },
+);
 
 /** Notifications configuration. The libraries read their own (database, Valkey, auth, real time) through their section. */
 export const notificationsConfigSchema = serviceConfigSchema
@@ -32,21 +53,20 @@ export const notificationsConfigSchema = serviceConfigSchema
     REALTIME_HOST: z.enum(RealtimeHost).default(RealtimeHost.Service),
   })
   .superRefine((config, ctx) => {
-    if (config.NOTIFICATIONS_EMAIL_SENDER !== EmailSenderKind.Smtp) {
-      return;
-    }
+    EMAIL_SENDER.check(
+      config.DEPLOY_ENVIRONMENT,
+      config.NOTIFICATIONS_EMAIL_SENDER,
+      ctx,
+    );
+    PUSH_SENDER.check(
+      config.DEPLOY_ENVIRONMENT,
+      config.NOTIFICATIONS_PUSH_SENDER,
+      ctx,
+    );
     if (
-      config.NODE_ENV !== NodeEnv.Development &&
-      config.NODE_ENV !== NodeEnv.Test
+      config.NOTIFICATIONS_EMAIL_SENDER === EmailSenderKind.Smtp &&
+      config.SMTP_URL === undefined
     ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['NOTIFICATIONS_EMAIL_SENDER'],
-        message:
-          'smtp is only allowed in development and tests: it neither authenticates nor encrypts',
-      });
-    }
-    if (config.SMTP_URL === undefined) {
       ctx.addIssue({
         code: 'custom',
         path: ['SMTP_URL'],

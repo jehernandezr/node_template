@@ -1,7 +1,9 @@
 import { ClientPlatform, type PushTarget } from '@contracts/identity';
 import type { UserRef } from '@contracts/platform';
+import { PushOutcome } from '../domain/push-outcome.enum.js';
 import { PushTargetDirectory } from '../domain/push-target-directory.js';
 import { InMemoryPushSender } from '../infrastructure/in-memory-push-sender.js';
+import { NonePushSender } from '../infrastructure/none-push-sender.js';
 import { DeliverPush } from '../application/deliver-push.use-case.js';
 
 const ANA: UserRef = {
@@ -25,40 +27,50 @@ const message = {
   body: 'Se emitió la factura F-0042.',
 };
 
+const targets: PushTarget[] = [
+  {
+    deviceId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f21',
+    platform: ClientPlatform.Ios,
+    pushToken: 'device-ios',
+  },
+  {
+    deviceId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f22',
+    platform: ClientPlatform.Android,
+    pushToken: 'device-android',
+  },
+];
+
 describe('DeliverPush', () => {
   it('sends the message to every registered device of the user', async () => {
     const sender = new InMemoryPushSender();
-    const targets: PushTarget[] = [
-      {
-        deviceId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f21',
-        platform: ClientPlatform.Ios,
-        pushToken: 'device-ios',
-      },
-      {
-        deviceId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f22',
-        platform: ClientPlatform.Android,
-        pushToken: 'device-android',
-      },
-    ];
 
-    const delivered = await new DeliverPush(
+    const outcome = await new DeliverPush(
       new FixedTargets(targets),
       sender,
     ).deliver(ANA, message);
 
-    expect(delivered).toBe(2);
+    expect(outcome).toBe(PushOutcome.Sent);
     expect(sender.sent).toEqual(targets.map((target) => ({ target, message })));
   });
 
   it('sends nothing to a user without devices', async () => {
     const sender = new InMemoryPushSender();
 
-    const delivered = await new DeliverPush(
-      new FixedTargets([]),
-      sender,
-    ).deliver(ANA, message);
+    const outcome = await new DeliverPush(new FixedTargets([]), sender).deliver(
+      ANA,
+      message,
+    );
 
-    expect(delivered).toBe(0);
+    expect(outcome).toBe(PushOutcome.Sent);
     expect(sender.sent).toEqual([]);
+  });
+
+  it('skips the push when the none sender delivers to none of the devices', async () => {
+    await expect(
+      new DeliverPush(new FixedTargets(targets), new NonePushSender()).deliver(
+        ANA,
+        message,
+      ),
+    ).resolves.toBe(PushOutcome.Skipped);
   });
 });

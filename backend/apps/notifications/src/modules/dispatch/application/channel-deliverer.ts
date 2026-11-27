@@ -3,14 +3,15 @@ import { NotificationChannel } from '@contracts/notifications';
 import { Clock } from '@platform/kernel';
 import { NotificationsDefaults } from '../../../shared/constants/notifications-defaults.constants.js';
 import { EmailFacade, NotificationEmailKey } from '../../email/index.js';
-import { PushFacade } from '../../push/index.js';
+import { PushFacade, PushOutcome } from '../../push/index.js';
 import { DeliveryStatus, type Delivery } from '../domain/delivery.js';
 import { DeliveryRetrySchedule } from '../domain/delivery-retry-schedule.js';
 import type { Recipient } from '../domain/recipient.js';
 
 /**
  * Delivers a notification by email or push and returns the delivery with its result. A failure stays in the
- * delivery so the job retries it with increasing backoff; after `maxDeliveryAttempts` it is abandoned.
+ * delivery so the job retries it with increasing backoff; after `maxDeliveryAttempts` it is abandoned. A push the
+ * sender does not deliver is recorded as skipped.
  */
 @Injectable()
 export class ChannelDeliverer {
@@ -29,12 +30,14 @@ export class ChannelDeliverer {
   async deliver(delivery: Delivery, recipient: Recipient): Promise<Delivery> {
     const attempts = delivery.attempts + 1;
     try {
-      const providerId = await this.send(delivery, recipient);
+      const sent = await this.send(delivery, recipient);
       return {
         ...delivery,
         attempts,
-        status: DeliveryStatus.Sent,
-        ...(providerId === undefined ? {} : { providerId }),
+        status: sent.status,
+        ...(sent.providerId === undefined
+          ? {}
+          : { providerId: sent.providerId }),
       };
     } catch (error) {
       return {
@@ -53,13 +56,13 @@ export class ChannelDeliverer {
     }
   }
 
-  /** The email provider's id; a push goes out to several devices and does not have a single one. */
+  /** The status and, for email, the provider's id; a push goes out to several devices and does not have a single one. */
   private async send(
     delivery: Delivery,
     recipient: Recipient,
-  ): Promise<string | undefined> {
+  ): Promise<{ status: DeliveryStatus; providerId?: string }> {
     if (delivery.channel === NotificationChannel.Email) {
-      return this.email.send({
+      const providerId = await this.email.send({
         messageId: delivery.id,
         template: NotificationEmailKey.Notification,
         to: recipient.email,
@@ -69,12 +72,18 @@ export class ChannelDeliverer {
           ['body', delivery.body],
         ]),
       });
+      return { status: DeliveryStatus.Sent, providerId };
     }
-    await this.push.deliver(recipient.ref, {
+    const outcome = await this.push.deliver(recipient.ref, {
       notificationId: delivery.notificationId,
       title: delivery.title,
       body: delivery.body,
     });
-    return undefined;
+    return {
+      status:
+        outcome === PushOutcome.Skipped
+          ? DeliveryStatus.Skipped
+          : DeliveryStatus.Sent,
+    };
   }
 }
