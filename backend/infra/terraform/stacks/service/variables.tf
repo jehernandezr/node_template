@@ -32,15 +32,14 @@ variable "lambda_package" {
 
 variable "api" {
   description = <<-EOT
-    HTTP API of the service in the shared API, behind CloudFront and its WAF.
-    runtime "lambda": function with the lambda.ts adapter; "fargate": container with main.ts behind
-    the internal ALB and the VPC link, with the listener priority of the service in the catalog.
+    HTTP API of the service in the shared API, behind CloudFront and its WAF. Its runtime comes from
+    service-base: on "lambda" a function with the lambda.ts adapter uses the Lambda fields; on "fargate" a
+    container with main.ts behind the internal ALB and the VPC link, with the listener priority of the
+    service in listener-priorities.json, uses the Fargate fields.
     route_prefixes never reach /internal, which only the internal routing serves (ADR 0040): no /, no prefix under
     /internal and no wildcard before the prefix is fixed.
-    Changing the runtime means changing this field and the artifact.
   EOT
   type = object({
-    runtime        = string
     route_prefixes = list(string)
 
     # Lambda
@@ -60,17 +59,8 @@ variable "api" {
     cpu_target_percent = optional(number, 60)
     health_check_path  = optional(string, "/health")
     spot               = optional(bool, false)
-
-    # API's own permissions
-    files_access = optional(bool, false)
-    ses_send     = optional(bool, false)
   })
   default = null
-
-  validation {
-    condition     = var.api == null || contains(["lambda", "fargate"], try(var.api.runtime, ""))
-    error_message = "api.runtime must be lambda or fargate."
-  }
 
   validation {
     condition     = var.api == null || alltrue([for path in try(var.api.route_prefixes, []) : !(path == "/" || startswith(lower(regex("^[^*?]*", path)), "/internal") || (length(regex("^[^*?]*", path)) < length(path) && startswith("/internal", lower(regex("^[^*?]*", path)))))])
@@ -79,7 +69,7 @@ variable "api" {
 }
 
 variable "realtime" {
-  description = "Realtime gateway (Socket.IO and SSE). Always on Fargate behind the platform public ALB, with the listener priority of the service in the catalog. path_patterns are required and never reach /internal (ADR 0040); host_headers only narrow them. publish grants it the producer topics and queues from the topology."
+  description = "Realtime gateway (Socket.IO and SSE). Always on Fargate behind the platform public ALB, with the listener priority of the service in listener-priorities.json. path_patterns are required and never reach /internal (ADR 0040); host_headers only narrow them. What it may use is set in service-base."
   type = object({
     path_patterns      = optional(list(string), [])
     host_headers       = optional(list(string), [])
@@ -92,9 +82,6 @@ variable "realtime" {
     max_capacity       = optional(number, 4)
     cpu_target_percent = optional(number, 60)
     health_check_path  = optional(string, "/health")
-    publish            = optional(bool, false)
-    files_access       = optional(bool, false)
-    ses_send           = optional(bool, false)
   })
   default = null
 
@@ -110,9 +97,8 @@ variable "realtime" {
 }
 
 variable "workers" {
-  description = "Fargate workers (worker.ts). Each runs the outbox relay, the jobs and saga recovery with at least one task (ADR 0039). With queue it consumes only that queue and scales on its depth; without queue it consumes nothing and runs one task, for a service whose contract has no queues."
+  description = "Fargate workers (worker.ts), with the same keys as in service-base. Each runs the outbox relay, the jobs and saga recovery with at least one task (ADR 0039). A worker with a queue in service-base scales on its depth; without queue it runs exactly one task."
   type = map(object({
-    queue               = optional(string)
     command             = optional(list(string))
     cpu                 = optional(number, 512)
     memory              = optional(number, 1024)
@@ -123,8 +109,6 @@ variable "workers" {
     messages_per_task   = optional(number, 100)
     steps               = optional(number, 5)
     scale_in_periods    = optional(number, 10)
-    files_access        = optional(bool, false)
-    ses_send            = optional(bool, false)
   }))
   default = {}
 
@@ -135,9 +119,8 @@ variable "workers" {
 }
 
 variable "consumers" {
-  description = "Lambda consumers of a queue (SQS adapter with partial failures)."
+  description = "Lambda consumers of a queue (SQS adapter with partial failures), with the same keys as in service-base, which sets their queue."
   type = map(object({
-    queue                           = string
     handler                         = string
     memory_size                     = optional(number, 512)
     timeout                         = optional(number, 30)
@@ -145,48 +128,8 @@ variable "consumers" {
     maximum_batching_window_seconds = optional(number, 0)
     maximum_concurrency             = optional(number, 5)
     filter_patterns                 = optional(list(string), [])
-    files_access                    = optional(bool, false)
-    ses_send                        = optional(bool, false)
   }))
   default = {}
-}
-
-# --- Access to shared resources ------------------------------------------------------
-
-variable "database_access" {
-  description = "Uses its user and its databases (shards and catalog) from the data stack. Receives DB_CREDENTIALS or DB_SECRET_ARN and DB_DATABASES."
-  type        = bool
-  default     = true
-}
-
-variable "valkey_access" {
-  description = "Uses its Valkey user (prefix <service>:). Requires the service in valkey_services of the data stack."
-  type        = bool
-  default     = true
-}
-
-variable "environment_variables" {
-  description = "The service's own environment variables. They do not replace the platform ones (SERVICE_NAME, AWS_*, DB_*, VALKEY_*...)."
-  type        = map(string)
-  default     = {}
-}
-
-variable "secrets" {
-  description = "Own secrets: variable name to valueFrom (Secrets Manager ARN, with an optional JSON key)."
-  type        = map(string)
-  default     = {}
-}
-
-variable "secrets_kms_key_arns" {
-  description = "CMK of the own secrets."
-  type        = list(string)
-  default     = []
-}
-
-variable "task_policies" {
-  description = "Own inline IAM policies (name to JSON) for all roles of the service. What only one component uses fits better in an option of that component."
-  type        = map(string)
-  default     = {}
 }
 
 variable "lambda_runtime" {
@@ -199,16 +142,4 @@ variable "lambda_otel_layer_arn" {
   description = "ADOT layer of the Lambdas. Confirm the current ARN for the region and architecture. Null disables it."
   type        = string
   default     = null
-}
-
-variable "enable_execute_command" {
-  description = "ECS Exec on the Fargate tasks of the service. It is audited with the cluster CMK."
-  type        = bool
-  default     = false
-}
-
-variable "log_retention_days" {
-  description = "Retention in days of the service logs."
-  type        = number
-  default     = 30
 }

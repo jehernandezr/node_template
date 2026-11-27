@@ -9,7 +9,7 @@ const ROOT = resolve(ScriptRunner.scriptsDir, '../../..');
 const TERRAFORM = join(ROOT, 'backend/infra/terraform');
 const ENVIRONMENTS = ['dev', 'staging', 'prod'];
 
-/** The queues a service stack polls in one environment: the `queue` of every entry in `workers` and `consumers`. */
+/** The queues a service polls in one environment: the `queue` of every entry in `workers` and `consumers` of its service-base values. */
 class DeployedQueues {
   static BLOCKS = ['workers', 'consumers'];
 
@@ -59,6 +59,7 @@ describe('service queues', () => {
           environment,
           'services',
           service,
+          'base',
           'terraform.tfvars',
         );
         assert.ok(existsSync(tfvars), `${tfvars} is missing`);
@@ -76,7 +77,10 @@ describe('service queues', () => {
       const services = join(TERRAFORM, 'environments', environment, 'services');
       for (const service of readdirSync(services)) {
         const deployed = new DeployedQueues(
-          readFileSync(join(services, service, 'terraform.tfvars'), 'utf8'),
+          readFileSync(
+            join(services, service, 'base', 'terraform.tfvars'),
+            'utf8',
+          ),
         );
         const unknown = deployed.queues.filter(
           (queue) => !contractQueuesOf(service).includes(queue),

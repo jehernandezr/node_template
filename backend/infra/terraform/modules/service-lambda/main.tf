@@ -1,17 +1,5 @@
-data "aws_caller_identity" "current" {}
-
-data "aws_partition" "current" {}
-
-data "aws_region" "current" {}
-
 locals {
-  full_name   = "${var.name_prefix}-${var.function_name}"
-  account_id  = data.aws_caller_identity.current.account_id
-  partition   = data.aws_partition.current.partition
-  region      = data.aws_region.current.region
-  log_group   = "/aws/lambda/${local.full_name}"
-  create_key  = var.kms_key_arn == null
-  kms_key_arn = local.create_key ? module.kms[0].arn : var.kms_key_arn
+  full_name = "${var.name_prefix}-${var.function_name}"
 
   # Node major version used to build and test the code (root .nvmrc).
   node_major = split(".", trimspace(file("${path.module}/../../../../../.nvmrc")))[0]
@@ -46,8 +34,8 @@ resource "terraform_data" "input_check" {
     }
 
     precondition {
-      condition     = !var.vpc_enabled || (var.vpc_id != null && length(var.subnet_ids) > 0)
-      error_message = "vpc_enabled requires vpc_id and subnet_ids."
+      condition     = !var.vpc_enabled || (var.security_group_id != null && length(var.subnet_ids) > 0)
+      error_message = "vpc_enabled requires security_group_id and subnet_ids."
     }
 
     # A runtime with another major version can break on Lambda code that passed type checks and tests.
@@ -58,68 +46,27 @@ resource "terraform_data" "input_check" {
   }
 }
 
-# --- KMS, logs and DLQ ------------------------------------------------------
-
-module "kms" {
-  count  = local.create_key ? 1 : 0
-  source = "../kms-key"
-
-  alias              = local.full_name
-  description        = "Encryption of ${local.full_name}: environment variables, logs and DLQ"
-  log_group_arns     = ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"]
-  service_principals = [{ sid = "AllowSqsUse", services = ["sqs.amazonaws.com"] }]
-  tags               = var.tags
-}
-
-resource "aws_cloudwatch_log_group" "this" {
-  name              = local.log_group
-  retention_in_days = var.log_retention_days
-  kms_key_id        = local.kms_key_arn
-
-  tags = var.tags
-}
+# --- DLQ -------------------------------------------------------------------
 
 # Dead letter queue for failed asynchronous invocations. Failed SQS messages go
 # to the source queue's DLQ, which the messaging module defines.
 resource "aws_sqs_queue" "dlq" {
   name                      = "${local.full_name}-async-dlq"
   message_retention_seconds = var.async_dlq_retention_seconds
-  kms_master_key_id         = local.kms_key_arn
+  kms_master_key_id         = var.kms_key_arn
 
   tags = merge(var.tags, { Name = "${local.full_name}-async-dlq", Role = "dlq" })
 }
 
-# --- IAM --------------------------------------------------------------------
+# --- Runtime permissions -------------------------------------------------------
+# The function role comes from component-base. What only this runtime uses, the async DLQ and the queue of
+# the event source mapping, is attached here, before the function and the mapping that need it.
 
-data "aws_iam_policy_document" "assume" {
+data "aws_iam_policy_document" "runtime" {
   statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceAccount"
-      values   = [local.account_id]
-    }
-  }
-}
-
-resource "aws_iam_role" "this" {
-  name               = local.full_name
-  assume_role_policy = data.aws_iam_policy_document.assume.json
-
-  tags = var.tags
-}
-
-data "aws_iam_policy_document" "base" {
-  statement {
-    sid       = "WriteLogs"
-    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
-    resources = ["${aws_cloudwatch_log_group.this.arn}:*"]
+    sid       = "SendToAsyncDlq"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.dlq.arn]
   }
 
   dynamic "statement" {
@@ -132,18 +79,6 @@ data "aws_iam_policy_document" "base" {
     }
   }
 
-  statement {
-    sid       = "SendToAsyncDlq"
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.dlq.arn]
-  }
-
-  statement {
-    sid       = "UseOwnKey"
-    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
-    resources = [local.kms_key_arn]
-  }
-
   dynamic "statement" {
     for_each = var.queue_arn == null || var.queue_kms_key_arn == null ? [] : [1]
 
@@ -153,82 +88,12 @@ data "aws_iam_policy_document" "base" {
       resources = [var.queue_kms_key_arn]
     }
   }
-
-  dynamic "statement" {
-    for_each = var.tracing_mode == "Active" ? [1] : []
-
-    content {
-      sid       = "XRay"
-      actions   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
-      resources = ["*"]
-    }
-  }
-
-  dynamic "statement" {
-    for_each = length(var.secret_arns) > 0 ? [1] : []
-
-    content {
-      sid       = "ReadSecrets"
-      actions   = ["secretsmanager:GetSecretValue"]
-      resources = var.secret_arns
-    }
-  }
-
-  dynamic "statement" {
-    for_each = length(var.secrets_kms_key_arns) > 0 ? [1] : []
-
-    content {
-      sid       = "DecryptSecrets"
-      actions   = ["kms:Decrypt"]
-      resources = var.secrets_kms_key_arns
-    }
-  }
 }
 
-resource "aws_iam_role_policy" "base" {
-  name   = "base"
-  role   = aws_iam_role.this.id
-  policy = data.aws_iam_policy_document.base.json
-}
-
-resource "aws_iam_role_policy" "extra" {
-  for_each = var.task_policies
-
-  name   = each.key
-  role   = aws_iam_role.this.id
-  policy = each.value
-}
-
-resource "aws_iam_role_policy_attachment" "vpc" {
-  count = var.vpc_enabled ? 1 : 0
-
-  role       = aws_iam_role.this.name
-  policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
-
-# --- Network ----------------------------------------------------------------
-
-resource "aws_security_group" "this" {
-  count = var.vpc_enabled ? 1 : 0
-
-  name        = local.full_name
-  description = "Lambda function ${local.full_name}"
-  vpc_id      = var.vpc_id
-
-  tags = merge(var.tags, { Name = local.full_name })
-}
-
-# Outbound HTTPS through NAT or VPC endpoints (ADR 0016).
-# trivy:ignore:AVD-AWS-0104
-resource "aws_vpc_security_group_egress_rule" "https" {
-  count = var.vpc_enabled ? 1 : 0
-
-  security_group_id = aws_security_group.this[0].id
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 443
-  to_port           = 443
-  ip_protocol       = "tcp"
-  description       = "HTTPS to VPC endpoints and external services"
+resource "aws_iam_role_policy" "runtime" {
+  name   = "runtime"
+  role   = var.role_name
+  policy = data.aws_iam_policy_document.runtime.json
 }
 
 # --- Function and event source ----------------------------------------------
@@ -236,7 +101,7 @@ resource "aws_vpc_security_group_egress_rule" "https" {
 resource "aws_lambda_function" "this" {
   function_name = local.full_name
   description   = var.description
-  role          = aws_iam_role.this.arn
+  role          = var.role_arn
   handler       = var.handler
   runtime       = var.runtime
   architectures = ["arm64"]
@@ -251,7 +116,7 @@ resource "aws_lambda_function" "this" {
   source_code_hash  = var.source_code_hash
 
   reserved_concurrent_executions = var.reserved_concurrent_executions
-  kms_key_arn                    = local.kms_key_arn
+  kms_key_arn                    = var.kms_key_arn
 
   environment {
     variables = local.function_environment
@@ -263,7 +128,7 @@ resource "aws_lambda_function" "this" {
 
   logging_config {
     log_format            = "JSON"
-    log_group             = aws_cloudwatch_log_group.this.name
+    log_group             = var.log_group_name
     application_log_level = var.application_log_level
     system_log_level      = "WARN"
   }
@@ -277,7 +142,7 @@ resource "aws_lambda_function" "this" {
 
     content {
       subnet_ids         = var.subnet_ids
-      security_group_ids = concat([aws_security_group.this[0].id], var.additional_security_group_ids)
+      security_group_ids = concat([var.security_group_id], var.additional_security_group_ids)
     }
   }
 
@@ -285,13 +150,14 @@ resource "aws_lambda_function" "this" {
 
   depends_on = [
     terraform_data.input_check,
-    aws_iam_role_policy.base,
-    aws_iam_role_policy_attachment.vpc,
+    aws_iam_role_policy.runtime,
   ]
 }
 
 resource "aws_lambda_event_source_mapping" "sqs" {
   count = var.queue_arn == null ? 0 : 1
+
+  depends_on = [aws_iam_role_policy.runtime]
 
   event_source_arn                   = var.queue_arn
   function_name                      = aws_lambda_function.this.arn
@@ -365,14 +231,4 @@ resource "aws_cloudwatch_metric_alarm" "async_dlq_not_empty" {
   alarm_actions = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
 
   tags = var.tags
-}
-
-moved {
-  from = aws_kms_key.this[0]
-  to   = module.kms[0].aws_kms_key.this
-}
-
-moved {
-  from = aws_kms_alias.this[0]
-  to   = module.kms[0].aws_kms_alias.this
 }

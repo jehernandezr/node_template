@@ -71,19 +71,30 @@ export class TfvarsBlockReader {
 
   /** Keys of the entries one level inside the block (`name = ...` or `"name" = ...`), in order; empty if the block does not exist. */
   entryNames(blockName) {
+    return this.entries(blockName).map((entry) => entry.name);
+  }
+
+  /** Entries one level inside the block, in order: each name with the text of its value, comments masked out; empty if the block does not exist. */
+  entries(blockName) {
     const open = this.#openBrace(blockName);
     if (open === -1) return [];
     const close = this.#closeBrace(open);
-    const names = [];
+    const entries = [];
     let depth = 0;
     let offset = open + 1;
     for (const line of this.#masked.slice(open + 1, close).split('\n')) {
-      if (depth === 0) {
-        const original = this.#text.slice(offset, offset + line.length);
-        const match = /^\s*(?:"([^"]+)"|([A-Za-z0-9_-]+))\s*=/.exec(original);
-        if (match !== null && /^\s*("[^"]*"|[A-Za-z0-9_-]+)\s*=/.test(line)) {
-          names.push(match[1] ?? match[2]);
-        }
+      const original = this.#text.slice(offset, offset + line.length);
+      const key =
+        depth === 0 ? /^\s*("[^"]*"|[A-Za-z0-9_-]+)\s*=/.exec(line) : null;
+      if (key !== null) {
+        const name = /^\s*(?:"([^"]+)"|([A-Za-z0-9_-]+))/.exec(original);
+        entries.push({
+          name: name[1] ?? name[2],
+          value: TfvarsBlockReader.#unmasked(original, line, key[0].length),
+        });
+      } else if (entries.length > 0 && depth > 0) {
+        entries.at(-1).value +=
+          `\n${TfvarsBlockReader.#unmasked(original, line, 0)}`;
       }
       for (const character of line) {
         if (character === '{') depth++;
@@ -91,7 +102,12 @@ export class TfvarsBlockReader {
       }
       offset += line.length + 1;
     }
-    return names;
+    return entries;
+  }
+
+  static #unmasked(original, masked, from) {
+    const commentFree = masked.slice(from).trimEnd().length;
+    return original.slice(from, from + commentFree).trim();
   }
 
   #topLevelMatch(key) {

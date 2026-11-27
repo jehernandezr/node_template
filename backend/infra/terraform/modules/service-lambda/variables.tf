@@ -29,6 +29,32 @@ variable "environment" {
   type        = string
 }
 
+variable "role_arn" {
+  description = "Function role (component-base), with the logs, secrets and component policies."
+  type        = string
+}
+
+variable "role_name" {
+  description = "Name of that role: the module attaches the async DLQ and the queue of the event source mapping to it."
+  type        = string
+}
+
+variable "log_group_name" {
+  description = "Log group of the function (component-base), /aws/lambda/<name_prefix>-<function_name>."
+  type        = string
+}
+
+variable "kms_key_arn" {
+  description = "CMK of the environment variables and the async DLQ. The function role must be allowed to use it (component-base)."
+  type        = string
+}
+
+variable "security_group_id" {
+  description = "Security group of the function (component-base). Required with vpc_enabled."
+  type        = string
+  default     = null
+}
+
 variable "handler" {
   description = "Function handler, for example lambda.handler."
   type        = string
@@ -98,18 +124,6 @@ variable "environment_variables" {
   default     = {}
 }
 
-variable "secret_arns" {
-  description = "ARNs of the Secrets Manager secrets the function can read."
-  type        = list(string)
-  default     = []
-}
-
-variable "secrets_kms_key_arns" {
-  description = "KMS keys that encrypt those secrets."
-  type        = list(string)
-  default     = []
-}
-
 variable "reserved_concurrent_executions" {
   description = "Reserved concurrency. It protects the database from a spike and keeps the function from using the whole account. Null reserves nothing."
   type        = number
@@ -156,22 +170,10 @@ variable "application_log_level" {
   }
 }
 
-variable "log_retention_days" {
-  description = "Retention days of the log group."
-  type        = number
-  default     = 30
-}
-
 variable "vpc_enabled" {
   description = "Runs the function inside the VPC (to reach RDS Proxy or Valkey). Requires vpc_id and subnet_ids."
   type        = bool
   default     = false
-}
-
-variable "vpc_id" {
-  description = "VPC ID. Required with vpc_enabled."
-  type        = string
-  default     = null
 }
 
 variable "additional_security_group_ids" {
@@ -249,20 +251,8 @@ variable "async_dlq_retention_seconds" {
   default     = 1209600
 }
 
-variable "task_policies" {
-  description = "Inline IAM policies of the role: name to JSON document. S3, SES, SNS and other permissions go here."
-  type        = map(string)
-  default     = {}
-}
-
 variable "alarm_topic_arn" {
   description = "ARN of an SNS topic for the error and DLQ alarms. If null, the alarms do not notify."
-  type        = string
-  default     = null
-}
-
-variable "kms_key_arn" {
-  description = "Existing KMS key for environment variables, logs and the DLQ. It must allow logs.<region>.amazonaws.com and SQS. If null, the module creates its own."
   type        = string
   default     = null
 }

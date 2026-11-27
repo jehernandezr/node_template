@@ -38,6 +38,26 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "execution_role_arn" {
+  description = "ECS execution role (component-base): pulls the image, writes the logs and reads the secrets of secrets and otlp_authorization_secret."
+  type        = string
+}
+
+variable "task_role_arn" {
+  description = "Role the container runs with (component-base), with the component policies."
+  type        = string
+}
+
+variable "log_group_name" {
+  description = "Log group of the containers (component-base)."
+  type        = string
+}
+
+variable "security_group_id" {
+  description = "Security group of the tasks (component-base), with HTTPS-only egress. With enable_load_balancer the module opens container_port on it from the ALB."
+  type        = string
+}
+
 variable "additional_security_group_ids" {
   description = "Extra security groups for the tasks. The data clients one (data stack) opens egress to RDS Proxy, the replicas, Valkey and OpenObserve; the service one only allows outbound HTTPS."
   type        = list(string)
@@ -152,12 +172,6 @@ variable "secrets" {
     condition     = alltrue([for v in values(var.secrets) : can(regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v))])
     error_message = "Each secrets value must be a Secrets Manager ARN."
   }
-}
-
-variable "secrets_kms_key_arns" {
-  description = "KMS keys that encrypt the secrets, so the execution role can decrypt them."
-  type        = list(string)
-  default     = []
 }
 
 variable "otlp_endpoint" {
@@ -289,46 +303,16 @@ variable "sqs_scaling" {
   }
 }
 
-variable "task_policies" {
-  description = "Inline IAM policies for the task role: name to JSON document. SQS, S3, SES and other permissions go here."
-  type        = map(string)
-  default     = {}
-}
-
 variable "enable_execute_command" {
-  description = "Enables ECS Exec for debugging. Sessions are logged with the cluster key and log group."
+  description = "Enables ECS Exec for debugging. The task role needs the ECS Exec channels (component-base enable_execute_command)."
   type        = bool
   default     = false
-}
-
-variable "exec_kms_key_arn" {
-  description = "Cluster KMS key (kms_key_arn output of ecs-cluster), so the task can open ECS Exec sessions."
-  type        = string
-  default     = null
-}
-
-variable "exec_log_group_arn" {
-  description = "ARN of the cluster ECS Exec log group. If null, the role can write to any log group under /ecs/."
-  type        = string
-  default     = null
 }
 
 variable "readonly_root_filesystem" {
   description = "Mounts the container root filesystem as read-only."
   type        = bool
   default     = true
-}
-
-variable "log_retention_days" {
-  description = "Retention in days for the service log group."
-  type        = number
-  default     = 30
-}
-
-variable "kms_key_arn" {
-  description = "KMS key for the log group. It must allow logs.<region>.amazonaws.com on /ecs/<name_prefix>/*; the ecs-cluster key works. If null, the module creates its own."
-  type        = string
-  default     = null
 }
 
 variable "tags" {

@@ -5,7 +5,7 @@ import type { TemplateFile, TemplateSource } from './template-source.js';
 
 /**
  * Creates a service with the same structure as the others: the app, its contract with the move operations and the `dev`
- * tfvars. Returns the lines that must be added by hand to the shared files.
+ * tfvars of its `service-base` and `service` stacks. Returns the lines that must be added by hand to the shared files.
  */
 export class ServiceGenerator {
   static readonly KIND = 'service';
@@ -52,6 +52,7 @@ export class ServiceGenerator {
       `backend/tsconfig.base.json (paths): "@contracts/${kebab}": ["./libs/contracts/${kebab}/src/index.ts"]`,
       `backend/eslint.config.mjs (depConstraints): '${kebab}' in the list of services with its scope:${kebab}`,
       `backend/infra/local/postgres/init.sql: CREATE DATABASE ${snake}_shard_0; and ${snake}_shard_1; with the vector extension`,
+      `backend/infra/terraform/listener-priorities.json: "${kebab}" with a priority above every existing one`,
       `backend/.env.example: DB_DATABASES with ${snake}_shard_0 and ${snake}_shard_1 to run ${kebab} locally`,
       `backend/tools/contracts-export/project.json (implicitDependencies): "contracts-${kebab}", then nx run contracts-export:export`,
       `backend/apps/identity/src/modules/tenant-moves/application/tenant-move-participants.ts: ${forms.pascal}TenantMoveOperations in ALL, so the MoveTenant saga moves its data`,

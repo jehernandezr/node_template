@@ -12,18 +12,31 @@ const STACK = Object.freeze({
   platform: 'platform',
   data: 'data',
   messaging: 'messaging',
+  serviceBase: 'service_base',
+});
+
+const RUNTIME = Object.freeze({
+  fargate: 'fargate',
+  lambda: 'lambda',
 });
 
 /**
- * Outputs of the network, platform, data and messaging stacks as the real values of one environment would produce them, for the environment tests of the stacks that read them through remote state. What exists follows the environment's tfvars and topology.json; identifiers are fixed fakes. Mirrors the null and presence rules of each stack's outputs.tf.
+ * Outputs of the network, platform, data, messaging and service-base stacks as the real values of one environment would produce them, for the environment tests of the stacks that read them through remote state. What exists follows the environment's tfvars and topology.json; identifiers are fixed fakes. Mirrors the null and presence rules of each stack's outputs.tf.
  */
 export class EnvironmentMocks {
   #terraformRoot;
   #environment;
+  #service;
 
-  constructor(terraformRoot, environment) {
+  /**
+   * @param {string} terraformRoot Root of the Terraform tree (backend/infra/terraform).
+   * @param {string} environment Environment whose tfvars the outputs follow.
+   * @param {string} [service] Service whose service-base outputs serviceBase() builds.
+   */
+  constructor(terraformRoot, environment, service = undefined) {
     this.#terraformRoot = terraformRoot;
     this.#environment = environment;
+    this.#service = service;
   }
 
   /**
@@ -239,17 +252,106 @@ export class EnvironmentMocks {
   }
 
   /**
-   * override_data blocks that give each named stack's remote state these outputs.
-   * @param {string[]} stacks Names of the data.terraform_remote_state blocks to override, each a method of this class.
+   * Outputs of the service's service-base stack: one component per api, realtime, worker and consumer of its base/terraform.tfvars, plus the one-off task, with the runtime and queue set there.
+   * @returns {object} service_name, components and the shared environment, secrets and keys.
+   */
+  serviceBase() {
+    const service = this.#service;
+    const values = this.#reader(`services/${service}/base`);
+    const name = service.replaceAll('_', '-');
+    const component = (key, componentName, runtime, queue = null) => {
+      const fargate = runtime === RUNTIME.fargate;
+      const role = `arn:aws:iam::${ACCOUNT}:role/${PREFIX}-${componentName}`;
+      return [
+        key,
+        {
+          name: componentName,
+          runtime,
+          queue,
+          role_arn: fargate ? `${role}-task` : role,
+          role_name: `${PREFIX}-${componentName}${fargate ? '-task' : ''}`,
+          execution_role_arn: fargate ? `${role}-execution` : null,
+          log_group_name: fargate
+            ? `/ecs/${PREFIX}/${componentName}`
+            : `/aws/lambda/${PREFIX}-${componentName}`,
+          security_group_id: `sg-0${componentName.replaceAll('-', '')}`,
+          environment:
+            queue === null
+              ? {}
+              : {
+                  QUEUE_URL: `https://sqs.${REGION}.amazonaws.com/${ACCOUNT}/${PREFIX}-${queue}`,
+                },
+        },
+      ];
+    };
+    const queueOf = (entry) =>
+      /\bqueue\s*=\s*"([^"]+)"/.exec(entry.value)?.[1] ?? null;
+    const keyed = (entry) => entry.name.replaceAll('_', '-');
+    const secret = `arn:aws:secretsmanager:${REGION}:${ACCOUNT}:secret:${PREFIX}/db/${service}-AbCdEf`;
+    const shared = {
+      SERVICE_NAME: service,
+      DEPLOY_ENVIRONMENT: this.#environment,
+    };
+    return {
+      service_name: service,
+      components: Object.fromEntries([
+        ...(values.hasBlock('api')
+          ? [component('api', `${name}-api`, values.stringIn('api', 'runtime'))]
+          : []),
+        ...(values.hasBlock('realtime')
+          ? [component('realtime', `${name}-rt`, RUNTIME.fargate)]
+          : []),
+        ...values
+          .entries('workers')
+          .map((entry) =>
+            component(
+              `worker-${entry.name}`,
+              `${name}-${keyed(entry)}`,
+              RUNTIME.fargate,
+              queueOf(entry),
+            ),
+          ),
+        ...values
+          .entries('consumers')
+          .map((entry) =>
+            component(
+              `consumer-${entry.name}`,
+              `${name}-${keyed(entry)}`,
+              RUNTIME.lambda,
+              queueOf(entry),
+            ),
+          ),
+        component('one-off', `${name}-one-off`, RUNTIME.fargate),
+      ]),
+      fargate_environment: { ...shared, AWS_REGION: REGION },
+      lambda_environment: { ...shared, DB_SECRET_ARN: secret },
+      fargate_secrets: { DB_CREDENTIALS: secret },
+      lambda_secret_arns: [secret],
+      kms_key_arn: `arn:aws:kms:${REGION}:${ACCOUNT}:key/compute-logs`,
+      data_security_group_ids: ['sg-0clients'],
+      enable_execute_command: false,
+    };
+  }
+
+  /**
+   * override_data blocks that give each named remote state these outputs.
+   * @param {string[]} stacks Names of the data.terraform_remote_state blocks to override: network, platform, data, messaging or service_base.
    * @returns {string} HCL for a .tftest.hcl file.
    */
   overrides(stacks) {
+    const outputs = {
+      [STACK.network]: () => this.network(),
+      [STACK.platform]: () => this.platform(),
+      [STACK.data]: () => this.data(),
+      [STACK.messaging]: () => this.messaging(),
+      [STACK.serviceBase]: () => this.serviceBase(),
+    };
     return stacks
       .map((stack) =>
         [
           'override_data {',
           `  target = data.terraform_remote_state.${stack}`,
-          `  values = { outputs = ${JSON.stringify(this[stack]())} }`,
+          `  values = { outputs = ${JSON.stringify(outputs[stack]())} }`,
           '}',
           '',
         ].join('\n'),

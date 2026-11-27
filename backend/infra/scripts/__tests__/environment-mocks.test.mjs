@@ -138,6 +138,48 @@ describe('EnvironmentMocks', () => {
     assert.deepEqual(Object.keys(data.valkey.user_names), ['identity']);
   });
 
+  it('mocks one service-base component per component of the base tfvars, with its runtime and queue', () => {
+    terraform.write(
+      'services/billing/base',
+      [
+        'service_name = "billing"',
+        'api = { runtime = "lambda" }',
+        'workers = {',
+        '  usage = { queue = "billing-usage" }',
+        '  jobs  = {}',
+        '}',
+        'consumers = {',
+        '  mail_events = {',
+        '    queue = "billing-identity"',
+        '  }',
+        '}',
+      ].join('\n'),
+    );
+    const { components } = new EnvironmentMocks(
+      terraform.root,
+      'dev',
+      'billing',
+    ).serviceBase();
+
+    assert.deepEqual(Object.keys(components).sort(), [
+      'api',
+      'consumer-mail_events',
+      'one-off',
+      'worker-jobs',
+      'worker-usage',
+    ]);
+    assert.equal(components.api.runtime, 'lambda');
+    assert.equal(components.api.execution_role_arn, null);
+    assert.equal(components['worker-usage'].queue, 'billing-usage');
+    assert.ok('QUEUE_URL' in components['worker-usage'].environment);
+    assert.equal(components['worker-jobs'].queue, null);
+    assert.equal(
+      components['consumer-mail_events'].name,
+      'billing-mail-events',
+    );
+    assert.equal(components['one-off'].runtime, 'fargate');
+  });
+
   it('renders one override_data block per remote state', () => {
     const hcl = terraform.write('platform', '').overrides(['network', 'data']);
 

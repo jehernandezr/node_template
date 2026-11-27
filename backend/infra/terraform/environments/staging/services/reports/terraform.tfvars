@@ -7,7 +7,6 @@ service_name = "reports"
 # projections up to date with events from tasks, billing and notifications. To move the API to Lambda:
 # runtime = "lambda" (uses lambda.handler).
 api = {
-  runtime           = "fargate"
   route_prefixes    = ["/v1/reports"]
   desired_count     = 1
   min_capacity      = 1
@@ -16,30 +15,9 @@ api = {
   health_check_path = "/health/ready"
 }
 
+# Sizes of the workers that service-base defines, under the same keys.
 workers = {
-  runs                = { queue = "reports-runs", max_capacity = 2 }
-  projections         = { queue = "reports-projections", max_capacity = 2 }
-  finance-projections = { queue = "reports-finance-projections", max_capacity = 2 }
+  runs                = { max_capacity = 2 }
+  projections         = { max_capacity = 2 }
+  finance-projections = { max_capacity = 2 }
 }
-
-# Non-secret values.
-# INTERNAL_API_BASE_URLS is required and comes from the deployment: a JSON with the internal address of identity
-# (access check), tasks and billing (projection backfill) in this environment, for example
-# "{\"identity\":\"http://identity.staging.internal\",\"tasks\":\"http://tasks.staging.internal\",
-# \"billing\":\"http://billing.staging.internal\"}" on a single line. The internal API of every service
-# answers on the same path, so the shared ALB cannot be used to reach them. If any of those URLs is missing,
-# the service does not start.
-environment_variables = {
-  INTERNAL_API_SIGNER      = "hmac"
-  REPORTS_MAX_RESULT_BYTES = "1000000"
-  REPORTS_RESULT_STORE     = "row"
-  REPORTS_RESULT_TTL_DAYS  = "30"
-  TRUST_PROXY_HOPS         = "2"
-}
-
-# Secrets in Secrets Manager (variable name to ARN, with an optional JSON key). The service config
-# requires INTERNAL_API_SHARED_SECRET.
-secrets = {}
-
-database_access = true
-valkey_access   = true

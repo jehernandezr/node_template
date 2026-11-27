@@ -1,31 +1,12 @@
-data "aws_caller_identity" "current" {}
-
-data "aws_partition" "current" {}
-
 data "aws_region" "current" {}
 
 locals {
-  full_name   = "${var.name_prefix}-${var.service_name}"
-  account_id  = data.aws_caller_identity.current.account_id
-  partition   = data.aws_partition.current.partition
-  region      = data.aws_region.current.region
-  log_group   = "/ecs/${var.name_prefix}/${var.service_name}"
-  create_key  = var.kms_key_arn == null
-  kms_key_arn = local.create_key ? module.logs_kms[0].arn : var.kms_key_arn
+  full_name = "${var.name_prefix}-${var.service_name}"
+  region    = data.aws_region.current.region
 
   otel_enabled    = var.otlp_endpoint != null
   otel_sidecar    = local.otel_enabled && var.otel_collector_sidecar
   has_otlp_secret = var.otlp_authorization_secret != null
-
-  # valueFrom entries may carry a JSON key; IAM needs only the secret ARN.
-  secret_value_from = merge(
-    var.secrets,
-    local.otel_sidecar && local.has_otlp_secret ? { OTLP_AUTHORIZATION = var.otlp_authorization_secret } : {}
-  )
-  secret_base_arns = distinct([
-    for v in values(local.secret_value_from) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)
-  ])
-
 
   worker_command = ["node", "worker.mjs"]
   command        = var.command != null ? var.command : (var.container_port == null ? local.worker_command : null)
@@ -72,7 +53,7 @@ locals {
   log_configuration = {
     logDriver = "awslogs"
     options = {
-      "awslogs-group"         = aws_cloudwatch_log_group.this.name
+      "awslogs-group"         = var.log_group_name
       "awslogs-region"        = local.region
       "awslogs-stream-prefix" = "app"
     }
@@ -117,7 +98,7 @@ locals {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.this.name
+        "awslogs-group"         = var.log_group_name
         "awslogs-region"        = local.region
         "awslogs-stream-prefix" = "otel"
       }
@@ -155,140 +136,12 @@ resource "terraform_data" "input_check" {
   }
 }
 
-# --- Logs -------------------------------------------------------------------
-
-module "logs_kms" {
-  count  = local.create_key ? 1 : 0
-  source = "../kms-key"
-
-  alias          = "${local.full_name}-logs"
-  description    = "Encryption of the logs of ${local.full_name}"
-  log_group_arns = ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"]
-  tags           = var.tags
-}
-
-resource "aws_cloudwatch_log_group" "this" {
-  name              = local.log_group
-  retention_in_days = var.log_retention_days
-  kms_key_id        = local.kms_key_arn
-
-  tags = var.tags
-}
-
-# --- IAM --------------------------------------------------------------------
-
-data "aws_iam_policy_document" "ecs_tasks_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceAccount"
-      values   = [local.account_id]
-    }
-  }
-}
-
-resource "aws_iam_role" "execution" {
-  name               = "${local.full_name}-execution"
-  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume.json
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "execution" {
-  role       = aws_iam_role.execution.name
-  policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-data "aws_iam_policy_document" "execution_secrets" {
-  statement {
-    sid       = "ReadSecrets"
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = length(local.secret_base_arns) > 0 ? local.secret_base_arns : ["arn:${local.partition}:secretsmanager:${local.region}:${local.account_id}:secret:${local.full_name}-none"]
-  }
-
-  statement {
-    sid       = "DecryptSecretsAndLogs"
-    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
-    resources = concat(var.secrets_kms_key_arns, [local.kms_key_arn])
-  }
-}
-
-resource "aws_iam_role_policy" "execution_secrets" {
-  name   = "secrets"
-  role   = aws_iam_role.execution.id
-  policy = data.aws_iam_policy_document.execution_secrets.json
-}
-
-resource "aws_iam_role" "task" {
-  name               = "${local.full_name}-task"
-  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume.json
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy" "task" {
-  for_each = var.task_policies
-
-  name   = each.key
-  role   = aws_iam_role.task.id
-  policy = each.value
-}
-
-data "aws_iam_policy_document" "exec" {
-  statement {
-    sid       = "SsmMessages"
-    actions   = ["ssmmessages:CreateControlChannel", "ssmmessages:CreateDataChannel", "ssmmessages:OpenControlChannel", "ssmmessages:OpenDataChannel"]
-    resources = ["*"]
-  }
-
-  statement {
-    sid       = "ExecLogs"
-    actions   = ["logs:DescribeLogGroups"]
-    resources = ["*"]
-  }
-
-  statement {
-    sid       = "ExecLogStreams"
-    actions   = ["logs:CreateLogStream", "logs:DescribeLogStreams", "logs:PutLogEvents"]
-    resources = var.exec_log_group_arn == null ? ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:/ecs/*:*"] : ["${var.exec_log_group_arn}:*"]
-  }
-
-  statement {
-    sid       = "ExecKey"
-    actions   = ["kms:Decrypt"]
-    resources = var.exec_kms_key_arn == null ? ["arn:${local.partition}:kms:${local.region}:${local.account_id}:key/*"] : [var.exec_kms_key_arn]
-  }
-}
-
-resource "aws_iam_role_policy" "exec" {
-  count = var.enable_execute_command ? 1 : 0
-
-  name   = "ecs-exec"
-  role   = aws_iam_role.task.id
-  policy = data.aws_iam_policy_document.exec.json
-}
-
 # --- Network ----------------------------------------------------------------
-
-resource "aws_security_group" "this" {
-  name        = local.full_name
-  description = "Tasks of ${local.full_name}"
-  vpc_id      = var.vpc_id
-
-  tags = merge(var.tags, { Name = local.full_name })
-}
 
 resource "aws_vpc_security_group_ingress_rule" "from_alb" {
   count = local.alb_count
 
-  security_group_id            = aws_security_group.this.id
+  security_group_id            = var.security_group_id
   referenced_security_group_id = var.alb_security_group_id
   from_port                    = var.container_port
   to_port                      = var.container_port
@@ -300,22 +153,11 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_service" {
   count = local.alb_count
 
   security_group_id            = var.alb_security_group_id
-  referenced_security_group_id = aws_security_group.this.id
+  referenced_security_group_id = var.security_group_id
   from_port                    = var.container_port
   to_port                      = var.container_port
   ip_protocol                  = "tcp"
   description                  = "ALB to ${local.full_name}"
-}
-
-# Outbound HTTPS through NAT or VPC endpoints (ADR 0016).
-# trivy:ignore:AVD-AWS-0104
-resource "aws_vpc_security_group_egress_rule" "https" {
-  security_group_id = aws_security_group.this.id
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 443
-  to_port           = 443
-  ip_protocol       = "tcp"
-  description       = "HTTPS to VPC endpoints and external services"
 }
 
 resource "aws_lb_target_group" "this" {
@@ -392,8 +234,8 @@ resource "aws_ecs_task_definition" "this" {
   network_mode             = "awsvpc"
   cpu                      = var.cpu
   memory                   = var.memory
-  execution_role_arn       = aws_iam_role.execution.arn
-  task_role_arn            = aws_iam_role.task.arn
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
 
   runtime_platform {
     operating_system_family = "LINUX"
@@ -439,7 +281,7 @@ resource "aws_ecs_service" "this" {
 
   network_configuration {
     subnets          = var.subnet_ids
-    security_groups  = concat([aws_security_group.this.id], var.additional_security_group_ids)
+    security_groups  = concat([var.security_group_id], var.additional_security_group_ids)
     assign_public_ip = false
   }
 
@@ -635,14 +477,4 @@ resource "aws_cloudwatch_metric_alarm" "sqs_backlog_empty" {
   alarm_actions = [aws_appautoscaling_policy.sqs_in[0].arn]
 
   tags = var.tags
-}
-
-moved {
-  from = aws_kms_key.logs[0]
-  to   = module.logs_kms[0].aws_kms_key.this
-}
-
-moved {
-  from = aws_kms_alias.logs[0]
-  to   = module.logs_kms[0].aws_kms_alias.this
 }

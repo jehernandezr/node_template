@@ -8,10 +8,15 @@ const RUNTIME = Object.freeze({
   none: 'none',
 });
 
-const SERVICE_FILES = Object.freeze(['terraform.tfvars', 'backend.tfvars']);
+const SERVICE_FILES = Object.freeze([
+  'terraform.tfvars',
+  'backend.tfvars',
+  'base/terraform.tfvars',
+  'base/backend.tfvars',
+]);
 
 /**
- * Discovers the services of an environment by walking environments/<environment>/services/*. Every folder there is a service and must hold every file of SERVICE_FILES; a half-created folder is an error, not a skipped service. There is no list of names.
+ * Discovers the services of an environment by walking environments/<environment>/services/*. Every folder there is a service and must hold every file of SERVICE_FILES (the service stack values and, in base/, the service-base values); a half-created folder is an error, not a skipped service. Its runtime and components come from base/terraform.tfvars. There is no list of names.
  */
 export class ServiceCatalog {
   #terraformRoot;
@@ -61,22 +66,29 @@ function requireServiceFiles(name, serviceDir) {
 }
 
 function describeService(name, serviceDir) {
-  const reader = new TfvarsBlockReader(
-    readFileSync(join(serviceDir, 'terraform.tfvars'), 'utf8'),
+  const declaredNames = ['terraform.tfvars', 'base/terraform.tfvars'].map(
+    (file) =>
+      new TfvarsBlockReader(
+        readFileSync(join(serviceDir, file), 'utf8'),
+      ).topLevelString('service_name'),
   );
-  const declaredName = reader.topLevelString('service_name');
-  if (declaredName !== undefined && declaredName !== name) {
-    throw new Error(
-      `service_name ${declaredName} does not match the folder ${name}`,
-    );
+  for (const declaredName of declaredNames) {
+    if (declaredName !== undefined && declaredName !== name) {
+      throw new Error(
+        `service_name ${declaredName} does not match the folder ${name}`,
+      );
+    }
   }
 
+  const reader = new TfvarsBlockReader(
+    readFileSync(join(serviceDir, 'base', 'terraform.tfvars'), 'utf8'),
+  );
   const runtime = reader.hasBlock('api')
     ? (reader.stringIn('api', 'runtime') ?? RUNTIME.none)
     : RUNTIME.none;
   const hasWorkers = reader.hasContent('workers');
   const hasConsumers = reader.hasContent('consumers');
-  const hasRealtime = reader.hasContent('realtime');
+  const hasRealtime = reader.hasBlock('realtime');
 
   return {
     name,

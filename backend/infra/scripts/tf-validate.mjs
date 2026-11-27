@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { EnvironmentMocks } from './environment-mocks.mjs';
 
 /**
- * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack, each module with tests and each example; then it plans every stack of every environment with its real values (common.tfvars and the stack's terraform.tfvars) through the stack's tests/environment, also with mocked providers. For the stacks in ENVIRONMENT_MOCKS, the remote states they read are mocked with EnvironmentMocks from the same environment's tfvars and topology.json. A run in KNOWN_GAPS must fail with exactly its listed errors until the cycle named there closes the gap, and fails the validation once it passes. It also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
+ * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack, each module with tests and each example; then it plans every stack of every environment with its real values (common.tfvars and the stack's terraform.tfvars; each service has its service-base values in services/<service>/base and its service values in services/<service>) through the stack's tests/environment, also with mocked providers. For the stacks in ENVIRONMENT_MOCKS, the remote states they read are mocked with EnvironmentMocks from the same environment's tfvars and topology.json. A run in KNOWN_GAPS must fail with exactly its listed errors until the cycle named there closes the gap, and fails the validation once it passes. It also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
  */
 const terraformRoot = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -55,7 +55,8 @@ const GENERATED_TESTS = join('tests', '.environment-generated');
  * Remote states that each stack's environment test reads from EnvironmentMocks instead of fixed values.
  */
 const ENVIRONMENT_MOCKS = Object.freeze({
-  service: ['network', 'platform', 'data', 'messaging'],
+  'service-base': ['network', 'platform', 'data', 'messaging'],
+  service: ['network', 'platform', 'messaging', 'service_base'],
 });
 
 const REALTIME_WITHOUT_CERTIFICATE =
@@ -67,12 +68,15 @@ const SES_WITHOUT_DOMAIN = 'ses_send needs ses_domain in the platform stack.';
  */
 const KNOWN_GAPS = Object.freeze(
   Object.fromEntries(
-    ['dev', 'staging', 'prod'].map((env) => [
-      `environments/${env}/services/notifications`,
-      {
-        cycle: 'F12-15',
-        errors: [REALTIME_WITHOUT_CERTIFICATE, SES_WITHOUT_DOMAIN],
-      },
+    ['dev', 'staging', 'prod'].flatMap((env) => [
+      [
+        `environments/${env}/services/notifications/base`,
+        { cycle: 'F12-15', errors: [SES_WITHOUT_DOMAIN] },
+      ],
+      [
+        `environments/${env}/services/notifications`,
+        { cycle: 'F12-15', errors: [REALTIME_WITHOUT_CERTIFICATE] },
+      ],
     ]),
   ),
 );
@@ -119,16 +123,18 @@ for (const env of subdirs(environmentsDir)) {
   for (const stack of subdirs(join(environmentsDir, env))) {
     const dirs =
       stack === 'services'
-        ? subdirs(join(environmentsDir, env, stack)).map((svc) =>
-            join(stack, svc),
-          )
-        : [stack];
-    const expected = stack === 'services' ? 'service' : stack;
-    if (!stacks.includes(expected))
-      failures.push(
-        `environments/${env}/${stack}: stacks/${expected} does not exist`,
-      );
-    for (const d of dirs) {
+        ? subdirs(join(environmentsDir, env, stack)).flatMap((svc) => [
+            { dir: join(stack, svc, 'base'), stack: 'service-base', svc },
+            { dir: join(stack, svc), stack: 'service', svc },
+          ])
+        : [{ dir: stack, stack, svc: undefined }];
+    for (const expected of new Set(dirs.map((d) => d.stack))) {
+      if (!stacks.includes(expected))
+        failures.push(
+          `environments/${env}/${stack}: stacks/${expected} does not exist`,
+        );
+    }
+    for (const { dir: d, stack: expected, svc } of dirs) {
       for (const file of ['backend.tfvars', 'terraform.tfvars']) {
         if (!existsSync(join(environmentsDir, env, d, file))) {
           failures.push(`environments/${env}/${d}/${file} does not exist`);
@@ -137,6 +143,7 @@ for (const env of subdirs(environmentsDir)) {
       environmentRuns.push({
         stack: expected,
         environment: env,
+        service: svc,
         label: `environments/${env}/${d}`,
         varFiles: [common, join(environmentsDir, env, d, 'terraform.tfvars')],
       });
@@ -153,12 +160,14 @@ for (const example of subdirs(join(terraformRoot, 'examples'))) {
   check(join(terraformRoot, 'examples', example), false);
 }
 
-function environmentTestDirectory(dir, stack, environment) {
+function environmentTestDirectory(dir, stack, environment, service) {
   const mocked = ENVIRONMENT_MOCKS[stack];
   if (mocked === undefined) return ENVIRONMENT_TESTS;
-  const overrides = new EnvironmentMocks(terraformRoot, environment).overrides(
-    mocked,
-  );
+  const overrides = new EnvironmentMocks(
+    terraformRoot,
+    environment,
+    service,
+  ).overrides(mocked);
   rmSync(join(dir, GENERATED_TESTS), { recursive: true, force: true });
   mkdirSync(join(dir, GENERATED_TESTS), { recursive: true });
   for (const file of readdirSync(join(dir, ENVIRONMENT_TESTS))) {
@@ -192,7 +201,13 @@ function checkKnownGap(label, gap, { ok, output }) {
 /**
  * Plans each stack with the real values of each environment. A stack without tests/environment fails, so a new stack cannot skip it.
  */
-for (const { stack, environment, label, varFiles } of environmentRuns) {
+for (const {
+  stack,
+  environment,
+  service,
+  label,
+  varFiles,
+} of environmentRuns) {
   const dir = join(stacksDir, stack);
   if (!stacks.includes(stack)) continue;
   if (!existsSync(join(dir, ENVIRONMENT_TESTS))) {
@@ -200,7 +215,12 @@ for (const { stack, environment, label, varFiles } of environmentRuns) {
     continue;
   }
   console.log(`::group::terraform test ${label}`);
-  const testDirectory = environmentTestDirectory(dir, stack, environment);
+  const testDirectory = environmentTestDirectory(
+    dir,
+    stack,
+    environment,
+    service,
+  );
   try {
     const result = runCaptured(dir, [
       'test',

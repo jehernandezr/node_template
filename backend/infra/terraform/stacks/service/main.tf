@@ -1,173 +1,57 @@
-# A microservice with its own state. Choose its API runtime (Lambda or Fargate), and
-# optionally realtime (Fargate behind the public ALB), Fargate workers and Lambda
-# consumers. It reads network, platform, data and messaging from their stacks; it does not modify them,
-# except for the routes it adds to the shared API and the rules of its listeners.
-
-data "aws_caller_identity" "current" {}
+# The runtime of a microservice, with its own state: its API (Lambda or Fargate), and optionally realtime
+# (Fargate behind the public ALB), Fargate workers and Lambda consumers. Their roles, log groups, security
+# groups and shared environment come from its service-base stack (ADR 0043), which is applied first. It reads
+# network, platform and messaging from their stacks; it does not modify them, except for the routes it adds
+# to the shared API and the rules of its listeners.
 
 locals {
   svc  = var.service_name
-  name = replace(var.service_name, "_", "-")
+  base = local.service_base
 
-  api_lambda  = var.api != null && try(var.api.runtime, "") == "lambda"
-  api_fargate = var.api != null && try(var.api.runtime, "") == "fargate"
+  components  = local.base.components
+  api_lambda  = var.api != null && try(local.components["api"].runtime, null) == "lambda"
+  api_fargate = var.api != null && try(local.components["api"].runtime, null) == "fargate"
   uses_lambda = local.api_lambda || length(var.consumers) > 0
   uses_ecs    = local.api_fargate || var.realtime != null || length(var.workers) > 0
-
-  # Topics and queues according to the producers and consumer of the exported topology.
-  access = try(local.messaging.service_access[local.svc], {
-    publish_topics = []
-    send_queues    = []
-    consume_queues = []
-  })
-  component_queues = concat([for w in values(var.workers) : w.queue if w.queue != null], [for c in values(var.consumers) : c.queue])
 
   # Listener priority: the fixed entry of the service in listener-priorities.json (ADR 0039).
   listener_priorities = jsondecode(file("${path.module}/../../listener-priorities.json"))
   listener_priority   = lookup(local.listener_priorities, local.svc, null)
   uses_listener       = local.api_fargate || var.realtime != null
 
-  databases     = try(local.data.service_databases[local.svc], null)
-  db_secret_arn = var.database_access ? try(local.data.db_service_secret_arns[local.svc], null) : null
-  valkey_user   = var.valkey_access ? try(local.data.valkey.user_names[local.svc], null) : null
+  # Each component this stack runs, as service-base defines it. A key service-base lacks maps to an empty
+  # component, so the check below reports the mismatch instead of an invalid index.
+  declared = concat(
+    var.api == null ? [] : ["api"],
+    var.realtime == null ? [] : ["realtime"],
+    [for k in keys(var.workers) : "worker-${k}"],
+    [for k in keys(var.consumers) : "consumer-${k}"],
+  )
+  missing_component = {
+    name               = "missing"
+    runtime            = null
+    queue              = null
+    role_arn           = null
+    role_name          = null
+    execution_role_arn = null
+    log_group_name     = null
+    security_group_id  = null
+    environment        = {}
+  }
+  component = { for key in local.declared : key => try(local.components[key], local.missing_component) }
+
+  base_workers   = sort([for key in keys(local.components) : trimprefix(key, "worker-") if startswith(key, "worker-")])
+  base_consumers = sort([for key in keys(local.components) : trimprefix(key, "consumer-") if startswith(key, "consumer-")])
+
+  fargate_environment = { for key, c in local.component : key => merge(local.base.fargate_environment, c.environment) }
+  lambda_environment  = { for key, c in local.component : key => merge(local.base.lambda_environment, c.environment) }
+
   observability = local.platform.observability
-
-  # Contract with the @platform adapters: the names of these variables are the ones their
-  # configuration schemas validate. The service's own variables go first,
-  # so they cannot override the contract.
-  common_environment = merge(
-    var.environment_variables,
-    {
-      SERVICE_NAME          = local.svc
-      DEPLOY_ENVIRONMENT    = var.environment
-      MESSAGING_NAME_PREFIX = local.messaging.name_prefix
-      # The AWS adapter builds the topic ARNs without calling STS.
-      AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
-    },
-    var.database_access ? {
-      DB_PROXY_HOST   = local.data.db.proxy_endpoint
-      DB_READER_HOSTS = join(",", local.data.db.reader_endpoints)
-      DB_PORT         = tostring(local.data.db.port)
-      DB_DATABASES    = jsonencode(local.databases)
-    } : {},
-    # Serverless Valkey requires TLS and IAM authentication: the client signs a token with its role
-    # for VALKEY_CACHE_NAME and connects as VALKEY_USER. The ACL limits keys and channels to
-    # VALKEY_KEY_PREFIX.
-    local.valkey_user == null ? {} : {
-      VALKEY_HOST       = local.data.valkey.endpoint
-      VALKEY_PORT       = tostring(local.data.valkey.port)
-      VALKEY_TLS        = "true"
-      VALKEY_USER       = local.valkey_user
-      VALKEY_AUTH       = "iam-serverless"
-      VALKEY_CACHE_NAME = local.data.valkey.cache_name
-      VALKEY_KEY_PREFIX = local.svc
-    },
-  )
-
-  # Lambda sets AWS_REGION on its own (it is a reserved variable); Fargate does not
-  # guarantee it on every platform version.
-  fargate_environment = merge(local.common_environment, { AWS_REGION = var.region })
-  lambda_environment  = merge(local.common_environment, local.db_secret_arn == null ? {} : { DB_SECRET_ARN = local.db_secret_arn })
-
-  # --- IAM per component ---------------------------------------------------------
-  # Each component gets only what it uses: the API and realtime do not consume queues, each
-  # worker consumes only its own, and files and SES are requested per component. Consumer
-  # Lambdas get their queue permission from the service-lambda module.
-  components = merge(
-    var.api == null ? {} : {
-      api = { publish = true, queue = null, files = var.api.files_access, ses = var.api.ses_send }
-    },
-    var.realtime == null ? {} : {
-      realtime = { publish = var.realtime.publish, queue = null, files = var.realtime.files_access, ses = var.realtime.ses_send }
-    },
-    { for k, w in var.workers : "worker-${k}" => { publish = true, queue = w.queue, files = w.files_access, ses = w.ses_send } },
-    { for k, c in var.consumers : "consumer-${k}" => { publish = true, queue = null, files = c.files_access, ses = c.ses_send } },
-  )
-
-  publish_statements = concat(
-    length(local.access.publish_topics) == 0 ? [] : [{
-      Sid      = "PublishTopics"
-      Effect   = "Allow"
-      Action   = ["sns:Publish"]
-      Resource = [for t in local.access.publish_topics : local.messaging.topic_arns[t]]
-    }],
-    length(local.access.send_queues) == 0 ? [] : [{
-      Sid      = "SendQueues"
-      Effect   = "Allow"
-      Action   = ["sqs:SendMessage", "sqs:GetQueueUrl"]
-      Resource = [for q in local.access.send_queues : local.messaging.queue_arns[q]]
-    }],
-  )
-
-  messaging_statements = {
-    for name, c in local.components : name => concat(
-      c.publish ? local.publish_statements : [],
-      c.queue == null ? [] : [{
-        Sid      = "ConsumeQueue"
-        Effect   = "Allow"
-        Action   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes", "sqs:GetQueueUrl"]
-        Resource = [try(local.messaging.queue_arns[c.queue], "")]
-      }],
-    )
-  }
-
-  policies = {
-    for name, c in local.components : name => merge(
-      length(local.messaging_statements[name]) == 0 ? {} : {
-        messaging = jsonencode({
-          Version = "2012-10-17"
-          Statement = concat(local.messaging_statements[name], [{
-            Sid      = "MessagingKey"
-            Effect   = "Allow"
-            Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
-            Resource = local.messaging.kms_key_arn
-          }])
-        })
-      },
-      local.valkey_user == null ? {} : {
-        valkey-connect = jsonencode({
-          Version = "2012-10-17"
-          Statement = [{
-            Effect   = "Allow"
-            Action   = ["elasticache:Connect"]
-            Resource = local.data.valkey.connect_resource_arns[local.svc]
-          }]
-        })
-      },
-      c.files ? { files = try(local.platform.files_bucket.read_write_policy_json, "") } : {},
-      c.ses ? { ses-send = try(local.platform.ses.send_policy_json, "") } : {},
-      var.task_policies,
-    )
-  }
-
-  component_environment = {
-    for name, c in local.components : name => c.files ? { FILES_BUCKET = try(local.platform.files_bucket.name, "") } : {}
-  }
-
-  secret_kms_keys = distinct(concat(
-    var.secrets_kms_key_arns,
-    local.db_secret_arn == null ? [] : [local.data.db.kms_key_arn],
-    local.observability == null ? [] : [local.observability.kms_key_arn],
-  ))
-
-  # Fargate gets the secret through valueFrom; Lambda gets the ARN and reads it at startup.
-  fargate_secrets = merge(var.secrets, local.db_secret_arn == null ? {} : { DB_CREDENTIALS = local.db_secret_arn })
-  lambda_secrets  = distinct(concat([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)], local.db_secret_arn == null ? [] : [local.db_secret_arn]))
-
-  # One logs CMK per environment for all compute (platform stack).
-  logs_kms_key_arn = local.platform.compute_logs_kms_key_arn
-
-  data_security_groups = [local.data.clients_security_group_id]
 
   api_path_patterns = local.api_fargate ? flatten([for p in var.api.route_prefixes : [p, "${p}/*"]]) : []
 
-  worker_environment = {
-    for k, w in var.workers : k => merge(
-      local.fargate_environment,
-      local.component_environment["worker-${k}"],
-      w.queue == null ? {} : { QUEUE_URL = local.messaging.queue_urls[w.queue] },
-    )
-  }
+  worker_queues   = { for k in keys(var.workers) : k => local.component["worker-${k}"].queue }
+  consumer_queues = { for k in keys(var.consumers) : k => local.component["consumer-${k}"].queue }
 }
 
 # References to other stacks that variable validation cannot check.
@@ -175,6 +59,18 @@ resource "terraform_data" "service_check" {
   input = local.svc
 
   lifecycle {
+    precondition {
+      condition     = local.base.service_name == local.svc
+      error_message = "The service-base state belongs to another service."
+    }
+    precondition {
+      condition     = (var.api != null) == contains(keys(local.components), "api") && (var.realtime != null) == contains(keys(local.components), "realtime")
+      error_message = "api and realtime are set here exactly when service-base defines them."
+    }
+    precondition {
+      condition     = sort(keys(var.workers)) == local.base_workers && sort(keys(var.consumers)) == local.base_consumers
+      error_message = "workers and consumers have the same keys here as in service-base: each component needs its role there before it runs here."
+    }
     precondition {
       condition     = !local.uses_ecs || var.image != null
       error_message = "The Fargate API, realtime and workers need image."
@@ -188,10 +84,6 @@ resource "terraform_data" "service_check" {
       error_message = "A Fargate API or realtime needs the service in listener-priorities.json, with a priority no other service uses."
     }
     precondition {
-      condition     = alltrue([for w in values(var.workers) : w.queue != null]) || length(local.access.consume_queues) == 0
-      error_message = "A worker without queue polls every queue of the contract: give each worker its queue when the service consumes queues."
-    }
-    precondition {
       condition     = !local.api_fargate || local.platform.api_alb != null
       error_message = "A Fargate API needs the internal ALB of the platform stack, which exists with compute_enabled."
     }
@@ -200,24 +92,8 @@ resource "terraform_data" "service_check" {
       error_message = "realtime needs realtime_alb_certificate_arn in the platform stack."
     }
     precondition {
-      condition     = !var.database_access || (local.databases != null && local.db_secret_arn != null)
-      error_message = "database_access needs the service in db_services of the data stack."
-    }
-    precondition {
-      condition     = !var.valkey_access || local.valkey_user != null
-      error_message = "valkey_access needs the service in valkey_services of the data stack."
-    }
-    precondition {
-      condition     = alltrue([for q in local.component_queues : contains(keys(local.messaging.queue_arns), q)])
+      condition     = alltrue([for q in values(local.worker_queues) : q == null || contains(keys(local.messaging.queue_names), q)]) && alltrue([for q in values(local.consumer_queues) : q != null && contains(keys(local.messaging.queue_arns), q)])
       error_message = "A worker or consumer uses a queue that is neither in the topology nor ses-events."
-    }
-    precondition {
-      condition     = !anytrue([for c in values(local.components) : c.files]) || local.platform.files_bucket != null
-      error_message = "files_access needs the files bucket (files_cors_allowed_origins in platform)."
-    }
-    precondition {
-      condition     = !anytrue([for c in values(local.components) : c.ses]) || local.platform.ses != null
-      error_message = "ses_send needs ses_domain in the platform stack."
     }
   }
 }
@@ -229,9 +105,14 @@ module "api_lambda" {
   source = "../../modules/service-lambda"
 
   name_prefix   = var.name_prefix
-  function_name = "${local.name}-api"
+  function_name = local.component["api"].name
   description   = "API of ${local.svc}"
   environment   = var.environment
+
+  role_arn       = local.component["api"].role_arn
+  role_name      = local.component["api"].role_name
+  log_group_name = local.component["api"].log_group_name
+  kms_key_arn    = local.base.kms_key_arn
 
   handler                        = var.api.handler
   runtime                        = var.lambda_runtime
@@ -244,18 +125,13 @@ module "api_lambda" {
   s3_object_version              = try(var.lambda_package.s3_object_version, null)
   source_code_hash               = try(var.lambda_package.source_code_hash, null)
 
-  environment_variables = merge(local.lambda_environment, local.component_environment["api"])
-  secret_arns           = local.lambda_secrets
-  secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies["api"]
+  environment_variables = local.lambda_environment["api"]
   otel_layer_arn        = var.lambda_otel_layer_arn
-  kms_key_arn           = local.logs_kms_key_arn
-  log_retention_days    = var.log_retention_days
 
   vpc_enabled                   = true
-  vpc_id                        = local.network.vpc_id
+  security_group_id             = local.component["api"].security_group_id
   subnet_ids                    = local.network.private_subnet_ids
-  additional_security_group_ids = local.data_security_groups
+  additional_security_group_ids = local.base.data_security_group_ids
 
   alarm_topic_arn = local.platform.alarm_topic_arn
 
@@ -267,14 +143,18 @@ module "api_fargate" {
   source = "../../modules/service-fargate"
 
   name_prefix  = var.name_prefix
-  service_name = "${local.name}-api"
+  service_name = local.component["api"].name
   environment  = var.environment
   cluster_arn  = local.platform.ecs_cluster.arn
   cluster_name = local.platform.ecs_cluster.name
   vpc_id       = local.network.vpc_id
   subnet_ids   = local.network.private_subnet_ids
 
-  additional_security_group_ids = local.data_security_groups
+  execution_role_arn            = local.component["api"].execution_role_arn
+  task_role_arn                 = local.component["api"].role_arn
+  log_group_name                = local.component["api"].log_group_name
+  security_group_id             = local.component["api"].security_group_id
+  additional_security_group_ids = local.base.data_security_group_ids
 
   image          = var.image
   command        = var.api.command
@@ -287,10 +167,8 @@ module "api_fargate" {
 
   capacity_provider_strategy = [{ capacity_provider = var.api.spot ? "FARGATE_SPOT" : "FARGATE", weight = 1, base = 0 }]
 
-  environment_variables = merge(local.fargate_environment, local.component_environment["api"])
-  secrets               = local.fargate_secrets
-  secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies["api"]
+  environment_variables = local.fargate_environment["api"]
+  secrets               = local.base.fargate_secrets
 
   otlp_endpoint             = try(local.observability.otlp_endpoint, null)
   otlp_authorization_secret = try(local.observability.otlp_authorization_value_from, null)
@@ -303,10 +181,7 @@ module "api_fargate" {
   health_check_path      = var.api.health_check_path
   cpu_target_percent     = var.api.cpu_target_percent
 
-  enable_execute_command = var.enable_execute_command
-  exec_kms_key_arn       = var.enable_execute_command ? local.platform.ecs_cluster.kms_key_arn : null
-  kms_key_arn            = local.logs_kms_key_arn
-  log_retention_days     = var.log_retention_days
+  enable_execute_command = local.base.enable_execute_command
 
   depends_on = [terraform_data.service_check]
 }
@@ -342,14 +217,18 @@ module "realtime" {
   source = "../../modules/service-fargate"
 
   name_prefix  = var.name_prefix
-  service_name = "${local.name}-rt"
+  service_name = local.component["realtime"].name
   environment  = var.environment
   cluster_arn  = local.platform.ecs_cluster.arn
   cluster_name = local.platform.ecs_cluster.name
   vpc_id       = local.network.vpc_id
   subnet_ids   = local.network.private_subnet_ids
 
-  additional_security_group_ids = local.data_security_groups
+  execution_role_arn            = local.component["realtime"].execution_role_arn
+  task_role_arn                 = local.component["realtime"].role_arn
+  log_group_name                = local.component["realtime"].log_group_name
+  security_group_id             = local.component["realtime"].security_group_id
+  additional_security_group_ids = local.base.data_security_group_ids
 
   image          = var.image
   command        = var.realtime.command
@@ -360,10 +239,8 @@ module "realtime" {
   min_capacity   = var.realtime.min_capacity
   max_capacity   = var.realtime.max_capacity
 
-  environment_variables = merge(local.fargate_environment, local.component_environment["realtime"])
-  secrets               = local.fargate_secrets
-  secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies["realtime"]
+  environment_variables = local.fargate_environment["realtime"]
+  secrets               = local.base.fargate_secrets
 
   otlp_endpoint             = try(local.observability.otlp_endpoint, null)
   otlp_authorization_secret = try(local.observability.otlp_authorization_value_from, null)
@@ -377,10 +254,7 @@ module "realtime" {
   health_check_path      = var.realtime.health_check_path
   cpu_target_percent     = var.realtime.cpu_target_percent
 
-  enable_execute_command = var.enable_execute_command
-  exec_kms_key_arn       = var.enable_execute_command ? local.platform.ecs_cluster.kms_key_arn : null
-  kms_key_arn            = local.logs_kms_key_arn
-  log_retention_days     = var.log_retention_days
+  enable_execute_command = local.base.enable_execute_command
 
   depends_on = [terraform_data.service_check]
 }
@@ -392,14 +266,18 @@ module "worker" {
   source   = "../../modules/service-fargate"
 
   name_prefix  = var.name_prefix
-  service_name = "${local.name}-${replace(each.key, "_", "-")}"
+  service_name = local.component["worker-${each.key}"].name
   environment  = var.environment
   cluster_arn  = local.platform.ecs_cluster.arn
   cluster_name = local.platform.ecs_cluster.name
   vpc_id       = local.network.vpc_id
   subnet_ids   = local.network.private_subnet_ids
 
-  additional_security_group_ids = local.data_security_groups
+  execution_role_arn            = local.component["worker-${each.key}"].execution_role_arn
+  task_role_arn                 = local.component["worker-${each.key}"].role_arn
+  log_group_name                = local.component["worker-${each.key}"].log_group_name
+  security_group_id             = local.component["worker-${each.key}"].security_group_id
+  additional_security_group_ids = local.base.data_security_group_ids
 
   image         = var.image
   command       = each.value.command
@@ -407,31 +285,26 @@ module "worker" {
   memory        = each.value.memory
   desired_count = each.value.min_capacity
   min_capacity  = each.value.min_capacity
-  max_capacity  = each.value.queue == null ? each.value.min_capacity : each.value.max_capacity
+  max_capacity  = local.worker_queues[each.key] == null ? each.value.min_capacity : each.value.max_capacity
 
   capacity_provider_strategy = [{ capacity_provider = each.value.spot ? "FARGATE_SPOT" : "FARGATE", weight = 1, base = 0 }]
 
-  environment_variables = local.worker_environment[each.key]
-  secrets               = local.fargate_secrets
-  secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies["worker-${each.key}"]
+  environment_variables = local.fargate_environment["worker-${each.key}"]
+  secrets               = local.base.fargate_secrets
 
   otlp_endpoint             = try(local.observability.otlp_endpoint, null)
   otlp_authorization_secret = try(local.observability.otlp_authorization_value_from, null)
 
   cpu_target_percent = null
-  sqs_scaling = each.value.queue == null ? null : {
-    queue_name          = local.messaging.queue_names[each.value.queue]
+  sqs_scaling = local.worker_queues[each.key] == null ? null : {
+    queue_name          = try(local.messaging.queue_names[local.worker_queues[each.key]], "")
     scale_out_threshold = each.value.scale_out_threshold
     messages_per_task   = each.value.messages_per_task
     steps               = each.value.steps
     scale_in_periods    = each.value.scale_in_periods
   }
 
-  enable_execute_command = var.enable_execute_command
-  exec_kms_key_arn       = var.enable_execute_command ? local.platform.ecs_cluster.kms_key_arn : null
-  kms_key_arn            = local.logs_kms_key_arn
-  log_retention_days     = var.log_retention_days
+  enable_execute_command = local.base.enable_execute_command
 
   depends_on = [terraform_data.service_check]
 }
@@ -441,9 +314,14 @@ module "consumer" {
   source   = "../../modules/service-lambda"
 
   name_prefix   = var.name_prefix
-  function_name = "${local.name}-${replace(each.key, "_", "-")}"
+  function_name = local.component["consumer-${each.key}"].name
   description   = "Consumer ${each.key} of ${local.svc}"
   environment   = var.environment
+
+  role_arn       = local.component["consumer-${each.key}"].role_arn
+  role_name      = local.component["consumer-${each.key}"].role_name
+  log_group_name = local.component["consumer-${each.key}"].log_group_name
+  kms_key_arn    = local.base.kms_key_arn
 
   handler           = each.value.handler
   runtime           = var.lambda_runtime
@@ -455,20 +333,15 @@ module "consumer" {
   s3_object_version = try(var.lambda_package.s3_object_version, null)
   source_code_hash  = try(var.lambda_package.source_code_hash, null)
 
-  environment_variables = merge(local.lambda_environment, local.component_environment["consumer-${each.key}"])
-  secret_arns           = local.lambda_secrets
-  secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies["consumer-${each.key}"]
+  environment_variables = local.lambda_environment["consumer-${each.key}"]
   otel_layer_arn        = var.lambda_otel_layer_arn
-  kms_key_arn           = local.logs_kms_key_arn
-  log_retention_days    = var.log_retention_days
 
   vpc_enabled                   = true
-  vpc_id                        = local.network.vpc_id
+  security_group_id             = local.component["consumer-${each.key}"].security_group_id
   subnet_ids                    = local.network.private_subnet_ids
-  additional_security_group_ids = local.data_security_groups
+  additional_security_group_ids = local.base.data_security_group_ids
 
-  queue_arn                       = local.messaging.queue_arns[each.value.queue]
+  queue_arn                       = try(local.messaging.queue_arns[local.consumer_queues[each.key]], null)
   queue_kms_key_arn               = local.messaging.kms_key_arn
   batch_size                      = each.value.batch_size
   maximum_batching_window_seconds = each.value.maximum_batching_window_seconds

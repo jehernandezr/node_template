@@ -27,9 +27,9 @@ locals {
 
   network = data.terraform_remote_state.network.outputs
   # Terraform does not store null outputs in the state: they are filled in with null.
-  platform  = merge(local.platform_defaults, data.terraform_remote_state.platform.outputs)
-  data      = data.terraform_remote_state.data.outputs
-  messaging = data.terraform_remote_state.messaging.outputs
+  platform     = merge(local.platform_defaults, data.terraform_remote_state.platform.outputs)
+  messaging    = data.terraform_remote_state.messaging.outputs
+  service_base = data.terraform_remote_state.service_base.outputs
 }
 
 data "terraform_remote_state" "network" {
@@ -42,12 +42,13 @@ data "terraform_remote_state" "platform" {
   config  = merge(local.remote_state_config, { key = "${var.region}/platform/terraform.tfstate" })
 }
 
-data "terraform_remote_state" "data" {
-  backend = "s3"
-  config  = merge(local.remote_state_config, { key = "${var.region}/data/terraform.tfstate" })
-}
-
 data "terraform_remote_state" "messaging" {
   backend = "s3"
   config  = merge(local.remote_state_config, { key = "${var.region}/messaging/terraform.tfstate" })
+}
+
+# The service-base stack of this same service: roles, log groups, security groups and shared environment.
+data "terraform_remote_state" "service_base" {
+  backend = "s3"
+  config  = merge(local.remote_state_config, { key = "${var.region}/services/${var.service_name}/base/terraform.tfstate" })
 }

@@ -20,13 +20,15 @@ function assertInOrder(lines, fragments) {
 }
 
 describe('deploy-service.sh dry run', () => {
-  it('fixture-fargate without stages publishes the image, migrates, plans and applies in order', () => {
+  it('fixture-fargate without stages publishes the image, applies service-base, migrates, plans and applies in order', () => {
     const { status, lines } = runner.run(DEPLOY, ['dev', 'fixture-fargate']);
     assert.equal(status, 0);
     assertInOrder(lines, [
       'pnpm nx run fixture-fargate:build',
       'docker build',
       'docker push',
+      'deploy-aws.sh plan service-base fixture-fargate',
+      'deploy-aws.sh apply service-base fixture-fargate',
       'pnpm nx run fixture-fargate:migrate',
       'deploy-aws.sh plan service fixture-fargate',
       'deploy-aws.sh apply service fixture-fargate',
@@ -93,14 +95,19 @@ describe('deploy-service.sh dry run', () => {
     assert.match(stderr, /Unknown stage: destroy-all/);
   });
 
-  it('in every service migrate runs before plan and plan before apply', () => {
+  it('in every service service-base is applied before migrate, migrate runs before plan and plan before apply', () => {
     for (const service of [
       'fixture-fargate',
       'fixture-lambda',
       'fixture-mixed',
     ]) {
       const { lines } = runner.run(DEPLOY, ['dev', service]);
+      const base = indexOfLine(
+        lines,
+        `deploy-aws.sh apply service-base ${service}`,
+      );
       const migrate = indexOfLine(lines, `:migrate`);
+      assert.ok(base < migrate, `${service}: service-base must come first`);
       const plan = indexOfLine(lines, `deploy-aws.sh plan service ${service}`);
       const apply = indexOfLine(
         lines,

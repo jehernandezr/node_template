@@ -110,6 +110,23 @@ describe('TfvarsBlockReader', () => {
     assert.deepEqual(reader.entryNames('consumers'), []);
   });
 
+  it('returns the value text of each entry, on one line or several', () => {
+    const reader = new TfvarsBlockReader(
+      [
+        'workers = {',
+        '  usage = { queue = "billing-usage" } # scales',
+        '  jobs = {',
+        '    ses_send = true',
+        '  }',
+        '}',
+      ].join('\n'),
+    );
+    assert.deepEqual(reader.entries('workers'), [
+      { name: 'usage', value: '{ queue = "billing-usage" }' },
+      { name: 'jobs', value: '{\nses_send = true\n}' },
+    ]);
+  });
+
   it('reads a one-line list of strings at the top level', () => {
     const reader = new TfvarsBlockReader(
       'valkey_services = ["identity", "tasks"] # all\n# other = ["x"]\n',

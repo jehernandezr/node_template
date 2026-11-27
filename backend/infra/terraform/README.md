@@ -15,9 +15,10 @@ backend/infra/
 │   │   ├── data/            RDS with per-shard and catalog databases, RDS Proxy, replicas and Valkey
 │   │   ├── messaging/       Topics, queues and DLQs from topology.json and the SES events queue
 │   │   ├── edge/            CloudFront with WAF and DNS
-│   │   └── service/         One microservice: instantiated once per service
+│   │   ├── service-base/    What one microservice needs before it runs: roles, logs, security groups, one_off_task
+│   │   └── service/         The runtime of one microservice: instantiated once per service, after its service-base
 │   ├── environments/        <environment>/common.tfvars and <environment>/<stack>/{backend.tfvars,terraform.tfvars}
-│   │   └── <environment>/services/<service>/   Values for each service
+│   │   └── <environment>/services/<service>/   Values of each service stack, with base/ for its service-base
 │   ├── examples/            A minimal usage of each module, validated in CI
 │   ├── topology.json        Topology exported by contracts-export (build-topology.ts)
 │   ├── listener-priorities.json  Fixed ALB listener priority of each service
@@ -38,15 +39,16 @@ Each stack has:
 
 ## Stacks and order
 
-| Order | Stack       | Reads                              | Environments              |
-| ----- | ----------- | ---------------------------------- | ------------------------- |
-| 0     | `global`    |                                    | dev, staging, prod        |
-| 1     | `network`   |                                    | dev, staging, prod        |
-| 2     | `platform`  | network                            | local, dev, staging, prod |
-| 3     | `data`      | network, platform                  | dev, staging, prod        |
-| 4     | `messaging` | platform                           | local, dev, staging, prod |
-| 5     | `edge`      | platform                           | dev, staging, prod        |
-| 6     | `service`   | network, platform, data, messaging | dev, staging, prod        |
+| Order | Stack          | Reads                                      | Environments              |
+| ----- | -------------- | ------------------------------------------ | ------------------------- |
+| 0     | `global`       |                                            | dev, staging, prod        |
+| 1     | `network`      |                                            | dev, staging, prod        |
+| 2     | `platform`     | network                                    | local, dev, staging, prod |
+| 3     | `data`         | network, platform                          | dev, staging, prod        |
+| 4     | `messaging`    | platform                                   | local, dev, staging, prod |
+| 5     | `edge`         | platform                                   | dev, staging, prod        |
+| 6     | `service-base` | network, platform, data, messaging         | dev, staging, prod        |
+| 7     | `service`      | network, platform, messaging, service-base | dev, staging, prod        |
 
 `environments/<environment>/common.tfvars` sets `environment`, `name_prefix` and `domain` once for every stack of the environment ([ADR 0042](../../../docs/adr/0042-region-and-catalog-model.md)). `deploy-aws.sh` and `local.sh` pass it before the stack's `terraform.tfvars`, which never repeats those keys (a script test checks it).
 
@@ -67,12 +69,19 @@ The state bucket itself comes before Terraform: `backend/infra/scripts/bootstrap
 
 ## Services
 
-A service is an instance of the `service` stack with its own state. To add one, copy `stacks/service/example.tfvars` to `environments/<environment>/services/<service>/terraform.tfvars` and create a `backend.tfvars` next to it with `key = "<region>/services/<service>/terraform.tfstate"`. Also:
+A service is two stacks, each with its own state ([ADR 0043](../../../docs/adr/0043-deploy-migrations-and-rollback.md)):
 
-- Add it to `db_services` and `valkey_services` in the `terraform.tfvars` of the `data` stack.
+- `service-base` owns what must exist before the service runs: the role, log group and security group of each component (`modules/component-base`) and of the one-off task, and the environment they share (the adapter contract, `DB_*`, `VALKEY_*` and `environment_variables`) with its secrets. It outputs them, with `one_off_task` (cluster, subnets, security groups, roles, log group, size, environment and secrets), from which the pipeline registers and runs `migrate` (and, for identity, `signing-keys` and `seed`) with the new image. Values in `environments/<environment>/services/<service>/base/`, state `<region>/services/<service>/base/terraform.tfstate`.
+- `service` owns the runtime: task definitions, ECS services, Lambda functions, target groups, listener rules and routes. It reads `service-base` through remote state, so each component runs with the role, log group and security group made for it and with the same environment as the one-off task. Values in `environments/<environment>/services/<service>/`, state `<region>/services/<service>/terraform.tfstate`.
+
+`deploy-service.sh` applies `service-base`, runs the migration and then plans and applies `service`; `deploy-aws.sh plan|apply service-base <service>` and `plan|apply service <service>` run each one. Later cycles add the region variables, the secrets and `INTERNAL_API_BASE_URLS` to the `service-base` environment.
+
+To add a service, copy `stacks/service-base/example.tfvars` to `environments/<environment>/services/<service>/base/terraform.tfvars` and `stacks/service/example.tfvars` to `environments/<environment>/services/<service>/terraform.tfvars`, each with a `backend.tfvars` next to it with its key. Every folder under `services/` must hold the four files: the pipeline catalog (`service-catalog.mjs`) rejects a half-created one instead of skipping it, and `tf-validate.mjs` reports each missing file. Also:
+
+- Add it to `db_services` and `valkey_services` in the `terraform.tfvars` of the `data` stack, and give it a listener priority in `listener-priorities.json`.
 - Declare its topics and queues in the topology. The publish, send and consume permissions come from `producers` and `consumer` in `topology.json`; they are not repeated in the `tfvars`.
 
-Parts of a service:
+Parts of a service. `service-base` declares each one with its runtime, queue and permissions; `service` sizes and routes it under the same key, and rejects a key that is missing on either side:
 
 - `api`: `runtime = "lambda"` (a function with `lambda.ts` behind API Gateway HTTP) or `"fargate"` (a container with `main.ts` behind the internal ALB, which `platform` always creates, through the VPC link). Both enter through the shared HTTP API, behind CloudFront and its WAF. Each prefix in `route_prefixes` creates `ANY <prefix>` and `ANY <prefix>/{proxy+}`; `/`, a prefix under `/internal` and a wildcard that could reach it are rejected, because the internal API is never public ([ADR 0040](../../../docs/adr/0040-internal-routing-and-authentication.md)). All APIs run on Fargate except `tasks` in `dev`, which runs on Lambda so both runtimes stay in acceptance ([ADR 0039](../../../docs/adr/0039-runtime-matrix-per-service.md)).
 - `realtime`: Socket.IO and SSE, always on Fargate behind the public ALB from `platform` (`realtime_alb_certificate_arn`). It needs `path_patterns`, which follow the same rule (no `/`, `/*`, `*…` or `/in*`); `host_headers` only narrow them, because a rule with a host alone would route `/internal` of that host.
@@ -83,9 +92,9 @@ Listener priorities come from `listener-priorities.json`: one fixed entry per se
 
 Target groups are named with a prefix of up to 6 characters and a suffix that AWS makes unique, and are created before the old one is destroyed, so the API and realtime of one service never collide on the 32-character limit.
 
-Permissions per part (least privilege): the API, the workers and the consumers publish and send according to `producers` in the topology; realtime only if `realtime.publish = true`. Each worker consumes only its queue and each consumer only its own (granted by the `service-lambda` module); the API and realtime do not consume. `files_access` and `ses_send` are requested per part (`api.files_access`, `workers.<x>.ses_send`...). `valkey_access` and `database_access` apply to the whole service, as does `task_policies`.
+Permissions per part (least privilege, set in `service-base`): the API, the workers and the consumers publish and send according to `producers` in the topology; realtime only if `realtime.publish = true`; the one-off task reaches the database and Valkey and publishes nothing. Each worker consumes only its queue and each consumer only its own (granted with its event source mapping by the `service-lambda` module); the API and realtime do not consume. `files_access` and `ses_send` are requested per part (`api.files_access`, `workers.<x>.ses_send`...). `valkey_access` and `database_access` apply to the whole service, as does `task_policies`.
 
-Environment variables: they are the contract with the `@platform/*` configuration schemas, and `backend/.env.example` uses the same names. `tests/service.tftest.hcl` pins the exact list, so a change on one side breaks the test.
+Environment variables: `service-base` builds them; they are the contract with the `@platform/*` configuration schemas, and `backend/.env.example` uses the same names. `stacks/service-base/tests/service-base.tftest.hcl` pins the exact list, so a change on one side breaks the test.
 
 | Variable                                                                        | When                     | Content                                                                                                 |
 | ------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
@@ -140,7 +149,8 @@ Requirements: Terraform from `.terraform-version` (or `>= 1.11`), AWS credential
 ```bash
 ENV=dev backend/infra/scripts/deploy-aws.sh plan data               # saves the plan of a stack
 ENV=dev backend/infra/scripts/deploy-aws.sh apply data              # applies that plan, without planning again
-ENV=dev backend/infra/scripts/deploy-aws.sh plan service identity   # one service
+ENV=dev backend/infra/scripts/deploy-aws.sh plan service-base identity  # what one service needs first
+ENV=dev backend/infra/scripts/deploy-aws.sh plan service identity       # its runtime, after service-base
 ENV=dev backend/infra/scripts/deploy-aws.sh destroy                 # in reverse order
 ```
 
@@ -184,7 +194,7 @@ Roles and variables of the GitHub repository. Each GitHub environment, named lik
 | `vars.ARTIFACTS_BUCKET`     | Artifacts bucket. Read by `publish-mobile.yml`; the services pipeline takes it from `global`.                                                                                                                                                                  |
 | `vars.DEPLOY_RUNNER`        | Optional. Label of a self-hosted runner inside the VPC. Without it the stacks job uses `ubuntu-latest` and the services job uses the native `ubuntu-24.04-arm`; a custom runner still builds `linux/arm64`, because the build passes `--platform linux/arm64`. |
 
-Order per service. Services are discovered by walking `environments/<environment>/services/*`: every folder with `terraform.tfvars` and `backend.tfvars` is a service, and the workflow has no fixed list. For each one, four steps run in order: publish the artifact (an image tagged `sha-<commit>` or a Lambda package in S3), migrate the database, plan and apply the `service` stack. The artifact goes first because the `apply` needs `TF_VAR_image` or `TF_VAR_lambda_package`. Before the services, the stacks job applies `network`, `platform`, `data`, `messaging` and `edge`, in that order, planning and applying each one before the next because it reads their outputs.
+Order per service. Services are discovered by walking `environments/<environment>/services/*`: every folder is a service and must hold `terraform.tfvars`, `backend.tfvars` and both in `base/`, and the workflow has no fixed list. For each one, five steps run in order: publish the artifact (an image tagged `sha-<commit>` or a Lambda package in S3), plan and apply the `service-base` stack, migrate the database, plan and apply the `service` stack. The artifact goes first because the `apply` needs `TF_VAR_image` or `TF_VAR_lambda_package`. Before the services, the stacks job applies `network`, `platform`, `data`, `messaging` and `edge`, in that order, planning and applying each one before the next because it reads their outputs.
 
 Migrations. Migrations run on the job's runner and need to reach the database through RDS Proxy. That is why a runner inside the VPC (`vars.DEPLOY_RUNNER`) is preferable to a GitHub-hosted one. `migrate-service.sh` reads the service's database and credentials from the `data` stack outputs and masks them in the logs.
 

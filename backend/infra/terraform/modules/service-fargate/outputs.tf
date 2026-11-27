@@ -13,26 +13,6 @@ output "task_definition_arn" {
   value       = aws_ecs_task_definition.this.arn
 }
 
-output "task_role_arn" {
-  description = "Task role ARN."
-  value       = aws_iam_role.task.arn
-}
-
-output "task_role_name" {
-  description = "Task role name, for attaching policies from the root module."
-  value       = aws_iam_role.task.name
-}
-
-output "execution_role_arn" {
-  description = "Execution role ARN."
-  value       = aws_iam_role.execution.arn
-}
-
-output "security_group_id" {
-  description = "Task security group. Pass it to allowed_security_group_ids of RDS Proxy and Valkey."
-  value       = aws_security_group.this.id
-}
-
 output "target_group_arn" {
   description = "Target group ARN. Null without a load balancer."
   value       = var.enable_load_balancer ? aws_lb_target_group.this[0].arn : null
@@ -61,11 +41,6 @@ output "min_capacity" {
 output "max_capacity" {
   description = "Autoscaling maximum task count."
   value       = aws_appautoscaling_target.this.max_capacity
-}
-
-output "log_group_name" {
-  description = "Service log group name."
-  value       = aws_cloudwatch_log_group.this.name
 }
 
 output "autoscaling_resource_id" {
