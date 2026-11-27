@@ -7,7 +7,7 @@ import { SystemRandomSource } from '@platform/kernel';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { InMemoryTransactionManager } from '@platform/messaging/test-utils';
 import { UnroutedShardScopes } from '@platform/persistence/test-utils';
-import { InMemoryRateLimiter } from '@platform/rate-limit';
+import { InMemoryRateLimiter, StrictRateLimiter } from '@platform/rate-limit';
 import { regionsConfigSchema, ServiceRegions } from '@platform/service';
 import { ClientChannel } from '@platform/http';
 import {
@@ -93,7 +93,7 @@ export class MfaHarness {
     new PlainSecretBox(),
     this.hasher,
     this.alerts,
-    new InMemoryRateLimiter({ clock: this.clock }),
+    new StrictRateLimiter(new InMemoryRateLimiter({ clock: this.clock })),
     this.scopes,
     new InMemoryTransactionManager(),
     this.clock,

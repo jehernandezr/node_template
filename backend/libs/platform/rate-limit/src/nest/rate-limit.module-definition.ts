@@ -1,5 +1,6 @@
 import { ConfigurableModuleBuilder } from '@nestjs/common';
 import { RateLimiter } from '../rate-limiter.js';
+import { StrictRateLimiter } from '../strict-rate-limiter.js';
 import { RateLimitKeyResolver } from './rate-limit-key-resolver.js';
 import type {
   RateLimitModuleExtras,
@@ -23,7 +24,12 @@ export const { ConfigurableModuleClass: RateLimitConfigurableModule } =
           ...(definition.providers ?? []),
           ...RateLimitProviders.build(extras),
         ],
-        exports: [RateLimiter, RateLimitGuard, RateLimitKeyResolver],
+        exports: [
+          RateLimiter,
+          StrictRateLimiter,
+          RateLimitGuard,
+          RateLimitKeyResolver,
+        ],
       }),
     )
     .build();
