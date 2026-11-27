@@ -74,6 +74,13 @@ export class GeneratorWorkspace {
     return this.backend.read(`${GeneratorWorkspace.BACKEND}/${path}`);
   }
 
+  /** The text of a `backend/` file as it is in the repository. */
+  static repositoryFile(path: string): Promise<string> {
+    return new NodeFileSystem().read(
+      join(GeneratorWorkspace.REPOSITORY_BACKEND, path),
+    );
+  }
+
   /** Copies the reference service files into memory as they are in the repository. */
   async copyReference(paths: readonly string[]): Promise<void> {
     const disk = new NodeFileSystem();

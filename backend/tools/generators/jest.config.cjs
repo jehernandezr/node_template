@@ -10,10 +10,11 @@ module.exports = {
   displayName: 'generators',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
+  /** The generator reuses ServiceName from the pipeline scripts, an ES module (.mjs) that Jest also transforms. */
   transform: {
-    '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
+    '^.+\\.m?[tj]s$': ['@swc/jest', swcJestConfig],
   },
-  moduleFileExtensions: ['ts', 'js', 'html'],
+  moduleFileExtensions: ['ts', 'js', 'mjs', 'html'],
   coverageDirectory: 'test-output/jest/coverage',
   /** main.ts only composes, and prettier loads its plugins with dynamic import(), which jest does not run without --experimental-vm-modules. generators:verify covers them. */
   coveragePathIgnorePatterns: [

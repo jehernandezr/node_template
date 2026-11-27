@@ -68,3 +68,4 @@ Numbers are not reused. File names use kebab-case and are in English.
 | 0045   | [Edge, domains and real time](0045-edge-domains-and-real-time.md)                                                     | Accepted                                 |
 | 0046   | [Providers per environment and telemetry in AWS](0046-providers-and-telemetry-per-environment.md)                     | Accepted                                 |
 | 0047   | [Shared test servers, rule guards and impact review](0047-shared-test-servers-rule-guards-and-impact-review.md)       | Accepted                                 |
+| 0048   | [Service name forms](0048-service-name-forms.md)                                                                      | Accepted                                 |

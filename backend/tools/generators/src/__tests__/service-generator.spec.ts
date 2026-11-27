@@ -51,8 +51,12 @@ describe('ServiceGenerator', () => {
     );
     expect(lines.join('\n')).toContain('stock_items_shard_0');
     expect(lines.join('\n')).toContain(
-      'listener-priorities.json: "stock-items"',
+      'listener-priorities.json: "stock_items"',
     );
+    expect(lines.join('\n')).toContain(
+      'stock_items in db_services and in valkey_services',
+    );
+    expect(lines.join('\n')).toContain('"stock-items" in services');
     expect(lines.join('\n')).toContain('StockItemsTenantMoveOperations in ALL');
   });
 
@@ -72,5 +76,75 @@ describe('ServiceGenerator', () => {
     await expect(workspace.file('apps/stock-items/src/main.ts')).resolves.toBe(
       'existing',
     );
+  });
+
+  describe('with a two-word name', () => {
+    const SERVICE = 'order-history';
+    const VALUES = `infra/terraform/environments/dev/services/${SERVICE}`;
+    const FILES = [
+      'terraform.tfvars',
+      'backend.tfvars',
+      'base/terraform.tfvars',
+      'base/backend.tfvars',
+    ];
+    const SERVICE_NAME_RULE = /can\(regex\("([^"]+)", var\.service_name\)\)/;
+
+    const generated = async (): Promise<GeneratorWorkspace> => {
+      const workspace = new GeneratorWorkspace();
+      await workspace.services.generate(SERVICE);
+      return workspace;
+    };
+
+    it('keeps the folder in kebab-case and writes service_name and the state keys in snake_case', async () => {
+      const workspace = await generated();
+
+      for (const file of ['terraform.tfvars', 'base/terraform.tfvars']) {
+        await expect(workspace.file(`${VALUES}/${file}`)).resolves.toContain(
+          'service_name = "order_history"',
+        );
+      }
+      await expect(
+        workspace.file(`${VALUES}/backend.tfvars`),
+      ).resolves.toContain(
+        'key          = "us-east-1/services/order_history/terraform.tfstate"',
+      );
+      await expect(
+        workspace.file(`${VALUES}/base/backend.tfvars`),
+      ).resolves.toContain(
+        'key          = "us-east-1/services/order_history/base/terraform.tfstate"',
+      );
+      await expect(
+        workspace.file(`${VALUES}/terraform.tfvars`),
+      ).resolves.toContain('route_prefixes    = ["/v1/order-history"]');
+    });
+
+    it('passes the service_name validation of both service stacks', async () => {
+      const workspace = await generated();
+      const serviceName = /^service_name = "([^"]+)"$/m.exec(
+        await workspace.file(`${VALUES}/base/terraform.tfvars`),
+      )?.[1];
+
+      for (const stack of ['service-base', 'service']) {
+        const rule = SERVICE_NAME_RULE.exec(
+          await GeneratorWorkspace.repositoryFile(
+            `infra/terraform/stacks/${stack}/variables.tf`,
+          ),
+        )?.[1];
+        expect(rule).toBeDefined();
+        expect(serviceName).toMatch(new RegExp(rule ?? '$^'));
+      }
+    });
+
+    it('renders the values that tf-validate plans as a generated service', async () => {
+      const workspace = await generated();
+
+      for (const file of FILES) {
+        await expect(workspace.file(`${VALUES}/${file}`)).resolves.toBe(
+          await GeneratorWorkspace.repositoryFile(
+            `infra/scripts/__tests__/utils/fixtures/generated-service/${SERVICE}/${file}`,
+          ),
+        );
+      }
+    });
   });
 });
