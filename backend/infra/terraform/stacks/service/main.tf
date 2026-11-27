@@ -40,9 +40,6 @@ locals {
   }
   component = { for key in local.declared : key => try(local.components[key], local.missing_component) }
 
-  base_workers   = sort([for key in keys(local.components) : trimprefix(key, "worker-") if startswith(key, "worker-")])
-  base_consumers = sort([for key in keys(local.components) : trimprefix(key, "consumer-") if startswith(key, "consumer-")])
-
   fargate_environment = { for key, c in local.component : key => merge(local.base.fargate_environment, c.environment) }
   lambda_environment  = { for key, c in local.component : key => merge(local.base.lambda_environment, c.environment) }
 
@@ -64,12 +61,8 @@ resource "terraform_data" "service_check" {
       error_message = "The service-base state belongs to another service."
     }
     precondition {
-      condition     = (var.api != null) == contains(keys(local.components), "api") && (var.realtime != null) == contains(keys(local.components), "realtime")
-      error_message = "api and realtime are set here exactly when service-base defines them."
-    }
-    precondition {
-      condition     = sort(keys(var.workers)) == local.base_workers && sort(keys(var.consumers)) == local.base_consumers
-      error_message = "workers and consumers have the same keys here as in service-base: each component needs its role there before it runs here."
+      condition     = alltrue([for key in local.declared : contains(keys(local.components), key)])
+      error_message = "Every api, realtime, worker and consumer set here needs its component in service-base, applied first: it runs with the role and security group made there."
     }
     precondition {
       condition     = !local.uses_ecs || var.image != null

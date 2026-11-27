@@ -13,6 +13,7 @@ const STACK = Object.freeze({
   data: 'data',
   messaging: 'messaging',
   serviceBase: 'service_base',
+  service: 'service',
 });
 
 const RUNTIME = Object.freeze({
@@ -21,7 +22,7 @@ const RUNTIME = Object.freeze({
 });
 
 /**
- * Outputs of the network, platform, data, messaging and service-base stacks as the real values of one environment would produce them, for the environment tests of the stacks that read them through remote state. What exists follows the environment's tfvars and topology.json; identifiers are fixed fakes. Mirrors the null and presence rules of each stack's outputs.tf.
+ * Outputs of the network, platform, data, messaging, service-base and service stacks as the real values of one environment would produce them, for the environment tests of the stacks that read them through remote state. What exists follows the environment's tfvars and topology.json; identifiers are fixed fakes. Mirrors the null and presence rules of each stack's outputs.tf.
  */
 export class EnvironmentMocks {
   #terraformRoot;
@@ -31,7 +32,7 @@ export class EnvironmentMocks {
   /**
    * @param {string} terraformRoot Root of the Terraform tree (backend/infra/terraform).
    * @param {string} environment Environment whose tfvars the outputs follow.
-   * @param {string} [service] Service whose service-base outputs serviceBase() builds.
+   * @param {string} [service] Service whose service-base and service outputs serviceBase() and service() build.
    */
   constructor(terraformRoot, environment, service = undefined) {
     this.#terraformRoot = terraformRoot;
@@ -259,6 +260,7 @@ export class EnvironmentMocks {
     const service = this.#service;
     const values = this.#reader(`services/${service}/base`);
     const name = service.replaceAll('_', '-');
+    const queueUrls = this.messaging().queue_urls;
     const component = (key, componentName, runtime, queue = null) => {
       const fargate = runtime === RUNTIME.fargate;
       const role = `arn:aws:iam::${ACCOUNT}:role/${PREFIX}-${componentName}`;
@@ -279,7 +281,7 @@ export class EnvironmentMocks {
             queue === null
               ? {}
               : {
-                  QUEUE_URL: `https://sqs.${REGION}.amazonaws.com/${ACCOUNT}/${PREFIX}-${queue}`,
+                  QUEUE_URL: queueUrls[queue],
                 },
         },
       ];
@@ -334,8 +336,23 @@ export class EnvironmentMocks {
   }
 
   /**
+   * Outputs of the service's service stack as its last apply leaves them: the keys of the components its terraform.tfvars runs.
+   * @returns {object} components, sorted.
+   */
+  service() {
+    const values = this.#reader(`services/${this.#service}`);
+    return {
+      components: [
+        ...['api', 'realtime'].filter((key) => values.hasBlock(key)),
+        ...values.entryNames('workers').map((key) => `worker-${key}`),
+        ...values.entryNames('consumers').map((key) => `consumer-${key}`),
+      ].sort(),
+    };
+  }
+
+  /**
    * override_data blocks that give each named remote state these outputs.
-   * @param {string[]} stacks Names of the data.terraform_remote_state blocks to override: network, platform, data, messaging or service_base.
+   * @param {string[]} stacks Names of the data.terraform_remote_state blocks to override: network, platform, data, messaging, service_base or service.
    * @returns {string} HCL for a .tftest.hcl file.
    */
   overrides(stacks) {
@@ -345,6 +362,7 @@ export class EnvironmentMocks {
       [STACK.data]: () => this.data(),
       [STACK.messaging]: () => this.messaging(),
       [STACK.serviceBase]: () => this.serviceBase(),
+      [STACK.service]: () => this.service(),
     };
     return stacks
       .map((stack) =>

@@ -2,7 +2,8 @@
 # Deploys a service by stages. Without stages it runs publish, base, migrate, plan and apply, in that order:
 # the artifact goes out first because apply needs TF_VAR_image or TF_VAR_lambda_package, and base plans and
 # applies service-base (roles, log groups, security groups and one_off_task) before the migration and before
-# the service stack, which reads it.
+# the service stack, which reads it. Removing a component reverses that order (publish plan apply, then base):
+# service-base refuses to drop a component the applied service stack still runs.
 # Usage: deploy-service.sh <environment> <service> [publish|base|migrate|plan|apply]...
 # plan and apply load .artifacts/<service>.env (publish writes it). In DRY_RUN the file is not
 # required: "+ source .artifacts/<service>.env" is logged.

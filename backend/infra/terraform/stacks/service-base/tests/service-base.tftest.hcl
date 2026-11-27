@@ -111,6 +111,14 @@ override_data {
   }
 }
 
+# The service stack has not been applied yet: it runs nothing.
+override_data {
+  target = data.terraform_remote_state.service
+  values = {
+    outputs = { components = [] }
+  }
+}
+
 run "lambda_api_with_consumer" {
   command = plan
 
@@ -328,6 +336,45 @@ run "the_api_runtime_is_lambda_or_fargate" {
   }
 
   expect_failures = [var.api]
+}
+
+run "a_component_the_service_stack_still_runs_cannot_be_removed" {
+  command = plan
+
+  variables {
+    api       = { runtime = "lambda" }
+    consumers = { commands = { queue = "identity-commands" } }
+  }
+
+  override_data {
+    target = data.terraform_remote_state.service
+    values = {
+      outputs = { components = ["api", "consumer-commands", "worker-reports"] }
+    }
+  }
+
+  expect_failures = [terraform_data.service_check]
+}
+
+run "a_component_the_service_stack_runs_stays_while_it_is_declared" {
+  command = plan
+
+  variables {
+    api       = { runtime = "fargate" }
+    consumers = { commands = { queue = "identity-commands" } }
+  }
+
+  override_data {
+    target = data.terraform_remote_state.service
+    values = {
+      outputs = { components = ["api", "consumer-commands"] }
+    }
+  }
+
+  assert {
+    condition     = length(local.running_dropped) == 0 && module.component["api"].runtime == "fargate"
+    error_message = "Switching the runtime of a running component keeps it: only its roles change, and its security group stays."
+  }
 }
 
 # Applied with the mocked provider, so the role, log group and security group identifiers are known.

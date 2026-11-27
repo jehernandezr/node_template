@@ -1,3 +1,8 @@
+output "components" {
+  description = "Keys of the service-base components this stack runs (api, realtime, worker-<key>, consumer-<key>). service-base reads them so it never drops a component that still runs."
+  value       = sort(local.declared)
+}
+
 output "api_routes" {
   description = "Routes of the service in the shared API."
   value       = try(module.api_routes[0].route_keys, [])

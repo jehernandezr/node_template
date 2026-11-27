@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { EnvironmentMocks } from './environment-mocks.mjs';
 
 /**
- * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack, each module with tests and each example; then it plans every stack of every environment with its real values (common.tfvars and the stack's terraform.tfvars; each service has its service-base values in services/<service>/base and its service values in services/<service>) through the stack's tests/environment, also with mocked providers. For the stacks in ENVIRONMENT_MOCKS, the remote states they read are mocked with EnvironmentMocks from the same environment's tfvars and topology.json. A run in KNOWN_GAPS must fail with exactly its listed errors until the cycle named there closes the gap, and fails the validation once it passes. It also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
+ * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack, each module with tests and each example; then it plans every stack of every environment with its real values (common.tfvars and the stack's terraform.tfvars; each service has its service-base values in services/<service>/base and its service values in services/<service>) through the stack's tests/environment, also with mocked providers; a stack without tests/environment fails, so a new stack cannot skip it. For the stacks in ENVIRONMENT_MOCKS, the remote states they read are mocked with EnvironmentMocks from the same environment's tfvars and topology.json. A run in KNOWN_GAPS must fail with exactly its listed errors until the cycle named there closes the gap, and fails the validation once it passes. It also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
  */
 const terraformRoot = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -55,7 +55,7 @@ const GENERATED_TESTS = join('tests', '.environment-generated');
  * Remote states that each stack's environment test reads from EnvironmentMocks instead of fixed values.
  */
 const ENVIRONMENT_MOCKS = Object.freeze({
-  'service-base': ['network', 'platform', 'data', 'messaging'],
+  'service-base': ['network', 'platform', 'data', 'messaging', 'service'],
   service: ['network', 'platform', 'messaging', 'service_base'],
 });
 
@@ -198,9 +198,6 @@ function checkKnownGap(label, gap, { ok, output }) {
   console.log(`Known gap until ${gap.cycle}: ${label}`);
 }
 
-/**
- * Plans each stack with the real values of each environment. A stack without tests/environment fails, so a new stack cannot skip it.
- */
 for (const {
   stack,
   environment,

@@ -242,7 +242,7 @@ resource "aws_iam_role_policy" "task" {
 
 resource "aws_security_group" "this" {
   name        = local.full_name
-  description = "${local.fargate ? "Tasks" : "Lambda function"} of ${local.full_name}"
+  description = "Network of ${local.full_name}"
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = local.full_name })

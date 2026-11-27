@@ -378,7 +378,7 @@ run "a_component_missing_from_service_base_is_rejected" {
   expect_failures = [terraform_data.service_check]
 }
 
-run "a_component_of_service_base_missing_here_is_rejected" {
+run "a_component_service_base_still_defines_can_stop_running_here_first" {
   command = plan
 
   variables {
@@ -387,7 +387,10 @@ run "a_component_of_service_base_missing_here_is_rejected" {
     workers  = { commands = {} }
   }
 
-  expect_failures = [terraform_data.service_check]
+  assert {
+    condition     = tolist(keys(module.worker)) == tolist(["commands"]) && tolist(output.components) == tolist(["api", "realtime", "worker-commands"])
+    error_message = "A component is removed here before service-base drops its role and security group, and the stack outputs what it still runs."
+  }
 }
 
 run "the_service_base_of_another_service_is_rejected" {

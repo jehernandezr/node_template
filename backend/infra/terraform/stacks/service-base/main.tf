@@ -148,10 +148,12 @@ locals {
 
   # Fargate gets the secret through valueFrom; Lambda gets the ARN and reads it at startup. The Fargate
   # execution roles also read the OpenObserve authorization for the collector sidecar.
-  fargate_secrets          = merge(var.secrets, local.db_secret_arn == null ? {} : { DB_CREDENTIALS = local.db_secret_arn })
-  fargate_execution_reads  = concat(values(local.fargate_secrets), local.observability == null ? [] : [local.observability.otlp_authorization_value_from])
-  lambda_secrets           = distinct(concat([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)], local.db_secret_arn == null ? [] : [local.db_secret_arn]))
-  data_security_group_ids  = [local.data.clients_security_group_id]
+  fargate_secrets         = merge(var.secrets, local.db_secret_arn == null ? {} : { DB_CREDENTIALS = local.db_secret_arn })
+  fargate_execution_reads = concat(values(local.fargate_secrets), local.observability == null ? [] : [local.observability.otlp_authorization_value_from])
+  lambda_secrets          = distinct(concat([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)], local.db_secret_arn == null ? [] : [local.db_secret_arn]))
+  data_security_group_ids = [local.data.clients_security_group_id]
+  running_dropped         = [for key in local.service.components : key if !contains(keys(local.components), key)]
+
   component_names_distinct = length(distinct([for c in values(local.components) : c.name])) == length(local.components)
 
   # One logs CMK per environment for all compute (platform stack).
@@ -166,6 +168,10 @@ resource "terraform_data" "service_check" {
     precondition {
       condition     = local.component_names_distinct
       error_message = "Two components share a name: a worker or consumer key cannot repeat another one, nor be api, rt or one-off."
+    }
+    precondition {
+      condition     = length(local.running_dropped) == 0
+      error_message = "The service stack still runs a component this plan removes, and its role and security group cannot go while it runs. Remove it from services/<service>/terraform.tfvars and apply the service stack first, then apply service-base."
     }
     precondition {
       condition     = local.platform.ecs_cluster != null

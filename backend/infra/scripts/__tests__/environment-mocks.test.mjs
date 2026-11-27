@@ -180,6 +180,65 @@ describe('EnvironmentMocks', () => {
     assert.equal(components['one-off'].runtime, 'fargate');
   });
 
+  it('gives each queue component the URL the messaging outputs give its queue, .fifo suffix included', () => {
+    const topologyFile = join(terraform.root, 'topology.json');
+    const original = readFileSync(topologyFile, 'utf8');
+    const withFifo = JSON.parse(original);
+    withFifo.queues.push({
+      name: 'billing-orders',
+      fifo: true,
+      consumer: 'billing',
+    });
+    writeFileSync(topologyFile, JSON.stringify(withFifo));
+    try {
+      terraform.write(
+        'services/billing/base',
+        'service_name = "billing"\nworkers = {\n  orders = { queue = "billing-orders" }\n}\n',
+      );
+      const mocks = new EnvironmentMocks(terraform.root, 'dev', 'billing');
+
+      assert.equal(
+        mocks.serviceBase().components['worker-orders'].environment.QUEUE_URL,
+        mocks.messaging().queue_urls['billing-orders'],
+      );
+      assert.match(
+        mocks.messaging().queue_urls['billing-orders'],
+        /nt-env-billing-orders\.fifo$/,
+      );
+    } finally {
+      writeFileSync(topologyFile, original);
+    }
+  });
+
+  it('mocks the components the service stack runs from the service tfvars', () => {
+    terraform.write(
+      'services/billing',
+      [
+        'service_name = "billing"',
+        'api = { route_prefixes = ["/v1/billing"] }',
+        'workers = {',
+        '  usage = {}',
+        '  jobs  = {}',
+        '}',
+        'consumers = {',
+        '  mail_events = {}',
+        '}',
+      ].join('\n'),
+    );
+
+    assert.deepEqual(
+      new EnvironmentMocks(terraform.root, 'dev', 'billing').service(),
+      {
+        components: [
+          'api',
+          'consumer-mail_events',
+          'worker-jobs',
+          'worker-usage',
+        ],
+      },
+    );
+  });
+
   it('renders one override_data block per remote state', () => {
     const hcl = terraform.write('platform', '').overrides(['network', 'data']);
 

@@ -45,6 +45,11 @@ run "a_fargate_component_gets_execution_and_task_roles_and_an_ecs_log_group" {
     condition     = aws_iam_role_policy.task["messaging"].name == "messaging"
     error_message = "The component policies go to the task role."
   }
+
+  assert {
+    condition     = aws_security_group.this.name == "nt-dev-tasks-api" && aws_security_group.this.description == "Network of nt-dev-tasks-api"
+    error_message = "The security group name and description do not depend on the runtime, so a runtime switch keeps the group that running tasks or functions still use."
+  }
 }
 
 run "a_lambda_component_gets_a_function_role_and_its_log_group" {
@@ -62,6 +67,11 @@ run "a_lambda_component_gets_a_function_role_and_its_log_group" {
   assert {
     condition     = aws_cloudwatch_log_group.this.name == "/aws/lambda/nt-dev-tasks-api" && length(aws_iam_role_policy_attachment.vpc) == 1
     error_message = "The function log group is the one Lambda writes to, and the role may attach to the VPC."
+  }
+
+  assert {
+    condition     = aws_security_group.this.name == "nt-dev-tasks-api" && aws_security_group.this.description == "Network of nt-dev-tasks-api"
+    error_message = "The security group name and description are the same as on Fargate, so a runtime switch does not replace the group."
   }
 }
 

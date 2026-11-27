@@ -30,6 +30,7 @@ locals {
   platform  = merge(local.platform_defaults, data.terraform_remote_state.platform.outputs)
   data      = data.terraform_remote_state.data.outputs
   messaging = data.terraform_remote_state.messaging.outputs
+  service   = data.terraform_remote_state.service.outputs
 }
 
 data "terraform_remote_state" "network" {
@@ -50,4 +51,12 @@ data "terraform_remote_state" "data" {
 data "terraform_remote_state" "messaging" {
   backend = "s3"
   config  = merge(local.remote_state_config, { key = "${var.region}/messaging/terraform.tfstate" })
+}
+
+# The service stack of this same service, applied after this one. Before its first apply it has no state, and
+# the defaults say it runs nothing.
+data "terraform_remote_state" "service" {
+  backend  = "s3"
+  config   = merge(local.remote_state_config, { key = "${var.region}/services/${var.service_name}/terraform.tfstate" })
+  defaults = { components = [] }
 }

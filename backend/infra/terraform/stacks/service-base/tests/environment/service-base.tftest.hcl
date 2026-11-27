@@ -2,8 +2,9 @@
 # it once per service of each environment with -var-file common.tfvars and -var-file the service's
 # base/terraform.tfvars, and puts before it the override_data blocks that EnvironmentMocks
 # (backend/infra/scripts/environment-mocks.mjs) builds for that environment: the platform outputs follow its
-# platform tfvars, the data outputs its data tfvars and the messaging outputs topology.json. A failure here is a
-# contradiction between the service values and the other stacks of the same environment.
+# platform tfvars, the data outputs its data tfvars, the messaging outputs topology.json and the service outputs
+# the components the service's terraform.tfvars runs. A failure here is a contradiction between the service values
+# and the other stacks of the same environment.
 
 mock_provider "aws" {
   mock_data "aws_iam_policy_document" {
