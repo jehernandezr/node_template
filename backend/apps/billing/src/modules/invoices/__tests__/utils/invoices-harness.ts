@@ -9,7 +9,7 @@ import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { CatalogPlans } from '../../../../__tests__/utils/catalog-plans.js';
 import { PaymentsHarness } from '../../../../__tests__/utils/payments-harness.js';
 import { SubscriptionsHarness } from '../../../../__tests__/utils/subscriptions-harness.js';
-import type { PaymentStatus } from '../../../payments/index.js';
+import type { PaymentsFacade, PaymentStatus } from '../../../payments/index.js';
 import { CloseInvoicePeriodsJob } from '../../application/close-invoice-periods.job.js';
 import { CollectInvoice } from '../../application/collect-invoice.use-case.js';
 import { IssueInvoice } from '../../application/issue-invoice.use-case.js';
@@ -112,11 +112,11 @@ export class InvoicesHarness {
     );
   }
 
-  /** The use case that charges a due invoice with the scripted payments. */
-  collect(): CollectInvoice {
+  /** The use case that charges a due invoice with `payments`, the scripted ones unless another is given. */
+  collect(payments: PaymentsFacade = this.payments): CollectInvoice {
     return new CollectInvoice(
       this.invoices,
-      this.payments,
+      payments,
       this.settle(),
       this.shard,
       this.clock,
@@ -124,13 +124,13 @@ export class InvoicesHarness {
     );
   }
 
-  /** The hourly job that closes the periods and charges the due invoices. */
-  closingJob(): CloseInvoicePeriodsJob {
+  /** The hourly job that closes the periods and charges the due invoices with `payments`, the scripted ones by default. */
+  closingJob(payments: PaymentsFacade = this.payments): CloseInvoicePeriodsJob {
     return new CloseInvoicePeriodsJob(
       this.subscriptions,
       this.issueInvoice(),
       new TenantInvoiceMaintenance(InvoicesHarness.TENANT, this.invoices),
-      this.collect(),
+      this.collect(payments),
       this.clock,
       this.logger,
     );

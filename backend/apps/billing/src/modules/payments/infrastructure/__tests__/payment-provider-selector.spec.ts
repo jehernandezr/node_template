@@ -3,6 +3,7 @@ import { FakePaymentOutcome } from '../../../../shared/enums/fake-payment-outcom
 import { PaymentProviderKind } from '../../../../shared/enums/payment-provider-kind.enum.js';
 import { PaymentStatus } from '../../domain/payment-status.enum.js';
 import { FakePaymentProvider } from '../fake-payment-provider.js';
+import { NonePaymentProvider } from '../none-payment-provider.js';
 import { PaymentProviderSelector } from '../payment-provider-selector.js';
 
 const settingsWith = (outcome: FakePaymentOutcome) => ({
@@ -28,5 +29,14 @@ describe('PaymentProviderSelector', () => {
         currency: Currency.Usd,
       }),
     ).resolves.toMatchObject({ status: PaymentStatus.Pending });
+  });
+
+  it('builds the provider that never charges for none', () => {
+    expect(
+      new PaymentProviderSelector().select({
+        BILLING_PAYMENT_PROVIDER: PaymentProviderKind.None,
+        BILLING_FAKE_PAYMENT_OUTCOME: FakePaymentOutcome.Approved,
+      }),
+    ).toBeInstanceOf(NonePaymentProvider);
   });
 });

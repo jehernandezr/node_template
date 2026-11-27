@@ -1,4 +1,4 @@
-import { InvoiceStatus } from '@contracts/billing';
+import { InvoiceStatus, SubscriptionStatus } from '@contracts/billing';
 import { JobContexts } from '@platform/kernel/test-utils';
 import {
   PaymentStatus,
@@ -43,6 +43,27 @@ describe('CloseInvoicePeriodsJob', () => {
       status: InvoiceStatus.Paid,
     });
     expect(harness.payments.charges).toHaveLength(1);
+  });
+
+  it('closes the period with the none provider and leaves the invoice issued, without delinquency', async () => {
+    const harness = new InvoicesHarness();
+    await harness.subscribe();
+    const neverCharging = harness.paymentsModule.neverCharging();
+
+    await harness.closingJob(neverCharging).run(JobContexts.live());
+    await harness.closingJob(neverCharging).run(JobContexts.live());
+
+    const [invoice] = harness.invoices.all();
+    expect(harness.invoices.all()).toHaveLength(1);
+    expect(invoice?.snapshot()).toMatchObject({
+      periodStart: '2026-11-01',
+      status: InvoiceStatus.Issued,
+      failedAttempts: 0,
+    });
+    expect(harness.standing()).toBe(SubscriptionStatus.Active);
+    expect(harness.attempts.all().map((attempt) => attempt.status)).toEqual([
+      PaymentStatus.Pending,
+    ]);
   });
 
   it('neither invoices nor charges twice when it runs again within the day', async () => {
