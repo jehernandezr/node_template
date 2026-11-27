@@ -1,3 +1,4 @@
+import { ConfigValidationError, DeployEnvironment } from '@platform/config';
 import { RuntimeAdapterSelector } from '../runtime-adapter-selector.js';
 
 describe('RuntimeAdapterSelector', () => {
@@ -53,5 +54,51 @@ describe('RuntimeAdapterSelector', () => {
         );
       },
     );
+  });
+
+  describe('outside local', () => {
+    it.each([
+      DeployEnvironment.Dev,
+      DeployEnvironment.Staging,
+      DeployEnvironment.Prod,
+    ])(
+      'rejects %s without Valkey instead of starting with the null and in-process adapters',
+      (environment) => {
+        expect(() =>
+          new RuntimeAdapterSelector().select({
+            DEPLOY_ENVIRONMENT: environment,
+          }),
+        ).toThrow(ConfigValidationError);
+      },
+    );
+
+    it('rejects an override that turns Valkey off in a deployed environment', () => {
+      expect(() =>
+        new RuntimeAdapterSelector().select(
+          {
+            DEPLOY_ENVIRONMENT: DeployEnvironment.Prod,
+            VALKEY_HOST: 'valkey.internal',
+          },
+          { valkey: false },
+        ),
+      ).toThrow('VALKEY_HOST');
+    });
+
+    it('accepts a deployed environment with VALKEY_HOST', () => {
+      expect(
+        new RuntimeAdapterSelector().select({
+          DEPLOY_ENVIRONMENT: DeployEnvironment.Dev,
+          VALKEY_HOST: 'valkey.internal',
+        }),
+      ).toEqual({ valkey: true, aws: false });
+    });
+
+    it('lets local start without Valkey', () => {
+      expect(
+        new RuntimeAdapterSelector().select({
+          DEPLOY_ENVIRONMENT: DeployEnvironment.Local,
+        }),
+      ).toEqual({ valkey: false, aws: false });
+    });
   });
 });
