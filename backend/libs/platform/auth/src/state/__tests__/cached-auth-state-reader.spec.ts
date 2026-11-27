@@ -110,7 +110,7 @@ describe('CachedAuthStateReader', () => {
     );
 
     it.each(READ_CASES)(
-      '$name serves the last known value when Valkey fails after the ttl',
+      '$name rejects once the ttl passed and Valkey fails, never serving an expired value',
       async ({ seed, read, value }) => {
         await seed(state);
         expect(await read(reader)).toEqual(value);
@@ -118,12 +118,14 @@ describe('CachedAuthStateReader', () => {
         clock.advance(5000);
         state.failure = new Error('down');
 
-        expect(await read(reader)).toEqual(value);
+        await expect(read(reader)).rejects.toMatchObject({
+          code: PlatformErrorCode.DependencyUnavailable,
+        });
       },
     );
 
     it.each(READ_CASES)(
-      '$name rejects with a circuit open error when Valkey fails and nothing is cached',
+      '$name rejects with a dependency unavailable error when Valkey fails and nothing is cached',
       async ({ read }) => {
         state.failure = new Error('down');
 

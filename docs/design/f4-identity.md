@@ -113,7 +113,7 @@ The `AccessTokenClaimsSchema` schema lives in `@contracts/identity` (`schemas/ac
 | 8    | Tenant epoch: earlier `iat` or suspended tenant | `IDENTITY.TOKEN.REVOKED` or `IDENTITY.TENANT.SUSPENDED`   |
 | 9    | `pv` older than the current one                 | `IDENTITY.TOKEN.STALE_PERMISSIONS`                        |
 
-Step 9 accepts a `pv` newer than the one in the local cache, because versions only go up and the cache can lag a few seconds behind identity; it rejects only an older one (the tenant or user version lower than the current one). Steps 6 to 9 match the contract's `SessionGuardErrors`. If Valkey fails in steps 6 to 9, the verifier uses the last value in its local cache. If it has none, it responds `PLATFORM.RESILIENCE.CIRCUIT_OPEN` (503): it never accepts a token without being able to check revocation.
+Step 9 accepts a `pv` newer than the one in the local cache, because versions only go up and the cache can lag a few seconds behind identity; it rejects only an older one (the tenant or user version lower than the current one). Steps 6 to 9 match the contract's `SessionGuardErrors`. If Valkey fails in steps 6 to 9, the verifier uses a value of its local cache only while it is fresh. If it has none, it responds `PLATFORM.DEPENDENCY.UNAVAILABLE` (503): it never accepts a token without being able to check revocation ([ADR 0044](../adr/0044-valkey-failure-policy.md)).
 
 #### 3.2.3 Shared state in Valkey
 

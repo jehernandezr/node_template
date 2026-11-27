@@ -13,10 +13,9 @@ import { TtlLruCache } from './ttl-lru-cache.js';
  * `AuthStateReader` used by the verifiers. Wraps the Valkey reader
  * (`source`) with:
  * - the local Bloom of revoked sessions, which avoids going to Valkey on almost every request;
- * - an `options.ttlMs` cache for epochs and permission versions, which serves the last known
- *   value, even if expired, when Valkey does not respond.
- * If Valkey fails and there is no value at all, throws `AuthenticationError.stateUnavailable`:
- * a token is never accepted without being able to check revocation.
+ * - an `options.ttlMs` cache for epochs and permission versions.
+ * If Valkey fails and the cached value is missing or expired, throws `AuthenticationError.stateUnavailable`
+ * (503 `PLATFORM.DEPENDENCY.UNAVAILABLE`): a token is never accepted on a revocation state older than the ttl.
  * `accessGrant`, `apiKey` and `revokedSessionIds` pass straight through: their resolvers
  * have their own cache and the Bloom rebuild is not cached.
  */
@@ -115,9 +114,6 @@ export class CachedAuthStateReader extends AuthStateReader {
       cache.set(key, value, nowMs);
       return value;
     } catch (error) {
-      if (entry !== undefined) {
-        return entry.value;
-      }
       throw AuthenticationError.stateUnavailable(error);
     }
   }
