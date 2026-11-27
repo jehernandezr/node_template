@@ -17,3 +17,5 @@ export { SharedValkeyHost } from './shared-valkey-host.js';
 export { ValkeyTestHost } from './valkey-test-host.js';
 export { RecordingCircuitListener } from './recording-circuit-listener.js';
 export { SilentValkeyRunner } from './silent-valkey-runner.js';
+export { ValkeyOutage } from './valkey-outage.js';
+export type { ValkeyOutageTarget } from './valkey-outage.js';

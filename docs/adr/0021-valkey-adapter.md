@@ -2,7 +2,7 @@
 
 - Status: Accepted, amended by [ADR 0044](0044-valkey-failure-policy.md) (Valkey required outside `local`, failure policy per use) and [ADR 0040](0040-internal-routing-and-authentication.md) (the IAM token is signed with `@smithy/signature-v4`)
 - Date: 2026-11-13
-- Revision: 2026-11-14 (`ValkeyRateLimiter` implements the `@platform/rate-limit` port; the shared `auth:*` space from [ADR 0022](0022-token-verification-shared-revocation-state.md) extends the per-service prefix rule)
+- Revision: 2026-11-14 (`ValkeyRateLimiter` implements the `@platform/rate-limit` port; the shared `auth:*` space from [ADR 0022](0022-token-verification-shared-revocation-state.md) extends the per-service prefix rule); 2026-11-27 (deadline and breaker on every command, `ValkeyUnavailableError`)
 
 ## Context
 
@@ -22,7 +22,8 @@ The plan chooses Valkey for the cache, short-lived data, Bloom filters and the s
 Rules:
 
 - Lua scripts are called with `EVALSHA` and resent with `EVAL` on `NOSCRIPT`.
-- `ValkeyCommandError` carries its `FailureKind`: transient when the server is down or in failover, permanent with `WRONGTYPE` or an invalid command, and timeout when `commandTimeout` expires. Its codes are `PLATFORM.VALKEY.COMMAND_FAILED` and `PLATFORM.VALKEY.UNEXPECTED_REPLY`.
+- A server that is down, in failover or past the deadline raises `ValkeyUnavailableError` (`PLATFORM.DEPENDENCY.UNAVAILABLE`, 503, retryable) with a transient or timeout `FailureKind`; a command the server rejects (`WRONGTYPE`, an invalid command) raises `ValkeyCommandError` (`PLATFORM.VALKEY.COMMAND_FAILED`, permanent), and a reply of the wrong shape `PLATFORM.VALKEY.UNEXPECTED_REPLY`.
+- Every command goes through `ValkeyCircuit`, shared by all the adapters of a client: a 500 ms deadline and a breaker that opens after 5 consecutive unavailable commands and tries again after 5 s ([ADR 0044](0044-valkey-failure-policy.md)). Its listeners hear when it opens and closes; the runtime uses them to route from the directory during the outage.
 - The cache timeout lives only in the `Cache` policy of `@platform/resilience` (100 ms, with a circuit breaker). `CacheAside` passes every call through that policy.
 - In AWS each service uses a Valkey user with IAM authentication (`VALKEY_AUTH=iam-serverless`) whose ACL limits its keys and channels to the service prefix (ADR 0020). The client signs the token with its own SigV4 (`node:crypto`) and requests a new one on every reconnection.
 - Every adapter requires a `ValkeyKeyspace` with the `VALKEY_KEY_PREFIX` prefix (the service name, without `:`). Keys end up as `<p>:…`, `<p>:routing:…` and `<p>:bloom:{name}`, and the channel as `<p>:sharding:directory-changed`.
