@@ -98,6 +98,7 @@ import type {
   RuntimeAdapters,
 } from './platform-runtime-options.js';
 import { ConsumedQueueSelector } from './consumed-queue-selector.js';
+import { RoutingCacheCircuitBridge } from './routing-cache-circuit-bridge.js';
 import { RuntimeAdapterSelector } from './runtime-adapter-selector.js';
 
 /** Environment variables the runtime reads in addition to those of the service schema. */
@@ -225,6 +226,7 @@ export class PlatformRuntimeModule {
         HealthModule,
       ],
       providers: [
+        ...(adapters.valkey ? [RoutingCacheCircuitBridge] : []),
         PlatformRuntimeModule.failureClassifierProvider(),
         PlatformRuntimeModule.useCaseRunnerProvider(),
         PlatformRuntimeModule.regionsProvider(),

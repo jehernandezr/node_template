@@ -509,4 +509,60 @@ describe('ShardRouter', () => {
       },
     );
   });
+
+  describe('while directory changes cannot be announced', () => {
+    it('reads every lookup from the directory without caching', async () => {
+      const router = routerWith();
+      await router.resolve(READ);
+
+      router.suspendCaching();
+      await router.resolve(READ);
+      await router.resolve(READ);
+
+      expect(directory.placementReads).toBe(3);
+      expect(directory.instanceReads).toBe(3);
+    });
+
+    it('ignores the shared cache while suspended', async () => {
+      const sharedCache = new InMemoryRoutingCache(clock);
+      await routerWith({ sharedCache }).resolve(READ);
+      const router = routerWith({ sharedCache });
+
+      router.suspendCaching();
+      await router.resolve(READ);
+
+      expect(directory.placementReads).toBe(2);
+    });
+
+    it('caches again after resuming, ignoring shared placements written before', async () => {
+      const sharedCache = new InMemoryRoutingCache(clock);
+      await routerWith({ sharedCache }).resolve(READ);
+      const router = routerWith({ sharedCache });
+      router.suspendCaching();
+      clock.advance(1_000);
+
+      router.resumeCaching();
+      await router.resolve(READ);
+      await router.resolve(READ);
+
+      expect(directory.placementReads).toBe(2);
+      expect(directory.instanceReads).toBe(2);
+    });
+
+    it('trusts the shared placements written after resuming', async () => {
+      const sharedCache = new InMemoryRoutingCache(clock);
+      const writer = routerWith({ sharedCache });
+      writer.suspendCaching();
+      writer.resumeCaching();
+      clock.advance(1);
+      await writer.resolve(READ);
+
+      const reader = routerWith({ sharedCache });
+      reader.suspendCaching();
+      reader.resumeCaching();
+      await reader.resolve(READ);
+
+      expect(directory.placementReads).toBe(1);
+    });
+  });
 });

@@ -51,4 +51,9 @@ export class ExpiringLru<V> {
   delete(key: string): void {
     this.entries.delete(key);
   }
+
+  /** Deletes every entry. */
+  clear(): void {
+    this.entries.clear();
+  }
 }

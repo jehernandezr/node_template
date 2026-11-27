@@ -5,6 +5,7 @@ import { LruMap } from '../lru-map.js';
 import { ExpiringLru } from './expiring-lru.js';
 import { PlacementCodec } from './placement-codec.js';
 import type { SharedRecord } from './shared-record.js';
+import { SharedRecordKind } from './shared-record-kind.enum.js';
 
 /** Parameters of {@link PlacementCache}. */
 export interface PlacementCacheSettings {
@@ -26,6 +27,9 @@ export class PlacementCache {
   private readonly placements: ExpiringLru<TenantPlacement>;
   /** Minimum acceptable version per tenant, learned from invalidations and changes. */
   private readonly minVersions: LruMap<string, number>;
+  private suspended = false;
+  /** Shared placements written before this instant are ignored: they may predate a change that was not announced. */
+  private trustSharedFrom = Number.NEGATIVE_INFINITY;
 
   constructor(
     private readonly settings: PlacementCacheSettings,
@@ -43,7 +47,26 @@ export class PlacementCache {
    * @returns The placement, or `undefined`.
    */
   local(tenantId: string): TenantPlacement | undefined {
-    return this.placements.get(tenantId);
+    return this.suspended ? undefined : this.placements.get(tenantId);
+  }
+
+  /**
+   * Stops both levels: every placement is read from the directory and nothing is cached until `resume`. Used while
+   * the change channel cannot announce invalidations.
+   */
+  suspend(): void {
+    this.suspended = true;
+    this.placements.clear();
+  }
+
+  /**
+   * Caches again, flushed: the in-process placements are forgotten and every shared placement written before now is
+   * ignored, because a change made during the outage may not have reached it.
+   */
+  resume(): void {
+    this.placements.clear();
+    this.trustSharedFrom = this.now();
+    this.suspended = false;
   }
 
   /**
@@ -58,6 +81,9 @@ export class PlacementCache {
     placement: TenantPlacement,
     sharedExpiresAt: number,
   ): void {
+    if (this.suspended) {
+      return;
+    }
     if (placement.version >= (this.minVersions.peek(tenantId) ?? 0)) {
       this.minVersions.delete(tenantId);
     }
@@ -92,13 +118,14 @@ export class PlacementCache {
    * @returns The record, or `undefined`.
    */
   async readShared(tenantId: string): Promise<SharedRecord | undefined> {
-    if (this.sharedCache === undefined) {
+    if (this.sharedCache === undefined || this.suspended) {
       return undefined;
     }
     try {
-      return PlacementCodec.decode(
+      const record = PlacementCodec.decode(
         await this.sharedCache.get(PlacementCache.KEY_PREFIX + tenantId),
       );
+      return this.trusted(record) ? record : undefined;
     } catch (error) {
       this.onError(error);
       return undefined;
@@ -118,7 +145,7 @@ export class PlacementCache {
     expiresAt: number,
     loadStartedAt: number,
   ): Promise<void> {
-    if (this.sharedCache === undefined) {
+    if (this.sharedCache === undefined || this.suspended) {
       return;
     }
     if (this.now() - loadStartedAt >= this.settings.tombstoneTtlMs) {
@@ -178,6 +205,13 @@ export class PlacementCache {
    */
   isOutdated(tenantId: string, version: number): boolean {
     return version < (this.minVersions.peek(tenantId) ?? 0);
+  }
+
+  private trusted(record: SharedRecord | undefined): boolean {
+    return (
+      record?.kind !== SharedRecordKind.Placement ||
+      record.entry.expiresAt - this.settings.sharedTtlMs >= this.trustSharedFrom
+    );
   }
 
   private now(): number {

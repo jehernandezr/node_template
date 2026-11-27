@@ -7,3 +7,4 @@ export {
   RuntimeProbeRecorded,
   runtimeProbeContract,
 } from './runtime-probe.contract.js';
+export * from './recording-shard-router.js';

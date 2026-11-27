@@ -142,6 +142,24 @@ export class ShardRouter {
   }
 
   /**
+   * Stops caching placements and instances while directory changes cannot reach this process: every lookup reads
+   * the directory until `resumeCaching`.
+   */
+  suspendCaching(): void {
+    this.parts.cache.suspend();
+    this.parts.instances.suspend();
+  }
+
+  /**
+   * Caches again once directory changes reach this process, flushed: what the process cached is forgotten and the
+   * shared placements written before now are ignored.
+   */
+  resumeCaching(): void {
+    this.parts.cache.resume();
+    this.parts.instances.resume();
+  }
+
+  /**
    * Deletes the cached instance of a logical shard, regardless of which placements reference it.
    * @param logicalShard Logical shard.
    */
