@@ -3,8 +3,12 @@
 #   ENV=dev deploy-aws.sh plan    [all|<stack>]       # plan one stack or all of them, in order
 #   ENV=dev deploy-aws.sh apply   [all|<stack>]       # applies the saved plan: network, platform, data, messaging, edge
 #   ENV=dev deploy-aws.sh destroy [all|<stack>]       # destroy in reverse order
-#   ENV=dev deploy-aws.sh plan    service <service>   # stack of one service (its own state)
+#   ENV=dev deploy-aws.sh plan    service-base <service>  # what one service needs before it runs: roles,
+#   ENV=dev deploy-aws.sh apply   service-base <service>  # log groups, security groups and one_off_task
+#   ENV=dev deploy-aws.sh plan    service <service>       # runtime of one service, which reads its service-base
 #   ENV=dev deploy-aws.sh apply   service <service>
+# A service applies service-base first (values in services/<service>/base), then runs its one-off tasks, then
+# plans and applies service (values in services/<service>): planning service reads the applied service-base.
 # plan saves the plan in PLAN_DIR (by default backend/infra/terraform/.plans/<ENV>) and apply
 # applies that file and nothing else: what was reviewed is what is applied. If the state changed
 # since the plan, Terraform rejects the old plan and it has to be planned again. A stack that reads
@@ -89,23 +93,26 @@ run_stacks() {
   done
 }
 
+# $1: service or service-base, $2: action, $3: service name.
 run_service() {
-  local action=$1 service=${2:?Missing the service name}
-  echo "==> terraform $action service $service ($ENV)"
-  tf_run service "services/$service" "$action"
+  local stack=$1 action=$2 service=${3:?Missing the service name}
+  local values="services/$service"
+  [[ "$stack" == service-base ]] && values="services/$service/base"
+  echo "==> terraform $action $stack $service ($ENV)"
+  tf_run "$stack" "$values" "$action"
 }
 
 action="${1:-plan}"
 case "$action" in
   plan | apply | destroy) ;;
   *)
-    echo "Usage: ENV=<dev|staging|prod> $0 <plan|apply|destroy> [all|<stack>|service <service>]" >&2
+    echo "Usage: ENV=<dev|staging|prod> $0 <plan|apply|destroy> [all|<stack>|service-base <service>|service <service>]" >&2
     exit 1
     ;;
 esac
 
-if [[ "${2:-}" == service ]]; then
-  run_service "$action" "${3:-}"
+if [[ "${2:-}" == service || "${2:-}" == service-base ]]; then
+  run_service "$2" "$action" "${3:-}"
 else
   run_stacks "$action" "${2:-all}"
 fi

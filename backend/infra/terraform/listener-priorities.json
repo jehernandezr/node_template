@@ -1,0 +1,7 @@
+{
+  "billing": 10,
+  "identity": 20,
+  "notifications": 30,
+  "reports": 40,
+  "tasks": 50
+}

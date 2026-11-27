@@ -25,6 +25,11 @@ variables {
   vpc_id       = "vpc-0123456789abcdef0"
   subnet_ids   = ["subnet-0123456789abcdef0"]
   image        = "123456789012.dkr.ecr.us-east-1.amazonaws.com/tasks@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+  execution_role_arn = "arn:aws:iam::123456789012:role/nt-dev-tasks-execution"
+  task_role_arn      = "arn:aws:iam::123456789012:role/nt-dev-tasks-task"
+  log_group_name     = "/ecs/nt-dev/tasks"
+  security_group_id  = "sg-0tasks"
 }
 
 run "worker_runs_worker_entry_point_by_default" {
@@ -81,16 +86,20 @@ run "target_groups_get_a_short_prefix_with_the_longest_real_name_prefix" {
   }
 }
 
-run "a_worker_named_after_its_queue_fits_the_iam_role_name_limit" {
+run "the_task_runs_with_the_roles_and_log_group_it_is_given" {
   command = plan
 
-  variables {
-    name_prefix  = "node-template-staging"
-    service_name = "notifications-realtime-control"
+  assert {
+    condition = (
+      aws_ecs_task_definition.this.execution_role_arn == var.execution_role_arn &&
+      aws_ecs_task_definition.this.task_role_arn == var.task_role_arn &&
+      jsondecode(aws_ecs_task_definition.this.container_definitions)[0].logConfiguration.options["awslogs-group"] == var.log_group_name
+    )
+    error_message = "The task definition uses the roles and the log group of component-base instead of creating its own."
   }
 
   assert {
-    condition     = length(aws_iam_role.execution.name) <= 64 && length(aws_iam_role.task.name) <= 64
-    error_message = "With the longest real name_prefix, a worker named <service>-<queue> keeps its role names within 64 characters."
+    condition     = contains(aws_ecs_service.this.network_configuration[0].security_groups, var.security_group_id)
+    error_message = "The tasks join the security group of component-base."
   }
 }

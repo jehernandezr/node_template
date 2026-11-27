@@ -58,9 +58,11 @@ describe('deploy-aws.sh', () => {
   const deploy = new RecordingDeploy();
   after(() => deploy.remove());
 
-  for (const target of [['network'], ['service', 'identity']]) {
-    const values = target.join('/').replace('service/', 'services/');
-
+  for (const [target, values] of [
+    [['network'], 'network'],
+    [['service-base', 'identity'], 'services/identity/base'],
+    [['service', 'identity'], 'services/identity'],
+  ]) {
     it(`plans ${target.join(' ')} with common.tfvars before the stack values`, () => {
       const { status, calls } = deploy.run('dev', ['plan', ...target]);
 
@@ -71,6 +73,26 @@ describe('deploy-aws.sh', () => {
       assert.ok(plan.includes(`${common} ${stack}`), plan);
     });
   }
+
+  it('initializes service-base and service against their own states', () => {
+    const base = deploy.run('dev', ['plan', 'service-base', 'identity']).calls;
+    const service = deploy.run('dev', ['plan', 'service', 'identity']).calls;
+
+    assert.ok(
+      base[0].includes(`-chdir=${TERRAFORM_ROOT}/stacks/service-base init`) &&
+        base[0].includes(
+          `-backend-config=${TERRAFORM_ROOT}/environments/dev/services/identity/base/backend.tfvars`,
+        ),
+      base[0],
+    );
+    assert.ok(
+      service[0].includes(`-chdir=${TERRAFORM_ROOT}/stacks/service init`) &&
+        service[0].includes(
+          `-backend-config=${TERRAFORM_ROOT}/environments/dev/services/identity/backend.tfvars`,
+        ),
+      service[0],
+    );
+  });
 
   it('stops before terraform when the environment has no common.tfvars', () => {
     const { status, stderr, calls } = deploy.run('qa', ['plan', 'network']);

@@ -17,11 +17,22 @@ const COMMANDS = Object.freeze({
   entry: 'entry',
 });
 
+/**
+ * Command line of the service catalog for the pipeline scripts: prints the GitHub Actions matrix, the service names or the entry of one service.
+ */
 export class ServiceCatalogCli {
   static #defaultTerraformRoot = fileURLToPath(
     new URL('../terraform', import.meta.url),
   );
 
+  /**
+   * Runs one catalog command.
+   * @param {string[]} argv Command, environment and, for entry, the service.
+   * @param {Record<string, string | undefined>} env Process environment; TF_ROOT overrides the Terraform root.
+   * @param {import('node:stream').Writable} out Stream that receives the result.
+   * @param {import('node:stream').Writable} [err] Stream that receives the usage or the error.
+   * @returns {number} 0 on success, 1 on a usage error or a catalog error.
+   */
   static main(argv, env, out, err = process.stderr) {
     const [command, environment, service] = argv;
     if (!ServiceCatalogCli.#isValid(command, environment, service)) {

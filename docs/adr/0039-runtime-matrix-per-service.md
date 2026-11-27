@@ -24,7 +24,7 @@ Every service has the components below. The API is the only one whose runtime is
 - The `service` stack runs one worker task per `workers` entry and gives it `QUEUE_URL` and the IAM grants of that queue alone, so `worker.mjs` polls only the contract queue that `QUEUE_URL` names (`<MESSAGING_NAME_PREFIX>-<queue>[.fifo]`) and refuses to start when it names none. Without `QUEUE_URL`, as in the local smoke stack, one worker polls every queue of the contract. One-off entries (`seed.mjs`, `tenant-move.mjs`) start with `ServiceBootstrap.task` and poll nothing. A service whose contract has no queues, such as `tasks`, has one worker entry without `queue`: it gets no `QUEUE_URL`, runs exactly one task and polls nothing; the `service` stack rejects such an entry for a service that consumes queues.
 - Defaults: all five services run the API on Fargate in every environment. In `dev`, `tasks` runs its API on Lambda so both runtimes stay in acceptance.
 - The internal ALB and its VPC link always exist in deployed environments. `fargate_api_enabled` is removed.
-- Listener priorities are computed in the `service` stack from the service's position in the sorted service catalog (`environments/<env>/services/*`), times 10. The tfvars no longer carry them.
+- Listener priorities come from `backend/infra/terraform/listener-priorities.json`, one fixed entry per service, the same in every environment. A new service takes a value above every existing one, so no rule moves when a service is added; a stack test rejects duplicates and a script test requires an entry for every service folder. The tfvars no longer carry them.
 - `apps/realtime` stays as the alternative for scaling real time apart from `notifications`. It is not deployed in F12.
 
 ## Consequences
@@ -38,7 +38,7 @@ Every service has the components below. The API is the only one whose runtime is
 ### Costs
 
 - Every service pays for one always-on worker task, even with a Lambda API.
-- Adding a service shifts the priorities of the services after it; the rules are recreated on the next apply of each.
+- Adding a service means adding its entry to `listener-priorities.json`.
 
 ## Alternatives considered
 

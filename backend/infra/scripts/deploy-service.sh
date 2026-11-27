@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Deploys a service by stages. Without stages it runs publish, migrate, plan and apply, in that order:
-# the artifact goes out first because apply needs TF_VAR_image or TF_VAR_lambda_package.
-# Usage: deploy-service.sh <environment> <service> [publish|migrate|plan|apply]...
+# Deploys a service by stages. Without stages it runs publish, base, migrate, plan and apply, in that order:
+# the artifact goes out first because apply needs TF_VAR_image or TF_VAR_lambda_package, and base plans and
+# applies service-base (roles, log groups, security groups and one_off_task) before the migration and before
+# the service stack, which reads it. Removing a component reverses that order (publish plan apply, then base):
+# service-base refuses to drop a component the applied service stack still runs.
+# Usage: deploy-service.sh <environment> <service> [publish|base|migrate|plan|apply]...
 # plan and apply load .artifacts/<service>.env (publish writes it). In DRY_RUN the file is not
 # required: "+ source .artifacts/<service>.env" is logged.
 # Variables: those of publish-service.sh, DRY_RUN=1 to print everything without running it.
@@ -19,15 +22,15 @@ require_identifier "service" "$SERVICE"
 export DRY_RUN="${DRY_RUN:-0}"
 
 usage() {
-  log "usage: deploy-service.sh <environment> <service> [publish|migrate|plan|apply]..."
+  log "usage: deploy-service.sh <environment> <service> [publish|base|migrate|plan|apply]..."
 }
 
 if [[ $# -eq 0 ]]; then
-  set -- publish migrate plan apply
+  set -- publish base migrate plan apply
 fi
 for stage in "$@"; do
   case "$stage" in
-    publish | migrate | plan | apply) ;;
+    publish | base | migrate | plan | apply) ;;
     *)
       log "Unknown stage: $stage"
       usage
@@ -63,6 +66,10 @@ for stage in "$@"; do
   case "$stage" in
     publish)
       "$SCRIPTS_DIR/publish-service.sh" "$ENVIRONMENT" "$SERVICE"
+      ;;
+    base)
+      run env "ENV=$ENVIRONMENT" "$SCRIPTS_DIR/deploy-aws.sh" plan service-base "$SERVICE"
+      run env "ENV=$ENVIRONMENT" "$SCRIPTS_DIR/deploy-aws.sh" apply service-base "$SERVICE"
       ;;
     migrate)
       "$SCRIPTS_DIR/migrate-service.sh" "$ENVIRONMENT" "$SERVICE"

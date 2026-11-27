@@ -2,7 +2,7 @@ import { GeneratorErrorReason } from '../generator-error.js';
 import { GeneratorWorkspace } from './utils/index.js';
 
 describe('ServiceGenerator', () => {
-  it('creates the app, its contract and its dev tfvars with the name of the service', async () => {
+  it('creates the app, its contract and the dev tfvars of its two stacks with the name of the service', async () => {
     const workspace = new GeneratorWorkspace();
 
     await workspace.services.generate('stock-items');
@@ -18,6 +18,9 @@ describe('ServiceGenerator', () => {
           'apps/stock-items/src/database/stock-items-tenant-move.manifest.ts',
           'libs/contracts/stock-items/src/contract.ts',
           'infra/terraform/environments/dev/services/stock-items/terraform.tfvars',
+          'infra/terraform/environments/dev/services/stock-items/backend.tfvars',
+          'infra/terraform/environments/dev/services/stock-items/base/terraform.tfvars',
+          'infra/terraform/environments/dev/services/stock-items/base/backend.tfvars',
         ].map((path) => `${GeneratorWorkspace.BACKEND}/${path}`),
       ),
     );
@@ -47,6 +50,9 @@ describe('ServiceGenerator', () => {
       ),
     );
     expect(lines.join('\n')).toContain('stock_items_shard_0');
+    expect(lines.join('\n')).toContain(
+      'listener-priorities.json: "stock-items"',
+    );
     expect(lines.join('\n')).toContain('StockItemsTenantMoveOperations in ALL');
   });
 

@@ -70,7 +70,7 @@ describe('ServiceCatalog', () => {
     assert.equal(mixed.hasConsumers, true);
   });
 
-  it('ignores a folder without backend.tfvars', () => {
+  it('rejects a half-created service folder instead of skipping it', () => {
     const root = join(workRoot, 'partial');
     cpSync(ScriptRunner.fixtureTerraformRoot, root, { recursive: true });
     const services = join(root, 'environments', 'dev', 'services');
@@ -79,14 +79,10 @@ describe('ServiceCatalog', () => {
       join(services, 'fixture-no-backend', 'terraform.tfvars'),
       'region = "us-east-1"\n',
     );
-    const names = new ServiceCatalog(root)
-      .discover('dev')
-      .map((service) => service.name);
-    assert.deepEqual(names, [
-      'fixture-fargate',
-      'fixture-lambda',
-      'fixture-mixed',
-    ]);
+    assert.throws(
+      () => new ServiceCatalog(root).discover('dev'),
+      /fixture-no-backend.*backend\.tfvars/,
+    );
   });
 
   it('throws if service_name does not match the folder', () => {

@@ -170,6 +170,9 @@ jobs:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      - name: Plan and apply the service base
+        run: backend/infra/scripts/deploy-service.sh "$ENVIRONMENT" "$SERVICE" base
+
       - name: Migrate the service database
         run: backend/infra/scripts/deploy-service.sh "$ENVIRONMENT" "$SERVICE" migrate
 

@@ -6,7 +6,6 @@ service_name = "identity"
 # API on Fargate behind the internal ALB. To move it to Lambda:
 # runtime = "lambda" (uses lambda.handler).
 api = {
-  runtime           = "fargate"
   route_prefixes    = ["/v1/auth", "/v1/me", "/v1/tenant", "/v1/tenants", "/v1/invitations", "/v1/sagas"]
   desired_count     = 2
   min_capacity      = 2
@@ -15,33 +14,10 @@ api = {
   health_check_path = "/health/ready"
 }
 
-# One worker per contract queue: each polls only the queue of its QUEUE_URL.
+# Sizes of the workers that service-base defines, under the same keys.
 workers = {
-  access-projection = { queue = "identity-access-projection", max_capacity = 2 }
-  auth-state        = { queue = "identity-auth-state", max_capacity = 2 }
-  billing           = { queue = "identity-billing", max_capacity = 2 }
-  password-resets   = { queue = "identity-password-resets", max_capacity = 2 }
+  access-projection = { max_capacity = 2 }
+  auth-state        = { max_capacity = 2 }
+  billing           = { max_capacity = 2 }
+  password-resets   = { max_capacity = 2 }
 }
-
-# Non-secret values. The domains belong to the environment and are adjusted at deploy time.
-# INTERNAL_API_BASE_URLS is required and comes from the deployment: a JSON with the internal address of billing
-# (tenant signup and user quota), notifications (email and welcome), tasks and reports (account
-# deletion) in this environment, for example "{\"billing\":\"http://billing.prod.internal\",
-# \"notifications\":\"http://notifications.prod.internal\",\"tasks\":\"http://tasks.prod.internal\",
-# \"reports\":\"http://reports.prod.internal\"}" on a single line. If any of those URLs is missing, the service
-# does not start.
-environment_variables = {
-  IDENTITY_REGION     = "us-east-1"
-  IDENTITY_AUDIENCES  = "api"
-  IDENTITY_MAILER     = "notifications"
-  INTERNAL_API_SIGNER = "hmac"
-  TRUST_PROXY_HOPS    = "2"
-}
-
-# Secrets in Secrets Manager (variable name to ARN, with an optional JSON key). The service config
-# requires IDENTITY_SIGNING_KEYS, IDENTITY_EMAIL_PEPPER, IDENTITY_TOKEN_PEPPER, IDENTITY_API_KEY_PEPPER,
-# IDENTITY_DEVICE_ID_KEY, IDENTITY_DATA_KEY and INTERNAL_API_SHARED_SECRET.
-secrets = {}
-
-database_access = true
-valkey_access   = true
