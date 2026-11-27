@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 
 /**
  * Guards for review findings that kept coming back: Jest mocks instead of class doubles, collaborators built with
- * `new` outside the composition root, `@Global()` modules outside the platform, and test harnesses that start their
- * own database server. A rule that could not be fixed
+ * `new` outside the composition root, `@Global()` modules outside the platform, test harnesses that start their
+ * own database server, and module `index.ts` files that export a Nest module. A rule that could not be fixed
  * everywhere at once lists its remaining files in `eslint.baseline.json`; the list may only shrink.
  */
 class GuardBaseline {
@@ -264,6 +264,40 @@ class NoOwnTestServerRule {
   }
 }
 
+/**
+ * Rejects a module `index.ts` that re-exports a Nest module: the module's Nest classes go through `module.ts`, so
+ * loading a facade never loads a module graph.
+ */
+class NoModuleInIndexRule {
+  static INDEX = /\/modules\/[^/]+\/index\.ts$/;
+  static NEST_MODULE = /\.module\.js$/;
+
+  meta = {
+    type: 'problem',
+    schema: [],
+    messages: {
+      module:
+        '`index.ts` exports facades and types only: export the Nest module from `module.ts`.',
+    },
+  };
+
+  /**
+   * Reports each re-export of a `*.module.js` file from a module `index.ts`.
+   * @param {import('eslint').Rule.RuleContext} context Lint context.
+   * @returns {import('eslint').Rule.RuleListener} The visitors.
+   */
+  create(context) {
+    const file = context.filename.replaceAll('\\', '/');
+    if (!NoModuleInIndexRule.INDEX.test(file)) return {};
+    const check = (node) => {
+      if (NoModuleInIndexRule.NEST_MODULE.test(node.source?.value ?? '')) {
+        context.report({ node, messageId: 'module' });
+      }
+    };
+    return { ExportNamedDeclaration: check, ExportAllDeclaration: check };
+  }
+}
+
 const baseline = GuardBaseline.load();
 
 /** ESLint plugin with the guards of the backend. */
@@ -273,6 +307,7 @@ const guardsPlugin = {
     'no-new-collaborator': new NoNewCollaboratorRule(baseline),
     'no-global-module': new NoGlobalModuleRule(baseline),
     'no-own-test-server': new NoOwnTestServerRule(),
+    'no-module-in-index': new NoModuleInIndexRule(),
   },
 };
 

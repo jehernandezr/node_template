@@ -309,6 +309,7 @@ export default [
       'guards/no-new-collaborator': 'error',
       'guards/no-global-module': 'error',
       'guards/no-own-test-server': 'error',
+      'guards/no-module-in-index': 'error',
     },
   },
   {
