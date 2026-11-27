@@ -10,6 +10,7 @@ export * from './root-settings.js';
 export * from './enums/deploy-environment.enum.js';
 export * from './enums/node-env.enum.js';
 export * from './env.js';
+export * from './environment-allowance.js';
 export * from './errors/config-error-catalog.js';
 export * from './errors/config-error-code.enum.js';
 export * from './errors/config-validation.error.js';

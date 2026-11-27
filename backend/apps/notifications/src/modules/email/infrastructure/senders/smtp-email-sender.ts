@@ -13,7 +13,7 @@ export interface SmtpEndpoint {
 
 /**
  * Email through SMTP without authentication or TLS, for Mailpit in development. The configuration only allows it with
- * `NODE_ENV=development`. One connection per email: local volume does not justify reusing them.
+ * `DEPLOY_ENVIRONMENT=local`. One connection per email: local volume does not justify reusing them.
  */
 export class SmtpEmailSender extends EmailSender {
   private static readonly TIMEOUT_MS = 10_000;

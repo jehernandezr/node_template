@@ -115,7 +115,15 @@ override_data {
 override_data {
   target = data.terraform_remote_state.service
   values = {
-    outputs = { components = [] }
+    outputs = { components = [], service_name = null }
+  }
+}
+
+# The first apply of this stack.
+override_data {
+  target = data.terraform_remote_state.service_base
+  values = {
+    outputs = { service_applied = false }
   }
 }
 
@@ -349,7 +357,7 @@ run "a_component_the_service_stack_still_runs_cannot_be_removed" {
   override_data {
     target = data.terraform_remote_state.service
     values = {
-      outputs = { components = ["api", "consumer-commands", "worker-reports"] }
+      outputs = { components = ["api", "consumer-commands", "worker-reports"], service_name = "identity" }
     }
   }
 
@@ -367,7 +375,7 @@ run "a_component_the_service_stack_runs_stays_while_it_is_declared" {
   override_data {
     target = data.terraform_remote_state.service
     values = {
-      outputs = { components = ["api", "consumer-commands"] }
+      outputs = { components = ["api", "consumer-commands"], service_name = "identity" }
     }
   }
 
@@ -375,6 +383,73 @@ run "a_component_the_service_stack_runs_stays_while_it_is_declared" {
     condition     = length(local.running_dropped) == 0 && module.component["api"].runtime == "fargate"
     error_message = "Switching the runtime of a running component keeps it: only its roles change, and its security group stays."
   }
+}
+
+run "the_first_apply_does_not_need_the_service_state" {
+  command = plan
+
+  variables {
+    api = { runtime = "lambda" }
+  }
+
+  assert {
+    condition     = !output.service_applied
+    error_message = "Before the service stack is applied, service-base records that it has not been."
+  }
+}
+
+run "a_found_service_state_is_recorded_as_applied" {
+  command = plan
+
+  variables {
+    api = { runtime = "lambda" }
+  }
+
+  override_data {
+    target = data.terraform_remote_state.service
+    values = {
+      outputs = { components = ["api"], service_name = "identity" }
+    }
+  }
+
+  assert {
+    condition     = output.service_applied
+    error_message = "Once the service state is found, service-base records it, so a later plan cannot lose it unnoticed."
+  }
+}
+
+run "the_service_state_of_another_service_is_rejected" {
+  command = plan
+
+  variables {
+    api = { runtime = "lambda" }
+  }
+
+  override_data {
+    target = data.terraform_remote_state.service
+    values = {
+      outputs = { components = ["api"], service_name = "tasks" }
+    }
+  }
+
+  expect_failures = [terraform_data.service_check]
+}
+
+run "a_service_state_that_is_no_longer_found_is_rejected" {
+  command = plan
+
+  variables {
+    api = { runtime = "lambda" }
+  }
+
+  override_data {
+    target = data.terraform_remote_state.service_base
+    values = {
+      outputs = { service_applied = true }
+    }
+  }
+
+  expect_failures = [terraform_data.service_check]
 }
 
 # Applied with the mocked provider, so the role, log group and security group identifiers are known.

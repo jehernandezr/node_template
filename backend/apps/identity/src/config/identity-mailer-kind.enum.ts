@@ -1,4 +1,4 @@
-/** Identity transactional email adapter. `console` exists only in development. */
+/** Identity transactional email adapter. `memory` and `console` are only allowed with `DEPLOY_ENVIRONMENT=local`. */
 export enum IdentityMailerKind {
   Memory = 'memory',
   Console = 'console',

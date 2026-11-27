@@ -18,14 +18,13 @@ workers = {
 # The internal API of every service answers on the same path, so the shared ALB cannot be used to
 # reach identity. The service does not start without that URL.
 environment_variables = {
-  INTERNAL_API_SIGNER          = "hmac"
-  BILLING_TRIAL_DAYS           = "14"
-  BILLING_GRACE_DAYS           = "7"
-  BILLING_INVOICE_SERIES       = "FAC"
-  BILLING_TRIAL_PLAN           = "inicio"
-  BILLING_PAYMENT_PROVIDER     = "fake"
-  BILLING_FAKE_PAYMENT_OUTCOME = "approved"
-  TRUST_PROXY_HOPS             = "2"
+  INTERNAL_API_SIGNER      = "hmac"
+  BILLING_TRIAL_DAYS       = "14"
+  BILLING_GRACE_DAYS       = "7"
+  BILLING_INVOICE_SERIES   = "FAC"
+  BILLING_TRIAL_PLAN       = "inicio"
+  BILLING_PAYMENT_PROVIDER = "none"
+  TRUST_PROXY_HOPS         = "2"
 }
 
 # Secrets in Secrets Manager (variable name to ARN, with an optional JSON key). The service config

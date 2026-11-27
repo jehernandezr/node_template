@@ -99,7 +99,7 @@
       "tooling-test": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "node --test .claude/guards/__tests__/*.test.mjs .claude/impact/__tests__/*.test.mjs .claude/skills/backend-structure/scripts/*.test.mjs .claude/skills/front-structure/scripts/__tests__/*.test.mjs .claude/skills/front-structure/scripts/rules/__tests__/*.test.mjs",
+          "command": "node .claude/guards/run-node-tests.mjs .claude/guards/__tests__/*.test.mjs .claude/impact/__tests__/*.test.mjs .claude/skills/backend-structure/scripts/*.test.mjs .claude/skills/front-structure/scripts/__tests__/*.test.mjs .claude/skills/front-structure/scripts/rules/__tests__/*.test.mjs",
           "cwd": "{workspaceRoot}"
         },
         "cache": true,

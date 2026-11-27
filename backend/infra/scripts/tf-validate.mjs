@@ -11,9 +11,10 @@ import {
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EnvironmentMocks } from './environment-mocks.mjs';
+import { GeneratedServiceWorkspace } from './generated-service-workspace.mjs';
 
 /**
- * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack, each module with tests and each example; then it plans every stack of every environment with its real values (common.tfvars and the stack's terraform.tfvars; each service has its service-base values in services/<service>/base and its service values in services/<service>) through the stack's tests/environment, also with mocked providers; a stack without tests/environment fails, so a new stack cannot skip it. For the stacks in ENVIRONMENT_MOCKS, the remote states they read are mocked with EnvironmentMocks from the same environment's tfvars and topology.json. A run in KNOWN_GAPS must fail with exactly its listed errors until the cycle named there closes the gap, and fails the validation once it passes. It also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
+ * Validates the Terraform without touching AWS or the backends: init -backend=false, validate and terraform test (mocked providers) in each stack, each module with tests and each example; then it plans every stack of every environment with its real values (common.tfvars and the stack's terraform.tfvars; each service has its service-base values in services/<service>/base and its service values in services/<service>) through the stack's tests/environment, also with mocked providers; a stack without tests/environment fails, so a new stack cannot skip it. For the stacks in ENVIRONMENT_MOCKS, the remote states they read are mocked with EnvironmentMocks from the same environment's tfvars and topology.json. It also plans both service stacks of a two-word service as the service generator renders it (GENERATED_SERVICE, kept equal to the templates by the generator tests), in a GeneratedServiceWorkspace. A run in KNOWN_GAPS must fail with exactly its listed errors until the cycle named there closes the gap, and fails the validation once it passes. It also checks that variables_common.tf is identical in all stacks and that each environment points to stacks that exist. Usage, from the repository root: node backend/infra/scripts/tf-validate.mjs.
  */
 const terraformRoot = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -49,13 +50,28 @@ function runCaptured(dir, args) {
 }
 
 const ENVIRONMENT_TESTS = join('tests', 'environment');
+const GENERATED_SERVICE = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '__tests__',
+  'utils',
+  'fixtures',
+  'generated-service',
+  'order-history',
+);
 const GENERATED_TESTS = join('tests', '.environment-generated');
 
 /**
  * Remote states that each stack's environment test reads from EnvironmentMocks instead of fixed values.
  */
 const ENVIRONMENT_MOCKS = Object.freeze({
-  'service-base': ['network', 'platform', 'data', 'messaging', 'service'],
+  'service-base': [
+    'network',
+    'platform',
+    'data',
+    'messaging',
+    'service',
+    'service_base',
+  ],
   service: ['network', 'platform', 'messaging', 'service_base'],
 });
 
@@ -160,14 +176,12 @@ for (const example of subdirs(join(terraformRoot, 'examples'))) {
   check(join(terraformRoot, 'examples', example), false);
 }
 
-function environmentTestDirectory(dir, stack, environment, service) {
+function environmentTestDirectory(root, dir, stack, environment, service) {
   const mocked = ENVIRONMENT_MOCKS[stack];
   if (mocked === undefined) return ENVIRONMENT_TESTS;
-  const overrides = new EnvironmentMocks(
-    terraformRoot,
-    environment,
-    service,
-  ).overrides(mocked);
+  const overrides = new EnvironmentMocks(root, environment, service).overrides(
+    mocked,
+  );
   rmSync(join(dir, GENERATED_TESTS), { recursive: true, force: true });
   mkdirSync(join(dir, GENERATED_TESTS), { recursive: true });
   for (const file of readdirSync(join(dir, ENVIRONMENT_TESTS))) {
@@ -213,6 +227,7 @@ for (const {
   }
   console.log(`::group::terraform test ${label}`);
   const testDirectory = environmentTestDirectory(
+    terraformRoot,
     dir,
     stack,
     environment,
@@ -235,6 +250,48 @@ for (const {
     console.log('::endgroup::');
   }
 }
+
+function checkGeneratedService() {
+  const workspace = new GeneratedServiceWorkspace(
+    terraformRoot,
+    GENERATED_SERVICE,
+  );
+  const root = workspace.create();
+  const { environment, service } = workspace;
+  const values = join(root, 'environments', environment, 'services', service);
+  try {
+    for (const [stack, valuesDir] of [
+      ['service-base', join(values, 'base')],
+      ['service', values],
+    ]) {
+      const dir = join(root, 'stacks', stack);
+      const label = `generated service ${service}: ${stack}`;
+      console.log(`::group::terraform test ${label}`);
+      const testDirectory = environmentTestDirectory(
+        root,
+        dir,
+        stack,
+        environment,
+        service,
+      );
+      const planned =
+        run(dir, ['init', '-backend=false', '-input=false']) &&
+        runCaptured(dir, [
+          'test',
+          '-no-color',
+          `-test-directory=${testDirectory}`,
+          `-var-file=${join(root, 'environments', environment, 'common.tfvars')}`,
+          `-var-file=${join(valuesDir, 'terraform.tfvars')}`,
+        ]).ok;
+      console.log('::endgroup::');
+      if (!planned) failures.push(label);
+    }
+  } finally {
+    workspace.remove();
+  }
+}
+
+checkGeneratedService();
 
 if (failures.length > 0) {
   console.error(`\nFailures:\n${failures.map((f) => `- ${f}`).join('\n')}`);

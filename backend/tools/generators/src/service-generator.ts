@@ -1,3 +1,4 @@
+import { ServiceName } from '../../../infra/scripts/service-name.mjs';
 import type { GeneratedFileWriter } from './generated-file-writer.js';
 import { NameForms } from './name-forms.js';
 import type { TemplateRenderer } from './template-renderer.js';
@@ -47,13 +48,16 @@ export class ServiceGenerator {
   }
 
   private static sharedLines(forms: NameForms): string[] {
-    const { kebab, snake } = forms;
+    const { kebab } = forms;
+    const serviceName = new ServiceName(kebab).terraform;
     return [
       `backend/tsconfig.base.json (paths): "@contracts/${kebab}": ["./libs/contracts/${kebab}/src/index.ts"]`,
       `backend/eslint.config.mjs (depConstraints): '${kebab}' in the list of services with its scope:${kebab}`,
-      `backend/infra/local/postgres/init.sql: CREATE DATABASE ${snake}_shard_0; and ${snake}_shard_1; with the vector extension`,
-      `backend/infra/terraform/listener-priorities.json: "${kebab}" with a priority above every existing one`,
-      `backend/.env.example: DB_DATABASES with ${snake}_shard_0 and ${snake}_shard_1 to run ${kebab} locally`,
+      `backend/infra/local/postgres/init.sql: CREATE DATABASE ${serviceName}_shard_0; and ${serviceName}_shard_1; with the vector extension`,
+      `backend/infra/terraform/listener-priorities.json: "${serviceName}" with a priority above every existing one`,
+      `backend/infra/terraform/environments/dev/data/terraform.tfvars: ${serviceName} in db_services and in valkey_services`,
+      `backend/infra/terraform/environments/dev/global/terraform.tfvars: "${kebab}" in services, for its ECR repository`,
+      `backend/.env.example: DB_DATABASES with ${serviceName}_shard_0 and ${serviceName}_shard_1 to run ${kebab} locally`,
       `backend/tools/contracts-export/project.json (implicitDependencies): "contracts-${kebab}", then nx run contracts-export:export`,
       `backend/apps/identity/src/modules/tenant-moves/application/tenant-move-participants.ts: ${forms.pascal}TenantMoveOperations in ALL, so the MoveTenant saga moves its data`,
       `backend/apps/identity/src/modules/tenants/application/tenant-directory-followers.ts: ${forms.pascal}TenantDirectoryOperations in ALL, so registering a tenant also places it in ${kebab}`,

@@ -1,3 +1,8 @@
+output "service_name" {
+  description = "Service this state belongs to. service-base checks it, so it never reads the state of another service as its own."
+  value       = var.service_name
+}
+
 output "components" {
   description = "Keys of the service-base components this stack runs (api, realtime, worker-<key>, consumer-<key>). service-base reads them so it never drops a component that still runs."
   value       = sort(local.declared)

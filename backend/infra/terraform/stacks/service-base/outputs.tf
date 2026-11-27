@@ -3,6 +3,11 @@ output "service_name" {
   value       = local.svc
 }
 
+output "service_applied" {
+  description = "Whether the service stack of this service has been applied: once true, a later plan that does not find its state fails."
+  value       = local.service_applied
+}
+
 output "components" {
   description = "Each component by key (api, realtime, worker-<key>, consumer-<key>, one-off): name, runtime, queue, the role it runs with (role_arn, role_name), the ECS execution role, log group, security group and its own variables (FILES_BUCKET, QUEUE_URL)."
   value = {

@@ -9,7 +9,11 @@ import {
   NotificationPreferences,
   PreferencesFacade,
 } from '../../../preferences/index.js';
-import type { PushFacade, PushMessage } from '../../../push/index.js';
+import {
+  PushOutcome,
+  type PushFacade,
+  type PushMessage,
+} from '../../../push/index.js';
 import { RealtimeFacade } from '../../../realtime/index.js';
 import type { Delivery } from '../../domain/delivery.js';
 import { DeliveryRepository } from '../../domain/delivery.repository.js';
@@ -170,9 +174,11 @@ export class RecordingEmail implements EmailFacade {
 
 export class RecordingPush implements PushFacade {
   readonly sent: Array<{ user: UserRef; message: PushMessage }> = [];
+  /** What each push ends as: `Skipped` stands for the `none` push sender. */
+  outcome = PushOutcome.Sent;
 
-  async deliver(user: UserRef, message: PushMessage): Promise<number> {
+  async deliver(user: UserRef, message: PushMessage): Promise<PushOutcome> {
     this.sent.push({ user, message });
-    return 1;
+    return this.outcome;
   }
 }

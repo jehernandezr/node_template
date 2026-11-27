@@ -1,7 +1,7 @@
 region       = "us-east-1"
 state_bucket = "node-template-dev-tfstate"
 
-service_name = "__name__"
+service_name = "__service_name__"
 
 # API runtime and what it may use. The service stack runs it with the routes and sizes of its own tfvars.
 api = { runtime = "fargate" }

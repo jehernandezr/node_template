@@ -1,6 +1,10 @@
+import { ServiceName } from '../../../infra/scripts/service-name.mjs';
 import type { NameForms } from './name-forms.js';
 
-/** Replaces in a template the forms of a name and, in module templates, the service name. */
+/**
+ * Replaces in a template the forms of a name and, in module templates, the service name. `__service_name__` is the
+ * Terraform service_name of the service, in snake_case, as `ServiceName` translates it from the folder name.
+ */
 export class TemplateRenderer {
   /** Suffix of template files: so neither the compiler nor lint treat them as code. */
   static readonly SUFFIX = '.tpl';
@@ -14,6 +18,7 @@ export class TemplateRenderer {
    */
   render(text: string, name: NameForms, service?: NameForms): string {
     const pairs: readonly (readonly [string, string])[] = [
+      ['__service_name__', new ServiceName((service ?? name).kebab).terraform],
       ['__service__', service?.kebab ?? '__service__'],
       ['__nameCamel__', name.camel],
       ['__name_snake__', name.snake],

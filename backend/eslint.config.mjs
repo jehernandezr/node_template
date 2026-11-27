@@ -232,8 +232,31 @@ const allowAppImports = (files) => ({
   },
 });
 
+/**
+ * The service generator renders the snake_case service name with `ServiceName`, the one translation of service
+ * names that the pipeline scripts also use (ADR 0048). Those scripts belong to no backend project, so Nx would read
+ * the import as one of the repository root project.
+ */
+const allowServiceNameImport = (files) => ({
+  files,
+  rules: {
+    '@nx/enforce-module-boundaries': [
+      'error',
+      {
+        enforceBuildableLibDependency: true,
+        allow: [
+          '^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$',
+          '^(\\.\\./)+infra/scripts/service-name\\.mjs$',
+        ],
+        depConstraints,
+      },
+    ],
+  },
+});
+
 export {
   allowAppImports,
+  allowServiceNameImport,
   allowBillingContracts,
   allowIdentityContracts,
   layoutPlugin,
@@ -339,6 +362,7 @@ export default [
     'libs/platform/metering/**/*.ts',
   ]),
   allowAppImports(['e2e/**/*.ts']),
+  allowServiceNameImport(['tools/generators/src/**/*.ts']),
   {
     files: ['**/domain/**/*.ts'],
     rules: {

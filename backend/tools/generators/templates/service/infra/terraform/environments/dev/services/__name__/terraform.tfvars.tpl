@@ -1,7 +1,7 @@
 region       = "us-east-1"
 state_bucket = "node-template-dev-tfstate"
 
-service_name = "__name__"
+service_name = "__service_name__"
 
 # API on Fargate behind the internal ALB, with the listener priority of the service in
 # listener-priorities.json. Its runtime is set in base/terraform.tfvars.
