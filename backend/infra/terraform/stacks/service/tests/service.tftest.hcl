@@ -403,3 +403,77 @@ run "realtime_paths_never_expose_the_internal_api" {
 
   expect_failures = [var.realtime]
 }
+
+run "a_realtime_wildcard_from_the_root_would_reach_the_internal_api" {
+  command = plan
+
+  variables {
+    realtime = { path_patterns = ["/*"] }
+  }
+
+  expect_failures = [var.realtime]
+}
+
+run "a_realtime_pattern_that_starts_with_a_wildcard_would_reach_the_internal_api" {
+  command = plan
+
+  variables {
+    realtime = { path_patterns = ["*/stream"] }
+  }
+
+  expect_failures = [var.realtime]
+}
+
+run "a_realtime_wildcard_inside_the_internal_prefix_would_reach_the_internal_api" {
+  command = plan
+
+  variables {
+    realtime = { path_patterns = ["/in*"] }
+  }
+
+  expect_failures = [var.realtime]
+}
+
+run "a_realtime_rule_on_the_root_path_is_rejected" {
+  command = plan
+
+  variables {
+    realtime = { path_patterns = ["/"] }
+  }
+
+  expect_failures = [var.realtime]
+}
+
+run "a_realtime_rule_with_only_a_host_would_route_every_path_of_that_host" {
+  command = plan
+
+  variables {
+    realtime = { host_headers = ["rt.example.test"] }
+  }
+
+  expect_failures = [var.realtime]
+}
+
+run "a_route_prefix_on_the_root_would_reach_the_internal_api" {
+  command = plan
+
+  variables {
+    api = { runtime = "lambda", route_prefixes = ["/"] }
+  }
+
+  expect_failures = [var.api]
+}
+
+run "realtime_paths_outside_the_internal_api_are_accepted" {
+  command = plan
+
+  variables {
+    api      = { runtime = "fargate", route_prefixes = ["/identity"] }
+    realtime = { path_patterns = ["/identity/stream", "/socket.io/*"], host_headers = ["rt.example.test"] }
+  }
+
+  assert {
+    condition     = length(module.realtime) == 1
+    error_message = "Patterns with a fixed prefix outside /internal reach the realtime rule."
+  }
+}

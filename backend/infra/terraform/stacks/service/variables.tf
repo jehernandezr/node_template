@@ -35,7 +35,8 @@ variable "api" {
     HTTP API of the service in the shared API, behind CloudFront and its WAF.
     runtime "lambda": function with the lambda.ts adapter; "fargate": container with main.ts behind
     the internal ALB and the VPC link, with the listener priority of the service in the catalog.
-    route_prefixes never reach /internal, which only the internal routing serves (ADR 0040).
+    route_prefixes never reach /internal, which only the internal routing serves (ADR 0040): no /, no prefix under
+    /internal and no wildcard before the prefix is fixed.
     Changing the runtime means changing this field and the artifact.
   EOT
   type = object({
@@ -72,13 +73,13 @@ variable "api" {
   }
 
   validation {
-    condition     = var.api == null || alltrue([for prefix in try(var.api.route_prefixes, []) : !startswith(lower(prefix), "/internal")])
-    error_message = "api.route_prefixes cannot start with /internal: the internal API is never public (ADR 0040)."
+    condition     = var.api == null || alltrue([for path in try(var.api.route_prefixes, []) : !(path == "/" || startswith(lower(regex("^[^*?]*", path)), "/internal") || (length(regex("^[^*?]*", path)) < length(path) && startswith("/internal", lower(regex("^[^*?]*", path)))))])
+    error_message = "api.route_prefixes cannot be /, start with /internal or hold a wildcard that reaches it: the internal API is never public (ADR 0040)."
   }
 }
 
 variable "realtime" {
-  description = "Realtime gateway (Socket.IO and SSE). Always on Fargate behind the platform public ALB, with the listener priority of the service in the catalog. publish grants it the producer topics and queues from the topology."
+  description = "Realtime gateway (Socket.IO and SSE). Always on Fargate behind the platform public ALB, with the listener priority of the service in the catalog. path_patterns are required and never reach /internal (ADR 0040); host_headers only narrow them. publish grants it the producer topics and queues from the topology."
   type = object({
     path_patterns      = optional(list(string), [])
     host_headers       = optional(list(string), [])
@@ -98,13 +99,13 @@ variable "realtime" {
   default = null
 
   validation {
-    condition     = var.realtime == null || length(try(var.realtime.path_patterns, [])) + length(try(var.realtime.host_headers, [])) > 0
-    error_message = "realtime needs path_patterns or host_headers."
+    condition     = var.realtime == null || length(try(var.realtime.path_patterns, [])) > 0
+    error_message = "realtime needs path_patterns: a rule with only host_headers routes every path of the host, /internal included."
   }
 
   validation {
-    condition     = var.realtime == null || alltrue([for pattern in try(var.realtime.path_patterns, []) : !startswith(lower(pattern), "/internal")])
-    error_message = "realtime.path_patterns cannot start with /internal: the internal API is never public (ADR 0040)."
+    condition     = var.realtime == null || alltrue([for path in try(var.realtime.path_patterns, []) : !(path == "/" || startswith(lower(regex("^[^*?]*", path)), "/internal") || (length(regex("^[^*?]*", path)) < length(path) && startswith("/internal", lower(regex("^[^*?]*", path)))))])
+    error_message = "realtime.path_patterns cannot be /, start with /internal or hold a wildcard that reaches it (/*, *, /in*): the internal API is never public (ADR 0040)."
   }
 }
 
