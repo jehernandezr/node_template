@@ -204,7 +204,7 @@ run "reads_the_service_base_outputs_from_remote_state" {
   }
 
   assert {
-    condition     = local.fargate_environment["worker-commands"]["QUEUE_URL"] == "https://sqs.us-east-1.amazonaws.com/123456789012/nt-dev-identity-commands" && !contains(keys(local.fargate_environment["worker-reports"]), "files")
+    condition     = local.fargate_environment["worker-commands"]["QUEUE_URL"] == "https://sqs.us-east-1.amazonaws.com/123456789012/nt-dev-identity-commands" && local.fargate_environment["worker-reports"]["QUEUE_URL"] == "https://sqs.us-east-1.amazonaws.com/123456789012/nt-dev-identity-reports"
     error_message = "A worker adds the variables of its own component, such as the URL of its queue."
   }
 
@@ -431,6 +431,25 @@ run "listener_priorities_come_from_the_fixed_registry" {
   assert {
     condition     = module.api_fargate[0].listener_rule_priority == 20 && module.realtime[0].listener_rule_priority == 20
     error_message = "The API and realtime rules of identity use its registry priority, each on its own listener."
+  }
+}
+
+run "listener_priorities_do_not_depend_on_the_service_folders_of_the_environment" {
+  command = plan
+
+  variables {
+    environment = "local"
+    api         = { route_prefixes = ["/identity"] }
+    realtime    = { path_patterns = ["/identity/socket.io/*"] }
+    workers = {
+      commands = {}
+      reports  = {}
+    }
+  }
+
+  assert {
+    condition     = module.api_fargate[0].listener_rule_priority == 20 && module.realtime[0].listener_rule_priority == 20
+    error_message = "The priority comes from listener-priorities.json even in an environment without service folders, so adding or removing a folder never moves it."
   }
 }
 
