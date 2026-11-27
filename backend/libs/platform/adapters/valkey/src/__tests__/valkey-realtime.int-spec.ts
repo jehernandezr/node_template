@@ -198,7 +198,11 @@ new ContainerRuntime(process.env).describeIfAvailable(
           auth,
           baseUrl: first.host.url(),
           resumeUrl: second.host.url(),
-          publisher: new RealtimePublisher(first.stream, first.presence),
+          publisher: new RealtimePublisher(
+            first.stream,
+            first.presence,
+            new SilentLogger(),
+          ),
           presence: first.presence,
         };
       });
