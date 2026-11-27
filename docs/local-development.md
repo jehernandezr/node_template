@@ -113,7 +113,7 @@ pnpm nx run identity:serve     # API at http://localhost:3000
 pnpm nx run identity:worker    # outbox relay, consumers and jobs
 ```
 
-`IDENTITY_MAILER=console` writes emails with codes and links to the log; with `memory` they stay only in the process, as in the tests. The identity end-to-end tests (`backend/apps/identity/e2e`) start their own PostgreSQL and Valkey with Testcontainers and do not use this infrastructure.
+`IDENTITY_MAILER=console` writes emails with codes and links to the log; with `memory` they stay only in the process, as in the tests. Both need `DEPLOY_ENVIRONMENT=local`: `dev`, `staging` and `prod` accept only the providers of [ADR 0046](adr/0046-providers-and-telemetry-per-environment.md). The identity end-to-end tests (`backend/apps/identity/e2e`) start their own PostgreSQL and Valkey with Testcontainers and do not use this infrastructure.
 
 ## Smoke tests of the service images
 
