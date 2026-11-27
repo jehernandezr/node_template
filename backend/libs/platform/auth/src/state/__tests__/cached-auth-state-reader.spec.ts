@@ -128,7 +128,7 @@ describe('CachedAuthStateReader', () => {
         state.failure = new Error('down');
 
         await expect(read(reader)).rejects.toMatchObject({
-          code: PlatformErrorCode.ResilienceCircuitOpen,
+          code: PlatformErrorCode.DependencyUnavailable,
         });
       },
     );
@@ -190,7 +190,7 @@ describe('CachedAuthStateReader', () => {
       state.failure = new Error('down');
 
       await expect(reader.isSessionRevoked('session-5')).rejects.toMatchObject({
-        code: PlatformErrorCode.ResilienceCircuitOpen,
+        code: PlatformErrorCode.DependencyUnavailable,
       });
     });
   });

@@ -12,6 +12,7 @@ export class SocketTestClient {
   readonly frames: ReceivedFrame[] = [];
   disconnected = false;
   connectError: string | undefined;
+  connectErrorData: unknown;
   private socket: Socket | undefined;
 
   async open(
@@ -39,6 +40,7 @@ export class SocketTestClient {
       this.socket?.on(SocketSink.READY_EVENT, () => resolve());
       this.socket?.on('connect_error', (error) => {
         this.connectError = error.message;
+        this.connectErrorData = (error as Error & { data?: unknown }).data;
         resolve();
       });
     });

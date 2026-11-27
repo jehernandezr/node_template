@@ -1,6 +1,7 @@
 import type { IncomingMessage } from 'node:http';
 import { Server, type Socket } from 'socket.io';
 import { StreamAuthenticator } from '../auth/stream-authenticator.js';
+import { StreamRejection } from '../auth/stream-rejection.js';
 import type { StreamPrincipal } from '../auth/stream-principal.js';
 import type { RealtimeHost } from '../realtime-host.js';
 import { RealtimeTransport } from '../realtime-transport.js';
@@ -53,9 +54,7 @@ export class SocketIoTransport extends RealtimeTransport {
           socket.data = principal;
           next();
         })
-        .catch((error: unknown) =>
-          next(error instanceof Error ? error : new Error(String(error))),
-        );
+        .catch((error: unknown) => next(SocketIoTransport.refusal(error)));
     });
     namespace.on('connection', (socket) => {
       this.serve(socket).catch(() => socket.disconnect(true));
@@ -66,6 +65,21 @@ export class SocketIoTransport extends RealtimeTransport {
     await this.connections.closeAll();
     this.server?.disconnectSockets(true);
     this.server?.engine.close();
+  }
+
+  /**
+   * The `connect_error` a client receives. An authentication failure carries the status and code of its
+   * `StreamRejection` in `data`, so a client tells a credential to renew (401) from a state to wait for (503).
+   */
+  private static refusal(error: unknown): Error {
+    const rejection = StreamRejection.of(error);
+    const refused = error instanceof Error ? error : new Error(String(error));
+    if (rejection === undefined) {
+      return refused;
+    }
+    return Object.assign(new Error(rejection.code), {
+      data: rejection.problem(),
+    });
   }
 
   private allowsOrigin(request: IncomingMessage): boolean {

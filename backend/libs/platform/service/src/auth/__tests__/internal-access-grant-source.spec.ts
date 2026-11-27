@@ -65,7 +65,7 @@ describe('InternalAccessGrantSource', () => {
 
   it('reports the auth state as unavailable when identity does not answer with a grant', async () => {
     await expect(source.fetch(TENANT, STRANGER)).rejects.toMatchObject({
-      code: PlatformErrorCode.ResilienceCircuitOpen,
+      code: PlatformErrorCode.DependencyUnavailable,
     });
   });
 });

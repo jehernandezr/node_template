@@ -140,6 +140,10 @@
         {
           "name": "ResilienceOverloaded",
           "value": "PLATFORM.RESILIENCE.OVERLOADED"
+        },
+        {
+          "name": "DependencyUnavailable",
+          "value": "PLATFORM.DEPENDENCY.UNAVAILABLE"
         }
       ]
     },
@@ -791,6 +795,15 @@
         "audience": "public",
         "messageKey": "error_platform_resilience_overloaded",
         "description": "The service is overloaded. Try again in a few moments."
+      },
+      {
+        "name": "DependencyUnavailable",
+        "code": "PLATFORM.DEPENDENCY.UNAVAILABLE",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_dependency_unavailable",
+        "description": "A shared dependency of the service is not available right now. Try again in a few moments."
       }
     ]
   }

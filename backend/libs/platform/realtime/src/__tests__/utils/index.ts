@@ -10,3 +10,4 @@ export * from './test-realtime-host.js';
 export * from './realtime-client.js';
 export * from './realtime-clients.js';
 export * from './transport-reconnection-contract.js';
+export * from './unavailable-stream-authenticator.js';

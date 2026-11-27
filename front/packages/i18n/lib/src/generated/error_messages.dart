@@ -71,6 +71,8 @@ String errorMessageFor(AppLocalizations l10n, String code) {
       l10n.error_platform_resilience_bulkhead_full,
     'PLATFORM.RESILIENCE.OVERLOADED' =>
       l10n.error_platform_resilience_overloaded,
+    'PLATFORM.DEPENDENCY.UNAVAILABLE' =>
+      l10n.error_platform_dependency_unavailable,
     'BILLING.SUBSCRIPTION.NOT_FOUND' =>
       l10n.error_billing_subscription_not_found,
     'BILLING.SUBSCRIPTION.NOT_CHANGEABLE' =>

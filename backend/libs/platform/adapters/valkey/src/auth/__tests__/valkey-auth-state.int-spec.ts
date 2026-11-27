@@ -186,7 +186,7 @@ runtime.describeIfAvailable('Valkey auth state against a real server', () => {
 
       expect(await cached.userEpoch('u1')).toEqual(EPOCH);
       await expect(cached.userEpoch('u2')).rejects.toMatchObject({
-        code: 'PLATFORM.RESILIENCE.CIRCUIT_OPEN',
+        code: 'PLATFORM.DEPENDENCY.UNAVAILABLE',
       });
     });
   });
