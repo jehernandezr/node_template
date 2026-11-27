@@ -1,7 +1,8 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, relative, resolve } from 'node:path';
 import { EnvironmentMocks } from '../environment-mocks.mjs';
 import { GeneratedServiceWorkspace } from '../generated-service-workspace.mjs';
 import { ServiceCatalog } from '../service-catalog.mjs';
@@ -70,12 +71,20 @@ describe('GeneratedServiceWorkspace', () => {
     assert.deepEqual(Object.keys(data.valkey.user_names), ['order_history']);
   });
 
-  it('removes the copy', () => {
+  it('copies into the repository tmp folder and not into the system temporary folder', () => {
+    assert.equal(workspace.copiesDir, resolve(TERRAFORM, '../../../tmp'));
+    assert.ok(!relative(workspace.copiesDir, root).startsWith('..'));
+    assert.ok(relative(tmpdir(), root).startsWith('..'));
+  });
+
+  it('removes the copy and leaves nothing behind', () => {
     const other = new GeneratedServiceWorkspace(TERRAFORM, VALUES);
+    const before = readdirSync(other.copiesDir);
     const otherRoot = other.create();
     other.remove();
     other.remove();
 
     assert.ok(!existsSync(otherRoot));
+    assert.deepEqual(readdirSync(other.copiesDir), before);
   });
 });
