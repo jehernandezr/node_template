@@ -6,7 +6,11 @@ import { identityConfigSchema } from '../identity.config.js';
 
 const deployed = (environment: DeployEnvironment): ConfigEnv =>
   IdentityTestEnvironment.build(
-    DeployedServiceEnvironment.of('identity', environment),
+    DeployedServiceEnvironment.of(
+      'identity',
+      environment,
+      IdentityTestEnvironment.build(),
+    ),
   );
 
 describe.each(DeployedServiceEnvironment.ENVIRONMENTS)(

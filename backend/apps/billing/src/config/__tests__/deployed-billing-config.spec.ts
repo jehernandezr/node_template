@@ -4,9 +4,13 @@ import { DeployedServiceEnvironment } from '@platform/config/test-utils';
 import { PaymentProviderKind } from '../../shared/enums/payment-provider-kind.enum.js';
 import { billingConfigSchema } from '../billing.config.js';
 
-const deployed = (environment: DeployEnvironment): ConfigEnv => ({
+const samples: ConfigEnv = {
   INTERNAL_API_SHARED_SECRET: randomBytes(32).toString('base64url'),
-  ...DeployedServiceEnvironment.of('billing', environment),
+};
+
+const deployed = (environment: DeployEnvironment): ConfigEnv => ({
+  ...samples,
+  ...DeployedServiceEnvironment.of('billing', environment, samples),
 });
 
 describe.each(DeployedServiceEnvironment.ENVIRONMENTS)(
