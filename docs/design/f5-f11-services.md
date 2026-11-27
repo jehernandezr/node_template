@@ -59,14 +59,14 @@ Where this document and an ADR contradict each other, the ADR wins, except for w
 | Runtime                      | `bootstrapHttp`, `bootstrapLambda`         | Fargate, Lambda                                                                                                     | `api.runtime` in tfvars               | ADR 0020                                                     |
 | Internal call signing        | `InternalRequestSigner`                    | `HmacSigner`, `SigV4Signer`                                                                                         | `INTERNAL_API_SIGNER`                 | ARCHITECTURE                                                 |
 | Search                       | `SearchIndex`                              | `PostgresTextSearch` (`tsvector`), `PostgresHybridSearch` (pgvector and `EmbeddingProvider`)                        | `SEARCH_MODE`                         | ARCHITECTURE                                                 |
-| Email                        | `EmailSender`                              | `SesEmailSender`, `SmtpEmailSender`                                                                                 | `EMAIL_TRANSPORT`                     | ARCHITECTURE                                                 |
+| Email                        | `EmailSender`                              | `SesEmailSender`, `SmtpEmailSender`, `InMemoryEmailSender`                                                          | `NOTIFICATIONS_EMAIL_SENDER`          | ARCHITECTURE                                                 |
 | Email templates              | `TemplateRenderer`                         | `TypeScriptTemplateRenderer`                                                                                        | only one; the port allows others      | this design                                                  |
-| Push                         | `PushSender`                               | `InMemoryPushSender` (APNs, FCM and Web Push require the user's accounts)                                           | `PUSH_TRANSPORT`                      | ARCHITECTURE                                                 |
+| Push                         | `PushSender`                               | `InMemoryPushSender`, `NonePushSender` (APNs, FCM and Web Push require the user's accounts)                         | `NOTIFICATIONS_PUSH_SENDER`           | ARCHITECTURE                                                 |
 | Flags                        | `FlagStore`                                | `ConfigFlagStore`, `InMemoryFlagStore`                                                                              | `FLAGS_STORE`                         | this design                                                  |
 | Report results               | `ReportResultStore`                        | `RowReportResultStore`; S3 arrives with `files`                                                                     | `REPORTS_RESULT_STORE`                | this design                                                  |
 | Tenant move                  | `TenantDataTransfer`                       | `BatchCopyTransfer` (batches and delta rounds), `LogicalReplicationTransfer` (PostgreSQL logical replication)       | `TENANT_MOVE_STRATEGY`                | [ADR 0010](../adr/0010-logical-sharding-region-residency.md) |
 | Write lock during the move   | `TenantWriteGate`                          | `DirectoryWriteGate` (shard directory), `ValkeyWriteGate` (lock in Valkey)                                          | `TENANT_WRITE_GATE`                   | ADR 0010                                                     |
-| Charging                     | `PaymentProvider`                          | `FakePaymentProvider`                                                                                               | the real one arrives after F12        | ARCHITECTURE                                                 |
+| Charging                     | `PaymentProvider`                          | `FakePaymentProvider`, `NonePaymentProvider` (the real one arrives after F12)                                       | `BILLING_PAYMENT_PROVIDER`            | ARCHITECTURE                                                 |
 
 The `EmbeddingProvider` of hybrid search ships a deterministic fake; the real adapter arrives with the AI module ([ADR 0013](../adr/0013-ai-module-ports-claude.md)).
 
@@ -269,7 +269,7 @@ With Socket.IO, the same flow goes through the `/notifications` namespace with t
 | `preferences` | `NotificationPreferences` per user and `DeliveryPolicy`: channels by type, preferences, quiet hours and presence                                                                                                                                            | User               |
 | `dispatch`    | `NotifyUser`, recipient and language via `identity.users.get-profile.v1`, templates per type, delivery retry (`NotificationsJob.RetryDeliveries`, exclusive, up to 5 attempts)                                                                              | User               |
 | `email`       | `EmailSender` (`SesEmailSender`, `SmtpEmailSender` for Mailpit, `InMemoryEmailSender`), versioned templates and suppression list                                                                                                                            | Tenant and catalog |
-| `push`        | `PushSender` per platform (`ApnsPushSender`, `FcmPushSender`, `WebPushSender`: in F6 only `InMemoryPushSender`) and targets via `identity.devices.list-push-targets.v1`                                                                                     | None               |
+| `push`        | `PushSender` per platform (`ApnsPushSender`, `FcmPushSender`, `WebPushSender`: for now only `InMemoryPushSender` and `NonePushSender`, which delivers nothing and records the push as skipped) and targets via `identity.devices.list-push-targets.v1`      | None               |
 | `realtime`    | Mounts `RealtimeModule` from `@platform/realtime` with the transports of `REALTIME_TRANSPORTS`; `RealtimeFacade` publishes to the per-user Valkey Stream (`notifications:rt:*`). With `REALTIME_HOST=app` it mounts nothing and `apps/realtime` handles it. |
 | `triggers`    | Consumers that translate events into `NotifyUser`, with the table below                                                                                                                                                                                     | None               |
 
@@ -310,7 +310,7 @@ Each facade has its fake in `modules/<m>/__tests__/utils/`. Templates are `Email
 
 Tables: `notifications` (user: `id`, `type`, `title`, `body`, `locale`, `read_at`), `notification_preferences` (one row per user), `notification_deliveries` (notification, channel, status, error, provider id), `email_messages` (tenant: template, version, HMAC fingerprint of the recipient, status, `trace_id`; it does not store the body) and `email_suppressions` (catalog: email fingerprint, reason). Valkey: `notifications:presence:{userId}` and `notifications:rt:{userId}`, always under the service prefix (ADR 0021).
 
-Configuration: `NOTIFICATIONS_EMAIL_SENDER` (`memory`, `smtp` or `ses`; `smtp` only with `NODE_ENV=development`), `SMTP_URL`, `NOTIFICATIONS_FROM_ADDRESS`, `NOTIFICATIONS_PUSH_SENDER` (`memory`), `NOTIFICATIONS_INBOX_RETENTION_DAYS`.
+Configuration: `NOTIFICATIONS_EMAIL_SENDER` (`memory`, `smtp` or `ses`; `dev`, `staging` and `prod` accept only `ses`), `SMTP_URL`, `NOTIFICATIONS_FROM_ADDRESS`, `NOTIFICATIONS_PUSH_SENDER` (`memory` or `none`; `dev` accepts both, `staging` and `prod` only `none`), `NOTIFICATIONS_INBOX_RETENTION_DAYS`. The allowed values follow `DEPLOY_ENVIRONMENT` ([ADR 0046](../adr/0046-providers-and-telemetry-per-environment.md)); `local` accepts any.
 
 ## 6. `reports` (F7)
 
@@ -454,7 +454,7 @@ The schemas mirror the front types: `Plan` (`id`, `name`, `price: MoneyAmount`, 
 | `usage`         | Idempotent ingestion of the command (`usage_records`, unique per tenant and `key`), aggregates per period (`usage_totals`) and user count via `membership.changed`                           | Tenant                   |
 | `entitlements`  | `EntitlementsSnapshot` (features and quotas of the current plan), `get` and `check` operations, `entitlements.changed` event                                                                 | None of its own          |
 | `invoices`      | `Invoice` and lines, consecutive numbering per tenant (`invoice_sequences`), `BillingJob.CloseInvoicePeriods` (daily, exclusive)                                                             | Tenant                   |
-| `payments`      | `PaymentProvider` port (`FakePaymentProvider`), `payment_attempts`, `mark-paid` and `mark-failed` operations                                                                                 | Tenant                   |
+| `payments`      | `PaymentProvider` port (`FakePaymentProvider`, `NonePaymentProvider`, which never charges and leaves each invoice issued), `payment_attempts`, `mark-paid` and `mark-failed` operations      | Tenant                   |
 
 ```ts
 export abstract class SubscriptionsFacade {
@@ -485,7 +485,7 @@ export abstract class PaymentProvider {
 - **Invoices.** `CloseInvoicePeriods` closes the expired periods: it builds the fixed fee and usage lines (only metrics with a unit price in the plan, decision 11), issues the invoice, publishes `invoice.issued` and asks `PaymentProvider` for the charge. Everything in integers of the minimum unit with its currency.
 - **Quotas.** `Users` is checked in identity when adding a member (`BillingQuotaChecker`); `ApiCalls` with `@Quota(UsageMetric.ApiCalls)` on the integration routes. The value of `check` can lag by up to 10 s.
 
-Configuration: `BILLING_TRIAL_DAYS`, `BILLING_GRACE_DAYS`, `BILLING_INVOICE_SERIES`, `BILLING_PAYMENT_PROVIDER` (`fake`). Invoice numbers are internal; electronic invoicing with the DIAN is out of scope.
+Configuration: `BILLING_TRIAL_DAYS`, `BILLING_GRACE_DAYS`, `BILLING_INVOICE_SERIES`, `BILLING_PAYMENT_PROVIDER` (`fake` or `none`; `dev` accepts both, `staging` and `prod` only `none`, per [ADR 0046](../adr/0046-providers-and-telemetry-per-environment.md)). Invoice numbers are internal; electronic invoicing with the DIAN is out of scope.
 
 ## 8. What crosses services (wave 7)
 
@@ -667,7 +667,7 @@ Phases are grouped by dependency: each service brings its Terraform stack, each 
 | Need                     | Decision                                                                                                                                                                                            |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Email on AWS             | Library: `@aws-sdk/client-sesv2`, isolated in `SesEmailSender`. Implementing the signed SES protocol (SigV4) by hand would be unwise.                                                               |
-| Local email (Mailpit)    | In-house: `SmtpEmailSender` on `node:net`, without authentication or TLS, only with `NODE_ENV=development`. `nodemailer` is discarded.                                                              |
+| Local email (Mailpit)    | In-house: `SmtpEmailSender` on `node:net`, without authentication or TLS, only with `DEPLOY_ENVIRONMENT=local`. `nodemailer` is discarded.                                                          |
 | Email templates          | In-house: classes with strings and `escapeHtml`. React Email and MJML are discarded.                                                                                                                |
 | Feature flags            | In-house: `@platform/flags`. OpenFeature is discarded.                                                                                                                                              |
 | Real time                | In-house SSE on `text/event-stream` and Valkey Stream. Socket.IO with its library and the streams adapter, because reimplementing its protocol is unwise.                                           |
@@ -689,16 +689,16 @@ The dates were checked with `npm view` on November 16, 2026: all are more than t
 
 ## 14. Outside F5 to F11
 
-| Piece                                                                                         | How it is simulated or postponed                           | Phase     |
-| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------- |
-| `files` service, attachments and `StorageGb`                                                  | No `StorageGb` source; reports store the result in the row | Later     |
-| Outgoing webhooks                                                                             | Nothing                                                    | Later     |
-| Real `EmbeddingProvider` adapter, AI module and `assistant`                                   | Deterministic embeddings fake; `assistant` keeps demo data | Later     |
-| Real push (APNs, FCM, Web Push)                                                               | `InMemoryPushSender`                                       | Later     |
-| SES bounce and complaint events, open tracking pixel                                          | Only the `email_suppressions` table and the port           | Later     |
-| `backoffice-api`, new `backoffice` screens, platform reports                                  | `backoffice` data stays demo data                          | Later     |
-| Real charging, electronic invoicing with the DIAN                                             | `FakePaymentProvider` and internal numbering               | After F12 |
-| `agreements`, DPoP, export to a data lake, SLOs, cross-region recovery, automatic rebalancing | Nothing                                                    | After F12 |
+| Piece                                                                                         | How it is simulated or postponed                                                                                  | Phase     |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------- |
+| `files` service, attachments and `StorageGb`                                                  | No `StorageGb` source; reports store the result in the row                                                        | Later     |
+| Outgoing webhooks                                                                             | Nothing                                                                                                           | Later     |
+| Real `EmbeddingProvider` adapter, AI module and `assistant`                                   | Deterministic embeddings fake; `assistant` keeps demo data                                                        | Later     |
+| Real push (APNs, FCM, Web Push)                                                               | `InMemoryPushSender` in `local` and `dev`, `NonePushSender` in `staging` and `prod`                               | Later     |
+| SES bounce and complaint events, open tracking pixel                                          | Only the `email_suppressions` table and the port                                                                  | Later     |
+| `backoffice-api`, new `backoffice` screens, platform reports                                  | `backoffice` data stays demo data                                                                                 | Later     |
+| Real charging, electronic invoicing with the DIAN                                             | `FakePaymentProvider` in `local` and `dev`, `NonePaymentProvider` in `staging` and `prod`, and internal numbering | After F12 |
+| `agreements`, DPoP, export to a data lake, SLOs, cross-region recovery, automatic rebalancing | Nothing                                                                                                           | After F12 |
 
 ## 15. Decisions that require the user
 
