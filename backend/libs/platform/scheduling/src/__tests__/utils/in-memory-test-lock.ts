@@ -3,12 +3,16 @@ import { JobLock, type JobLease } from '@platform/kernel';
 /** Controllable lock to test `JobExecution` without a clock or timings. */
 export class InMemoryTestLock extends JobLock {
   held = false;
+  failAcquire = false;
   failRelease = false;
   releases = 0;
   renewals = 0;
   leaseLost = false;
 
   override async tryAcquire(name: string): Promise<JobLease | undefined> {
+    if (this.failAcquire) {
+      throw new Error('lock store down');
+    }
     if (this.held) {
       return undefined;
     }
