@@ -55,7 +55,14 @@ const GENERATED_TESTS = join('tests', '.environment-generated');
  * Remote states that each stack's environment test reads from EnvironmentMocks instead of fixed values.
  */
 const ENVIRONMENT_MOCKS = Object.freeze({
-  'service-base': ['network', 'platform', 'data', 'messaging', 'service'],
+  'service-base': [
+    'network',
+    'platform',
+    'data',
+    'messaging',
+    'service',
+    'service_base',
+  ],
   service: ['network', 'platform', 'messaging', 'service_base'],
 });
 

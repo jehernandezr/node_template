@@ -153,6 +153,8 @@ locals {
   lambda_secrets          = distinct(concat([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)], local.db_secret_arn == null ? [] : [local.db_secret_arn]))
   data_security_group_ids = [local.data.clients_security_group_id]
   running_dropped         = [for key in local.service.components : key if !contains(keys(local.components), key)]
+  service_state_found     = local.service.service_name != null
+  service_applied         = local.service_state_found || local.previous.service_applied
 
   component_names_distinct = length(distinct([for c in values(local.components) : c.name])) == length(local.components)
 
@@ -168,6 +170,14 @@ resource "terraform_data" "service_check" {
     precondition {
       condition     = local.component_names_distinct
       error_message = "Two components share a name: a worker or consumer key cannot repeat another one, nor be api, rt or one-off."
+    }
+    precondition {
+      condition     = !local.service_state_found || local.service.service_name == local.svc
+      error_message = "The service state at ${local.service_state_key} belongs to another service."
+    }
+    precondition {
+      condition     = local.service_state_found || !local.previous.service_applied
+      error_message = "The service stack was applied before, but its state is not found at ${local.service_state_key}, so the components it runs are unknown. Fix the key or the bucket; if the service stack was destroyed on purpose, destroy this stack too."
     }
     precondition {
       condition     = length(local.running_dropped) == 0

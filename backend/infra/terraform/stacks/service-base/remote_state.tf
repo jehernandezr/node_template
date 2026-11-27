@@ -31,6 +31,9 @@ locals {
   data      = data.terraform_remote_state.data.outputs
   messaging = data.terraform_remote_state.messaging.outputs
   service   = data.terraform_remote_state.service.outputs
+  previous  = data.terraform_remote_state.service_base.outputs
+
+  service_state_key = "${var.region}/services/${var.service_name}/terraform.tfstate"
 }
 
 data "terraform_remote_state" "network" {
@@ -54,9 +57,17 @@ data "terraform_remote_state" "messaging" {
 }
 
 # The service stack of this same service, applied after this one. Before its first apply it has no state, and
-# the defaults say it runs nothing.
+# the defaults say it runs nothing and name no service.
 data "terraform_remote_state" "service" {
   backend  = "s3"
-  config   = merge(local.remote_state_config, { key = "${var.region}/services/${var.service_name}/terraform.tfstate" })
-  defaults = { components = [] }
+  config   = merge(local.remote_state_config, { key = local.service_state_key })
+  defaults = { components = [], service_name = null }
+}
+
+# The last apply of this stack: it records whether it found the service state, so a later plan that no longer
+# finds it fails instead of reading an empty list of running components.
+data "terraform_remote_state" "service_base" {
+  backend  = "s3"
+  config   = merge(local.remote_state_config, { key = "${var.region}/services/${var.service_name}/base/terraform.tfstate" })
+  defaults = { service_applied = false }
 }

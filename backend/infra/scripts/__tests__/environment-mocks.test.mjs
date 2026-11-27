@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -28,6 +29,9 @@ class MockedTerraform {
   }
 
   write(stack, text) {
+    mkdirSync(join(this.root, 'environments', 'dev', stack), {
+      recursive: true,
+    });
     writeFileSync(
       join(this.root, 'environments', 'dev', stack, 'terraform.tfvars'),
       text,
@@ -229,6 +233,7 @@ describe('EnvironmentMocks', () => {
     assert.deepEqual(
       new EnvironmentMocks(terraform.root, 'dev', 'billing').service(),
       {
+        service_name: 'billing',
         components: [
           'api',
           'consumer-mail_events',
@@ -236,6 +241,33 @@ describe('EnvironmentMocks', () => {
           'worker-usage',
         ],
       },
+    );
+  });
+
+  it('names a two-word service by its snake_case service_name and its resources by its folder', () => {
+    terraform.write(
+      'services/order-history/base',
+      'api = { runtime = "fargate" }',
+    );
+    terraform.write('services/order-history', 'api = {}');
+    const mocks = new EnvironmentMocks(terraform.root, 'dev', 'order-history');
+
+    assert.equal(mocks.serviceBase().service_name, 'order_history');
+    assert.equal(
+      mocks.serviceBase().fargate_environment.SERVICE_NAME,
+      'order_history',
+    );
+    assert.equal(mocks.serviceBase().components.api.name, 'order-history-api');
+    assert.equal(mocks.service().service_name, 'order_history');
+  });
+
+  it('records the service stack as applied in the service-base outputs', () => {
+    terraform.write('services/billing/base', 'api = { runtime = "lambda" }');
+
+    assert.equal(
+      new EnvironmentMocks(terraform.root, 'dev', 'billing').serviceBase()
+        .service_applied,
+      true,
     );
   });
 

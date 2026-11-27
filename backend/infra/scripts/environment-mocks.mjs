@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { ServiceName } from './service-name.mjs';
 import { TfvarsBlockReader } from './tfvars-block-reader.mjs';
 
 const ACCOUNT = '123456789012';
@@ -32,7 +33,7 @@ export class EnvironmentMocks {
   /**
    * @param {string} terraformRoot Root of the Terraform tree (backend/infra/terraform).
    * @param {string} environment Environment whose tfvars the outputs follow.
-   * @param {string} [service] Service whose service-base and service outputs serviceBase() and service() build.
+   * @param {string} [service] Folder of the service whose service-base and service outputs serviceBase() and service() build.
    */
   constructor(terraformRoot, environment, service = undefined) {
     this.#terraformRoot = terraformRoot;
@@ -254,12 +255,12 @@ export class EnvironmentMocks {
 
   /**
    * Outputs of the service's service-base stack: one component per api, realtime, worker and consumer of its base/terraform.tfvars, plus the one-off task, with the runtime and queue set there.
-   * @returns {object} service_name, components and the shared environment, secrets and keys.
+   * @returns {object} service_name, service_applied, components and the shared environment, secrets and keys.
    */
   serviceBase() {
-    const service = this.#service;
-    const values = this.#reader(`services/${service}/base`);
-    const name = service.replaceAll('_', '-');
+    const name = this.#service;
+    const service = new ServiceName(name).terraform;
+    const values = this.#reader(`services/${name}/base`);
     const queueUrls = this.messaging().queue_urls;
     const component = (key, componentName, runtime, queue = null) => {
       const fargate = runtime === RUNTIME.fargate;
@@ -296,6 +297,7 @@ export class EnvironmentMocks {
     };
     return {
       service_name: service,
+      service_applied: true,
       components: Object.fromEntries([
         ...(values.hasBlock('api')
           ? [component('api', `${name}-api`, values.stringIn('api', 'runtime'))]
@@ -336,12 +338,13 @@ export class EnvironmentMocks {
   }
 
   /**
-   * Outputs of the service's service stack as its last apply leaves them: the keys of the components its terraform.tfvars runs.
-   * @returns {object} components, sorted.
+   * Outputs of the service's service stack as its last apply leaves them: its service_name and the keys of the components its terraform.tfvars runs.
+   * @returns {object} service_name and components, sorted.
    */
   service() {
     const values = this.#reader(`services/${this.#service}`);
     return {
+      service_name: new ServiceName(this.#service).terraform,
       components: [
         ...['api', 'realtime'].filter((key) => values.hasBlock(key)),
         ...values.entryNames('workers').map((key) => `worker-${key}`),
