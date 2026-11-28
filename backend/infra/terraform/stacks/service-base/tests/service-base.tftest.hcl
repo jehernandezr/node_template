@@ -75,11 +75,14 @@ override_data {
       db_service_secret_arns = { identity = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf" }
       service_databases      = { identity = { shards = ["identity_shard_0", "identity_shard_1"], catalog = "catalog" } }
       valkey = {
-        endpoint              = "nt-dev-valkey.serverless.use1.cache.amazonaws.com"
-        cache_name            = "nt-dev-valkey"
-        port                  = 6379
-        user_names            = { identity = "nt-dev-identity" }
-        connect_resource_arns = { identity = ["arn:aws:elasticache:us-east-1:123456789012:serverlesscache:nt-dev-valkey"] }
+        endpoint   = "nt-dev-valkey.serverless.use1.cache.amazonaws.com"
+        cache_name = "nt-dev-valkey"
+        port       = 6379
+        user_names = { identity = "nt-dev-identity", tasks = "nt-dev-tasks" }
+        connect_resource_arns = {
+          identity = ["arn:aws:elasticache:us-east-1:123456789012:serverlesscache:nt-dev-valkey"]
+          tasks    = ["arn:aws:elasticache:us-east-1:123456789012:serverlesscache:nt-dev-valkey"]
+        }
       }
     }
   }
@@ -304,7 +307,6 @@ run "a_worker_without_queue_runs_the_loops_of_a_service_that_consumes_none" {
   variables {
     service_name    = "tasks"
     database_access = false
-    valkey_access   = false
     api             = { runtime = "lambda" }
     workers         = { jobs = {} }
   }
@@ -313,6 +315,18 @@ run "a_worker_without_queue_runs_the_loops_of_a_service_that_consumes_none" {
     condition     = !contains(keys(local.component_environment["worker-jobs"]), "QUEUE_URL") && !strcontains(try(local.policies["worker-jobs"]["messaging"], ""), "sqs:ReceiveMessage")
     error_message = "A worker without queue gets no QUEUE_URL and consumes nothing."
   }
+}
+
+run "a_service_without_its_valkey_user_is_rejected" {
+  command = plan
+
+  variables {
+    service_name    = "billing"
+    database_access = false
+    api             = { runtime = "lambda" }
+  }
+
+  expect_failures = [terraform_data.service_check]
 }
 
 run "a_worker_without_queue_is_rejected_where_the_service_consumes_queues" {

@@ -41,4 +41,3 @@ secrets               = {}
 # Topics and queues come from the producers and consumer of topology.json: they are not repeated here. Each
 # worker or consumer only consumes its own queue; files and SES are requested per component.
 database_access = true
-valkey_access   = true

@@ -33,4 +33,3 @@ environment_variables = {
 secrets = {}
 
 database_access = true
-valkey_access   = true

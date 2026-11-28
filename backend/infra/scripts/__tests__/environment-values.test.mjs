@@ -12,6 +12,34 @@ const ENVIRONMENTS = join(
 );
 const COMMON_KEYS = ['environment', 'name_prefix', 'domain'];
 const TERRAFORM = resolve(ScriptRunner.scriptsDir, '../terraform');
+const SERVICE_BASE = join(TERRAFORM, 'stacks', 'service-base');
+
+/** The variables a stack declares across its .tf files. */
+class StackVariables {
+  constructor(dir) {
+    this.names = new Set(
+      readdirSync(dir)
+        .filter((name) => name.endsWith('.tf'))
+        .flatMap((name) => [
+          ...readFileSync(join(dir, name), 'utf8').matchAll(
+            /^variable\s+"([a-z0-9_]+)"/gm,
+          ),
+        ])
+        .map((match) => match[1]),
+    );
+  }
+
+  /**
+   * The top-level keys of a tfvars file that the stack does not declare.
+   * @param {string} text Content of the tfvars file.
+   * @returns {string[]} The undeclared keys.
+   */
+  undeclaredIn(text) {
+    return [...text.matchAll(/^([a-z0-9_]+)\s*=/gm)]
+      .map((match) => match[1])
+      .filter((key) => !this.names.has(key));
+  }
+}
 
 /** The tfvars of one environment: its common.tfvars and every stack's terraform.tfvars. */
 class EnvironmentValues {
@@ -41,6 +69,13 @@ class EnvironmentValues {
 }
 
 describe('environment values', () => {
+  const serviceBase = new StackVariables(SERVICE_BASE);
+
+  it('service-base has no variable that leaves a deployed service without Valkey', () => {
+    assert.equal(serviceBase.names.has('valkey_access'), false);
+    assert.ok(serviceBase.names.has('service_name'));
+  });
+
   for (const environment of readdirSync(ENVIRONMENTS).sort()) {
     const values = new EnvironmentValues(environment);
 
@@ -105,6 +140,16 @@ describe('environment values', () => {
             `${where} service_name`,
           );
         }
+      });
+    }
+
+    for (const folder of values.services()) {
+      it(`${environment} ${folder} base sets only variables that service-base declares`, () => {
+        const text = readFileSync(
+          join(values.dir, 'services', folder, 'base', 'terraform.tfvars'),
+          'utf8',
+        );
+        assert.deepEqual(serviceBase.undeclaredIn(text), []);
       });
     }
 
