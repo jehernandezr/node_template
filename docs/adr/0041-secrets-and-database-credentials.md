@@ -33,7 +33,7 @@ Every service tfvars has `secrets = {}`. No stack creates the identity keys and 
 **Delivery.**
 
 - Fargate: the task definition `secrets` (`valueFrom` ARN), injected at task start. A rotation is picked up by a forced new deployment, which the runbooks include.
-- Lambda: `SECRETS_MAP` is a JSON map from variable name to ARN, with an optional JSON key as in `valueFrom`. `LambdaBootstrap` resolves it through a new `SecretSource` port (`@platform/config`, adapter `SecretsManagerSecretSource` in `@platform/adapters-aws`, `BatchGetSecretValue` for up to twenty secrets per call) before validating the configuration, once per execution environment. A new execution environment picks up a rotation; a deploy forces it.
+- Lambda: `SECRETS_MAP` is a JSON map from variable name to ARN, with an optional JSON key as in `valueFrom`. `LambdaBootstrap` resolves it through a new `SecretSource` port (`@platform/config`, adapter `SecretsManagerSecretSource` in `@platform/adapters-aws`, `BatchGetSecretValue` for up to twenty secrets per call) before validating the configuration, once per execution environment. The function role gets `GetSecretValue` on each of its secrets and `BatchGetSecretValue`, which takes no resource scope, on `*`. A new execution environment picks up a rotation; a deploy forces it.
 
 **Database access.** Each service has three login roles, created by the bootstrap Lambda:
 

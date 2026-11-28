@@ -117,3 +117,35 @@ run "without_a_key_the_component_creates_its_own" {
     error_message = "Without kms_key_arn the component creates the CMK of its logs."
   }
 }
+
+run "a_lambda_with_secrets_may_read_them_in_one_batch" {
+  command = plan
+
+  variables {
+    runtime     = "lambda"
+    secret_arns = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/tasks-api/data-key-AbCdEf"]
+  }
+
+  assert {
+    condition     = length([for statement in data.aws_iam_policy_document.function.statement : statement if statement.sid == "ReadSecrets" && toset(statement.actions) == toset(["secretsmanager:GetSecretValue"]) && toset(statement.resources) == toset(var.secret_arns)]) == 1
+    error_message = "The function role may read each secret of SECRETS_MAP, and only those."
+  }
+
+  assert {
+    condition     = length([for statement in data.aws_iam_policy_document.function.statement : statement if statement.sid == "BatchReadSecrets" && toset(statement.actions) == toset(["secretsmanager:BatchGetSecretValue"]) && toset(statement.resources) == toset(["*"])]) == 1
+    error_message = "BatchGetSecretValue has no resource scope, so the function role needs it on every resource to read SECRETS_MAP in one call."
+  }
+}
+
+run "a_lambda_without_secrets_gets_no_batch_read" {
+  command = plan
+
+  variables {
+    runtime = "lambda"
+  }
+
+  assert {
+    condition     = length([for statement in data.aws_iam_policy_document.function.statement : statement if contains(["ReadSecrets", "BatchReadSecrets"], statement.sid)]) == 0
+    error_message = "A function without secrets may not read any."
+  }
+}
