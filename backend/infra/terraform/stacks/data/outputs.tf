@@ -21,7 +21,7 @@ output "db_service_secret_arns" {
 }
 
 output "service_databases" {
-  description = "Per service, its databases: shards (sorted list <service>_shard_<n>) and catalog (null without access)."
+  description = "Per service, its databases: shards (sorted list <service>_shard_<n>) and catalog (<service>_catalog)."
   value       = local.service_databases
 }
 

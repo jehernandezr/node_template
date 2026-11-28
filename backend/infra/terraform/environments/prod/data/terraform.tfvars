@@ -12,11 +12,11 @@ db_skip_final_snapshot     = false
 
 # One database per shard of each service plus the catalog. replication (the default) serves SagaType.MoveShard.
 db_services = {
-  identity      = { shards = 2, catalog = "owner" }
-  tasks         = { shards = 1, catalog = "read" }
-  notifications = { shards = 2, catalog = "owner" }
-  reports       = { shards = 2, catalog = "read" }
-  billing       = { shards = 2, catalog = "owner" }
+  identity      = { shards = 2 }
+  tasks         = { shards = 1 }
+  notifications = { shards = 2 }
+  reports       = { shards = 2 }
+  billing       = { shards = 2 }
 }
 db_enable_secret_rotation              = true
 db_secret_rotation_days                = 30

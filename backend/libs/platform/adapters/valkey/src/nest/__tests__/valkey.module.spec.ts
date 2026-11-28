@@ -12,6 +12,8 @@ import { ValkeyAuthStateWriter } from '../../auth/valkey-auth-state-writer.js';
 import { ValkeyAuthMode } from '../../valkey-auth-mode.enum.js';
 import { ValkeyBloomFilterFactory } from '../../valkey-bloom-filter-factory.js';
 import { ValkeyCache } from '../../valkey-cache.js';
+import { ValkeyCircuit } from '../../valkey-circuit.js';
+import { ValkeyCommand } from '../../valkey-command.enum.js';
 import { ValkeyCommandExecutor } from '../../valkey-command-executor.js';
 import { ValkeyErrorCode } from '../../valkey-error-code.enum.js';
 import { ValkeyErrorTranslator } from '../../valkey-error-translator.js';
@@ -28,6 +30,7 @@ import {
   PollUntil,
   RecordingLogger,
   StaticTokenProvider,
+  ThrowingCircuitListener,
 } from '../../__tests__/utils/index.js';
 import { ValkeyModule } from '../valkey.module.js';
 import { VALKEY_CLIENT } from '../valkey.tokens.js';
@@ -193,6 +196,27 @@ describe('ValkeyModule', () => {
         },
       },
     });
+  });
+
+  it('reports a circuit listener that fails through the logger', async () => {
+    const app = await appWith(
+      ValkeyModule.forRoot({ circuit: { consecutiveFailures: 1 } }),
+    );
+    app
+      .get(ValkeyCircuit)
+      .subscribe(new ThrowingCircuitListener(new Error('bridge failed')));
+    client.callsFail = true;
+
+    await expect(
+      app.get(ValkeyCommandExecutor).run(ValkeyCommand.Get, ['k']),
+    ).rejects.toThrow();
+
+    expect(logger.errors).toEqual([
+      {
+        message: 'valkey circuit listener failed',
+        fields: { error: expect.objectContaining({ name: 'Error' }) },
+      },
+    ]);
   });
 
   describe('against a client that has not connected', () => {

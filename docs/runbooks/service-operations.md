@@ -6,11 +6,13 @@ The five services in the template (identity, tasks, notifications, reports and b
 
 Each service has three entry points, built in `backend/dist/<service>`:
 
-| Entry point   | What it runs                                                        | Local command                   |
-| ------------- | ------------------------------------------------------------------- | ------------------------------- |
-| `main.mjs`    | The public and internal APIs                                        | `pnpm nx run <service>:serve`   |
-| `worker.mjs`  | The SQS consumers, the outbox relay, saga recovery and the jobs     | `pnpm nx run <service>:worker`  |
-| `migrate.mjs` | The catalog and per-shard migrations (`catalog`, `shards` or `all`) | `pnpm nx run <service>:migrate` |
+| Entry point   | What it runs                                                                  | Local command                   |
+| ------------- | ----------------------------------------------------------------------------- | ------------------------------- |
+| `main.mjs`    | The public and internal APIs                                                  | `pnpm nx run <service>:serve`   |
+| `worker.mjs`  | The SQS consumers, the outbox relay, saga recovery and the jobs               | `pnpm nx run <service>:worker`  |
+| `migrate.mjs` | The service's catalog and per-shard migrations (`catalog`, `shards` or `all`) | `pnpm nx run <service>:migrate` |
+
+Each service has its own catalog database, `<service>_catalog`, with its shard directory, shard map and catalog tables; identity's also holds the global indexes ([ADR 0042](../adr/0042-region-and-catalog-model.md)). A service never reads another service's catalog: to know where a tenant lives it reads its own directory, which identity fills with `<service>.tenant-directory.place.v1`.
 
 In AWS, migrations run as a task before deploying the new version; a failing migration stops the deployment.
 
@@ -19,7 +21,7 @@ The identity seed (`pnpm nx run identity:seed`) creates the region's fixed tenan
 ## Health
 
 - `GET /health/live`: the process responds. If it fails, the orchestrator restarts the task.
-- `GET /health/ready`: the catalog and every shard respond. A task that is not ready leaves the load balancer without being restarted.
+- `GET /health/ready`: the service's catalog and every shard respond. A task that is not ready leaves the load balancer without being restarted.
 
 If `ready` fails on every task, check RDS Proxy and the credentials (`DB_CREDENTIALS`). Valkey is not part of readiness ([ADR 0044](../adr/0044-valkey-failure-policy.md)): while it is down, `ready` stays up and reports `valkey: degraded`, and authenticated requests answer 503 with `PLATFORM.DEPENDENCY.UNAVAILABLE` until it is back.
 

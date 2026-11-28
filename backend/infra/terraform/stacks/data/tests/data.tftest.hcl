@@ -26,12 +26,13 @@ mock_provider "aws" {
 variables {
   region       = "us-east-1"
   domain       = "example.test"
+  regions      = { us = { aws_region = "us-east-1", api_base_url = "https://api.example.test", issuer = "https://api.example.test" } }
   environment  = "dev"
   name_prefix  = "nt-dev"
   state_bucket = "nt-dev-tfstate"
   db_services = {
-    identity = { shards = 2, catalog = "owner" }
-    tasks    = { catalog = "read" }
+    identity = { shards = 2 }
+    tasks    = {}
   }
   valkey_services       = ["identity", "tasks"]
   db_read_replica_count = 1
@@ -58,12 +59,12 @@ override_data {
   }
 }
 
-run "one_database_per_shard_plus_catalog" {
+run "one_catalog_per_service_and_one_database_per_shard" {
   command = plan
 
   assert {
-    condition     = toset([for d in local.databases : d.name]) == toset(["catalog", "identity_shard_0", "identity_shard_1", "tasks_shard_0"])
-    error_message = "The databases match backend/infra/local/postgres/init.sql."
+    condition     = toset([for d in local.databases : d.name]) == toset(["identity_catalog", "identity_shard_0", "identity_shard_1", "tasks_catalog", "tasks_shard_0"])
+    error_message = "Each service has its own catalog and its shards, as in backend/infra/local/postgres/init.sql."
   }
 
   assert {
@@ -72,17 +73,12 @@ run "one_database_per_shard_plus_catalog" {
   }
 
   assert {
-    condition     = [for d in local.databases : d.owner if d.name == "identity_shard_1"][0] == "identity"
-    error_message = "Each service owns its shards."
+    condition     = alltrue([for d in local.databases : startswith(d.name, "${d.owner}_") && length(d.readers) == 0])
+    error_message = "Each service owns its catalog and its shards, and no other role reads them."
   }
 
   assert {
-    condition     = tolist(local.group_roles[0].members) == tolist(["identity"]) && tolist(local.group_roles[1].members) == tolist(["tasks"])
-    error_message = "catalog owner and read map to group roles."
-  }
-
-  assert {
-    condition     = local.service_databases["tasks"].catalog == "catalog" && length(local.service_databases["tasks"].shards) == 1
+    condition     = local.service_databases["tasks"].catalog == "tasks_catalog" && length(local.service_databases["tasks"].shards) == 1
     error_message = "Each service receives the map of its databases."
   }
 
@@ -105,16 +101,6 @@ run "one_database_per_shard_plus_catalog" {
     condition     = length(aws_vpc_security_group_egress_rule.clients_to_replicas) == 1
     error_message = "With replicas, clients have egress to them."
   }
-}
-
-run "rejects_unknown_catalog_access" {
-  command = plan
-
-  variables {
-    db_services = { identity = { catalog = "write" } }
-  }
-
-  expect_failures = [var.db_services]
 }
 
 run "auth_writer_is_configurable" {

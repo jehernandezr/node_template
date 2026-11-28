@@ -36,27 +36,27 @@ EVENT = {
         {"name": "tasks", "secret_arn": "arn:tasks"},
         {"name": "replication", "secret_arn": "arn:replication", "rds_replication": True},
     ],
-    "group_roles": [
-        {"name": "catalog_owner", "members": ["identity"]},
-        {"name": "catalog_reader", "members": ["tasks"]},
-    ],
     "databases": [
-        {
-            "name": "catalog",
-            "owner": "catalog_owner",
-            "readers": ["catalog_reader"],
-            "extensions": ["vector"],
-        },
+        {"name": "identity_catalog", "owner": "identity", "extensions": ["vector"]},
         {"name": "identity_shard_0", "owner": "identity", "extensions": ["vector"]},
+        {"name": "tasks_catalog", "owner": "tasks", "extensions": ["vector"]},
         {"name": "tasks_shard_0", "owner": "tasks", "extensions": ["vector"]},
     ],
 }
 
+GROUP_EVENT = {
+    "users": [{"name": "identity", "secret_arn": "arn:identity"}],
+    "group_roles": [{"name": "identity_readers", "members": ["identity"]}],
+    "databases": [
+        {"name": "identity_catalog", "owner": "identity", "readers": ["identity_readers"]},
+    ],
+}
 
-def run_bootstrap(roles=(), databases=()):
+
+def run_bootstrap(roles=(), databases=(), event=EVENT):
     state = {"roles": set(roles), "databases": set(databases), "log": [], "closed": 0}
     summary = handler.bootstrap(
-        EVENT,
+        event,
         "platform_admin",
         lambda dbname: FakeConnection(dbname, state),
         lambda user: f"pw-{user['name']}",
@@ -75,36 +75,47 @@ class ImportTest(unittest.TestCase):
 
 
 class BootstrapTest(unittest.TestCase):
-    def test_creates_roles_databases_extensions_and_grants(self):
+    def test_creates_one_catalog_per_service_owned_by_the_service(self):
         summary, state = run_bootstrap()
 
+        self.assertEqual(summary["created_roles"], ["identity", "tasks", "replication"])
         self.assertEqual(
-            summary["created_roles"],
-            ["identity", "tasks", "replication", "catalog_owner", "catalog_reader"],
-        )
-        self.assertEqual(
-            summary["created_databases"], ["catalog", "identity_shard_0", "tasks_shard_0"]
+            summary["created_databases"],
+            ["identity_catalog", "identity_shard_0", "tasks_catalog", "tasks_shard_0"],
         )
         admin = statements(state, "postgres")
-        self.assertIn('CREATE DATABASE "catalog" OWNER "catalog_owner"', admin)
+        self.assertIn('CREATE DATABASE "identity_catalog" OWNER "identity"', admin)
+        self.assertIn('CREATE DATABASE "tasks_catalog" OWNER "tasks"', admin)
         self.assertIn('CREATE DATABASE "identity_shard_0" OWNER "identity"', admin)
-        self.assertIn('REVOKE ALL ON DATABASE "tasks_shard_0" FROM PUBLIC', admin)
-        self.assertIn('GRANT CONNECT ON DATABASE "catalog" TO "catalog_reader"', admin)
+        self.assertIn('REVOKE ALL ON DATABASE "tasks_catalog" FROM PUBLIC', admin)
         self.assertIn('GRANT CONNECT ON DATABASE "tasks_shard_0" TO "replication"', admin)
-        self.assertIn('GRANT "catalog_owner" TO "identity"', admin)
         self.assertIn("GRANT rds_replication TO \"replication\"", admin)
-        self.assertIn('CREATE EXTENSION IF NOT EXISTS "vector"', statements(state, "catalog"))
+        self.assertFalse([sql for sql in admin if sql.startswith("GRANT CONNECT") and '"tasks"' in sql])
         self.assertIn(
-            'ALTER DEFAULT PRIVILEGES FOR ROLE "catalog_owner" IN SCHEMA public '
-            'GRANT SELECT ON TABLES TO "catalog_reader"',
-            statements(state, "catalog"),
+            'CREATE EXTENSION IF NOT EXISTS "vector"', statements(state, "identity_catalog")
         )
-        self.assertEqual(state["closed"], 4)
+        self.assertEqual(state["closed"], 5)
+
+    def test_creates_group_roles_and_grants_their_readers(self):
+        summary, state = run_bootstrap(event=GROUP_EVENT)
+
+        self.assertEqual(summary["created_roles"], ["identity", "identity_readers"])
+        admin = statements(state, "postgres")
+        self.assertIn('CREATE ROLE "identity_readers" NOLOGIN', admin)
+        self.assertIn('GRANT "identity_readers" TO "identity"', admin)
+        self.assertIn(
+            'GRANT CONNECT ON DATABASE "identity_catalog" TO "identity_readers"', admin
+        )
+        self.assertIn(
+            'ALTER DEFAULT PRIVILEGES FOR ROLE "identity" IN SCHEMA public '
+            'GRANT SELECT ON TABLES TO "identity_readers"',
+            statements(state, "identity_catalog"),
+        )
 
     def test_is_idempotent_with_existing_roles_and_databases(self):
         summary, state = run_bootstrap(
-            roles={"identity", "tasks", "replication", "catalog_owner", "catalog_reader"},
-            databases={"catalog", "identity_shard_0", "tasks_shard_0"},
+            roles={"identity", "tasks", "replication"},
+            databases={"identity_catalog", "identity_shard_0", "tasks_catalog", "tasks_shard_0"},
         )
 
         self.assertEqual(summary["created_roles"], [])

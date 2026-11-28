@@ -22,6 +22,15 @@ locals {
   valkey_user   = try(local.data.valkey.user_names[local.svc], null)
   observability = local.platform.observability
 
+  # The region this stack serves, by its code in var.regions (ADR 0042).
+  region_codes = [for code, r in var.regions : code if r.aws_region == var.region]
+  region_code  = one(local.region_codes)
+  regions_json = jsonencode([for code in sort(keys(var.regions)) : {
+    code       = code
+    apiBaseUrl = var.regions[code].api_base_url
+    issuer     = var.regions[code].issuer
+  }])
+
   # Contract with the @platform adapters: the names of these variables are the ones their
   # configuration schemas validate. The service's own variables go first,
   # so they cannot override the contract.
@@ -33,12 +42,18 @@ locals {
       MESSAGING_NAME_PREFIX = local.messaging.name_prefix
       # The AWS adapter builds the topic ARNs without calling STS.
       AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
+      REGIONS        = local.regions_json
+      SERVICE_REGION = local.region_code
     },
+    local.svc == "identity" ? { IDENTITY_REGION = local.region_code } : {},
     var.database_access ? {
       DB_PROXY_HOST   = local.data.db.proxy_endpoint
       DB_READER_HOSTS = join(",", local.data.db.reader_endpoints)
       DB_PORT         = tostring(local.data.db.port)
       DB_DATABASES    = jsonencode(local.databases)
+      # Tenant moves copy in batches; TENANT_MOVE_TARGETS stays unset so each shard's group follows the naming
+      # convention of ADR 0032.
+      TENANT_MOVE_STRATEGY = "batch"
     } : {},
     # Serverless Valkey requires TLS and IAM authentication: the client signs a token with its role
     # for VALKEY_CACHE_NAME and connects as VALKEY_USER. The ACL limits keys and channels to
@@ -167,6 +182,10 @@ resource "terraform_data" "service_check" {
   input = local.svc
 
   lifecycle {
+    precondition {
+      condition     = length(local.region_codes) == 1
+      error_message = "The stack region ${var.region} must be the aws_region of exactly one entry of regions in common.tfvars."
+    }
     precondition {
       condition     = local.component_names_distinct
       error_message = "Two components share a name: a worker or consumer key cannot repeat another one, nor be api, rt or one-off."

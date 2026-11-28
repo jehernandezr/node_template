@@ -30,6 +30,8 @@ locals {
   platform     = merge(local.platform_defaults, data.terraform_remote_state.platform.outputs)
   messaging    = data.terraform_remote_state.messaging.outputs
   service_base = data.terraform_remote_state.service_base.outputs
+
+  service_base_state_key = "${var.region}/services/${var.service_name}/base/terraform.tfstate"
 }
 
 data "terraform_remote_state" "network" {
@@ -50,5 +52,5 @@ data "terraform_remote_state" "messaging" {
 # The service-base stack of this same service: roles, log groups, security groups and shared environment.
 data "terraform_remote_state" "service_base" {
   backend = "s3"
-  config  = merge(local.remote_state_config, { key = "${var.region}/services/${var.service_name}/base/terraform.tfstate" })
+  config  = merge(local.remote_state_config, { key = local.service_base_state_key })
 }

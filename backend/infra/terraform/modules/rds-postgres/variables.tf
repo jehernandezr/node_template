@@ -37,7 +37,7 @@ variable "service_users" {
 }
 
 variable "group_roles" {
-  description = "Group roles without login, for example catalog_owner and catalog_reader. members are users from service_users."
+  description = "Group roles without login. members are users from service_users."
   type = list(object({
     name    = string
     members = optional(list(string), [])

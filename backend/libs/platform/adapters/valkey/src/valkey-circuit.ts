@@ -13,7 +13,8 @@ import { ValkeyUnavailableError } from './valkey-unavailable.error.js';
 /**
  * Bounds every Valkey command with a deadline and a circuit breaker shared by all the adapters of a client, so an
  * outage adds at most the deadline to a request and, once the circuit opens, nothing. Only
- * `ValkeyUnavailableError` counts as a failure; a malformed command does not open the circuit.
+ * `ValkeyUnavailableError` counts as a failure; a malformed command does not open the circuit. A listener that
+ * throws goes to `onListenerError` and never stops the others from hearing the change.
  */
 export class ValkeyCircuit {
   /** Deadline and breaker used when the module does not set them. */
@@ -31,6 +32,8 @@ export class ValkeyCircuit {
   constructor(
     clock: Clock,
     private readonly options: ValkeyCircuitOptions = ValkeyCircuit.DEFAULTS,
+    private readonly onListenerError: (error: unknown) => void = () =>
+      undefined,
   ) {
     this.breaker = new ConsecutiveCircuitBreaker({
       consecutiveFailures: options.consecutiveFailures,
@@ -112,7 +115,9 @@ export class ValkeyCircuit {
     for (const listener of [...this.listeners]) {
       try {
         tell(listener);
-      } catch {}
+      } catch (error) {
+        this.onListenerError(error);
+      }
     }
   }
 }

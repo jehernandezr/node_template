@@ -5,8 +5,10 @@ import { ValkeyUnavailableError } from './valkey-unavailable.error.js';
 
 /**
  * Translates iovalkey client errors. As a `FailureRule` it tells the
- * `FailureClassifier` how a server reply error fails; as a
- * translator it wraps any client error in a `ValkeyCommandError`.
+ * `FailureClassifier` how a server reply error fails. As a translator, a
+ * server that does not answer, times out, loads or fails over becomes a
+ * `ValkeyUnavailableError`, and only a reply that rejects the command becomes
+ * a `ValkeyCommandError`.
  */
 export class ValkeyErrorTranslator extends FailureRule {
   /**

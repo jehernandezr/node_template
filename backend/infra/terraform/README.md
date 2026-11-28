@@ -12,7 +12,7 @@ backend/infra/
 │   │   ├── global/          One per account: GitHub OIDC, ECR, artifacts bucket, hosted zone and CloudFront certificate
 │   │   ├── network/         VPC, subnets, NAT, endpoints and flow logs (ADR 0016)
 │   │   ├── platform/        Alarms and budget, ECS, OpenObserve, HTTP API, ALB, files, SES and the compute logs CMK
-│   │   ├── data/            RDS with per-shard and catalog databases, RDS Proxy, replicas and Valkey
+│   │   ├── data/            RDS with per-service catalog and shard databases, RDS Proxy, replicas and Valkey
 │   │   ├── messaging/       Topics, queues and DLQs from topology.json and the SES events queue
 │   │   ├── edge/            CloudFront with WAF and DNS
 │   │   ├── service-base/    What one microservice needs before it runs: roles, logs, security groups, one_off_task
@@ -50,7 +50,9 @@ Each stack has:
 | 6     | `service-base` | network, platform, data, messaging         | dev, staging, prod        |
 | 7     | `service`      | network, platform, messaging, service-base | dev, staging, prod        |
 
-`environments/<environment>/common.tfvars` sets `environment`, `name_prefix` and `domain` once for every stack of the environment ([ADR 0042](../../../docs/adr/0042-region-and-catalog-model.md)). `deploy-aws.sh` and `local.sh` pass it before the stack's `terraform.tfvars`, which never repeats those keys (a script test checks it).
+`environments/<environment>/common.tfvars` sets `environment`, `name_prefix`, `domain`, `main_region` and `regions` once for every stack of the environment ([ADR 0042](../../../docs/adr/0042-region-and-catalog-model.md)). `deploy-aws.sh` and `local.sh` pass it before the stack's `terraform.tfvars`, which never repeats those keys (a script test checks it).
+
+`regions` maps each region code to its AWS region, public API URL and token issuer, and `main_region` (`us` by default) names the main one. F12 deploys one region, `us` on `us-east-1`; change both before the first apply if needed. The `service-base` stack of a region serves the code whose `aws_region` is the stack's `region` and refuses a region that matches none.
 
 Each region has its own states with the same code: the region is part of the key. `global` is the exception: one per account, with state key `global/terraform.tfstate`, applied first and by hand on a new account ([first deploy](../../../docs/runbooks/first-deploy.md)). `deploy-aws.sh plan global` and `apply global` run it; `all` leaves it out.
 
@@ -98,23 +100,26 @@ Permissions per part (least privilege, set in `service-base`): the API, the work
 
 Environment variables: `service-base` builds them; they are the contract with the `@platform/*` configuration schemas, and `backend/.env.example` uses the same names. `stacks/service-base/tests/service-base.tftest.hcl` pins the exact list, so a change on one side breaks the test.
 
-| Variable                                                                        | When                     | Content                                                                                                 |
-| ------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `SERVICE_NAME`, `DEPLOY_ENVIRONMENT`, `MESSAGING_NAME_PREFIX`, `AWS_ACCOUNT_ID` | always                   | Service, environment, topic and queue prefix, and account (to build ARNs without STS).                  |
-| `AWS_REGION`                                                                    | Fargate                  | Region. In Lambda the runtime sets it.                                                                  |
-| `DB_PROXY_HOST`, `DB_READER_HOSTS`, `DB_PORT`, `DB_DATABASES`                   | `database_access`        | RDS Proxy, comma-separated replicas, port and JSON with `shards` and `catalog`.                         |
-| `DB_CREDENTIALS` / `DB_SECRET_ARN`                                              | `database_access`        | Fargate receives the secret (JSON with `username` and `password`) through `valueFrom`; Lambda, its ARN. |
-| `VALKEY_HOST`, `VALKEY_PORT`, `VALKEY_TLS`, `VALKEY_USER`                       | always                   | Serverless endpoint, TLS (`true`) and the service's IAM user.                                           |
-| `VALKEY_AUTH`, `VALKEY_CACHE_NAME`                                              | always                   | `iam-serverless`: the client signs an IAM token (SigV4, 15 minutes) for the `VALKEY_CACHE_NAME` cache.  |
-| `VALKEY_KEY_PREFIX`                                                             | always                   | Service name. The adapters write `<prefix>:...` in keys and channels, the only thing the ACL allows.    |
-| `FILES_BUCKET`                                                                  | `files_access` of a part | Files bucket.                                                                                           |
-| `QUEUE_URL`                                                                     | workers                  | URL of its queue. The worker polls only that contract queue; without it, every queue of the contract.   |
+| Variable                                                                        | When                     | Content                                                                                                                                |
+| ------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `SERVICE_NAME`, `DEPLOY_ENVIRONMENT`, `MESSAGING_NAME_PREFIX`, `AWS_ACCOUNT_ID` | always                   | Service, environment, topic and queue prefix, and account (to build ARNs without STS).                                                 |
+| `AWS_REGION`                                                                    | Fargate                  | Region. In Lambda the runtime sets it.                                                                                                 |
+| `REGIONS`, `SERVICE_REGION`                                                     | always                   | JSON of `regions` from `common.tfvars` (`code`, `apiBaseUrl`, `issuer`) and the code of the stack's region.                            |
+| `IDENTITY_REGION`                                                               | identity                 | The code of the stack's region, equal to `SERVICE_REGION`.                                                                             |
+| `TENANT_MOVE_STRATEGY`                                                          | `database_access`        | `batch`. `TENANT_MOVE_TARGETS` stays unset (a validation rejects it), so each shard's group follows the naming convention of ADR 0032. |
+| `DB_PROXY_HOST`, `DB_READER_HOSTS`, `DB_PORT`, `DB_DATABASES`                   | `database_access`        | RDS Proxy, comma-separated replicas, port and JSON with `shards` and `catalog` (`<service>_catalog`).                                  |
+| `DB_CREDENTIALS` / `DB_SECRET_ARN`                                              | `database_access`        | Fargate receives the secret (JSON with `username` and `password`) through `valueFrom`; Lambda, its ARN.                                |
+| `VALKEY_HOST`, `VALKEY_PORT`, `VALKEY_TLS`, `VALKEY_USER`                       | always                   | Serverless endpoint, TLS (`true`) and the service's IAM user.                                                                          |
+| `VALKEY_AUTH`, `VALKEY_CACHE_NAME`                                              | always                   | `iam-serverless`: the client signs an IAM token (SigV4, 15 minutes) for the `VALKEY_CACHE_NAME` cache.                                 |
+| `VALKEY_KEY_PREFIX`                                                             | always                   | Service name. The adapters write `<prefix>:...` in keys and channels, the only thing the ACL allows.                                   |
+| `FILES_BUCKET`                                                                  | `files_access` of a part | Files bucket.                                                                                                                          |
+| `QUEUE_URL`                                                                     | workers                  | URL of its queue. The worker polls only that contract queue; without it, every queue of the contract.                                  |
 
 `environment_variables` adds custom variables, without being able to replace the ones in the table. The pipeline passes the artifacts with `TF_VAR_image` and `TF_VAR_lambda_package`. Lambdas use the runtime of the major version in `.nvmrc` (`nodejs24.x`); `service-lambda` rejects any other in the plan.
 
 ## Data
 
-- One RDS PostgreSQL 17 instance per region. The bootstrap (a Lambda in the VPC) creates one role per service with its rotated secret, one database per shard (`<service>_shard_<n>`, owned by the service) and the `catalog` database (owned by `catalog_owner`), all with the `vector` extension, same as `backend/infra/local/postgres/init.sql`. `catalog = "owner"` makes the service a member of `catalog_owner` (it migrates the catalog with `SET ROLE catalog_owner`) and `"read"`, of `catalog_reader`. Removing a database from the list does not delete it.
+- One RDS PostgreSQL 17 instance per region. For each service in `db_services`, the bootstrap (a Lambda in the VPC) creates its role with a rotated secret, its catalog `<service>_catalog` and one database per shard (`<service>_shard_<n>`), all owned by the service and with the `vector` extension, same as `backend/infra/local/postgres/init.sql` ([ADR 0042](../../../docs/adr/0042-region-and-catalog-model.md)). A service's catalog holds its shard directory, shard map, catalog idempotency keys and its own catalog tables; identity's also holds the global indexes, `identity_sagas` and `tenant_moves`. No service reads another service's catalog. Removing a database from the list does not delete it.
 - Writes go through RDS Proxy. Reads go directly to the replicas: outside Aurora, RDS Proxy only supports the writer instance. The replicas have their own security group.
 - The bootstrap Lambda loads its dependencies from `vendor/` (Lambda only puts `/var/task` on `sys.path`). The versions are in `requirements.txt`, which OSV-Scanner and Renovate also read. CI runs `backend/infra/scripts/check_vendor.py`, which fails if `vendor/` does not have exactly those versions; a Renovate bump needs `vendor/` regenerated with the command in the header of `requirements.txt`.
 - The bootstrap connects as the master user and creates roles with passwords, so it verifies the RDS certificate (chain and name) with `rds-ca-bundle.pem`, the public AWS bundle next to the handler. `backend/infra/scripts/fetch-rds-ca-bundle.sh` downloads it; it is committed to git and renewed when AWS publishes new CAs. Without it, the bootstrap refuses to connect and the `data` apply fails at the invocation.

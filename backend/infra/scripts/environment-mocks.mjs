@@ -170,7 +170,7 @@ export class EnvironmentMocks {
       ),
       service_databases: perService(databases, (service) => ({
         shards: [`${service}_shard_0`],
-        catalog: 'catalog',
+        catalog: `${service}_catalog`,
       })),
       valkey: {
         endpoint: `${PREFIX}-valkey.serverless.use1.cache.amazonaws.com`,

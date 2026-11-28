@@ -19,6 +19,7 @@ mock_provider "aws" {
 variables {
   region            = "us-east-1"
   domain            = "example.test"
+  regions           = { us = { aws_region = "us-east-1", api_base_url = "https://api.example.test", issuer = "https://api.example.test" } }
   services          = ["identity", "tasks"]
   github_repository = "acme/node-template"
 }

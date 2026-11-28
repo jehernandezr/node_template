@@ -1,5 +1,5 @@
 -- Local initialization of the simulated region B (postgres-b).
--- Shards only: the catalog lives in the main region (postgres). It runs only when the
+-- Shards only: every catalog lives in the main region (postgres). It runs only when the
 -- postgres-b-data volume is empty.
 
 CREATE DATABASE identity_shard_b0;
