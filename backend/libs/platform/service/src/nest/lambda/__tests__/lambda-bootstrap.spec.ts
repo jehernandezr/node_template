@@ -1,6 +1,8 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { AbstractHttpAdapter } from '@nestjs/core';
+import { ConfigValidationError } from '@platform/config';
+import { InMemorySecretSource } from '@platform/config/test-utils';
 import { SchedulingMode } from '@platform/scheduling';
 import { ApiGatewayEventBuilder } from '../../../__tests__/utils/api-gateway-event.builder.js';
 import { ServiceDefinitionBuilder } from '../../../__tests__/utils/service-definition.builder.js';
@@ -108,5 +110,69 @@ describe('LambdaBootstrap', () => {
 
     expect(applications.requests).toHaveLength(2);
     expect(response).toMatchObject({ statusCode: 200 });
+  });
+
+  describe('with SECRETS_MAP', () => {
+    const arn =
+      'arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/billing/webhook-key-AbCdEf';
+    const withMap = {
+      ...env,
+      SECRETS_MAP: JSON.stringify({ BILLING_WEBHOOK_KEY: arn }),
+    };
+
+    it('starts the service with the value of each secret in its environment', async () => {
+      const secrets = new InMemorySecretSource({ [arn]: 'webhook-key-value' });
+
+      await LambdaBootstrap.http(definition, {
+        env: withMap,
+        applications,
+        secrets,
+      })(ApiGatewayEventBuilder.aRequest().build());
+
+      expect(
+        new ModuleTree(applications.requests[0]?.module).valuesOf(
+          'BILLING_WEBHOOK_KEY',
+        ),
+      ).toContain('webhook-key-value');
+    });
+
+    it('reads the secrets once for several invocations', async () => {
+      const secrets = new InMemorySecretSource({ [arn]: 'webhook-key-value' });
+      const handler = LambdaBootstrap.http(definition, {
+        env: withMap,
+        applications,
+        secrets,
+      });
+
+      await handler(ApiGatewayEventBuilder.aRequest().build());
+      await handler(ApiGatewayEventBuilder.aRequest().build());
+
+      expect(secrets.reads).toHaveLength(1);
+    });
+
+    it('does not start the service when a secret cannot be read', async () => {
+      const handler = LambdaBootstrap.http(definition, {
+        env: withMap,
+        applications,
+        secrets: new InMemorySecretSource({}),
+      });
+
+      await expect(
+        handler(ApiGatewayEventBuilder.aRequest().build()),
+      ).rejects.toThrow('no secret for BILLING_WEBHOOK_KEY');
+      expect(applications.requests).toEqual([]);
+    });
+
+    it('needs AWS_REGION to read the secrets from Secrets Manager by default', async () => {
+      const handler = LambdaBootstrap.http(definition, {
+        env: withMap,
+        applications,
+      });
+
+      await expect(
+        handler(ApiGatewayEventBuilder.aRequest().build()),
+      ).rejects.toBeInstanceOf(ConfigValidationError);
+      expect(applications.requests).toEqual([]);
+    });
   });
 });

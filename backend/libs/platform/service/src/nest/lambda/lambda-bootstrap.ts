@@ -1,3 +1,14 @@
+import {
+  AwsClientFactory,
+  awsConfigSchema,
+  SecretsManagerSecretSource,
+} from '@platform/adapters-aws';
+import {
+  type ConfigEnv,
+  ConfigLoader,
+  EnvironmentSecretResolver,
+  SecretsMap,
+} from '@platform/config';
 import { SchedulingMode } from '@platform/scheduling';
 import { ApiGatewayRequestMapper } from '../../lambda/api-gateway-request-mapper.js';
 import { ApiGatewayResponseMapper } from '../../lambda/api-gateway-response-mapper.js';
@@ -5,25 +16,26 @@ import type { LambdaHttpHandler } from '../../lambda/lambda-http-handler.js';
 import { LoopbackForwarder } from '../../lambda/loopback-forwarder.js';
 import type { ServiceDefinition } from '../../service-definition.js';
 import { ServiceBootstrap } from '../bootstrap/service-bootstrap.js';
-import type { ServiceBootstrapOptions } from '../bootstrap/service-bootstrap-options.js';
+import type { LambdaBootstrapOptions } from './lambda-bootstrap-options.js';
 
 /**
  * Startup of a service as a Lambda function. The service is the same HTTP process
  * as always, started only once on loopback per warm container;
  * each event is forwarded to it. No timers of its own, because Lambda
- * freezes the container between invocations.
+ * freezes the container between invocations. Before the configuration is validated, the variables that
+ * `SECRETS_MAP` names receive the current values of their secrets, once per execution environment.
  */
 export class LambdaBootstrap {
   /**
-   * Returns the function `handler`. The startup happens on the first
+   * Returns the function `handler`. The startup, secrets included, happens on the first
    * invocation and is retried if it fails.
    * @param definition Service definition.
-   * @param options Bootstrap options.
+   * @param options Bootstrap options and the source of the secrets of `SECRETS_MAP`.
    * @returns The Lambda handler.
    */
   static http(
     definition: ServiceDefinition,
-    options: ServiceBootstrapOptions = {},
+    options: LambdaBootstrapOptions = {},
   ): LambdaHttpHandler {
     let starting: Promise<LoopbackForwarder> | undefined;
     const ensureStarted = (): Promise<LoopbackForwarder> => {
@@ -40,10 +52,15 @@ export class LambdaBootstrap {
 
   private static async start(
     definition: ServiceDefinition,
-    options: ServiceBootstrapOptions,
+    options: LambdaBootstrapOptions,
   ): Promise<LoopbackForwarder> {
+    const { secrets, ...bootstrap } = options;
     const running = await ServiceBootstrap.http(definition, {
-      ...options,
+      ...bootstrap,
+      env: await LambdaBootstrap.withSecrets(
+        options.env ?? process.env,
+        secrets,
+      ),
       schedulingMode: options.schedulingMode ?? SchedulingMode.External,
       http: { ...options.http, port: 0, host: '127.0.0.1' },
     });
@@ -60,5 +77,29 @@ export class LambdaBootstrap {
       new ApiGatewayResponseMapper(),
       globalThis.fetch,
     );
+  }
+
+  private static async withSecrets(
+    env: ConfigEnv,
+    secrets: LambdaBootstrapOptions['secrets'],
+  ): Promise<ConfigEnv> {
+    if (secrets !== undefined) {
+      return new EnvironmentSecretResolver(secrets).resolve(env);
+    }
+    if ((env[SecretsMap.VARIABLE] ?? '').trim() === '') {
+      return env;
+    }
+    const client = new AwsClientFactory().secretsManager(
+      new ConfigLoader(env).load(
+        awsConfigSchema.pick({ AWS_REGION: true, AWS_ENDPOINT_URL: true }),
+      ),
+    );
+    try {
+      return await new EnvironmentSecretResolver(
+        new SecretsManagerSecretSource(client),
+      ).resolve(env);
+    } finally {
+      client.destroy();
+    }
   }
 }
