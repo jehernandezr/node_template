@@ -61,7 +61,7 @@ output "enable_execute_command" {
 }
 
 output "one_off_task" {
-  description = "What the pipeline needs to register and run the one-off tasks of identity (signing-keys, seed) with the new image: cluster, subnets, security groups, roles, log group, size, environment and secrets. The environment is the one every Fargate task of the service gets, with the app role as DB_USER."
+  description = "What the pipeline needs to register and run the one-off tasks (seed for every service, signing-keys for identity) with the new image: cluster, subnets, security groups, roles, log group, size, environment and secrets. The environment is the one every Fargate task of the service gets, with the app role as DB_USER."
   value       = local.one_off_tasks["one-off"]
 }
 
