@@ -12,3 +12,4 @@ export { UnroutedShardScopes } from './unrouted-shard-scopes.js';
 export { TestDatabaseServer } from './test-database-server.js';
 export { IsolatedPostgresServer } from './isolated-postgres-server.js';
 export type { PostgresTestServers } from './postgres-test-servers.js';
+export { RecordingDatabaseTokenProvider } from './recording-database-token-provider.js';

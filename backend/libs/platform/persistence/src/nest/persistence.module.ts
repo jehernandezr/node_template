@@ -14,15 +14,18 @@ import { PersistenceContextProvider } from '../context/persistence-context-provi
 import { RequestPersistenceContextProvider } from '../context/request-persistence-context-provider.js';
 import { EntityManagerProvider } from '../entity-manager-provider.js';
 import { EntityRegistry } from '../entity-registry.js';
+import { DatabaseAuth } from '../model/database-auth.enum.js';
 import { DatabaseKind } from '../model/database-kind.enum.js';
 import type { PersistenceFeatureOptions } from '../model/persistence-feature-options.js';
 import type { PersistenceModuleOptions } from '../model/persistence-module-options.js';
 import { OptimisticWriter } from '../optimistic-writer.js';
 import { PersistenceError } from '../errors/persistence-error.js';
 import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
+import { PasswordDatabaseTokenProvider } from '../password-database-token-provider.js';
 import { PersistenceFeature } from '../persistence-feature.js';
 import { PostgresDataSourceFactory } from '../postgres-data-source-factory.js';
 import { DataSourceFactory } from '../ports/data-source-factory.js';
+import { DatabaseTokenProvider } from '../ports/database-token-provider.js';
 import { InstanceEndpointResolver } from '../ports/instance-endpoint-resolver.js';
 import { ShardLister } from '../ports/shard-lister.js';
 import { RepositoryKit } from '../repository-kit.js';
@@ -166,6 +169,23 @@ export class PersistenceModule extends PersistenceModuleClass {
     };
   }
 
+  /** @throws PersistenceError `PersistenceInvalidConfig` with `DB_AUTH=iam`, which needs a signer in `tokens`. */
+  private static passwordTokens(
+    settings: DatabaseSettings,
+  ): DatabaseTokenProvider {
+    if (
+      settings.DB_AUTH === DatabaseAuth.Iam ||
+      settings.DB_PASSWORD === undefined
+    ) {
+      throw new PersistenceError(
+        PersistenceErrorCode.InvalidConfig,
+        'DB_AUTH=iam needs the token signer of the AWS adapter in `tokens`',
+        { details: { option: 'tokens' } },
+      );
+    }
+    return new PasswordDatabaseTokenProvider(settings.DB_PASSWORD);
+  }
+
   private static providersFor(extras: PersistenceModuleExtras): Provider[] {
     const settings = DatabaseConfig.token;
     return [
@@ -187,20 +207,35 @@ export class PersistenceModule extends PersistenceModuleClass {
           }
         : { provide: InstanceEndpointResolver, useExisting: extras.endpoints },
       { provide: ShardLister, useExisting: extras.shardLister },
+      extras.tokens === undefined
+        ? {
+            provide: DatabaseTokenProvider,
+            useFactory: (databaseSettings: DatabaseSettings) =>
+              PersistenceModule.passwordTokens(databaseSettings),
+            inject: [settings],
+          }
+        : { provide: DatabaseTokenProvider, useExisting: extras.tokens },
       {
         provide: DataSourceFactory,
         useFactory: (
           databaseSettings: DatabaseSettings,
           options: PersistenceModuleOptions,
           registry: EntityRegistry,
+          tokens: DatabaseTokenProvider,
         ) =>
           new PostgresDataSourceFactory(
             databaseSettings,
             options.shard,
             options.catalog,
             registry,
+            tokens,
           ),
-        inject: [settings, PERSISTENCE_OPTIONS, EntityRegistry],
+        inject: [
+          settings,
+          PERSISTENCE_OPTIONS,
+          EntityRegistry,
+          DatabaseTokenProvider,
+        ],
       },
       {
         provide: ShardDataSources,
