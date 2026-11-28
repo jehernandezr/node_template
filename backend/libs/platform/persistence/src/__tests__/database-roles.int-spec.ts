@@ -1,9 +1,13 @@
+/**
+ * @isolated-server The bootstrap Lambda creates the owner, app and reader roles and rds_iam on its server.
+ */
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { DataSource, type EntityManager } from 'typeorm';
 import { SessionSetting } from '../enums.js';
 import { PlatformPersistenceMigrations } from '../migrations/platform-persistence-migrations.js';
 import { CreateProbes1794700000001 } from './utils/create-probes.migration.js';
 import { DatabaseBootstrapLambda } from './utils/database-bootstrap-lambda.js';
+import { IsolatedPostgresServer } from './utils/isolated-postgres-server.js';
 import { IsolateProbes1794700000002 } from './utils/isolate-probes.migration.js';
 import { TestDatabaseServer } from './utils/test-database-server.js';
 
@@ -11,7 +15,8 @@ const runtime = new ContainerRuntime(process.env);
 
 runtime.describeIfAvailable('database roles of the bootstrap Lambda', () => {
   jest.setTimeout(120_000);
-  const server = new TestDatabaseServer();
+  const servers = new IsolatedPostgresServer();
+  const server = new TestDatabaseServer(servers);
   const database = 'roles_probe_shard_0';
   const owner = 'roles_probe_owner';
   const app = 'roles_probe_app';
@@ -70,6 +75,7 @@ runtime.describeIfAvailable('database roles of the bootstrap Lambda', () => {
   let adminSource: DataSource;
 
   beforeAll(async () => {
+    await servers.start();
     const admin = server.connection();
     await server.drop([database]);
     adminSource = await new DataSource({
@@ -94,10 +100,13 @@ runtime.describeIfAvailable('database roles of the bootstrap Lambda', () => {
   });
 
   afterAll(async () => {
-    for (const source of sources) {
-      await source.destroy();
+    try {
+      for (const source of sources) {
+        await source.destroy();
+      }
+    } finally {
+      await servers.stop();
     }
-    await server.drop([database]);
   });
 
   it('keeps the app role from creating, altering or dropping tables', async () => {
