@@ -30,7 +30,7 @@ describe('InternalApiController', () => {
     const router = new StubInternalRouter();
     const controller = new InternalApiController(
       router,
-      new HmacInternalCallAuthenticator(SECRET, clock),
+      new HmacInternalCallAuthenticator([SECRET], clock),
       new CallMetaReader(),
     );
     const signer = new HmacSigner(secret, clock);

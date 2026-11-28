@@ -25,6 +25,7 @@ import { GreeterHandlers } from './utils/greeter-handlers.js';
 import { NodeHttpTestServer } from './utils/node-http-test-server.js';
 
 const SECRET = randomBytes(32).toString('hex');
+const PREVIOUS_SECRET = randomBytes(32).toString('hex');
 const TRACEPARENT = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
 const SKEW_TABLE: Array<[number, Record<string, unknown>]> = [
   [-59_000, { kind: CallOutcomeKind.Success }],
@@ -61,7 +62,11 @@ describe('Internal API end to end over HTTP', () => {
           transport: InternalTransportKind.InProcess,
           processedStore: InMemoryProcessedOperationStore,
           operations: [E2eOperations.Greet, E2eOperations.Flaky],
-          http: { baseUrls: {}, secret: SECRET },
+          http: {
+            baseUrls: {},
+            secret: SECRET,
+            previousSecret: PREVIOUS_SECRET,
+          },
         }),
       ],
       providers: [GreeterHandlers],
@@ -128,6 +133,27 @@ describe('Internal API end to end over HTTP', () => {
       code: OperationMetadata.INVALID_INPUT_CODE,
     });
     expect(handlers.greetCalls).toBe(before);
+  });
+
+  it('accepts a call signed with the previous secret while a rotation reaches every service', async () => {
+    const transport = new HttpTransport(
+      new ServiceBaseUrls({ greeter: serverUrl }),
+      new HmacSigner(PREVIOUS_SECRET, new SystemClock()),
+      new HttpOutcomeReader(new RetryAfterParser(new SystemClock())),
+      globalThis.fetch,
+    );
+
+    const outcome = await transport.invoke(
+      E2eOperations.Greet.id,
+      { name: 'Ana' },
+      {
+        idempotencyKey: 'greet-previous-secret-1',
+        deadline: Date.now() + 5_000,
+        timeoutMs: 5_000,
+      },
+    );
+
+    expect(outcome).toMatchObject({ kind: CallOutcomeKind.Success });
   });
 
   it('rejects a call signed with another secret as unauthenticated', async () => {

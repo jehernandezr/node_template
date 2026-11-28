@@ -94,7 +94,7 @@ describe('HttpTransport', () => {
     await build(fetcher).invoke(OPERATION_ID, { amount: 3 }, meta);
 
     const sent = fetcher.requests[0];
-    const authenticator = new HmacInternalCallAuthenticator(SECRET, clock);
+    const authenticator = new HmacInternalCallAuthenticator([SECRET], clock);
     await expect(
       authenticator.authenticate({
         method: 'POST',

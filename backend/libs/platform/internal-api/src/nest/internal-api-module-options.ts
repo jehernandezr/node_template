@@ -13,6 +13,8 @@ export interface InternalApiHttpOptions {
   readonly baseUrls: Readonly<Record<string, string>>;
   /** HMAC secret shared between services. It comes from the validated configuration, never written in the code. */
   readonly secret: string;
+  /** Secret of the previous rotation: incoming calls signed with it are still accepted; nothing is signed with it. */
+  readonly previousSecret?: string;
   /**
    * Signer of outgoing calls. Without a value, `HmacSigner` with `secret`. A service that chooses
    * `INTERNAL_API_SIGNER=sigv4` passes the `SigV4Signer` from `@platform/adapters-aws` here.

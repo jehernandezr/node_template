@@ -17,6 +17,8 @@ export interface ServiceInternalHttpSettings {
   readonly baseUrls: Readonly<Record<string, string>>;
   /** HMAC secret shared between services. */
   readonly secret: string;
+  /** HMAC secret of the previous rotation, still accepted on incoming calls. */
+  readonly previousSecret?: string;
   /** Outgoing signer; without a value, HMAC with `secret`. The service builds it according to `INTERNAL_API_SIGNER`. */
   readonly signer?: InternalRequestSigner;
   readonly signatureWindowMs?: number;

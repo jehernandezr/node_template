@@ -161,7 +161,12 @@ export class InternalApiServerProviders {
           options.http === undefined
             ? new DenyAllInternalCallAuthenticator()
             : new HmacInternalCallAuthenticator(
-                options.http.secret,
+                [
+                  options.http.secret,
+                  ...(options.http.previousSecret === undefined
+                    ? []
+                    : [options.http.previousSecret]),
+                ],
                 clock,
                 options.http.signatureWindowMs,
               ),
