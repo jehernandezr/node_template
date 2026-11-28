@@ -17,6 +17,11 @@ variable "db_services" {
     condition     = alltrue([for name, svc in var.db_services : svc.shards >= 1 && svc.shards <= 64])
     error_message = "shards must be between 1 and 64."
   }
+
+  validation {
+    condition     = length(distinct([for svc in values(var.db_services) : svc.shards])) <= 1
+    error_message = "Every service has the same number of shards: without TENANT_MOVE_TARGETS, the group shard_<n> is <service>_shard_<n> in every service (ADR 0032)."
+  }
 }
 
 variable "db_replication_users" {

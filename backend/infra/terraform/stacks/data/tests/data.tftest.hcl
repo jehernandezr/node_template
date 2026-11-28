@@ -32,7 +32,7 @@ variables {
   state_bucket = "nt-dev-tfstate"
   db_services = {
     identity = { shards = 2 }
-    tasks    = {}
+    tasks    = { shards = 2 }
   }
   valkey_services       = ["identity", "tasks"]
   db_read_replica_count = 1
@@ -63,7 +63,7 @@ run "one_catalog_per_service_and_one_database_per_shard" {
   command = plan
 
   assert {
-    condition     = toset([for d in local.databases : d.name]) == toset(["identity_catalog", "identity_shard_0", "identity_shard_1", "tasks_catalog", "tasks_shard_0"])
+    condition     = toset([for d in local.databases : d.name]) == toset(["identity_catalog", "identity_shard_0", "identity_shard_1", "tasks_catalog", "tasks_shard_0", "tasks_shard_1"])
     error_message = "Each service has its own catalog and its shards, as in backend/infra/local/postgres/init.sql."
   }
 
@@ -78,7 +78,7 @@ run "one_catalog_per_service_and_one_database_per_shard" {
   }
 
   assert {
-    condition     = local.service_databases["tasks"].catalog == "tasks_catalog" && length(local.service_databases["tasks"].shards) == 1
+    condition     = local.service_databases["tasks"].catalog == "tasks_catalog" && length(local.service_databases["tasks"].shards) == 2
     error_message = "Each service receives the map of its databases."
   }
 
@@ -127,4 +127,19 @@ run "acl_overrides_replace_the_generated_rules" {
     condition     = local.valkey_users["tasks"] == "on ~* +@all"
     error_message = "A custom ACL replaces the generated one."
   }
+}
+
+# Without TENANT_MOVE_TARGETS, group shard_<n> maps to <service>_shard_<n> in every service (ADR 0032), so a
+# service with fewer shards than identity fails the onboarding of every tenant identity places beyond them.
+run "every_service_has_the_same_number_of_shards" {
+  command = plan
+
+  variables {
+    db_services = {
+      identity = { shards = 2 }
+      tasks    = { shards = 1 }
+    }
+  }
+
+  expect_failures = [var.db_services]
 }

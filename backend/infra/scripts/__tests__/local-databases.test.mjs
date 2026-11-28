@@ -29,6 +29,49 @@ class InitScript {
       .map((name) => name.slice(0, -'_catalog'.length))
       .sort();
   }
+
+  /**
+   * How many shard databases the script creates for a service.
+   * @param {string} service Service name.
+   * @returns {number} The number of <service>_shard_<n> databases.
+   */
+  shardCountOf(service) {
+    return this.databases.filter((name) =>
+      new RegExp(`^${service}_shard_\\d+$`).test(name),
+    ).length;
+  }
+}
+
+/** The database services of an environment's data stack values. */
+class DataStackValues {
+  #values;
+
+  /**
+   * @param {string} path Path of the data stack terraform.tfvars.
+   */
+  constructor(path) {
+    this.#values = new TfvarsBlockReader(readFileSync(path, 'utf8'));
+  }
+
+  /**
+   * The services in db_services.
+   * @returns {string[]} The service names, in order.
+   */
+  services() {
+    return this.#values.entryNames('db_services');
+  }
+
+  /**
+   * The shard count of a db_services entry, 1 when the entry leaves it out.
+   * @param {string} service Service name.
+   * @returns {number} The shards of the service.
+   */
+  shardCountOf(service) {
+    const entry = this.#values
+      .entries('db_services')
+      .find((candidate) => candidate.name === service);
+    return Number(/shards\s*=\s*(\d+)/.exec(entry?.value ?? '')?.[1] ?? 1);
+  }
 }
 
 describe('local databases', () => {
@@ -59,15 +102,24 @@ describe('local databases', () => {
       'terraform.tfvars',
     );
     if (!existsSync(dataTfvars)) continue;
-    const services = new TfvarsBlockReader(
-      readFileSync(dataTfvars, 'utf8'),
-    ).entryNames('db_services');
+    const values = new DataStackValues(dataTfvars);
+    const services = values.services();
 
     it(`init.sql creates the catalog of every ${environment} database service`, () => {
       assert.deepEqual(
         services.filter((service) => !init.catalogServices().includes(service)),
         [],
       );
+    });
+
+    it(`gives every ${environment} database service the shard count of init.sql`, () => {
+      for (const service of services) {
+        assert.equal(
+          values.shardCountOf(service),
+          init.shardCountOf(service),
+          `${service} must have as many shards as every other service (ADR 0032)`,
+        );
+      }
     });
   }
 });

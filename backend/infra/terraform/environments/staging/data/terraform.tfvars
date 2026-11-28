@@ -13,7 +13,7 @@ db_skip_final_snapshot     = false
 
 db_services = {
   identity      = { shards = 2 }
-  tasks         = { shards = 1 }
+  tasks         = { shards = 2 }
   notifications = { shards = 2 }
   reports       = { shards = 2 }
   billing       = { shards = 2 }
