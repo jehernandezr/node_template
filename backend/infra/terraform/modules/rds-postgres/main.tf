@@ -318,7 +318,7 @@ resource "aws_db_instance" "this" {
   storage_encrypted     = true
   kms_key_id            = module.kms.arn
 
-  # No initial database: the bootstrap creates the catalog and each service's databases.
+  # No initial database: the bootstrap creates each service's catalog and shards.
   username = var.db_username
 
   manage_master_user_password   = true

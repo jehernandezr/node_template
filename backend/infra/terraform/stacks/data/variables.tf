@@ -1,12 +1,11 @@
 variable "db_services" {
   description = <<-EOT
-    Services with a database. Each one gets a user with a rotated secret and one database per
-    logical shard (<service>_shard_<n>), which it owns. catalog grants access to the catalog
-    database: "owner" (migrates the catalog) or "read" (queries only). Same as the local environment.
+    Services with a database. Each one gets a user with a rotated secret, its catalog database
+    (<service>_catalog) and one database per logical shard (<service>_shard_<n>), all owned by it.
+    Same as the local environment.
   EOT
   type = map(object({
-    shards  = optional(number, 1)
-    catalog = optional(string)
+    shards = optional(number, 1)
   }))
 
   validation {
@@ -18,11 +17,6 @@ variable "db_services" {
     condition     = alltrue([for name, svc in var.db_services : svc.shards >= 1 && svc.shards <= 64])
     error_message = "shards must be between 1 and 64."
   }
-
-  validation {
-    condition     = alltrue([for name, svc in var.db_services : svc.catalog == null || contains(["owner", "read"], coalesce(svc.catalog, "-"))])
-    error_message = "catalog must be owner, read or null."
-  }
 }
 
 variable "db_replication_users" {
@@ -32,7 +26,7 @@ variable "db_replication_users" {
 }
 
 variable "db_extensions" {
-  description = "Extensions the bootstrap creates in each database (catalog and shards)."
+  description = "Extensions the bootstrap creates in each database (catalogs and shards)."
   type        = list(string)
   default     = ["vector"]
 }

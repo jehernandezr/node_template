@@ -12,11 +12,11 @@ db_backup_retention_period = 7
 db_skip_final_snapshot     = false
 
 db_services = {
-  identity      = { shards = 2, catalog = "owner" }
-  tasks         = { shards = 1, catalog = "read" }
-  notifications = { shards = 2, catalog = "owner" }
-  reports       = { shards = 2, catalog = "read" }
-  billing       = { shards = 2, catalog = "owner" }
+  identity      = { shards = 2 }
+  tasks         = { shards = 1 }
+  notifications = { shards = 2 }
+  reports       = { shards = 2 }
+  billing       = { shards = 2 }
 }
 db_secret_recovery_window_days = 7
 

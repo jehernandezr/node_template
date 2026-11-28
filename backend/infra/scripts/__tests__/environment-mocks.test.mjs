@@ -133,11 +133,13 @@ describe('EnvironmentMocks', () => {
     const data = terraform
       .write(
         'data',
-        'db_services = {\n  identity = { shards = 2, catalog = "owner" }\n}\nvalkey_services = ["identity"]\n',
+        'db_services = {\n  identity = { shards = 2 }\n}\nvalkey_services = ["identity"]\n',
       )
       .data();
 
-    assert.deepEqual(Object.keys(data.service_databases), ['identity']);
+    assert.deepEqual(data.service_databases, {
+      identity: { shards: ['identity_shard_0'], catalog: 'identity_catalog' },
+    });
     assert.deepEqual(Object.keys(data.db_service_secret_arns), ['identity']);
     assert.deepEqual(Object.keys(data.valkey.user_names), ['identity']);
   });

@@ -1,18 +1,15 @@
 # Regional persistence: one shared RDS PostgreSQL instance with one database per shard
-# of each service plus the catalog (ADR 0010), RDS Proxy for writes, replicas for reads,
+# of each service plus its own catalog (ADR 0010, ADR 0042), RDS Proxy for writes, replicas for reads,
 # and Valkey. The databases, their owners and extensions are the same ones
 # backend/infra/local/postgres/init.sql creates locally.
 
 locals {
-  catalog_database = "catalog"
-  catalog_owner    = "catalog_owner"
-  catalog_reader   = "catalog_reader"
-
-  # Databases of each service: <service>_shard_<n> and, if it has access, the catalog.
+  # Databases of each service: its catalog <service>_catalog and its shards <service>_shard_<n>. No service
+  # reads another service's catalog.
   service_databases = {
     for name, svc in var.db_services : name => {
       shards  = [for i in range(svc.shards) : "${name}_shard_${i}"]
-      catalog = svc.catalog == null ? null : local.catalog_database
+      catalog = "${name}_catalog"
     }
   }
 
@@ -21,30 +18,16 @@ locals {
     [for name in var.db_replication_users : { name = name, rds_replication = true }],
   )
 
-  # Whoever migrates the catalog is a member of catalog_owner; whoever only queries it, of catalog_reader.
-  group_roles = [
-    { name = local.catalog_owner, members = sort([for name, svc in var.db_services : name if svc.catalog == "owner"]) },
-    { name = local.catalog_reader, members = sort([for name, svc in var.db_services : name if svc.catalog == "read"]) },
-  ]
-
-  databases = concat(
-    [{
-      name       = local.catalog_database
-      owner      = local.catalog_owner
-      readers    = [local.catalog_reader]
-      extensions = var.db_extensions
-    }],
-    flatten([
-      for name in sort(keys(local.service_databases)) : [
-        for db in local.service_databases[name].shards : {
-          name       = db
-          owner      = name
-          readers    = []
-          extensions = var.db_extensions
-        }
-      ]
-    ]),
-  )
+  databases = flatten([
+    for name in sort(keys(local.service_databases)) : [
+      for db in concat([local.service_databases[name].catalog], local.service_databases[name].shards) : {
+        name       = db
+        owner      = name
+        readers    = []
+        extensions = var.db_extensions
+      }
+    ]
+  ])
 
   # Each service sees its own keys and channels: the cache layer prefixes the service name. Also,
   # the shared authentication state (`auth:*`, ADR 0022) is written only by the owner service
@@ -130,7 +113,6 @@ module "rds" {
   allowed_security_group_ids = [aws_security_group.clients.id]
 
   service_users = local.db_users
-  group_roles   = local.group_roles
   databases     = local.databases
 
   enable_secret_rotation              = var.db_enable_secret_rotation

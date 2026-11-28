@@ -134,7 +134,7 @@ export class GeneratedServiceWorkspace {
     writeFileSync(
       join(dataDir, 'terraform.tfvars'),
       [
-        `db_services = {\n  ${name} = { shards = 2, catalog = "read" }\n}`,
+        `db_services = {\n  ${name} = { shards = 2 }\n}`,
         `valkey_services = ["${name}"]`,
         '',
       ].join('\n'),

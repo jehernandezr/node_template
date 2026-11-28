@@ -73,7 +73,7 @@ override_data {
         kms_key_arn      = "arn:aws:kms:us-east-1:123456789012:key/rds"
       }
       db_service_secret_arns = { identity = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf" }
-      service_databases      = { identity = { shards = ["identity_shard_0", "identity_shard_1"], catalog = "catalog" } }
+      service_databases      = { identity = { shards = ["identity_shard_0", "identity_shard_1"], catalog = "identity_catalog" } }
       valkey = {
         endpoint   = "nt-dev-valkey.serverless.use1.cache.amazonaws.com"
         cache_name = "nt-dev-valkey"
