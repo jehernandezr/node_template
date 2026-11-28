@@ -604,8 +604,28 @@ run "migrate_task_has_its_own_role_and_connects_as_the_owner" {
   }
 
   assert {
-    condition     = output.migrate_task.environment["DB_USER"] == "identity_owner" && merge(output.migrate_task.environment, { DB_USER = "identity_app" }) == output.fargate_environment
-    error_message = "Apart from DB_USER, the owner role, the migrate task gets the environment of every Fargate task of the service stack."
+    condition = (
+      output.migrate_task.environment["DB_USER"] == "identity_owner" &&
+      merge(output.migrate_task.environment, {
+        DB_USER        = "identity_app"
+        DB_READER_USER = "identity_reader"
+        DB_INSTANCES   = output.fargate_environment["DB_INSTANCES"]
+      }) == output.fargate_environment
+    )
+    error_message = "Apart from the owner role and the primary-only instances, the migrate task gets the environment of every Fargate task of the service stack."
+  }
+
+  assert {
+    condition = (
+      !contains(keys(output.migrate_task.environment), "DB_READER_USER") &&
+      jsondecode(output.migrate_task.environment["DB_INSTANCES"]) == {
+        main = {
+          primary  = { host = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com", port = 5432 }
+          replicas = []
+        }
+      }
+    )
+    error_message = "The migrate task reaches only the primary through RDS Proxy: its owner role has no connect right on the replicas, so it neither reads them nor opens a pool to them."
   }
 
   assert {

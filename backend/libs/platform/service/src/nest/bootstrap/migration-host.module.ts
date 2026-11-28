@@ -22,7 +22,8 @@ import { RuntimeAdapterSelector } from '../runtime/runtime-adapter-selector.js';
  * Root module of the migrator. It only sets up the databases: there is no Valkey, messaging or jobs, because
  * migrating must not depend on anything other than PostgreSQL. With `DB_AUTH=iam` it adds the AWS adapter only to
  * sign the connection tokens of the owner role. `KernelModule` is required because `PostgresPlatformModule` and the
- * signer inject `Clock` and `IdGenerator`.
+ * signer inject `Clock` and `IdGenerator`. The shard list is read from the catalog primary: the migrator connects only
+ * as the owner role, which reaches no replica, and a replica could still lag behind a newly placed shard.
  */
 @Module({})
 export class MigrationHostModule {
@@ -55,7 +56,7 @@ export class MigrationHostModule {
           shardLister: DirectoryShardLister,
           ...(databaseIam ? { tokens: RdsIamDatabaseTokenProvider } : {}),
         }),
-        PostgresPlatformModule.forRoot(),
+        PostgresPlatformModule.forRoot({ directoryReadPrimary: true }),
         ShardingModule.forRoot({ directory: TypeOrmDirectoryStore }),
       ],
     };

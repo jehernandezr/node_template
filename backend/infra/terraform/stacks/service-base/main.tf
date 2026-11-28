@@ -35,12 +35,14 @@ locals {
 
   # The one physical instance of the region: RDS Proxy as the primary and the replicas, read directly.
   db_instance = "main"
+  db_primary  = { host = local.data.db.proxy_endpoint, port = local.data.db.port }
   db_instances = jsonencode({
     (local.db_instance) = {
-      primary  = { host = local.data.db.proxy_endpoint, port = local.data.db.port }
+      primary  = local.db_primary
       replicas = [for host in local.data.db.reader_endpoints : { host = host, port = local.data.db.port }]
     }
   })
+  db_primary_instances = jsonencode({ (local.db_instance) = { primary = local.db_primary, replicas = [] } })
 
   # Contract with the @platform adapters: the names of these variables are the ones their
   # configuration schemas validate. The service's own variables go first,
@@ -94,8 +96,12 @@ locals {
   fargate_environment = merge(local.common_environment, { AWS_REGION = var.region })
   lambda_environment  = local.common_environment
   # Only the migrate task connects as the owner role (ADR 0041); the other one-off tasks and the components run as
-  # the app role.
-  migrate_environment = merge(local.fargate_environment, var.database_access ? { DB_USER = try(local.db_roles.owner, null) } : {})
+  # the app role. The owner may connect only through RDS Proxy, so the migrate task gets no replica and no reader
+  # role: its pools and its shard list stay on the primary.
+  migrate_environment = merge(
+    { for name, value in local.fargate_environment : name => value if !(var.database_access && name == "DB_READER_USER") },
+    var.database_access ? { DB_USER = try(local.db_roles.owner, null), DB_INSTANCES = local.db_primary_instances } : {},
+  )
 
   # --- Components ------------------------------------------------------------------
   # Each component gets only what it uses: the API and realtime do not consume queues, each
