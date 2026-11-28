@@ -22,4 +22,10 @@ export interface AwsModuleOptions {
    * it is serverless are set by `ValkeyModule` from its configuration. Defaults to `false`.
    */
   readonly elastiCache?: boolean;
+  /**
+   * `true` registers `RdsIamDatabaseTokenProvider`, which `PersistenceModule` receives as `tokens` with
+   * `DB_AUTH=iam`. The region comes from `AWS_REGION`; the host, port and user come with each connection.
+   * Defaults to `false`.
+   */
+  readonly rdsIam?: boolean;
 }

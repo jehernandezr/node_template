@@ -8,6 +8,7 @@ import {
   AwsConfig,
   AwsCredentialsProvider,
   ElastiCacheIamAuthTokenProvider,
+  RdsIamDatabaseTokenProvider,
   SnsSqsEnvelopePublisher,
   type AwsSettings,
 } from '@platform/adapters-aws';
@@ -98,6 +99,7 @@ import type {
   RuntimeAdapters,
 } from './platform-runtime-options.js';
 import { ConsumedQueueSelector } from './consumed-queue-selector.js';
+import { DatabaseIamAuth } from './database-iam-auth.js';
 import { RoutingCacheCircuitBridge } from './routing-cache-circuit-bridge.js';
 import { RuntimeAdapterSelector } from './runtime-adapter-selector.js';
 
@@ -143,6 +145,11 @@ export class PlatformRuntimeModule {
       adapters.aws &&
       adapters.valkey &&
       PlatformRuntimeModule.usesIamToken(options.env);
+    const databaseIam = DatabaseIamAuth.required(
+      definition.name,
+      options.env,
+      adapters.aws,
+    );
     const publisher =
       options.publisher ?? (adapters.aws ? SnsSqsEnvelopePublisher : undefined);
     const ownPublishers = PlatformRuntimeModule.ownPublishers(
@@ -174,6 +181,7 @@ export class PlatformRuntimeModule {
           definition.name,
           adapters,
           elastiCacheIam,
+          databaseIam,
         ),
         PersistenceModule.forRoot({
           shard: sets.shard,
@@ -184,6 +192,7 @@ export class PlatformRuntimeModule {
           requireScope: definition.sharding?.requireScope ?? false,
           shardLister: DirectoryShardLister,
           tenantMoves: true,
+          ...(databaseIam ? { tokens: RdsIamDatabaseTokenProvider } : {}),
         }),
         PostgresPlatformModule.forRoot(),
         PlatformRuntimeModule.shardingModule(
@@ -342,10 +351,16 @@ export class PlatformRuntimeModule {
     serviceName: string,
     adapters: RuntimeAdapters,
     elastiCacheIam: boolean,
+    databaseIam: boolean,
   ): DynamicModule[] {
     return [
       ...(adapters.aws
-        ? [AwsModule.forRoot({ elastiCache: elastiCacheIam })]
+        ? [
+            AwsModule.forRoot({
+              elastiCache: elastiCacheIam,
+              rdsIam: databaseIam,
+            }),
+          ]
         : []),
       ...(adapters.valkey
         ? [
