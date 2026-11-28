@@ -2,6 +2,7 @@ import { SecretInitialization, type SecretReference } from '@platform/config';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { AwsClientFactory } from '../../aws-client-factory.js';
 import { LocalStackSecretsServer } from '../../__tests__/utils/localstack-secrets-server.js';
+import { StaleDescribeSecretsManagerClient } from '../../__tests__/utils/stale-describe-secrets-manager-client.js';
 import { SecretsManagerSecretInitializer } from '../secrets-manager-secret-initializer.js';
 import { SecretsManagerSecretSource } from '../secrets-manager-secret-source.js';
 
@@ -98,6 +99,21 @@ runtime.describeIfAvailable('Secrets Manager over LocalStack', () => {
         SecretInitialization.Written,
         SecretInitialization.AlreadySet,
       ]);
+      expect(await server.current(secretId)).toBe('first-value');
+    });
+
+    it('keeps the first value when another run fills the secret after this one found it empty', async () => {
+      const secretId = await server.create('initializer/race');
+      await new SecretsManagerSecretInitializer(server.client()).initialize(
+        secretId,
+        'first-value',
+      );
+
+      const late = await new SecretsManagerSecretInitializer(
+        new StaleDescribeSecretsManagerClient(server.client()),
+      ).initialize(secretId, 'second-value');
+
+      expect(late).toBe(SecretInitialization.AlreadySet);
       expect(await server.current(secretId)).toBe('first-value');
     });
 
