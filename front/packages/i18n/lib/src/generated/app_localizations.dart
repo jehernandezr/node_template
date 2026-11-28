@@ -537,6 +537,12 @@ abstract class AppLocalizations {
   /// **'El servicio está ocupado. Intenta en unos instantes.'**
   String get error_platform_resilience_overloaded;
 
+  /// No description provided for @error_platform_dependency_unavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Un servicio no está disponible temporalmente. Intenta de nuevo en un momento.'**
+  String get error_platform_dependency_unavailable;
+
   /// No description provided for @error_platform_auth_token_expired.
   ///
   /// In es, this message translates to:

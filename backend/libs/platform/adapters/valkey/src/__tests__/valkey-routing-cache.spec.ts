@@ -1,12 +1,18 @@
+import { SystemClock } from '@platform/kernel';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeyRoutingCache } from '../valkey-routing-cache.js';
 import { ReplyErrors, ScriptedValkeyRunner } from './utils/index.js';
 
 function cacheOver(runner: ScriptedValkeyRunner): ValkeyRoutingCache {
   return new ValkeyRoutingCache(
-    new ValkeyCommandExecutor(runner, new ValkeyErrorTranslator()),
+    new ValkeyCommandExecutor(
+      runner,
+      new ValkeyErrorTranslator(),
+      new ValkeyCircuit(new SystemClock()),
+    ),
     new ValkeyKeyspace('svc'),
   );
 }

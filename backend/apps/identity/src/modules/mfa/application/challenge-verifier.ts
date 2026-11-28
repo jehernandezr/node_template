@@ -8,7 +8,7 @@ import {
   type AuthMethodReference,
 } from '@contracts/identity';
 import { Clock, TransactionManager } from '@platform/kernel';
-import { RateLimitRule, RateLimiter } from '@platform/rate-limit';
+import { RateLimitRule, StrictRateLimiter } from '@platform/rate-limit';
 import { SecretHasher } from '../../../security/secret-hasher.js';
 import { LockoutRules } from '../../../shared/constants/lockout.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
@@ -24,7 +24,8 @@ import { MfaMethodCatalog } from './mfa-method-catalog.js';
 /**
  * Verifies the code of a challenge: five attempts at most per challenge, a single use, and a per-user cap on
  * wrong codes across every challenge, so a stolen session cannot guess a TOTP code by opening challenge
- * after challenge. Returns the method satisfied, to add it to the session `amr`.
+ * after challenge. Returns the method satisfied, to add it to the session `amr`. The per-user cap never degrades to
+ * a per-process count: with Valkey down the verification fails with 503.
  */
 @Injectable()
 export class ChallengeVerifier {
@@ -42,7 +43,7 @@ export class ChallengeVerifier {
     private readonly box: SecretBox,
     private readonly hasher: SecretHasher,
     private readonly alerts: SecurityAlerts,
-    private readonly limiter: RateLimiter,
+    private readonly limiter: StrictRateLimiter,
     private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,

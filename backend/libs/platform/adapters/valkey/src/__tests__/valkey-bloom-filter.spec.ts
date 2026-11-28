@@ -1,9 +1,11 @@
+import { SystemClock } from '@platform/kernel';
 import { InvalidParametersError } from '@platform/bloom';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { ValkeyBloomFilter } from '../valkey-bloom-filter.js';
 import { ValkeyBloomFilterFactory } from '../valkey-bloom-filter-factory.js';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeyUnexpectedReplyError } from '../valkey-unexpected-reply.error.js';
 import { BloomKeys } from '../bloom-keys.js';
@@ -13,7 +15,11 @@ const keyspace = new ValkeyKeyspace('svc');
 const KEY = 'svc:bloom:{emails}';
 
 function executorOver(runner: ScriptedValkeyRunner): ValkeyCommandExecutor {
-  return new ValkeyCommandExecutor(runner, new ValkeyErrorTranslator());
+  return new ValkeyCommandExecutor(
+    runner,
+    new ValkeyErrorTranslator(),
+    new ValkeyCircuit(new SystemClock()),
+  );
 }
 
 function filterOver(

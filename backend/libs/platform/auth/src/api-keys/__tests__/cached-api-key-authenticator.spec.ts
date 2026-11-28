@@ -138,7 +138,7 @@ describe('CachedApiKeyAuthenticator', () => {
       );
     });
 
-    it('reports CIRCUIT_OPEN when the resolver fails with an unexpected error', async () => {
+    it('reports the dependency as unavailable when the resolver fails with an unexpected error', async () => {
       const authenticator = new CachedApiKeyAuthenticator(
         new InMemoryAuthState(),
         new ThrowingApiKeyResolver(),
@@ -146,7 +146,7 @@ describe('CachedApiKeyAuthenticator', () => {
       );
 
       await expect(authenticator.authenticate(RAW_LIVE)).rejects.toMatchObject({
-        code: PlatformErrorCode.ResilienceCircuitOpen,
+        code: PlatformErrorCode.DependencyUnavailable,
       });
     });
   });

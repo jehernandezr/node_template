@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
-import { FailureKind } from '@platform/kernel';
+import { FailureKind, SystemClock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { FailureClassifier, InvalidArgumentError } from '@platform/primitives';
 import type { RateLimitRule } from '@platform/rate-limit';
 import { ValkeyCommand } from '../valkey-command.enum.js';
-import { ValkeyCommandError } from '../valkey-command.error.js';
+import { ValkeyUnavailableError } from '../valkey-unavailable.error.js';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeyRateLimiter } from '../valkey-rate-limiter.js';
 import { ValkeyUnexpectedReplyError } from '../valkey-unexpected-reply.error.js';
@@ -22,7 +23,11 @@ const NOW = new Date('2025-01-01T00:00:00.250Z');
 
 function limiterWith(runner: ScriptedValkeyRunner): ValkeyRateLimiter {
   return new ValkeyRateLimiter(
-    new ValkeyCommandExecutor(runner, new ValkeyErrorTranslator()),
+    new ValkeyCommandExecutor(
+      runner,
+      new ValkeyErrorTranslator(),
+      new ValkeyCircuit(new SystemClock()),
+    ),
     keyspace,
     new FixedClock(NOW),
   );
@@ -135,7 +140,7 @@ describe('ValkeyRateLimiter', () => {
     const failure = await limiterWith(runner)
       .peek('k', RULE)
       .catch((error: unknown) => error);
-    expect(failure).toBeInstanceOf(ValkeyCommandError);
+    expect(failure).toBeInstanceOf(ValkeyUnavailableError);
     expect(new FailureClassifier().classify(failure)).toBe(
       FailureKind.Transient,
     );

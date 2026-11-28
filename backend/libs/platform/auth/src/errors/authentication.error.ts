@@ -129,7 +129,7 @@ export class AuthenticationError extends PlatformError {
    */
   static stateUnavailable(cause: unknown): AuthenticationError {
     return new AuthenticationError(
-      PlatformErrorCode.ResilienceCircuitOpen,
+      PlatformErrorCode.DependencyUnavailable,
       'Authentication state is unavailable',
       { retryable: true, failureKind: FailureKind.Transient, cause },
     );

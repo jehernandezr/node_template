@@ -42,4 +42,5 @@ export enum PlatformErrorCode {
   ResilienceTimeout = 'PLATFORM.RESILIENCE.TIMEOUT',
   ResilienceBulkheadFull = 'PLATFORM.RESILIENCE.BULKHEAD_FULL',
   ResilienceOverloaded = 'PLATFORM.RESILIENCE.OVERLOADED',
+  DependencyUnavailable = 'PLATFORM.DEPENDENCY.UNAVAILABLE',
 }

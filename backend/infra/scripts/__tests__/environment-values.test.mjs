@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { describe, it } from 'node:test';
+import { ServiceName } from '../service-name.mjs';
 import { TfvarsBlockReader } from '../tfvars-block-reader.mjs';
 import { ScriptRunner } from './utils/script-runner.mjs';
 
@@ -11,6 +12,34 @@ const ENVIRONMENTS = join(
 );
 const COMMON_KEYS = ['environment', 'name_prefix', 'domain'];
 const TERRAFORM = resolve(ScriptRunner.scriptsDir, '../terraform');
+const SERVICE_BASE = join(TERRAFORM, 'stacks', 'service-base');
+
+/** The variables a stack declares across its .tf files. */
+class StackVariables {
+  constructor(dir) {
+    this.names = new Set(
+      readdirSync(dir)
+        .filter((name) => name.endsWith('.tf'))
+        .flatMap((name) => [
+          ...readFileSync(join(dir, name), 'utf8').matchAll(
+            /^variable\s+"([a-z0-9_]+)"/gm,
+          ),
+        ])
+        .map((match) => match[1]),
+    );
+  }
+
+  /**
+   * The top-level keys of a tfvars file that the stack does not declare.
+   * @param {string} text Content of the tfvars file.
+   * @returns {string[]} The undeclared keys.
+   */
+  undeclaredIn(text) {
+    return [...text.matchAll(/^([a-z0-9_]+)\s*=/gm)]
+      .map((match) => match[1])
+      .filter((key) => !this.names.has(key));
+  }
+}
 
 /** The tfvars of one environment: its common.tfvars and every stack's terraform.tfvars. */
 class EnvironmentValues {
@@ -19,6 +48,15 @@ class EnvironmentValues {
     this.common = new TfvarsBlockReader(
       readFileSync(join(this.dir, 'common.tfvars'), 'utf8'),
     );
+  }
+
+  reader(...path) {
+    return new TfvarsBlockReader(readFileSync(join(this.dir, ...path), 'utf8'));
+  }
+
+  services() {
+    const dir = join(this.dir, 'services');
+    return existsSync(dir) ? readdirSync(dir).sort() : [];
   }
 
   stackFiles(dir = this.dir) {
@@ -31,6 +69,13 @@ class EnvironmentValues {
 }
 
 describe('environment values', () => {
+  const serviceBase = new StackVariables(SERVICE_BASE);
+
+  it('service-base has no variable that leaves a deployed service without Valkey', () => {
+    assert.equal(serviceBase.names.has('valkey_access'), false);
+    assert.ok(serviceBase.names.has('service_name'));
+  });
+
   for (const environment of readdirSync(ENVIRONMENTS).sort()) {
     const values = new EnvironmentValues(environment);
 
@@ -42,6 +87,71 @@ describe('environment values', () => {
       );
       assert.ok(values.common.topLevelString('domain'));
     });
+
+    for (const folder of values.services()) {
+      it(`${environment} ${folder} keeps both service states where service-base reads them`, () => {
+        const region = values
+          .reader('network', 'terraform.tfvars')
+          .topLevelString('region');
+        const bucket = `${values.common.topLevelString('name_prefix')}-tfstate`;
+        const serviceName = new ServiceName(folder).terraform;
+        const stacks = [
+          {
+            path: [],
+            key: `${region}/services/${serviceName}/terraform.tfstate`,
+          },
+          {
+            path: ['base'],
+            key: `${region}/services/${serviceName}/base/terraform.tfstate`,
+          },
+        ];
+        for (const stack of stacks) {
+          const where = join('services', folder, ...stack.path);
+          const backend = values.reader(where, 'backend.tfvars');
+          const tfvars = values.reader(where, 'terraform.tfvars');
+          assert.equal(
+            backend.topLevelString('key'),
+            stack.key,
+            `${where} key`,
+          );
+          assert.equal(
+            backend.topLevelString('bucket'),
+            bucket,
+            `${where} bucket`,
+          );
+          assert.equal(
+            backend.topLevelString('region'),
+            region,
+            `${where} region`,
+          );
+          assert.equal(
+            tfvars.topLevelString('region'),
+            region,
+            `${where} region`,
+          );
+          assert.equal(
+            tfvars.topLevelString('state_bucket'),
+            bucket,
+            `${where} state_bucket`,
+          );
+          assert.equal(
+            tfvars.topLevelString('service_name'),
+            serviceName,
+            `${where} service_name`,
+          );
+        }
+      });
+    }
+
+    for (const folder of values.services()) {
+      it(`${environment} ${folder} base sets only variables that service-base declares`, () => {
+        const text = readFileSync(
+          join(values.dir, 'services', folder, 'base', 'terraform.tfvars'),
+          'utf8',
+        );
+        assert.deepEqual(serviceBase.undeclaredIn(text), []);
+      });
+    }
 
     it(`no ${environment} stack repeats a key of common.tfvars`, () => {
       for (const file of values.stackFiles()) {

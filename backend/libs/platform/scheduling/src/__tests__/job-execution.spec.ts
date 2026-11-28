@@ -103,6 +103,23 @@ describe('JobExecution', () => {
       expect(lock.held).toBe(true);
     });
 
+    it('skips the run and warns when the lock store cannot be reached', async () => {
+      lock.failAcquire = true;
+      const job = new RecordingJob({ name: 'job-a', exclusive: true });
+      await expect(execution.execute(job, signals)).resolves.toBe(
+        JobRunResult.Skipped,
+      );
+      expect(job.runs).toBe(0);
+      expect(lock.releases).toBe(0);
+      expect(logger.levels()).toContain(FakeLogLevel.Warn);
+      expect(
+        metrics.total(SchedulingMetric.Runs, {
+          [SchedulingMetricAttribute.Job]: 'job-a',
+          [SchedulingMetricAttribute.Result]: JobRunResult.Skipped,
+        }),
+      ).toBe(1);
+    });
+
     it('releases the lock after a successful run', async () => {
       const job = new RecordingJob({ name: 'job-a', exclusive: true });
       await execution.execute(job, signals);

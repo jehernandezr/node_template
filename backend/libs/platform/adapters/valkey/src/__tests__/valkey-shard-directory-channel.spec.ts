@@ -1,3 +1,4 @@
+import { SystemClock } from '@platform/kernel';
 import {
   ShardDirectoryChangeKind,
   ShardingEvent,
@@ -5,6 +6,7 @@ import {
 } from '@platform/sharding';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeyShardDirectoryChannel } from '../valkey-shard-directory-channel.js';
 import { ValkeySubscriberSource } from '../valkey-subscriber-source.js';
@@ -31,7 +33,11 @@ function channelOver(
   onError?: (error: unknown) => void,
 ): ValkeyShardDirectoryChannel {
   return new ValkeyShardDirectoryChannel(
-    new ValkeyCommandExecutor(broker.publisher, new ValkeyErrorTranslator()),
+    new ValkeyCommandExecutor(
+      broker.publisher,
+      new ValkeyErrorTranslator(),
+      new ValkeyCircuit(new SystemClock()),
+    ),
     new ValkeySubscriberSource(broker.opener),
     new ValkeyKeyspace('orders'),
     onError,

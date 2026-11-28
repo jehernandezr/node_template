@@ -9,6 +9,7 @@ import { InvalidationLog } from './invalidation-log.js';
 export class InstanceResolver {
   private readonly instances: ExpiringLru<string>;
   private readonly invalidations: InvalidationLog;
+  private suspended = false;
 
   /**
    * @param localTtlMs TTL of each instance in the cache.
@@ -30,7 +31,7 @@ export class InstanceResolver {
    * @returns The instance, or `undefined`.
    */
   cached(logicalShard: string): string | undefined {
-    return this.instances.get(logicalShard);
+    return this.suspended ? undefined : this.instances.get(logicalShard);
   }
 
   /**
@@ -50,7 +51,7 @@ export class InstanceResolver {
         { details: { logicalShard } },
       );
     }
-    if (this.invalidations.isCurrent(logicalShard, since)) {
+    if (!this.suspended && this.invalidations.isCurrent(logicalShard, since)) {
       this.instances.set(
         logicalShard,
         instance,
@@ -58,6 +59,20 @@ export class InstanceResolver {
       );
     }
     return instance;
+  }
+
+  /**
+   * Stops caching and forgets every instance: each lookup reads the directory until `resume`.
+   */
+  suspend(): void {
+    this.suspended = true;
+    this.instances.clear();
+  }
+
+  /** Forgets every instance read while suspended and caches again. */
+  resume(): void {
+    this.instances.clear();
+    this.suspended = false;
   }
 
   /**

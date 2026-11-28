@@ -7,7 +7,7 @@ export abstract class AccessResolver {
    * @param tenantId Tenant of the member.
    * @param userId Member.
    * @returns The grant.
-   * @throws AuthenticationError (`PLATFORM.RESILIENCE.CIRCUIT_OPEN`) if there is no way to compute it.
+   * @throws AuthenticationError (`PLATFORM.DEPENDENCY.UNAVAILABLE`) if there is no way to compute it.
    */
   abstract resolve(tenantId: string, userId: string): Promise<AccessGrant>;
 }

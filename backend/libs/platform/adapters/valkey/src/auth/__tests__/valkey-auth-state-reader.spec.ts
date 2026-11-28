@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { AsyncBatches } from './utils/async-batches.js';
 import { ValkeyCommand } from '../../valkey-command.enum.js';
@@ -136,11 +137,11 @@ describe('ValkeyAuthStateReader', () => {
       });
     });
 
-    it('rejects a runner failure with a command failed error', async () => {
+    it('rejects a runner failure as an unavailable dependency', async () => {
       const { reader } = readerOver(new Error('connection refused'));
 
       await expect(reader.isSessionRevoked('s1')).rejects.toMatchObject({
-        code: ValkeyErrorCode.CommandFailed,
+        code: PlatformErrorCode.DependencyUnavailable,
       });
     });
   });

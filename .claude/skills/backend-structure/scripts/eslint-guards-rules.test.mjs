@@ -32,6 +32,7 @@ class GuardRulesHarness {
               'guards/no-new-collaborator': 'error',
               'guards/no-global-module': 'error',
               'guards/no-own-test-server': 'error',
+              'guards/no-module-in-index': 'error',
             },
           },
         ],
@@ -157,6 +158,37 @@ describe('guards/no-global-module', () => {
   it('accepts @Global() in a platform library', () => {
     assert.deepEqual(
       harness.reported('backend/libs/platform/x/src/nest/x.module.ts', module),
+      [],
+    );
+  });
+});
+
+describe('guards/no-module-in-index', () => {
+  const INDEX = 'backend/apps/notifications/src/modules/push/index.ts';
+
+  it('rejects a module index.ts that re-exports a Nest module', () => {
+    assert.deepEqual(
+      harness.reported(
+        INDEX,
+        "export { PushModule } from './presentation/push.module.js';\nexport * from './presentation/other.module.js';\n",
+      ),
+      ['guards/no-module-in-index', 'guards/no-module-in-index'],
+    );
+  });
+
+  it('accepts facades and types in index.ts and Nest modules in module.ts', () => {
+    assert.deepEqual(
+      harness.reported(
+        INDEX,
+        "export { PushFacade } from './application/push.facade.js';\nexport type { PushMessage } from './domain/push-message.js';\n",
+      ),
+      [],
+    );
+    assert.deepEqual(
+      harness.reported(
+        'backend/apps/notifications/src/modules/push/module.ts',
+        "export { PushModule } from './presentation/push.module.js';\n",
+      ),
       [],
     );
   });

@@ -6,6 +6,7 @@ describe('DeployedServiceEnvironment', () => {
     const environment = DeployedServiceEnvironment.of(
       'billing',
       DeployEnvironment.Prod,
+      {},
     );
 
     expect(environment).toMatchObject({
@@ -25,7 +26,52 @@ describe('DeployedServiceEnvironment', () => {
 
   it('fails for a service without values', () => {
     expect(() =>
-      DeployedServiceEnvironment.of('nowhere', DeployEnvironment.Dev),
+      DeployedServiceEnvironment.of('nowhere', DeployEnvironment.Dev, {}),
     ).toThrow();
+  });
+
+  describe('secrets', () => {
+    const values = [
+      'service_name = "sample"',
+      'environment_variables = {',
+      '  SAMPLE_MODE = "on"',
+      '}',
+      'secrets = {',
+      '  # Delivered from Secrets Manager.',
+      '  SAMPLE_KEY = "arn:aws:secretsmanager:us-east-1:000000000000:secret:sample"',
+      '}',
+    ].join('\n');
+
+    it('gives each secret the sample value of the test', () => {
+      expect(
+        DeployedServiceEnvironment.parse(values, DeployEnvironment.Staging, {
+          SAMPLE_KEY: 'sample-value',
+        }),
+      ).toEqual({
+        SAMPLE_MODE: 'on',
+        SAMPLE_KEY: 'sample-value',
+        DEPLOY_ENVIRONMENT: DeployEnvironment.Staging,
+        SERVICE_NAME: 'sample',
+      });
+    });
+
+    it('fails for a secret the test gives no sample value', () => {
+      expect(() =>
+        DeployedServiceEnvironment.parse(values, DeployEnvironment.Staging, {}),
+      ).toThrow('SAMPLE_KEY');
+    });
+
+    it('reads an empty secrets map as no secrets', () => {
+      expect(
+        DeployedServiceEnvironment.parse(
+          'service_name = "sample"\nsecrets = {}\n',
+          DeployEnvironment.Dev,
+          {},
+        ),
+      ).toEqual({
+        DEPLOY_ENVIRONMENT: DeployEnvironment.Dev,
+        SERVICE_NAME: 'sample',
+      });
+    });
   });
 });

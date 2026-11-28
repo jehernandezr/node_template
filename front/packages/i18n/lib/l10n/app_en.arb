@@ -82,6 +82,7 @@
   "error_platform_resilience_timeout": "The operation took too long. Try again.",
   "error_platform_resilience_bulkhead_full": "There are many operations in progress. Try again in a moment.",
   "error_platform_resilience_overloaded": "The service is busy. Try again in a moment.",
+  "error_platform_dependency_unavailable": "A service is temporarily unavailable. Try again in a moment.",
   "error_platform_auth_token_expired": "Your access expired. Refreshing the session.",
   "error_platform_auth_origin_rejected": "This request does not come from an allowed origin.",
   "error_platform_api_unsupported_version": "This version of the app is not supported. Update it.",

@@ -4,16 +4,20 @@ import type { ValkeyCommandRunner } from './valkey-command-runner.js';
 import type { ValkeyErrorTranslator } from './valkey-error-translator.js';
 import { ValkeyUnexpectedReplyError } from './valkey-unexpected-reply.error.js';
 import type { LuaScript } from './lua-script.js';
+import type { ValkeyCircuit } from './valkey-circuit.js';
 
 /**
- * Sends commands and scripts through a client and translates any failure into a
- * `ValkeyCommandError` that the `FailureClassifier` understands. It also reads
- * replies with a known shape. It is the only thing the adapters use from the client.
+ * Sends commands and scripts through a client, each within the deadline and breaker of its `ValkeyCircuit`, and
+ * translates any failure: `ValkeyUnavailableError` when Valkey does not answer, `ValkeyCommandError` when it rejects
+ * the command. It also reads replies with a known shape. It is the only thing the adapters use from the client.
  */
 export class ValkeyCommandExecutor {
+  private static readonly NO_SCRIPT = Symbol('noscript');
+
   constructor(
     private readonly client: ValkeyCommandRunner,
     private readonly errors: ValkeyErrorTranslator,
+    private readonly circuit: ValkeyCircuit,
   ) {}
 
   /**
@@ -21,13 +25,17 @@ export class ValkeyCommandExecutor {
    * @param command Command name.
    * @param args Its arguments.
    * @returns The raw reply.
+   * @throws ValkeyUnavailableError when Valkey does not answer in time or the circuit is open.
+   * @throws ValkeyCommandError when the server rejects the command.
    */
-  async run(command: ValkeyCommand, args: ValkeyArgument[]): Promise<unknown> {
-    try {
-      return await this.client.call(command, args);
-    } catch (error) {
-      throw this.errors.translate(error, command);
-    }
+  run(command: ValkeyCommand, args: ValkeyArgument[]): Promise<unknown> {
+    return this.circuit.run(command, async () => {
+      try {
+        return await this.client.call(command, args);
+      } catch (error) {
+        throw this.errors.translate(error, command);
+      }
+    });
   }
 
   /**
@@ -37,6 +45,8 @@ export class ValkeyCommandExecutor {
    * @param keys Keys it touches.
    * @param args Its arguments.
    * @returns The raw reply.
+   * @throws ValkeyUnavailableError when Valkey does not answer in time or the circuit is open.
+   * @throws ValkeyCommandError when the server rejects the script.
    */
   async script(
     script: LuaScript,
@@ -44,20 +54,25 @@ export class ValkeyCommandExecutor {
     args: readonly ValkeyArgument[],
   ): Promise<unknown> {
     const tail: ValkeyArgument[] = [keys.length, ...keys, ...args];
-    try {
-      return await this.client.call(ValkeyCommand.EvalSha, [
-        script.sha,
-        ...tail,
-      ]);
-    } catch (error) {
-      if (
-        this.errors.isReplyError(error) &&
-        this.errors.replyPrefix(error) === 'NOSCRIPT'
-      ) {
-        return this.run(ValkeyCommand.Eval, [script.source, ...tail]);
+    const reply = await this.circuit.run(ValkeyCommand.EvalSha, async () => {
+      try {
+        return await this.client.call(ValkeyCommand.EvalSha, [
+          script.sha,
+          ...tail,
+        ]);
+      } catch (error) {
+        if (
+          this.errors.isReplyError(error) &&
+          this.errors.replyPrefix(error) === 'NOSCRIPT'
+        ) {
+          return ValkeyCommandExecutor.NO_SCRIPT;
+        }
+        throw this.errors.translate(error, ValkeyCommand.EvalSha);
       }
-      throw this.errors.translate(error, ValkeyCommand.EvalSha);
-    }
+    });
+    return reply === ValkeyCommandExecutor.NO_SCRIPT
+      ? this.run(ValkeyCommand.Eval, [script.source, ...tail])
+      : reply;
   }
 
   /**

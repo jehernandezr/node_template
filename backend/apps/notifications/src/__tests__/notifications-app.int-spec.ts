@@ -479,6 +479,36 @@ new ContainerRuntime(process.env).describeIfAvailable(
       ).resolves.toEqual([{ version: 2 }]);
     });
 
+    it('stores a push the none sender skipped and reads it back as skipped', async () => {
+      const ref = { userId: ANA.userId, homeTenantId: ANA.tenantId };
+      const notificationId = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f75';
+      const skipped = {
+        id: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f74',
+        notificationId,
+        userId: ref.userId,
+        homeTenantId: ref.homeTenantId,
+        channel: NotificationChannel.Push,
+        status: DeliveryStatus.Skipped,
+        attempts: 1,
+        nextAttemptAt: new Date('2026-11-20T10:00:00.000Z'),
+        title: 'Invoice',
+        body: 'Your invoice is ready',
+        locale: 'en',
+      };
+
+      const stored = await app.get(ShardScopes).inUserShard(ref, async () => {
+        await app.get(DeliveryRepository).save(skipped);
+        return app.get(DeliveryRepository).ofNotification(notificationId);
+      });
+
+      expect(stored).toEqual([
+        expect.objectContaining({
+          channel: NotificationChannel.Push,
+          status: DeliveryStatus.Skipped,
+        }),
+      ]);
+    });
+
     it('places a tenant onboarded by identity in the shard of its group once and takes it out when the onboarding is undone', async () => {
       const rehearsal = new TenantDirectoryRehearsal(
         NotificationsTenantDirectoryOperations,

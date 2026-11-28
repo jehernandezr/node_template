@@ -56,7 +56,7 @@ describe('realtime transports in one process', () => {
       auth,
       baseUrl: host.url(),
       resumeUrl: host.url(),
-      publisher: new RealtimePublisher(stream, presence),
+      publisher: new RealtimePublisher(stream, presence, new SilentLogger()),
       presence,
     };
   });

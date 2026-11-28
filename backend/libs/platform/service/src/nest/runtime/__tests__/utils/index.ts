@@ -7,3 +7,8 @@ export {
   RuntimeProbeRecorded,
   runtimeProbeContract,
 } from './runtime-probe.contract.js';
+export * from './recording-shard-router.js';
+export * from './outage-probe-job.js';
+export * from './outage-probe-root.module.js';
+export * from './outage-probe-cache.enum.js';
+export * from './outage-probe-job-name.enum.js';

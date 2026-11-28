@@ -6,6 +6,7 @@ import { InMemoryRateLimiter } from '../in-memory-rate-limiter.js';
 import { ObservabilityRateLimitDegradationReporter } from '../observability-rate-limit-degradation-reporter.js';
 import { RateLimitDegradationReporter } from '../rate-limit-degradation-reporter.js';
 import { RateLimiter } from '../rate-limiter.js';
+import { StrictRateLimiter } from '../strict-rate-limiter.js';
 import { IpRateLimitKeyResolver } from './ip-rate-limit-key-resolver.js';
 import { RateLimitKeyResolver } from './rate-limit-key-resolver.js';
 import type {
@@ -61,8 +62,22 @@ export class RateLimitProviders {
         useExisting: extras.logger,
       });
     }
-    providers.push(RateLimitProviders.limiterProvider(extras));
+    providers.push(
+      RateLimitProviders.limiterProvider(extras),
+      RateLimitProviders.strictLimiterProvider(extras),
+    );
     return providers;
+  }
+
+  /** The shared limiter without degradation, or the local one where there is no shared limiter. */
+  private static strictLimiterProvider(
+    extras: RateLimitModuleExtras,
+  ): Provider {
+    return {
+      provide: StrictRateLimiter,
+      useFactory: (shared: RateLimiter) => new StrictRateLimiter(shared),
+      inject: [extras.limiter ?? InMemoryRateLimiter],
+    };
   }
 
   /**

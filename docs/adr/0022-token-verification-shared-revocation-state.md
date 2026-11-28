@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-13
-- Revised: 2026-11-25 (identity replays the shared state from its own events and a permission version never goes back; see ADR 0036)
+- Revised: 2026-11-25 (identity replays the shared state from its own events and a permission version never goes back; see ADR 0036); 2026-11-27 (an expired cached value is never served when Valkey fails; see ADR 0044)
 
 ## Context
 
@@ -18,7 +18,7 @@ ADR 0005 decides that identity issues the tokens and the other services only ver
 - Identity writes the revocation state in Valkey's `auth:*` space, without a service prefix: `auth:revoked:{sid}` with its index `auth:revoked-index`, `auth:epoch:user:{id}`, `auth:epoch:tenant:{id}`, `auth:pv:*`, `auth:access:{tid}:{uid}`, `auth:apikey:{prefix}` and the `auth:revocations` channel.
 - The Valkey ACL of the `data` stack gives identity read and write on `auth:*`, and the other services only read (`%R~auth:*`) and subscription to `auth:revocations`.
 - Identity writes each revocation and permission version right after the commit, and replays it from its own events (`SessionRevoked`, `TokensRevoked` with user scope and `PermissionsChanged`) through the `identity-auth-state` queue. The write after the commit is the fast path; the replay is the one that survives a Valkey outage or a crash between the commit and that write. A permission version is only raised (a Lua script in Valkey), and an epoch replay never moves the cut-off back, so late or repeated writes are harmless.
-- Each process keeps an in-memory Bloom of revoked sessions, fed by the channel and rebuilt every 10 s from the index, and a 5 s local cache for epochs and versions. If Valkey does not respond and there is no cached value, the verifier answers 503 instead of accepting the token.
+- Each process keeps an in-memory Bloom of revoked sessions, fed by the channel and rebuilt every 10 s from the index, and a 5 s local cache for epochs and versions. If Valkey does not respond and the cached value is missing or older than those 5 s, the verifier answers 503 `PLATFORM.DEPENDENCY.UNAVAILABLE` instead of accepting the token ([ADR 0044](0044-valkey-failure-policy.md)).
 - `@platform/auth` and `@platform/http` may import `@contracts/identity` (explicit exception in `backend/eslint.config.mjs`): the token format and its codes are identity's contract.
 
 ## Implementation in identity

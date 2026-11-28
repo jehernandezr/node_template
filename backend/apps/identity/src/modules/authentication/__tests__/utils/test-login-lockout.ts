@@ -1,5 +1,5 @@
 import { Clock } from '@platform/kernel';
-import { InMemoryRateLimiter } from '@platform/rate-limit';
+import { InMemoryRateLimiter, StrictRateLimiter } from '@platform/rate-limit';
 import { EphemeralStore } from '../../../../ephemeral/ephemeral-store.js';
 import { HmacSecretHasher } from '../../../../security/hmac-secret-hasher.js';
 import { LockoutKeys } from '../../application/lockout-keys.js';
@@ -21,7 +21,9 @@ export class TestLoginLockout {
   constructor(ephemeral: EphemeralStore, clock: Clock) {
     this.store = new EphemeralLockoutStore(ephemeral);
     this.lockout = new LoginLockout(
-      new RateLimiterAttemptCounters(new InMemoryRateLimiter({ clock })),
+      new RateLimiterAttemptCounters(
+        new StrictRateLimiter(new InMemoryRateLimiter({ clock })),
+      ),
       this.store,
       this.keys,
     );

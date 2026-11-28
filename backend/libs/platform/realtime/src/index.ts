@@ -5,6 +5,8 @@ export * from './auth/cookie-stream-authenticator.js';
 export * from './auth/stream-authenticator.js';
 export * from './auth/stream-credentials.js';
 export * from './auth/stream-principal.js';
+export * from './auth/stream-rejection.js';
+export * from './auth/stream-rejection-status.enum.js';
 export * from './auth/stream-revocations.js';
 export * from './presence/in-memory-presence-tracker.js';
 export * from './presence/presence-tracker.js';

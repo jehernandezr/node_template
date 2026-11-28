@@ -5,10 +5,14 @@ import { EmailSenderKind } from '../../shared/enums/email-sender-kind.enum.js';
 import { PushSenderKind } from '../../shared/enums/push-sender-kind.enum.js';
 import { notificationsConfigSchema } from '../notifications.config.js';
 
-const deployed = (environment: DeployEnvironment): ConfigEnv => ({
+const samples: ConfigEnv = {
   NOTIFICATIONS_EMAIL_PEPPER: randomBytes(32).toString('base64url'),
   INTERNAL_API_SHARED_SECRET: randomBytes(32).toString('base64url'),
-  ...DeployedServiceEnvironment.of('notifications', environment),
+};
+
+const deployed = (environment: DeployEnvironment): ConfigEnv => ({
+  ...samples,
+  ...DeployedServiceEnvironment.of('notifications', environment, samples),
 });
 
 describe.each(DeployedServiceEnvironment.ENVIRONMENTS)(

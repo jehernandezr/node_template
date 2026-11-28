@@ -266,6 +266,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The service is busy. Try again in a moment.';
 
   @override
+  String get error_platform_dependency_unavailable =>
+      'A service is temporarily unavailable. Try again in a moment.';
+
+  @override
   String get error_platform_auth_token_expired =>
       'Your access expired. Refreshing the session.';
 

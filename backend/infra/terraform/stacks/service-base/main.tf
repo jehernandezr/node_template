@@ -19,7 +19,7 @@ locals {
 
   databases     = try(local.data.service_databases[local.svc], null)
   db_secret_arn = var.database_access ? try(local.data.db_service_secret_arns[local.svc], null) : null
-  valkey_user   = var.valkey_access ? try(local.data.valkey.user_names[local.svc], null) : null
+  valkey_user   = try(local.data.valkey.user_names[local.svc], null)
   observability = local.platform.observability
 
   # Contract with the @platform adapters: the names of these variables are the ones their
@@ -196,8 +196,8 @@ resource "terraform_data" "service_check" {
       error_message = "database_access needs the service in db_services of the data stack."
     }
     precondition {
-      condition     = !var.valkey_access || local.valkey_user != null
-      error_message = "valkey_access needs the service in valkey_services of the data stack."
+      condition     = local.valkey_user != null
+      error_message = "Every deployed service needs Valkey: add the service to valkey_services of the data stack."
     }
     precondition {
       condition     = alltrue([for q in local.component_queues : contains(keys(local.messaging.queue_arns), q)])

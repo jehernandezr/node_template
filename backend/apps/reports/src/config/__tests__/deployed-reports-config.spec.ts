@@ -3,9 +3,13 @@ import { type ConfigEnv, type DeployEnvironment } from '@platform/config';
 import { DeployedServiceEnvironment } from '@platform/config/test-utils';
 import { reportsConfigSchema } from '../reports.config.js';
 
-const deployed = (environment: DeployEnvironment): ConfigEnv => ({
+const samples: ConfigEnv = {
   INTERNAL_API_SHARED_SECRET: randomBytes(32).toString('base64url'),
-  ...DeployedServiceEnvironment.of('reports', environment),
+};
+
+const deployed = (environment: DeployEnvironment): ConfigEnv => ({
+  ...samples,
+  ...DeployedServiceEnvironment.of('reports', environment, samples),
 });
 
 describe.each(DeployedServiceEnvironment.ENVIRONMENTS)(

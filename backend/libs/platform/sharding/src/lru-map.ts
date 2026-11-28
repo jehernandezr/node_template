@@ -72,4 +72,9 @@ export class LruMap<K, V> {
   delete(key: K): boolean {
     return this.entries.delete(key);
   }
+
+  /** Deletes every entry. */
+  clear(): void {
+    this.entries.clear();
+  }
 }

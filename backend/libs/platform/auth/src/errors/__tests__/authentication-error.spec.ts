@@ -50,7 +50,7 @@ describe('AuthenticationError', () => {
       [
         'stateUnavailable',
         () => AuthenticationError.stateUnavailable(new Error('down')),
-        PlatformErrorCode.ResilienceCircuitOpen,
+        PlatformErrorCode.DependencyUnavailable,
       ],
     ])('%s carries its public code', (_name, build, code) => {
       expect(build().code).toBe(code);

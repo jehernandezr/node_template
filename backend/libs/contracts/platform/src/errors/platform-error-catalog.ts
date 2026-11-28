@@ -194,4 +194,9 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     true,
     'The service is overloaded. Try again in a few moments.',
   ),
+  [C.DependencyUnavailable]: pub(
+    503,
+    true,
+    'A shared dependency of the service is not available right now. Try again in a few moments.',
+  ),
 });

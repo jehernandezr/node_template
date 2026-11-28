@@ -269,6 +269,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'El servicio está ocupado. Intenta en unos instantes.';
 
   @override
+  String get error_platform_dependency_unavailable =>
+      'Un servicio no está disponible temporalmente. Intenta de nuevo en un momento.';
+
+  @override
   String get error_platform_auth_token_expired =>
       'Tu acceso venció. Actualizando la sesión.';
 

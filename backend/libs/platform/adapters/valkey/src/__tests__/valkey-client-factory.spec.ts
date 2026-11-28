@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { FailureClassifier } from '@platform/primitives';
 import {
   ResilienceEventKind,
@@ -26,8 +27,8 @@ import { ValkeyCache } from '../valkey-cache.js';
 import { ValkeyClientFactory } from '../valkey-client-factory.js';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyConnectionResolver } from '../valkey-connection-resolver.js';
-import { ValkeyErrorCode } from '../valkey-error-code.enum.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { valkeyConfigSchema } from '../valkey.config.js';
 
@@ -102,11 +103,15 @@ describe('ValkeyClientFactory', () => {
     const client = await factoryFor(DOWN).create();
     try {
       const cache = new ValkeyCache(
-        new ValkeyCommandExecutor(client, new ValkeyErrorTranslator()),
+        new ValkeyCommandExecutor(
+          client,
+          new ValkeyErrorTranslator(),
+          new ValkeyCircuit(new SystemClock()),
+        ),
         new ValkeyKeyspace('svc'),
       );
       await expect(cache.get('a')).rejects.toMatchObject({
-        code: ValkeyErrorCode.CommandFailed,
+        code: PlatformErrorCode.DependencyUnavailable,
         failureKind: FailureKind.Transient,
       });
 

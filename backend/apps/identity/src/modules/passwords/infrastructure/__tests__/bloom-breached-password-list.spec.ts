@@ -32,6 +32,17 @@ class FlakyFilter extends AsyncBloomFilter {
   }
 }
 
+/** Filter whose store is down: it takes items but cannot be read. */
+class UnreadableFilter extends AsyncBloomFilter {
+  override async add(): Promise<void> {}
+
+  override async addMany(): Promise<void> {}
+
+  override mightContain(): Promise<boolean> {
+    return Promise.reject(new Error('valkey does not respond'));
+  }
+}
+
 describe('BloomBreachedPasswordList', () => {
   const filter = () =>
     new InMemoryBloomFilterFactory().create(
@@ -66,16 +77,28 @@ describe('BloomBreachedPasswordList', () => {
     );
   });
 
-  it('tries to load again when the first load fails', async () => {
+  it('answers from the source while the first load fails and loads again on the next query', async () => {
+    const flaky = new FlakyFilter(filter());
     const list = new BloomBreachedPasswordList(
-      new FlakyFilter(filter()),
+      flaky,
       new KnownBreachedPasswordsSource(),
     );
 
-    await expect(list.contains('Password1234')).rejects.toThrow(
-      'valkey does not respond',
-    );
     await expect(list.contains('Password1234')).resolves.toBe(true);
+    await expect(list.contains('Password1234')).resolves.toBe(true);
+    await expect(flaky.mightContain('password1234')).resolves.toBe(true);
+  });
+
+  it('answers from the source when the filter cannot be read', async () => {
+    const list = new BloomBreachedPasswordList(
+      new UnreadableFilter(),
+      new KnownBreachedPasswordsSource(),
+    );
+
+    await expect(list.contains('Password1234')).resolves.toBe(true);
+    await expect(list.contains('a phrase nobody uses 2026')).resolves.toBe(
+      false,
+    );
   });
 
   it('hands the rebuild job its items in batches', () => {

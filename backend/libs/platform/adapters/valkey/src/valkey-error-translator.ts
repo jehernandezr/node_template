@@ -1,6 +1,7 @@
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { FailureRule } from '@platform/primitives';
 import { ValkeyCommandError } from './valkey-command.error.js';
+import { ValkeyUnavailableError } from './valkey-unavailable.error.js';
 
 /**
  * Translates iovalkey client errors. As a `FailureRule` it tells the
@@ -55,7 +56,9 @@ export class ValkeyErrorTranslator extends FailureRule {
   }
 
   /**
-   * Wraps a client error in a {@link ValkeyCommandError}. Platform errors pass through unchanged.
+   * Wraps a client error: a server that does not answer, times out, loads or fails over becomes a
+   * {@link ValkeyUnavailableError}; a reply that rejects the command becomes a {@link ValkeyCommandError}. Platform
+   * errors pass through unchanged.
    * @param error Client error.
    * @param command Command that failed.
    * @returns The platform error.
@@ -64,7 +67,10 @@ export class ValkeyErrorTranslator extends FailureRule {
     if (error instanceof PlatformError) {
       return error;
     }
-    return new ValkeyCommandError(command, this.kindOf(error), error);
+    const kind = this.kindOf(error);
+    return kind === FailureKind.Permanent
+      ? new ValkeyCommandError(command, kind, error)
+      : new ValkeyUnavailableError(command, kind, error);
   }
 
   /**

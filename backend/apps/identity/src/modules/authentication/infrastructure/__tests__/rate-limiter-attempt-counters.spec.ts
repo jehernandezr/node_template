@@ -1,12 +1,12 @@
 import { FixedClock } from '@platform/kernel/test-utils';
-import { InMemoryRateLimiter } from '@platform/rate-limit';
+import { InMemoryRateLimiter, StrictRateLimiter } from '@platform/rate-limit';
 import { LockoutRules } from '../../../../shared/constants/lockout.constants.js';
 import { RateLimiterAttemptCounters } from '../rate-limiter-attempt-counters.js';
 
 class CountersHarness {
   readonly clock = new FixedClock(new Date('2026-11-16T10:00:00.000Z'));
   readonly counters = new RateLimiterAttemptCounters(
-    new InMemoryRateLimiter({ clock: this.clock }),
+    new StrictRateLimiter(new InMemoryRateLimiter({ clock: this.clock })),
   );
 }
 

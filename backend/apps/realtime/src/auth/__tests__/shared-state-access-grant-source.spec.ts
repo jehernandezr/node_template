@@ -6,7 +6,7 @@ describe('SharedStateAccessGrantSource', () => {
     await expect(
       new SharedStateAccessGrantSource().fetch(),
     ).rejects.toMatchObject({
-      code: PlatformErrorCode.ResilienceCircuitOpen,
+      code: PlatformErrorCode.DependencyUnavailable,
       retryable: true,
     });
   });

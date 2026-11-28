@@ -50,9 +50,12 @@ export class RealtimeModule {
         }),
         {
           provide: RealtimePublisher,
-          useFactory: (stream: RealtimeStream, presence: PresenceTracker) =>
-            new RealtimePublisher(stream, presence),
-          inject: [RealtimeStream, PresenceTracker],
+          useFactory: (
+            stream: RealtimeStream,
+            presence: PresenceTracker,
+            logger: LoggerPort,
+          ) => new RealtimePublisher(stream, presence, logger),
+          inject: [RealtimeStream, PresenceTracker, LoggerPort],
         },
         {
           provide: RealtimeConnections,

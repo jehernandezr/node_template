@@ -89,14 +89,14 @@ describe('CachedAccessResolver', () => {
       );
     });
 
-    it('rejects with a circuit open error when neither the state nor the source answer', async () => {
+    it('rejects with a dependency unavailable error when neither the state nor the source answer', async () => {
       state.failure = new Error('down');
       source.failure = new Error('identity down');
 
       await expect(
         resolver.resolve('tenant-1', 'user-1'),
       ).rejects.toMatchObject({
-        code: PlatformErrorCode.ResilienceCircuitOpen,
+        code: PlatformErrorCode.DependencyUnavailable,
       });
     });
 

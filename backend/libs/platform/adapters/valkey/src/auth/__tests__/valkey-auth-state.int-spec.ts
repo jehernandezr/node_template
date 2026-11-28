@@ -161,7 +161,7 @@ runtime.describeIfAvailable('Valkey auth state against a real server', () => {
   });
 
   describe('local cache when Valkey goes away', () => {
-    it('serves the last known epoch after the connection drops and fails for unknown keys', async () => {
+    it('serves a fresh epoch after the connection drops and fails closed once it expires', async () => {
       const { writer } = stores();
       await writer.setUserEpoch('u1', EPOCH);
       const client = users.readerClient();
@@ -182,11 +182,14 @@ runtime.describeIfAvailable('Valkey auth state against a real server', () => {
       expect(await cached.userEpoch('u1')).toEqual(EPOCH);
 
       client.disconnect();
-      clock.advance(10_000);
 
       expect(await cached.userEpoch('u1')).toEqual(EPOCH);
+      clock.advance(10_000);
+      await expect(cached.userEpoch('u1')).rejects.toMatchObject({
+        code: 'PLATFORM.DEPENDENCY.UNAVAILABLE',
+      });
       await expect(cached.userEpoch('u2')).rejects.toMatchObject({
-        code: 'PLATFORM.RESILIENCE.CIRCUIT_OPEN',
+        code: 'PLATFORM.DEPENDENCY.UNAVAILABLE',
       });
     });
   });

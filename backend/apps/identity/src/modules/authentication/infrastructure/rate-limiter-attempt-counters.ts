@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RateLimitRule, RateLimiter } from '@platform/rate-limit';
+import { RateLimitRule, StrictRateLimiter } from '@platform/rate-limit';
 import { LockoutRules } from '../../../shared/constants/lockout.constants.js';
 import { AttemptCounterRule } from '../domain/attempt-counter-rule.enum.js';
 import {
@@ -8,9 +8,10 @@ import {
 } from '../domain/attempt-counters.js';
 
 /**
- * `AttemptCounters` over the platform `RateLimiter`: one rule per dimension with its window. The
+ * `AttemptCounters` over the platform `StrictRateLimiter`: one rule per dimension with its window. The
  * limit of each rule is its lockout threshold: once reached the count stops rising, and the policy
- * only asks whether it was reached.
+ * only asks whether it was reached. The limiter never degrades to a per-process count, so a Valkey outage
+ * refuses the attempt with 503 instead of letting it bypass the lockout.
  */
 @Injectable()
 export class RateLimiterAttemptCounters extends AttemptCounters {
@@ -30,7 +31,7 @@ export class RateLimiterAttemptCounters extends AttemptCounters {
     windowMs: LockoutRules.ip.windowMs,
   });
 
-  constructor(private readonly limiter: RateLimiter) {
+  constructor(private readonly limiter: StrictRateLimiter) {
     super();
   }
 

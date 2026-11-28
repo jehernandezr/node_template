@@ -10,6 +10,7 @@ export * from './sliding-window.js';
 export * from './in-memory-rate-limiter.js';
 export * from './in-memory-rate-limiter.options.js';
 export * from './degrading-rate-limiter.js';
+export * from './strict-rate-limiter.js';
 export * from './degrading-rate-limiter.options.js';
 export * from './rate-limit-degraded-listener.js';
 export * from './rate-limit-degradation-reporter.js';

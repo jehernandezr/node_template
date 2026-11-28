@@ -36,8 +36,8 @@ export class JobExecution {
   ) {}
 
   /**
-   * Runs the job once. An exclusive job whose lock is held by another process does not run and is
-   * counted as skipped; while an exclusive job runs, its lease is renewed every third of `timeoutMs`, and
+   * Runs the job once. An exclusive job whose lock is held by another process, or whose lock store cannot be
+   * reached, does not run and is counted as skipped, so the next occurrence tries again; while an exclusive job runs, its lease is renewed every third of `timeoutMs`, and
    * if a renewal finds the lease lost the job is aborted. A run that outlives its `timeoutMs` is aborted and
    * counted as failed; this call settles, and the lock is released, only once the job itself returns or
    * `signals.abandon` aborts, so a job that ignores the abort never overlaps the next run.
@@ -59,14 +59,11 @@ export class JobExecution {
     let stopRenewing: () => void = () => undefined;
     try {
       if (job.exclusive) {
-        lease = await this.lock.tryAcquire(job.name, job.timeoutMs);
-        if (lease === undefined) {
-          this.logger.debug(
-            'Job skipped: another process holds the lock',
-            fields,
-          );
+        const taken = await this.acquire(job, fields);
+        if (taken === undefined) {
           return this.finish(job, JobRunResult.Skipped, startedAt);
         }
+        lease = taken;
       }
       const leaseLost = new AbortController();
       if (lease !== undefined) {
@@ -98,6 +95,32 @@ export class JobExecution {
           fields,
         );
       }
+    }
+  }
+
+  /**
+   * The lease of an exclusive job, or `undefined` when the run must be skipped: another process holds the lock, or
+   * the lock store cannot be reached and nobody can tell whether another process runs the job.
+   */
+  private async acquire(
+    job: ScheduledJob,
+    fields: Record<string, unknown>,
+  ): Promise<JobLease | undefined> {
+    try {
+      const lease = await this.lock.tryAcquire(job.name, job.timeoutMs);
+      if (lease === undefined) {
+        this.logger.debug(
+          'Job skipped: another process holds the lock',
+          fields,
+        );
+      }
+      return lease;
+    } catch (error) {
+      this.logger.warn('Job skipped: the lock store is unavailable', {
+        ...fields,
+        error: ErrorDescriptor.describe(error),
+      });
+      return undefined;
     }
   }
 

@@ -14,6 +14,7 @@ import { ValkeyAuthStateWriter } from '../auth/valkey-auth-state-writer.js';
 import { ValkeyAuthTokenProvider } from '../valkey-auth-token-provider.js';
 import { ValkeyBloomFilterFactory } from '../valkey-bloom-filter-factory.js';
 import { ValkeyCache } from '../valkey-cache.js';
+import { ValkeyCircuit } from '../valkey-circuit.js';
 import { ValkeyClientFactory } from '../valkey-client-factory.js';
 import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyConnectionResolver } from '../valkey-connection-resolver.js';
@@ -82,10 +83,22 @@ export class ValkeyProviders {
         useFactory: () => new ValkeyErrorTranslator(),
       },
       {
+        provide: ValkeyCircuit,
+        useFactory: (options: ValkeyRuntimeOptions, clock: Clock) =>
+          new ValkeyCircuit(clock, {
+            ...ValkeyCircuit.DEFAULTS,
+            ...options.circuit,
+          }),
+        inject: [VALKEY_MODULE_OPTIONS, Clock],
+      },
+      {
         provide: ValkeyCommandExecutor,
-        useFactory: (client: Valkey, errors: ValkeyErrorTranslator) =>
-          new ValkeyCommandExecutor(client, errors),
-        inject: [VALKEY_CLIENT, ValkeyErrorTranslator],
+        useFactory: (
+          client: Valkey,
+          errors: ValkeyErrorTranslator,
+          circuit: ValkeyCircuit,
+        ) => new ValkeyCommandExecutor(client, errors, circuit),
+        inject: [VALKEY_CLIENT, ValkeyErrorTranslator, ValkeyCircuit],
       },
       {
         provide: ValkeyKeyspace,
@@ -216,6 +229,7 @@ export class ValkeyProviders {
   static exports(): Array<symbol | Type<unknown>> {
     return [
       VALKEY_CLIENT,
+      ValkeyCircuit,
       ValkeyCommandExecutor,
       ValkeyKeyspace,
       ValkeyErrorTranslator,

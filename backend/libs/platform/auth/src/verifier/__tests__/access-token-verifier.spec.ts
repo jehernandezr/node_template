@@ -442,7 +442,7 @@ describe('AccessTokenVerifier', () => {
       harness.reader.failOn = failing;
 
       await expect(harness.verify(harness.token())).rejects.toMatchObject({
-        code: PlatformErrorCode.ResilienceCircuitOpen,
+        code: PlatformErrorCode.DependencyUnavailable,
       });
     });
 
@@ -451,7 +451,7 @@ describe('AccessTokenVerifier', () => {
       harness.access.failure = new Error('down');
 
       await expect(harness.verify(harness.token())).rejects.toMatchObject({
-        code: PlatformErrorCode.ResilienceCircuitOpen,
+        code: PlatformErrorCode.DependencyUnavailable,
       });
     });
 
@@ -461,7 +461,7 @@ describe('AccessTokenVerifier', () => {
       });
 
       await expect(harness.verify(harness.token())).rejects.toMatchObject({
-        code: PlatformErrorCode.ResilienceCircuitOpen,
+        code: PlatformErrorCode.DependencyUnavailable,
       });
     });
   });

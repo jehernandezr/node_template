@@ -310,6 +310,14 @@ enum PlatformErrorCode {
     httpStatus: 503,
     retryable: true,
     messageKey: 'error_platform_resilience_overloaded',
+  ),
+
+  /// A shared dependency of the service is not available right now. Try again in a few moments.
+  dependencyUnavailable(
+    'PLATFORM.DEPENDENCY.UNAVAILABLE',
+    httpStatus: 503,
+    retryable: true,
+    messageKey: 'error_platform_dependency_unavailable',
   );
 
   const PlatformErrorCode(

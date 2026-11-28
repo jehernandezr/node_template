@@ -74,12 +74,6 @@ variable "database_access" {
   default     = true
 }
 
-variable "valkey_access" {
-  description = "Uses its Valkey user (prefix <service>:). Requires the service in valkey_services of the data stack."
-  type        = bool
-  default     = true
-}
-
 variable "environment_variables" {
   description = "The service's own environment variables. They do not replace the platform ones (SERVICE_NAME, AWS_*, DB_*, VALKEY_*...)."
   type        = map(string)
