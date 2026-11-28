@@ -154,12 +154,12 @@ run "lambda_api_with_consumer" {
   # Contract with the adapters' configuration schemas: changing a name here
   # requires changing it in backend/libs and backend/.env.example too.
   assert {
-    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(concat(["AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["DB_SECRET_ARN"]))
+    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["DB_SECRET_ARN"]))
     error_message = "The Lambda API receives exactly the variables of the adapter contract."
   }
 
   assert {
-    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(concat(["AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["DB_SECRET_ARN"]))
+    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["DB_SECRET_ARN"]))
     error_message = "A Lambda consumer receives the same variables as the Lambda API."
   }
 
@@ -209,12 +209,12 @@ run "fargate_api_with_realtime_and_workers" {
   }
 
   assert {
-    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(concat(["AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION"]))
+    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION"]))
     error_message = "The Fargate API receives exactly the variables of the adapter contract."
   }
 
   assert {
-    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"]))) == sort(concat(["AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION", "QUEUE_URL"]))
+    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_DATABASES", "DB_PORT", "DB_PROXY_HOST", "DB_READER_HOSTS", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION", "QUEUE_URL"]))
     error_message = "A worker receives the Fargate variables and the URL of its queue."
   }
 
@@ -536,6 +536,11 @@ run "one_off_task_carries_the_region_of_the_stack_and_no_move_targets" {
   }
 
   assert {
+    condition     = output.one_off_task.environment["AUTH_ISSUER"] == "https://eu.api.example.test" && output.one_off_task.environment["IDENTITY_ISSUER"] == "https://eu.api.example.test"
+    error_message = "AUTH_ISSUER, and IDENTITY_ISSUER for identity, are the issuer of the stack region, as the regions and identity schemas require."
+  }
+
+  assert {
     condition     = output.one_off_task.environment["TENANT_MOVE_STRATEGY"] == "batch"
     error_message = "Tenant moves copy in batches."
   }
@@ -556,8 +561,8 @@ run "only_identity_receives_identity_region" {
   }
 
   assert {
-    condition     = !contains(keys(local.lambda_environment), "IDENTITY_REGION") && local.lambda_environment["SERVICE_REGION"] == "us"
-    error_message = "Every service gets SERVICE_REGION; only identity gets IDENTITY_REGION."
+    condition     = !contains(keys(local.lambda_environment), "IDENTITY_REGION") && !contains(keys(local.lambda_environment), "IDENTITY_ISSUER") && local.lambda_environment["SERVICE_REGION"] == "us" && local.lambda_environment["AUTH_ISSUER"] == "https://api.example.test"
+    error_message = "Every service gets SERVICE_REGION and AUTH_ISSUER; only identity gets IDENTITY_REGION and IDENTITY_ISSUER."
   }
 }
 

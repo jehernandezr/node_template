@@ -16,6 +16,40 @@ describe('DeployedServiceEnvironment', () => {
     });
   });
 
+  it('adds the region keys service-base builds from common.tfvars', () => {
+    const environment = DeployedServiceEnvironment.of(
+      'identity',
+      DeployEnvironment.Dev,
+      {},
+    );
+
+    expect(JSON.parse(environment['REGIONS'] ?? '')).toEqual([
+      {
+        code: 'us',
+        apiBaseUrl: 'https://api.dev.example.com',
+        issuer: 'https://api.dev.example.com',
+      },
+    ]);
+    expect(environment).toMatchObject({
+      SERVICE_REGION: 'us',
+      AUTH_ISSUER: 'https://api.dev.example.com',
+      IDENTITY_REGION: 'us',
+      IDENTITY_ISSUER: 'https://api.dev.example.com',
+    });
+  });
+
+  it('gives identity alone its region and issuer keys', () => {
+    const environment = DeployedServiceEnvironment.of(
+      'billing',
+      DeployEnvironment.Prod,
+      {},
+    );
+
+    expect(environment['SERVICE_REGION']).toBe('us');
+    expect(environment).not.toHaveProperty('IDENTITY_REGION');
+    expect(environment).not.toHaveProperty('IDENTITY_ISSUER');
+  });
+
   it('covers every deployed environment and no local one', () => {
     expect(DeployedServiceEnvironment.ENVIRONMENTS).toEqual([
       DeployEnvironment.Dev,

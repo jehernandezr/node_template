@@ -25,6 +25,7 @@ locals {
   # The region this stack serves, by its code in var.regions (ADR 0042).
   region_codes = [for code, r in var.regions : code if r.aws_region == var.region]
   region_code  = one(local.region_codes)
+  issuer       = try(var.regions[local.region_code].issuer, null)
   regions_json = jsonencode([for code in sort(keys(var.regions)) : {
     code       = code
     apiBaseUrl = var.regions[code].api_base_url
@@ -44,8 +45,9 @@ locals {
       AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
       REGIONS        = local.regions_json
       SERVICE_REGION = local.region_code
+      AUTH_ISSUER    = local.issuer
     },
-    local.svc == "identity" ? { IDENTITY_REGION = local.region_code } : {},
+    local.svc == "identity" ? { IDENTITY_REGION = local.region_code, IDENTITY_ISSUER = local.issuer } : {},
     var.database_access ? {
       DB_PROXY_HOST   = local.data.db.proxy_endpoint
       DB_READER_HOSTS = join(",", local.data.db.reader_endpoints)

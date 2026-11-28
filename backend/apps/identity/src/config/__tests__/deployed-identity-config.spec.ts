@@ -1,5 +1,6 @@
 import { DeployEnvironment, type ConfigEnv } from '@platform/config';
 import { DeployedServiceEnvironment } from '@platform/config/test-utils';
+import { regionsConfigSchema } from '@platform/service';
 import { IdentityTestEnvironment } from '../../__tests__/utils/index.js';
 import { IdentityMailerKind } from '../identity-mailer-kind.enum.js';
 import { identityConfigSchema } from '../identity.config.js';
@@ -22,6 +23,19 @@ describe.each(DeployedServiceEnvironment.ENVIRONMENTS)(
       expect(parsed.error).toBeUndefined();
       expect(parsed.data?.IDENTITY_MAILER).toBe(
         IdentityMailerKind.Notifications,
+      );
+    });
+
+    it('serves the region and issuer Terraform builds for it', () => {
+      const values = deployed(environment);
+      const regions = regionsConfigSchema.safeParse(values);
+
+      expect(regions.error).toBeUndefined();
+      expect(values['IDENTITY_REGION']).toBe(regions.data?.SERVICE_REGION);
+      expect(values['IDENTITY_ISSUER']).toBe(
+        regions.data?.REGIONS.find(
+          (region) => region.code === regions.data?.SERVICE_REGION,
+        )?.issuer,
       );
     });
 
