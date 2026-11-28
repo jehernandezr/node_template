@@ -75,9 +75,14 @@ variable "database_access" {
 }
 
 variable "environment_variables" {
-  description = "The service's own environment variables. They do not replace the platform ones (SERVICE_NAME, AWS_*, DB_*, VALKEY_*...)."
+  description = "The service's own environment variables. They do not replace the platform ones (SERVICE_NAME, AWS_*, DB_*, VALKEY_*, REGIONS, SERVICE_REGION...)."
   type        = map(string)
   default     = {}
+
+  validation {
+    condition     = !contains(keys(var.environment_variables), "TENANT_MOVE_TARGETS")
+    error_message = "TENANT_MOVE_TARGETS stays unset in a deployed environment: each shard's group follows the naming convention (ADR 0042)."
+  }
 }
 
 variable "secrets" {

@@ -10,7 +10,13 @@ const ENVIRONMENTS = join(
   resolve(ScriptRunner.scriptsDir, '../terraform'),
   'environments',
 );
-const COMMON_KEYS = ['environment', 'name_prefix', 'domain'];
+const COMMON_KEYS = [
+  'environment',
+  'name_prefix',
+  'domain',
+  'main_region',
+  'regions',
+];
 const TERRAFORM = resolve(ScriptRunner.scriptsDir, '../terraform');
 const SERVICE_BASE = join(TERRAFORM, 'stacks', 'service-base');
 const SERVICE = join(TERRAFORM, 'stacks', 'service');

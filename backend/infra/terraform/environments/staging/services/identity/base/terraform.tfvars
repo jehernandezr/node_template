@@ -22,7 +22,6 @@ workers = {
 # \"reports\":\"http://reports.staging.internal\"}" on a single line. If any of those URLs is missing, the service
 # does not start.
 environment_variables = {
-  IDENTITY_REGION     = "us-east-1"
   IDENTITY_AUDIENCES  = "api"
   IDENTITY_MAILER     = "notifications"
   INTERNAL_API_SIGNER = "hmac"
