@@ -163,6 +163,7 @@ const CONFIG = ConfigModule.forRoot({
   env: {
     DB_USER: 'app',
     DB_PASSWORD: 'secret',
+    DB_CATALOG_NAME: 'svc_catalog',
     DB_INSTANCES: JSON.stringify({
       'stub-instance': { primary: { host: 'localhost', port: 5432 } },
     }),

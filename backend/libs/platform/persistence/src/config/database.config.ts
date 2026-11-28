@@ -34,8 +34,8 @@ export const databaseConfigSchema = z.object({
   DB_SSL: envBoolean().default(false),
   DB_POOL_MAX: envNumber({ min: 1, max: 200 }).default(10),
   DB_STATEMENT_TIMEOUT_MS: envNumber({ min: 0 }).default(30_000),
-  /** Name of the catalog database. */
-  DB_CATALOG_NAME: z.string().trim().min(1).default('catalog'),
+  /** Name of the service's catalog database, `<service>_catalog`. */
+  DB_CATALOG_NAME: z.string().trim().min(1),
   /** Physical instance of the catalog, a key of `DB_INSTANCES`. */
   DB_CATALOG_INSTANCE: z.string().trim().min(1).default('catalog'),
   DB_INSTANCES: instancesSchema,

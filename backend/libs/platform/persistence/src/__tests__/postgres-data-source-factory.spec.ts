@@ -26,6 +26,7 @@ function settings(): DatabaseSettings {
   return databaseConfigSchema.parse({
     DB_USER: 'app',
     DB_PASSWORD: 'factory-password',
+    DB_CATALOG_NAME: 'svc_catalog',
     DB_INSTANCES: JSON.stringify({
       'db-1': { primary: PRIMARY, replicas: [REPLICA] },
     }),
