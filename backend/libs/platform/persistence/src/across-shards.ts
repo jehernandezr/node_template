@@ -28,6 +28,7 @@ export class AcrossShards {
 
   /**
    * Runs `fn` on each shard. Never throws because of a down shard: reports it in `failures` and marks `partial`.
+   * The deadline of each shard covers opening its data source as well as `fn`.
    * @param fn Work on one shard.
    * @param options Deadline and concurrency.
    * @returns The results and the failed shards.
@@ -111,10 +112,10 @@ export class AcrossShards {
     timeoutMs: number,
     fn: (connection: ShardConnection) => Promise<T>,
   ): Promise<{ readonly value: T }> {
-    const dataSource = await this.sources.get(location);
-    const value = await Deadline.after(timeoutMs, this.clock).race(() =>
-      fn({ location, dataSource }),
-    );
+    const value = await Deadline.after(timeoutMs, this.clock).race(async () => {
+      const dataSource = await this.sources.get(location);
+      return fn({ location, dataSource });
+    });
     return { value };
   }
 }

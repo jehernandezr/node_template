@@ -3,6 +3,7 @@ import { AwsModule } from '@platform/adapters-aws/nest';
 import { TelemetryBootstrap } from '@platform/observability/setup';
 import { DatabaseAuth, DatabaseTokenProvider } from '@platform/persistence';
 import { PersistenceModule } from '@platform/persistence/nest';
+import { PostgresPlatformModule } from '@platform/adapters-postgres/nest';
 import { InvalidServiceDefinitionError } from '../../../errors/invalid-service-definition.error.js';
 import { ServiceDefinitionBuilder } from '../../../__tests__/utils/index.js';
 import { ImportedModules } from '../../runtime/__tests__/utils/index.js';
@@ -19,6 +20,16 @@ describe('MigrationHostModule', () => {
     const dynamic = MigrationHostModule.forService(definition, {}, telemetry);
 
     expect(ImportedModules.of(dynamic)).not.toContain(AwsModule);
+  });
+
+  it('lists the shards from the catalog primary, which only the owner role reaches', () => {
+    const dynamic = MigrationHostModule.forService(definition, {}, telemetry);
+
+    expect(
+      ImportedModules.find(dynamic, PostgresPlatformModule)?.providers,
+    ).toContainEqual(
+      expect.objectContaining({ useValue: { directoryReadPrimary: true } }),
+    );
   });
 
   it('signs the owner tokens with the RDS signer of AWS when DB_AUTH=iam', () => {

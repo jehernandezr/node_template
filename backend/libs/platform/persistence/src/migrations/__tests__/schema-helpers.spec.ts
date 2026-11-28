@@ -8,6 +8,7 @@ import {
   createRangePartitionsSql,
   dropAuditTriggerSql,
   partitionClause,
+  registerPartitionedTableSql,
   uuidV7LowerBound,
 } from '../schema-helpers.js';
 
@@ -72,6 +73,7 @@ describe('schema helpers', () => {
     ).toEqual([
       'CREATE TABLE "events" (id uuid PRIMARY KEY) PARTITION BY RANGE ("id")',
       'CREATE TABLE "events_default" PARTITION OF "events" DEFAULT',
+      "INSERT INTO platform_partitioned_tables (table_name, partition_step, retention) VALUES ('events', 'day', NULL) ON CONFLICT (table_name) DO UPDATE SET partition_step = EXCLUDED.partition_step, retention = EXCLUDED.retention",
       "SELECT platform_ensure_partitions('events', 'day', 7)",
     ]);
     expect(
@@ -83,6 +85,30 @@ describe('schema helpers', () => {
     expect(() =>
       createRangePartitionsSql('t', PartitionInterval.Month, -1),
     ).toThrow('ahead must be an integer from 0 to 120');
+    expect(() =>
+      createRangePartitionsSql('t', PartitionInterval.Month, 121),
+    ).toThrow('ahead must be an integer from 0 to 120');
+  });
+
+  it('registers a table with retention when its partitioned options declare one', () => {
+    expect(
+      createPartitionedTableSql('attempts', 'id uuid PRIMARY KEY', {
+        by: PartitionBy.Range,
+        column: 'id',
+        retention: 12,
+      }),
+    ).toContain(
+      "INSERT INTO platform_partitioned_tables (table_name, partition_step, retention) VALUES ('attempts', 'month', 12) ON CONFLICT (table_name) DO UPDATE SET partition_step = EXCLUDED.partition_step, retention = EXCLUDED.retention",
+    );
+    expect(() =>
+      registerPartitionedTableSql('bad name', PartitionInterval.Day, 1),
+    ).toThrow('partitioned table must be a plain SQL identifier');
+    expect(() =>
+      registerPartitionedTableSql('attempts', 'week' as PartitionInterval),
+    ).toThrow('partition interval must be a PartitionInterval');
+    expect(() =>
+      registerPartitionedTableSql('attempts', PartitionInterval.Month, 0),
+    ).toThrow('retention must be a positive integer');
   });
 
   it('computes the lowest UUIDv7 of an instant', () => {

@@ -59,6 +59,11 @@ export class ShardProbe {
     return this.servers.serviceConnection();
   }
 
+  /** A login role that owns nothing, as the app role of the environments, to open one to a shard. */
+  appRoleConnection(): ReturnType<IdentityTestServers['appRoleConnection']> {
+    return this.servers.appRoleConnection();
+  }
+
   names(): readonly string[] {
     return this.servers.shards().map((shard) => shard.database);
   }

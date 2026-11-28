@@ -5,8 +5,8 @@
 # The runner that executes this script must reach the database (RDS Proxy inside the VPC), which is why
 # deploy.yml uses vars.DEPLOY_RUNNER: a self-hosted runner inside the VPC, not one hosted by GitHub.
 #
-# Reads the one_off_task output of the service's service-base stack and exports its environment, the one the
-# migrate one-off task gets: DB_AUTH=iam with the service's owner role as DB_USER (ADR 0041). The pool signs an
+# Reads the migrate_task output of the service's service-base stack and exports its environment, the one the
+# migrate task gets: DB_AUTH=iam with the service's owner role as DB_USER (ADR 0041). The pool signs an
 # IAM token per connection with the runner's credentials, so its role needs rds-db:connect for that owner role.
 # No database password is read. <service> is the folder and Nx project name.
 # DRY_RUN=1 reads with capture, exports nothing and runs migrate only as a printed command.
@@ -26,18 +26,18 @@ base_backend="$TF_ROOT/environments/$ENVIRONMENT/services/$SERVICE/base/backend.
 
 run terraform -chdir="$base_stack" init -input=false -reconfigure -backend-config="$base_backend"
 
-one_off_json="$(capture terraform -chdir="$base_stack" output -json one_off_task)"
+migrate_json="$(capture terraform -chdir="$base_stack" output -json migrate_task)"
 
 if is_dry; then
-  dry_text 'export the environment of one_off_task'
+  dry_text 'export the environment of migrate_task'
 else
-  if [[ -z "$(json_get "$one_off_json" 'o.environment.DB_USER')" ]]; then
-    log "The service-base stack of $SERVICE in $ENVIRONMENT gives its one-off task no database: apply it first"
+  if [[ -z "$(json_get "$migrate_json" 'o.environment.DB_USER')" ]]; then
+    log "The service-base stack of $SERVICE in $ENVIRONMENT gives its migrate task no database: apply it first"
     exit 1
   fi
   while IFS= read -r -d '' pair; do
     export "${pair?}"
-  done < <(printf '%s' "$one_off_json" | node -e "
+  done < <(printf '%s' "$migrate_json" | node -e "
     const o = JSON.parse(require('node:fs').readFileSync(0, 'utf8'));
     for (const [key, value] of Object.entries(o.environment)) process.stdout.write(key + '=' + value + '\0');
   ")

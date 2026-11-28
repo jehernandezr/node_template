@@ -26,6 +26,24 @@ describe('databaseConfigSchema', () => {
       });
       expect(settings.DB_CATALOG_NAME).toBe('svc_catalog');
       expect(settings.DB_SSL).toBe(false);
+      expect(settings.DB_CONNECT_TIMEOUT_MS).toBe(5_000);
+    });
+
+    it('reads the connect timeout and rejects one below a millisecond', () => {
+      const base = {
+        DB_USER: 'app',
+        DB_PASSWORD: 'database-secret',
+        DB_CATALOG_NAME: 'svc_catalog',
+      };
+
+      expect(
+        databaseConfigSchema.parse({ ...base, DB_CONNECT_TIMEOUT_MS: '250' })
+          .DB_CONNECT_TIMEOUT_MS,
+      ).toBe(250);
+      expect(
+        databaseConfigSchema.safeParse({ ...base, DB_CONNECT_TIMEOUT_MS: '0' })
+          .success,
+      ).toBe(false);
     });
   });
 

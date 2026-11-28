@@ -94,6 +94,17 @@ export class ServiceTestServers {
     return this.service().serviceConnection();
   }
 
+  /**
+   * Creates, unless an earlier suite of the run did, a login role of the service that owns nothing, as its app role
+   * in the environments. It gets no grant: the suite grants what it needs on its own databases.
+   * @returns How that role connects.
+   */
+  async appRoleConnection(): Promise<PostgresConnection> {
+    const username = `${this.serviceName}_app`;
+    await this.postgres.ensureServiceRole(username);
+    return { ...this.serviceConnection(), username };
+  }
+
   async stop(): Promise<void> {
     await this.valkey.stop();
     await this.postgres.stop();

@@ -166,12 +166,49 @@ run "every_service_has_the_same_number_of_shards" {
 }
 
 # Tokens and API calls of a deployed environment travel over TLS; only local runs on plain http.
+run "the_backup_retention_reaches_the_instance" {
+  command = plan
+
+  variables {
+    environment                = "staging"
+    db_backup_retention_period = 14
+  }
+
+  assert {
+    condition     = module.rds.backup_retention_period == 14
+    error_message = "The instance keeps the automated backups db_backup_retention_period asks for."
+  }
+}
+
+run "staging_rejects_a_backup_retention_below_14_days" {
+  command = plan
+
+  variables {
+    environment                = "staging"
+    db_backup_retention_period = 7
+  }
+
+  expect_failures = [var.db_backup_retention_period]
+}
+
+run "prod_rejects_a_backup_retention_below_35_days" {
+  command = plan
+
+  variables {
+    environment                = "prod"
+    db_backup_retention_period = 14
+  }
+
+  expect_failures = [var.db_backup_retention_period]
+}
+
 run "a_deployed_environment_rejects_an_http_issuer" {
   command = plan
 
   variables {
-    environment = "prod"
-    regions     = { us = { aws_region = "us-east-1", api_base_url = "https://api.example.test", issuer = "http://api.example.test" } }
+    environment                = "prod"
+    db_backup_retention_period = 35
+    regions                    = { us = { aws_region = "us-east-1", api_base_url = "https://api.example.test", issuer = "http://api.example.test" } }
   }
 
   expect_failures = [var.regions]

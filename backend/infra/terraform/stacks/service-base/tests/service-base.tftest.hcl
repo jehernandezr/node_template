@@ -195,12 +195,12 @@ run "lambda_api_with_consumer" {
   # Contract with the adapters' configuration schemas: changing a name here
   # requires changing it in backend/libs and backend/.env.example too.
   assert {
-    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
+    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
     error_message = "The Lambda API receives exactly the variables of the adapter contract."
   }
 
   assert {
-    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
+    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
     error_message = "A Lambda consumer receives the same variables as the Lambda API."
   }
 
@@ -250,12 +250,12 @@ run "fargate_api_with_realtime_and_workers" {
   }
 
   assert {
-    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION"]))
+    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION"]))
     error_message = "The Fargate API receives exactly the variables of the adapter contract."
   }
 
   assert {
-    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION", "QUEUE_URL"]))
+    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION", "QUEUE_URL"]))
     error_message = "A worker receives the Fargate variables and the URL of its queue."
   }
 
@@ -331,6 +331,31 @@ run "files_only_where_asked" {
     condition     = local.component_environment["api"]["FILES_BUCKET"] == "nt-dev-files-123456789012" && !contains(keys(local.component_environment["worker-commands"]), "FILES_BUCKET")
     error_message = "Only the component with files receives FILES_BUCKET."
   }
+}
+
+run "the_connect_timeout_reaches_every_component" {
+  command = plan
+
+  variables {
+    api                         = { runtime = "lambda" }
+    database_connect_timeout_ms = 2500
+  }
+
+  assert {
+    condition     = local.lambda_environment["DB_CONNECT_TIMEOUT_MS"] == "2500" && local.fargate_environment["DB_CONNECT_TIMEOUT_MS"] == "2500" && local.migrate_environment["DB_CONNECT_TIMEOUT_MS"] == "2500"
+    error_message = "Every component and one-off task gives up a connection after database_connect_timeout_ms."
+  }
+}
+
+run "a_connect_timeout_below_a_millisecond_is_rejected" {
+  command = plan
+
+  variables {
+    api                         = { runtime = "lambda" }
+    database_connect_timeout_ms = 0
+  }
+
+  expect_failures = [var.database_connect_timeout_ms]
 }
 
 run "files_need_bucket" {
@@ -536,23 +561,85 @@ run "one_off_task_has_what_the_pipeline_needs_to_run_it" {
   }
 
   assert {
-    condition     = output.one_off_task.environment["DB_USER"] == "identity_owner" && output.one_off_task.environment["DB_AUTH"] == "iam" && length(output.one_off_task.secrets) == 0
-    error_message = "The one-off task migrates as the owner role, with an IAM token and no secret."
+    condition     = output.one_off_task.environment["DB_AUTH"] == "iam" && length(output.one_off_task.secrets) == 0
+    error_message = "The one-off task signs an IAM token and gets no secret."
   }
 
   assert {
-    condition     = merge(output.one_off_task.environment, { DB_USER = "identity_app" }) == output.fargate_environment
-    error_message = "Apart from DB_USER, the one-off task gets the same environment as every Fargate task of the service stack."
+    condition     = output.one_off_task.environment == output.fargate_environment && output.one_off_task.environment["DB_USER"] == "identity_app"
+    error_message = "The signing-keys and seed one-off task runs as the app role, with the environment of every Fargate task of the service stack."
   }
 
   assert {
-    condition     = strcontains(local.policies["one-off"]["database-connect"], "dbuser:prx-0123456789abcdef0/identity_owner") && !strcontains(local.policies["one-off"]["database-connect"], "identity_app")
-    error_message = "Only the one-off task connects as the owner role."
+    condition     = !strcontains(local.policies["one-off"]["database-connect"], "identity_owner") && strcontains(local.policies["one-off"]["database-connect"], "dbuser:prx-0123456789abcdef0/identity_app")
+    error_message = "The one-off task never connects as the owner role."
   }
 
   assert {
-    condition     = !contains(keys(local.policies["one-off"]), "messaging")
-    error_message = "The one-off task publishes and consumes nothing."
+    condition     = !contains(keys(local.policies["one-off"]), "messaging") && !contains(keys(local.policies["migrate"]), "messaging")
+    error_message = "The one-off and migrate tasks publish and consume nothing."
+  }
+}
+
+# Applied with the mocked provider, so the role, log group and security group identifiers are known.
+run "migrate_task_has_its_own_role_and_connects_as_the_owner" {
+  command = apply
+
+  variables {
+    api     = { runtime = "fargate" }
+    workers = { commands = { queue = "identity-commands" } }
+  }
+
+  assert {
+    condition = (
+      output.migrate_task.task_role_arn == module.component["migrate"].role_arn &&
+      output.migrate_task.task_role_arn != output.one_off_task.task_role_arn &&
+      output.migrate_task.execution_role_arn == module.component["migrate"].execution_role_arn &&
+      output.migrate_task.log_group_name == "/ecs/nt-dev/identity-migrate" &&
+      output.migrate_task.security_group_ids == [module.component["migrate"].security_group_id, "sg-0clients"] &&
+      output.migrate_task.cluster_arn == output.one_off_task.cluster_arn &&
+      output.migrate_task.subnet_ids == output.one_off_task.subnet_ids
+    )
+    error_message = "The migrate task runs where the one-off task runs, with its own task and execution roles, log group and security group (ADR 0041)."
+  }
+
+  assert {
+    condition = (
+      output.migrate_task.environment["DB_USER"] == "identity_owner" &&
+      merge(output.migrate_task.environment, {
+        DB_USER        = "identity_app"
+        DB_READER_USER = "identity_reader"
+        DB_INSTANCES   = output.fargate_environment["DB_INSTANCES"]
+      }) == output.fargate_environment
+    )
+    error_message = "Apart from the owner role and the primary-only instances, the migrate task gets the environment of every Fargate task of the service stack."
+  }
+
+  assert {
+    condition = (
+      !contains(keys(output.migrate_task.environment), "DB_READER_USER") &&
+      jsondecode(output.migrate_task.environment["DB_INSTANCES"]) == {
+        main = {
+          primary  = { host = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com", port = 5432 }
+          replicas = []
+        }
+      }
+    )
+    error_message = "The migrate task reaches only the primary through RDS Proxy: its owner role has no connect right on the replicas, so it neither reads them nor opens a pool to them."
+  }
+
+  assert {
+    condition = (
+      strcontains(local.policies["migrate"]["database-connect"], "dbuser:prx-0123456789abcdef0/identity_owner") &&
+      !strcontains(local.policies["migrate"]["database-connect"], "identity_app") &&
+      !strcontains(local.policies["migrate"]["database-connect"], "identity_reader")
+    )
+    error_message = "The migrate task connects as the owner role only."
+  }
+
+  assert {
+    condition     = length([for key, p in local.policies : key if strcontains(try(p["database-connect"], ""), "identity_owner")]) == 1
+    error_message = "Only the migrate task connects as the owner role."
   }
 }
 

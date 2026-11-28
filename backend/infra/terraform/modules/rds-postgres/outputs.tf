@@ -78,6 +78,11 @@ output "iam_database_authentication_enabled" {
   value       = aws_db_instance.this.iam_database_authentication_enabled && alltrue(aws_db_instance.replica[*].iam_database_authentication_enabled)
 }
 
+output "backup_retention_period" {
+  description = "Days of automated backups the instance keeps for point-in-time recovery."
+  value       = aws_db_instance.this.backup_retention_period
+}
+
 output "pinned_connections_alarm" {
   description = "Alarm on proxy connections pinned to a session: metric_name, threshold and dimensions."
   value = {

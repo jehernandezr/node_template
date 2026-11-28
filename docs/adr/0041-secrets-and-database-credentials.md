@@ -37,9 +37,11 @@ Every service tfvars has `secrets = {}`. No stack creates the identity keys and 
 
 **Database access.** Each service has three login roles, created by the bootstrap Lambda:
 
-- `<svc>_owner` owns the shards and its catalog and runs only in the `migrate` task, which has its own task role in `service-base`.
+- `<svc>_owner` owns the shards and its catalog and runs only in the `migrate` task, which has its own task role in `service-base`. The owner connects only through RDS Proxy, so that task gets the primary without replicas or a reader role, and the migrator lists the shards from the catalog primary.
 - `<svc>_app` runs the service: DML through `ALTER DEFAULT PRIVILEGES FOR ROLE <svc>_owner`, no DDL, not an owner, so RLS always applies. Maintenance keeps its RLS policy ([ADR 0029](0029-cross-tenant-maintenance-search-per-shard.md)); no role has `BYPASSRLS`. Deployed environments therefore move tenants with `TENANT_MOVE_STRATEGY=batch`: the `logical` strategy of [ADR 0032](0032-tenant-moves-and-regions.md) needs a subscription role that bypasses RLS, so it stays local until a decision adds that role.
 - `<svc>_reader` has `rds_iam` and `SELECT`, and reads the replicas directly.
+
+Partition maintenance runs as the owner through `SECURITY DEFINER` functions of `@platform/persistence`. They are not executable by `PUBLIC`: the bootstrap Lambda grants `EXECUTE` on the owner's functions to `<svc>_app` only. They accept only the tables a migration registers in `platform_partitioned_tables`, each with its step and, when old partitions may go, its retention. Only dated partitions whose whole range ended before that retention can be detached or dropped, never the `DEFAULT` partition, and no more than 120 partitions can be created ahead, so the app role can never remove `audit_log` history or the history any other table must still keep. Row level security without policies keeps that registry out of reach of every role but the owner.
 
 Clients reach RDS Proxy with IAM authentication (`iam_auth = "REQUIRED"`); the proxy holds the owner and app passwords and follows their rotation by itself. Readers use IAM tokens against the replicas. A new `DatabaseTokenProvider` port in `@platform/persistence`, adapter in `@platform/adapters-aws` with the RDS signer, gives the pool a fresh token per connection. `DB_AUTH=iam` selects it; `DB_AUTH=password` keeps `DB_PASSWORD` for local and tests.
 

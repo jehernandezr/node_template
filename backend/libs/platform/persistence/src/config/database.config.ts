@@ -33,7 +33,7 @@ export const databaseConfigSchema = z
   .object({
     /** `password` presents `DB_PASSWORD`; `iam` signs a fresh token per connection (ADR 0041). */
     DB_AUTH: z.enum(DatabaseAuth).default(DatabaseAuth.Password),
-    /** User of the primary: the service's app role, or its owner role in the one-off task. */
+    /** User of the primary: the service's app role, or its owner role in the migrate task. */
     DB_USER: z.string().trim().min(1),
     /** User of the read replicas, `<service>_reader` in AWS. Without it the replicas use `DB_USER`. */
     DB_READER_USER: z.string().trim().min(1).optional(),
@@ -42,6 +42,8 @@ export const databaseConfigSchema = z
     DB_SSL: envBoolean().default(false),
     DB_POOL_MAX: envNumber({ min: 1, max: 200 }).default(10),
     DB_STATEMENT_TIMEOUT_MS: envNumber({ min: 0 }).default(30_000),
+    /** Time a new connection has to reach a node before it fails, so a shard that does not answer frees its caller. */
+    DB_CONNECT_TIMEOUT_MS: envNumber({ min: 1 }).default(5_000),
     /** Name of the service's catalog database, `<service>_catalog`. */
     DB_CATALOG_NAME: z.string().trim().min(1),
     /** Physical instance of the catalog, a key of `DB_INSTANCES`. */

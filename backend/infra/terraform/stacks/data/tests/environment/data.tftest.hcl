@@ -49,4 +49,9 @@ run "plans_with_the_environment_values" {
     condition     = toset(keys(var.db_services)) == toset([for file in fileset("${path.module}/../../environments/${var.environment}/services", "*/terraform.tfvars") : dirname(file)])
     error_message = "db_services declares exactly the services of the environment."
   }
+
+  assert {
+    condition     = module.rds.backup_retention_period == { dev = 7, staging = 14, prod = 35 }[var.environment]
+    error_message = "The instance keeps automated backups 7 days in dev, 14 in staging and 35 in prod (ADR 0043)."
+  }
 }

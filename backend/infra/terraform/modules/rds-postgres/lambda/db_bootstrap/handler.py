@@ -81,8 +81,12 @@ def _schemas(conn, owner):
     return sorted({"public", *[row[0] for row in rows]})
 
 
-def _grant(conn, owner, role, table_privileges, sequence_privileges):
-    """Grants a role its privileges on what the owner created and will create, in every schema."""
+def _grant(conn, owner, role, table_privileges, sequence_privileges, run_functions=False):
+    """Grants a role its privileges on what the owner created and will create, in every schema.
+
+    With run_functions the role may also execute the owner's functions, including the partition functions that
+    migrations keep from PUBLIC.
+    """
     owner_ident = pg.identifier(owner)
     role_ident = pg.identifier(role)
     for schema in _schemas(conn, owner):
@@ -93,6 +97,8 @@ def _grant(conn, owner, role, table_privileges, sequence_privileges):
             conn.run(
                 f"GRANT {sequence_privileges} ON ALL SEQUENCES IN SCHEMA {schema_ident} TO {role_ident}"
             )
+        if run_functions:
+            conn.run(f"GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA {schema_ident} TO {role_ident}")
     conn.run(f"ALTER DEFAULT PRIVILEGES FOR ROLE {owner_ident} GRANT USAGE ON SCHEMAS TO {role_ident}")
     conn.run(
         f"ALTER DEFAULT PRIVILEGES FOR ROLE {owner_ident} GRANT {table_privileges} ON TABLES TO {role_ident}"
@@ -102,6 +108,8 @@ def _grant(conn, owner, role, table_privileges, sequence_privileges):
             f"ALTER DEFAULT PRIVILEGES FOR ROLE {owner_ident} "
             f"GRANT {sequence_privileges} ON SEQUENCES TO {role_ident}"
         )
+    if run_functions:
+        conn.run(f"ALTER DEFAULT PRIVILEGES FOR ROLE {owner_ident} GRANT EXECUTE ON FUNCTIONS TO {role_ident}")
 
 
 WRITER_TABLE_PRIVILEGES = "SELECT, INSERT, UPDATE, DELETE"
@@ -113,8 +121,8 @@ def bootstrap(event, master_username, connect, password_of):
     """Applies roles, memberships, databases, extensions and grants. Returns a summary.
 
     A user with rds_iam logs in only with IAM tokens: it has no password and gets rds_iam. The others get the
-    password of their secret. Writers get DML and readers SELECT on what the database owner creates, so neither
-    can change the schema and RLS applies to both.
+    password of their secret. Writers get DML and EXECUTE and readers SELECT on what the database owner creates, so
+    neither can change the schema and RLS applies to both.
     """
     admin = pg.identifier(master_username)
     users = event.get("users", [])
@@ -181,7 +189,14 @@ def bootstrap(event, master_username, connect, password_of):
                 conn.run(f"CREATE EXTENSION IF NOT EXISTS {pg.identifier(ext)}")
             conn.run("REVOKE CREATE ON SCHEMA public FROM PUBLIC")
             for writer in db.get("writers", []):
-                _grant(conn, db["owner"], writer, WRITER_TABLE_PRIVILEGES, WRITER_SEQUENCE_PRIVILEGES)
+                _grant(
+                    conn,
+                    db["owner"],
+                    writer,
+                    WRITER_TABLE_PRIVILEGES,
+                    WRITER_SEQUENCE_PRIVILEGES,
+                    run_functions=True,
+                )
             for reader in db.get("readers", []):
                 _grant(conn, db["owner"], reader, READER_TABLE_PRIVILEGES, None)
         finally:

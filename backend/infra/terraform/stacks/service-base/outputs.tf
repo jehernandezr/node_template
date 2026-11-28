@@ -9,7 +9,7 @@ output "service_applied" {
 }
 
 output "components" {
-  description = "Each component by key (api, realtime, worker-<key>, consumer-<key>, one-off): name, runtime, queue, the role it runs with (role_arn, role_name), the ECS execution role, log group, security group and its own variables (FILES_BUCKET, QUEUE_URL)."
+  description = "Each component by key (api, realtime, worker-<key>, consumer-<key>, one-off, migrate): name, runtime, queue, the role it runs with (role_arn, role_name), the ECS execution role, log group, security group and its own variables (FILES_BUCKET, QUEUE_URL)."
   value = {
     for key, c in local.components : key => {
       name               = c.name
@@ -61,17 +61,11 @@ output "enable_execute_command" {
 }
 
 output "one_off_task" {
-  description = "What the pipeline needs to register and run the one-off task (migrate, signing-keys, seed) with the new image: cluster, subnets, security groups, roles, log group, size, environment and secrets. The environment is the one every Fargate task of the service gets, with the owner role as DB_USER."
-  value = {
-    cluster_arn        = try(local.platform.ecs_cluster.arn, null)
-    subnet_ids         = local.network.private_subnet_ids
-    security_group_ids = concat([module.component["one-off"].security_group_id], local.data_security_group_ids)
-    task_role_arn      = module.component["one-off"].role_arn
-    execution_role_arn = module.component["one-off"].execution_role_arn
-    log_group_name     = module.component["one-off"].log_group_name
-    cpu                = var.one_off_task.cpu
-    memory             = var.one_off_task.memory
-    environment        = local.one_off_environment
-    secrets            = local.fargate_secrets
-  }
+  description = "What the pipeline needs to register and run the one-off tasks of identity (signing-keys, seed) with the new image: cluster, subnets, security groups, roles, log group, size, environment and secrets. The environment is the one every Fargate task of the service gets, with the app role as DB_USER."
+  value       = local.one_off_tasks["one-off"]
+}
+
+output "migrate_task" {
+  description = "What the pipeline needs to register and run the migrate task with the new image, in the shape of one_off_task. It has its own roles and log group, and its environment is the one every Fargate task of the service gets with the owner role as DB_USER (ADR 0041)."
+  value       = local.one_off_tasks["migrate"]
 }
