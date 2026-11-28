@@ -1,5 +1,7 @@
 import { Secret } from '@platform/config';
 import { SystemClock } from '@platform/kernel';
+import type { DataSource } from 'typeorm';
+import type { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver.js';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { AcrossShards } from '../across-shards.js';
 import { databaseConfigSchema } from '../config/database.config.js';
@@ -15,6 +17,19 @@ import { StaticShardLister } from './utils/static-shard-lister.js';
 import { TestDatabaseServer } from './utils/test-database-server.js';
 
 const runtime = new ContainerRuntime(process.env);
+const POOL_LOCK_KEY = 4_120_011;
+
+const pause = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const waitUntilQueued = async (dataSource: DataSource): Promise<void> => {
+  const pool = (dataSource.driver as PostgresDriver).master as {
+    readonly waitingCount: number;
+  };
+  while (pool.waitingCount === 0) {
+    await pause(10);
+  }
+};
 
 runtime.describeIfAvailable(
   'AcrossShards with a shard that never answers',
@@ -125,19 +140,27 @@ runtime.describeIfAvailable(
     });
 
     it('lets a query wait for a free client of a full pool longer than DB_CONNECT_TIMEOUT_MS', async () => {
-      const { sources } = across(300, 1);
-      const dataSource = await sources.get({
-        logicalShard: reachable,
-        instance: 'reachable',
-      });
+      const connectTimeoutMs = 300;
+      const shard = { logicalShard: reachable, instance: 'reachable' };
+      const { sources } = across(connectTimeoutMs, 1);
+      const dataSource = await sources.get(shard);
+      const lockHolder = (
+        await across(60_000).sources.get(shard)
+      ).createQueryRunner();
+      await lockHolder.query('SELECT pg_advisory_lock($1)', [POOL_LOCK_KEY]);
 
-      const [held, waiting] = await Promise.all([
-        dataSource.query("SELECT 'slept' AS state FROM pg_sleep(1)"),
-        dataSource.query('SELECT 1 AS answered'),
-      ]);
+      const held = dataSource.query(
+        "SELECT 'held' AS state FROM pg_advisory_xact_lock($1)",
+        [POOL_LOCK_KEY],
+      );
+      const waiting = dataSource.query('SELECT 1 AS answered');
+      await waitUntilQueued(dataSource);
+      await pause(connectTimeoutMs * 3);
+      await lockHolder.query('SELECT pg_advisory_unlock($1)', [POOL_LOCK_KEY]);
+      await lockHolder.release();
 
-      expect(held).toEqual([{ state: 'slept' }]);
-      expect(waiting).toEqual([{ answered: 1 }]);
+      await expect(held).resolves.toEqual([{ state: 'held' }]);
+      await expect(waiting).resolves.toEqual([{ answered: 1 }]);
     });
   },
 );
