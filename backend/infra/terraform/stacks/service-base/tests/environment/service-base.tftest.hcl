@@ -30,8 +30,17 @@ run "plans_with_the_environment_values" {
   }
 
   assert {
-    condition     = merge(output.migrate_task.environment, { DB_USER = output.fargate_environment["DB_USER"] }) == output.fargate_environment && output.migrate_task.environment["DB_USER"] == "${var.service_name}_owner"
-    error_message = "The migrate task migrates as the owner role, with the environment every Fargate task of the service gets otherwise (ADR 0041, ADR 0043)."
+    condition = (
+      output.migrate_task.environment["DB_USER"] == "${var.service_name}_owner" &&
+      !contains(keys(output.migrate_task.environment), "DB_READER_USER") &&
+      alltrue([for instance in values(jsondecode(output.migrate_task.environment["DB_INSTANCES"])) : length(instance.replicas) == 0]) &&
+      merge(output.migrate_task.environment, {
+        DB_USER        = output.fargate_environment["DB_USER"]
+        DB_READER_USER = output.fargate_environment["DB_READER_USER"]
+        DB_INSTANCES   = output.fargate_environment["DB_INSTANCES"]
+      }) == output.fargate_environment
+    )
+    error_message = "The migrate task migrates as the owner role on the primary alone, with the environment every Fargate task of the service gets otherwise (ADR 0041, ADR 0043)."
   }
 
   assert {
