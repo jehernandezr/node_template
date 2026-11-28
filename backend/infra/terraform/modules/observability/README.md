@@ -5,7 +5,7 @@ Single-node OpenObserve on Fargate. It receives logs, metrics and traces over OT
 ## What it creates
 
 - ECS service with one task running OpenObserve (ARM64 by default). Telemetry data goes to a KMS-encrypted S3 bucket; metadata (users, dashboards, alerts) lives in SQLite on KMS-encrypted EFS with backup.
-- Secrets Manager secret with the root user, a generated password and the `Authorization` header ready for the OTLP exporters. Terraform generates the password, so it ends up in the state: protect the state bucket.
+- Secrets Manager secret with the root user, a generated password and the `Authorization` header ready for the OTLP exporters. The password is ephemeral and written through a write-only attribute, so neither it nor the header reaches the Terraform state.
 - KMS key with rotation for the secret, the bucket, EFS and the logs.
 - Entry through its own internal ALB (default) or through a rule on the listener of an existing ALB.
 - Least-privilege execution and task roles, security groups and a log group with KMS.

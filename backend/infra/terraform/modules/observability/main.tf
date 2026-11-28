@@ -189,7 +189,9 @@ resource "aws_efs_access_point" "data" {
 
 # --- Secrets ----------------------------------------------------------------
 
-resource "random_password" "root" {
+# The password is ephemeral and reaches Secrets Manager through a write-only attribute, so neither it nor the
+# authorization header built from it lands in the state (ADR 0041).
+ephemeral "random_password" "root" {
   length           = 40
   special          = true
   override_special = "-_.~"
@@ -207,11 +209,12 @@ resource "aws_secretsmanager_secret" "root" {
 resource "aws_secretsmanager_secret_version" "root" {
   secret_id = aws_secretsmanager_secret.root.id
 
-  secret_string = jsonencode({
+  secret_string_wo = jsonencode({
     ZO_ROOT_USER_EMAIL    = var.root_user_email
-    ZO_ROOT_USER_PASSWORD = random_password.root.result
-    OTLP_AUTHORIZATION    = "Basic ${base64encode("${var.root_user_email}:${random_password.root.result}")}"
+    ZO_ROOT_USER_PASSWORD = ephemeral.random_password.root.result
+    OTLP_AUTHORIZATION    = "Basic ${base64encode("${var.root_user_email}:${ephemeral.random_password.root.result}")}"
   })
+  secret_string_wo_version = 1
 }
 
 # --- Logs and IAM -----------------------------------------------------------
