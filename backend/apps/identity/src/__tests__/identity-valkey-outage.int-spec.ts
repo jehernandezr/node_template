@@ -2,12 +2,26 @@ import { PlatformErrorCode } from '@contracts/platform';
 import { IdentityRoute, MfaFactor } from '@contracts/identity';
 import { PollUntil, ValkeyOutage } from '@platform/adapters-valkey/test-utils';
 import { FlagEvaluator } from '@platform/flags';
-import { HealthState } from '@platform/kernel';
+import { ClientChannel } from '@platform/http';
+import { Clock, HealthState, TransactionManager } from '@platform/kernel';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
+import { ShardScopes } from '@platform/persistence';
+import { StrictRateLimiter } from '@platform/rate-limit';
+import { SecurityAlerts } from '../modules/alerts/index.js';
+import { AttemptCounters } from '../modules/authentication/domain/attempt-counters.js';
+import { ChallengeVerifier } from '../modules/mfa/application/challenge-verifier.js';
+import { MfaMethodCatalog } from '../modules/mfa/application/mfa-method-catalog.js';
+import { MfaFactorRepository } from '../modules/mfa/domain/mfa-factor-repository.js';
+import { SecretBox } from '../modules/mfa/domain/secret-box.js';
+import { EphemeralChallengeStore } from '../modules/mfa/infrastructure/ephemeral-challenge-store.js';
 import { BreachedPasswordList } from '../modules/passwords/domain/breached-password-list.js';
+import { SecretHasher } from '../security/secret-hasher.js';
+import { PendingPurpose } from '../shared/enums/pending-purpose.enum.js';
+import type { PendingAuthentication } from '../shared/types/pending-authentication.type.js';
 import {
   IdentityJourney,
   IdentityTestApp,
+  InMemoryEphemeralStore,
   TestIds,
   type SessionTokensBody,
 } from './utils/index.js';
@@ -65,6 +79,41 @@ new ContainerRuntime(process.env).describeIfAvailable(
       await outage.stop();
     });
 
+    const dependencyUnavailable = {
+      code: PlatformErrorCode.DependencyUnavailable,
+    };
+
+    const verifierWithLocalChallenges = async (
+      pending: PendingAuthentication,
+    ) => {
+      const clock = app.get(Clock);
+      const challenges = new EphemeralChallengeStore(
+        new InMemoryEphemeralStore(clock),
+        clock,
+      );
+      const challengeId = TestIds.next();
+      await challenges.save({
+        id: challengeId,
+        pendingId: pending.id,
+        method: MfaFactor.EmailOtp,
+        codeHash: app.get(SecretHasher).digest('123456'),
+        expiresAt: pending.expiresAt,
+      });
+      const verifier = new ChallengeVerifier(
+        challenges,
+        app.get(MfaFactorRepository),
+        app.get(MfaMethodCatalog),
+        app.get(SecretBox),
+        app.get(SecretHasher),
+        app.get(SecurityAlerts),
+        app.get(StrictRateLimiter),
+        app.get(ShardScopes),
+        app.get(TransactionManager),
+        clock,
+      );
+      return { verifier, challengeId };
+    };
+
     const expectUnavailable = (response: {
       status: number;
       body: unknown;
@@ -84,16 +133,48 @@ new ContainerRuntime(process.env).describeIfAvailable(
       });
     });
 
-    it('refuses a password sign-in instead of counting it outside the lockout', async () => {
+    it('answers 503 to a password sign-in', async () => {
       expectUnavailable(await ana.signIn(ana.native(), 'not the password'));
     });
 
-    it('refuses a second-factor code instead of counting it outside the attempt cap', async () => {
+    it('answers 503 to a second-factor code whose challenge cannot be read', async () => {
       expectUnavailable(
         await ana.native().post('/v1/auth/mfa/verify', {
           body: { mfaToken, challengeId, code: '000000' },
         }),
       );
+    });
+
+    it('fails the lockout counters instead of counting the failure in one process', async () => {
+      const counters = app.get(AttemptCounters);
+      const origin = TestIds.next();
+      const account = TestIds.next();
+
+      await expect(
+        counters.recordFailure(origin, account, IdentityTestApp.DEFAULT_IP),
+      ).rejects.toMatchObject(dependencyUnavailable);
+      await expect(
+        counters.recordFailure(origin, account, IdentityTestApp.DEFAULT_IP),
+      ).rejects.toMatchObject(dependencyUnavailable);
+    });
+
+    it('fails the per-user second-factor cap even when the challenge can be read', async () => {
+      const clock = app.get(Clock);
+      const pending: PendingAuthentication = {
+        id: TestIds.next(),
+        user: { userId: TestIds.next(), homeTenantId: TestIds.next() },
+        purpose: PendingPurpose.SignIn,
+        offeredFactors: [MfaFactor.EmailOtp],
+        client: { ip: IdentityTestApp.DEFAULT_IP, channel: ClientChannel.Web },
+        authMethods: [],
+        expiresAt: new Date(clock.now().getTime() + 60_000),
+      };
+      const { verifier, challengeId } =
+        await verifierWithLocalChallenges(pending);
+
+      await expect(
+        verifier.verify(pending, challengeId, '000000'),
+      ).rejects.toMatchObject(dependencyUnavailable);
     });
 
     it('refuses a signed device request whose nonce cannot be recorded', async () => {

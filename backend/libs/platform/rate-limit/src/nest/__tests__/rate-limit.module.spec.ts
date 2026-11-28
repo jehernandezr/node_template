@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import { RateLimitMetricName } from '../../rate-limit-metric-name.enum.js';
 import { InMemoryRateLimiter } from '../../in-memory-rate-limiter.js';
 import { RateLimiter } from '../../rate-limiter.js';
+import { StrictRateLimiter } from '../../strict-rate-limiter.js';
 import { RateLimitModule } from '../rate-limit.module.js';
 import {
   FakeRateLimiter,
@@ -52,6 +53,41 @@ describe('RateLimitModule', () => {
     expect(ref.get(RecordingMetricsPort).increments).toContainEqual(
       expect.objectContaining({ name: RateLimitMetricName.Degraded }),
     );
+  });
+
+  it('binds the strict limiter to the shared one so it fails while the degrading limiter answers locally', async () => {
+    const ref = await Test.createTestingModule({
+      imports: [
+        KernelModule,
+        RateLimitTestModule,
+        RateLimitModule.forRoot({
+          limiter: FakeRateLimiter,
+          degradeLocally: true,
+        }),
+      ],
+    }).compile();
+    const outage = new Error('valkey down');
+    ref.get(FakeRateLimiter).failWith(outage);
+    const strict = ref.get(StrictRateLimiter);
+    await expect(strict.consume('k', RULE)).rejects.toBe(outage);
+    await expect(strict.peek('k', RULE)).rejects.toBe(outage);
+    await expect(
+      ref.get(RateLimiter).consume('k', RULE),
+    ).resolves.toMatchObject({ allowed: true, count: 1 });
+  });
+
+  it('binds the strict limiter to the in-memory one when there is no shared limiter', async () => {
+    const ref = await Test.createTestingModule({
+      imports: [KernelModule, RateLimitModule.forRoot()],
+    }).compile();
+    const strict = ref.get(StrictRateLimiter);
+    await expect(strict.consume('k', RULE)).resolves.toMatchObject({
+      allowed: true,
+      count: 1,
+    });
+    await expect(
+      ref.get(InMemoryRateLimiter).peek('k', RULE),
+    ).resolves.toMatchObject({ count: 1 });
   });
 
   it('uses the shared limiter as is without degradeLocally', async () => {
