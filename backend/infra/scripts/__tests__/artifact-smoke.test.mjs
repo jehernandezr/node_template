@@ -204,7 +204,7 @@ describe('ServiceArtifacts', () => {
     ]);
   });
 
-  it('has every service bundle main, worker, lambda and migrate, and identity seed and tenant-move too', () => {
+  it('has every service bundle main, worker, lambda and migrate, and identity seed, signing-keys and tenant-move too', () => {
     for (const service of artifacts.services()) {
       const entries = artifacts.entries(service);
       for (const entry of ServiceArtifacts.REQUIRED_ENTRIES) {
@@ -214,7 +214,7 @@ describe('ServiceArtifacts', () => {
         );
       }
     }
-    for (const entry of ['seed.mjs', 'tenant-move.mjs']) {
+    for (const entry of ['seed.mjs', 'signing-keys.mjs', 'tenant-move.mjs']) {
       assert.ok(artifacts.entries('identity').includes(entry));
     }
   });

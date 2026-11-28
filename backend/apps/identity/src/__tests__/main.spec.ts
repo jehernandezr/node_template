@@ -11,6 +11,7 @@ describe('entry points', () => {
   const seed = read('seed.ts');
   const tenantMove = read('tenant-move.ts');
   const lambda = read('lambda.ts');
+  const signingKeys = read('signing-keys.ts');
   const instrumentation = read('instrumentation.ts');
 
   it.each([
@@ -54,6 +55,11 @@ describe('entry points', () => {
   it('exports the Lambda handler of the API with LambdaBootstrap.http', () => {
     expect(lambda).toContain('export const handler = LambdaBootstrap.http(');
     expect(lambda).toContain('HttpApplicationSetup');
+  });
+
+  it('fills the signing keys without starting identity, whose configuration needs them', () => {
+    expect(signingKeys).toContain('new SigningKeysTask(');
+    expect(signingKeys).not.toContain('ServiceBootstrap');
   });
 
   it('runs the worker with ServiceBootstrap.worker', () => {
