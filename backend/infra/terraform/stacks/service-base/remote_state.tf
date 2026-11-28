@@ -33,7 +33,8 @@ locals {
   service   = data.terraform_remote_state.service.outputs
   previous  = data.terraform_remote_state.service_base.outputs
 
-  service_state_key = "${var.region}/services/${var.service_name}/terraform.tfstate"
+  service_state_key      = "${var.region}/services/${var.service_name}/terraform.tfstate"
+  service_base_state_key = "${var.region}/services/${var.service_name}/base/terraform.tfstate"
 }
 
 data "terraform_remote_state" "network" {
@@ -68,6 +69,6 @@ data "terraform_remote_state" "service" {
 # finds it fails instead of reading an empty list of running components.
 data "terraform_remote_state" "service_base" {
   backend  = "s3"
-  config   = merge(local.remote_state_config, { key = "${var.region}/services/${var.service_name}/base/terraform.tfstate" })
+  config   = merge(local.remote_state_config, { key = local.service_base_state_key })
   defaults = { service_applied = false }
 }

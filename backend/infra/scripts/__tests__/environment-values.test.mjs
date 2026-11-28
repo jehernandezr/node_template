@@ -13,6 +13,53 @@ const ENVIRONMENTS = join(
 const COMMON_KEYS = ['environment', 'name_prefix', 'domain'];
 const TERRAFORM = resolve(ScriptRunner.scriptsDir, '../terraform');
 const SERVICE_BASE = join(TERRAFORM, 'stacks', 'service-base');
+const SERVICE = join(TERRAFORM, 'stacks', 'service');
+
+/** The state keys a stack reads, as its remote_state.tf writes them. */
+class RemoteStateKeys {
+  constructor(dir) {
+    this.text = readFileSync(join(dir, 'remote_state.tf'), 'utf8');
+  }
+
+  /**
+   * The key one remote state reads, with the stack variables filled in.
+   * @param {string} name Name of the terraform_remote_state data source.
+   * @param {Record<string, string>} variables Value of each variable the key uses.
+   * @returns {string} The state key.
+   */
+  key(name, variables) {
+    return this.template(name).replace(
+      /\$\{var\.([a-z0-9_]+)\}/g,
+      (_, variable) => {
+        assert.ok(variable in variables, `${name} key uses var.${variable}`);
+        return variables[variable];
+      },
+    );
+  }
+
+  /**
+   * The key template of one remote state, from its config or the local it names.
+   * @param {string} name Name of the terraform_remote_state data source.
+   * @returns {string} The template, with its `${var.*}` references.
+   */
+  template(name) {
+    const block = this.text.match(
+      new RegExp(
+        `^data "terraform_remote_state" "${name}" \\{[\\s\\S]*?^\\}`,
+        'm',
+      ),
+    );
+    assert.ok(block, `remote state ${name}`);
+    const key = block[0].match(/\bkey\s*=\s*(?:local\.([a-z0-9_]+)|"([^"]+)")/);
+    assert.ok(key, `remote state ${name} key`);
+    if (key[2] !== undefined) return key[2];
+    const local = this.text.match(
+      new RegExp(`^\\s*${key[1]}\\s*=\\s*"([^"]+)"`, 'm'),
+    );
+    assert.ok(local, `local.${key[1]}`);
+    return local[1];
+  }
+}
 
 /** The variables a stack declares across its .tf files. */
 class StackVariables {
@@ -95,25 +142,29 @@ describe('environment values', () => {
           .topLevelString('region');
         const bucket = `${values.common.topLevelString('name_prefix')}-tfstate`;
         const serviceName = new ServiceName(folder).terraform;
+        const variables = { region, service_name: serviceName };
+        const serviceBaseReads = new RemoteStateKeys(SERVICE_BASE);
+        const serviceReads = new RemoteStateKeys(SERVICE);
         const stacks = [
           {
             path: [],
-            key: `${region}/services/${serviceName}/terraform.tfstate`,
+            keys: [serviceBaseReads.key('service', variables)],
           },
           {
             path: ['base'],
-            key: `${region}/services/${serviceName}/base/terraform.tfstate`,
+            keys: [
+              serviceBaseReads.key('service_base', variables),
+              serviceReads.key('service_base', variables),
+            ],
           },
         ];
         for (const stack of stacks) {
           const where = join('services', folder, ...stack.path);
           const backend = values.reader(where, 'backend.tfvars');
           const tfvars = values.reader(where, 'terraform.tfvars');
-          assert.equal(
-            backend.topLevelString('key'),
-            stack.key,
-            `${where} key`,
-          );
+          for (const key of stack.keys) {
+            assert.equal(backend.topLevelString('key'), key, `${where} key`);
+          }
           assert.equal(
             backend.topLevelString('bucket'),
             bucket,
