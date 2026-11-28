@@ -30,8 +30,13 @@ run "plans_with_the_environment_values" {
   }
 
   assert {
-    condition     = merge(output.one_off_task.environment, { DB_USER = output.fargate_environment["DB_USER"] }) == output.fargate_environment && output.one_off_task.environment["DB_USER"] == "${var.service_name}_owner"
-    error_message = "The one-off task migrates as the owner role, with the environment every Fargate task of the service gets otherwise (ADR 0041, ADR 0043)."
+    condition     = merge(output.migrate_task.environment, { DB_USER = output.fargate_environment["DB_USER"] }) == output.fargate_environment && output.migrate_task.environment["DB_USER"] == "${var.service_name}_owner"
+    error_message = "The migrate task migrates as the owner role, with the environment every Fargate task of the service gets otherwise (ADR 0041, ADR 0043)."
+  }
+
+  assert {
+    condition     = output.one_off_task.environment == output.fargate_environment && output.one_off_task.environment["DB_USER"] == "${var.service_name}_app"
+    error_message = "The signing-keys and seed one-off task runs as the app role (ADR 0041)."
   }
 
   assert {

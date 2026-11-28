@@ -268,7 +268,7 @@ export class EnvironmentMocks {
   }
 
   /**
-   * Outputs of the service's service-base stack: one component per api, realtime, worker and consumer of its base/terraform.tfvars, plus the one-off task, with the runtime and queue set there.
+   * Outputs of the service's service-base stack: one component per api, realtime, worker and consumer of its base/terraform.tfvars, plus the one-off and migrate tasks, with the runtime and queue set there.
    * @returns {object} service_name, service_applied, components and the shared environment, secrets and keys.
    */
   serviceBase() {
@@ -339,6 +339,7 @@ export class EnvironmentMocks {
             ),
           ),
         component('one-off', `${name}-one-off`, RUNTIME.fargate),
+        component('migrate', `${name}-migrate`, RUNTIME.fargate),
       ]),
       fargate_environment: { ...shared, AWS_REGION: REGION },
       lambda_environment: { ...shared },

@@ -58,7 +58,7 @@ variable "consumers" {
 }
 
 variable "one_off_task" {
-  description = "Size of the one-off Fargate task the pipeline registers from one_off_task with the new image: migrate and, for identity, signing-keys and seed (ADR 0043)."
+  description = "Size of the one-off Fargate tasks the pipeline registers with the new image: migrate from migrate_task and, for identity, signing-keys and seed from one_off_task (ADR 0043)."
   type = object({
     cpu    = optional(number, 512)
     memory = optional(number, 1024)
@@ -69,7 +69,7 @@ variable "one_off_task" {
 # --- Access to shared resources ------------------------------------------------------
 
 variable "database_access" {
-  description = "Uses its roles and its databases (shards and catalog) from the data stack: the DB_* variables with DB_AUTH=iam and rds-db:connect for the app and reader roles (the owner role in the one-off task)."
+  description = "Uses its roles and its databases (shards and catalog) from the data stack: the DB_* variables with DB_AUTH=iam and rds-db:connect for the app and reader roles (only the owner role in the migrate task)."
   type        = bool
   default     = true
 }

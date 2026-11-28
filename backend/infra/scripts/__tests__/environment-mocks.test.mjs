@@ -181,6 +181,7 @@ describe('EnvironmentMocks', () => {
     assert.deepEqual(Object.keys(components).sort(), [
       'api',
       'consumer-mail_events',
+      'migrate',
       'one-off',
       'worker-jobs',
       'worker-usage',
@@ -195,6 +196,7 @@ describe('EnvironmentMocks', () => {
       'billing-mail-events',
     );
     assert.equal(components['one-off'].runtime, 'fargate');
+    assert.equal(components.migrate.runtime, 'fargate');
   });
 
   it('gives each queue component the URL the messaging outputs give its queue, .fifo suffix included', () => {

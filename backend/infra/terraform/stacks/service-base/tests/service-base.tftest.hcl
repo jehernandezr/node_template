@@ -536,23 +536,65 @@ run "one_off_task_has_what_the_pipeline_needs_to_run_it" {
   }
 
   assert {
-    condition     = output.one_off_task.environment["DB_USER"] == "identity_owner" && output.one_off_task.environment["DB_AUTH"] == "iam" && length(output.one_off_task.secrets) == 0
-    error_message = "The one-off task migrates as the owner role, with an IAM token and no secret."
+    condition     = output.one_off_task.environment["DB_AUTH"] == "iam" && length(output.one_off_task.secrets) == 0
+    error_message = "The one-off task signs an IAM token and gets no secret."
   }
 
   assert {
-    condition     = merge(output.one_off_task.environment, { DB_USER = "identity_app" }) == output.fargate_environment
-    error_message = "Apart from DB_USER, the one-off task gets the same environment as every Fargate task of the service stack."
+    condition     = output.one_off_task.environment == output.fargate_environment && output.one_off_task.environment["DB_USER"] == "identity_app"
+    error_message = "The signing-keys and seed one-off task runs as the app role, with the environment of every Fargate task of the service stack."
   }
 
   assert {
-    condition     = strcontains(local.policies["one-off"]["database-connect"], "dbuser:prx-0123456789abcdef0/identity_owner") && !strcontains(local.policies["one-off"]["database-connect"], "identity_app")
-    error_message = "Only the one-off task connects as the owner role."
+    condition     = !strcontains(local.policies["one-off"]["database-connect"], "identity_owner") && strcontains(local.policies["one-off"]["database-connect"], "dbuser:prx-0123456789abcdef0/identity_app")
+    error_message = "The one-off task never connects as the owner role."
   }
 
   assert {
-    condition     = !contains(keys(local.policies["one-off"]), "messaging")
-    error_message = "The one-off task publishes and consumes nothing."
+    condition     = !contains(keys(local.policies["one-off"]), "messaging") && !contains(keys(local.policies["migrate"]), "messaging")
+    error_message = "The one-off and migrate tasks publish and consume nothing."
+  }
+}
+
+# Applied with the mocked provider, so the role, log group and security group identifiers are known.
+run "migrate_task_has_its_own_role_and_connects_as_the_owner" {
+  command = apply
+
+  variables {
+    api     = { runtime = "fargate" }
+    workers = { commands = { queue = "identity-commands" } }
+  }
+
+  assert {
+    condition = (
+      output.migrate_task.task_role_arn == module.component["migrate"].role_arn &&
+      output.migrate_task.task_role_arn != output.one_off_task.task_role_arn &&
+      output.migrate_task.execution_role_arn == module.component["migrate"].execution_role_arn &&
+      output.migrate_task.log_group_name == "/ecs/nt-dev/identity-migrate" &&
+      output.migrate_task.security_group_ids == [module.component["migrate"].security_group_id, "sg-0clients"] &&
+      output.migrate_task.cluster_arn == output.one_off_task.cluster_arn &&
+      output.migrate_task.subnet_ids == output.one_off_task.subnet_ids
+    )
+    error_message = "The migrate task runs where the one-off task runs, with its own task and execution roles, log group and security group (ADR 0041)."
+  }
+
+  assert {
+    condition     = output.migrate_task.environment["DB_USER"] == "identity_owner" && merge(output.migrate_task.environment, { DB_USER = "identity_app" }) == output.fargate_environment
+    error_message = "Apart from DB_USER, the owner role, the migrate task gets the environment of every Fargate task of the service stack."
+  }
+
+  assert {
+    condition = (
+      strcontains(local.policies["migrate"]["database-connect"], "dbuser:prx-0123456789abcdef0/identity_owner") &&
+      !strcontains(local.policies["migrate"]["database-connect"], "identity_app") &&
+      !strcontains(local.policies["migrate"]["database-connect"], "identity_reader")
+    )
+    error_message = "The migrate task connects as the owner role only."
+  }
+
+  assert {
+    condition     = length([for key, p in local.policies : key if strcontains(try(p["database-connect"], ""), "identity_owner")]) == 1
+    error_message = "Only the migrate task connects as the owner role."
   }
 }
 

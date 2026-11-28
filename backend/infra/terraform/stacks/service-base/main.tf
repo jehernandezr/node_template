@@ -1,7 +1,7 @@
 # What a service needs before it runs (ADR 0043): the roles, log groups and security groups of each of its
 # components and of its one-off task, and the environment they share. The service stack reads all of it through
-# remote state and runs the components; the pipeline runs migrate (and, for identity, signing-keys and seed)
-# from one_off_task before applying the service stack.
+# remote state and runs the components; the pipeline runs migrate from migrate_task (and, for identity, signing-keys
+# and seed from one_off_task) before applying the service stack.
 
 data "aws_caller_identity" "current" {}
 
@@ -92,14 +92,16 @@ locals {
   # guarantee it on every platform version.
   fargate_environment = merge(local.common_environment, { AWS_REGION = var.region })
   lambda_environment  = local.common_environment
-  # The one-off task migrates, so it connects as the owner role; everything else runs as the app role.
-  one_off_environment = merge(local.fargate_environment, var.database_access ? { DB_USER = try(local.db_roles.owner, null) } : {})
+  # Only the migrate task connects as the owner role (ADR 0041); the other one-off tasks and the components run as
+  # the app role.
+  migrate_environment = merge(local.fargate_environment, var.database_access ? { DB_USER = try(local.db_roles.owner, null) } : {})
 
   # --- Components ------------------------------------------------------------------
   # Each component gets only what it uses: the API and realtime do not consume queues, each
-  # worker consumes only its own, and files and SES are requested per component. The one-off task
-  # (migrate, signing-keys, seed) reaches the database as the owner role and Valkey, and publishes nothing. Consumer
-  # Lambdas get their queue permission in the service stack, with their event source mapping.
+  # worker consumes only its own, and files and SES are requested per component. The migrate task reaches the
+  # database as the owner role only; the one-off task (signing-keys, seed) reaches it as the app role. Both reach
+  # Valkey and publish nothing. Consumer Lambdas get their queue permission in the service stack, with their event
+  # source mapping.
   components = merge(
     var.api == null ? {} : {
       api = { name = "${local.name}-api", runtime = var.api.runtime, publish = true, queue = null, files = var.api.files_access, ses = var.api.ses_send }
@@ -110,7 +112,14 @@ locals {
     { for k, w in var.workers : "worker-${k}" => { name = "${local.name}-${replace(k, "_", "-")}", runtime = "fargate", publish = true, queue = w.queue, files = w.files_access, ses = w.ses_send } },
     { for k, c in var.consumers : "consumer-${k}" => { name = "${local.name}-${replace(k, "_", "-")}", runtime = "lambda", publish = true, queue = null, files = c.files_access, ses = c.ses_send } },
     { "one-off" = { name = "${local.name}-one-off", runtime = "fargate", publish = false, queue = null, files = false, ses = false } },
+    { migrate = { name = "${local.name}-migrate", runtime = "fargate", publish = false, queue = null, files = false, ses = false } },
   )
+
+  # The tasks the pipeline registers with the new image and runs once, each with its own role and environment.
+  one_off_environments = {
+    "one-off" = local.fargate_environment
+    migrate   = local.migrate_environment
+  }
 
   publish_statements = concat(
     length(local.access.publish_topics) == 0 ? [] : [{
@@ -168,7 +177,7 @@ locals {
           Statement = [{
             Effect   = "Allow"
             Action   = ["rds-db:connect"]
-            Resource = concat(key == "one-off" ? local.db_connect.owner : local.db_connect.app, local.db_connect.reader)
+            Resource = key == "migrate" ? local.db_connect.owner : concat(local.db_connect.app, local.db_connect.reader)
           }]
         })
       },
@@ -206,6 +215,22 @@ locals {
 
   # One logs CMK per environment for all compute (platform stack).
   logs_kms_key_arn = local.platform.compute_logs_kms_key_arn
+
+  # Outputs one_off_task and migrate_task: what the pipeline needs to register and run each with the new image.
+  one_off_tasks = {
+    for key, environment in local.one_off_environments : key => {
+      cluster_arn        = try(local.platform.ecs_cluster.arn, null)
+      subnet_ids         = local.network.private_subnet_ids
+      security_group_ids = concat([module.component[key].security_group_id], local.data_security_group_ids)
+      task_role_arn      = module.component[key].role_arn
+      execution_role_arn = module.component[key].execution_role_arn
+      log_group_name     = module.component[key].log_group_name
+      cpu                = var.one_off_task.cpu
+      memory             = var.one_off_task.memory
+      environment        = environment
+      secrets            = local.fargate_secrets
+    }
+  }
 }
 
 # References to other stacks that variable validation cannot check.
@@ -219,7 +244,7 @@ resource "terraform_data" "service_check" {
     }
     precondition {
       condition     = local.component_names_distinct
-      error_message = "Two components share a name: a worker or consumer key cannot repeat another one, nor be api, rt or one-off."
+      error_message = "Two components share a name: a worker or consumer key cannot repeat another one, nor be api, rt, one-off or migrate."
     }
     precondition {
       condition     = !local.service_state_found || local.service.service_name == local.svc
