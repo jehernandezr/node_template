@@ -128,6 +128,7 @@ export function createPartitionedTableSql(
         name,
         options.interval ?? PartitionInterval.Month,
         ahead,
+        options.retention !== undefined,
       ),
     );
   }
@@ -135,15 +136,19 @@ export function createPartitionedTableSql(
 }
 
 /**
- * Statement that ensures the range partitions of the current interval and the
- * next `ahead` ones. The migration runs it once; a scheduled job
- * repeats it to create future ones.
+ * Statement that registers a range partitioned table for the platform partition functions, which refuse any table
+ * that is not registered. Only a `retained` table may have its old partitions detached or dropped through them.
+ * Running it again updates the registration. Requires the `PlatformPartitionGuard` migration.
+ * @param table Partitioned table.
+ * @param interval Interval of each partition.
+ * @param retained Whether old partitions may be detached or dropped.
+ * @returns The statement.
  */
-export function createRangePartitionsSql(
+export function registerPartitionedTableSql(
   table: string,
   interval: PartitionInterval,
-  ahead: number,
-): string[] {
+  retained: boolean,
+): string {
   const name = identifier(table, 'partitioned table');
   if (!Object.values(PartitionInterval).includes(interval)) {
     throw PersistenceError.invalidConfiguration(
@@ -151,6 +156,26 @@ export function createRangePartitionsSql(
       'a PartitionInterval',
     );
   }
+  return `INSERT INTO platform_partitioned_tables (table_name, partition_step, retained) VALUES (${literal(name)}, ${literal(interval)}, ${retained}) ON CONFLICT (table_name) DO UPDATE SET partition_step = EXCLUDED.partition_step, retained = EXCLUDED.retained`;
+}
+
+/**
+ * Statements that register the table and ensure the range partitions of the current interval and the
+ * next `ahead` ones. The migration runs them once; a scheduled job
+ * repeats `platform_ensure_partitions` to create future ones.
+ * @param table Partitioned table.
+ * @param interval Interval of each partition.
+ * @param ahead Partitions after the current one.
+ * @param retained Whether old partitions may be detached or dropped.
+ * @returns The statements.
+ */
+export function createRangePartitionsSql(
+  table: string,
+  interval: PartitionInterval,
+  ahead: number,
+  retained = false,
+): string[] {
+  const name = identifier(table, 'partitioned table');
   if (!Number.isInteger(ahead) || ahead < 0 || ahead > 120) {
     throw PersistenceError.invalidConfiguration(
       'ahead',
@@ -158,6 +183,7 @@ export function createRangePartitionsSql(
     );
   }
   return [
+    registerPartitionedTableSql(name, interval, retained),
     `SELECT platform_ensure_partitions(${literal(name)}, ${literal(interval)}, ${ahead})`,
   ];
 }

@@ -181,6 +181,130 @@ $fn$`,
     'ALTER FUNCTION platform_ensure_partitions(text, text, integer) SECURITY INVOKER RESET search_path',
   ];
 
+  static readonly partitionGuardName = 'PlatformPartitionGuard1794600000004';
+
+  private static readonly notPartitionedByPlatform = `RAISE EXCEPTION '% is not partitioned by the platform', parent
+      USING ERRCODE = 'insufficient_privilege';`;
+
+  private static readonly notRetainedByPlatform = `RAISE EXCEPTION '% has no partition retention', parent
+      USING ERRCODE = 'insufficient_privilege';`;
+
+  /**
+   * Limits the owner's partition functions to the tables they are meant for (ADR 0041):
+   * - `platform_partitioned_tables` lists each parent with its step and whether its old partitions may be detached
+   *   or dropped (`retained`). Migrations fill it through `registerPartitionedTableSql`. Row level security without
+   *   policies hides it from every role but its owner, so the DML that the app role gets on every table reaches no row.
+   * - `platform_ensure_partitions` only accepts a registered parent with its step; `platform_detach_partitions_before`
+   *   and `platform_drop_partition` only a retained one. Any other parent fails with `insufficient_privilege`, so
+   *   `audit_log` partitions are never detached or dropped through them.
+   * - None of the three is executable by `PUBLIC`: the bootstrap Lambda grants `EXECUTE` to the app role only.
+   */
+  static readonly partitionGuardUp: readonly string[] = [
+    `CREATE TABLE platform_partitioned_tables (
+  table_name text PRIMARY KEY,
+  partition_step text NOT NULL CHECK (partition_step IN ('day', 'month')),
+  retained boolean NOT NULL DEFAULT false
+)`,
+    'ALTER TABLE platform_partitioned_tables ENABLE ROW LEVEL SECURITY',
+    `INSERT INTO platform_partitioned_tables (table_name, partition_step, retained) VALUES ('audit_log', 'month', false)`,
+    `CREATE OR REPLACE FUNCTION platform_ensure_partitions(parent text, step text, ahead integer)
+RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $fn$
+DECLARE
+  created integer := 0;
+  bucket timestamptz;
+  child text;
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM platform_partitioned_tables t WHERE t.table_name = parent AND t.partition_step = step
+  ) THEN
+    ${PlatformSchemaSql.notPartitionedByPlatform}
+  END IF;
+  FOR i IN 0..ahead LOOP
+    bucket := date_trunc(step, now()) + make_interval(
+      months => CASE WHEN step = 'month' THEN i ELSE 0 END,
+      days => CASE WHEN step = 'day' THEN i ELSE 0 END);
+    child := parent || '_' || to_char(bucket, CASE WHEN step = 'month' THEN 'YYYYMM' ELSE 'YYYYMMDD' END);
+    IF to_regclass(quote_ident(child)) IS NULL THEN
+      EXECUTE format(
+        'CREATE TABLE %I PARTITION OF %I FOR VALUES FROM (%L) TO (%L)',
+        child, parent,
+        platform_uuid_v7_lower_bound(bucket),
+        platform_uuid_v7_lower_bound(bucket + ('1 ' || step)::interval));
+      created := created + 1;
+    END IF;
+  END LOOP;
+  RETURN created;
+END
+$fn$`,
+    `CREATE OR REPLACE FUNCTION platform_detach_partitions_before(parent text, step text, cutoff timestamptz)
+RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $fn$
+DECLARE
+  detached integer := 0;
+  child record;
+  bucket timestamptz;
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM platform_partitioned_tables t
+    WHERE t.table_name = parent AND t.partition_step = step AND t.retained
+  ) THEN
+    ${PlatformSchemaSql.notRetainedByPlatform}
+  END IF;
+  FOR child IN
+    SELECT c.relname AS name
+    FROM pg_inherits i
+    JOIN pg_class c ON c.oid = i.inhrelid
+    JOIN pg_class p ON p.oid = i.inhparent
+    WHERE p.relname = parent
+      AND c.relname ~ ('^' || parent || '_[0-9]{6}([0-9]{2})?$')
+  LOOP
+    bucket := to_timestamp(substring(child.name FROM length(parent) + 2),
+      CASE WHEN step = 'month' THEN 'YYYYMM' ELSE 'YYYYMMDD' END);
+    IF bucket + ('1 ' || step)::interval <= cutoff THEN
+      EXECUTE format('ALTER TABLE %I DETACH PARTITION %I', parent, child.name);
+      detached := detached + 1;
+    END IF;
+  END LOOP;
+  RETURN detached;
+END
+$fn$`,
+    `CREATE OR REPLACE FUNCTION platform_drop_partition(parent text, child text)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $fn$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM platform_partitioned_tables t WHERE t.table_name = parent AND t.retained
+  ) THEN
+    ${PlatformSchemaSql.notRetainedByPlatform}
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_inherits i
+    JOIN pg_class c ON c.oid = i.inhrelid
+    JOIN pg_class p ON p.oid = i.inhparent
+    WHERE p.relname = parent AND c.relname = child
+  ) THEN
+    RETURN false;
+  END IF;
+  EXECUTE format('DROP TABLE %I', child);
+  RETURN true;
+END
+$fn$`,
+    'REVOKE EXECUTE ON FUNCTION platform_ensure_partitions(text, text, integer) FROM PUBLIC',
+    'REVOKE EXECUTE ON FUNCTION platform_detach_partitions_before(text, text, timestamptz) FROM PUBLIC',
+    'REVOKE EXECUTE ON FUNCTION platform_drop_partition(text, text) FROM PUBLIC',
+  ];
+
+  static readonly partitionGuardDown: readonly string[] = [
+    'GRANT EXECUTE ON FUNCTION platform_drop_partition(text, text) TO PUBLIC',
+    'GRANT EXECUTE ON FUNCTION platform_detach_partitions_before(text, text, timestamptz) TO PUBLIC',
+    'GRANT EXECUTE ON FUNCTION platform_ensure_partitions(text, text, integer) TO PUBLIC',
+    ...PlatformSchemaSql.functionsUp.filter(
+      (statement) =>
+        statement.includes('FUNCTION platform_ensure_partitions(') ||
+        statement.includes('FUNCTION platform_detach_partitions_before('),
+    ),
+    ...PlatformSchemaSql.ownerMaintenanceUp,
+    'DROP TABLE IF EXISTS platform_partitioned_tables',
+  ];
+
   /**
    * `audit_log`: partitioned by month on `id` (UUIDv7), inserts only, with
    * a `DEFAULT` partition so that a month without a partition never loses records.

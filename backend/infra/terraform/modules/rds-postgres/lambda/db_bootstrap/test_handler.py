@@ -148,7 +148,12 @@ class BootstrapTest(unittest.TestCase):
             'ALTER DEFAULT PRIVILEGES FOR ROLE "identity_owner" GRANT SELECT ON TABLES TO "identity_reader"',
             shard,
         )
-        self.assertFalse([sql for sql in shard if "_reader" in sql and "INSERT" in sql])
+        self.assertIn(
+            'ALTER DEFAULT PRIVILEGES FOR ROLE "identity_owner" GRANT EXECUTE ON FUNCTIONS TO "identity_app"',
+            shard,
+        )
+        self.assertIn('GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA "public" TO "identity_app"', shard)
+        self.assertFalse([sql for sql in shard if "_reader" in sql and ("INSERT" in sql or "EXECUTE" in sql)])
         self.assertFalse(
             [sql for sql in statements(state) if "_app" in sql and ("CREATE ON" in sql or "OWNER" in sql)]
         )

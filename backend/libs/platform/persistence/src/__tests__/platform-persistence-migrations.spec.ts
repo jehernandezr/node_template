@@ -1,6 +1,7 @@
 import { PlatformAuditLog1794600000002 } from '../migrations/platform-audit-log.migration.js';
 import { PlatformFunctions1794600000001 } from '../migrations/platform-functions.migration.js';
 import { PlatformOwnerMaintenance1794600000003 } from '../migrations/platform-owner-maintenance.migration.js';
+import { PlatformPartitionGuard1794600000004 } from '../migrations/platform-partition-guard.migration.js';
 import { PlatformPersistenceMigrations } from '../migrations/platform-persistence-migrations.js';
 import { PlatformSchemaSql } from '../migrations/platform-schema-sql.js';
 import { StubDataSource } from './utils/stub-data-source.js';
@@ -83,5 +84,38 @@ describe('platform persistence migrations', () => {
         ),
       );
     }
+  });
+
+  it('runs the partition guard statements on up and their reverse on down', async () => {
+    const dataSource = new StubDataSource('guard');
+    await dataSource.initialize();
+    const runner = dataSource.createQueryRunner();
+    const migration = new PlatformPartitionGuard1794600000004();
+
+    await migration.up(runner);
+    await migration.down(runner);
+
+    expect(dataSource.runners[0].calls).toEqual([
+      ...recorded(PlatformSchemaSql.partitionGuardUp),
+      ...recorded(PlatformSchemaSql.partitionGuardDown),
+    ]);
+  });
+
+  it('keeps the partition functions from PUBLIC and limits them to registered tables', () => {
+    const guard = PlatformSchemaSql.partitionGuardUp.join('\n');
+
+    for (const signature of [
+      'platform_ensure_partitions(text, text, integer)',
+      'platform_detach_partitions_before(text, text, timestamptz)',
+      'platform_drop_partition(text, text)',
+    ]) {
+      expect(guard).toContain(
+        `REVOKE EXECUTE ON FUNCTION ${signature} FROM PUBLIC`,
+      );
+    }
+    expect(guard.match(/FROM platform_partitioned_tables t/g)).toHaveLength(3);
+    expect(
+      guard.match(/SECURITY DEFINER SET search_path = public/g),
+    ).toHaveLength(3);
   });
 });
