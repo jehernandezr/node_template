@@ -58,7 +58,7 @@ variable "consumers" {
 }
 
 variable "one_off_task" {
-  description = "Size of the one-off Fargate tasks the pipeline registers with the new image: migrate from migrate_task and, for identity, signing-keys and seed from one_off_task (ADR 0043)."
+  description = "Size of the one-off Fargate tasks the pipeline registers with the new image: migrate from migrate_task, seed from one_off_task and, for identity, signing-keys from signing_keys_task (ADR 0043)."
   type = object({
     cpu    = optional(number, 512)
     memory = optional(number, 1024)
@@ -108,8 +108,25 @@ variable "environment_variables" {
   }
 }
 
+variable "generated_secrets" {
+  description = "Variables whose value this stack generates: a random 64-character value in a Secrets Manager secret of the service, written once through a write-only attribute so it never reaches the state (ADR 0041). Every component receives them, Fargate through valueFrom and Lambda through SECRETS_MAP."
+  type        = set(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for name in var.generated_secrets : can(regex("^[A-Z][A-Z0-9_]*$", name))])
+    error_message = "generated_secrets are environment variable names in uppercase, such as IDENTITY_DATA_KEY."
+  }
+}
+
+variable "secret_recovery_window_days" {
+  description = "Recovery window in days for a deleted secret of the service. 0 deletes it immediately (disposable environments only)."
+  type        = number
+  default     = 30
+}
+
 variable "secrets" {
-  description = "Own secrets: variable name to valueFrom (Secrets Manager ARN, with an optional JSON key)."
+  description = "Secrets created outside this stack: variable name to valueFrom (Secrets Manager ARN, with an optional JSON key). The secrets of generated_secrets and identity's signing keys are not listed here."
   type        = map(string)
   default     = {}
 }

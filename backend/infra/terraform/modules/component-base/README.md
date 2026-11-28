@@ -23,4 +23,4 @@ What one component of a service needs before it runs: the role it runs with, its
 
 ## Outputs
 
-`runtime`, `role_arn`, `role_name`, `execution_role_arn` (null on Lambda), `log_group_name`, `security_group_id`, `kms_key_arn`.
+`runtime`, `role_arn`, `role_name`, `execution_role_arn` and `execution_role_name` (null on Lambda), `log_group_name`, `security_group_id`, `kms_key_arn`.

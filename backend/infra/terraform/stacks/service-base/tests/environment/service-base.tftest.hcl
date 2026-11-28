@@ -45,7 +45,27 @@ run "plans_with_the_environment_values" {
 
   assert {
     condition     = output.one_off_task.environment == output.fargate_environment && output.one_off_task.environment["DB_USER"] == "${var.service_name}_app"
-    error_message = "The signing-keys and seed one-off task runs as the app role (ADR 0041)."
+    error_message = "The seed one-off task runs as the app role (ADR 0041)."
+  }
+
+  assert {
+    condition     = alltrue([for version in values(aws_secretsmanager_secret_version.generated) : version.secret_string == null && version.secret_string_wo_version == 1])
+    error_message = "No generated secret value reaches the plan or the state: each one is written once through a write-only attribute (ADR 0041)."
+  }
+
+  assert {
+    condition     = length(aws_secretsmanager_secret.smoke_account) == (var.service_name == "identity" && contains(["dev", "staging"], var.environment) ? 1 : 0) && length(aws_secretsmanager_secret_policy.smoke_account) == length(aws_secretsmanager_secret.smoke_account)
+    error_message = "Identity owns the SMOKE_ACCOUNT container, with the policy that lets only the deploy role write it, in dev and staging and never in prod (ADR 0043)."
+  }
+
+  assert {
+    condition     = var.service_name != "identity" || sort(keys(local.fargate_secrets)) == sort(["IDENTITY_API_KEY_PEPPER", "IDENTITY_DATA_KEY", "IDENTITY_DEVICE_ID_KEY", "IDENTITY_EMAIL_PEPPER", "IDENTITY_SIGNING_KEYS", "IDENTITY_TOKEN_PEPPER"])
+    error_message = "Identity receives every secret of its configuration from this stack (ADR 0041)."
+  }
+
+  assert {
+    condition     = output.fargate_environment["WEB_ORIGINS"] == join(",", var.web_origins)
+    error_message = "Every service accepts the web origins of common.tfvars."
   }
 
   assert {

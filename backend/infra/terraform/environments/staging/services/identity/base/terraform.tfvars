@@ -28,9 +28,18 @@ environment_variables = {
   TRUST_PROXY_HOPS    = "2"
 }
 
-# Secrets in Secrets Manager (variable name to ARN, with an optional JSON key). The service config
-# requires IDENTITY_SIGNING_KEYS, IDENTITY_EMAIL_PEPPER, IDENTITY_TOKEN_PEPPER, IDENTITY_API_KEY_PEPPER,
-# IDENTITY_DEVICE_ID_KEY, IDENTITY_DATA_KEY and INTERNAL_API_SHARED_SECRET.
+# Secrets this stack generates once, without their values reaching the state (ADR 0041). It also creates the
+# IDENTITY_SIGNING_KEYS container, which the signing-keys task fills, and, outside prod, the SMOKE_ACCOUNT one.
+# INTERNAL_API_SHARED_SECRET is never created in AWS: internal calls there are signed with SigV4 (ADR 0040).
+generated_secrets = [
+  "IDENTITY_EMAIL_PEPPER",
+  "IDENTITY_TOKEN_PEPPER",
+  "IDENTITY_API_KEY_PEPPER",
+  "IDENTITY_DEVICE_ID_KEY",
+  "IDENTITY_DATA_KEY",
+]
+
+# Secrets created outside this stack (variable name to ARN, with an optional JSON key).
 secrets = {}
 
 database_access = true

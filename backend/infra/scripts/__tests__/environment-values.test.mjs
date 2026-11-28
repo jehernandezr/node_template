@@ -16,6 +16,7 @@ const COMMON_KEYS = [
   'domain',
   'main_region',
   'regions',
+  'web_origins',
 ];
 const TERRAFORM = resolve(ScriptRunner.scriptsDir, '../terraform');
 const SERVICE_BASE = join(TERRAFORM, 'stacks', 'service-base');

@@ -13,3 +13,6 @@ main_region = "us"
 regions = {
   us = { aws_region = "us-east-1", api_base_url = "https://api.dev.example.com", issuer = "https://api.dev.example.com" }
 }
+
+# Origins of the web app (ADR 0045). Every service accepts browser requests only from these, as WEB_ORIGINS.
+web_origins = ["https://app.dev.example.com"]

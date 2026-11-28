@@ -13,8 +13,8 @@
 # applies that file and nothing else: what was reviewed is what is applied. If the state changed
 # since the plan, Terraform rejects the old plan and it has to be planned again. A stack that reads
 # outputs of another one is planned after that other one is applied.
-# Each stack gets environments/<env>/common.tfvars (environment, name_prefix, domain, main_region, regions) before its own
-# terraform.tfvars, which never repeats those keys.
+# Each stack gets environments/<env>/common.tfvars (environment, name_prefix, domain, main_region, regions,
+# web_origins) before its own terraform.tfvars, which never repeats those keys.
 # Variables: ENV (dev), AUTO_APPROVE=1 skips the destroy confirmation, LOCK_TIMEOUT (5m).
 # The artifacts of a service arrive as TF_VAR_image and TF_VAR_lambda_package when planning.
 # Credentials: OIDC in CI, a profile locally.

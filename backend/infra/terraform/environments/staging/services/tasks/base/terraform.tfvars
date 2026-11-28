@@ -25,8 +25,8 @@ environment_variables = {
   TRUST_PROXY_HOPS             = "2"
 }
 
-# Secrets in Secrets Manager (variable name to ARN, with an optional JSON key). The service config
-# requires INTERNAL_API_SHARED_SECRET.
+# Secrets created outside this stack (variable name to ARN, with an optional JSON key). INTERNAL_API_SHARED_SECRET
+# is never created in AWS: internal calls there are signed with SigV4 (ADR 0040, ADR 0041).
 secrets = {}
 
 database_access = true
