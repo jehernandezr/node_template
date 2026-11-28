@@ -103,7 +103,7 @@ locals {
         Sid       = "OnlyTheDeployRoleWrites"
         Effect    = "Deny"
         Principal = "*"
-        Action    = ["secretsmanager:PutSecretValue", "secretsmanager:UpdateSecret", "secretsmanager:UpdateSecretVersionStage", "secretsmanager:RestoreSecret"]
+        Action    = ["secretsmanager:PutSecretValue", "secretsmanager:UpdateSecret", "secretsmanager:UpdateSecretVersionStage", "secretsmanager:RestoreSecret", "secretsmanager:PutResourcePolicy", "secretsmanager:DeleteResourcePolicy", "secretsmanager:DeleteSecret"]
         Resource  = "*"
         Condition = { StringNotEquals = { "aws:PrincipalArn" = local.deploy_role_arn } }
       },

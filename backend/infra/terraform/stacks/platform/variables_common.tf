@@ -84,8 +84,8 @@ variable "web_origins" {
   default     = []
 
   validation {
-    condition     = alltrue([for origin in var.web_origins : can(regex("^https?://[^/\\s]+$", origin))])
-    error_message = "web_origins are origins such as https://app.example.com, without a path or a trailing slash."
+    condition     = alltrue([for origin in var.web_origins : can(regex("^https?://[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[1-9][0-9]{0,4})?$", origin)) && !can(regex("^(https://.*:443|http://.*:80)$", origin))])
+    error_message = "web_origins are origins such as https://app.example.com: a lowercase host and an optional non-default port, without credentials, a path, a query or a trailing slash."
   }
 
   validation {

@@ -769,7 +769,7 @@ run "generated_secrets_never_reach_the_plan" {
 
   assert {
     condition     = sort(keys(jsondecode(local.lambda_environment["SECRETS_MAP"]))) == sort(keys(local.fargate_secrets)) && alltrue([for name, arn in jsondecode(local.lambda_environment["SECRETS_MAP"]) : arn == local.fargate_secrets[name] && contains(local.lambda_secrets, arn)])
-    error_message = "A function receives SECRETS_MAP with the same names and ARNs as the Fargate secrets, and its role may read them."
+    error_message = "A function receives SECRETS_MAP with the same names and ARNs as the Fargate secrets, and component-base grants its role reading them (GetSecretValue on each ARN, BatchGetSecretValue on every resource)."
   }
 
   assert {
@@ -848,11 +848,11 @@ run "only_the_deploy_role_writes_the_smoke_account" {
       Sid       = "OnlyTheDeployRoleWrites"
       Effect    = "Deny"
       Principal = "*"
-      Action    = ["secretsmanager:PutSecretValue", "secretsmanager:UpdateSecret", "secretsmanager:UpdateSecretVersionStage", "secretsmanager:RestoreSecret"]
+      Action    = ["secretsmanager:PutSecretValue", "secretsmanager:UpdateSecret", "secretsmanager:UpdateSecretVersionStage", "secretsmanager:RestoreSecret", "secretsmanager:PutResourcePolicy", "secretsmanager:DeleteResourcePolicy", "secretsmanager:DeleteSecret"]
       Resource  = "*"
       Condition = { StringNotEquals = { "aws:PrincipalArn" = "arn:aws:iam::123456789012:role/nt-dev-github-deploy" } }
     }]
-    error_message = "Every principal but the deploy role is denied writing the smoke account."
+    error_message = "Every principal but the deploy role is denied writing the smoke account, deleting it, and replacing or dropping the policy that denies it."
   }
 
   assert {
@@ -911,6 +911,59 @@ run "web_origins_are_origins" {
   }
 
   expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_a_query_is_rejected" {
+  command = plan
+
+  variables {
+    web_origins = ["https://app.example.test?x"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_an_uppercase_host_is_rejected" {
+  command = plan
+
+  variables {
+    web_origins = ["https://App.Example.test"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_credentials_is_rejected" {
+  command = plan
+
+  variables {
+    web_origins = ["https://user@app.example.test"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_its_default_port_is_rejected" {
+  command = plan
+
+  variables {
+    web_origins = ["https://app.example.test:443"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_another_port_is_accepted" {
+  command = plan
+
+  variables {
+    web_origins = ["https://app.example.test:8443"]
+  }
+
+  assert {
+    condition     = local.fargate_environment["WEB_ORIGINS"] == "https://app.example.test:8443"
+    error_message = "An origin with a non-default port is the origin the browser sends."
+  }
 }
 
 run "a_deployed_environment_needs_a_web_origin" {
