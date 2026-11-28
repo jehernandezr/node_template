@@ -40,6 +40,7 @@ export * from './entities/versioned-entity.js';
 export * from './metadata/entity-metadata.js';
 export * from './migrations/platform-audit-log.migration.js';
 export * from './migrations/platform-functions.migration.js';
+export * from './migrations/platform-owner-maintenance.migration.js';
 export * from './migrations/platform-persistence-migrations.js';
 export * from './migrations/platform-schema-sql.js';
 export * from './migrations/schema-helpers.js';
