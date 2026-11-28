@@ -21,11 +21,11 @@ The identity seed (`pnpm nx run identity:seed`) creates the region's fixed tenan
 - `GET /health/live`: the process responds. If it fails, the orchestrator restarts the task.
 - `GET /health/ready`: the catalog and every shard respond. A task that is not ready leaves the load balancer without being restarted.
 
-If `ready` fails on every task, check RDS Proxy and the credentials (`DB_CREDENTIALS`) first, then Valkey.
+If `ready` fails on every task, check RDS Proxy and the credentials (`DB_CREDENTIALS`). Valkey is not part of readiness ([ADR 0044](../adr/0044-valkey-failure-policy.md)): while it is down, `ready` stays up and reports `valkey: degraded`, and authenticated requests answer 503 with `PLATFORM.DEPENDENCY.UNAVAILABLE` until it is back.
 
 ## Jobs
 
-Jobs are `ScheduledJob` instances run by `@platform/scheduling` with a lock in Valkey, so each one runs on a single task at a time.
+Jobs are `ScheduledJob` instances run by `@platform/scheduling` with a lock in Valkey, so each one runs on a single task at a time. While Valkey is down every run is skipped and the next occurrence tries again.
 
 | Service       | Job                                                                                                                                | What it does                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |

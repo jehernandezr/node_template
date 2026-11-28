@@ -92,9 +92,8 @@ export class CachedAuthStateReader extends AuthStateReader {
   }
 
   /**
-   * Serves the stored value if fresh; otherwise requests it from `load`. When `load` fails
-   * the last known value is returned even if expired, because an expired epoch
-   * has almost never changed; with no previous value, it rejects.
+   * Serves the stored value while it is fresh; otherwise loads it with `load` and stores it.
+   * An expired value is never served: when `load` fails it throws `AuthenticationError.stateUnavailable`.
    */
   private async cached<V>(
     cache: TtlLruCache<V>,
