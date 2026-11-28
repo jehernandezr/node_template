@@ -5,7 +5,7 @@ What one component of a service needs before it runs: the role it runs with, its
 ## What it creates
 
 - `runtime = "fargate"`: an execution role (the ECS managed policy, the declared secrets and their keys, and the logs key) and a task role with `task_policies` and, with `enable_execute_command`, the ECS Exec channels.
-- `runtime = "lambda"`: a function role that writes its logs, uses its key for the environment and the async DLQ, writes X-Ray traces with `tracing_mode = "Active"`, reads the declared secrets, attaches to the VPC and carries `task_policies`.
+- `runtime = "lambda"`: a function role that writes its logs, uses its key for the environment and the async DLQ, writes X-Ray traces with `tracing_mode = "Active"`, reads the declared secrets in one `BatchGetSecretValue` call (granted on `*`, since it takes no resource scope, with `GetSecretValue` scoped to each secret), attaches to the VPC and carries `task_policies`.
 - A KMS-encrypted log group: `/ecs/<name_prefix>/<name>` on Fargate, `/aws/lambda/<name_prefix>-<name>` on Lambda. The key is `kms_key_arn` or one the module creates.
 - A security group with HTTPS-only egress. The runtime modules add the ALB ingress and the data clients group.
 
@@ -23,4 +23,4 @@ What one component of a service needs before it runs: the role it runs with, its
 
 ## Outputs
 
-`runtime`, `role_arn`, `role_name`, `execution_role_arn` (null on Lambda), `log_group_name`, `security_group_id`, `kms_key_arn`.
+`runtime`, `role_arn`, `role_name`, `execution_role_arn` and `execution_role_name` (null on Lambda), `log_group_name`, `security_group_id`, `kms_key_arn`.

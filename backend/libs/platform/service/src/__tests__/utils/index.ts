@@ -19,3 +19,5 @@ export { InternalOperationsClient } from './internal-operations-client.js';
 export { ServiceTestApp } from './service-test-app.js';
 export type { ServiceTestAppOptions } from './service-test-app-options.js';
 export type { TestServer } from './test-server.js';
+export { ApiGatewayEventBuilder } from './api-gateway-event.builder.js';
+export { ClosingApplicationFactory } from '../../nest/bootstrap/__tests__/utils/closing-application-factory.js';

@@ -10,7 +10,7 @@ Every service tfvars has `secrets = {}`. No stack creates the identity keys and 
 
 ## Decision
 
-**Inventory.** Every secret lives in Secrets Manager with the environment CMK. The stack that owns the consumer creates it; a service's secrets live in its `service-base` stack, so they exist before its one-off tasks and its runtime ([ADR 0043](0043-deploy-migrations-and-rollback.md)).
+**Inventory.** Every secret lives in Secrets Manager, encrypted with a CMK of its owner stack. The stack that owns the consumer creates it; a service's secrets live in its `service-base` stack, under the service's own CMK and listed by name in its `generated_secrets`, so they exist before its one-off tasks and its runtime ([ADR 0043](0043-deploy-migrations-and-rollback.md)).
 
 | Secret                                                | Owner stack                    | Creation                                                                                                                                                                                              | Rotation                                                                                                                                                      | Same in every region |
 | ----------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
@@ -33,7 +33,7 @@ Every service tfvars has `secrets = {}`. No stack creates the identity keys and 
 **Delivery.**
 
 - Fargate: the task definition `secrets` (`valueFrom` ARN), injected at task start. A rotation is picked up by a forced new deployment, which the runbooks include.
-- Lambda: `SECRETS_MAP` is a JSON map from variable name to ARN. `LambdaBootstrap` resolves it through a new `SecretSource` port (`@platform/config`, adapter `SecretsManagerSecretSource` in `@platform/adapters-aws`, one `BatchGetSecretValue`) before validating the configuration, once per execution environment. A new execution environment picks up a rotation; a deploy forces it.
+- Lambda: `SECRETS_MAP` is a JSON map from variable name to ARN, with an optional JSON key as in `valueFrom`. `LambdaBootstrap` resolves it through a new `SecretSource` port (`@platform/config`, adapter `SecretsManagerSecretSource` in `@platform/adapters-aws`, `BatchGetSecretValue` for up to twenty secrets per call) before validating the configuration, once per execution environment. The function role gets `GetSecretValue` on each of its secrets and `BatchGetSecretValue`, which takes no resource scope, on `*`. A new execution environment picks up a rotation; a deploy forces it.
 
 **Database access.** Each service has three login roles, created by the bootstrap Lambda:
 

@@ -119,7 +119,7 @@ variable "timeout" {
 }
 
 variable "environment_variables" {
-  description = "Function environment variables, without secrets. They are encrypted with the module KMS key."
+  description = "Function environment variables, without secret values: SECRETS_MAP names the ARNs the function reads at startup. They are encrypted with the module KMS key."
   type        = map(string)
   default     = {}
 }

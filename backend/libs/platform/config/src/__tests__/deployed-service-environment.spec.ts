@@ -20,7 +20,15 @@ describe('DeployedServiceEnvironment', () => {
     const environment = DeployedServiceEnvironment.of(
       'identity',
       DeployEnvironment.Dev,
-      {},
+      Object.fromEntries(
+        [
+          'IDENTITY_EMAIL_PEPPER',
+          'IDENTITY_TOKEN_PEPPER',
+          'IDENTITY_API_KEY_PEPPER',
+          'IDENTITY_DEVICE_ID_KEY',
+          'IDENTITY_DATA_KEY',
+        ].map((name) => [name, 'sample-value']),
+      ),
     );
 
     expect(JSON.parse(environment['REGIONS'] ?? '')).toEqual([
@@ -36,6 +44,14 @@ describe('DeployedServiceEnvironment', () => {
       IDENTITY_REGION: 'us',
       IDENTITY_ISSUER: 'https://api.dev.example.com',
     });
+  });
+
+  it('adds the web origins of common.tfvars', () => {
+    expect(
+      DeployedServiceEnvironment.of('billing', DeployEnvironment.Staging, {})[
+        'WEB_ORIGINS'
+      ],
+    ).toBe('https://app.staging.example.com');
   });
 
   it('gives identity alone its region and issuer keys', () => {
@@ -93,6 +109,26 @@ describe('DeployedServiceEnvironment', () => {
       expect(() =>
         DeployedServiceEnvironment.parse(values, DeployEnvironment.Staging, {}),
       ).toThrow('SAMPLE_KEY');
+    });
+
+    it('gives each generated secret the sample value of the test', () => {
+      expect(
+        DeployedServiceEnvironment.parse(
+          'service_name = "sample"\ngenerated_secrets = [\n  "SAMPLE_PEPPER",\n]\nsecrets = {}\n',
+          DeployEnvironment.Dev,
+          { SAMPLE_PEPPER: 'pepper-value' },
+        ),
+      ).toMatchObject({ SAMPLE_PEPPER: 'pepper-value' });
+    });
+
+    it('fails for a generated secret the test gives no sample value', () => {
+      expect(() =>
+        DeployedServiceEnvironment.parse(
+          'service_name = "sample"\ngenerated_secrets = ["SAMPLE_PEPPER"]\n',
+          DeployEnvironment.Dev,
+          {},
+        ),
+      ).toThrow('SAMPLE_PEPPER');
     });
 
     it('reads an empty secrets map as no secrets', () => {

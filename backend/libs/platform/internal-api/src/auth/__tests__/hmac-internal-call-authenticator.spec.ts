@@ -38,11 +38,50 @@ async function signed(
 describe('HmacInternalCallAuthenticator', () => {
   it('accepts a request signed with the same secret and clock', async () => {
     const clock = new FixedClock(START);
-    const authenticator = new HmacInternalCallAuthenticator(SECRET, clock);
+    const authenticator = new HmacInternalCallAuthenticator([SECRET], clock);
 
     await expect(
       authenticator.authenticate(await signed(clock)),
     ).resolves.toBeUndefined();
+  });
+
+  describe('during a rotation', () => {
+    const PREVIOUS = 'previous-secret-of-the-authenticator';
+
+    it.each([
+      ['the current secret', SECRET],
+      ['the previous secret', PREVIOUS],
+    ])('accepts a request signed with %s', async (_label, secret) => {
+      const clock = new FixedClock(START);
+      const authenticator = new HmacInternalCallAuthenticator(
+        [SECRET, PREVIOUS],
+        clock,
+      );
+
+      await expect(
+        authenticator.authenticate(await signed(clock, { secret })),
+      ).resolves.toBeUndefined();
+    });
+
+    it('rejects a request signed with any other secret', async () => {
+      const clock = new FixedClock(START);
+      const authenticator = new HmacInternalCallAuthenticator(
+        [SECRET, PREVIOUS],
+        clock,
+      );
+
+      await expect(
+        authenticator.authenticate(
+          await signed(clock, { secret: 'other-secret' }),
+        ),
+      ).rejects.toMatchObject({ code: InternalApiErrorCode.Unauthenticated });
+    });
+  });
+
+  it('needs at least one secret', () => {
+    expect(
+      () => new HmacInternalCallAuthenticator([], new FixedClock(START)),
+    ).toThrow('at least one secret');
   });
 
   it.each([
@@ -140,7 +179,7 @@ describe('HmacInternalCallAuthenticator', () => {
     ],
   ])('rejects a request with %s', async (_label, build) => {
     const clock = new FixedClock(START);
-    const authenticator = new HmacInternalCallAuthenticator(SECRET, clock);
+    const authenticator = new HmacInternalCallAuthenticator([SECRET], clock);
     const request = await build(clock);
 
     await expect(authenticator.authenticate(request)).rejects.toMatchObject({
@@ -153,7 +192,7 @@ describe('HmacInternalCallAuthenticator', () => {
     ['a timestamp 59 seconds in the future', 59_000],
   ])('accepts a request with %s', async (_label, shiftMs) => {
     const clock = new FixedClock(START);
-    const authenticator = new HmacInternalCallAuthenticator(SECRET, clock);
+    const authenticator = new HmacInternalCallAuthenticator([SECRET], clock);
     const request = await signed(clock);
     clock.advance(shiftMs);
 
@@ -162,7 +201,7 @@ describe('HmacInternalCallAuthenticator', () => {
 
   it('gives the same message for two different reasons to reject', async () => {
     const clock = new FixedClock(START);
-    const authenticator = new HmacInternalCallAuthenticator(SECRET, clock);
+    const authenticator = new HmacInternalCallAuthenticator([SECRET], clock);
     const wrongSecret = await signed(clock, { secret: 'other-secret' });
     const missingSignature = await signed(clock);
     const headers = { ...missingSignature.headers };

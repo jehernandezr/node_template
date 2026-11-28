@@ -19,7 +19,8 @@ export class SignedInternalHttp {
   constructor(private readonly callees: readonly string[] = []) {}
 
   /**
-   * Builds the signed internal HTTP settings of the service: its URLs, signer and callees.
+   * Builds the signed internal HTTP settings of the service: its URLs, signer, callees and the secrets incoming calls
+   * may be signed with.
    * @param config Service configuration.
    * @param context Service name and callees.
    * @returns The settings.
@@ -32,6 +33,11 @@ export class SignedInternalHttp {
   ): ServiceInternalHttpSettings {
     const values = config.root<InternalHttpConfig>();
     const hmacSecret = values.INTERNAL_API_SHARED_SECRET.reveal();
+    const previous = values.INTERNAL_API_SHARED_SECRET_PREVIOUS;
+    const accepted = {
+      secret: hmacSecret,
+      ...(previous === undefined ? {} : { previousSecret: previous.reveal() }),
+    };
     const baseUrls = values.INTERNAL_API_BASE_URLS;
     const missing = this.callees.filter((callee) => !(callee in baseUrls));
     if (missing.length > 0) {
@@ -40,7 +46,7 @@ export class SignedInternalHttp {
       );
     }
     if (values.INTERNAL_API_SIGNER === InternalApiSignerKind.Hmac) {
-      return { baseUrls, secret: hmacSecret };
+      return { baseUrls, ...accepted };
     }
     if (context.aws === undefined) {
       throw new Error(
@@ -49,7 +55,7 @@ export class SignedInternalHttp {
     }
     return {
       baseUrls,
-      secret: hmacSecret,
+      ...accepted,
       signer: this.selector.select(values.INTERNAL_API_SIGNER, {
         hmacSecret,
         clock: context.clock,

@@ -10,21 +10,33 @@ import type { SignableRequest } from './signable-request.js';
 /**
  * Authenticates incoming calls signed with `HmacSigner`. The
  * signature is only valid within a time window, on each side of the clock, so
- * that an intercepted call cannot be replayed later.
+ * that an intercepted call cannot be replayed later. During a rotation it accepts the signature of the current
+ * secret and of the previous one, so services deployed one at a time keep calling each other.
  */
 export class HmacInternalCallAuthenticator extends InternalCallAuthenticator {
   /** Validity window of a signature. */
   static readonly DEFAULT_WINDOW_MS = 60_000;
 
-  private readonly calculator: HmacSignatureCalculator;
+  private readonly calculators: readonly HmacSignatureCalculator[];
 
+  /**
+   * @param secrets The current secret first and, during a rotation, the previous one; never empty.
+   * @throws Error if no secret is given.
+   */
   constructor(
-    secret: string,
+    secrets: readonly string[],
     private readonly clock: Clock,
     private readonly windowMs: number = HmacInternalCallAuthenticator.DEFAULT_WINDOW_MS,
   ) {
     super();
-    this.calculator = new HmacSignatureCalculator(secret);
+    if (secrets.length === 0) {
+      throw new Error(
+        'HmacInternalCallAuthenticator needs at least one secret',
+      );
+    }
+    this.calculators = secrets.map(
+      (secret) => new HmacSignatureCalculator(secret),
+    );
   }
 
   override authenticate(request: SignableRequest): Promise<void> {
@@ -37,18 +49,18 @@ export class HmacInternalCallAuthenticator extends InternalCallAuthenticator {
     ) {
       return Promise.reject(HmacInternalCallAuthenticator.rejection());
     }
-    const expected = this.expectedSignature(request, timestampMs);
-    if (expected === undefined) {
-      return Promise.reject(HmacInternalCallAuthenticator.rejection());
-    }
     const received = Buffer.from(signature, 'utf8');
-    if (
-      expected.length !== received.length ||
-      !timingSafeEqual(expected, received)
-    ) {
-      return Promise.reject(HmacInternalCallAuthenticator.rejection());
-    }
-    return Promise.resolve();
+    const matches = this.calculators.map((calculator) => {
+      const expected = this.expectedSignature(calculator, request, timestampMs);
+      return (
+        expected !== undefined &&
+        expected.length === received.length &&
+        timingSafeEqual(expected, received)
+      );
+    });
+    return matches.includes(true)
+      ? Promise.resolve()
+      : Promise.reject(HmacInternalCallAuthenticator.rejection());
   }
 
   /**
@@ -57,11 +69,12 @@ export class HmacInternalCallAuthenticator extends InternalCallAuthenticator {
    * an invalid signature, without leaking a different error.
    */
   private expectedSignature(
+    calculator: HmacSignatureCalculator,
     request: SignableRequest,
     timestampMs: number,
   ): Buffer | undefined {
     try {
-      return Buffer.from(this.calculator.sign(request, timestampMs), 'utf8');
+      return Buffer.from(calculator.sign(request, timestampMs), 'utf8');
     } catch {
       return undefined;
     }

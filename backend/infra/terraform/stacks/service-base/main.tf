@@ -1,7 +1,7 @@
 # What a service needs before it runs (ADR 0043): the roles, log groups and security groups of each of its
 # components and of its one-off task, and the environment they share. The service stack reads all of it through
-# remote state and runs the components; the pipeline runs migrate from migrate_task (and, for identity, signing-keys
-# and seed from one_off_task) before applying the service stack.
+# remote state and runs the components; the pipeline runs migrate from migrate_task, seed from one_off_task and, for
+# identity, signing-keys from signing_keys_task before applying the service stack. The secrets live in secrets.tf.
 
 data "aws_caller_identity" "current" {}
 
@@ -59,6 +59,7 @@ locals {
       SERVICE_REGION = local.region_code
       AUTH_ISSUER    = local.issuer
     },
+    length(var.web_origins) == 0 ? {} : { WEB_ORIGINS = join(",", var.web_origins) },
     local.svc == "identity" ? { IDENTITY_REGION = local.region_code, IDENTITY_ISSUER = local.issuer } : {},
     # The pool signs an IAM token per connection (ADR 0041): the app role writes through RDS Proxy and the reader
     # role reads the replicas. The names are the keys of databaseConfigSchema (database-config.json).
@@ -94,7 +95,7 @@ locals {
   # Lambda sets AWS_REGION on its own (it is a reserved variable); Fargate does not
   # guarantee it on every platform version.
   fargate_environment = merge(local.common_environment, { AWS_REGION = var.region })
-  lambda_environment  = local.common_environment
+  lambda_environment  = merge(local.common_environment, length(local.fargate_secrets) == 0 ? {} : { SECRETS_MAP = jsonencode(local.fargate_secrets) })
   # Only the migrate task connects as the owner role (ADR 0041); the other one-off tasks and the components run as
   # the app role. The owner may connect only through RDS Proxy, so the migrate task gets no replica and no reader
   # role: its pools and its shard list stay on the primary.
@@ -106,7 +107,7 @@ locals {
   # --- Components ------------------------------------------------------------------
   # Each component gets only what it uses: the API and realtime do not consume queues, each
   # worker consumes only its own, and files and SES are requested per component. The migrate task reaches the
-  # database as the owner role only; the one-off task (signing-keys, seed) reaches it as the app role. Both reach
+  # database as the owner role only; the one-off task (seed) reaches it as the app role. Both reach
   # Valkey and publish nothing. Consumer Lambdas get their queue permission in the service stack, with their event
   # source mapping.
   components = merge(
@@ -188,6 +189,7 @@ locals {
           }]
         })
       },
+      key == "one-off" && local.identity ? { signing-keys = local.signing_keys_policy } : {},
       c.files ? { files = try(local.platform.files_bucket.read_write_policy_json, "") } : {},
       c.ses ? { ses-send = try(local.platform.ses.send_policy_json, "") } : {},
       var.task_policies,
@@ -204,15 +206,18 @@ locals {
 
   secret_kms_keys = distinct(concat(
     var.secrets_kms_key_arns,
+    [for key in module.secrets_kms : key.arn],
     local.observability == null ? [] : [local.observability.kms_key_arn],
   ))
 
-  # Fargate gets the secret through valueFrom; Lambda gets the ARN and reads it at startup. The Fargate
-  # execution roles also read the OpenObserve authorization for the collector sidecar. No database secret: the
-  # pool signs IAM tokens with the component role.
-  fargate_secrets         = var.secrets
+  # Fargate gets each secret through valueFrom; Lambda gets SECRETS_MAP with the same names and ARNs and reads them
+  # at startup (ADR 0041). The Fargate execution roles also read the OpenObserve authorization for the collector
+  # sidecar, and the one-off execution role the smoke account its seed receives. No database secret: the pool signs
+  # IAM tokens with the component role.
+  fargate_secrets         = merge(var.secrets, local.stack_secrets)
   fargate_execution_reads = concat(values(local.fargate_secrets), local.observability == null ? [] : [local.observability.otlp_authorization_value_from])
-  lambda_secrets          = distinct([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)])
+  lambda_secrets          = distinct([for v in values(local.fargate_secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)])
+  one_off_task_secrets    = merge(local.fargate_secrets, local.one_off_secrets)
   data_security_group_ids = [local.data.clients_security_group_id]
   running_dropped         = [for key in local.service.components : key if !contains(keys(local.components), key)]
   service_state_found     = local.service.service_name != null
@@ -235,9 +240,19 @@ locals {
       cpu                = var.one_off_task.cpu
       memory             = var.one_off_task.memory
       environment        = environment
-      secrets            = local.fargate_secrets
+      secrets            = key == "one-off" ? local.one_off_task_secrets : local.fargate_secrets
     }
   }
+
+  # The signing-keys task runs before the identity configuration is valid, so it gets only the region and the
+  # container it fills, and no secret: ECS would not start a task whose secret has no value yet.
+  signing_keys_task = local.identity ? merge(local.one_off_tasks["one-off"], {
+    environment = {
+      AWS_REGION                       = var.region
+      IDENTITY_SIGNING_KEYS_SECRET_ARN = aws_secretsmanager_secret.signing_keys[0].arn
+    }
+    secrets = {}
+  }) : null
 }
 
 # References to other stacks that variable validation cannot check.
@@ -264,6 +279,10 @@ resource "terraform_data" "service_check" {
     precondition {
       condition     = length(local.running_dropped) == 0
       error_message = "The service stack still runs a component this plan removes, and its role and security group cannot go while it runs. Remove it from services/<service>/terraform.tfvars and apply the service stack first, then apply service-base."
+    }
+    precondition {
+      condition     = length(setintersection(keys(var.secrets), keys(local.stack_secrets))) == 0
+      error_message = "A variable of secrets is one this stack already creates (generated_secrets, IDENTITY_SIGNING_KEYS)."
     }
     precondition {
       condition     = local.platform.ecs_cluster != null
@@ -305,7 +324,7 @@ module "component" {
   runtime     = each.value.runtime
   vpc_id      = local.network.vpc_id
 
-  secret_arns            = each.value.runtime == "fargate" ? local.fargate_execution_reads : local.lambda_secrets
+  secret_arns            = each.value.runtime == "lambda" ? local.lambda_secrets : concat(local.fargate_execution_reads, each.key == "one-off" ? values(local.one_off_secrets) : [])
   secrets_kms_key_arns   = local.secret_kms_keys
   task_policies          = local.policies[each.key]
   enable_execute_command = each.value.runtime == "fargate" && var.enable_execute_command

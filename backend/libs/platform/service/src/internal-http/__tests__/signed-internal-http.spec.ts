@@ -37,6 +37,21 @@ describe('SignedInternalHttp', () => {
     });
   });
 
+  it('accepts the previous secret on incoming calls while a rotation reaches every service', () => {
+    const previous = 'b'.repeat(40);
+
+    const settings = new SignedInternalHttp().settings(
+      configOf({ INTERNAL_API_SHARED_SECRET_PREVIOUS: previous }),
+      { clock: new SystemClock() },
+    );
+
+    expect(settings).toEqual({
+      baseUrls: {},
+      secret: SHARED,
+      previousSecret: previous,
+    });
+  });
+
   it('refuses to start without the base URL of a service it calls', () => {
     expect(() =>
       new SignedInternalHttp(['identity', 'billing']).settings(

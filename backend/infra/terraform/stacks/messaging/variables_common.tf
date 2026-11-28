@@ -1,7 +1,7 @@
 # Variables and locals shared by all stacks. This file is identical in every stack;
 # backend/infra/scripts/tf-validate.mjs fails if any copy differs. environments/<environment>/common.tfvars
-# sets environment, name_prefix, domain, main_region and regions once for every stack. Reading the state of other
-# stacks lives in remote_state.tf.
+# sets environment, name_prefix, domain, main_region, regions and web_origins once for every stack. Reading the
+# state of other stacks lives in remote_state.tf.
 
 variable "region" {
   description = "AWS region of the stack. Each region has its own stacks and states."
@@ -75,6 +75,22 @@ variable "regions" {
   validation {
     condition     = contains(keys(var.regions), var.main_region)
     error_message = "main_region must be a key of regions."
+  }
+}
+
+variable "web_origins" {
+  description = "Origins of the web app, such as https://app.dev.example.com: the service-base stack hands them to every service as WEB_ORIGINS, the origins its CORS and Origin policy accept. Outside the local environment there is at least one."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for origin in var.web_origins : can(regex("^https?://[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[1-9][0-9]{0,4})?$", origin)) && !can(regex("^(https://.*:443|http://.*:80)$", origin))])
+    error_message = "web_origins are origins such as https://app.example.com: a lowercase host and an optional non-default port, without credentials, a path, a query or a trailing slash."
+  }
+
+  validation {
+    condition     = var.environment == "local" || (length(var.web_origins) > 0 && alltrue([for origin in var.web_origins : startswith(origin, "https://")]))
+    error_message = "Outside the local environment, web_origins lists at least one origin, each with https."
   }
 }
 

@@ -14,12 +14,16 @@ mock_provider "aws" {
   mock_data "aws_caller_identity" {
     defaults = { account_id = "123456789012" }
   }
+  mock_resource "aws_secretsmanager_secret" {
+    defaults = { arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/identity/secret-AbCdEf" }
+  }
 }
 
 variables {
   region       = "us-east-1"
   domain       = "example.test"
   regions      = { us = { aws_region = "us-east-1", api_base_url = "https://api.example.test", issuer = "https://api.example.test" } }
+  web_origins  = ["https://app.example.test"]
   environment  = "dev"
   name_prefix  = "nt-dev"
   state_bucket = "nt-dev-tfstate"
@@ -188,19 +192,19 @@ run "lambda_api_with_consumer" {
   }
 
   assert {
-    condition     = length(local.lambda_secrets) == 0 && !contains(keys(local.lambda_environment), "DB_SECRET_ARN")
+    condition     = sort(keys(local.fargate_secrets)) == sort(["IDENTITY_SIGNING_KEYS"]) && !contains(keys(local.lambda_environment), "DB_SECRET_ARN")
     error_message = "No component reads a database secret: the pool signs IAM tokens."
   }
 
   # Contract with the adapters' configuration schemas: changing a name here
   # requires changing it in backend/libs and backend/.env.example too.
   assert {
-    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
+    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SECRETS_MAP", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER", "WEB_ORIGINS"], []))
     error_message = "The Lambda API receives exactly the variables of the adapter contract."
   }
 
   assert {
-    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
+    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SECRETS_MAP", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER", "WEB_ORIGINS"], []))
     error_message = "A Lambda consumer receives the same variables as the Lambda API."
   }
 
@@ -245,17 +249,17 @@ run "fargate_api_with_realtime_and_workers" {
   }
 
   assert {
-    condition     = length(local.fargate_secrets) == 0 && length(local.fargate_execution_reads) == 0
-    error_message = "Fargate receives no database credentials: the pool signs IAM tokens with the task role."
+    condition     = sort(keys(local.fargate_secrets)) == sort(["IDENTITY_SIGNING_KEYS"]) && length(local.fargate_execution_reads) == 1
+    error_message = "Fargate receives no database credentials: the pool signs IAM tokens with the task role. Identity's only secret here is its signing keys."
   }
 
   assert {
-    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION"]))
+    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER", "WEB_ORIGINS"], ["AWS_REGION"]))
     error_message = "The Fargate API receives exactly the variables of the adapter contract."
   }
 
   assert {
-    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION", "QUEUE_URL"]))
+    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER", "WEB_ORIGINS"], ["AWS_REGION", "QUEUE_URL"]))
     error_message = "A worker receives the Fargate variables and the URL of its queue."
   }
 
@@ -561,13 +565,13 @@ run "one_off_task_has_what_the_pipeline_needs_to_run_it" {
   }
 
   assert {
-    condition     = output.one_off_task.environment["DB_AUTH"] == "iam" && length(output.one_off_task.secrets) == 0
-    error_message = "The one-off task signs an IAM token and gets no secret."
+    condition     = output.one_off_task.environment["DB_AUTH"] == "iam" && sort(keys(output.one_off_task.secrets)) == sort(["IDENTITY_SIGNING_KEYS", "IDENTITY_SMOKE_ACCOUNT"])
+    error_message = "The one-off task signs an IAM token and gets no database secret; identity's seed gets its signing keys and, outside prod, the smoke account."
   }
 
   assert {
     condition     = output.one_off_task.environment == output.fargate_environment && output.one_off_task.environment["DB_USER"] == "identity_app"
-    error_message = "The signing-keys and seed one-off task runs as the app role, with the environment of every Fargate task of the service stack."
+    error_message = "The seed one-off task runs as the app role, with the environment of every Fargate task of the service stack."
   }
 
   assert {
@@ -697,6 +701,16 @@ run "only_identity_receives_identity_region" {
     condition     = !contains(keys(local.lambda_environment), "IDENTITY_REGION") && !contains(keys(local.lambda_environment), "IDENTITY_ISSUER") && local.lambda_environment["SERVICE_REGION"] == "us" && local.lambda_environment["AUTH_ISSUER"] == "https://api.example.test"
     error_message = "Every service gets SERVICE_REGION and AUTH_ISSUER; only identity gets IDENTITY_REGION and IDENTITY_ISSUER."
   }
+
+  assert {
+    condition     = length(aws_secretsmanager_secret.signing_keys) == 0 && length(aws_secretsmanager_secret.smoke_account) == 0 && output.signing_keys_task == null && output.smoke_account_secret_arn == null
+    error_message = "Only identity owns a signing-key container, a smoke account and a signing-keys task."
+  }
+
+  assert {
+    condition     = length(module.secrets_kms) == 0 && !contains(keys(local.lambda_environment), "SECRETS_MAP")
+    error_message = "A service without secrets gets no secrets key and no SECRETS_MAP."
+  }
 }
 
 run "a_stack_region_outside_regions_is_rejected" {
@@ -718,4 +732,256 @@ run "tenant_move_targets_cannot_be_set" {
   }
 
   expect_failures = [var.environment_variables]
+}
+
+# The KMS key gets its ARN when it is created: the runs below give the secrets key a known ARN during the plan, to
+# check the policies that name it. Each secret takes the ARN of the mock_resource defaults.
+
+run "generated_secrets_never_reach_the_plan" {
+  command = plan
+
+  variables {
+    api               = { runtime = "lambda" }
+    generated_secrets = ["IDENTITY_EMAIL_PEPPER", "IDENTITY_DATA_KEY"]
+  }
+
+  override_resource {
+    target          = aws_secretsmanager_secret.generated
+    override_during = plan
+    values          = { arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/identity/generated-AbCdEf" }
+  }
+
+  override_module {
+    target          = module.secrets_kms
+    override_during = plan
+    outputs         = { arn = "arn:aws:kms:us-east-1:123456789012:key/identity-secrets" }
+  }
+
+  assert {
+    condition     = alltrue([for version in values(aws_secretsmanager_secret_version.generated) : version.secret_string == null && version.secret_string_wo == null && version.secret_string_wo_version == 1])
+    error_message = "A generated value reaches Secrets Manager through a write-only attribute, never through the plan or the state (ADR 0041)."
+  }
+
+  assert {
+    condition     = sort(keys(local.fargate_secrets)) == sort(["IDENTITY_DATA_KEY", "IDENTITY_EMAIL_PEPPER", "IDENTITY_SIGNING_KEYS"])
+    error_message = "Every component of identity receives its generated secrets and its signing keys."
+  }
+
+  assert {
+    condition     = sort(keys(jsondecode(local.lambda_environment["SECRETS_MAP"]))) == sort(keys(local.fargate_secrets)) && alltrue([for name, arn in jsondecode(local.lambda_environment["SECRETS_MAP"]) : arn == local.fargate_secrets[name] && contains(local.lambda_secrets, arn)])
+    error_message = "A function receives SECRETS_MAP with the same names and ARNs as the Fargate secrets, and component-base grants its role reading them (GetSecretValue on each ARN, BatchGetSecretValue on every resource)."
+  }
+
+  assert {
+    condition     = aws_secretsmanager_secret.generated["IDENTITY_DATA_KEY"].name == "nt-dev/identity/identity-data-key" && aws_secretsmanager_secret.generated["IDENTITY_DATA_KEY"].kms_key_id == "arn:aws:kms:us-east-1:123456789012:key/identity-secrets"
+    error_message = "Each secret is named after the service and its variable and is encrypted with the secrets key of the service."
+  }
+}
+
+run "the_signing_keys_task_fills_an_empty_container" {
+  command = plan
+
+  variables {
+    api = { runtime = "fargate" }
+  }
+
+  override_module {
+    target          = module.secrets_kms
+    override_during = plan
+    outputs         = { arn = "arn:aws:kms:us-east-1:123456789012:key/identity-secrets" }
+  }
+
+  assert {
+    condition     = output.signing_keys_task.environment == { AWS_REGION = "us-east-1", IDENTITY_SIGNING_KEYS_SECRET_ARN = aws_secretsmanager_secret.signing_keys[0].arn } && length(output.signing_keys_task.secrets) == 0
+    error_message = "The signing-keys task gets only the region and the container it fills, and no secret: ECS would not start it while the container is empty."
+  }
+
+  assert {
+    condition     = output.signing_keys_task.task_role_arn == output.one_off_task.task_role_arn && output.signing_keys_task.log_group_name == output.one_off_task.log_group_name
+    error_message = "The signing-keys task runs on the one-off roles and log group."
+  }
+
+  assert {
+    condition = jsondecode(local.policies["one-off"]["signing-keys"]).Statement == [
+      {
+        Sid      = "FillSigningKeys"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:DescribeSecret", "secretsmanager:PutSecretValue"]
+        Resource = aws_secretsmanager_secret.signing_keys[0].arn
+      },
+      {
+        Sid      = "EncryptSigningKeys"
+        Effect   = "Allow"
+        Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
+        Resource = "arn:aws:kms:us-east-1:123456789012:key/identity-secrets"
+      },
+    ]
+    error_message = "The one-off role may describe the signing-key container and write its first value, never read it."
+  }
+
+  assert {
+    condition     = !contains(keys(local.policies["api"]), "signing-keys") && !contains(keys(local.policies["migrate"]), "signing-keys")
+    error_message = "Only the one-off role writes the signing keys."
+  }
+}
+
+run "only_the_deploy_role_writes_the_smoke_account" {
+  command = plan
+
+  variables {
+    api = { runtime = "fargate" }
+  }
+
+  override_module {
+    target          = module.secrets_kms
+    override_during = plan
+    outputs         = { arn = "arn:aws:kms:us-east-1:123456789012:key/identity-secrets" }
+  }
+
+  assert {
+    condition     = output.smoke_account_secret_arn == aws_secretsmanager_secret.smoke_account[0].arn && length(aws_secretsmanager_secret_policy.smoke_account) == 1
+    error_message = "Identity owns an empty SMOKE_ACCOUNT container with its resource policy outside prod (ADR 0043)."
+  }
+
+  assert {
+    condition = [for statement in jsondecode(local.smoke_account_policy).Statement : statement if statement.Effect == "Deny" && contains(statement.Action, "secretsmanager:PutSecretValue")] == [{
+      Sid       = "OnlyTheDeployRoleWrites"
+      Effect    = "Deny"
+      Principal = "*"
+      Action    = ["secretsmanager:PutSecretValue", "secretsmanager:UpdateSecret", "secretsmanager:UpdateSecretVersionStage", "secretsmanager:RestoreSecret", "secretsmanager:PutResourcePolicy", "secretsmanager:DeleteResourcePolicy", "secretsmanager:DeleteSecret"]
+      Resource  = "*"
+      Condition = { StringNotEquals = { "aws:PrincipalArn" = "arn:aws:iam::123456789012:role/nt-dev-github-deploy" } }
+    }]
+    error_message = "Every principal but the deploy role is denied writing the smoke account, deleting it, and replacing or dropping the policy that denies it."
+  }
+
+  assert {
+    condition = [for statement in jsondecode(local.smoke_account_policy).Statement : statement.Condition.StringNotEquals["aws:PrincipalArn"] if statement.Effect == "Deny" && contains(statement.Action, "secretsmanager:GetSecretValue")] == [[
+      "arn:aws:iam::123456789012:role/nt-dev-github-deploy",
+      "arn:aws:iam::123456789012:role/nt-dev-identity-one-off-execution",
+    ]]
+    error_message = "Only the deploy role and the execution role of the seed task may read the smoke account."
+  }
+
+  assert {
+    condition     = output.one_off_task.secrets["IDENTITY_SMOKE_ACCOUNT"] == output.smoke_account_secret_arn && !contains(keys(local.fargate_secrets), "IDENTITY_SMOKE_ACCOUNT") && !contains(keys(output.migrate_task.secrets), "IDENTITY_SMOKE_ACCOUNT")
+    error_message = "Only the seed task receives the smoke account; the API, the workers and the migrate task do not."
+  }
+}
+
+run "prod_has_no_smoke_account" {
+  command = plan
+
+  variables {
+    environment = "prod"
+    name_prefix = "nt-prod"
+    api         = { runtime = "fargate" }
+  }
+
+  assert {
+    condition     = length(aws_secretsmanager_secret.smoke_account) == 0 && output.smoke_account_secret_arn == null && !contains(keys(output.one_off_task.secrets), "IDENTITY_SMOKE_ACCOUNT")
+    error_message = "prod never creates SMOKE_ACCOUNT and its seed never receives one (ADR 0043)."
+  }
+
+  assert {
+    condition     = length(aws_secretsmanager_secret.signing_keys) == 1
+    error_message = "prod keeps the signing-key container."
+  }
+}
+
+run "web_origins_reach_every_component" {
+  command = plan
+
+  variables {
+    web_origins = ["https://app.example.test", "https://admin.example.test"]
+    api         = { runtime = "lambda" }
+  }
+
+  assert {
+    condition     = local.lambda_environment["WEB_ORIGINS"] == "https://app.example.test,https://admin.example.test" && local.fargate_environment["WEB_ORIGINS"] == local.lambda_environment["WEB_ORIGINS"]
+    error_message = "Every component receives the web origins of common.tfvars as WEB_ORIGINS."
+  }
+}
+
+run "web_origins_are_origins" {
+  command = plan
+
+  variables {
+    web_origins = ["https://app.example.test/"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_a_query_is_rejected" {
+  command = plan
+
+  variables {
+    web_origins = ["https://app.example.test?x"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_an_uppercase_host_is_rejected" {
+  command = plan
+
+  variables {
+    web_origins = ["https://App.Example.test"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_credentials_is_rejected" {
+  command = plan
+
+  variables {
+    web_origins = ["https://user@app.example.test"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_its_default_port_is_rejected" {
+  command = plan
+
+  variables {
+    web_origins = ["https://app.example.test:443"]
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "a_web_origin_with_another_port_is_accepted" {
+  command = plan
+
+  variables {
+    web_origins = ["https://app.example.test:8443"]
+  }
+
+  assert {
+    condition     = local.fargate_environment["WEB_ORIGINS"] == "https://app.example.test:8443"
+    error_message = "An origin with a non-default port is the origin the browser sends."
+  }
+}
+
+run "a_deployed_environment_needs_a_web_origin" {
+  command = plan
+
+  variables {
+    web_origins = []
+  }
+
+  expect_failures = [var.web_origins]
+}
+
+run "an_external_secret_cannot_take_the_name_of_a_stack_secret" {
+  command = plan
+
+  variables {
+    secrets = { IDENTITY_SIGNING_KEYS = "arn:aws:secretsmanager:us-east-1:123456789012:secret:keys-AbCdEf" }
+  }
+
+  expect_failures = [terraform_data.service_check]
 }

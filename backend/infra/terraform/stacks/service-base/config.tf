@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 6.0, < 7.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.7, < 4.0"
+    }
   }
 
   # One state per service, apart from its runtime: environments/<environment>/services/<service>/base/backend.tfvars

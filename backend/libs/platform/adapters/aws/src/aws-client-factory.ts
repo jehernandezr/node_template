@@ -1,3 +1,4 @@
+import { SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { SESv2Client } from '@aws-sdk/client-sesv2';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { SQSClient } from '@aws-sdk/client-sqs';
@@ -39,6 +40,15 @@ export class AwsClientFactory {
    */
   ses(settings: AwsClientSettings): SESv2Client {
     return new SESv2Client(this.options(settings));
+  }
+
+  /**
+   * Creates the Secrets Manager client.
+   * @param settings Region, endpoint and credentials.
+   * @returns The client.
+   */
+  secretsManager(settings: AwsClientSettings): SecretsManagerClient {
+    return new SecretsManagerClient(this.options(settings));
   }
 
   private options(settings: AwsClientSettings) {

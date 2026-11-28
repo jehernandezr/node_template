@@ -18,6 +18,11 @@ output "execution_role_arn" {
   value       = local.fargate ? aws_iam_role.execution[0].arn : null
 }
 
+output "execution_role_name" {
+  description = "Name of the ECS execution role, known at plan time, for the resource policies that name it. Null on Lambda."
+  value       = local.fargate ? aws_iam_role.execution[0].name : null
+}
+
 output "log_group_name" {
   description = "Name of the log group."
   value       = aws_cloudwatch_log_group.this.name

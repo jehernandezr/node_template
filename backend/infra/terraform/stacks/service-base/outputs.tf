@@ -31,12 +31,12 @@ output "fargate_environment" {
 }
 
 output "lambda_environment" {
-  description = "Environment shared by every function of the service: the Fargate one without AWS_REGION."
+  description = "Environment shared by every function of the service: the Fargate one without AWS_REGION, plus SECRETS_MAP with the secrets the function reads at startup."
   value       = local.lambda_environment
 }
 
 output "fargate_secrets" {
-  description = "Secrets of the Fargate tasks: variable name to valueFrom."
+  description = "Secrets of the Fargate components: variable name to valueFrom. The functions get the same map as SECRETS_MAP in lambda_environment."
   value       = local.fargate_secrets
 }
 
@@ -61,11 +61,21 @@ output "enable_execute_command" {
 }
 
 output "one_off_task" {
-  description = "What the pipeline needs to register and run the one-off tasks of identity (signing-keys, seed) with the new image: cluster, subnets, security groups, roles, log group, size, environment and secrets. The environment is the one every Fargate task of the service gets, with the app role as DB_USER."
+  description = "What the pipeline needs to register and run the seed task with the new image: cluster, subnets, security groups, roles, log group, size, environment and secrets. The environment is the one every Fargate task of the service gets, with the app role as DB_USER; outside prod, identity's also gets IDENTITY_SMOKE_ACCOUNT."
   value       = local.one_off_tasks["one-off"]
 }
 
 output "migrate_task" {
   description = "What the pipeline needs to register and run the migrate task with the new image, in the shape of one_off_task. It has its own roles and log group, and its environment is the one every Fargate task of the service gets with the owner role as DB_USER (ADR 0041)."
   value       = local.one_off_tasks["migrate"]
+}
+
+output "signing_keys_task" {
+  description = "Identity only, null otherwise: the signing-keys task in the shape of one_off_task, on its roles and log group, with only AWS_REGION and IDENTITY_SIGNING_KEYS_SECRET_ARN and no secret, because it fills the signing-key container before identity can start."
+  value       = local.signing_keys_task
+}
+
+output "smoke_account_secret_arn" {
+  description = "Identity outside prod, null otherwise: the SMOKE_ACCOUNT container the deploy job writes before the seed (ADR 0043)."
+  value       = local.smoke_account_enabled ? aws_secretsmanager_secret.smoke_account[0].arn : null
 }

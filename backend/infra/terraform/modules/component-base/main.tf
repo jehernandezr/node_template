@@ -202,6 +202,17 @@ data "aws_iam_policy_document" "function" {
     }
   }
 
+  # BatchGetSecretValue takes no resource scope; Secrets Manager still checks GetSecretValue on each secret it returns.
+  dynamic "statement" {
+    for_each = length(local.secret_base_arns) > 0 ? [1] : []
+
+    content {
+      sid       = "BatchReadSecrets"
+      actions   = ["secretsmanager:BatchGetSecretValue"]
+      resources = ["*"]
+    }
+  }
+
   dynamic "statement" {
     for_each = length(var.secrets_kms_key_arns) > 0 ? [1] : []
 

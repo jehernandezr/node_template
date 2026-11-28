@@ -21,9 +21,12 @@ const BaseUrlsSchema = z
 /**
  * Variables of the internal API HTTP transport. `INTERNAL_API_BASE_URLS` is a JSON map from service to base
  * URL, for example `{"identity":"http://identity.internal"}`; a service that does not call others leaves it empty.
+ * `INTERNAL_API_SHARED_SECRET_PREVIOUS` holds the outgoing secret while a rotation reaches every service: incoming
+ * calls signed with it are still accepted.
  */
 export const internalHttpConfigSchema = z.object({
   INTERNAL_API_SHARED_SECRET: secret({ minLength: 32 }),
+  INTERNAL_API_SHARED_SECRET_PREVIOUS: secret({ minLength: 32 }).optional(),
   INTERNAL_API_BASE_URLS: BaseUrlsSchema.default({}),
   ...internalApiSignerConfigSchema.shape,
   ...sigV4ConfigSchema.shape,

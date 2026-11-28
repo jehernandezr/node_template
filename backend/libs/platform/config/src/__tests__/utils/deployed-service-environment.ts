@@ -4,9 +4,9 @@ import type { ConfigEnv } from '../../config-env.js';
 import { DeployEnvironment } from '../../enums/deploy-environment.enum.js';
 
 /**
- * The environment Terraform gives a service in a deployed environment: the `environment_variables` and the `secrets`
- * of its `service-base` values, plus `DEPLOY_ENVIRONMENT`, `SERVICE_NAME` and the region keys as the stack sets them
- * from `common.tfvars`. A secret takes the sample value the test gives for it. A service config test parses the
+ * The environment Terraform gives a service in a deployed environment: the `environment_variables`, the
+ * `generated_secrets` and the `secrets` of its `service-base` values, plus `DEPLOY_ENVIRONMENT`, `SERVICE_NAME`, the
+ * region keys and `WEB_ORIGINS` as the stack sets them from `common.tfvars`. A secret takes the sample value the test gives for it. A service config test parses the
  * result, so a provider or a variable its environment rejects fails the test before it fails a deploy.
  */
 export class DeployedServiceEnvironment {
@@ -37,6 +37,10 @@ export class DeployedServiceEnvironment {
   private static readonly VARIABLES =
     /^environment_variables\s*=\s*\{\n([\s\S]*?)^\}/m;
   private static readonly SECRETS = /^secrets\s*=\s*\{(?:\}|\n([\s\S]*?)^\})/m;
+  private static readonly GENERATED_SECRETS =
+    /^generated_secrets\s*=\s*\[([\s\S]*?)\]/m;
+  private static readonly WEB_ORIGINS = /^web_origins\s*=\s*\[([^\]]*)\]/m;
+  private static readonly QUOTED = /"([^"]*)"/g;
   private static readonly SECRET = /^\s*"?([A-Z][A-Z0-9_]*)"?\s*=/;
   private static readonly ASSIGNMENT =
     /^\s*([A-Z][A-Z0-9_]*)\s*=\s*("(?:[^"\\]|\\.)*")\s*$/;
@@ -70,8 +74,8 @@ export class DeployedServiceEnvironment {
   }
 
   /**
-   * The region keys `service-base` builds from `common.tfvars` for a service of the main region: `REGIONS`,
-   * `SERVICE_REGION` and `AUTH_ISSUER`, plus `IDENTITY_REGION` and `IDENTITY_ISSUER` for identity.
+   * The keys `service-base` builds from `common.tfvars` for a service of the main region: `REGIONS`,
+   * `SERVICE_REGION`, `AUTH_ISSUER` and `WEB_ORIGINS`, plus `IDENTITY_REGION` and `IDENTITY_ISSUER` for identity.
    * @param common Text of an environment's `common.tfvars`.
    * @param serviceName Service name, as `service_name` gives it.
    * @returns The region keys.
@@ -97,10 +101,14 @@ export class DeployedServiceEnvironment {
     if (served === undefined) {
       throw new Error('main_region is not a key of regions');
     }
+    const webOrigins = DeployedServiceEnvironment.quoted(
+      DeployedServiceEnvironment.WEB_ORIGINS.exec(common)?.[1] ?? '',
+    );
     return {
       REGIONS: JSON.stringify(regions),
       SERVICE_REGION: served.code,
       AUTH_ISSUER: served.issuer,
+      ...(webOrigins.length === 0 ? {} : { WEB_ORIGINS: webOrigins.join(',') }),
       ...(serviceName === DeployedServiceEnvironment.IDENTITY
         ? { IDENTITY_REGION: served.code, IDENTITY_ISSUER: served.issuer }
         : {}),
@@ -162,18 +170,32 @@ export class DeployedServiceEnvironment {
 
   private static secrets(values: string, samples: ConfigEnv): ConfigEnv {
     const block = DeployedServiceEnvironment.SECRETS.exec(values)?.[1] ?? '';
-    return Object.fromEntries(
-      DeployedServiceEnvironment.lines(block).map((line) => {
+    const names = [
+      ...DeployedServiceEnvironment.quoted(
+        DeployedServiceEnvironment.GENERATED_SECRETS.exec(values)?.[1] ?? '',
+      ),
+      ...DeployedServiceEnvironment.lines(block).map((line) => {
         const name = DeployedServiceEnvironment.SECRET.exec(line)?.[1];
         if (name === undefined) {
           throw new Error(`Not a secret variable: ${line.trim()}`);
         }
+        return name;
+      }),
+    ];
+    return Object.fromEntries(
+      names.map((name) => {
         const sample = samples[name];
         if (sample === undefined) {
           throw new Error(`The secret ${name} has no sample value`);
         }
         return [name, sample];
       }),
+    );
+  }
+
+  private static quoted(text: string): string[] {
+    return [...text.matchAll(DeployedServiceEnvironment.QUOTED)].map(
+      (match) => match[1] ?? '',
     );
   }
 
