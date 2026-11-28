@@ -1,5 +1,6 @@
 import { PartitionBy, PartitionInterval } from '../enums.js';
 import { PersistenceError } from '../errors/persistence-error.js';
+import { PlatformSchemaSql } from './platform-schema-sql.js';
 import {
   auditedOptionsOf,
   type EntityClass,
@@ -128,7 +129,7 @@ export function createPartitionedTableSql(
         name,
         options.interval ?? PartitionInterval.Month,
         ahead,
-        options.retention !== undefined,
+        options.retention,
       ),
     );
   }
@@ -137,17 +138,18 @@ export function createPartitionedTableSql(
 
 /**
  * Statement that registers a range partitioned table for the platform partition functions, which refuse any table
- * that is not registered. Only a `retained` table may have its old partitions detached or dropped through them.
- * Running it again updates the registration. Requires the `PlatformPartitionGuard` migration.
+ * that is not registered. Only a table with `retention` may have its old partitions detached or dropped through them,
+ * and only once their whole range ends `retention` intervals ago. Running it again updates the registration.
+ * Requires the `PlatformPartitionGuard` migration.
  * @param table Partitioned table.
  * @param interval Interval of each partition.
- * @param retained Whether old partitions may be detached or dropped.
+ * @param retention Intervals a partition is kept after it ends; none keeps every partition.
  * @returns The statement.
  */
 export function registerPartitionedTableSql(
   table: string,
   interval: PartitionInterval,
-  retained: boolean,
+  retention?: number,
 ): string {
   const name = identifier(table, 'partitioned table');
   if (!Object.values(PartitionInterval).includes(interval)) {
@@ -156,7 +158,16 @@ export function registerPartitionedTableSql(
       'a PartitionInterval',
     );
   }
-  return `INSERT INTO platform_partitioned_tables (table_name, partition_step, retained) VALUES (${literal(name)}, ${literal(interval)}, ${retained}) ON CONFLICT (table_name) DO UPDATE SET partition_step = EXCLUDED.partition_step, retained = EXCLUDED.retained`;
+  if (
+    retention !== undefined &&
+    (!Number.isInteger(retention) || retention < 1)
+  ) {
+    throw PersistenceError.invalidConfiguration(
+      'retention',
+      'a positive integer',
+    );
+  }
+  return `INSERT INTO platform_partitioned_tables (table_name, partition_step, retention) VALUES (${literal(name)}, ${literal(interval)}, ${retention ?? 'NULL'}) ON CONFLICT (table_name) DO UPDATE SET partition_step = EXCLUDED.partition_step, retention = EXCLUDED.retention`;
 }
 
 /**
@@ -165,25 +176,29 @@ export function registerPartitionedTableSql(
  * repeats `platform_ensure_partitions` to create future ones.
  * @param table Partitioned table.
  * @param interval Interval of each partition.
- * @param ahead Partitions after the current one.
- * @param retained Whether old partitions may be detached or dropped.
+ * @param ahead Partitions after the current one, from 0 to `PlatformSchemaSql.maxPartitionsAhead`.
+ * @param retention Intervals a partition is kept after it ends; none keeps every partition.
  * @returns The statements.
  */
 export function createRangePartitionsSql(
   table: string,
   interval: PartitionInterval,
   ahead: number,
-  retained = false,
+  retention?: number,
 ): string[] {
   const name = identifier(table, 'partitioned table');
-  if (!Number.isInteger(ahead) || ahead < 0 || ahead > 120) {
+  if (
+    !Number.isInteger(ahead) ||
+    ahead < 0 ||
+    ahead > PlatformSchemaSql.maxPartitionsAhead
+  ) {
     throw PersistenceError.invalidConfiguration(
       'ahead',
-      'an integer from 0 to 120',
+      `an integer from 0 to ${PlatformSchemaSql.maxPartitionsAhead}`,
     );
   }
   return [
-    registerPartitionedTableSql(name, interval, retained),
+    registerPartitionedTableSql(name, interval, retention),
     `SELECT platform_ensure_partitions(${literal(name)}, ${literal(interval)}, ${ahead})`,
   ];
 }

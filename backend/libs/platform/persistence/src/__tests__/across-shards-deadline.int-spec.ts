@@ -29,6 +29,7 @@ runtime.describeIfAvailable(
 
     const across = (
       connectTimeoutMs: number,
+      poolMax = 2,
     ): {
       readonly across: AcrossShards;
       readonly sources: ShardDataSources;
@@ -38,7 +39,7 @@ runtime.describeIfAvailable(
         DB_USER: username,
         DB_PASSWORD: password,
         DB_CATALOG_NAME: 'deadline_probe_catalog',
-        DB_POOL_MAX: '2',
+        DB_POOL_MAX: String(poolMax),
         DB_CONNECT_TIMEOUT_MS: String(connectTimeoutMs),
       });
       const sources = new ShardDataSources(
@@ -121,6 +122,22 @@ runtime.describeIfAvailable(
         { shard: unreachable, timedOut: false, code: undefined },
       ]);
       expect(sources.activeShards()).toEqual([reachable]);
+    });
+
+    it('lets a query wait for a free client of a full pool longer than DB_CONNECT_TIMEOUT_MS', async () => {
+      const { sources } = across(300, 1);
+      const dataSource = await sources.get({
+        logicalShard: reachable,
+        instance: 'reachable',
+      });
+
+      const [held, waiting] = await Promise.all([
+        dataSource.query("SELECT 'slept' AS state FROM pg_sleep(1)"),
+        dataSource.query('SELECT 1 AS answered'),
+      ]);
+
+      expect(held).toEqual([{ state: 'slept' }]);
+      expect(waiting).toEqual([{ answered: 1 }]);
     });
   },
 );

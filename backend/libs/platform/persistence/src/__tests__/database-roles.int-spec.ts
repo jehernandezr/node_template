@@ -176,9 +176,59 @@ runtime.describeIfAvailable('database roles of the bootstrap Lambda', () => {
     ).resolves.toEqual([{ dropped: true }]);
     await expect(
       appSource.query(
-        `SELECT platform_drop_partition('expiring_probes', 'probes') AS dropped`,
+        `SELECT platform_drop_partition('expiring_probes', 'expiring_probes_201901') AS dropped`,
       ),
     ).resolves.toEqual([{ dropped: false }]);
+  });
+
+  const attachedPartitions = (table: string): Promise<{ name: string }[]> =>
+    ownerSource.query(
+      `SELECT c.relname AS name FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid
+       JOIN pg_class p ON p.oid = i.inhparent WHERE p.relname = $1 ORDER BY c.relname`,
+      [table],
+    );
+
+  it('keeps the app role from dropping or detaching a partition that retention still keeps', async () => {
+    const current = `expiring_probes_${new Date().toISOString().slice(0, 7).replace('-', '')}`;
+    const before = await attachedPartitions('expiring_probes');
+
+    for (const child of [
+      'expiring_probes_default',
+      current,
+      'probes',
+      'expiring_probes_2020010',
+    ]) {
+      await expect(
+        appSource.query(
+          `SELECT platform_drop_partition('expiring_probes', $1)`,
+          [child],
+        ),
+      ).rejects.toMatchObject(insufficientPrivilege);
+    }
+    await appSource.query(
+      `SELECT platform_detach_partitions_before('expiring_probes', 'month', now() + interval '10 years')`,
+    );
+
+    const after = await attachedPartitions('expiring_probes');
+    expect(after.map((row) => row.name)).toEqual(
+      expect.arrayContaining(['expiring_probes_default', current]),
+    );
+    expect(after.filter((row) => row.name >= current)).toEqual(
+      before.filter((row) => row.name >= current),
+    );
+  });
+
+  it('keeps the app role from creating more partitions ahead than the bound', async () => {
+    await expect(
+      appSource.query(
+        `SELECT platform_ensure_partitions('audit_log', 'month', 121)`,
+      ),
+    ).rejects.toMatchObject(insufficientPrivilege);
+    await expect(
+      appSource.query(
+        `SELECT platform_ensure_partitions('audit_log', 'month', -1)`,
+      ),
+    ).rejects.toMatchObject(insufficientPrivilege);
   });
 
   it('keeps the app role from dropping or detaching partitions of the tables without retention', async () => {
@@ -221,12 +271,12 @@ runtime.describeIfAvailable('database roles of the bootstrap Lambda', () => {
   it('keeps the app role from registering or changing a table for the platform functions', async () => {
     await expect(
       appSource.query(
-        `INSERT INTO platform_partitioned_tables (table_name, partition_step, retained) VALUES ('loose_probes', 'month', true)`,
+        `INSERT INTO platform_partitioned_tables (table_name, partition_step, retention) VALUES ('loose_probes', 'month', 1)`,
       ),
     ).rejects.toMatchObject(insufficientPrivilege);
     await expect(
       appSource.query(
-        `UPDATE platform_partitioned_tables SET retained = true WHERE table_name = 'audit_log' RETURNING table_name`,
+        `UPDATE platform_partitioned_tables SET retention = 1 WHERE table_name = 'audit_log' RETURNING table_name`,
       ),
     ).resolves.toEqual([[], 0]);
     await expect(

@@ -4,7 +4,9 @@ import {
   IdentityTestApp,
   ShardedUsers,
 } from '../../../__tests__/utils/index.js';
+import { DataSource } from 'typeorm';
 import { RotateLoginAttemptPartitionsJob } from '../application/rotate-login-attempt-partitions.job.js';
+import { LoginAttemptPartitions } from '../infrastructure/persistence/login-attempt-partitions.js';
 
 const runtime = new ContainerRuntime(process.env);
 
@@ -129,5 +131,54 @@ runtime.describeIfAvailable('login attempts in monthly partitions', () => {
         `SELECT 1 FROM pg_class WHERE relname = '${partitionOf(ahead)}'`,
       ),
     ).toEqual([...probe.names()]);
+  });
+
+  it('keeps the partitions as an app role that owns no table and only has EXECUTE on the platform functions', async () => {
+    const probe = app.shards();
+    const [shard = ''] = probe.names();
+    const appRole = 'identity_partitions_app';
+    const connection = probe.serviceConnection();
+    await probe.rowsIn(
+      shard,
+      `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${appRole}') THEN CREATE ROLE ${appRole} LOGIN; END IF; END $$`,
+    );
+    await probe.rowsIn(
+      shard,
+      `ALTER ROLE ${appRole} PASSWORD '${connection.password.replace(/'/g, "''")}'`,
+    );
+    for (const grant of [
+      `GRANT CONNECT ON DATABASE "${shard}" TO ${appRole}`,
+      `GRANT USAGE ON SCHEMA public TO ${appRole}`,
+      `GRANT EXECUTE ON FUNCTION platform_ensure_partitions(text, text, integer), platform_drop_partition(text, text) TO ${appRole}`,
+      `CREATE TABLE login_attempts_202002 PARTITION OF login_attempts FOR VALUES FROM (platform_uuid_v7_lower_bound('2020-02-01')) TO (platform_uuid_v7_lower_bound('2020-03-01'))`,
+    ]) {
+      await probe.rowsIn(shard, grant);
+    }
+    const source = await new DataSource({
+      type: 'postgres',
+      ...connection,
+      username: appRole,
+      database: shard,
+    }).initialize();
+    try {
+      await expect(
+        source.query('DROP TABLE login_attempts_202002'),
+      ).rejects.toMatchObject({ driverError: { code: '42501' } });
+
+      const dropped = await new LoginAttemptPartitions().maintain(
+        source.manager,
+        new Date(),
+      );
+
+      expect(dropped).toContain('login_attempts_202002');
+      expect(
+        await probe.rowsIn(
+          shard,
+          `SELECT 1 FROM pg_class WHERE relname = 'login_attempts_202002'`,
+        ),
+      ).toEqual([]);
+    } finally {
+      await source.destroy();
+    }
   });
 });

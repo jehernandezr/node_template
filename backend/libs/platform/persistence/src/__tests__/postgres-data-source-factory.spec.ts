@@ -125,7 +125,25 @@ describe('PostgresDataSourceFactory', () => {
         settings({ DB_CONNECT_TIMEOUT_MS: '1500' }),
       ).create(SHARD_TARGET, { primary: PRIMARY, replicas: [REPLICA] });
 
-      expect(dataSource.options).toMatchObject({ connectTimeoutMS: 1500 });
+      const { Client } = dataSource.options.extra as {
+        Client: new (config: object) => { _connectionTimeoutMillis?: number };
+      };
+      const client = new Client({ host: 'primary.local' });
+
+      expect(client._connectionTimeoutMillis).toBe(1500);
+    });
+
+    it('does not bound the wait for a free client of the pool', () => {
+      const dataSource = buildFactory(
+        new EntityRegistry(),
+        new RecordingDatabaseTokenProvider(),
+        settings({ DB_CONNECT_TIMEOUT_MS: '1500' }),
+      ).create(SHARD_TARGET, { primary: PRIMARY, replicas: [REPLICA] });
+
+      expect(dataSource.options).not.toHaveProperty('connectTimeoutMS');
+      expect(dataSource.options.extra).not.toHaveProperty(
+        'connectionTimeoutMillis',
+      );
     });
   });
 

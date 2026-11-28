@@ -18,7 +18,7 @@ export class RetainLoginAttemptPartitions1795000300002 implements MigrationInter
       registerPartitionedTableSql(
         LoginAttemptPartitions.TABLE,
         PartitionInterval.Month,
-        true,
+        LoginAttemptPartitions.RETENTION_MONTHS,
       ),
     );
   }
