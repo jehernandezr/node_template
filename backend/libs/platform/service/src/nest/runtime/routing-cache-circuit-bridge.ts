@@ -25,6 +25,7 @@ export class RoutingCacheCircuitBridge
     private readonly router: ShardRouter,
   ) {}
 
+  /** Listens to the circuit, and routes from the directory at once if Valkey is already down at start. */
   onModuleInit(): void {
     this.unsubscribe = this.circuit.subscribe(this);
     if (this.circuit.open) {
@@ -32,6 +33,7 @@ export class RoutingCacheCircuitBridge
     }
   }
 
+  /** Stops listening to the circuit. */
   onModuleDestroy(): void {
     this.unsubscribe();
   }
