@@ -8,12 +8,17 @@ export class FakeValkeyClient {
   disconnects = 0;
   /** Whether `quit` fails, so the lifecycle must cut the connection. */
   quitFails = false;
+  /** Whether every command fails as if the server were down. */
+  callsFail = false;
 
   /** @param log Log shared with other doubles, to check the order of the closes. */
   constructor(private readonly log: string[] = []) {}
 
   async call(command: string): Promise<unknown> {
     this.commands.push(command);
+    if (this.callsFail) {
+      throw new Error('Connection is closed.');
+    }
     return command === 'PING' ? 'PONG' : null;
   }
 

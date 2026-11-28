@@ -8,9 +8,11 @@ import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
 import { ValkeyUnavailableError } from '../valkey-unavailable.error.js';
 import {
   RecordingCircuitListener,
+  RecordingErrorListener,
   ReplyErrors,
   ScriptedValkeyRunner,
   SilentValkeyRunner,
+  ThrowingCircuitListener,
 } from './utils/index.js';
 
 const OPTIONS = {
@@ -103,5 +105,24 @@ describe('ValkeyCircuit', () => {
     await executor.run(ValkeyCommand.Get, ['b']).catch(() => undefined);
 
     expect(late.events).toEqual([]);
+  });
+
+  it('reports a listener that throws and still tells the other listeners', async () => {
+    const errors = new RecordingErrorListener();
+    const reporting = new ValkeyCircuit(clock, OPTIONS, errors.report);
+    const failing = new ThrowingCircuitListener(new Error('bridge failed'));
+    const healthy = new RecordingCircuitListener();
+    reporting.subscribe(failing);
+    reporting.subscribe(healthy);
+    const executor = new ValkeyCommandExecutor(
+      new ScriptedValkeyRunner(new Error(DOWN), new Error(DOWN)),
+      new ValkeyErrorTranslator(),
+      reporting,
+    );
+    await executor.run(ValkeyCommand.Get, ['a']).catch(() => undefined);
+    await executor.run(ValkeyCommand.Get, ['b']).catch(() => undefined);
+
+    expect(healthy.events).toEqual(['opened']);
+    expect(errors.errors).toEqual([failing.failure]);
   });
 });

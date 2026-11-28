@@ -84,12 +84,24 @@ export class ValkeyProviders {
       },
       {
         provide: ValkeyCircuit,
-        useFactory: (options: ValkeyRuntimeOptions, clock: Clock) =>
-          new ValkeyCircuit(clock, {
-            ...ValkeyCircuit.DEFAULTS,
-            ...options.circuit,
-          }),
-        inject: [VALKEY_MODULE_OPTIONS, Clock],
+        useFactory: (
+          options: ValkeyRuntimeOptions,
+          clock: Clock,
+          logger: LoggerPort | undefined,
+        ) =>
+          new ValkeyCircuit(
+            clock,
+            { ...ValkeyCircuit.DEFAULTS, ...options.circuit },
+            (error) =>
+              logger?.error('valkey circuit listener failed', {
+                error: ErrorDescriptor.describe(error),
+              }),
+          ),
+        inject: [
+          VALKEY_MODULE_OPTIONS,
+          Clock,
+          { token: LoggerPort, optional: true },
+        ],
       },
       {
         provide: ValkeyCommandExecutor,
