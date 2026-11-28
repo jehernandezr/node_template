@@ -86,6 +86,17 @@ variable "database_statement_timeout_ms" {
   default     = 30000
 }
 
+variable "database_connect_timeout_ms" {
+  description = "Time a new connection has to reach the proxy or a replica in milliseconds (DB_CONNECT_TIMEOUT_MS), so a shard that does not answer fails within the deadline of a cross-shard walk."
+  type        = number
+  default     = 5000
+
+  validation {
+    condition     = var.database_connect_timeout_ms >= 1 && floor(var.database_connect_timeout_ms) == var.database_connect_timeout_ms
+    error_message = "database_connect_timeout_ms must be a whole number of milliseconds of at least 1."
+  }
+}
+
 variable "environment_variables" {
   description = "The service's own environment variables. They do not replace the platform ones (SERVICE_NAME, AWS_*, DB_*, VALKEY_*, REGIONS, SERVICE_REGION...)."
   type        = map(string)

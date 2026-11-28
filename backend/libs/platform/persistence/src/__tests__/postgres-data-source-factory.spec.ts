@@ -117,6 +117,18 @@ describe('PostgresDataSourceFactory', () => {
     });
   });
 
+  describe('when a node does not answer', () => {
+    it('gives up connecting to it after DB_CONNECT_TIMEOUT_MS', () => {
+      const dataSource = buildFactory(
+        new EntityRegistry(),
+        new RecordingDatabaseTokenProvider(),
+        settings({ DB_CONNECT_TIMEOUT_MS: '1500' }),
+      ).create(SHARD_TARGET, { primary: PRIMARY, replicas: [REPLICA] });
+
+      expect(dataSource.options).toMatchObject({ connectTimeoutMS: 1500 });
+    });
+  });
+
   describe('when the shard has no replicas', () => {
     it('uses the primary as its only reader', () => {
       const dataSource = buildFactory().create(SHARD_TARGET, {

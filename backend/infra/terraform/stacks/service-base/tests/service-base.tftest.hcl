@@ -195,12 +195,12 @@ run "lambda_api_with_consumer" {
   # Contract with the adapters' configuration schemas: changing a name here
   # requires changing it in backend/libs and backend/.env.example too.
   assert {
-    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
+    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
     error_message = "The Lambda API receives exactly the variables of the adapter contract."
   }
 
   assert {
-    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
+    condition     = sort(keys(merge(local.lambda_environment, local.component_environment["consumer-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], []))
     error_message = "A Lambda consumer receives the same variables as the Lambda API."
   }
 
@@ -250,12 +250,12 @@ run "fargate_api_with_realtime_and_workers" {
   }
 
   assert {
-    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION"]))
+    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["api"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION"]))
     error_message = "The Fargate API receives exactly the variables of the adapter contract."
   }
 
   assert {
-    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION", "QUEUE_URL"]))
+    condition     = sort(keys(merge(local.fargate_environment, local.component_environment["worker-commands"]))) == sort(concat(["AUTH_ISSUER", "AWS_ACCOUNT_ID", "DB_AUTH", "DB_CATALOG_INSTANCE", "DB_CATALOG_NAME", "DB_CONNECT_TIMEOUT_MS", "DB_INSTANCES", "DB_POOL_MAX", "DB_READER_USER", "DB_SSL", "DB_STATEMENT_TIMEOUT_MS", "DB_USER", "DEPLOY_ENVIRONMENT", "IDENTITY_ISSUER", "IDENTITY_REGION", "MESSAGING_NAME_PREFIX", "REGIONS", "SERVICE_NAME", "SERVICE_REGION", "TENANT_MOVE_STRATEGY", "VALKEY_AUTH", "VALKEY_CACHE_NAME", "VALKEY_HOST", "VALKEY_KEY_PREFIX", "VALKEY_PORT", "VALKEY_TLS", "VALKEY_USER"], ["AWS_REGION", "QUEUE_URL"]))
     error_message = "A worker receives the Fargate variables and the URL of its queue."
   }
 
@@ -331,6 +331,31 @@ run "files_only_where_asked" {
     condition     = local.component_environment["api"]["FILES_BUCKET"] == "nt-dev-files-123456789012" && !contains(keys(local.component_environment["worker-commands"]), "FILES_BUCKET")
     error_message = "Only the component with files receives FILES_BUCKET."
   }
+}
+
+run "the_connect_timeout_reaches_every_component" {
+  command = plan
+
+  variables {
+    api                         = { runtime = "lambda" }
+    database_connect_timeout_ms = 2500
+  }
+
+  assert {
+    condition     = local.lambda_environment["DB_CONNECT_TIMEOUT_MS"] == "2500" && local.fargate_environment["DB_CONNECT_TIMEOUT_MS"] == "2500" && local.migrate_environment["DB_CONNECT_TIMEOUT_MS"] == "2500"
+    error_message = "Every component and one-off task gives up a connection after database_connect_timeout_ms."
+  }
+}
+
+run "a_connect_timeout_below_a_millisecond_is_rejected" {
+  command = plan
+
+  variables {
+    api                         = { runtime = "lambda" }
+    database_connect_timeout_ms = 0
+  }
+
+  expect_failures = [var.database_connect_timeout_ms]
 }
 
 run "files_need_bucket" {

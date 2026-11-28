@@ -1,9 +1,5 @@
 import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
-import {
-  SystemClock,
-  TransactionManager,
-  type UnitOfWork,
-} from '@platform/kernel';
+import { SystemClock, type TransactionManager } from '@platform/kernel';
 import { ShardingErrorCode } from '@platform/sharding';
 import { AcrossShards } from '../across-shards.js';
 import { PersistenceError } from '../errors/persistence-error.js';
@@ -11,6 +7,7 @@ import type { ShardLocation } from '../model/shard-location.js';
 import { ShardDataSources } from '../shard-data-sources.js';
 import { FakeDataSourceFactory } from './utils/fake-data-source-factory.js';
 import { FakeInstanceEndpointResolver } from './utils/fake-instance-endpoint-resolver.js';
+import { FakeTransactionManager } from './utils/fake-transaction-manager.js';
 import { StaticShardLister } from './utils/static-shard-lister.js';
 
 const SHARDS: readonly ShardLocation[] = [
@@ -18,33 +15,6 @@ const SHARDS: readonly ShardLocation[] = [
   { logicalShard: 'svc_shard_2', instance: 'instance-1' },
   { logicalShard: 'svc_shard_3', instance: 'instance-1' },
 ];
-
-/** Transaction manager that only reports whether one is open. */
-class FakeTransactionManager extends TransactionManager {
-  constructor(private readonly open: boolean) {
-    super();
-  }
-
-  override runInTransaction<T>(
-    fn: (uow: UnitOfWork) => Promise<T>,
-  ): Promise<T> {
-    return fn({
-      database: '',
-      afterCommit: () => undefined,
-      afterRollback: () => undefined,
-    });
-  }
-
-  override current(): undefined {
-    return undefined;
-  }
-
-  override isInTransaction(): boolean {
-    return this.open;
-  }
-
-  override afterCommit(): void {}
-}
 
 /** One turn through the scheduler: lets the other workers run before continuing. */
 function flush(): Promise<void> {
@@ -54,9 +24,10 @@ function flush(): Promise<void> {
 function buildAcross(
   shards: readonly ShardLocation[] = SHARDS,
   transactions: TransactionManager = new FakeTransactionManager(false),
+  factory = new FakeDataSourceFactory(),
 ): AcrossShards {
   const sources = new ShardDataSources(
-    new FakeDataSourceFactory(),
+    factory,
     new FakeInstanceEndpointResolver(),
     new SystemClock(),
     { idleTtlMs: 60_000 },
@@ -160,6 +131,29 @@ describe('AcrossShards', () => {
         expect.objectContaining({ shard: 'svc_shard_1', timedOut: true }),
       ]);
       expect(result.partial).toBe(true);
+    });
+  });
+
+  describe('when the data source of one shard never connects', () => {
+    it('reports it as timed out within the shard deadline and keeps the others', async () => {
+      const factory = new FakeDataSourceFactory();
+      factory.hangFor('svc_shard_2');
+
+      const result = await buildAcross(
+        SHARDS,
+        new FakeTransactionManager(false),
+        factory,
+      ).run(({ location }) => Promise.resolve(location.logicalShard), {
+        shardTimeoutMs: 20,
+      });
+
+      expect(result.failures).toEqual([
+        expect.objectContaining({ shard: 'svc_shard_2', timedOut: true }),
+      ]);
+      expect(result.results.map((entry) => entry.shard)).toEqual([
+        'svc_shard_1',
+        'svc_shard_3',
+      ]);
     });
   });
 

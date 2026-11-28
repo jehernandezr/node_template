@@ -13,7 +13,8 @@ import type { DatabaseTokenProvider } from './ports/database-token-provider.js';
  * Creates the PostgreSQL `DataSource` of a logical database with read replicas. `synchronize`
  * is always off and migrations never run on their own: `ShardedMigrationRunner` applies them. The password is a
  * function the pool calls on every new connection, so each one gets a fresh token from `DatabaseTokenProvider`. The
- * primary connects as `DB_USER`; the replicas as `DB_READER_USER` when it is set.
+ * primary connects as `DB_USER`; the replicas as `DB_READER_USER` when it is set. A connection that does not reach
+ * its node within `DB_CONNECT_TIMEOUT_MS` fails, so an unreachable shard never holds its caller.
  */
 export class PostgresDataSourceFactory extends DataSourceFactory {
   constructor(
@@ -56,6 +57,7 @@ export class PostgresDataSourceFactory extends DataSourceFactory {
       },
       ssl: this.settings.DB_SSL,
       poolSize: this.settings.DB_POOL_MAX,
+      connectTimeoutMS: this.settings.DB_CONNECT_TIMEOUT_MS,
       extra: {
         statement_timeout: this.settings.DB_STATEMENT_TIMEOUT_MS,
       },

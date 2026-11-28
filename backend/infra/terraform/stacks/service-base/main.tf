@@ -70,6 +70,7 @@ locals {
       DB_CATALOG_NAME         = try(local.databases.catalog, null)
       DB_POOL_MAX             = tostring(var.database_pool_max)
       DB_STATEMENT_TIMEOUT_MS = tostring(var.database_statement_timeout_ms)
+      DB_CONNECT_TIMEOUT_MS   = tostring(var.database_connect_timeout_ms)
       # Tenant moves copy in batches; TENANT_MOVE_TARGETS stays unset so each shard's group follows the naming
       # convention of ADR 0032.
       TENANT_MOVE_STRATEGY = "batch"

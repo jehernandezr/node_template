@@ -283,6 +283,7 @@ export class ShardedTestDatabase {
       DB_SSL: false,
       DB_POOL_MAX: 5,
       DB_STATEMENT_TIMEOUT_MS: 30_000,
+      DB_CONNECT_TIMEOUT_MS: 5_000,
       DB_CATALOG_NAME: this.catalogName,
       DB_CATALOG_INSTANCE: ShardedTestDatabase.INSTANCE,
       DB_INSTANCES: {},
