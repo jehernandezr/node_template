@@ -143,3 +143,29 @@ run "every_service_has_the_same_number_of_shards" {
 
   expect_failures = [var.db_services]
 }
+
+# Tokens and API calls of a deployed environment travel over TLS; only local runs on plain http.
+run "a_deployed_environment_rejects_an_http_issuer" {
+  command = plan
+
+  variables {
+    environment = "prod"
+    regions     = { us = { aws_region = "us-east-1", api_base_url = "https://api.example.test", issuer = "http://api.example.test" } }
+  }
+
+  expect_failures = [var.regions]
+}
+
+run "the_local_environment_accepts_http_regions" {
+  command = plan
+
+  variables {
+    environment = "local"
+    regions     = { us = { aws_region = "us-east-1", api_base_url = "http://localhost:3000", issuer = "http://localhost:3000" } }
+  }
+
+  assert {
+    condition     = var.regions["us"].issuer == "http://localhost:3000"
+    error_message = "The local environment runs on plain http."
+  }
+}
