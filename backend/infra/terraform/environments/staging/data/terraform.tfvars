@@ -8,7 +8,7 @@ db_max_allocated_storage   = 200
 db_multi_az                = true
 db_read_replica_count      = 1
 db_deletion_protection     = true
-db_backup_retention_period = 7
+db_backup_retention_period = 14
 db_skip_final_snapshot     = false
 
 db_services = {

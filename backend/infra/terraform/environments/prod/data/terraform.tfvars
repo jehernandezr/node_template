@@ -7,7 +7,7 @@ db_max_allocated_storage   = 1000
 db_multi_az                = true
 db_read_replica_count      = 1
 db_deletion_protection     = true
-db_backup_retention_period = 14
+db_backup_retention_period = 35
 db_skip_final_snapshot     = false
 
 # One database per shard of each service plus the catalog. replication (the default) serves SagaType.MoveShard.

@@ -86,9 +86,14 @@ variable "db_deletion_protection" {
 }
 
 variable "db_backup_retention_period" {
-  description = "RDS backup retention in days (PITR)."
+  description = "RDS backup retention in days (PITR). ADR 0043 sets 7 days in dev, 14 in staging and 35 in prod; a deployed environment never keeps less."
   type        = number
   default     = 7
+
+  validation {
+    condition     = var.db_backup_retention_period >= lookup({ dev = 7, staging = 14, prod = 35 }, var.environment, 1) && var.db_backup_retention_period <= 35
+    error_message = "db_backup_retention_period must be at least 7 days in dev, 14 in staging and 35 in prod (ADR 0043), and at most 35."
+  }
 }
 
 variable "db_skip_final_snapshot" {
