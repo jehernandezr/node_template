@@ -33,7 +33,8 @@ environment_variables = {
 }
 
 # Secrets this stack generates once, without their values reaching the state (ADR 0041).
-# INTERNAL_API_SHARED_SECRET is never created in AWS: internal calls there are signed with SigV4 (ADR 0040).
+# INTERNAL_API_SHARED_SECRET has no source in AWS yet: the config requires it while INTERNAL_API_SIGNER is hmac,
+# so a deployed service does not start until internal calls are signed with SigV4 (ADR 0040).
 generated_secrets = ["NOTIFICATIONS_EMAIL_PEPPER"]
 
 # Secrets created outside this stack (variable name to ARN, with an optional JSON key).

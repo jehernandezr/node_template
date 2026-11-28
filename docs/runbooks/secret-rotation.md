@@ -9,7 +9,7 @@ Each secret has one owner stack, listed in [ADR 0041](../adr/0041-secrets-and-da
 
 ## Internal API secret
 
-`INTERNAL_API_SHARED_SECRET` signs internal calls with HMAC when `INTERNAL_API_SIGNER=hmac` (local and tests). It is never created in AWS: there calls are signed with SigV4 and each service's role ([ADR 0040](../adr/0040-internal-routing-and-authentication.md)), so there is no secret to rotate.
+`INTERNAL_API_SHARED_SECRET` signs internal calls with HMAC when `INTERNAL_API_SIGNER=hmac` (local and tests). It is never created in AWS, where calls are meant to be signed with SigV4 and each service's role ([ADR 0040](../adr/0040-internal-routing-and-authentication.md)), so there is no secret to rotate there. Until that signing is in place, a deployed service still runs with `INTERNAL_API_SIGNER=hmac` and has no source for the secret, so it does not start.
 
 With HMAC there is one secret for all services. `INTERNAL_API_SHARED_SECRET_PREVIOUS` holds a second value that incoming calls may still be signed with; nothing is signed with it. A rotation overlaps both values, so the services can be deployed one at a time with no failed call:
 
@@ -37,4 +37,4 @@ The `platform` stack owns it and CloudFront sends it from the `edge` stack. Bump
 
 ## Smoke account
 
-Outside `prod`, the deploy job writes fresh credentials to identity's `SMOKE_ACCOUNT` secret before every `seed` ([ADR 0043](../adr/0043-deploy-migrations-and-rollback.md)), so it rotates on every deploy. Its resource policy lets only the deploy role write it, and only the deploy role and the execution role of the seed task read it. `prod` has no smoke account.
+Outside `prod`, the deploy job writes fresh credentials to identity's `SMOKE_ACCOUNT` secret before every `seed` ([ADR 0043](../adr/0043-deploy-migrations-and-rollback.md)), so it rotates on every deploy. Its resource policy lets only the deploy role write it, delete it or change that policy, and only the deploy role and the execution role of the seed task read it. `prod` has no smoke account.
