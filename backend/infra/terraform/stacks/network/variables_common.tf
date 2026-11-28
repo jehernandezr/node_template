@@ -63,6 +63,11 @@ variable "regions" {
   }
 
   validation {
+    condition     = var.environment == "local" || alltrue(flatten([for r in values(var.regions) : [for url in [r.api_base_url, r.issuer] : startswith(url, "https://")]]))
+    error_message = "Outside the local environment, api_base_url and issuer use https."
+  }
+
+  validation {
     condition     = length(distinct([for r in values(var.regions) : r.aws_region])) == length(var.regions)
     error_message = "Each region code has its own AWS region."
   }

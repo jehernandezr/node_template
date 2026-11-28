@@ -10,6 +10,7 @@ import { AwsMessagingNames } from '../aws-messaging-names.js';
 import { type AwsSettings, AwsConfig } from '../aws.config.js';
 import { AwsCredentialsProvider } from '../aws-credentials-provider.js';
 import { ElastiCacheIamAuthTokenProvider } from '../elasticache-iam-auth-token-provider.js';
+import { RdsIamDatabaseTokenProvider } from '../rds/rds-iam-database-token-provider.js';
 import { SdkClientCredentialsProvider } from '../sdk-client-credentials-provider.js';
 import { SesEmailClient } from '../ses/ses-email-client.js';
 import { SnsSqsEnvelopePublisher } from '../sns-sqs-envelope-publisher.js';
@@ -122,6 +123,18 @@ export class AwsProviders {
         inject: [AwsConfig.token, SQS_CLIENT, Clock],
       });
     }
+    if (options.rdsIam === true) {
+      providers.push({
+        provide: RdsIamDatabaseTokenProvider,
+        useFactory: (settings: AwsSettings, sqs: SQSClient, clock: Clock) =>
+          new RdsIamDatabaseTokenProvider(
+            settings.AWS_REGION,
+            new SdkClientCredentialsProvider(sqs),
+            clock,
+          ),
+        inject: [AwsConfig.token, SQS_CLIENT, Clock],
+      });
+    }
     providers.push(AwsLifecycle);
     return providers;
   }
@@ -148,6 +161,9 @@ export class AwsProviders {
     }
     if (options.elastiCache === true) {
       exported.push(ElastiCacheIamAuthTokenProvider);
+    }
+    if (options.rdsIam === true) {
+      exported.push(RdsIamDatabaseTokenProvider);
     }
     return exported;
   }

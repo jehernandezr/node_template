@@ -13,7 +13,7 @@ db_skip_final_snapshot     = false
 # One database per shard of each service plus the catalog. replication (the default) serves SagaType.MoveShard.
 db_services = {
   identity      = { shards = 2 }
-  tasks         = { shards = 1 }
+  tasks         = { shards = 2 }
   notifications = { shards = 2 }
   reports       = { shards = 2 }
   billing       = { shards = 2 }

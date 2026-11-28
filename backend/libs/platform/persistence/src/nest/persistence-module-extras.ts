@@ -1,4 +1,5 @@
 import type { Abstract, Type } from '@nestjs/common';
+import type { DatabaseTokenProvider } from '../ports/database-token-provider.js';
 import type { InstanceEndpointResolver } from '../ports/instance-endpoint-resolver.js';
 import type { ShardLister } from '../ports/shard-lister.js';
 
@@ -12,4 +13,10 @@ export interface PersistenceModuleExtras {
   /** `ConfigInstanceEndpointResolver` by default, which reads `DB_INSTANCES`. */
   readonly endpoints?:
     Type<InstanceEndpointResolver> | Abstract<InstanceEndpointResolver>;
+  /**
+   * Signs the password of each connection; required with `DB_AUTH=iam`, for example the RDS signer of
+   * `@platform/adapters-aws`. Without it, every connection presents `DB_PASSWORD`.
+   */
+  readonly tokens?:
+    Type<DatabaseTokenProvider> | Abstract<DatabaseTokenProvider>;
 }

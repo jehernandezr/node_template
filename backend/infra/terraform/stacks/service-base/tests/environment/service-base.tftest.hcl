@@ -25,8 +25,13 @@ run "plans_with_the_environment_values" {
   command = plan
 
   assert {
-    condition     = alltrue([for key in ["DB_PROXY_HOST", "DB_READER_HOSTS", "DB_PORT", "DB_DATABASES"] : contains(keys(output.one_off_task.environment), key)]) && output.one_off_task.environment == output.fargate_environment
-    error_message = "The one-off task reaches the service databases with the environment every Fargate task of the service gets (ADR 0043)."
+    condition     = sort([for key in keys(output.one_off_task.environment) : key if startswith(key, "DB_")]) == sort(jsondecode(file("${path.module}/../../database-config.json")).keys.iam)
+    error_message = "The one-off task carries exactly the DB_* keys databaseConfigSchema expects with DB_AUTH=iam (database-config.json)."
+  }
+
+  assert {
+    condition     = merge(output.one_off_task.environment, { DB_USER = output.fargate_environment["DB_USER"] }) == output.fargate_environment && output.one_off_task.environment["DB_USER"] == "${var.service_name}_owner"
+    error_message = "The one-off task migrates as the owner role, with the environment every Fargate task of the service gets otherwise (ADR 0041, ADR 0043)."
   }
 
   assert {

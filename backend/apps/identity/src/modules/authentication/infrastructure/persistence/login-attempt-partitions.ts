@@ -3,7 +3,8 @@ import type { EntityManager } from 'typeorm';
 /**
  * Maintenance of the monthly `login_attempts` partitions on a shard: creates those for the upcoming
  * months and drops those past retention. Uses the `@platform/persistence` functions
- * (`platform_ensure_partitions`) and the `<table>_<YYYYMM>` name they give each partition.
+ * (`platform_ensure_partitions` and `platform_drop_partition`, which run as the table owner because the service
+ * role cannot change the schema) and the `<table>_<YYYYMM>` name they give each partition.
  */
 export class LoginAttemptPartitions {
   static readonly TABLE = 'login_attempts';
@@ -31,7 +32,10 @@ export class LoginAttemptPartitions {
       .map((row) => row.name)
       .filter((name) => this.isExpired(name, now));
     for (const name of expired) {
-      await manager.query(`DROP TABLE IF EXISTS "${name}"`);
+      await manager.query('SELECT platform_drop_partition($1, $2)', [
+        LoginAttemptPartitions.TABLE,
+        name,
+      ]);
     }
     return expired;
   }

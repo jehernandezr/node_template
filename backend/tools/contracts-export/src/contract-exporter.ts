@@ -3,12 +3,16 @@ import type { Artifact, ExportReport } from './artifact.type.js';
 import type { AsyncApiBuilder } from './async-api-builder.js';
 import type { OpenApiBuilder } from './open-api-builder.js';
 import type { ContractRegistry } from './contract-registry.js';
+import type { DatabaseConfigExportBuilder } from './database-config-export-builder.js';
 import { ExportScope } from './export-constants.js';
 import type { ExportPaths } from './export-paths.js';
 import type { SchemaExportBuilder } from './schema-export-builder.js';
 import type { TopologyBuilder } from './topology-builder.js';
 
-/** Orchestrates the export: loads the contracts, builds the artifacts for the requested scope and hands them to the writer. */
+/**
+ * Orchestrates the export: loads the contracts, builds the artifacts for the requested scope and hands them to the
+ * writer. The full scope also writes the database configuration keys Terraform checks against.
+ */
 export class ContractExporter {
   constructor(
     private readonly registry: ContractRegistry,
@@ -17,6 +21,7 @@ export class ContractExporter {
     private readonly asyncApi: AsyncApiBuilder,
     private readonly openApi: OpenApiBuilder,
     private readonly paths: ExportPaths,
+    private readonly databaseConfig: DatabaseConfigExportBuilder,
   ) {}
 
   /**
@@ -51,6 +56,7 @@ export class ContractExporter {
       ...openApiArtifacts,
       topology,
       { path: this.paths.asyncApi, value: this.asyncApi.build(contracts) },
+      { path: this.paths.databaseConfig, value: this.databaseConfig.build() },
     ]);
   }
 }

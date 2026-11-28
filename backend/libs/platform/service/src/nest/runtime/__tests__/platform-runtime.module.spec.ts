@@ -15,7 +15,12 @@ import {
 } from '@platform/observability';
 import { ShardKey, ShardRouter } from '@platform/sharding';
 import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
-import { ShardScope } from '@platform/persistence';
+import {
+  DatabaseAuth,
+  DatabaseTokenProvider,
+  ShardScope,
+} from '@platform/persistence';
+import { RdsIamDatabaseTokenProvider } from '@platform/adapters-aws';
 import { PlacedTenantVerifier } from '../../../messaging/placed-tenant-verifier.js';
 import { TenantShardDeliveryContext } from '../../../messaging/tenant-shard-delivery-context.js';
 import { AppConfig } from '@platform/config';
@@ -111,6 +116,51 @@ describe('PlatformRuntimeModule', () => {
         expect(modules.indexOf(ValkeyModule)).toBeLessThan(
           modules.indexOf(PersistenceModule),
         );
+      });
+    });
+
+    describe('when the pool authenticates with IAM', () => {
+      const definition = ServiceDefinitionBuilder.aDefinition().build();
+
+      it('registers the RDS signer in AWS and hands it to persistence as its tokens', () => {
+        const dynamic = PlatformRuntimeModule.forService(definition, {
+          env: { DB_AUTH: DatabaseAuth.Iam },
+          adapters: { valkey: false, aws: true },
+        });
+
+        expect(
+          ImportedModules.find(dynamic, AwsModule)?.providers,
+        ).toContainEqual(
+          expect.objectContaining({ provide: RdsIamDatabaseTokenProvider }),
+        );
+        expect(
+          ImportedModules.find(dynamic, PersistenceModule)?.providers,
+        ).toContainEqual({
+          provide: DatabaseTokenProvider,
+          useExisting: RdsIamDatabaseTokenProvider,
+        });
+      });
+
+      it('keeps the password without DB_AUTH=iam', () => {
+        const dynamic = PlatformRuntimeModule.forService(definition, {
+          env: {},
+          adapters: { valkey: false, aws: true },
+        });
+
+        expect(
+          ImportedModules.find(dynamic, AwsModule)?.providers,
+        ).not.toContainEqual(
+          expect.objectContaining({ provide: RdsIamDatabaseTokenProvider }),
+        );
+      });
+
+      it('refuses IAM without the AWS adapter', () => {
+        expect(() =>
+          PlatformRuntimeModule.forService(definition, {
+            env: { DB_AUTH: DatabaseAuth.Iam },
+            adapters: { valkey: false, aws: false },
+          }),
+        ).toThrow(InvalidServiceDefinitionError);
       });
     });
 

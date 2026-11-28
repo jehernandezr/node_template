@@ -21,9 +21,11 @@ import { RequestPersistenceContextProvider } from '../../context/request-persist
 import { PersistenceError } from '../../errors/persistence-error.js';
 import { EntityManagerProvider } from '../../entity-manager-provider.js';
 import { EntityRegistry } from '../../entity-registry.js';
+import { DatabaseAuth } from '../../model/database-auth.enum.js';
 import type { DatabaseSetDefinition } from '../../model/database-set-definition.js';
 import type { InstanceEndpoints } from '../../model/instance-endpoints.js';
 import { OptimisticWriter } from '../../optimistic-writer.js';
+import { PasswordDatabaseTokenProvider } from '../../password-database-token-provider.js';
 import { PersistenceFeature } from '../../persistence-feature.js';
 import { PostgresDataSourceFactory } from '../../postgres-data-source-factory.js';
 import { InstanceEndpointResolver } from '../../ports/instance-endpoint-resolver.js';
@@ -273,9 +275,11 @@ export class ShardedTestDatabase {
       clock: new SystemClock(),
     });
 
+    const password = new Secret(server.password);
     const settings: DatabaseSettings = {
+      DB_AUTH: DatabaseAuth.Password,
       DB_USER: server.username,
-      DB_PASSWORD: new Secret(server.password),
+      DB_PASSWORD: password,
       DB_SSL: false,
       DB_POOL_MAX: 5,
       DB_STATEMENT_TIMEOUT_MS: 30_000,
@@ -293,6 +297,7 @@ export class ShardedTestDatabase {
       this.options.shard,
       this.options.catalog,
       registry,
+      new PasswordDatabaseTokenProvider(password),
     );
     this.sources = new ShardDataSources(factory, endpoints, new SystemClock(), {
       idleTtlMs: 300_000,

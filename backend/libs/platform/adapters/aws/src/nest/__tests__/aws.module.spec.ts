@@ -16,6 +16,7 @@ import {
   tasksContract,
 } from '../../__tests__/utils/test-contracts.js';
 import { ElastiCacheIamAuthTokenProvider } from '../../elasticache-iam-auth-token-provider.js';
+import { RdsIamDatabaseTokenProvider } from '../../rds/rds-iam-database-token-provider.js';
 import { SnsSqsMessageBus } from '../../sns-sqs-message-bus.js';
 import { SqsLambdaHandler } from '../../sqs-lambda-handler.js';
 import { SqsPoller } from '../../sqs-poller.js';
@@ -155,6 +156,27 @@ describe('AwsModule and SqsConsumerModule', () => {
 
     expect(token).toMatch(/^cache-1\/\?/);
     expect(token).toContain(FakeSqsClient.CREDENTIALS.accessKeyId);
+  });
+
+  it('issues an RDS IAM token signed with the SDK credentials', async () => {
+    const app = await appWith([AwsModule.forRoot({ rdsIam: true })]);
+
+    const token = await app
+      .get(RdsIamDatabaseTokenProvider, { strict: false })
+      .token({ host: 'proxy.test', port: 5432, user: 'svc_app' });
+
+    expect(token).toMatch(
+      /^proxy\.test:5432\/\?Action=connect&DBUser=svc_app&/,
+    );
+    expect(token).toContain(FakeSqsClient.CREDENTIALS.accessKeyId);
+  });
+
+  it('registers no RDS signer unless asked', async () => {
+    const app = await appWith([AwsModule.forRoot()]);
+
+    expect(() =>
+      app.get(RdsIamDatabaseTokenProvider, { strict: false }),
+    ).toThrow();
   });
 
   it('refuses a queue that is not in the topology', async () => {

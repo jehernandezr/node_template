@@ -7,6 +7,7 @@ const ACCOUNT = '123456789012';
 const REGION = 'us-east-1';
 const PREFIX = 'nt-env';
 const SES_QUEUE = 'ses-events';
+const DB_CONNECT_BASE = `arn:aws:rds-db:${REGION}:${ACCOUNT}:dbuser`;
 
 const STACK = Object.freeze({
   network: 'network',
@@ -145,7 +146,7 @@ export class EnvironmentMocks {
 
   /**
    * Outputs of the data stack for the services of the environment's data tfvars (db_services and valkey_services).
-   * @returns {object} The database endpoints, each service's databases and secret, and Valkey.
+   * @returns {object} The database endpoints, each service's databases, roles and rds-db:connect resources, and Valkey.
    */
   data() {
     const values = this.#reader(STACK.data);
@@ -163,11 +164,24 @@ export class EnvironmentMocks {
         port: 5432,
         kms_key_arn: `arn:aws:kms:${REGION}:${ACCOUNT}:key/rds`,
       },
-      db_service_secret_arns: perService(
-        databases,
-        (service) =>
-          `arn:aws:secretsmanager:${REGION}:${ACCOUNT}:secret:${PREFIX}/db/${service}-AbCdEf`,
+      db_secret_arns: Object.fromEntries(
+        databases.flatMap((service) =>
+          [`${service}_owner`, `${service}_app`].map((role) => [
+            role,
+            `arn:aws:secretsmanager:${REGION}:${ACCOUNT}:secret:${PREFIX}/db/${role}-AbCdEf`,
+          ]),
+        ),
       ),
+      db_roles: perService(databases, (service) => ({
+        owner: `${service}_owner`,
+        app: `${service}_app`,
+        reader: `${service}_reader`,
+      })),
+      db_connect_arns: perService(databases, (service) => ({
+        app: [`${DB_CONNECT_BASE}:prx-0123456789abcdef0/${service}_app`],
+        owner: [`${DB_CONNECT_BASE}:prx-0123456789abcdef0/${service}_owner`],
+        reader: [`${DB_CONNECT_BASE}:db-REPLICA1/${service}_reader`],
+      })),
       service_databases: perService(databases, (service) => ({
         shards: [`${service}_shard_0`],
         catalog: `${service}_catalog`,
@@ -290,7 +304,6 @@ export class EnvironmentMocks {
     const queueOf = (entry) =>
       /\bqueue\s*=\s*"([^"]+)"/.exec(entry.value)?.[1] ?? null;
     const keyed = (entry) => entry.name.replaceAll('_', '-');
-    const secret = `arn:aws:secretsmanager:${REGION}:${ACCOUNT}:secret:${PREFIX}/db/${service}-AbCdEf`;
     const shared = {
       SERVICE_NAME: service,
       DEPLOY_ENVIRONMENT: this.#environment,
@@ -328,9 +341,9 @@ export class EnvironmentMocks {
         component('one-off', `${name}-one-off`, RUNTIME.fargate),
       ]),
       fargate_environment: { ...shared, AWS_REGION: REGION },
-      lambda_environment: { ...shared, DB_SECRET_ARN: secret },
-      fargate_secrets: { DB_CREDENTIALS: secret },
-      lambda_secret_arns: [secret],
+      lambda_environment: { ...shared },
+      fargate_secrets: {},
+      lambda_secret_arns: [],
       kms_key_arn: `arn:aws:kms:${REGION}:${ACCOUNT}:key/compute-logs`,
       data_security_group_ids: ['sg-0clients'],
       enable_execute_command: false,

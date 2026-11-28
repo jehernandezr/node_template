@@ -31,7 +31,7 @@ output "fargate_environment" {
 }
 
 output "lambda_environment" {
-  description = "Environment shared by every function of the service: the Fargate one without AWS_REGION, plus DB_SECRET_ARN."
+  description = "Environment shared by every function of the service: the Fargate one without AWS_REGION."
   value       = local.lambda_environment
 }
 
@@ -61,7 +61,7 @@ output "enable_execute_command" {
 }
 
 output "one_off_task" {
-  description = "What the pipeline needs to register and run the one-off task (migrate, signing-keys, seed) with the new image: cluster, subnets, security groups, roles, log group, size, environment and secrets. The environment is the one every Fargate task of the service gets."
+  description = "What the pipeline needs to register and run the one-off task (migrate, signing-keys, seed) with the new image: cluster, subnets, security groups, roles, log group, size, environment and secrets. The environment is the one every Fargate task of the service gets, with the owner role as DB_USER."
   value = {
     cluster_arn        = try(local.platform.ecs_cluster.arn, null)
     subnet_ids         = local.network.private_subnet_ids
@@ -71,7 +71,7 @@ output "one_off_task" {
     log_group_name     = module.component["one-off"].log_group_name
     cpu                = var.one_off_task.cpu
     memory             = var.one_off_task.memory
-    environment        = local.fargate_environment
+    environment        = local.one_off_environment
     secrets            = local.fargate_secrets
   }
 }

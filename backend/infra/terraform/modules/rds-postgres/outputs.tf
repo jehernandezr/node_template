@@ -29,7 +29,7 @@ output "master_secret_arn" {
 }
 
 output "service_secret_arns" {
-  description = "ARN of each service user's secret, by name."
+  description = "ARN of the secret of each password user, by name. Read only by RDS Proxy, the rotation and the bootstrap."
   value       = { for name, s in aws_secretsmanager_secret.service : name => s.arn }
 }
 
@@ -51,4 +51,38 @@ output "security_group_id" {
 output "proxy_security_group_id" {
   description = "Security group of the RDS Proxy. Clients connect out to it on port 5432."
   value       = aws_security_group.proxy.id
+}
+
+output "proxy_resource_id" {
+  description = "Resource id of the RDS Proxy (prx-...), the one rds-db:connect ARNs name for the proxy."
+  value       = element(split(":", aws_db_proxy.this.arn), 6)
+}
+
+output "replica_resource_ids" {
+  description = "Resource id (db-...) of each read replica, the one rds-db:connect ARNs name for it."
+  value       = aws_db_instance.replica[*].resource_id
+}
+
+output "proxy_name" {
+  description = "Name of the RDS Proxy."
+  value       = aws_db_proxy.this.name
+}
+
+output "proxy_auth" {
+  description = "Auth entries of RDS Proxy: one per password user, with the IAM requirement on clients."
+  value       = [for auth in aws_db_proxy.this.auth : { auth_scheme = auth.auth_scheme, iam_auth = auth.iam_auth, secret_arn = auth.secret_arn }]
+}
+
+output "iam_database_authentication_enabled" {
+  description = "Whether the instance and every replica accept IAM database authentication."
+  value       = aws_db_instance.this.iam_database_authentication_enabled && alltrue(aws_db_instance.replica[*].iam_database_authentication_enabled)
+}
+
+output "pinned_connections_alarm" {
+  description = "Alarm on proxy connections pinned to a session: metric_name, threshold and dimensions."
+  value = {
+    metric_name = aws_cloudwatch_metric_alarm.proxy_pinned_connections.metric_name
+    threshold   = aws_cloudwatch_metric_alarm.proxy_pinned_connections.threshold
+    dimensions  = aws_cloudwatch_metric_alarm.proxy_pinned_connections.dimensions
+  }
 }

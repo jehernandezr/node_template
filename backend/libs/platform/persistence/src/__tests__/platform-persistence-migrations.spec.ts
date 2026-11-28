@@ -1,5 +1,6 @@
 import { PlatformAuditLog1794600000002 } from '../migrations/platform-audit-log.migration.js';
 import { PlatformFunctions1794600000001 } from '../migrations/platform-functions.migration.js';
+import { PlatformOwnerMaintenance1794600000003 } from '../migrations/platform-owner-maintenance.migration.js';
 import { PlatformPersistenceMigrations } from '../migrations/platform-persistence-migrations.js';
 import { PlatformSchemaSql } from '../migrations/platform-schema-sql.js';
 import { StubDataSource } from './utils/stub-data-source.js';
@@ -51,5 +52,36 @@ describe('platform persistence migrations', () => {
       ...recorded(PlatformSchemaSql.auditLogUp),
       ...recorded(PlatformSchemaSql.auditLogDown),
     ]);
+  });
+
+  it('runs the owner maintenance statements on up and their reverse on down', async () => {
+    const dataSource = new StubDataSource('maintenance');
+    await dataSource.initialize();
+    const runner = dataSource.createQueryRunner();
+    const migration = new PlatformOwnerMaintenance1794600000003();
+
+    await migration.up(runner);
+    await migration.down(runner);
+
+    expect(dataSource.runners[0].calls).toEqual([
+      ...recorded(PlatformSchemaSql.ownerMaintenanceUp),
+      ...recorded(PlatformSchemaSql.ownerMaintenanceDown),
+    ]);
+  });
+
+  it('runs every partition function with the rights of the table owner', () => {
+    const definer = PlatformSchemaSql.ownerMaintenanceUp.join('\n');
+
+    for (const fn of [
+      'platform_ensure_partitions',
+      'platform_detach_partitions_before',
+      'platform_drop_partition',
+    ]) {
+      expect(definer).toMatch(
+        new RegExp(
+          `${fn}\\([^)]*\\)[\\s\\S]*?SECURITY DEFINER SET search_path = public`,
+        ),
+      );
+    }
   });
 });

@@ -14,6 +14,12 @@ export const TOPOLOGY_FORMAT_VERSION = 1;
 /** Path of `asyncapi.json`, relative to `backend/`. Its `$ref` entries point to each `contract.json`. */
 export const ASYNCAPI_PATH = 'libs/contracts/asyncapi.json';
 
+/** Format version of `database-config.json`. The `service-base` stack test reads it. */
+export const DATABASE_CONFIG_FORMAT_VERSION = 1;
+
+/** Path of `database-config.json`, relative to `backend/`. */
+export const DATABASE_CONFIG_PATH = 'infra/terraform/database-config.json';
+
 /** Path of `topology.json`, relative to `backend/`. */
 export const TOPOLOGY_PATH = 'infra/terraform/topology.json';
 

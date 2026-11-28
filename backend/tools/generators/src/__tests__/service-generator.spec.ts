@@ -54,7 +54,13 @@ describe('ServiceGenerator', () => {
       'listener-priorities.json: "stock_items"',
     );
     expect(lines.join('\n')).toContain(
-      'stock_items in db_services and in valkey_services',
+      'stock_items in db_services, with the shard count of the other services, and in valkey_services',
+    );
+    expect(lines).toContain(
+      'backend/infra/local/postgres/init.sql: CREATE DATABASE stock_items_catalog, stock_items_shard_0 and stock_items_shard_1, each with the vector extension',
+    );
+    expect(lines).toContain(
+      'backend/.env.example: DB_CATALOG_NAME=stock_items_catalog to run stock-items locally',
     );
     expect(lines.join('\n')).toContain('"stock-items" in services');
     expect(lines.join('\n')).toContain('StockItemsTenantMoveOperations in ALL');

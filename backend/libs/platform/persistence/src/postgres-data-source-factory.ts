@@ -4,12 +4,16 @@ import type { EntityRegistry } from './entity-registry.js';
 import { DatabaseKind } from './model/database-kind.enum.js';
 import type { DatabaseSetDefinition } from './model/database-set-definition.js';
 import type { DatabaseTarget } from './model/database-target.js';
+import type { DatabaseEndpoint } from './model/database-endpoint.js';
 import type { InstanceEndpoints } from './model/instance-endpoints.js';
 import { DataSourceFactory } from './ports/data-source-factory.js';
+import type { DatabaseTokenProvider } from './ports/database-token-provider.js';
 
 /**
  * Creates the PostgreSQL `DataSource` of a logical database with read replicas. `synchronize`
- * is always off and migrations never run on their own: `ShardedMigrationRunner` applies them.
+ * is always off and migrations never run on their own: `ShardedMigrationRunner` applies them. The password is a
+ * function the pool calls on every new connection, so each one gets a fresh token from `DatabaseTokenProvider`. The
+ * primary connects as `DB_USER`; the replicas as `DB_READER_USER` when it is set.
  */
 export class PostgresDataSourceFactory extends DataSourceFactory {
   constructor(
@@ -17,6 +21,7 @@ export class PostgresDataSourceFactory extends DataSourceFactory {
     private readonly shard: DatabaseSetDefinition,
     private readonly catalog: DatabaseSetDefinition,
     private readonly registry: EntityRegistry,
+    private readonly tokens: DatabaseTokenProvider,
   ) {
     super();
   }
@@ -30,21 +35,24 @@ export class PostgresDataSourceFactory extends DataSourceFactory {
   ): DataSource {
     const definition =
       target.kind === DatabaseKind.Catalog ? this.catalog : this.shard;
-    const credentials = (endpoint: { host: string; port: number }) => ({
+    const credentials = (endpoint: DatabaseEndpoint, user: string) => ({
       host: endpoint.host,
       port: endpoint.port,
-      username: this.settings.DB_USER,
-      password: this.settings.DB_PASSWORD.reveal(),
+      username: user,
+      password: () =>
+        this.tokens.token({ host: endpoint.host, port: endpoint.port, user }),
       database: target.database,
     });
+    const writer = this.settings.DB_USER;
+    const reader = this.settings.DB_READER_USER ?? writer;
     return new DataSource({
       type: 'postgres',
       replication: {
-        master: credentials(endpoints.primary),
-        slaves: (endpoints.replicas.length > 0
-          ? endpoints.replicas
-          : [endpoints.primary]
-        ).map(credentials),
+        master: credentials(endpoints.primary, writer),
+        slaves:
+          endpoints.replicas.length > 0
+            ? endpoints.replicas.map((replica) => credentials(replica, reader))
+            : [credentials(endpoints.primary, writer)],
       },
       ssl: this.settings.DB_SSL,
       poolSize: this.settings.DB_POOL_MAX,

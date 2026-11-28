@@ -6,6 +6,7 @@ import {
   type DatabaseSettings,
 } from '../config/database.config.js';
 import { ProbeEntity } from './utils/probe.entity.js';
+import { RecordingDatabaseTokenProvider } from './utils/recording-database-token-provider.js';
 
 class CatalogOnlyEntity {}
 
@@ -22,10 +23,12 @@ const CATALOG_TARGET = {
 const PRIMARY = { host: 'primary.local', port: 5432 };
 const REPLICA = { host: 'replica.local', port: 5433 };
 
-function settings(): DatabaseSettings {
+function settings(extra: Record<string, string> = {}): DatabaseSettings {
   return databaseConfigSchema.parse({
     DB_USER: 'app',
     DB_PASSWORD: 'factory-password',
+    DB_CATALOG_NAME: 'svc_catalog',
+    ...extra,
     DB_INSTANCES: JSON.stringify({
       'db-1': { primary: PRIMARY, replicas: [REPLICA] },
     }),
@@ -34,13 +37,29 @@ function settings(): DatabaseSettings {
 
 function buildFactory(
   registry = new EntityRegistry(),
+  tokens = new RecordingDatabaseTokenProvider(),
+  values = settings(),
 ): PostgresDataSourceFactory {
   return new PostgresDataSourceFactory(
-    settings(),
+    values,
     { entities: [ProbeEntity], migrations: [] },
     { entities: [CatalogOnlyEntity], migrations: [] },
     registry,
+    tokens,
   );
+}
+
+type Credentials = { username: string; password: () => Promise<string> };
+
+function replication(options: unknown): {
+  master: Credentials;
+  slaves: Credentials[];
+} {
+  return (
+    options as {
+      replication: { master: Credentials; slaves: Credentials[] };
+    }
+  ).replication;
 }
 
 describe('PostgresDataSourceFactory', () => {
@@ -62,6 +81,39 @@ describe('PostgresDataSourceFactory', () => {
           slaves: [{ host: 'replica.local', port: 5433 }],
         },
       });
+    });
+  });
+
+  describe('when a connection opens', () => {
+    it('asks the token provider for the host, port and user of that node every time', async () => {
+      const tokens = new RecordingDatabaseTokenProvider();
+      const dataSource = buildFactory(
+        new EntityRegistry(),
+        tokens,
+        settings({ DB_AUTH: 'iam', DB_READER_USER: 'svc_reader' }),
+      ).create(SHARD_TARGET, { primary: PRIMARY, replicas: [REPLICA] });
+      const { master, slaves } = replication(dataSource.options);
+
+      await expect(master.password()).resolves.toBe('token-1');
+      await expect(master.password()).resolves.toBe('token-2');
+      await expect(slaves[0]?.password()).resolves.toBe('token-3');
+
+      expect(tokens.requests).toEqual([
+        { host: 'primary.local', port: 5432, user: 'app' },
+        { host: 'primary.local', port: 5432, user: 'app' },
+        { host: 'replica.local', port: 5433, user: 'svc_reader' },
+      ]);
+      expect(slaves[0]?.username).toBe('svc_reader');
+    });
+
+    it('connects to the primary as DB_USER when there are no replicas, even with a reader user', () => {
+      const dataSource = buildFactory(
+        new EntityRegistry(),
+        new RecordingDatabaseTokenProvider(),
+        settings({ DB_READER_USER: 'svc_reader' }),
+      ).create(SHARD_TARGET, { primary: PRIMARY, replicas: [] });
+
+      expect(replication(dataSource.options).slaves[0]?.username).toBe('app');
     });
   });
 

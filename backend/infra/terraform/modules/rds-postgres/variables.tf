@@ -14,9 +14,10 @@ variable "data_subnet_ids" {
 }
 
 variable "service_users" {
-  description = "Database users per service. Each one gets a secret in Secrets Manager with rotation. Apps never use the master user. rds_replication grants the logical replication permission and CONNECT on all databases."
+  description = "Database users. A password user gets a secret in Secrets Manager with rotation and an RDS Proxy auth entry that requires IAM from clients; an rds_iam user has no password and logs in with IAM tokens on the replicas. Apps never use the master user. rds_replication grants the logical replication permission and CONNECT on all databases."
   type = list(object({
     name            = string
+    rds_iam         = optional(bool, false)
     rds_replication = optional(bool, false)
   }))
 
@@ -51,10 +52,11 @@ variable "group_roles" {
 }
 
 variable "databases" {
-  description = "Databases the bootstrap creates: name, owner (service user or group role), roles with read access and extensions. Removing a database from the list does not drop it."
+  description = "Databases the bootstrap creates: name, owner (service user or group role), writers (DML only), readers (SELECT only) and extensions. Writers and readers get their rights on what the owner creates, never DDL. Removing a database from the list does not drop it."
   type = list(object({
     name       = string
     owner      = string
+    writers    = optional(list(string), [])
     readers    = optional(list(string), [])
     extensions = optional(list(string), [])
   }))
@@ -145,6 +147,12 @@ variable "alarm_freeable_memory_bytes" {
   description = "Freeable memory bytes below which the alarm fires."
   type        = number
   default     = 268435456
+}
+
+variable "alarm_pinned_connections" {
+  description = "Proxy connections pinned to a client session above which the alarm fires. Transactions pin their connection (set_config and advisory locks, ADR 0041), so pools are sized for pinned connections and this alarm flags when they approach the instance limit."
+  type        = number
+  default     = 100
 }
 
 variable "alarm_replica_lag_seconds" {

@@ -18,18 +18,29 @@ locals {
   component_queues = concat([for w in values(var.workers) : w.queue if w.queue != null], [for c in values(var.consumers) : c.queue])
 
   databases     = try(local.data.service_databases[local.svc], null)
-  db_secret_arn = var.database_access ? try(local.data.db_service_secret_arns[local.svc], null) : null
+  db_roles      = var.database_access ? try(local.data.db_roles[local.svc], null) : null
+  db_connect    = var.database_access ? try(local.data.db_connect_arns[local.svc], null) : null
   valkey_user   = try(local.data.valkey.user_names[local.svc], null)
   observability = local.platform.observability
 
   # The region this stack serves, by its code in var.regions (ADR 0042).
   region_codes = [for code, r in var.regions : code if r.aws_region == var.region]
   region_code  = one(local.region_codes)
+  issuer       = try(var.regions[local.region_code].issuer, null)
   regions_json = jsonencode([for code in sort(keys(var.regions)) : {
     code       = code
     apiBaseUrl = var.regions[code].api_base_url
     issuer     = var.regions[code].issuer
   }])
+
+  # The one physical instance of the region: RDS Proxy as the primary and the replicas, read directly.
+  db_instance = "main"
+  db_instances = jsonencode({
+    (local.db_instance) = {
+      primary  = { host = local.data.db.proxy_endpoint, port = local.data.db.port }
+      replicas = [for host in local.data.db.reader_endpoints : { host = host, port = local.data.db.port }]
+    }
+  })
 
   # Contract with the @platform adapters: the names of these variables are the ones their
   # configuration schemas validate. The service's own variables go first,
@@ -44,13 +55,21 @@ locals {
       AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
       REGIONS        = local.regions_json
       SERVICE_REGION = local.region_code
+      AUTH_ISSUER    = local.issuer
     },
-    local.svc == "identity" ? { IDENTITY_REGION = local.region_code } : {},
+    local.svc == "identity" ? { IDENTITY_REGION = local.region_code, IDENTITY_ISSUER = local.issuer } : {},
+    # The pool signs an IAM token per connection (ADR 0041): the app role writes through RDS Proxy and the reader
+    # role reads the replicas. The names are the keys of databaseConfigSchema (database-config.json).
     var.database_access ? {
-      DB_PROXY_HOST   = local.data.db.proxy_endpoint
-      DB_READER_HOSTS = join(",", local.data.db.reader_endpoints)
-      DB_PORT         = tostring(local.data.db.port)
-      DB_DATABASES    = jsonencode(local.databases)
+      DB_AUTH                 = "iam"
+      DB_USER                 = try(local.db_roles.app, null)
+      DB_READER_USER          = try(local.db_roles.reader, null)
+      DB_SSL                  = "true"
+      DB_INSTANCES            = local.db_instances
+      DB_CATALOG_INSTANCE     = local.db_instance
+      DB_CATALOG_NAME         = try(local.databases.catalog, null)
+      DB_POOL_MAX             = tostring(var.database_pool_max)
+      DB_STATEMENT_TIMEOUT_MS = tostring(var.database_statement_timeout_ms)
       # Tenant moves copy in batches; TENANT_MOVE_TARGETS stays unset so each shard's group follows the naming
       # convention of ADR 0032.
       TENANT_MOVE_STRATEGY = "batch"
@@ -72,12 +91,14 @@ locals {
   # Lambda sets AWS_REGION on its own (it is a reserved variable); Fargate does not
   # guarantee it on every platform version.
   fargate_environment = merge(local.common_environment, { AWS_REGION = var.region })
-  lambda_environment  = merge(local.common_environment, local.db_secret_arn == null ? {} : { DB_SECRET_ARN = local.db_secret_arn })
+  lambda_environment  = local.common_environment
+  # The one-off task migrates, so it connects as the owner role; everything else runs as the app role.
+  one_off_environment = merge(local.fargate_environment, var.database_access ? { DB_USER = try(local.db_roles.owner, null) } : {})
 
   # --- Components ------------------------------------------------------------------
   # Each component gets only what it uses: the API and realtime do not consume queues, each
   # worker consumes only its own, and files and SES are requested per component. The one-off task
-  # (migrate, signing-keys, seed) reaches the database and Valkey and publishes nothing. Consumer
+  # (migrate, signing-keys, seed) reaches the database as the owner role and Valkey, and publishes nothing. Consumer
   # Lambdas get their queue permission in the service stack, with their event source mapping.
   components = merge(
     var.api == null ? {} : {
@@ -141,6 +162,16 @@ locals {
           }]
         })
       },
+      local.db_connect == null ? {} : {
+        database-connect = jsonencode({
+          Version = "2012-10-17"
+          Statement = [{
+            Effect   = "Allow"
+            Action   = ["rds-db:connect"]
+            Resource = concat(key == "one-off" ? local.db_connect.owner : local.db_connect.app, local.db_connect.reader)
+          }]
+        })
+      },
       c.files ? { files = try(local.platform.files_bucket.read_write_policy_json, "") } : {},
       c.ses ? { ses-send = try(local.platform.ses.send_policy_json, "") } : {},
       var.task_policies,
@@ -157,15 +188,15 @@ locals {
 
   secret_kms_keys = distinct(concat(
     var.secrets_kms_key_arns,
-    local.db_secret_arn == null ? [] : [local.data.db.kms_key_arn],
     local.observability == null ? [] : [local.observability.kms_key_arn],
   ))
 
   # Fargate gets the secret through valueFrom; Lambda gets the ARN and reads it at startup. The Fargate
-  # execution roles also read the OpenObserve authorization for the collector sidecar.
-  fargate_secrets         = merge(var.secrets, local.db_secret_arn == null ? {} : { DB_CREDENTIALS = local.db_secret_arn })
+  # execution roles also read the OpenObserve authorization for the collector sidecar. No database secret: the
+  # pool signs IAM tokens with the component role.
+  fargate_secrets         = var.secrets
   fargate_execution_reads = concat(values(local.fargate_secrets), local.observability == null ? [] : [local.observability.otlp_authorization_value_from])
-  lambda_secrets          = distinct(concat([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)], local.db_secret_arn == null ? [] : [local.db_secret_arn]))
+  lambda_secrets          = distinct([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)])
   data_security_group_ids = [local.data.clients_security_group_id]
   running_dropped         = [for key in local.service.components : key if !contains(keys(local.components), key)]
   service_state_found     = local.service.service_name != null
@@ -211,7 +242,7 @@ resource "terraform_data" "service_check" {
       error_message = "A worker without queue polls every queue of the contract: give each worker its queue when the service consumes queues."
     }
     precondition {
-      condition     = !var.database_access || (local.databases != null && local.db_secret_arn != null)
+      condition     = !var.database_access || (local.databases != null && local.db_roles != null && local.db_connect != null)
       error_message = "database_access needs the service in db_services of the data stack."
     }
     precondition {

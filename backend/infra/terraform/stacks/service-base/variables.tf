@@ -69,9 +69,21 @@ variable "one_off_task" {
 # --- Access to shared resources ------------------------------------------------------
 
 variable "database_access" {
-  description = "Uses its user and its databases (shards and catalog) from the data stack. Receives DB_CREDENTIALS or DB_SECRET_ARN and DB_DATABASES."
+  description = "Uses its roles and its databases (shards and catalog) from the data stack: the DB_* variables with DB_AUTH=iam and rds-db:connect for the app and reader roles (the owner role in the one-off task)."
   type        = bool
   default     = true
+}
+
+variable "database_pool_max" {
+  description = "Connections of each pool (DB_POOL_MAX). Transactions pin their RDS Proxy connection, so size it for pinned connections (ADR 0041)."
+  type        = number
+  default     = 10
+}
+
+variable "database_statement_timeout_ms" {
+  description = "Statement timeout of each connection in milliseconds (DB_STATEMENT_TIMEOUT_MS)."
+  type        = number
+  default     = 30000
 }
 
 variable "environment_variables" {

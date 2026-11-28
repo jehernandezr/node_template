@@ -3,6 +3,7 @@ import {
   ASYNCAPI_PATH,
   CONTRACT_EXPORT_FILE,
   CONTRACTS_DIR,
+  DATABASE_CONFIG_PATH,
   EXPORT_DIR,
   OPENAPI_EXPORT_FILE,
   TOPOLOGY_PATH,
@@ -20,6 +21,11 @@ export class ExportPaths {
   /** Path of the messaging topology. */
   get topology(): string {
     return resolve(this.backendRoot, TOPOLOGY_PATH);
+  }
+
+  /** Path of the database configuration keys Terraform checks its `DB_*` variables against. */
+  get databaseConfig(): string {
+    return resolve(this.backendRoot, DATABASE_CONFIG_PATH);
   }
 
   /** Path of the AsyncAPI document. */

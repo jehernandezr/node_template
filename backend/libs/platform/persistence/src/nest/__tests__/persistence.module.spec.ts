@@ -28,6 +28,8 @@ import { VersionedEntity } from '../../entities/versioned-entity.js';
 import { EntityManagerProvider } from '../../entity-manager-provider.js';
 import { EntityRegistry } from '../../entity-registry.js';
 import { DatabaseKind } from '../../model/database-kind.enum.js';
+import { DatabaseTokenProvider } from '../../ports/database-token-provider.js';
+import { PasswordDatabaseTokenProvider } from '../../password-database-token-provider.js';
 import { PersistenceFeature } from '../../persistence-feature.js';
 import { InstanceEndpointResolver } from '../../ports/instance-endpoint-resolver.js';
 import { RepositoryKit } from '../../repository-kit.js';
@@ -41,6 +43,7 @@ import { FakeDataSourceFactory } from '../../__tests__/utils/fake-data-source-fa
 import { FakeInstanceEndpointResolver } from '../../__tests__/utils/fake-instance-endpoint-resolver.js';
 import { ProbeDatabaseSets } from '../../__tests__/utils/probe-database-sets.js';
 import { ProbeEntity } from '../../__tests__/utils/probe.entity.js';
+import { RecordingDatabaseTokenProvider } from '../../__tests__/utils/recording-database-token-provider.js';
 import { RecordingLogger } from '../../__tests__/utils/recording-logger.js';
 import { StaticShardLister } from '../../__tests__/utils/static-shard-lister.js';
 import { PersistenceModule } from '../persistence.module.js';
@@ -159,10 +162,24 @@ class ClosableCatalogDataSource extends CatalogDataSource {
   }
 }
 
+/** Registers the signer double globally, as `AwsModule` registers the RDS signer. */
+@Global()
+@Module({
+  providers: [
+    {
+      provide: RecordingDatabaseTokenProvider,
+      useFactory: () => new RecordingDatabaseTokenProvider(),
+    },
+  ],
+  exports: [RecordingDatabaseTokenProvider],
+})
+class SpecTokensModule {}
+
 const CONFIG = ConfigModule.forRoot({
   env: {
     DB_USER: 'app',
     DB_PASSWORD: 'secret',
+    DB_CATALOG_NAME: 'svc_catalog',
     DB_INSTANCES: JSON.stringify({
       'stub-instance': { primary: { host: 'localhost', port: 5432 } },
     }),
@@ -226,6 +243,66 @@ describe('PersistenceModule', () => {
         PersistenceModule.forRoot(options),
       ).rejects.toMatchObject({
         code: PersistenceErrorCode.InvalidConfig,
+      });
+    });
+  });
+
+  describe('database authentication', () => {
+    const IAM_CONFIG = ConfigModule.forRoot({
+      env: {
+        DB_AUTH: 'iam',
+        DB_USER: 'svc_app',
+        DB_CATALOG_NAME: 'svc_catalog',
+      },
+    });
+
+    it('presents DB_PASSWORD on every connection by default', async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [
+          KernelModule,
+          SpecGlobalModule,
+          CONFIG,
+          PersistenceModule.forRoot(rootOptions()),
+        ],
+      }).compile();
+
+      expect(
+        moduleRef.get(DatabaseTokenProvider, { strict: false }),
+      ).toBeInstanceOf(PasswordDatabaseTokenProvider);
+    });
+
+    it('uses the signer it receives in tokens', async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [
+          KernelModule,
+          SpecGlobalModule,
+          SpecTokensModule,
+          IAM_CONFIG,
+          PersistenceModule.forRoot({
+            ...rootOptions(),
+            tokens: RecordingDatabaseTokenProvider,
+          }),
+        ],
+      }).compile();
+
+      expect(moduleRef.get(DatabaseTokenProvider, { strict: false })).toBe(
+        moduleRef.get(RecordingDatabaseTokenProvider),
+      );
+    });
+
+    it('refuses DB_AUTH=iam without a signer with PersistenceInvalidConfig', async () => {
+      await expect(
+        Test.createTestingModule({
+          imports: [
+            KernelModule,
+            SpecGlobalModule,
+            IAM_CONFIG,
+            PersistenceModule.forRoot(rootOptions()),
+          ],
+        }).compile(),
+      ).rejects.toMatchObject({
+        code: PersistenceErrorCode.InvalidConfig,
+        details: { option: 'tokens' },
       });
     });
   });

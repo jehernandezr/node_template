@@ -5,11 +5,11 @@
 # The runner that executes this script must reach the database (RDS Proxy inside the VPC), which is why
 # deploy.yml uses vars.DEPLOY_RUNNER: a self-hosted runner inside the VPC, not one hosted by GitHub.
 #
-# Reads the db, service_databases and db_service_secret_arns outputs of the data stack, gets the
-# credentials of the service from Secrets Manager, masks them in the logs and exports DB_PROXY_HOST,
-# DB_PORT, DB_DATABASES and DB_CREDENTIALS for pnpm nx run <service>:migrate. <service> is the folder and
-# Nx project name; the data stack keys it by the service_name the catalog gives it.
-# DRY_RUN=1 reads with capture, exports no real values and runs migrate only as a printed command.
+# Reads the one_off_task output of the service's service-base stack and exports its environment, the one the
+# migrate one-off task gets: DB_AUTH=iam with the service's owner role as DB_USER (ADR 0041). The pool signs an
+# IAM token per connection with the runner's credentials, so its role needs rds-db:connect for that owner role.
+# No database password is read. <service> is the folder and Nx project name.
+# DRY_RUN=1 reads with capture, exports nothing and runs migrate only as a printed command.
 set -euo pipefail
 
 # shellcheck source=pipeline-common.sh
@@ -21,44 +21,26 @@ require_identifier "environment" "$ENVIRONMENT"
 require_identifier "service" "$SERVICE"
 cd "$REPO_ROOT"
 
-entry="$(node "$SCRIPTS_DIR/service-catalog-cli.mjs" entry "$ENVIRONMENT" "$SERVICE")"
-service_name="$(json_get "$entry" 'o.serviceName')"
+base_stack="$TF_ROOT/stacks/service-base"
+base_backend="$TF_ROOT/environments/$ENVIRONMENT/services/$SERVICE/base/backend.tfvars"
 
-data_stack="$TF_ROOT/stacks/data"
-data_backend="$TF_ROOT/environments/$ENVIRONMENT/data/backend.tfvars"
+run terraform -chdir="$base_stack" init -input=false -reconfigure -backend-config="$base_backend"
 
-run terraform -chdir="$data_stack" init -input=false -reconfigure -backend-config="$data_backend"
-
-db_json="$(capture terraform -chdir="$data_stack" output -json db)"
-databases_json="$(capture terraform -chdir="$data_stack" output -json service_databases)"
-secrets_json="$(capture terraform -chdir="$data_stack" output -json db_service_secret_arns)"
+one_off_json="$(capture terraform -chdir="$base_stack" output -json one_off_task)"
 
 if is_dry; then
-  proxy_host='<dry-run>'
-  port='<dry-run>'
-  databases='<dry-run>'
-  secret_arn='<dry-run>'
-  credentials="$(capture aws secretsmanager get-secret-value --secret-id "$secret_arn" \
-    --query SecretString --output text)"
-  dry_text 'echo "::add-mask::<database credentials>"'
+  dry_text 'export the environment of one_off_task'
 else
-  proxy_host="$(json_get "$db_json" 'o.proxy_endpoint')"
-  port="$(json_get "$db_json" 'o.port')"
-  databases="$(json_get "$databases_json" "o['$service_name']")"
-  secret_arn="$(json_get "$secrets_json" "o['$service_name']")"
-  if [[ -z "$databases" || -z "$secret_arn" ]]; then
-    log "The service $service_name is not in service_databases of $ENVIRONMENT: add it to the data stack"
+  if [[ -z "$(json_get "$one_off_json" 'o.environment.DB_USER')" ]]; then
+    log "The service-base stack of $SERVICE in $ENVIRONMENT gives its one-off task no database: apply it first"
     exit 1
   fi
-  credentials="$(aws secretsmanager get-secret-value --secret-id "$secret_arn" \
-    --query SecretString --output text)"
-  password="$(json_get "$credentials" 'o.password')"
-  echo "::add-mask::$credentials"
-  echo "::add-mask::$password"
-  export DB_PROXY_HOST="$proxy_host"
-  export DB_PORT="$port"
-  export DB_DATABASES="$databases"
-  export DB_CREDENTIALS="$credentials"
+  while IFS= read -r -d '' pair; do
+    export "${pair?}"
+  done < <(printf '%s' "$one_off_json" | node -e "
+    const o = JSON.parse(require('node:fs').readFileSync(0, 'utf8'));
+    for (const [key, value] of Object.entries(o.environment)) process.stdout.write(key + '=' + value + '\0');
+  ")
 fi
 
 run pnpm nx run "$SERVICE:migrate"

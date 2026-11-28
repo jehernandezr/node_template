@@ -4,7 +4,7 @@ output "clients_security_group_id" {
 }
 
 output "db" {
-  description = "PostgreSQL: proxy_endpoint (writes), reader_endpoints (replicas, empty without replicas), port, kms_key_arn and master_secret_arn (administration only)."
+  description = "PostgreSQL: proxy_endpoint (writes, IAM authentication), reader_endpoints (replicas, empty without replicas), port, kms_key_arn and master_secret_arn (administration only)."
   value = {
     proxy_endpoint    = module.rds.proxy_endpoint
     reader_endpoints  = module.rds.reader_endpoints
@@ -15,9 +15,19 @@ output "db" {
   }
 }
 
-output "db_service_secret_arns" {
-  description = "Secret ARN of each database user, by name."
+output "db_secret_arns" {
+  description = "Secret ARN of each password database user (owner, app and replication), by name. Only RDS Proxy, the rotation and the bootstrap read them; services authenticate with IAM."
   value       = module.rds.service_secret_arns
+}
+
+output "db_roles" {
+  description = "Per service, its database roles: owner (migrations), app (the service) and reader (the replicas)."
+  value       = local.db_roles
+}
+
+output "db_connect_arns" {
+  description = "Per service, the rds-db:connect resources of each role: app and owner through RDS Proxy, reader on each replica."
+  value       = local.db_connect_arns
 }
 
 output "service_databases" {

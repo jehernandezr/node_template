@@ -10,17 +10,17 @@ locals {
   # Parameter group family: postgres17 for major version 17.
   parameter_group_family = "postgres${split(".", var.engine_version)[0]}"
 
-  users = { for u in var.service_users : u.name => u }
+  # Users that log in with a password from a rotated secret; the rds_iam ones (readers) only with IAM tokens.
+  users = { for u in var.service_users : u.name => u if !u.rds_iam }
 
   bootstrap_users = [
-    for u in var.service_users : {
-      name            = u.name
-      secret_arn      = aws_secretsmanager_secret.service[u.name].arn
-      rds_replication = u.rds_replication
-    }
+    for u in var.service_users : merge(
+      { name = u.name, rds_iam = u.rds_iam, rds_replication = u.rds_replication },
+      u.rds_iam ? {} : { secret_arn = aws_secretsmanager_secret.service[u.name].arn },
+    )
   ]
 
-  # What the bootstrap creates: group roles, databases with their owner, readers and extensions.
+  # What the bootstrap creates: group roles, databases with their owner, writers, readers and extensions.
   bootstrap_spec = {
     users       = local.bootstrap_users
     group_roles = var.group_roles
@@ -51,8 +51,13 @@ resource "terraform_data" "input_check" {
     }
 
     precondition {
-      condition     = alltrue(flatten([for d in var.databases : [for r in d.readers : contains(local.role_names, r)]]))
-      error_message = "The readers of each database must be in service_users or group_roles."
+      condition     = alltrue(flatten([for d in var.databases : [for r in concat(d.writers, d.readers) : contains(local.role_names, r)]]))
+      error_message = "The writers and readers of each database must be in service_users or group_roles."
+    }
+
+    precondition {
+      condition     = !anytrue([for u in var.service_users : u.rds_iam && u.rds_replication])
+      error_message = "A replication user logs in with a password: it cannot be rds_iam."
     }
 
     precondition {
@@ -329,6 +334,9 @@ resource "aws_db_instance" "this" {
   parameter_group_name   = aws_db_parameter_group.this.name
   publicly_accessible    = false
 
+  # Readers log in to the replicas with IAM tokens (ADR 0041).
+  iam_database_authentication_enabled = true
+
   multi_az                   = var.multi_az
   deletion_protection        = var.deletion_protection
   backup_retention_period    = var.backup_retention_period
@@ -367,6 +375,8 @@ resource "aws_db_instance" "replica" {
   vpc_security_group_ids = [aws_security_group.replica[0].id]
   publicly_accessible    = false
   multi_az               = false
+
+  iam_database_authentication_enabled = true
 
   auto_minor_version_upgrade            = true
   deletion_protection                   = var.deletion_protection
@@ -574,7 +584,8 @@ resource "aws_secretsmanager_secret_rotation" "service" {
 }
 
 # ---------------------------------------------------------------------------
-# RDS Proxy. It authenticates with the service secrets, not the master one.
+# RDS Proxy. Clients authenticate with IAM tokens (iam_auth REQUIRED); the proxy logs in to the database with
+# the password user secrets, not the master one, and follows their rotation by itself (ADR 0041).
 # ---------------------------------------------------------------------------
 
 resource "aws_iam_role" "proxy" {
@@ -640,7 +651,7 @@ resource "aws_db_proxy" "this" {
 
     content {
       auth_scheme = "SECRETS"
-      iam_auth    = "DISABLED"
+      iam_auth    = "REQUIRED"
       secret_arn  = aws_secretsmanager_secret.service[auth.key].arn
     }
   }
@@ -723,6 +734,28 @@ resource "aws_cloudwatch_metric_alarm" "freeable_memory" {
   treat_missing_data  = "missing"
 
   dimensions = { DBInstanceIdentifier = aws_db_instance.this.identifier }
+
+  alarm_actions = local.alarm_actions
+  ok_actions    = local.alarm_actions
+
+  tags = var.tags
+}
+
+# Transactions pin their proxy connection (set_config and the fence advisory locks). That is accepted (ADR 0041):
+# this alarm flags when pinned connections approach what the instance takes.
+resource "aws_cloudwatch_metric_alarm" "proxy_pinned_connections" {
+  alarm_name          = "${var.name_prefix}-rds-proxy-pinned-connections-high"
+  alarm_description   = "Client connections pinned to their session in RDS Proxy above the threshold"
+  namespace           = "AWS/RDS"
+  metric_name         = "DatabaseConnectionsCurrentlySessionPinned"
+  statistic           = "Maximum"
+  period              = 300
+  evaluation_periods  = 3
+  threshold           = var.alarm_pinned_connections
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = { ProxyName = aws_db_proxy.this.name }
 
   alarm_actions = local.alarm_actions
   ok_actions    = local.alarm_actions

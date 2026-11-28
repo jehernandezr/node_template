@@ -13,7 +13,7 @@ db_skip_final_snapshot     = true # No final snapshot in dev.
 # One catalog and one database per shard of each service, same as backend/infra/local/postgres/init.sql.
 db_services = {
   identity      = { shards = 2 }
-  tasks         = { shards = 1 }
+  tasks         = { shards = 2 }
   notifications = { shards = 2 }
   reports       = { shards = 2 }
   billing       = { shards = 2 }

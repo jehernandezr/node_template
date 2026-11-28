@@ -1,6 +1,7 @@
 import { ArtifactWriter } from '../artifact-writer.js';
 import { AsyncApiBuilder } from '../async-api-builder.js';
 import { ContractExporter } from '../contract-exporter.js';
+import { DatabaseConfigExportBuilder } from '../database-config-export-builder.js';
 import { OpenApiBuilder } from '../open-api-builder.js';
 import { ExportScope } from '../export-constants.js';
 import { ExportPaths } from '../export-paths.js';
@@ -29,6 +30,7 @@ describe('ContractExporter', () => {
         new AsyncApiBuilder(new SchemaOwnership(), topology),
         new OpenApiBuilder(),
         paths,
+        new DatabaseConfigExportBuilder(),
       );
 
       const report = await exporter.run(
@@ -47,6 +49,9 @@ describe('ContractExporter', () => {
       ).toBeDefined();
       expect(fileSystem.contentOf(paths.topology)).toBeDefined();
       expect(fileSystem.contentOf(paths.asyncApi)).toBeDefined();
+      expect(
+        JSON.parse(fileSystem.contentOf(paths.databaseConfig) ?? '{}'),
+      ).toEqual(new DatabaseConfigExportBuilder().build());
       expect(report).toEqual({
         ok: true,
         lines: [
@@ -58,6 +63,7 @@ describe('ContractExporter', () => {
           `Wrote ${paths.openApiOf('billing')}`,
           `Wrote ${paths.topology}`,
           `Wrote ${paths.asyncApi}`,
+          `Wrote ${paths.databaseConfig}`,
         ],
       });
     });
@@ -73,6 +79,7 @@ describe('ContractExporter', () => {
         new AsyncApiBuilder(new SchemaOwnership(), topology),
         new OpenApiBuilder(),
         paths,
+        new DatabaseConfigExportBuilder(),
       );
 
       const report = await exporter.run(
@@ -102,6 +109,7 @@ describe('ContractExporter', () => {
         new AsyncApiBuilder(new SchemaOwnership(), topology),
         new OpenApiBuilder(),
         paths,
+        new DatabaseConfigExportBuilder(),
       );
 
       const report = await exporter.run(

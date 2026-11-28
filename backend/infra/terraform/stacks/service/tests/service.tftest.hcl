@@ -156,10 +156,10 @@ override_data {
           environment        = {}
         }
       }
-      fargate_environment     = { SERVICE_NAME = "identity", AWS_REGION = "us-east-1", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com" }
-      lambda_environment      = { SERVICE_NAME = "identity", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com", DB_SECRET_ARN = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf" }
-      fargate_secrets         = { DB_CREDENTIALS = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf" }
-      lambda_secret_arns      = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf"]
+      fargate_environment     = { SERVICE_NAME = "identity", AWS_REGION = "us-east-1", DB_AUTH = "iam" }
+      lambda_environment      = { SERVICE_NAME = "identity", DB_AUTH = "iam" }
+      fargate_secrets         = { SERVICE_PEPPER = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/identity/pepper-AbCdEf" }
+      lambda_secret_arns      = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/identity/pepper-AbCdEf"]
       kms_key_arn             = "arn:aws:kms:us-east-1:123456789012:key/compute-logs"
       data_security_group_ids = ["sg-0clients"]
       enable_execute_command  = false
@@ -200,7 +200,7 @@ run "reads_the_service_base_outputs_from_remote_state" {
   }
 
   assert {
-    condition     = local.fargate_environment["api"] == { SERVICE_NAME = "identity", AWS_REGION = "us-east-1", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com" }
+    condition     = local.fargate_environment["api"] == { SERVICE_NAME = "identity", AWS_REGION = "us-east-1", DB_AUTH = "iam" }
     error_message = "The API gets the shared Fargate environment of service-base, the one its one-off task gets."
   }
 
@@ -265,10 +265,10 @@ run "lambda_api_with_consumer" {
             environment        = {}
           }
         }
-        fargate_environment     = { SERVICE_NAME = "identity", AWS_REGION = "us-east-1", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com" }
-        lambda_environment      = { SERVICE_NAME = "identity", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com", DB_SECRET_ARN = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf" }
-        fargate_secrets         = { DB_CREDENTIALS = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf" }
-        lambda_secret_arns      = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf"]
+        fargate_environment     = { SERVICE_NAME = "identity", AWS_REGION = "us-east-1", DB_AUTH = "iam" }
+        lambda_environment      = { SERVICE_NAME = "identity", DB_AUTH = "iam" }
+        fargate_secrets         = { SERVICE_PEPPER = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/identity/pepper-AbCdEf" }
+        lambda_secret_arns      = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/identity/pepper-AbCdEf"]
         kms_key_arn             = "arn:aws:kms:us-east-1:123456789012:key/compute-logs"
         data_security_group_ids = ["sg-0clients"]
         enable_execute_command  = false
@@ -292,7 +292,7 @@ run "lambda_api_with_consumer" {
   }
 
   assert {
-    condition     = local.lambda_environment["consumer-commands"]["DB_SECRET_ARN"] == "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/identity-AbCdEf"
+    condition     = local.lambda_environment["consumer-commands"]["DB_AUTH"] == "iam"
     error_message = "The functions get the shared Lambda environment of service-base."
   }
 }
@@ -346,10 +346,10 @@ run "a_worker_without_queue_runs_exactly_one_task" {
             environment        = {}
           }
         }
-        fargate_environment     = { SERVICE_NAME = "tasks", AWS_REGION = "us-east-1", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com" }
-        lambda_environment      = { SERVICE_NAME = "tasks", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com", DB_SECRET_ARN = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/tasks-AbCdEf" }
-        fargate_secrets         = { DB_CREDENTIALS = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/tasks-AbCdEf" }
-        lambda_secret_arns      = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/tasks-AbCdEf"]
+        fargate_environment     = { SERVICE_NAME = "tasks", AWS_REGION = "us-east-1", DB_AUTH = "iam" }
+        lambda_environment      = { SERVICE_NAME = "tasks", DB_AUTH = "iam" }
+        fargate_secrets         = { SERVICE_PEPPER = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/tasks/pepper-AbCdEf" }
+        lambda_secret_arns      = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/tasks/pepper-AbCdEf"]
         kms_key_arn             = "arn:aws:kms:us-east-1:123456789012:key/compute-logs"
         data_security_group_ids = ["sg-0clients"]
         enable_execute_command  = false
@@ -494,10 +494,10 @@ run "a_service_without_a_registry_entry_has_no_listener_priority" {
             environment        = {}
           }
         }
-        fargate_environment     = { SERVICE_NAME = "audit", AWS_REGION = "us-east-1", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com" }
-        lambda_environment      = { SERVICE_NAME = "audit", DB_PROXY_HOST = "nt-dev-proxy.proxy-x.us-east-1.rds.amazonaws.com", DB_SECRET_ARN = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/audit-AbCdEf" }
-        fargate_secrets         = { DB_CREDENTIALS = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/audit-AbCdEf" }
-        lambda_secret_arns      = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/db/audit-AbCdEf"]
+        fargate_environment     = { SERVICE_NAME = "audit", AWS_REGION = "us-east-1", DB_AUTH = "iam" }
+        lambda_environment      = { SERVICE_NAME = "audit", DB_AUTH = "iam" }
+        fargate_secrets         = { SERVICE_PEPPER = "arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/audit/pepper-AbCdEf" }
+        lambda_secret_arns      = ["arn:aws:secretsmanager:us-east-1:123456789012:secret:nt-dev/audit/pepper-AbCdEf"]
         kms_key_arn             = "arn:aws:kms:us-east-1:123456789012:key/compute-logs"
         data_security_group_ids = ["sg-0clients"]
         enable_execute_command  = false

@@ -12,6 +12,7 @@ export * from './dead-letter-attribute.enum.js';
 export * from './delivery-action.enum.js';
 export * from './delivery-report.js';
 export * from './elasticache-iam-auth-token-provider.js';
+export * from './rds/rds-iam-database-token-provider.js';
 export * from './sdk-client-credentials-provider.js';
 export * from './sns-sqs-envelope-publisher.js';
 export * from './sns-sqs-message-bus.js';

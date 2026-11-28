@@ -1,8 +1,9 @@
 variable "db_services" {
   description = <<-EOT
-    Services with a database. Each one gets a user with a rotated secret, its catalog database
-    (<service>_catalog) and one database per logical shard (<service>_shard_<n>), all owned by it.
-    Same as the local environment.
+    Services with a database. Each one gets three roles (ADR 0041): <service>_owner, which owns its catalog
+    database (<service>_catalog) and one database per logical shard (<service>_shard_<n>); <service>_app, with DML
+    only; and <service>_reader, with SELECT through IAM tokens on the replicas. The owner and app passwords are
+    rotated secrets that only RDS Proxy reads. The databases are the same as in the local environment.
   EOT
   type = map(object({
     shards = optional(number, 1)
@@ -17,6 +18,11 @@ variable "db_services" {
     condition     = alltrue([for name, svc in var.db_services : svc.shards >= 1 && svc.shards <= 64])
     error_message = "shards must be between 1 and 64."
   }
+
+  validation {
+    condition     = length(distinct([for svc in values(var.db_services) : svc.shards])) <= 1
+    error_message = "Every service has the same number of shards: without TENANT_MOVE_TARGETS, the group shard_<n> is <service>_shard_<n> in every service (ADR 0032)."
+  }
 }
 
 variable "db_replication_users" {
@@ -29,6 +35,12 @@ variable "db_extensions" {
   description = "Extensions the bootstrap creates in each database (catalogs and shards)."
   type        = list(string)
   default     = ["vector"]
+}
+
+variable "db_alarm_pinned_connections" {
+  description = "RDS Proxy connections pinned to a client session above which the alarm fires."
+  type        = number
+  default     = 100
 }
 
 variable "db_engine_version" {

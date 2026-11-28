@@ -5,6 +5,8 @@
 export class PlatformSchemaSql {
   static readonly functionsName = 'PlatformFunctions1794600000001';
   static readonly auditLogName = 'PlatformAuditLog1794600000002';
+  static readonly ownerMaintenanceName =
+    'PlatformOwnerMaintenance1794600000003';
 
   /**
    * Platform functions on each shard:
@@ -143,6 +145,40 @@ $fn$`,
     'DROP FUNCTION IF EXISTS platform_ensure_partitions(text, text, integer)',
     'DROP FUNCTION IF EXISTS platform_uuid_v7_lower_bound(timestamptz)',
     'DROP FUNCTION IF EXISTS platform_uuid_v7()',
+  ];
+
+  /**
+   * Partition maintenance as the owner of the tables (ADR 0041): the service connects as its app role, which owns
+   * no table and cannot create, detach or drop partitions. The partition functions run with the rights of their
+   * owner, the role that ran the migrations, with a fixed `search_path`:
+   * - `platform_ensure_partitions` and `platform_detach_partitions_before` become `SECURITY DEFINER`.
+   * - `platform_drop_partition(parent, child)` drops `child` only when it is a partition of `parent`, and returns
+   *   whether it did.
+   */
+  static readonly ownerMaintenanceUp: readonly string[] = [
+    'ALTER FUNCTION platform_ensure_partitions(text, text, integer) SECURITY DEFINER SET search_path = public',
+    'ALTER FUNCTION platform_detach_partitions_before(text, text, timestamptz) SECURITY DEFINER SET search_path = public',
+    `CREATE OR REPLACE FUNCTION platform_drop_partition(parent text, child text)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $fn$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_inherits i
+    JOIN pg_class c ON c.oid = i.inhrelid
+    JOIN pg_class p ON p.oid = i.inhparent
+    WHERE p.relname = parent AND c.relname = child
+  ) THEN
+    RETURN false;
+  END IF;
+  EXECUTE format('DROP TABLE %I', child);
+  RETURN true;
+END
+$fn$`,
+  ];
+
+  static readonly ownerMaintenanceDown: readonly string[] = [
+    'DROP FUNCTION IF EXISTS platform_drop_partition(text, text)',
+    'ALTER FUNCTION platform_detach_partitions_before(text, text, timestamptz) SECURITY INVOKER RESET search_path',
+    'ALTER FUNCTION platform_ensure_partitions(text, text, integer) SECURITY INVOKER RESET search_path',
   ];
 
   /**

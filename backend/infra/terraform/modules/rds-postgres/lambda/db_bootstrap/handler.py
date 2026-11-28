@@ -1,4 +1,7 @@
-"""Creates the PostgreSQL roles and databases of the platform.
+"""Creates the PostgreSQL roles and databases of the platform (ADR 0041).
+
+Each service has an owner role that owns its databases and runs the migrations, an app role with DML only and a
+reader role that logs in with IAM tokens on the replicas.
 
 Idempotent: a role that already exists keeps its password (rotation owns it) and a
 database that already exists is not touched except for its owner, its grants and its
@@ -68,8 +71,51 @@ def _database_exists(conn, name):
     return bool(conn.run("SELECT 1 FROM pg_database WHERE datname = :n", n=name))
 
 
+def _schemas(conn, owner):
+    """Schemas the grants cover: public and every schema the owner created (saga, for example)."""
+    rows = conn.run(
+        "SELECT nspname FROM pg_namespace n JOIN pg_roles r ON r.oid = n.nspowner "
+        "WHERE n.nspname = 'public' OR r.rolname = :o ORDER BY nspname",
+        o=owner,
+    )
+    return sorted({"public", *[row[0] for row in rows]})
+
+
+def _grant(conn, owner, role, table_privileges, sequence_privileges):
+    """Grants a role its privileges on what the owner created and will create, in every schema."""
+    owner_ident = pg.identifier(owner)
+    role_ident = pg.identifier(role)
+    for schema in _schemas(conn, owner):
+        schema_ident = pg.identifier(schema)
+        conn.run(f"GRANT USAGE ON SCHEMA {schema_ident} TO {role_ident}")
+        conn.run(f"GRANT {table_privileges} ON ALL TABLES IN SCHEMA {schema_ident} TO {role_ident}")
+        if sequence_privileges:
+            conn.run(
+                f"GRANT {sequence_privileges} ON ALL SEQUENCES IN SCHEMA {schema_ident} TO {role_ident}"
+            )
+    conn.run(f"ALTER DEFAULT PRIVILEGES FOR ROLE {owner_ident} GRANT USAGE ON SCHEMAS TO {role_ident}")
+    conn.run(
+        f"ALTER DEFAULT PRIVILEGES FOR ROLE {owner_ident} GRANT {table_privileges} ON TABLES TO {role_ident}"
+    )
+    if sequence_privileges:
+        conn.run(
+            f"ALTER DEFAULT PRIVILEGES FOR ROLE {owner_ident} "
+            f"GRANT {sequence_privileges} ON SEQUENCES TO {role_ident}"
+        )
+
+
+WRITER_TABLE_PRIVILEGES = "SELECT, INSERT, UPDATE, DELETE"
+WRITER_SEQUENCE_PRIVILEGES = "USAGE, SELECT, UPDATE"
+READER_TABLE_PRIVILEGES = "SELECT"
+
+
 def bootstrap(event, master_username, connect, password_of):
-    """Applies roles, memberships, databases, extensions and grants. Returns a summary."""
+    """Applies roles, memberships, databases, extensions and grants. Returns a summary.
+
+    A user with rds_iam logs in only with IAM tokens: it has no password and gets rds_iam. The others get the
+    password of their secret. Writers get DML and readers SELECT on what the database owner creates, so neither
+    can change the schema and RLS applies to both.
+    """
     admin = pg.identifier(master_username)
     users = event.get("users", [])
     groups = event.get("group_roles", [])
@@ -88,13 +134,15 @@ def bootstrap(event, master_username, connect, password_of):
             if _role_exists(conn, name):
                 summary["existing_roles"].append(name)
             else:
+                password = "" if user.get("rds_iam") else f" PASSWORD {pg.literal(password_of(user))}"
                 conn.run(
-                    f"CREATE ROLE {ident} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
-                    f"NOBYPASSRLS PASSWORD {pg.literal(password_of(user))}"
+                    f"CREATE ROLE {ident} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS{password}"
                 )
                 summary["created_roles"].append(name)
             # The master must be able to assume the role to create databases on its behalf (PG16+).
             conn.run(f"GRANT {ident} TO {admin}")
+            if user.get("rds_iam"):
+                conn.run(f"GRANT rds_iam TO {ident}")
             if user.get("rds_replication"):
                 conn.run(f"GRANT rds_replication TO {ident}")
 
@@ -121,25 +169,21 @@ def bootstrap(event, master_username, connect, password_of):
                 conn.run(f"CREATE DATABASE {ident} OWNER {owner}")
                 summary["created_databases"].append(name)
             conn.run(f"REVOKE ALL ON DATABASE {ident} FROM PUBLIC")
-            for role in [*db.get("readers", []), *replication]:
+            for role in [*db.get("writers", []), *db.get("readers", []), *replication]:
                 conn.run(f"GRANT CONNECT ON DATABASE {ident} TO {pg.identifier(role)}")
     finally:
         conn.close()
 
     for db in databases:
-        owner = pg.identifier(db["owner"])
         conn = connect(db["name"])
         try:
             for ext in db.get("extensions", []):
                 conn.run(f"CREATE EXTENSION IF NOT EXISTS {pg.identifier(ext)}")
+            conn.run("REVOKE CREATE ON SCHEMA public FROM PUBLIC")
+            for writer in db.get("writers", []):
+                _grant(conn, db["owner"], writer, WRITER_TABLE_PRIVILEGES, WRITER_SEQUENCE_PRIVILEGES)
             for reader in db.get("readers", []):
-                role = pg.identifier(reader)
-                conn.run(f"GRANT USAGE ON SCHEMA public TO {role}")
-                conn.run(f"GRANT SELECT ON ALL TABLES IN SCHEMA public TO {role}")
-                conn.run(
-                    f"ALTER DEFAULT PRIVILEGES FOR ROLE {owner} IN SCHEMA public "
-                    f"GRANT SELECT ON TABLES TO {role}"
-                )
+                _grant(conn, db["owner"], reader, READER_TABLE_PRIVILEGES, None)
         finally:
             conn.close()
 

@@ -31,6 +31,9 @@
       "inputs": [
         "{workspaceRoot}/backend/libs/contracts/**/*",
         "{workspaceRoot}/backend/infra/terraform/topology.json",
+        "{workspaceRoot}/backend/infra/terraform/database-config.json",
+        "{workspaceRoot}/backend/libs/platform/persistence/src/config/**/*",
+        "{workspaceRoot}/backend/libs/platform/persistence/src/model/database-auth.enum.ts",
         "{workspaceRoot}/.prettierrc",
         "{projectRoot}/src/**/*",
         {

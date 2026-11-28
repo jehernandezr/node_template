@@ -34,15 +34,24 @@ export class RuntimeAdapterSelector {
     const valkey =
       RuntimeAdapterSelector.present(env[RuntimeAdapterVariable.ValkeyUrl]) ||
       RuntimeAdapterSelector.present(env[RuntimeAdapterVariable.ValkeyHost]);
-    const aws = RuntimeAdapterSelector.present(
-      env[RuntimeAdapterVariable.AwsRegion],
-    );
+    const aws = this.awsConfigured(env);
     const adapters = {
       valkey: overrides.valkey ?? valkey,
       aws: overrides.aws ?? aws,
     };
     RuntimeAdapterSelector.requireValkeyWhenDeployed(env, adapters);
     return adapters;
+  }
+
+  /**
+   * Whether the environment configures the AWS adapter, which it does with `AWS_REGION`.
+   * @param env Environment variables.
+   * @returns True when `AWS_REGION` has a value.
+   */
+  awsConfigured(env: ConfigEnv): boolean {
+    return RuntimeAdapterSelector.present(
+      env[RuntimeAdapterVariable.AwsRegion],
+    );
   }
 
   private static requireValkeyWhenDeployed(
