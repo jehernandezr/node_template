@@ -18,4 +18,4 @@ With HMAC there is a single secret for all services: rotating it is a cutover. D
 
 ## Database credentials
 
-`DB_CREDENTIALS` comes from the secret that RDS rotates. RDS Proxy picks up the new credential without dropping connections; the services read it at startup. After a rotation, restart the tasks in a staggered way and check `GET /health/ready`.
+The `<service>_owner` and `<service>_app` passwords are secrets that the `data` stack rotates every 30 days; only RDS Proxy, the rotation and the bootstrap Lambdas read them. Services never see them: they reach RDS Proxy with IAM tokens (`DB_AUTH=iam`, [ADR 0041](../adr/0041-secrets-and-database-credentials.md)), and the proxy follows the rotation by itself. A rotation needs no restart; check `GET /health/ready` afterwards.

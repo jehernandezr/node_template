@@ -73,8 +73,29 @@ run "one_catalog_per_service_and_one_database_per_shard" {
   }
 
   assert {
-    condition     = alltrue([for d in local.databases : startswith(d.name, "${d.owner}_") && length(d.readers) == 0])
-    error_message = "Each service owns its catalog and its shards, and no other role reads them."
+    condition     = alltrue([for d in local.databases : startswith(d.name, trimsuffix(d.owner, "owner")) && d.writers == ["${trimsuffix(d.owner, "_owner")}_app"] && d.readers == ["${trimsuffix(d.owner, "_owner")}_reader"]])
+    error_message = "Each service owner role owns its catalog and its shards; only its app role writes them and its reader role reads them."
+  }
+
+  assert {
+    condition     = local.db_roles["identity"] == { owner = "identity_owner", app = "identity_app", reader = "identity_reader" }
+    error_message = "Each service has an owner, an app and a reader role (ADR 0041)."
+  }
+
+  assert {
+    condition     = toset(keys(module.rds.service_secret_arns)) == toset(["identity_owner", "identity_app", "tasks_owner", "tasks_app", "replication"])
+    error_message = "The owner and app roles have rotated password secrets; the reader roles log in with IAM only and have none."
+  }
+
+
+  assert {
+    condition     = alltrue([for auth in module.rds.proxy_auth : auth.iam_auth == "REQUIRED" && auth.auth_scheme == "SECRETS"]) && length(module.rds.proxy_auth) == 5
+    error_message = "Clients reach RDS Proxy with IAM only; the proxy logs in with each password user's secret."
+  }
+
+  assert {
+    condition     = module.rds.iam_database_authentication_enabled
+    error_message = "The instance and its replicas accept IAM database authentication, which the readers use."
   }
 
   assert {
@@ -167,5 +188,37 @@ run "the_local_environment_accepts_http_regions" {
   assert {
     condition     = var.regions["us"].issuer == "http://localhost:3000"
     error_message = "The local environment runs on plain http."
+  }
+}
+
+# The proxy and replica resource ids are known at plan time through the overrides.
+run "services_reach_the_database_with_iam" {
+  command = plan
+
+  override_resource {
+    target          = module.rds.aws_db_proxy.this
+    override_during = plan
+    values          = { arn = "arn:aws:rds:us-east-1:123456789012:db-proxy:prx-0123456789abcdef0", name = "nt-dev-proxy" }
+  }
+
+  override_resource {
+    target          = module.rds.aws_db_instance.replica
+    override_during = plan
+    values          = { resource_id = "db-REPLICA1" }
+  }
+
+  assert {
+    condition     = local.db_connect_arns["identity"].app == ["arn:aws:rds-db:us-east-1:123456789012:dbuser:prx-0123456789abcdef0/identity_app"] && local.db_connect_arns["identity"].owner == ["arn:aws:rds-db:us-east-1:123456789012:dbuser:prx-0123456789abcdef0/identity_owner"]
+    error_message = "The app and owner roles connect through RDS Proxy with IAM."
+  }
+
+  assert {
+    condition     = local.db_connect_arns["identity"].reader == ["arn:aws:rds-db:us-east-1:123456789012:dbuser:db-REPLICA1/identity_reader"]
+    error_message = "The reader role connects to each replica with IAM."
+  }
+
+  assert {
+    condition     = module.rds.pinned_connections_alarm.metric_name == "DatabaseConnectionsCurrentlySessionPinned" && module.rds.pinned_connections_alarm.dimensions["ProxyName"] == "nt-dev-proxy" && module.rds.pinned_connections_alarm.threshold == 100
+    error_message = "An alarm watches the proxy connections pinned to a session (ADR 0041)."
   }
 }

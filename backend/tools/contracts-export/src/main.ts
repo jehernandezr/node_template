@@ -2,6 +2,7 @@ import { AsyncApiBuilder } from './async-api-builder.js';
 import { ConsoleOutput } from './console-output.js';
 import { ContractExporter } from './contract-exporter.js';
 import { ContractsDiscovery } from './contracts-discovery.js';
+import { DatabaseConfigExportBuilder } from './database-config-export-builder.js';
 import { ExportCommand } from './export-command.js';
 import { ExitCode } from './export-constants.js';
 import { ExportPaths } from './export-paths.js';
@@ -28,6 +29,7 @@ async function main(args: readonly string[]): Promise<ExitCode> {
     new AsyncApiBuilder(ownership, topology),
     new OpenApiBuilder(),
     paths,
+    new DatabaseConfigExportBuilder(),
   );
   const command = new ExportCommand(
     exporter,

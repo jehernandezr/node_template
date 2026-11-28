@@ -1,0 +1,28 @@
+{
+  "formatVersion": 1,
+  "keys": {
+    "password": [
+      "DB_AUTH",
+      "DB_CATALOG_INSTANCE",
+      "DB_CATALOG_NAME",
+      "DB_INSTANCES",
+      "DB_PASSWORD",
+      "DB_POOL_MAX",
+      "DB_READER_USER",
+      "DB_SSL",
+      "DB_STATEMENT_TIMEOUT_MS",
+      "DB_USER"
+    ],
+    "iam": [
+      "DB_AUTH",
+      "DB_CATALOG_INSTANCE",
+      "DB_CATALOG_NAME",
+      "DB_INSTANCES",
+      "DB_POOL_MAX",
+      "DB_READER_USER",
+      "DB_SSL",
+      "DB_STATEMENT_TIMEOUT_MS",
+      "DB_USER"
+    ]
+  }
+}

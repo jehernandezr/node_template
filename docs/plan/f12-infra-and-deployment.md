@@ -259,6 +259,8 @@ One PR per cycle, in this order. Each runs after the previous one is merged. A c
 | Web caching (2.11); keystore and debug signing (2.11); Android manifest (2.10)                                                                                                      | F12-18                                          |
 | Unredacted query in HTTP spans (2.8)                                                                                                                                                | F12-19                                          |
 | Group convention without `TENANT_MOVE_TARGETS` has only unit tests (wave 9)                                                                                                         | F12-20: the `dev` deploy runs on the convention |
+| Replicas use the RDS CA, which Node does not trust: the image needs the RDS bundle in `NODE_EXTRA_CA_CERTS` before `DB_SSL=true` reaches a replica (F12-9)                          | F12-20                                          |
+| `migrate-service.sh` signs the owner token with the deploy runner's role, which needs `rds-db:connect` for `<svc>_owner` until `migrate` runs as the one-off task (F12-9)           | F12-16                                          |
 
 Closed before F12: `check-structure.mjs` runs in CI since cycle 2a (general review 2.11).
 

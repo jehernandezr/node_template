@@ -140,7 +140,18 @@ describe('EnvironmentMocks', () => {
     assert.deepEqual(data.service_databases, {
       identity: { shards: ['identity_shard_0'], catalog: 'identity_catalog' },
     });
-    assert.deepEqual(Object.keys(data.db_service_secret_arns), ['identity']);
+    assert.deepEqual(data.db_roles, {
+      identity: {
+        owner: 'identity_owner',
+        app: 'identity_app',
+        reader: 'identity_reader',
+      },
+    });
+    assert.deepEqual(Object.keys(data.db_connect_arns.identity), [
+      'app',
+      'owner',
+      'reader',
+    ]);
     assert.deepEqual(Object.keys(data.valkey.user_names), ['identity']);
   });
 

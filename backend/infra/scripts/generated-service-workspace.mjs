@@ -82,6 +82,7 @@ export class GeneratedServiceWorkspace {
       'stacks/service',
       'modules',
       'topology.json',
+      'database-config.json',
     ]) {
       copy(path);
     }

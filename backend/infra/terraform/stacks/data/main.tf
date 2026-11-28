@@ -1,7 +1,11 @@
 # Regional persistence: one shared RDS PostgreSQL instance with one database per shard
-# of each service plus its own catalog (ADR 0010, ADR 0042), RDS Proxy for writes, replicas for reads,
-# and Valkey. The databases, their owners and extensions are the same ones
+# of each service plus its own catalog (ADR 0010, ADR 0042), RDS Proxy with IAM authentication for writes,
+# replicas read with IAM tokens, and Valkey. Each service has an owner, an app and a reader role (ADR 0041). The databases, their owners and extensions are the same ones
 # backend/infra/local/postgres/init.sql creates locally.
+
+data "aws_partition" "current" {}
+
+data "aws_caller_identity" "current" {}
 
 locals {
   # Databases of each service: its catalog <service>_catalog and its shards <service>_shard_<n>. No service
@@ -13,21 +17,49 @@ locals {
     }
   }
 
+  # Three roles per service (ADR 0041): the owner runs migrations and owns the databases, the app role runs the
+  # service with DML only, and the reader reads the replicas with IAM tokens. The proxy holds the owner and app
+  # passwords; clients reach it with IAM.
+  db_roles = {
+    for name in keys(var.db_services) : name => {
+      owner  = "${name}_owner"
+      app    = "${name}_app"
+      reader = "${name}_reader"
+    }
+  }
+
   db_users = concat(
-    [for name in sort(keys(var.db_services)) : { name = name, rds_replication = false }],
-    [for name in var.db_replication_users : { name = name, rds_replication = true }],
+    flatten([
+      for name in sort(keys(var.db_services)) : [
+        { name = local.db_roles[name].owner, rds_iam = false, rds_replication = false },
+        { name = local.db_roles[name].app, rds_iam = false, rds_replication = false },
+        { name = local.db_roles[name].reader, rds_iam = true, rds_replication = false },
+      ]
+    ]),
+    [for name in var.db_replication_users : { name = name, rds_iam = false, rds_replication = true }],
   )
 
   databases = flatten([
     for name in sort(keys(local.service_databases)) : [
       for db in concat([local.service_databases[name].catalog], local.service_databases[name].shards) : {
         name       = db
-        owner      = name
-        readers    = []
+        owner      = local.db_roles[name].owner
+        writers    = [local.db_roles[name].app]
+        readers    = [local.db_roles[name].reader]
         extensions = var.db_extensions
       }
     ]
   ])
+
+  # rds-db:connect resources: the app and owner roles through the proxy, the reader on each replica.
+  db_connect_arn_base = "arn:${data.aws_partition.current.partition}:rds-db:${var.region}:${data.aws_caller_identity.current.account_id}:dbuser"
+  db_connect_arns = {
+    for name, roles in local.db_roles : name => {
+      app    = ["${local.db_connect_arn_base}:${module.rds.proxy_resource_id}/${roles.app}"]
+      owner  = ["${local.db_connect_arn_base}:${module.rds.proxy_resource_id}/${roles.owner}"]
+      reader = [for id in module.rds.replica_resource_ids : "${local.db_connect_arn_base}:${id}/${roles.reader}"]
+    }
+  }
 
   # Each service sees its own keys and channels: the cache layer prefixes the service name. Also,
   # the shared authentication state (`auth:*`, ADR 0022) is written only by the owner service
@@ -122,6 +154,7 @@ module "rds" {
   performance_insights_retention_days = var.db_performance_insights_retention_days
   log_retention_days                  = var.log_retention_days
   alarm_topic_arn                     = local.platform.alarm_topic_arn
+  alarm_pinned_connections            = var.db_alarm_pinned_connections
 
   engine_version          = var.db_engine_version
   instance_class          = var.db_instance_class

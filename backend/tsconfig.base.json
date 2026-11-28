@@ -123,6 +123,9 @@
         "./libs/platform/observability/src/__tests__/utils/index.ts"
       ],
       "@platform/persistence": ["./libs/platform/persistence/src/index.ts"],
+      "@platform/persistence/config": [
+        "./libs/platform/persistence/src/config.ts"
+      ],
       "@platform/persistence/nest": [
         "./libs/platform/persistence/src/nest/index.ts"
       ],

@@ -1,5 +1,6 @@
 import { AsyncApiBuilder } from '../async-api-builder.js';
 import { ContractExporter } from '../contract-exporter.js';
+import { DatabaseConfigExportBuilder } from '../database-config-export-builder.js';
 import { OpenApiBuilder } from '../open-api-builder.js';
 import { ExportCommand } from '../export-command.js';
 import { ExitCode } from '../export-constants.js';
@@ -32,6 +33,7 @@ function commandOver(fileSystem: FileSystem, output: Output): ExportCommand {
     new AsyncApiBuilder(new SchemaOwnership(), topology),
     new OpenApiBuilder(),
     paths,
+    new DatabaseConfigExportBuilder(),
   );
   return new ExportCommand(
     exporter,
@@ -76,7 +78,8 @@ describe('ExportCommand', () => {
       expect(fileSystem.contentOf(paths.topology)).toBeDefined();
       expect(fileSystem.contentOf(paths.asyncApi)).toBeDefined();
       expect(fileSystem.contentOf(paths.openApiOf('identity'))).toBeDefined();
-      expect(output.infoLines).toHaveLength(8);
+      expect(fileSystem.contentOf(paths.databaseConfig)).toBeDefined();
+      expect(output.infoLines).toHaveLength(9);
     });
 
     it('check passes when the files match the contracts', async () => {

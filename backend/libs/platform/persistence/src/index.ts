@@ -32,6 +32,7 @@ export * from './tenant-isolated-repository.js';
 export * from './tenant-maintenance-session.js';
 export * from './migrations/tenant-isolation-sql.js';
 export * from './config/database.config.js';
+export * from './config/database-config-keys.js';
 export * from './context/persistence-context.js';
 export * from './context/persistence-context-provider.js';
 export * from './context/request-persistence-context-provider.js';

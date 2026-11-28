@@ -632,7 +632,7 @@ Moving a whole logical shard to another instance (`MoveShard`) is planned, not b
 - Changing region is a `MoveTenant` between regions.
 - F12 deploys one region per environment. What a second region needs (global indexes across regions, cross-region writes, revocation and bus propagation) is decided when it is added ([ADR 0042](adr/0042-region-and-catalog-model.md)).
 
-**Sharding operations as code.** Shards are declared once, in `db_services` of the `data` stack, and reach each service as `DB_DATABASES`. Adding a shard is a PR that the pipeline applies and migrates. Moving a tenant is an operator command (`nx run identity:tenant-move`, [runbook](runbooks/tenant-move.md)); the pipeline launches no saga.
+**Sharding operations as code.** Shards are declared once, in `db_services` of the `data` stack, with the same count for every service, and each service lists them from its catalog. Adding a shard is a PR that the pipeline applies and migrates. Moving a tenant is an operator command (`nx run identity:tenant-move`, [runbook](runbooks/tenant-move.md)); the pipeline launches no saga.
 
 **Operation.** Each span carries `db.shard`; there are per-shard metrics (connections, latency, size, tenants) and an imbalance alarm. Locally and in integration tests two shards run, so routing is exercised from day one.
 
@@ -1374,9 +1374,9 @@ The `egress` variable of the `network` stack decides the egress of the private s
 
 **Data**
 
-- One RDS instance per region with one database per logical shard of each service (`<service>_shard_<n>`) and one catalog per service (`<service>_catalog`, [ADR 0042](adr/0042-region-and-catalog-model.md); F12 replaces today's shared `catalog`), the same as `backend/infra/local/postgres/init.sql`. A bootstrap Lambda inside the VPC creates roles, databases with their owner and the `vector` extension; it never deletes.
-- Apps never use the master user. F12 gives each service three roles: `<svc>_owner` for migrations, `<svc>_app` for the runtime (no DDL, RLS always applies) and `<svc>_reader` for the replicas, with IAM authentication to RDS Proxy and the replicas ([ADR 0041](adr/0041-secrets-and-database-credentials.md)).
-- Each service receives `DB_DATABASES` with the map of its databases, writes through `DB_PROXY_HOST` (RDS Proxy) and reads from `DB_READER_HOSTS`, directly to the replicas: outside Aurora, RDS Proxy only supports the writer instance.
+- One RDS instance per region with one database per logical shard of each service (`<service>_shard_<n>`) and one catalog per service (`<service>_catalog`, [ADR 0042](adr/0042-region-and-catalog-model.md); F12 replaces today's shared `catalog`), the same as `backend/infra/local/postgres/init.sql`. A bootstrap Lambda inside the VPC creates roles, databases with their owner, the grants of the app and reader roles and the `vector` extension; it never deletes.
+- Apps never use the master user. Each service has three roles: `<svc>_owner` for migrations, `<svc>_app` for the runtime (no DDL, RLS always applies) and `<svc>_reader` for the replicas, with IAM authentication to RDS Proxy and the replicas ([ADR 0041](adr/0041-secrets-and-database-credentials.md)). Partition upkeep goes through `SECURITY DEFINER` platform functions that run as the owner.
+- Each service receives the `DB_*` variables of `databaseConfigSchema` with `DB_AUTH=iam`: `DB_INSTANCES` has RDS Proxy as the primary and the replicas, read directly (outside Aurora, RDS Proxy only supports the writer instance), and `DB_CATALOG_NAME` its catalog. The pool asks `DatabaseTokenProvider` for a fresh IAM token on each connection.
 - The parameter group turns on `rds.logical_replication`, which enables zero-downtime shard moves.
 - Valkey authenticates through IAM with one user per service limited to `~<service>:*`; the cache prefixes its keys with the service name. With F4, the ACL adds the shared `auth:*` space: identity writes it and the other services read it (ADR 0022).
 - The logs of PostgreSQL and of the administration Lambdas have retention and a CMK.
